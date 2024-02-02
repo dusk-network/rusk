@@ -1,0 +1,27 @@
+.dusk-progress-bar {
+	width: 100%;
+	height: var(--progress-bar-height);
+	background-color: var(--progress-bg-color);
+	border-radius: var(--control-border-radius-size);
+	overflow-x: hidden;
+}
+
+.dusk-progress-bar__filler {
+	height: 100%;
+	background-color: var(--progress-filler-color);
+	position: relative;
+}
+
+.dusk-progress-bar__filler--undetermined {
+	width: 20%;
+	animation: progressBarAnimation 2s infinite;
+}
+
+@keyframes progressBarAnimation {
+	0% {
+		left: -20%;
+	}
+	100% {
+		left: 100%;
+	}
+}

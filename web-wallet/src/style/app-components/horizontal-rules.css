@@ -1,0 +1,5 @@
+hr {
+	border: none;
+	border-top: 1px solid var(--divider-color-primary);
+	width: 100%;
+}

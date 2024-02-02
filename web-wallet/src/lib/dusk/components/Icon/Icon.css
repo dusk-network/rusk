@@ -1,0 +1,10 @@
+.dusk-icon {
+	display: inline-block;
+	fill: currentColor;
+}
+
+.dusk-icon rect {
+	fill: transparent;
+	width: 100%;
+	height: 100%;
+}

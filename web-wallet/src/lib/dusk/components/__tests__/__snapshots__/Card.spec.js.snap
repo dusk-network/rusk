@@ -1,0 +1,58 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Card > renders the Card component with a heading 1`] = `
+<div>
+  <div
+    class="dusk-card"
+  >
+    <header
+      class="dusk-card__header"
+    >
+       
+      <h3
+        class="h4"
+      >
+        My Card
+      </h3>
+       
+    </header>
+     
+  </div>
+  
+  <!--&lt;Card&gt;-->
+</div>
+`;
+
+exports[`Card > renders the the Card component with an icon when iconPath is provided 1`] = `
+<div>
+  <div
+    class="dusk-card"
+  >
+    <header
+      class="dusk-card__header"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <h3
+        class="h4"
+      >
+        My Card
+      </h3>
+       
+    </header>
+     
+  </div>
+  
+  <!--&lt;Card&gt;-->
+</div>
+`;

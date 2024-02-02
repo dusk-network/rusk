@@ -1,0 +1,73 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Throbber > should accept a custom duration and size 1`] = `
+<svg
+  class="dusk-throbber"
+  height="16px"
+  role="progressbar"
+  viewBox="0 0 128 128"
+  width="16px"
+>
+  <g>
+    <path
+      d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+    />
+    <animatetransform
+      attributeName="transform"
+      dur="500ms"
+      from="0 64 64"
+      repeatCount="indefinite"
+      to="360 64 64"
+      type="rotate"
+    />
+  </g>
+</svg>
+`;
+
+exports[`Throbber > should pass additional class names to the rendered element 1`] = `
+<svg
+  class="dusk-throbber foo bar"
+  height="64px"
+  role="progressbar"
+  viewBox="0 0 128 128"
+  width="64px"
+>
+  <g>
+    <path
+      d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+    />
+    <animatetransform
+      attributeName="transform"
+      dur="1800ms"
+      from="0 64 64"
+      repeatCount="indefinite"
+      to="360 64 64"
+      type="rotate"
+    />
+  </g>
+</svg>
+`;
+
+exports[`Throbber > should render the Throbber component 1`] = `
+<svg
+  class="dusk-throbber"
+  height="64px"
+  role="progressbar"
+  viewBox="0 0 128 128"
+  width="64px"
+>
+  <g>
+    <path
+      d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+    />
+    <animatetransform
+      attributeName="transform"
+      dur="1800ms"
+      from="0 64 64"
+      repeatCount="indefinite"
+      to="360 64 64"
+      type="rotate"
+    />
+  </g>
+</svg>
+`;

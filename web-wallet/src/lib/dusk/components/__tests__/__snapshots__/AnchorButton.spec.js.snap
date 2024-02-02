@@ -1,0 +1,156 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AnchorButton > should add a disabled class if the related property is \`true\` 1`] = `
+<a
+  aria-disabled="true"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-anchor-button--disabled"
+  href="/some-url"
+  tabindex="-1"
+>
+  <span
+    class="dusk-anchor-button__text"
+  >
+    some text
+  </span>
+  
+</a>
+`;
+
+exports[`AnchorButton > should be able to render a AnchorButton with an icon and text 1`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+  href="/some-url"
+>
+  <span
+    class="dusk-anchor-button__text"
+  >
+    some text
+  </span>
+   
+  <svg
+    class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+  
+</a>
+`;
+
+exports[`AnchorButton > should be able to render a AnchorButton with an icon and text 2`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+  href="/some-url"
+>
+  <span
+    class="dusk-anchor-button__text"
+  >
+    some text
+  </span>
+   
+  <svg
+    class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+  
+</a>
+`;
+
+exports[`AnchorButton > should be able to render a AnchorButton with an icon only 1`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button"
+  href="/some-url"
+>
+   
+  <svg
+    class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+  
+</a>
+`;
+
+exports[`AnchorButton > should be able to render a AnchorButton with an icon only 2`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button"
+  href="/some-url"
+>
+   
+  <svg
+    class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+  
+</a>
+`;
+
+exports[`AnchorButton > should pass additional class names and attributes to the rendered element 1`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal foo bar"
+  href="/some-url"
+  id="some-id"
+>
+  <span
+    class="dusk-anchor-button__text"
+  >
+    some text
+  </span>
+  
+</a>
+`;
+
+exports[`AnchorButton > should render a AnchorButton without a text 1`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
+  href="/some-url"
+>
+  
+</a>
+`;
+
+exports[`AnchorButton > should render the AnchorButton component 1`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
+  href="/some-url"
+>
+  <span
+    class="dusk-anchor-button__text"
+  >
+    some text
+  </span>
+  
+</a>
+`;

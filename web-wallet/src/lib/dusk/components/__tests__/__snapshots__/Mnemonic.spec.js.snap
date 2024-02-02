@@ -1,0 +1,330 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Mnemonic > should render the "Mnemonic" component in the authenticate state 1`] = `
+<div>
+  <div
+    class="dusk-mnemonic"
+  >
+     
+    <ol
+      class="dusk-words"
+    >
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+    </ol>
+    <!--&lt;Words&gt;-->
+     
+    <div
+      class="dusk-mnemonic__authenticate-actions-wrapper"
+    >
+      <input
+        class="dusk-textbox dusk-textbox-text"
+        maxlength="8"
+        placeholder="Enter word 1"
+        type="text"
+      />
+      
+      <!--&lt;Textbox&gt;-->
+       
+      
+    </div>
+  </div>
+  <!--&lt;Mnemonic&gt;-->
+</div>
+`;
+
+exports[`Mnemonic > should render the "Mnemonic" component in the validate state 1`] = `
+<div>
+  <div
+    class="dusk-mnemonic"
+  >
+     
+    <ol
+      class="dusk-words"
+    >
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+      <li
+        class="dusk-words__word"
+      >
+        _____
+      </li>
+    </ol>
+    <!--&lt;Words&gt;-->
+     
+    <div
+      class="dusk-mnemonic__validate-actions-wrapper"
+    >
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="auction"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          auction
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="tribe"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          tribe
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="type"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          type
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="torch"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          torch
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="domain"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          domain
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="auction"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          auction
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="lyrics"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          lyrics
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="mouse"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          mouse
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="alert"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          alert
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="fabric"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          fabric
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="snake"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          snake
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        data-value="ticket"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          ticket
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+      
+    </div>
+  </div>
+  <!--&lt;Mnemonic&gt;-->
+</div>
+`;

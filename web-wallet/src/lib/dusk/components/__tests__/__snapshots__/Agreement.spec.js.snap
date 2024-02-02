@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Agreement > renders the Agreement component 1`] = `
+<div>
+  <div
+    class="dusk-agreement"
+  >
+    <input
+      class="dusk-checkbox"
+      id="test"
+      name="test"
+      tabindex="0"
+      type="checkbox"
+    />
+    <!--&lt;Checkbox&gt;-->
+     
+    <label
+      class="dusk-agreement__label"
+      for="test"
+    >
+      I agree
+    </label>
+  </div>
+  <!--&lt;Agreement&gt;-->
+</div>
+`;

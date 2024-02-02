@@ -1,0 +1,125 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Dashboard > should render the transactions page 1`] = `
+<div>
+  <div
+    class="transactions s-w5uHSYkypcPX"
+  >
+    <h2
+      class="visible-hidden s-w5uHSYkypcPX"
+    >
+      Transactions
+    </h2>
+     
+    <article
+      class="dusk-balance"
+    >
+      <header
+        class="dusk-balance__header"
+      >
+        <h2>
+          Your Balance:
+        </h2>
+      </header>
+       
+      <p
+        class="dusk-balance__dusk"
+      >
+        <strong>
+          0.000000000
+        </strong>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+          data-tooltip-id="balance-tooltip"
+          data-tooltip-place="right"
+          data-tooltip-text="DUSK"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </p>
+       
+      <p
+        class="dusk-balance__fiat"
+      >
+        <strong>
+          (
+          $0.00
+          )
+        </strong>
+      </p>
+       
+       
+      <div
+        aria-hidden="true"
+        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+        id="balance-tooltip"
+        role="tooltip"
+        style="left: 0px; top: 0px;"
+      >
+        
+      </div>
+      <!--&lt;Tooltip&gt;-->
+    </article>
+    <!--&lt;Balance&gt;-->
+     
+    <svg
+      class="dusk-throbber loading"
+      height="64px"
+      role="progressbar"
+      viewBox="0 0 128 128"
+      width="64px"
+    >
+      <g>
+        <path
+          d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+        />
+        <animatetransform
+          attributeName="transform"
+          dur="1800ms"
+          from="0 64 64"
+          repeatCount="indefinite"
+          to="360 64 64"
+          type="rotate"
+        />
+      </g>
+    </svg>
+    <!--&lt;Throbber&gt;-->
+     
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+      href="/dashboard"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-anchor-button__text"
+      >
+        Back
+      </span>
+      
+      
+    </a>
+    <!--&lt;Anchor&gt;-->
+    <!--&lt;AnchorButton&gt;-->
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;

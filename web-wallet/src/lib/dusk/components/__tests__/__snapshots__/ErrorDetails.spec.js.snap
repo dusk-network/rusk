@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ErrorDetails > should pass additional class names to the rendered element 1`] = `
+<details
+  class="dusk-error-details dusk-error-details__details foo bar"
+>
+  <summary
+    class="dusk-error-details__summary"
+  >
+    Some error summary
+  </summary>
+   
+  <pre
+    class="dusk-error-details__error"
+  >
+    			
+    Some error messaage
+    
+		
+  </pre>
+</details>
+`;
+
+exports[`ErrorDetails > should render nothing if the error is \`null\` 1`] = ``;
+
+exports[`ErrorDetails > should render the \`ErrorDetails\` component 1`] = `
+<details
+  class="dusk-error-details dusk-error-details__details"
+>
+  <summary
+    class="dusk-error-details__summary"
+  >
+    Some error summary
+  </summary>
+   
+  <pre
+    class="dusk-error-details__error"
+  >
+    			
+    Some error messaage
+    
+		
+  </pre>
+</details>
+`;

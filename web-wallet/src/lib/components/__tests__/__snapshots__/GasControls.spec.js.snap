@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GasControls > should render the \`GasControls\` component 1`] = `
+<body>
+  <label
+    class="gas-control s-POS_LBjGgkOM"
+  >
+    <span
+      class="gas-control__label s-POS_LBjGgkOM"
+    >
+      Price: (lux)
+    </span>
+     
+    <input
+      class="dusk-textbox dusk-textbox-number gas-control__input"
+      max="20"
+      min="1"
+      required=""
+      type="number"
+    />
+    
+    <!--&lt;Textbox&gt;-->
+  </label>
+   
+  <label
+    class="gas-control s-POS_LBjGgkOM"
+  >
+    <span
+      class="gas-control__label s-POS_LBjGgkOM"
+    >
+      Gas Limit: (unit)
+    </span>
+     
+    <input
+      class="dusk-textbox dusk-textbox-number gas-control__input"
+      max="100"
+      min="10"
+      required=""
+      type="number"
+    />
+    
+    <!--&lt;Textbox&gt;-->
+  </label>
+  <!--&lt;GasControls&gt;-->
+</body>
+`;

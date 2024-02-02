@@ -1,0 +1,261 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OperationResult > should accept a custom message for the failure state 1`] = `
+<div
+  class="operation-result s-iQe6V4SteEBR"
+>
+  <svg
+    class="dusk-icon dusk-icon--size--large"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+   
+  <details
+    class="dusk-error-details dusk-error-details__details"
+  >
+    <summary
+      class="dusk-error-details__summary"
+    >
+      Transaction failed
+    </summary>
+     
+    <pre
+      class="dusk-error-details__error"
+    >
+      			
+      some error
+      
+		
+    </pre>
+  </details>
+  
+  <!--&lt;ErrorDetails&gt;-->
+   
+   
+  <a
+    aria-disabled="false"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
+    href="/dashboard"
+  >
+    <span
+      class="dusk-anchor-button__text"
+    >
+      HOME
+    </span>
+    
+  </a>
+  <!--&lt;Anchor&gt;-->
+  <!--&lt;AnchorButton&gt;-->
+</div>
+`;
+
+exports[`OperationResult > should accept a custom message for the pending state 1`] = `
+<div
+  class="operation-result s-iQe6V4SteEBR"
+>
+  <svg
+    class="dusk-throbber"
+    height="64px"
+    role="progressbar"
+    viewBox="0 0 128 128"
+    width="64px"
+  >
+    <g>
+      <path
+        d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+      />
+      <animatetransform
+        attributeName="transform"
+        dur="1800ms"
+        from="0 64 64"
+        repeatCount="indefinite"
+        to="360 64 64"
+        type="rotate"
+      />
+    </g>
+  </svg>
+  <!--&lt;Throbber&gt;-->
+   
+  <span
+    class="s-iQe6V4SteEBR"
+  >
+    Transaction pending
+  </span>
+</div>
+`;
+
+exports[`OperationResult > should accept a custom message for the successful state 1`] = `
+<div
+  class="operation-result s-iQe6V4SteEBR"
+>
+  <svg
+    class="dusk-icon dusk-icon--size--large"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M23 12L20.6 9.2L20.9 5.5L17.3 4.7L15.4 1.5L12 3L8.6 1.5L6.7 4.7L3.1 5.5L3.4 9.2L1 12L3.4 14.8L3.1 18.5L6.7 19.3L8.6 22.5L12 21L15.4 22.5L17.3 19.3L20.9 18.5L20.6 14.8L23 12M18.7 16.9L16 17.5L14.6 19.9L12 18.8L9.4 19.9L8 17.5L5.3 16.9L5.5 14.1L3.7 12L5.5 9.9L5.3 7.1L8 6.5L9.4 4.1L12 5.2L14.6 4.1L16 6.5L18.7 7.1L18.5 9.9L20.3 12L18.5 14.1L18.7 16.9M16.6 7.6L18 9L10 17L6 13L7.4 11.6L10 14.2L16.6 7.6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+   
+  <span
+    class="s-iQe6V4SteEBR"
+  >
+    Transaction completed
+  </span>
+   
+   
+  <a
+    aria-disabled="false"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
+    href="/dashboard"
+  >
+    <span
+      class="dusk-anchor-button__text"
+    >
+      HOME
+    </span>
+    
+  </a>
+  <!--&lt;Anchor&gt;-->
+  <!--&lt;AnchorButton&gt;-->
+</div>
+`;
+
+exports[`OperationResult > should be able to render the \`OperationResult\` component in a pending state 1`] = `
+<div
+  class="operation-result s-iQe6V4SteEBR"
+>
+  <svg
+    class="dusk-throbber"
+    height="64px"
+    role="progressbar"
+    viewBox="0 0 128 128"
+    width="64px"
+  >
+    <g>
+      <path
+        d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+      />
+      <animatetransform
+        attributeName="transform"
+        dur="1800ms"
+        from="0 64 64"
+        repeatCount="indefinite"
+        to="360 64 64"
+        type="rotate"
+      />
+    </g>
+  </svg>
+  <!--&lt;Throbber&gt;-->
+   
+  <span
+    class="s-iQe6V4SteEBR"
+  >
+    
+  </span>
+</div>
+`;
+
+exports[`OperationResult > should be able to render the \`OperationResult\` in a failure state 1`] = `
+<div
+  class="operation-result s-iQe6V4SteEBR"
+>
+  <svg
+    class="dusk-icon dusk-icon--size--large"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+   
+  <details
+    class="dusk-error-details dusk-error-details__details"
+  >
+    <summary
+      class="dusk-error-details__summary"
+    >
+      Operation failed
+    </summary>
+     
+    <pre
+      class="dusk-error-details__error"
+    >
+      			
+      some error
+      
+		
+    </pre>
+  </details>
+  
+  <!--&lt;ErrorDetails&gt;-->
+   
+   
+  <a
+    aria-disabled="false"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
+    href="/dashboard"
+  >
+    <span
+      class="dusk-anchor-button__text"
+    >
+      HOME
+    </span>
+    
+  </a>
+  <!--&lt;Anchor&gt;-->
+  <!--&lt;AnchorButton&gt;-->
+</div>
+`;
+
+exports[`OperationResult > should be able to render the \`OperationResult\` in a successful state 1`] = `
+<div
+  class="operation-result s-iQe6V4SteEBR"
+>
+  <svg
+    class="dusk-icon dusk-icon--size--large"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M23 12L20.6 9.2L20.9 5.5L17.3 4.7L15.4 1.5L12 3L8.6 1.5L6.7 4.7L3.1 5.5L3.4 9.2L1 12L3.4 14.8L3.1 18.5L6.7 19.3L8.6 22.5L12 21L15.4 22.5L17.3 19.3L20.9 18.5L20.6 14.8L23 12M18.7 16.9L16 17.5L14.6 19.9L12 18.8L9.4 19.9L8 17.5L5.3 16.9L5.5 14.1L3.7 12L5.5 9.9L5.3 7.1L8 6.5L9.4 4.1L12 5.2L14.6 4.1L16 6.5L18.7 7.1L18.5 9.9L20.3 12L18.5 14.1L18.7 16.9M16.6 7.6L18 9L10 17L6 13L7.4 11.6L10 14.2L16.6 7.6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+   
+  <span
+    class="s-iQe6V4SteEBR"
+  >
+    Operation completed
+  </span>
+   
+   
+  <a
+    aria-disabled="false"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
+    href="/dashboard"
+  >
+    <span
+      class="dusk-anchor-button__text"
+    >
+      HOME
+    </span>
+    
+  </a>
+  <!--&lt;Anchor&gt;-->
+  <!--&lt;AnchorButton&gt;-->
+</div>
+`;

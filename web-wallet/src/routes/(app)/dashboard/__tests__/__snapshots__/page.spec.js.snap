@@ -1,0 +1,1644 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Dashboard > should render a card when there is an error getting transactions 1`] = `
+<div>
+  <div
+    class="dashboard-content s-qpUp5WgwgSGx"
+  >
+    <h2
+      class="visible-hidden s-qpUp5WgwgSGx"
+    >
+      Dashboard
+    </h2>
+     
+     
+    <div
+      class="address-picker"
+    >
+      <div
+        aria-expanded="false"
+        aria-haspopup="true"
+        class="address-picker__trigger"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="dusk-icon--circular"
+          style=""
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--large"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+        </div>
+        <!--&lt;CircularIcon&gt;-->
+         
+        <p
+          class="address-picker__current-address"
+        >
+          2087290d3dc213d43e493f03f5435f99
+        </p>
+         
+        <span
+          class="address-picker__copy-address-button-wrapper"
+        >
+          <button
+            aria-label="Copy Address"
+            class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </span>
+      </div>
+       
+    </div>
+    <!--&lt;AddressPicker&gt;-->
+     
+    <article
+      class="dusk-balance"
+    >
+      <header
+        class="dusk-balance__header"
+      >
+        <h2>
+          Your Balance:
+        </h2>
+      </header>
+       
+      <p
+        class="dusk-balance__dusk"
+      >
+        <strong>
+          2,345.000000000
+        </strong>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+          data-tooltip-id="balance-tooltip"
+          data-tooltip-place="right"
+          data-tooltip-text="DUSK"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </p>
+       
+      <p
+        class="dusk-balance__fiat"
+      >
+        <strong>
+          (
+          $1,172.50
+          )
+        </strong>
+      </p>
+       
+       
+      <div
+        aria-hidden="true"
+        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+        id="balance-tooltip"
+        role="tooltip"
+        style="left: 0px; top: 0px;"
+      >
+        
+      </div>
+      <!--&lt;Tooltip&gt;-->
+    </article>
+    <!--&lt;Balance&gt;-->
+     
+    <article
+      class="tabs s-qpUp5WgwgSGx"
+    >
+      <div
+        class="dusk-tabs"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          disabled=""
+          hidden="true"
+          tabindex="-1"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+         
+        <ul
+          class="dusk-tabs-list"
+          role="tablist"
+        >
+          <li
+            aria-selected="true"
+            class="dusk-tab-item dusk-tab-item__selected"
+            data-tabid="transfer"
+            role="tab"
+            tabindex="0"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-tab-label"
+            >
+              Transact
+            </span>
+            
+             
+          </li>
+          <li
+            aria-selected="false"
+            class="dusk-tab-item"
+            data-tabid="staking"
+            role="tab"
+            tabindex="0"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 3C7.58 3 4 4.79 4 7V17C4 19.21 7.59 21 12 21S20 19.21 20 17V7C20 4.79 16.42 3 12 3M18 17C18 17.5 15.87 19 12 19S6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16S16.39 15.55 18 14.77V17M18 12.45C16.7 13.4 14.42 14 12 14C9.58 14 7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11C14.39 11 16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5C15.87 5 18 6.5 18 7S15.87 9 12 9Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-tab-label"
+            >
+              Stake
+            </span>
+            
+             
+          </li>
+        </ul>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          disabled=""
+          hidden="true"
+          tabindex="-1"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+      </div>
+      <!--&lt;Tabs&gt;-->
+       
+      <div
+        class="tabs__panel s-qpUp5WgwgSGx tabs__panel--first"
+      >
+        <div
+          class="tabs__contract s-qpUp5WgwgSGx"
+        >
+          <dl
+            class="contract-statuses s-fYGIMZDSuGmT"
+          >
+            <dt
+              class="contract-statuses__label s-fYGIMZDSuGmT"
+            >
+              Spendable
+               
+            </dt>
+            <dd
+              class="contract-statuses__value s-fYGIMZDSuGmT"
+            >
+              <span
+                class="s-fYGIMZDSuGmT"
+              >
+                50,000.000000000
+              </span>
+               
+              <svg
+                class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="DUSK"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+                />
+              </svg>
+              
+              <!--&lt;Icon&gt;-->
+               
+            </dd>
+          </dl>
+          <!--&lt;ContractStatusesList&gt;-->
+           
+          <menu
+            class="contract-operations s-MYVJhCZxEBFW"
+          >
+            <li
+              class="contract-operations__operation s-MYVJhCZxEBFW"
+            >
+              <button
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,7L17,12H14V16H10V12H7L12,7M19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21M19,19V5H5V19H19Z"
+                  />
+                </svg>
+                
+                <!--&lt;Icon&gt;-->
+                 
+                <span
+                  class="dusk-button__text"
+                >
+                  Send
+                </span>
+                
+              </button>
+              <!--&lt;Button&gt;-->
+               
+            </li>
+            <li
+              class="contract-operations__operation s-MYVJhCZxEBFW"
+            >
+              <button
+                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,17L7,12H10V8H14V12H17L12,17M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M5,5V19H19V5H5Z"
+                  />
+                </svg>
+                
+                <!--&lt;Icon&gt;-->
+                 
+                <span
+                  class="dusk-button__text"
+                >
+                  Receive
+                </span>
+                
+              </button>
+              <!--&lt;Button&gt;-->
+               
+            </li>
+          </menu>
+          <!--&lt;ContractOperations&gt;-->
+          
+          <!--&lt;TransferContract&gt;-->
+        </div>
+      </div>
+    </article>
+     
+    <div
+      class="dusk-card"
+    >
+      <header
+        class="dusk-card__header"
+      >
+         
+        <h3
+          class="h4"
+        >
+          Error getting transactions
+        </h3>
+         
+      </header>
+       
+      <pre
+        class="s-qpUp5WgwgSGx"
+      >
+        Error: some error message
+      </pre>
+    </div>
+    
+    <!--&lt;Card&gt;-->
+    
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Dashboard > should render the dashboard page and show a throbber while transactions are loading 1`] = `
+<div>
+  <div
+    class="dashboard-content s-qpUp5WgwgSGx"
+  >
+    <h2
+      class="visible-hidden s-qpUp5WgwgSGx"
+    >
+      Dashboard
+    </h2>
+     
+     
+    <div
+      class="address-picker"
+    >
+      <div
+        aria-expanded="false"
+        aria-haspopup="true"
+        class="address-picker__trigger"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="dusk-icon--circular"
+          style=""
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--large"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+        </div>
+        <!--&lt;CircularIcon&gt;-->
+         
+        <p
+          class="address-picker__current-address"
+        >
+          2087290d3dc213d43e493f03f5435f99
+        </p>
+         
+        <span
+          class="address-picker__copy-address-button-wrapper"
+        >
+          <button
+            aria-label="Copy Address"
+            class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </span>
+      </div>
+       
+    </div>
+    <!--&lt;AddressPicker&gt;-->
+     
+    <article
+      class="dusk-balance"
+    >
+      <header
+        class="dusk-balance__header"
+      >
+        <h2>
+          Your Balance:
+        </h2>
+      </header>
+       
+      <p
+        class="dusk-balance__dusk"
+      >
+        <strong>
+          2,345.000000000
+        </strong>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+          data-tooltip-id="balance-tooltip"
+          data-tooltip-place="right"
+          data-tooltip-text="DUSK"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </p>
+       
+      <p
+        class="dusk-balance__fiat"
+      >
+        <strong>
+          (
+          $1,172.50
+          )
+        </strong>
+      </p>
+       
+       
+      <div
+        aria-hidden="true"
+        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+        id="balance-tooltip"
+        role="tooltip"
+        style="left: 0px; top: 0px;"
+      >
+        
+      </div>
+      <!--&lt;Tooltip&gt;-->
+    </article>
+    <!--&lt;Balance&gt;-->
+     
+    <article
+      class="tabs s-qpUp5WgwgSGx"
+    >
+      <div
+        class="dusk-tabs"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          disabled=""
+          hidden="true"
+          tabindex="-1"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+         
+        <ul
+          class="dusk-tabs-list"
+          role="tablist"
+        >
+          <li
+            aria-selected="true"
+            class="dusk-tab-item dusk-tab-item__selected"
+            data-tabid="transfer"
+            role="tab"
+            tabindex="0"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-tab-label"
+            >
+              Transact
+            </span>
+            
+             
+          </li>
+          <li
+            aria-selected="false"
+            class="dusk-tab-item"
+            data-tabid="staking"
+            role="tab"
+            tabindex="0"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 3C7.58 3 4 4.79 4 7V17C4 19.21 7.59 21 12 21S20 19.21 20 17V7C20 4.79 16.42 3 12 3M18 17C18 17.5 15.87 19 12 19S6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16S16.39 15.55 18 14.77V17M18 12.45C16.7 13.4 14.42 14 12 14C9.58 14 7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11C14.39 11 16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5C15.87 5 18 6.5 18 7S15.87 9 12 9Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-tab-label"
+            >
+              Stake
+            </span>
+            
+             
+          </li>
+        </ul>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          disabled=""
+          hidden="true"
+          tabindex="-1"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+      </div>
+      <!--&lt;Tabs&gt;-->
+       
+      <div
+        class="tabs__panel s-qpUp5WgwgSGx tabs__panel--first"
+      >
+        <div
+          class="tabs__contract s-qpUp5WgwgSGx"
+        >
+          <dl
+            class="contract-statuses s-fYGIMZDSuGmT"
+          >
+            <dt
+              class="contract-statuses__label s-fYGIMZDSuGmT"
+            >
+              Spendable
+               
+            </dt>
+            <dd
+              class="contract-statuses__value s-fYGIMZDSuGmT"
+            >
+              <span
+                class="s-fYGIMZDSuGmT"
+              >
+                50,000.000000000
+              </span>
+               
+              <svg
+                class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="DUSK"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+                />
+              </svg>
+              
+              <!--&lt;Icon&gt;-->
+               
+            </dd>
+          </dl>
+          <!--&lt;ContractStatusesList&gt;-->
+           
+          <menu
+            class="contract-operations s-MYVJhCZxEBFW"
+          >
+            <li
+              class="contract-operations__operation s-MYVJhCZxEBFW"
+            >
+              <button
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,7L17,12H14V16H10V12H7L12,7M19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21M19,19V5H5V19H19Z"
+                  />
+                </svg>
+                
+                <!--&lt;Icon&gt;-->
+                 
+                <span
+                  class="dusk-button__text"
+                >
+                  Send
+                </span>
+                
+              </button>
+              <!--&lt;Button&gt;-->
+               
+            </li>
+            <li
+              class="contract-operations__operation s-MYVJhCZxEBFW"
+            >
+              <button
+                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,17L7,12H10V8H14V12H17L12,17M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M5,5V19H19V5H5Z"
+                  />
+                </svg>
+                
+                <!--&lt;Icon&gt;-->
+                 
+                <span
+                  class="dusk-button__text"
+                >
+                  Receive
+                </span>
+                
+              </button>
+              <!--&lt;Button&gt;-->
+               
+            </li>
+          </menu>
+          <!--&lt;ContractOperations&gt;-->
+          
+          <!--&lt;TransferContract&gt;-->
+        </div>
+      </div>
+    </article>
+     
+    
+    <svg
+      class="dusk-throbber loading"
+      height="64px"
+      role="progressbar"
+      viewBox="0 0 128 128"
+      width="64px"
+    >
+      <g>
+        <path
+          d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+        />
+        <animatetransform
+          attributeName="transform"
+          dur="1800ms"
+          from="0 64 64"
+          repeatCount="indefinite"
+          to="360 64 64"
+          type="rotate"
+        />
+      </g>
+    </svg>
+    <!--&lt;Throbber&gt;-->
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Dashboard > should render the dashboard page with the transactions after they are loaded 1`] = `
+<div>
+  <div
+    class="dashboard-content s-qpUp5WgwgSGx"
+  >
+    <h2
+      class="visible-hidden s-qpUp5WgwgSGx"
+    >
+      Dashboard
+    </h2>
+     
+     
+    <div
+      class="address-picker"
+    >
+      <div
+        aria-expanded="false"
+        aria-haspopup="true"
+        class="address-picker__trigger"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="dusk-icon--circular"
+          style=""
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--large"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+        </div>
+        <!--&lt;CircularIcon&gt;-->
+         
+        <p
+          class="address-picker__current-address"
+        >
+          2087290d3dc213d43e493f03f5435f99
+        </p>
+         
+        <span
+          class="address-picker__copy-address-button-wrapper"
+        >
+          <button
+            aria-label="Copy Address"
+            class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </span>
+      </div>
+       
+    </div>
+    <!--&lt;AddressPicker&gt;-->
+     
+    <article
+      class="dusk-balance"
+    >
+      <header
+        class="dusk-balance__header"
+      >
+        <h2>
+          Your Balance:
+        </h2>
+      </header>
+       
+      <p
+        class="dusk-balance__dusk"
+      >
+        <strong>
+          2,345.000000000
+        </strong>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+          data-tooltip-id="balance-tooltip"
+          data-tooltip-place="right"
+          data-tooltip-text="DUSK"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </p>
+       
+      <p
+        class="dusk-balance__fiat"
+      >
+        <strong>
+          (
+          $1,172.50
+          )
+        </strong>
+      </p>
+       
+       
+      <div
+        aria-hidden="true"
+        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+        id="balance-tooltip"
+        role="tooltip"
+        style="left: 0px; top: 0px;"
+      >
+        
+      </div>
+      <!--&lt;Tooltip&gt;-->
+    </article>
+    <!--&lt;Balance&gt;-->
+     
+    <article
+      class="tabs s-qpUp5WgwgSGx"
+    >
+      <div
+        class="dusk-tabs"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          disabled=""
+          hidden="true"
+          tabindex="-1"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+         
+        <ul
+          class="dusk-tabs-list"
+          role="tablist"
+        >
+          <li
+            aria-selected="true"
+            class="dusk-tab-item dusk-tab-item__selected"
+            data-tabid="transfer"
+            role="tab"
+            tabindex="0"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-tab-label"
+            >
+              Transact
+            </span>
+            
+             
+          </li>
+          <li
+            aria-selected="false"
+            class="dusk-tab-item"
+            data-tabid="staking"
+            role="tab"
+            tabindex="0"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 3C7.58 3 4 4.79 4 7V17C4 19.21 7.59 21 12 21S20 19.21 20 17V7C20 4.79 16.42 3 12 3M18 17C18 17.5 15.87 19 12 19S6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16S16.39 15.55 18 14.77V17M18 12.45C16.7 13.4 14.42 14 12 14C9.58 14 7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11C14.39 11 16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5C15.87 5 18 6.5 18 7S15.87 9 12 9Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-tab-label"
+            >
+              Stake
+            </span>
+            
+             
+          </li>
+        </ul>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          disabled=""
+          hidden="true"
+          tabindex="-1"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+      </div>
+      <!--&lt;Tabs&gt;-->
+       
+      <div
+        class="tabs__panel s-qpUp5WgwgSGx tabs__panel--first"
+      >
+        <div
+          class="tabs__contract s-qpUp5WgwgSGx"
+        >
+          <dl
+            class="contract-statuses s-fYGIMZDSuGmT"
+          >
+            <dt
+              class="contract-statuses__label s-fYGIMZDSuGmT"
+            >
+              Spendable
+               
+            </dt>
+            <dd
+              class="contract-statuses__value s-fYGIMZDSuGmT"
+            >
+              <span
+                class="s-fYGIMZDSuGmT"
+              >
+                50,000.000000000
+              </span>
+               
+              <svg
+                class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="DUSK"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+                />
+              </svg>
+              
+              <!--&lt;Icon&gt;-->
+               
+            </dd>
+          </dl>
+          <!--&lt;ContractStatusesList&gt;-->
+           
+          <menu
+            class="contract-operations s-MYVJhCZxEBFW"
+          >
+            <li
+              class="contract-operations__operation s-MYVJhCZxEBFW"
+            >
+              <button
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,7L17,12H14V16H10V12H7L12,7M19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21M19,19V5H5V19H19Z"
+                  />
+                </svg>
+                
+                <!--&lt;Icon&gt;-->
+                 
+                <span
+                  class="dusk-button__text"
+                >
+                  Send
+                </span>
+                
+              </button>
+              <!--&lt;Button&gt;-->
+               
+            </li>
+            <li
+              class="contract-operations__operation s-MYVJhCZxEBFW"
+            >
+              <button
+                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,17L7,12H10V8H14V12H17L12,17M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M5,5V19H19V5H5Z"
+                  />
+                </svg>
+                
+                <!--&lt;Icon&gt;-->
+                 
+                <span
+                  class="dusk-button__text"
+                >
+                  Receive
+                </span>
+                
+              </button>
+              <!--&lt;Button&gt;-->
+               
+            </li>
+          </menu>
+          <!--&lt;ContractOperations&gt;-->
+          
+          <!--&lt;TransferContract&gt;-->
+        </div>
+      </div>
+    </article>
+     
+    <article
+      class="transactions s-j8yKepzodVZ-"
+      style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
+    >
+      <header
+        class="transactions__header s-j8yKepzodVZ-"
+      >
+        <h3
+          class="h4 s-qpUp5WgwgSGx"
+          slot="heading"
+        >
+          Transactions
+        </h3>
+      </header>
+       
+      <div
+        class="transactions__lists s-j8yKepzodVZ-"
+      >
+        <dl
+          class="transactions-list s-j8yKepzodVZ-"
+        >
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Hash
+          </dt>
+          <dd
+            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+          >
+            <samp
+              class="s-j8yKepzodVZ-"
+            >
+              <a
+                class="dusk-anchor"
+                href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                tg874534tddsghdtst54hdfh795h
+              </a>
+              <!--&lt;Anchor&gt;-->
+            </samp>
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Type
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral w-100"
+            >
+              STAKE
+            </span>
+            <!--&lt;Badge&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Block
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            33,460
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Amount
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            +27,000.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Fee
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            1,876.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+        </dl>
+        <dl
+          class="transactions-list s-j8yKepzodVZ-"
+        >
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Hash
+          </dt>
+          <dd
+            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+          >
+            <samp
+              class="s-j8yKepzodVZ-"
+            >
+              <a
+                class="dusk-anchor"
+                href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                tg874534tddsghdtst54hdfh794h
+              </a>
+              <!--&lt;Anchor&gt;-->
+            </samp>
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Type
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral w-100"
+            >
+              TRANSFER
+            </span>
+            <!--&lt;Badge&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Block
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            33,459
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Amount
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            -25,000.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+        </dl>
+        <dl
+          class="transactions-list s-j8yKepzodVZ-"
+        >
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Hash
+          </dt>
+          <dd
+            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+          >
+            <samp
+              class="s-j8yKepzodVZ-"
+            >
+              <a
+                class="dusk-anchor"
+                href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                tg874534tddsghdtst54hdfh793h
+              </a>
+              <!--&lt;Anchor&gt;-->
+            </samp>
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Type
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral w-100"
+            >
+              TRANSFER
+            </span>
+            <!--&lt;Badge&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Block
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            33,458
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Amount
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            +25,000.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+        </dl>
+        <dl
+          class="transactions-list s-j8yKepzodVZ-"
+        >
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Hash
+          </dt>
+          <dd
+            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+          >
+            <samp
+              class="s-j8yKepzodVZ-"
+            >
+              <a
+                class="dusk-anchor"
+                href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh792h"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                tg874534tddsghdtst54hdfh792h
+              </a>
+              <!--&lt;Anchor&gt;-->
+            </samp>
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Type
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral w-100"
+            >
+              TRANSFER
+            </span>
+            <!--&lt;Badge&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Block
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            33,457
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Amount
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            -25,000.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Fee
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            1,876.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+        </dl>
+        <dl
+          class="transactions-list s-j8yKepzodVZ-"
+        >
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Hash
+          </dt>
+          <dd
+            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+          >
+            <samp
+              class="s-j8yKepzodVZ-"
+            >
+              <a
+                class="dusk-anchor"
+                href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh791h"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                tg874534tddsghdtst54hdfh791h
+              </a>
+              <!--&lt;Anchor&gt;-->
+            </samp>
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Type
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral w-100"
+            >
+              TRANSFER
+            </span>
+            <!--&lt;Badge&gt;-->
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Block
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            33,456
+             
+          </dd>
+          <dt
+            class="transactions-list__term s-j8yKepzodVZ-"
+          >
+            Amount
+          </dt>
+          <dd
+            class="transactions-list__datum s-j8yKepzodVZ-"
+          >
+            -25,000.00
+             
+            <svg
+              class="dusk-icon dusk-icon--size--normal transactions-list__icon"
+              data-tooltip-id="transactions-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+          </dd>
+        </dl>
+        
+      </div>
+       
+      <footer
+        class="transactions__footer s-j8yKepzodVZ-"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal view-transactions"
+          href="/dashboard/transactions"
+          slot="controls"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+      </footer>
+    </article>
+     
+     
+    <div
+      aria-hidden="true"
+      class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+      id="transactions-tooltip"
+      role="tooltip"
+      style="left: 0px; top: 0px;"
+    >
+      
+    </div>
+    <!--&lt;Tooltip&gt;-->
+    <!--&lt;Transactions&gt;-->
+    
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;

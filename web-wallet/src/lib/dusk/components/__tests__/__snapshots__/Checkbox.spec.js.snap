@@ -1,0 +1,51 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Checkbox > renders the Checkbox component 1`] = `
+<div>
+  <input
+    class="dusk-checkbox"
+    id="test"
+    name="test"
+    type="checkbox"
+  />
+  <!--&lt;Checkbox&gt;-->
+</div>
+`;
+
+exports[`Checkbox > renders the Checkbox component in a checked state 1`] = `
+<div>
+  <input
+    class="dusk-checkbox"
+    id="test"
+    name="test"
+    type="checkbox"
+  />
+  <!--&lt;Checkbox&gt;-->
+</div>
+`;
+
+exports[`Checkbox > renders the Checkbox component in a disabled state 1`] = `
+<div>
+  <input
+    class="dusk-checkbox"
+    disabled=""
+    id="test"
+    name="test"
+    type="checkbox"
+  />
+  <!--&lt;Checkbox&gt;-->
+</div>
+`;
+
+exports[`Checkbox > renders the Checkbox component in a disabled, checked state 1`] = `
+<div>
+  <input
+    class="dusk-checkbox"
+    disabled=""
+    id="test"
+    name="test"
+    type="checkbox"
+  />
+  <!--&lt;Checkbox&gt;-->
+</div>
+`;

@@ -1,0 +1,20 @@
+.dusk-error-details__summary {
+	outline: none;
+	cursor: default;
+
+	&::marker {
+		font-size: 1.2em;
+		transition: color 0.2s ease-in-out 0s;
+	}
+
+	&:hover::marker{
+		color: var(--secondary-color);
+	}
+}
+
+.dusk-error-details__error {
+	margin-top: var(--default-gap);
+	font-size: .875em;
+	white-space: pre-line;
+	word-break: keep-all;
+}

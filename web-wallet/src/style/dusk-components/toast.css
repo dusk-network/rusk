@@ -1,0 +1,49 @@
+.dusk-toast {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    right: 20px;
+    bottom: 100px;
+    z-index:5;
+    row-gap: 0.625em;
+}
+
+.dusk-toast__item {
+    display: flex;
+    column-gap: 0.625em;
+    padding: 0.625em;
+    border-radius: 1em;
+    background-color: var(--background-color-alt);
+    min-width: 200px;
+    max-width: 250px;
+}
+
+.dusk-toast__item-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.625em;
+    height: 1.625em;
+    border-radius: 100%;
+    flex-shrink: 0;
+}
+
+.dusk-toast__item-icon-wrapper--info {
+    background-color: var(--info-color);
+}
+
+.dusk-toast__item-icon-wrapper--success {
+    background-color: var(--success-color);
+}
+
+.dusk-toast__item-icon-wrapper--warning {
+    background-color: var(--warning-color);
+}
+
+.dusk-toast__item-icon-wrapper--error {
+    background-color: var(--error-color);
+}
+
+.dusk-toast__item-icon-wrapper--error .dusk-toast__item-icon {
+   color: #fff;
+}

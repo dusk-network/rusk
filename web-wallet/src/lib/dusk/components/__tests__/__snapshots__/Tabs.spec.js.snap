@@ -1,0 +1,1187 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Tabs > should be able to render tabs with icon and text 1`] = `
+<div
+  class="dusk-tabs"
+>
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    disabled=""
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+   
+  <ul
+    class="dusk-tabs-list"
+    role="tablist"
+  >
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="dashboard"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-tab-label"
+      >
+        Dashboard
+      </span>
+      
+       
+    </li>
+    <li
+      aria-selected="true"
+      class="dusk-tab-item dusk-tab-item__selected"
+      data-tabid="user-settings"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        User Settings
+      </span>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="user-profile"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-tab-label"
+      >
+        User Profile
+      </span>
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="notifications"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Notifications
+      </span>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="direct-messaging"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-tab-label"
+      >
+        Direct Messaging
+      </span>
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="task-manager"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Task Manager
+      </span>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="event-calendar"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-tab-label"
+      >
+        Event Calendar
+      </span>
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="analytics"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Analytics
+      </span>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="team-management"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-tab-label"
+      >
+        Team Management
+      </span>
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="help"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Help
+      </span>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+  </ul>
+   
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;
+
+exports[`Tabs > should be able to render tabs with icons only 1`] = `
+<div
+  class="dusk-tabs"
+>
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    disabled=""
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+   
+  <ul
+    class="dusk-tabs-list"
+    role="tablist"
+  >
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="dashboard"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
+       
+    </li>
+    <li
+      aria-selected="true"
+      class="dusk-tab-item dusk-tab-item__selected"
+      data-tabid="user-settings"
+      role="tab"
+      tabindex="0"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="user-profile"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="notifications"
+      role="tab"
+      tabindex="0"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="direct-messaging"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="task-manager"
+      role="tab"
+      tabindex="0"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="event-calendar"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="analytics"
+      role="tab"
+      tabindex="0"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="team-management"
+      role="tab"
+      tabindex="0"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="help"
+      role="tab"
+      tabindex="0"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+    </li>
+  </ul>
+   
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;
+
+exports[`Tabs > should pass additional class names and attributes to the root element 1`] = `
+<div
+  class="dusk-tabs foo bar"
+  id="some-id"
+>
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    disabled=""
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+   
+  <ul
+    class="dusk-tabs-list"
+    role="tablist"
+  >
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="dashboard"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Dashboard
+      </span>
+       
+    </li>
+    <li
+      aria-selected="true"
+      class="dusk-tab-item dusk-tab-item__selected"
+      data-tabid="user-settings"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        User Settings
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="user-profile"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        User Profile
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="notifications"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Notifications
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="direct-messaging"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Direct Messaging
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="task-manager"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Task Manager
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="event-calendar"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Event Calendar
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="analytics"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Analytics
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="team-management"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Team Management
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="help"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Help
+      </span>
+       
+    </li>
+  </ul>
+   
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;
+
+exports[`Tabs > should render a "Tabs" component and reset its scroll status if no tab is selected 1`] = `
+<div
+  class="dusk-tabs"
+>
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    disabled=""
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+   
+  <ul
+    class="dusk-tabs-list"
+    role="tablist"
+  >
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="dashboard"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Dashboard
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="user-settings"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        User Settings
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="user-profile"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        User Profile
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="notifications"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Notifications
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="direct-messaging"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Direct Messaging
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="task-manager"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Task Manager
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="event-calendar"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Event Calendar
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="analytics"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Analytics
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="team-management"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Team Management
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="help"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        Help
+      </span>
+       
+    </li>
+  </ul>
+   
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;
+
+exports[`Tabs > should use the id as label if the tab hasn't one and is without icon 1`] = `
+<div
+  class="dusk-tabs"
+>
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    disabled=""
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+   
+  <ul
+    class="dusk-tabs-list"
+    role="tablist"
+  >
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="dashboard"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        dashboard
+      </span>
+       
+    </li>
+    <li
+      aria-selected="true"
+      class="dusk-tab-item dusk-tab-item__selected"
+      data-tabid="user-settings"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        user-settings
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="user-profile"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        user-profile
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="notifications"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        notifications
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="direct-messaging"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        direct-messaging
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="task-manager"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        task-manager
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="event-calendar"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        event-calendar
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="analytics"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        analytics
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="team-management"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        team-management
+      </span>
+       
+    </li>
+    <li
+      aria-selected="false"
+      class="dusk-tab-item"
+      data-tabid="help"
+      role="tab"
+      tabindex="0"
+    >
+      <span
+        class="dusk-tab-label"
+      >
+        help
+      </span>
+       
+    </li>
+  </ul>
+   
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    hidden="false"
+    tabindex="-1"
+    type="button"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;

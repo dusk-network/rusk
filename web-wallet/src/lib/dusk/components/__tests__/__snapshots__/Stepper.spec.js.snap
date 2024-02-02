@@ -1,0 +1,167 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Stepper > renders the Stepper component with a completed step 1`] = `
+<div>
+  <div
+    class="dusk-stepper"
+    role="tablist"
+  >
+    <div
+      class="dusk-stepper__progress-bar"
+    >
+      <div
+        class="dusk-stepper__progress-filler"
+        style="width: 100%;"
+      />
+    </div>
+     
+    <div
+      class="dusk-stepper__steps"
+    >
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="true"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+    </div>
+  </div>
+  <!--&lt;Stepper&gt;-->
+</div>
+`;
+
+exports[`Stepper > renders the Stepper component with five steps 1`] = `
+<div>
+  <div
+    class="dusk-stepper"
+    role="tablist"
+  >
+    <div
+      class="dusk-stepper__progress-bar"
+    >
+      <div
+        class="dusk-stepper__progress-filler"
+        style="width: 0%;"
+      />
+    </div>
+     
+    <div
+      class="dusk-stepper__steps"
+    >
+      <div
+        aria-disabled="true"
+        aria-selected="true"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step"
+      />
+    </div>
+  </div>
+  <!--&lt;Stepper&gt;-->
+</div>
+`;
+
+exports[`Stepper > renders the Stepper component with five steps, with the third one being active, and the first two – completed 1`] = `
+<div>
+  <div
+    class="dusk-stepper"
+    role="tablist"
+  >
+    <div
+      class="dusk-stepper__progress-bar"
+    >
+      <div
+        class="dusk-stepper__progress-filler"
+        style="width: 75%;"
+      />
+    </div>
+     
+    <div
+      class="dusk-stepper__steps"
+    >
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="true"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step"
+      />
+    </div>
+  </div>
+  <!--&lt;Stepper&gt;-->
+</div>
+`;
+
+exports[`Stepper > renders the Stepper component with two steps 1`] = `
+<div>
+  <div
+    class="dusk-stepper"
+    role="tablist"
+  >
+    <div
+      class="dusk-stepper__progress-bar"
+    >
+      <div
+        class="dusk-stepper__progress-filler"
+        style="width: 0%;"
+      />
+    </div>
+     
+    <div
+      class="dusk-stepper__steps"
+    >
+      <div
+        aria-disabled="true"
+        aria-selected="true"
+        class="dusk-stepper__step dusk-stepper__step--processed"
+      />
+      <div
+        aria-disabled="true"
+        aria-selected="false"
+        class="dusk-stepper__step"
+      />
+    </div>
+  </div>
+  <!--&lt;Stepper&gt;-->
+</div>
+`;

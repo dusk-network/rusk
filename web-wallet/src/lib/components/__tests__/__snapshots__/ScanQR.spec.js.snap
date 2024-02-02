@@ -1,0 +1,32 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ScanQR > renders the ScanQR component 1`] = `
+<div
+  class="scan s--VhvQ6ibSubn"
+>
+  <video
+    class="s--VhvQ6ibSubn"
+  >
+    <track
+      class="s--VhvQ6ibSubn"
+      kind="captions"
+    />
+  </video>
+   
+  <div
+    class="scan__highlight s--VhvQ6ibSubn"
+  />
+   
+  <button
+    class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--small"
+    type="button"
+  >
+    <span
+      class="dusk-button__text"
+    >
+      CLOSE
+    </span>
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;

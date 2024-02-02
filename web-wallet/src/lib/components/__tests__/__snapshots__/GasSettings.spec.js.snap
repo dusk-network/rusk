@@ -1,0 +1,168 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GasSettings > renders the GasSettings component closed 1`] = `
+<div
+  class="gas-settings s-qWT2RqqjhEXG"
+>
+  <dl
+    class="gas-settings__edit s-qWT2RqqjhEXG"
+  >
+    <div
+      class="gas-fee s-IvXTyNf8Mc_c"
+    >
+      <span
+        class="s-IvXTyNf8Mc_c"
+      >
+        Max Gas Fee:
+      </span>
+       
+      <div
+        class="gas-fee__amount s-IvXTyNf8Mc_c"
+      >
+        <span
+          class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+        >
+          0.020000000
+        </span>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-amount__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="DUSK"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </div>
+    </div>
+    <!--&lt;GasFee&gt;-->
+    <dd
+      class="s-qWT2RqqjhEXG"
+    >
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          EDIT
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+    </dd>
+  </dl>
+   
+</div>
+`;
+
+exports[`GasSettings > renders the GasSettings component opened 1`] = `
+<div
+  class="gas-settings s-qWT2RqqjhEXG"
+>
+  <dl
+    class="gas-settings__edit s-qWT2RqqjhEXG"
+  >
+    <div
+      class="gas-fee s-IvXTyNf8Mc_c"
+    >
+      <span
+        class="s-IvXTyNf8Mc_c"
+      >
+        Max Gas Fee:
+      </span>
+       
+      <div
+        class="gas-fee__amount s-IvXTyNf8Mc_c"
+      >
+        <span
+          class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+        >
+          0.020000000
+        </span>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-amount__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="DUSK"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </div>
+    </div>
+    <!--&lt;GasFee&gt;-->
+    <dd
+      class="s-qWT2RqqjhEXG"
+    >
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          CLOSE
+        </span>
+      </button>
+      <!--&lt;Button&gt;-->
+    </dd>
+  </dl>
+   
+  <div
+    class="gas-settings s-qWT2RqqjhEXG"
+    style="animation: __svelte_276924520_0 400ms linear 0ms 1 both;"
+  >
+    <label
+      class="gas-control s-POS_LBjGgkOM"
+    >
+      <span
+        class="gas-control__label s-POS_LBjGgkOM"
+      >
+        Price: (lux)
+      </span>
+       
+      <input
+        class="dusk-textbox dusk-textbox-number gas-control__input"
+        max="20000000"
+        min="1"
+        required=""
+        type="number"
+      />
+      
+      <!--&lt;Textbox&gt;-->
+    </label>
+     
+    <label
+      class="gas-control s-POS_LBjGgkOM"
+    >
+      <span
+        class="gas-control__label s-POS_LBjGgkOM"
+      >
+        Gas Limit: (unit)
+      </span>
+       
+      <input
+        class="dusk-textbox dusk-textbox-number gas-control__input"
+        max="1000000000"
+        min="10000000"
+        required=""
+        type="number"
+      />
+      
+      <!--&lt;Textbox&gt;-->
+    </label>
+    <!--&lt;GasControls&gt;-->
+  </div>
+</div>
+`;
