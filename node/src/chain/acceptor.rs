@@ -9,7 +9,7 @@ use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::{ConsensusError, TimeoutSet};
 use dusk_consensus::config::{
-    CONSENSUS_ROLLING_FINALITY_THRESHOLD, MIN_STEP_TIMEOUT,
+    CONSENSUS_ROLLING_FINALITY_THRESHOLD, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
 };
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::{
@@ -621,9 +621,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     async fn read_avg_timeout(&self, key: &[u8]) -> Duration {
         let metric = self.db.read().await.view(|t| {
-            let bytes = &t.op_read(key)?.unwrap_or_default();
-            let metric =
-                AverageElapsedTime::read(&mut &bytes[..]).unwrap_or_default();
+            let bytes = &t.op_read(key)?;
+            let metric = match bytes {
+                Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
+                    .unwrap_or_default(),
+                None => {
+                    let mut metric = AverageElapsedTime::default();
+                    metric.push_back(MAX_STEP_TIMEOUT);
+                    metric
+                }
+            };
+
             Ok::<AverageElapsedTime, anyhow::Error>(metric)
         });
 
