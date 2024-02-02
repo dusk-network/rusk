@@ -6,8 +6,9 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths-ignore:
-      - "web-wallet/**"
+    paths:
+      - "**"
+      - "!web-wallet/**"
 
 name: Continuous integration
 
