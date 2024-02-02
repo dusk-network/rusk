@@ -48,6 +48,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub round_update: RoundUpdate,
     pub iteration: u8,
     step: StepName,
+    step_start_time: Option<Instant>,
 
     pub executor: Arc<Mutex<T>>,
 
@@ -83,6 +84,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             executor,
             sv_registry,
             quorum_sender,
+            step_start_time: None,
         }
     }
 
@@ -92,6 +94,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub fn step(&self) -> u16 {
         self.step.to_step(self.iteration)
+    }
+
+    pub fn set_start_time(&mut self) {
+        self.step_start_time = Some(Instant::now());
     }
 
     /// Returns true if `my pubkey` is a member of [`committee`].
@@ -136,6 +142,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         if let Some(step_result) =
                             self.process_inbound_msg(phase.clone(), msg).await
                         {
+                            self.report_elapsed_time().await;
                             return Ok(step_result);
                         }
                     }
@@ -432,5 +439,22 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             self.step_name(),
             exclusion,
         )
+    }
+
+    /// Reports step elapsed time to the client
+    async fn report_elapsed_time(&mut self) {
+        let elapsed = self.step_start_time.expect("valid start time").elapsed();
+        let _ = self
+            .executor
+            .lock()
+            .await
+            .add_step_elapsed_time(
+                self.round_update.round,
+                self.step_name(),
+                elapsed,
+            )
+            .await;
+
+        self.step_start_time = None;
     }
 }
