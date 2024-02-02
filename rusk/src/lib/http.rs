@@ -550,6 +550,7 @@ mod tests {
 
         let client = reqwest::ClientBuilder::new()
             .add_root_certificate(certificate)
+            .danger_accept_invalid_certs(true)
             .build()
             .expect("creating client should succeed");
 
