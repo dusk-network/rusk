@@ -1,0 +1,50 @@
+name: web-wallet CI
+
+on:
+  pull_request:
+    paths:
+      - "web-wallet/**"
+
+jobs:
+  lint-test:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    name: Node ${{ matrix.node-version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setting up Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: "https://npm.pkg.github.com/"
+          scope: "@dusk-network"
+
+      - name: Installing dev dependencies
+        run: npm ci
+        working-directory: ./web-wallet
+        env:
+          REGISTRY_TOKEN: ${{secrets.GH_TOKEN}}
+
+      - name: Linting
+        run: npm run lint
+        working-directory: ./web-wallet
+
+      - name: Type checks
+        run: npm run typecheck
+        working-directory: ./web-wallet
+
+      - name: Run the test suite
+        run: npm test
+        working-directory: ./web-wallet
+
+      - name: Building the app
+        run: npm run build
+        working-directory: ./web-wallet
