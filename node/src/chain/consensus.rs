@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Candidate, Mempool};
+use crate::database::{self, Candidate, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, RoundUpdate};
+use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
     CallParams, Error, Operations, Output, VerificationOutput,
@@ -19,10 +19,14 @@ use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
-use node_data::ledger;
+use crate::chain::metrics::AverageElapsedTime;
+use crate::database::rocksdb::{
+    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION,
+};
+use node_data::{ledger, Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -79,6 +83,7 @@ impl Task {
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         network: &Arc<RwLock<N>>,
+        base_timeout: TimeoutSet,
     ) {
         let current = provisioners_list.to_current();
         let c = Consensus::new(
@@ -95,13 +100,11 @@ impl Task {
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
-        let round_base_timeout = self.adjust_round_base_timeout(db);
-
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
             self.keys.0,
             most_recent_block.header(),
-            round_base_timeout,
+            base_timeout.clone(),
         );
 
         self.task_id += 1;
@@ -112,6 +115,7 @@ impl Task {
             event = "spawn consensus",
             id = self.task_id,
             round = ru.round,
+            timeout = ?base_timeout,
             all = all_num,           // all provisioners count
             eligible = eligible_num  // eligible provisioners count
         );
@@ -152,14 +156,6 @@ impl Task {
                 warn!("Unable to send cancel for abort")
             };
         }
-    }
-
-    /// TBD
-    fn adjust_round_base_timeout<D: database::DB>(
-        &mut self,
-        _db: &Arc<RwLock<D>>,
-    ) -> Duration {
-        dusk_consensus::config::ROUND_BASE_TIMEOUT
     }
 }
 
@@ -355,5 +351,42 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             verification_output,
             discarded_txs,
         })
+    }
+
+    async fn add_step_elapsed_time(
+        &self,
+        _round: u64,
+        step_name: StepName,
+        elapsed: Duration,
+    ) -> Result<(), Error> {
+        let db_key = match step_name {
+            StepName::Proposal => &MD_AVG_PROPOSAL[..],
+            StepName::Validation => &MD_AVG_VALIDATION[..],
+            StepName::Ratification => &MD_AVG_RATIFICATION[..],
+        };
+
+        let db = self.db.read().await;
+        let _ = db
+            .update(|t| {
+                let mut metric = match &t.op_read(db_key)? {
+                    Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
+                        .unwrap_or_default(),
+                    None => AverageElapsedTime::default(),
+                };
+
+                metric.push_back(elapsed);
+                debug!(event = "avg_updated", ?step_name,  metric = ?metric);
+
+                let mut bytes = Vec::new();
+                metric.write(&mut bytes)?;
+
+                t.op_write(db_key, bytes)
+            })
+            .map_err(|err: anyhow::Error| {
+                error!("{err}");
+                Error::Failed
+            })?;
+
+        Ok(())
     }
 }

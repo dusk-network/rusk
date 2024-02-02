@@ -11,6 +11,7 @@ mod fsm;
 mod genesis;
 
 mod header_validation;
+mod metrics;
 
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;

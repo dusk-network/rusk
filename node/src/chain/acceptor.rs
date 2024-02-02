@@ -7,8 +7,10 @@
 use crate::database::{self, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
-use dusk_consensus::commons::ConsensusError;
-use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
+use dusk_consensus::commons::{ConsensusError, TimeoutSet};
+use dusk_consensus::config::{
+    CONSENSUS_ROLLING_FINALITY_THRESHOLD, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, SpentTransaction,
@@ -16,13 +18,19 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use node_data::{Serializable, StepName};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::Validator;
-use crate::database::rocksdb::{MD_HASH_KEY, MD_STATE_ROOT_KEY};
+use crate::chain::metrics::AverageElapsedTime;
+use crate::database::rocksdb::{
+    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
+    MD_STATE_ROOT_KEY,
+};
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -132,6 +140,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
+        let base_timeouts = self.adjust_round_base_timeouts().await;
 
         self.task.write().await.spawn(
             self.mrb.read().await.inner(),
@@ -139,6 +148,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             &self.network,
+            base_timeouts,
         );
     }
 
@@ -393,12 +403,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Restart Consensus.
         if enable_consensus {
+            let base_timeouts = self.adjust_round_base_timeouts().await;
             task.spawn(
                 mrb.inner(),
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
                 &self.network,
+                base_timeouts,
             );
         }
 
@@ -518,12 +530,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&mrb.inner().header().hash),
         );
 
+        let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
             mrb.inner(),
             provisioners_list,
             &self.db,
             &self.vm,
             &self.network,
+            base_timeouts,
         );
     }
 
@@ -582,6 +596,49 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_outbound_chan(&self) -> AsyncQueue<Message> {
         self.task.read().await.outbound.clone()
+    }
+
+    async fn adjust_round_base_timeouts(&self) -> TimeoutSet {
+        let mut base_timeout_set = TimeoutSet::new();
+
+        base_timeout_set.insert(
+            StepName::Proposal,
+            self.read_avg_timeout(MD_AVG_PROPOSAL).await,
+        );
+
+        base_timeout_set.insert(
+            StepName::Validation,
+            self.read_avg_timeout(MD_AVG_VALIDATION).await,
+        );
+
+        base_timeout_set.insert(
+            StepName::Ratification,
+            self.read_avg_timeout(MD_AVG_RATIFICATION).await,
+        );
+
+        base_timeout_set
+    }
+
+    async fn read_avg_timeout(&self, key: &[u8]) -> Duration {
+        let metric = self.db.read().await.view(|t| {
+            let bytes = &t.op_read(key)?;
+            let metric = match bytes {
+                Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
+                    .unwrap_or_default(),
+                None => {
+                    let mut metric = AverageElapsedTime::default();
+                    metric.push_back(MAX_STEP_TIMEOUT);
+                    metric
+                }
+            };
+
+            Ok::<AverageElapsedTime, anyhow::Error>(metric)
+        });
+
+        metric
+            .unwrap_or_default()
+            .average()
+            .unwrap_or(MIN_STEP_TIMEOUT)
     }
 }
 
