@@ -9,8 +9,10 @@ on:
     paths:
       - "**"
       - "!web-wallet/**"
+      - "!.github/workflows/webwallet_ci.yml"
+      - "!**/*.md'"
 
-name: Continuous integration
+name: Rusk CI
 
 jobs:
   analyze:
