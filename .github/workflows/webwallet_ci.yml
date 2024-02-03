@@ -2,36 +2,36 @@ name: web-wallet CI
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
     paths:
       - "web-wallet/**"
-
+      - ".github/workflows/webwallet_ci.yml"
+      - "!**/*.md"
 jobs:
   lint-test:
-
+    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-
-    name: Node ${{ matrix.node-version }}
+    name: Node 20.x
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setting up Node ${{ matrix.node-version }}
+      - name: Setting up Node 20.x
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
           registry-url: "https://npm.pkg.github.com/"
           scope: "@dusk-network"
 
       - name: Installing dev dependencies
         run: npm ci
         working-directory: ./web-wallet
-        env:
-          REGISTRY_TOKEN: ${{secrets.GH_TOKEN}}
 
       - name: Linting
         run: npm run lint
