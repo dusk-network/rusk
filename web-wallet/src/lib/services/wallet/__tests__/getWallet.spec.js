@@ -32,7 +32,6 @@ describe("getWallet", () => {
 			  "stake",
 			  "stakeInfo",
 			  "unstake",
-			  "stakeAllow",
 			  "withdrawReward",
 			  "history",
 			  "reset",
