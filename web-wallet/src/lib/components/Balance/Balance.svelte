@@ -6,31 +6,34 @@
 	import { makeClassName } from "$lib/dusk/string";
 	import { createCurrencyFormatter } from "$lib/dusk/currency";
 
-	/** @type {String | Undefined} */
+	/** @type {string | undefined} */
 	export let className = undefined;
 
-	/** @type {Number} */
-	export let tokens = 0;
+	/** @type {string} */
+	export let fiatCurrency;
 
-	/** @type {Number} */
-	export let fiat = 0;
+	/** @type {number | undefined} */
+	export let fiatPrice = undefined;
 
-	/** @type {String} */
-	export let tokenCurrency = "DUSK";
+	/**
+	 * A BCP 47 language tag.
+	 * @type {string}
+	 */
+	export let locale;
 
-	/** @type {String} */
-	export let fiatCurrency = "USD";
+	/** @type {string} */
+	export let tokenCurrency;
 
-	/** @type {String} */
-	export let locale = "en";
+	/** @type {number} */
+	export let tokens;
+
+	const duskFormatter = createCurrencyFormatter(locale, tokenCurrency, 9);
+	const fiatFormatter = createCurrencyFormatter(locale, fiatCurrency, 2);
 
 	$: classes = makeClassName([
 		"dusk-balance",
 		className
 	]);
-
-	const duskFormatter = createCurrencyFormatter(locale, tokenCurrency, 9);
-	const fiatFormatter = createCurrencyFormatter(locale, fiatCurrency, 2);
 </script>
 
 <article
@@ -50,10 +53,12 @@
 			data-tooltip-place="right"
 		/>
 	</p>
-	<p class="dusk-balance__fiat">
-		<strong>
-			({fiatFormatter(fiat)})
-		</strong>
-	</p>
+	{#if fiatPrice}
+		<p class="dusk-balance__fiat">
+			<strong>
+				({fiatFormatter(fiatPrice * tokens)})
+			</strong>
+		</p>
+	{/if}
 	<Tooltip id="balance-tooltip"/>
 </article>

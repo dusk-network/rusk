@@ -4,9 +4,10 @@
 
 <section>
 	<Balance
-		dusk={2000000}
-		fiat={100000}
-		currency="GBP"
+		fiatCurrency="GBP"
+		fiatPrice={10}
+		locale="en"
+		tokenCurrency="DUSK"
+		tokens={2000000}
 	/>
-
 </section>
