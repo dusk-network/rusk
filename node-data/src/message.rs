@@ -421,18 +421,8 @@ pub mod payload {
         NoCandidate = 0,
         Valid(Hash) = 1,
         Invalid(Hash) = 2,
-    }
 
-    impl Vote {
-        pub fn signable(&self, round: u64, step: u16) -> Vec<u8> {
-            // This must be equale to Message signable implementation
-            let mut buf = vec![];
-            buf.extend_from_slice(&round.to_le_bytes());
-            buf.extend_from_slice(&step.to_le_bytes());
-            self.write(&mut buf).expect("Writing to vec should succeed");
-
-            buf
-        }
+        NoQuorum = 3,
     }
 
     impl fmt::Display for Vote {
@@ -441,6 +431,7 @@ pub mod payload {
                 Self::NoCandidate => ("NoCandidate", "".into()),
                 Self::Valid(hash) => ("Valid", to_str(hash)),
                 Self::Invalid(hash) => ("Invalid", to_str(hash)),
+                Self::NoQuorum => ("NoQuorum", "".into()),
             };
             write!(f, "Vote: {desc}({hash})")
         }
@@ -459,6 +450,7 @@ pub mod payload {
                     w.write_all(&[2])?;
                     w.write_all(hash)?;
                 }
+                Self::NoQuorum => w.write_all(&[3])?,
             };
             Ok(())
         }
@@ -471,6 +463,7 @@ pub mod payload {
                 0 => Self::NoCandidate,
                 1 => Self::Valid(Self::read_bytes(r)?),
                 2 => Self::Invalid(Self::read_bytes(r)?),
+                3 => Self::NoQuorum,
                 _ => Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "Invalid vote",
