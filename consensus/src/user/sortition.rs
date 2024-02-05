@@ -249,7 +249,7 @@ mod tests {
         let cfg = Config::raw(Seed::default(), 7777, 8, 64, None);
 
         let c = Committee::new(&p, &cfg);
-        assert_eq!(c.quorum(), 43);
+        assert_eq!(c.super_majority_quorum(), 43);
     }
 
     #[test]

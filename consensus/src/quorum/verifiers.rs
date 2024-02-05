@@ -134,8 +134,8 @@ pub fn verify_votes(
 
     let total = committee.total_occurrences(&sub_committee);
     let target_quorum = match vote {
-        Vote::NoCandidate => committee.nil_quorum(),
-        _ => committee.quorum(),
+        Vote::Valid(_) => committee.super_majority_quorum(),
+        _ => committee.majority_quorum(),
     };
 
     let quorum_result = QuorumResult {

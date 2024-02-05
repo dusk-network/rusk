@@ -74,7 +74,7 @@ impl Aggregator {
             debug_assert!(weight.is_some());
 
             let total = cluster.total_occurrences();
-            let quorum_target = committee.quorum();
+            let quorum_target = committee.super_majority_quorum();
 
             debug!(
                 event = "vote aggregated",
@@ -97,8 +97,8 @@ impl Aggregator {
             };
 
             let quorum_reached = match &vote {
-                Vote::NoCandidate => total >= committee.nil_quorum(),
-                _ => total >= committee.quorum(),
+                Vote::Valid(_) => total >= committee.super_majority_quorum(),
+                _ => total >= committee.majority_quorum(),
             };
 
             if quorum_reached {
@@ -261,7 +261,7 @@ mod tests {
 
         let target_quorum = 7;
 
-        assert_eq!(c.quorum(), target_quorum);
+        assert_eq!(c.super_majority_quorum(), target_quorum);
 
         let mut a = Aggregator::default();
 

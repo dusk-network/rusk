@@ -12,8 +12,9 @@ pub const CONSENSUS_MAX_ITER: u8 = 255;
 /// Number of consecutive attested blocks needed to consider a final block.
 pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 5;
 
-/// Percentage number that determines a quorum.
-pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
+/// Percentage number that determines quorums.
+pub const SUPERMAJORITY_THRESHOLD: f64 = 0.67;
+pub const MAJORITY_THRESHOLD: f64 = 0.5;
 
 /// Initial step timeout in milliseconds.
 pub const CONSENSUS_TIMEOUT_MS: u64 = 5 * 1000;

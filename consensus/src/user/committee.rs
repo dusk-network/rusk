@@ -17,8 +17,8 @@ use std::mem;
 #[derive(Default, Debug, Clone)]
 pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
-    quorum: usize,
-    nil_quorum: usize,
+    super_majority: usize,
+    majority: usize,
     excluded: Option<PublicKeyBytes>,
 }
 
@@ -36,18 +36,19 @@ impl Committee {
     pub fn new(provisioners: &Provisioners, cfg: &sortition::Config) -> Self {
         // Generate committee using deterministic sortition.
         let extracted = provisioners.create_committee(cfg);
+        let committe_size = cfg.committee_size() as f64;
 
-        let quorum = (cfg.committee_size() as f64
-            * config::CONSENSUS_QUORUM_THRESHOLD)
-            .ceil() as usize;
-        let nil_quorum = cfg.committee_size() - quorum + 1;
+        let super_majority =
+            (committe_size * config::SUPERMAJORITY_THRESHOLD).ceil() as usize;
+        let majority =
+            (committe_size * config::MAJORITY_THRESHOLD) as usize + 1;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its
         // occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
-            nil_quorum,
-            quorum,
+            super_majority,
+            majority,
             excluded: cfg.exclusion().copied(),
         };
 
@@ -81,14 +82,14 @@ impl Committee {
         self.members.len()
     }
 
-    /// Returns target quorum for the generated committee.
-    pub fn quorum(&self) -> usize {
-        self.quorum
+    /// Returns target supermajority quorum for the generated committee.
+    pub fn super_majority_quorum(&self) -> usize {
+        self.super_majority
     }
 
-    /// Returns target NIL quorum for the generated committee.
-    pub fn nil_quorum(&self) -> usize {
-        self.nil_quorum
+    /// Returns target majority quorum for the generated committee.
+    pub fn majority_quorum(&self) -> usize {
+        self.majority
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {
