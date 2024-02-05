@@ -128,6 +128,7 @@ impl MsgHandler for ValidationHandler {
                     Vote::NoCandidate => QuorumType::NilQuorum,
                     Vote::Invalid(_) => QuorumType::InvalidQuorum,
                     Vote::Valid(_) => QuorumType::ValidQuorum,
+                    Vote::NoQuorum => QuorumType::NoQuorum,
                 };
                 info!(event = "quorum reached", %vote);
                 return Ok(final_result(sv, vote, quorum_type));
