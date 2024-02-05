@@ -48,8 +48,9 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub round_update: RoundUpdate,
     pub iteration: u8,
     step: StepName,
+    step_start_time: Option<Instant>,
 
-    pub executor: Arc<Mutex<T>>,
+    pub client: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
     quorum_sender: QuorumMsgSender,
@@ -67,7 +68,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         round_update: RoundUpdate,
         iteration: u8,
         step: StepName,
-        executor: Arc<Mutex<T>>,
+        client: Arc<Mutex<T>>,
         sv_registry: SafeCertificateInfoRegistry,
         quorum_sender: QuorumMsgSender,
     ) -> Self {
@@ -80,9 +81,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             round_update,
             iteration,
             step,
-            executor,
+            client,
             sv_registry,
             quorum_sender,
+            step_start_time: None,
         }
     }
 
@@ -92,6 +94,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub fn step(&self) -> u16 {
         self.step.to_step(self.iteration)
+    }
+
+    pub fn set_start_time(&mut self) {
+        self.step_start_time = Some(Instant::now());
     }
 
     /// Returns true if `my pubkey` is a member of [`committee`].
@@ -136,6 +142,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         if let Some(step_result) =
                             self.process_inbound_msg(phase.clone(), msg).await
                         {
+                            self.report_elapsed_time().await;
                             return Ok(step_result);
                         }
                     }
@@ -165,7 +172,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     &self.round_update,
                     self.outbound.clone(),
                     self.inbound.clone(),
-                    self.executor.clone(),
+                    self.client.clone(),
                 )
                 .await;
             };
@@ -432,5 +439,25 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             self.step_name(),
             exclusion,
         )
+    }
+
+    /// Reports step elapsed time to the client
+    async fn report_elapsed_time(&mut self) {
+        let elapsed = self
+            .step_start_time
+            .take()
+            .expect("valid start time")
+            .elapsed();
+
+        let _ = self
+            .client
+            .lock()
+            .await
+            .add_step_elapsed_time(
+                self.round_update.round,
+                self.step_name(),
+                elapsed,
+            )
+            .await;
     }
 }
