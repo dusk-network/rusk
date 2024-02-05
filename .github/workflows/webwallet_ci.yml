@@ -26,7 +26,6 @@ jobs:
             run-ci:
               - 'web-wallet/**'
               - '.github/workflows/webwallet_ci.yml'
-              - '!**/*.md'
   lint-test:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
