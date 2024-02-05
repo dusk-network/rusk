@@ -358,30 +358,60 @@ exports[`Dashboard > should render a card when there is an error getting transac
       </div>
     </article>
      
-    <div
-      class="dusk-card"
+    <article
+      class="transactions s-j8yKepzodVZ-"
     >
       <header
-        class="dusk-card__header"
+        class="transactions__header s-j8yKepzodVZ-"
       >
-         
         <h3
-          class="h4"
+          class="h4 s-j8yKepzodVZ-"
         >
-          Error getting transactions
+          Transactions
         </h3>
-         
       </header>
        
-      <pre
-        class="s-qpUp5WgwgSGx"
+      <details
+        class="dusk-error-details dusk-error-details__details"
       >
-        Error: some error message
-      </pre>
-    </div>
-    
-    <!--&lt;Card&gt;-->
-    
+        <summary
+          class="dusk-error-details__summary"
+        >
+          Error getting transactions
+        </summary>
+         
+        <pre
+          class="dusk-error-details__error"
+        >
+          			
+          some error message
+          
+		
+        </pre>
+      </details>
+      
+      <!--&lt;ErrorDetails&gt;-->
+       
+      <footer
+        class="transactions__footer s-j8yKepzodVZ-"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+      </footer>
+    </article>
+    <!--&lt;Transactions&gt;-->
   </div>
   <!--&lt;+page&gt;-->
 </div>
@@ -745,29 +775,62 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
       </div>
     </article>
      
-    
-    <svg
-      class="dusk-throbber loading"
-      height="64px"
-      role="progressbar"
-      viewBox="0 0 128 128"
-      width="64px"
+    <article
+      class="transactions s-j8yKepzodVZ-"
     >
-      <g>
-        <path
-          d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
-        />
-        <animatetransform
-          attributeName="transform"
-          dur="1800ms"
-          from="0 64 64"
-          repeatCount="indefinite"
-          to="360 64 64"
-          type="rotate"
-        />
-      </g>
-    </svg>
-    <!--&lt;Throbber&gt;-->
+      <header
+        class="transactions__header s-j8yKepzodVZ-"
+      >
+        <h3
+          class="h4 s-j8yKepzodVZ-"
+        >
+          Transactions
+        </h3>
+      </header>
+       
+      <svg
+        class="dusk-throbber loading"
+        height="64px"
+        role="progressbar"
+        viewBox="0 0 128 128"
+        width="64px"
+      >
+        <g>
+          <path
+            d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+          />
+          <animatetransform
+            attributeName="transform"
+            dur="1800ms"
+            from="0 64 64"
+            repeatCount="indefinite"
+            to="360 64 64"
+            type="rotate"
+          />
+        </g>
+      </svg>
+      <!--&lt;Throbber&gt;-->
+       
+      <footer
+        class="transactions__footer s-j8yKepzodVZ-"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+      </footer>
+    </article>
+    <!--&lt;Transactions&gt;-->
   </div>
   <!--&lt;+page&gt;-->
 </div>
@@ -1133,14 +1196,12 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
      
     <article
       class="transactions s-j8yKepzodVZ-"
-      style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <header
         class="transactions__header s-j8yKepzodVZ-"
       >
         <h3
-          class="h4 s-qpUp5WgwgSGx"
-          slot="heading"
+          class="h4 s-j8yKepzodVZ-"
         >
           Transactions
         </h3>
@@ -1214,7 +1275,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1240,7 +1301,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1320,7 +1381,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1400,7 +1461,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1480,7 +1541,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1506,7 +1567,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1586,7 +1647,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
              
             <svg
               class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-              data-tooltip-id="transactions-tooltip"
+              data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1609,9 +1670,8 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal view-transactions"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
           href="/dashboard/transactions"
-          slot="controls"
         >
           <span
             class="dusk-anchor-button__text"
@@ -1624,20 +1684,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         <!--&lt;AnchorButton&gt;-->
       </footer>
     </article>
-     
-     
-    <div
-      aria-hidden="true"
-      class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-      id="transactions-tooltip"
-      role="tooltip"
-      style="left: 0px; top: 0px;"
-    >
-      
-    </div>
-    <!--&lt;Tooltip&gt;-->
     <!--&lt;Transactions&gt;-->
-    
   </div>
   <!--&lt;+page&gt;-->
 </div>
