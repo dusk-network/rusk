@@ -7,13 +7,29 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - "web-wallet/**"
-      - ".github/workflows/webwallet_ci.yml"
-      - "!**/*.md"
 jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'web-wallet/**'
+              - '.github/workflows/webwallet_ci.yml'
+              - '!**/*.md'
   lint-test:
-    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     name: Node 20.x
@@ -26,7 +42,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20.x
-          registry-url: "https://npm.pkg.github.com/"
           scope: "@dusk-network"
 
       - name: Installing dev dependencies
