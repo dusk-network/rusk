@@ -6,16 +6,33 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - "**"
-      - "!web-wallet/**"
-      - "!.github/workflows/webwallet_ci.yml"
-      - "!**/*.md'"
 
 name: Rusk CI
 
 jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: core
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - '!web-wallet/**'
+              - '!.github/workflows/webwallet_ci.yml'
+              - '!**/*.md'
   analyze:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+
     name: Dusk Analyzer
     runs-on: core
     steps:
@@ -25,7 +42,8 @@ jobs:
       - run: cargo dusk-analyzer
 
   test_nightly:
-    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     name: Nightly tests
     runs-on: core
     steps:
@@ -48,6 +66,9 @@ jobs:
           path: ./target/release/rusk
           retention-days: 5
   fmt:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+
     name: Rustfmt
     runs-on: core
     steps:
