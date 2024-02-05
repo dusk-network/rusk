@@ -443,7 +443,12 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     /// Reports step elapsed time to the client
     async fn report_elapsed_time(&mut self) {
-        let elapsed = self.step_start_time.expect("valid start time").elapsed();
+        let elapsed = self
+            .step_start_time
+            .take()
+            .expect("valid start time")
+            .elapsed();
+
         let _ = self
             .client
             .lock()
@@ -454,7 +459,5 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 elapsed,
             )
             .await;
-
-        self.step_start_time = None;
     }
 }
