@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
+use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use async_trait::async_trait;
 use node_data::{ledger, StepName};
 use tracing::{error, warn};
@@ -93,7 +93,7 @@ impl MsgHandler for RatificationHandler {
                 iteration,
                 &p.vote,
                 sv,
-                SvType::Ratification,
+                StepName::Ratification,
                 quorum_reached,
                 committee.excluded().expect("Generator to be excluded"),
             );
@@ -135,7 +135,7 @@ impl MsgHandler for RatificationHandler {
                     p.header().iteration,
                     &p.vote,
                     sv,
-                    SvType::Ratification,
+                    StepName::Ratification,
                     quorum_reached,
                     committee.excluded().expect("Generator to be excluded"),
                 )
