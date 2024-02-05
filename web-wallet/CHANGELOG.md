@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component #1331
 - Remove `fiat` property from Balance component #1331
 
+### Added
+
+- Add ability to revert words when entering the mnemonic phrase
+
 ## [0.1.0-beta] - 2024-02-02
 
 ### Added

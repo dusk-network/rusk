@@ -1,5 +1,5 @@
 <script>
-	import { mdiAlertOutline, mdiContentPaste } from "@mdi/js";
+	import { mdiAlertOutline, mdiContentPaste, mdiRedoVariant } from "@mdi/js";
 	import { wordlists } from "bip39";
 	import { Button, Textbox, Words } from "$lib/dusk/components";
 	import { makeClassName } from "$lib/dusk/string";
@@ -73,6 +73,16 @@
 		textboxElement?.focus();
 	}
 
+	function undoLastWord () {
+		if (currentIndex === 0) {
+			return;
+		}
+
+		currentIndex--;
+		enteredMnemonicPhrase[currentIndex] = "";
+		enteredWordIndex[currentIndex] = "";
+	}
+
 	$: suggestions = currentInput && findFirstNMatches(enDictionary, currentInput.toLowerCase(), 3);
 
 	const pasteSeed = () => {
@@ -105,16 +115,22 @@
 
 <div {...$$restProps} class={classes}>
 
-	{#if type === "authenticate" && shouldShowPaste}
-		<div class="dusk-mnemonic__authenticate-paste-wrapper">
+	<div class="dusk-mnemonic__actions-wrapper">
+		{#if type === "authenticate" && shouldShowPaste}
 			<Button
 				icon={{ path: mdiContentPaste }}
 				text="Paste seed phrase"
 				variant="tertiary"
 				on:click={pasteSeed}
 			/>
-		</div>
-	{/if}
+		{/if}
+		<Button
+			disabled={!currentIndex}
+			on:click={undoLastWord}
+			icon={{ path: mdiRedoVariant }}
+			text="Undo"
+			variant="tertiary"/>
+	</div>
 
 	<Words words={enteredMnemonicPhrase}/>
 
