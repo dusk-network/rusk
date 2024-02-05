@@ -1,9 +1,10 @@
 .dusk-words {
-	--words-container-padding: 1.5em 1em;
+	--words-container-padding: 1.25em 1em;
 	--words-word-index-size: 2em;
  }
 
 .dusk-words {
+	font-size: 0.75em;
 	padding: var(--words-container-padding);
 	overflow: hidden;
 	background-color: var(--on-primary-color);
