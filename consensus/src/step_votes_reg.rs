@@ -49,7 +49,9 @@ impl CertificateInfo {
         }
     }
 
-    pub(crate) fn add_sv(
+    /// Set certificate stepvotes according to [step]. Store [quorum_reached] to
+    /// calculate [CertificateInfo::is_ready]
+    pub(crate) fn set_sv(
         &mut self,
         iter: u8,
         sv: StepVotes,
@@ -164,7 +166,7 @@ impl CertInfoRegistry {
 
         let cert_info = cert.get_or_insert(vote);
 
-        cert_info.add_sv(iteration, sv, step, quorum_reached);
+        cert_info.set_sv(iteration, sv, step, quorum_reached);
         cert_info
             .is_ready()
             .then(|| Self::build_quorum_msg(&self.ru, iteration, cert_info))
