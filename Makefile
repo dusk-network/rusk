@@ -52,7 +52,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./rusk/ $@
 
 run: keys state web-wallet ## Run the server
-	cargo run --release --bin rusk
+	$(MAKE) -C ./rusk/ $@
 
 rusk: keys state web-wallet ## Build rusk binary
 	$(MAKE) -C ./rusk build
