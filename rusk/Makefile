@@ -20,10 +20,13 @@ clippy: ## Run clippy
 build: ## Build rusk binary
 	@cargo build --release
 
+run:
+	@cargo r --release --bin rusk
+
 recovery-keys: ## Build circuit keys
 	@cargo r --no-default-features --features recovery-keys --release -- recovery-keys
 
 recovery-state: ## Build network state
 	@cargo r --no-default-features --features recovery-state --release -- recovery-state --init $(INITFILE)
 
-.PHONY: test help clippy build recovery-keys recovery-state
+.PHONY: test help clippy build recovery-keys recovery-state rusk
