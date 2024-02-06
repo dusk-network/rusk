@@ -34,89 +34,87 @@ impl Aggregator {
     ) -> Option<(StepVotes, bool)> {
         let signature = sign_info.signature.inner();
         let signer = &sign_info.signer;
+
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
-        if let Some(weight) = committee.votes_for(signer) {
-            let (aggr_sign, cluster) = self
-                .0
-                .entry((msg_step, vote.clone()))
-                .or_insert((AggrSignature::default(), Cluster::new()));
+        let weight = committee.votes_for(signer)?;
 
-            // Each committee has 64 slots. If a Provisioner is extracted into
-            // multiple slots, then he/she only needs to send one vote which can
-            // be taken account as a vote for all his/her slots.
-            // Otherwise, if a Provisioner is only extracted to one
-            // slot per committee, then a single vote is taken into
-            // account (if more votes for the same slot are
-            // propagated, those are discarded).
-            if cluster.contains_key(signer) {
-                warn!(
-                    event = "discarded duplicated vote",
-                    from = signer.to_bs58(),
-                    %vote,
-                    msg_step,
-                    msg_round = header.round,
-                );
-                return None;
-            }
+        let (aggr_sign, cluster) =
+            self.0.entry((msg_step, vote.clone())).or_default();
 
-            // Aggregate Signatures
-            if let Err(e) = aggr_sign.add(signature) {
-                error!("{:?}", e);
-                return None;
-            }
-
-            // An committee member is allowed to vote only once per a single
-            // step. Its vote has a weight value depending on how many times it
-            // has been extracted in the sortition for this step.
-            let weight = cluster.set_weight(signer, weight);
-            debug_assert!(weight.is_some());
-
-            let total = cluster.total_occurrences();
-            let quorum_target = committee.super_majority_quorum();
-
-            debug!(
-                event = "vote aggregated",
-                %vote,
+        // Each committee has 64 slots.
+        //
+        // If a Provisioner is extracted into multiple slots, then he/she only
+        // needs to send one vote which can be taken account as a vote for all
+        // his/her slots.
+        // Otherwise, if a Provisioner is only extracted to one slot per
+        // committee, then a single vote is taken into account (if more votes
+        // for the same slot are propagated, those are discarded).
+        if cluster.contains_key(signer) {
+            warn!(
+                event = "discarded duplicated vote",
                 from = signer.to_bs58(),
-                added = weight,
-                total,
-                target = quorum_target,
-                signature = to_str(signature),
+                %vote,
+                msg_step,
+                msg_round = header.round,
             );
-
-            let s = aggr_sign
-                .aggregated_bytes()
-                .expect("Signature to exist after aggregating");
-            let bitset = committee.bits(cluster);
-
-            let step_votes = StepVotes {
-                bitset,
-                aggregate_signature: Signature::from(s),
-            };
-
-            let quorum_reached = match &vote {
-                Vote::Valid(_) => total >= committee.super_majority_quorum(),
-                _ => total >= committee.majority_quorum(),
-            };
-
-            if quorum_reached {
-                tracing::info!(
-                    event = "quorum reached",
-                    %vote,
-                    total,
-                    target = quorum_target,
-                    bitset,
-                    step = msg_step,
-                    signature = to_str(&s),
-                );
-            }
-
-            return Some((step_votes, quorum_reached));
+            return None;
         }
 
-        None
+        // Aggregate Signatures
+        if let Err(e) = aggr_sign.add(signature) {
+            error!("{:?}", e);
+            return None;
+        }
+
+        // An committee member is allowed to vote only once per a single
+        // step. Its vote has a weight value depending on how many times it
+        // has been extracted in the sortition for this step.
+        let weight = cluster.set_weight(signer, weight);
+        debug_assert!(weight.is_some());
+
+        let total = cluster.total_occurrences();
+        let quorum_target = committee.super_majority_quorum();
+
+        debug!(
+            event = "vote aggregated",
+            %vote,
+            from = signer.to_bs58(),
+            added = weight,
+            total,
+            target = quorum_target,
+            signature = to_str(signature),
+        );
+
+        let s = aggr_sign
+            .aggregated_bytes()
+            .expect("Signature to exist after aggregating");
+        let bitset = committee.bits(cluster);
+
+        let step_votes = StepVotes {
+            bitset,
+            aggregate_signature: Signature::from(s),
+        };
+
+        let quorum_reached = match &vote {
+            Vote::Valid(_) => total >= committee.super_majority_quorum(),
+            _ => total >= committee.majority_quorum(),
+        };
+
+        if quorum_reached {
+            tracing::info!(
+                event = "quorum reached",
+                %vote,
+                total,
+                target = quorum_target,
+                bitset,
+                step = msg_step,
+                signature = to_str(&s),
+            );
+        }
+
+        Some((step_votes, quorum_reached))
     }
 }
 
@@ -134,25 +132,17 @@ impl fmt::Display for Aggregator {
     }
 }
 
-#[derive(Debug)]
-pub enum AggrSigError {
-    InvalidData(dusk_bls12_381_sign::Error),
-}
-
-impl From<dusk_bls12_381_sign::Error> for AggrSigError {
-    fn from(e: dusk_bls12_381_sign::Error) -> Self {
-        Self::InvalidData(e)
-    }
-}
-
 #[derive(Default)]
 pub(super) struct AggrSignature {
     data: Option<dusk_bls12_381_sign::Signature>,
 }
 
 impl AggrSignature {
-    pub fn add(&mut self, data: &[u8; 48]) -> Result<(), AggrSigError> {
-        let sig = dusk_bls12_381_sign::Signature::from_bytes(data)?;
+    pub fn add(
+        &mut self,
+        data: &[u8; 48],
+    ) -> Result<(), dusk_bls12_381_sign::Error> {
+        let sig = BlsSignature::from_bytes(data)?;
 
         let aggr_sig = match self.data {
             Some(data) => data.aggregate(&[sig]),
