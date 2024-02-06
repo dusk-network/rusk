@@ -43,6 +43,7 @@
 	export let data;
 
 	const { currentPrice } = data;
+
 	const {
 		currency,
 		dashboardTransactionLimit,
