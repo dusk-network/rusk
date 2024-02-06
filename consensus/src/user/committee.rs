@@ -126,14 +126,10 @@ impl Committee {
     }
 
     pub fn total_occurrences(&self, voters: &Cluster<PublicKey>) -> usize {
-        let mut total = 0;
-        for (item_pk, _) in voters.iter() {
-            if let Some(weight) = self.votes_for(item_pk) {
-                total += weight;
-            };
-        }
-
-        total
+        voters
+            .iter()
+            .flat_map(|(voter, _)| self.votes_for(voter))
+            .sum()
     }
 }
 
