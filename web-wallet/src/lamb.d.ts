@@ -625,8 +625,8 @@ declare module "lamb" {
 
 	function pick<
 		S extends Record<string, any>,
-		W extends string[]
-	> (whitelist: W): (source: S) => Pick<S, typeof whitelist[number]>;
+		K extends string
+	> (whitelist: K[]): (source: S) => Pick<S, K>;
 
 	function pickIf<
 		S extends Record<string, any>,
@@ -635,8 +635,8 @@ declare module "lamb" {
 
 	function pickIn<
 		S extends Record<string, any>,
-		W extends string[]
-	> (source: S, whitelist: W): Pick<S, typeof whitelist[number]>;
+		K extends string
+	> (source: S, whitelist: K[]): Pick<S, K>;
 
 	function rename<
 		DK extends string,
@@ -652,8 +652,8 @@ declare module "lamb" {
 
 	function skip<
 		S extends Record<string, any>,
-		B extends string[]
-	> (blacklist: B): (source: S) => Omit<S, typeof blacklist[number]>;
+		K extends string
+	> (blacklist: K[]): (source: S) => Omit<S, K>;
 
 	function skipIf<
 		S extends Record<string, any>,
@@ -662,8 +662,8 @@ declare module "lamb" {
 
 	function skipIn<
 		S extends Record<string, any>,
-		B extends string[]
-	> (source: S, blacklist: B): Omit<S, typeof blacklist[number]>;
+		K extends string
+	> (source: S, blacklist: K[]): Omit<S, K>;
 
 	/* ------------------------- *
 	 * *****   PRIVATES    ***** *

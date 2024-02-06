@@ -20,11 +20,11 @@
 	<h2 class="visible-hidden">Transactions</h2>
 
 	<Balance
-		tokens={balance.value}
-		tokenCurrency="DUSK"
-		fiat={balance.value * currentPrice[currency.toLowerCase()]}
 		fiatCurrency={currency}
+		fiatPrice={currentPrice[currency.toLowerCase()]}
 		locale={language}
+		tokenCurrency="DUSK"
+		tokens={balance.value}
 	/>
 
 	{#await walletStore.getTransactionsHistory()}
