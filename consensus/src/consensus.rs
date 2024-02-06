@@ -220,7 +220,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     let step_name = phase.to_step_name();
                     // Initialize new phase with message returned by previous
                     // phase.
-                    phase.reinitialize(&msg, ru.round, iter).await;
+                    phase.reinitialize(msg, ru.round, iter).await;
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(

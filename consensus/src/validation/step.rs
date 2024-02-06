@@ -209,7 +209,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
     pub async fn reinitialize(
         &mut self,
-        msg: &Message,
+        msg: Message,
         round: u64,
         iteration: u8,
     ) {

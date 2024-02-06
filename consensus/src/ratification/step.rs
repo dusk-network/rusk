@@ -91,7 +91,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
     pub async fn reinitialize(
         &mut self,
-        msg: &Message,
+        msg: Message,
         round: u64,
         iteration: u8,
     ) {

@@ -42,7 +42,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
     pub async fn reinitialize(
         &mut self,
-        msg: &Message,
+        msg: Message,
         round: u64,
         iteration: u8,
     ) {
