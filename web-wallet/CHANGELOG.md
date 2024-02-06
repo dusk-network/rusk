@@ -9,16 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add ability to revert words when entering the mnemonic phrase
+- Add `fiatPrice` optional property to Balance component #1331
+- Add ability to revert words when entering the mnemonic phrase #1333
+- Add missing error handling when querying the quote API #1344
+
+### Changed
+
+- Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component #1331
+
+### Removed
+
+- Remove `fiat` property from Balance component #1331
 
 ### Fixed
 
-- Fix Seed Phrase words size
-- Fix colors on red background
-
-- Add `fiatPrice` optional property to Balance component #1331
-- Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component #1331
-- Remove `fiat` property from Balance component #1331
+- Fix Seed Phrase words size #1337
+- Fix colors on red background #1336
 
 ## [0.1.0-beta] - 2024-02-02
 
