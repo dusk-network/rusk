@@ -181,8 +181,6 @@ impl MsgHandler for ValidationHandler {
             {
                 return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
-
-            return Ok(final_result(sv, p.vote, QuorumType::Valid));
         }
 
         Ok(HandleMsgOutput::Pending)
