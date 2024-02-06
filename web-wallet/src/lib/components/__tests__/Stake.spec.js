@@ -12,6 +12,7 @@ import { deductLuxFeeFrom } from "$lib/contracts";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
 
 import { Stake } from "..";
+import { tick } from "svelte";
 
 describe("Stake", () => {
 	const formatter = createCurrencyFormatter("en", "DUSK", 9);
@@ -70,7 +71,7 @@ describe("Stake", () => {
 		expect(container.firstChild).toMatchSnapshot();
 	});
 
-	it("should disable the next button if the stake amount is invalid on mount", () => {
+	it("should disable the next button if the stake amount is invalid on mount", async () => {
 		const props = {
 			...baseProps,
 			gasSettings: {
@@ -87,6 +88,7 @@ describe("Stake", () => {
 		const nextButton = getByRole("button", { name: "Next" });
 		const amountInput = getByRole("spinbutton");
 
+		await tick();
 		expect(nextButton).toBeDisabled();
 		expect(amountInput.getAttribute("min")).toBe("1000");
 		expect(amountInput.getAttribute("max")).toBe(currentMaxSpendable.toString());

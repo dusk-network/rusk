@@ -1,7 +1,7 @@
 <svelte:options immutable={true}/>
 
 <script>
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import {
 		always,
 		clamp,
@@ -47,6 +47,8 @@
 			limit: validLimit,
 			price: toValidPrice(price, validLimit)
 		});
+
+		checkGasLimits();
 	}
 
 	function handleLimitChange () {
@@ -57,7 +59,26 @@
 		}
 
 		dispatchGasChange();
+		checkGasLimits();
 	}
+
+	function checkGasLimits () {
+		let inputPrice = false;
+		let	inputLimit = false;
+		let validGasLimits = false;
+
+		inputPrice = !!(price >= priceLower && price <= toValidLimit(limit));
+
+		inputLimit = !!(limit >= limitLower && limit <= limitUpper);
+
+		validGasLimits = !!(inputPrice && inputLimit);
+
+		dispatch("checkGasLimits", validGasLimits);
+	}
+
+	onMount(() => {
+		checkGasLimits();
+	});
 </script>
 
 <label for={undefined} class="gas-control">

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `fiatPrice` optional property to Balance component #1331
 - Add ability to revert words when entering the mnemonic phrase #1333
 - Add missing error handling when querying the quote API #1344
+- Add validation for invalid Gas Settings during Send and Stake flows #1347
 
 ### Changed
 

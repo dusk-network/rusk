@@ -1,12 +1,12 @@
 <svelte:options immutable={true}/>
 
 <script>
-	import { createEventDispatcher, onMount } from "svelte";
+	import { createEventDispatcher, onMount, tick } from "svelte";
 	import { fade } from "svelte/transition";
 	import { mdiDatabaseArrowDownOutline, mdiDatabaseOutline } from "@mdi/js";
 
 	import { deductLuxFeeFrom } from "$lib/contracts";
-	import { luxToDusk } from "$lib/dusk/currency";
+	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
 	import { logo } from "$lib/dusk/icons";
 	import {
 		AnchorButton,
@@ -65,6 +65,9 @@
 	/** @type {boolean} */
 	let isNextButtonDisabled = false;
 
+	/** @type {boolean} */
+	let validGasLimits = false;
+
 	/** @type {Record<StakeType, string>} */
 	const overviewLabels = {
 		"stake": "Amount",
@@ -72,8 +75,10 @@
 		"withdraw-stake": "Withdraw Amount"
 	};
 
-	const checkAmountValid = () => {
-		isNextButtonDisabled = !stakeInput?.checkValidity();
+	const checkAmountValid = async () => {
+		await tick();
+		isNextButtonDisabled = !(stakeInput?.checkValidity() && validGasLimits
+			&& (luxFee + luxToDusk(stakeAmount) <= duskToLux(spendable)));
 	};
 
 	const dispatch = createEventDispatcher();
@@ -148,6 +153,10 @@
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
 					on:setGasSettings
+					on:checkGasLimits={(event) => {
+						validGasLimits = event.detail;
+						checkAmountValid();
+					}}
 				/>
 			</WizardStep>
 		{/if}
@@ -192,6 +201,10 @@
 						price={gasSettings.gasPrice}
 						priceLower={gasSettings.gasPriceLower}
 						on:setGasSettings
+						on:checkGasLimits={(event) => {
+							validGasLimits = event.detail;
+							checkAmountValid();
+						}}
 					/>
 				{/if}
 
