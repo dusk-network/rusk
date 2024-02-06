@@ -88,7 +88,7 @@ impl From<dusk_bls12_381_sign::Error> for StepSigError {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
@@ -97,6 +97,7 @@ pub enum ConsensusError {
     InvalidValidationStepVotes(StepSigError),
     InvalidValidation(QuorumType),
     InvalidQuorumType,
+    InvalidVote(Vote),
     FutureEvent,
     PastEvent,
     NotCommitteeMember,

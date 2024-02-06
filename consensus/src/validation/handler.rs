@@ -91,6 +91,12 @@ impl MsgHandler for ValidationHandler {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
+
+        // NoQuorum cannot be cast from validation committee
+        if p.vote == Vote::NoQuorum {
+            return Err(ConsensusError::InvalidVote(p.vote));
+        }
+
         let iteration = p.header().iteration;
         if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
@@ -125,10 +131,12 @@ impl MsgHandler for ValidationHandler {
                 let vote = p.vote;
 
                 let quorum_type = match vote {
-                    Vote::NoCandidate => QuorumType::NilQuorum,
-                    Vote::Invalid(_) => QuorumType::InvalidQuorum,
-                    Vote::Valid(_) => QuorumType::ValidQuorum,
-                    Vote::NoQuorum => QuorumType::NoQuorum,
+                    Vote::NoCandidate => QuorumType::NoCandidate,
+                    Vote::Invalid(_) => QuorumType::Invalid,
+                    Vote::Valid(_) => QuorumType::Valid,
+                    Vote::NoQuorum => {
+                        return Err(ConsensusError::InvalidVote(vote));
+                    }
                 };
                 info!(event = "quorum reached", %vote);
                 return Ok(final_result(sv, vote, quorum_type));
@@ -146,6 +154,11 @@ impl MsgHandler for ValidationHandler {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
+
+        // NoQuorum cannot be cast from validation committee
+        if p.vote == Vote::NoQuorum {
+            return Err(ConsensusError::InvalidVote(p.vote));
+        }
 
         // Collect vote, if msg payload is validation type
         if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
@@ -169,7 +182,7 @@ impl MsgHandler for ValidationHandler {
                 return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
 
-            return Ok(final_result(sv, p.vote, QuorumType::ValidQuorum));
+            return Ok(final_result(sv, p.vote, QuorumType::Valid));
         }
 
         Ok(HandleMsgOutput::Pending)

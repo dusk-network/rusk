@@ -212,7 +212,7 @@ impl RatificationHandler {
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
         match result.quorum {
-            QuorumType::ValidQuorum | QuorumType::NilQuorum => {
+            QuorumType::Valid | QuorumType::NoCandidate => {
                 if let Some(generator) = round_committees.get_generator(iter) {
                     if let Some(validation_committee) =
                         round_committees.get_validation_committee(iter)
