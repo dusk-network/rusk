@@ -554,19 +554,19 @@ pub mod payload {
             })
         }
     }
-    #[derive(Clone, Copy, Default)]
+    #[derive(Clone, Copy, Debug, Default)]
     #[cfg_attr(
         any(feature = "faker", test),
         derive(fake::Dummy, Eq, PartialEq)
     )]
     pub enum QuorumType {
-        /// Quorum on Valid Candidate
-        ValidQuorum = 0,
-        // Quorum on Invalid Candidate
-        InvalidQuorum = 1,
-        //Quorum on Timeout (NilQuorum)
-        NilQuorum = 2,
-        // NoQuorum
+        /// Supermajority of Valid votes
+        Valid = 0,
+        /// Majority of Invalid votes
+        Invalid = 1,
+        /// Majority of NoCandidate votes
+        NoCandidate = 2,
+        /// No quorum reached (timeout expired)
         #[default]
         NoQuorum = 255,
     }
@@ -574,23 +574,11 @@ pub mod payload {
     impl From<u8> for QuorumType {
         fn from(v: u8) -> QuorumType {
             match v {
-                0 => QuorumType::ValidQuorum,
-                1 => QuorumType::InvalidQuorum,
-                2 => QuorumType::NilQuorum,
+                0 => QuorumType::Valid,
+                1 => QuorumType::Invalid,
+                2 => QuorumType::NoCandidate,
                 _ => QuorumType::NoQuorum,
             }
-        }
-    }
-
-    impl fmt::Debug for QuorumType {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let label = match self {
-                QuorumType::ValidQuorum => "valid_quorum",
-                QuorumType::InvalidQuorum => "invalid_quorum",
-                QuorumType::NilQuorum => "nil_quorum",
-                QuorumType::NoQuorum => "no_quorum",
-            };
-            f.write_str(label)
         }
     }
 
@@ -1174,7 +1162,7 @@ mod tests {
                     bitset: 12345,
                     aggregate_signature: [1; 48].into(),
                 },
-                quorum: payload::QuorumType::ValidQuorum,
+                quorum: payload::QuorumType::Valid,
                 vote: payload::Vote::Valid([5; 32]),
             },
             timestamp: 1_000_000,
