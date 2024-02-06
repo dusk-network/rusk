@@ -22,7 +22,7 @@
 	--on-secondary-color: var(--smokey-black);
 	--on-surface-color: var(--smokey-black);
 
-	--on-error-color: var(--light-grey);
+	--on-error-color: white;
 
 	/* Typography */
 
@@ -92,8 +92,9 @@
 	--divider-color-primary: var(--taupe-grey);
 
     /* Footer icon */
-
-    --footer-icon-color: var(--light-grey);
+	
+	--footer-icon-color: var(--smokey-black);
+	--footer-icon-error-color: white;
 
 	/* Home animation */
 

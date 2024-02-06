@@ -16,6 +16,7 @@
 
 .dusk-tooltip.dusk-tooltip-error {
 	background-color: var(--error-color);
+	color: var(--on-error-color);
 }
 
 .dusk-tooltip.dusk-tooltip-info {
