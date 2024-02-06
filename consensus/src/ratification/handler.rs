@@ -112,7 +112,7 @@ impl MsgHandler for RatificationHandler {
         Ok(HandleMsgOutput::Pending)
     }
 
-    /// Collects the reduction message from former iteration.
+    /// Collects the ratification message from former iteration.
     async fn collect_from_past(
         &mut self,
         msg: Message,
@@ -121,7 +121,7 @@ impl MsgHandler for RatificationHandler {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
-        // Collect vote, if msg payload is reduction type
+        // Collect vote, if msg payload is ratification type
         if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
             committee,
             p.header(),

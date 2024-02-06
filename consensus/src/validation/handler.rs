@@ -65,7 +65,7 @@ impl ValidationHandler {
 
 #[async_trait]
 impl MsgHandler for ValidationHandler {
-    /// Verifies if a msg is a valid reduction message.
+    /// Verifies if a msg is a valid validation message.
     fn verify(
         &self,
         msg: &Message,
@@ -83,7 +83,7 @@ impl MsgHandler for ValidationHandler {
         Ok(())
     }
 
-    /// Collects the reduction message.
+    /// Collects the validation message.
     async fn collect(
         &mut self,
         msg: Message,
@@ -103,7 +103,7 @@ impl MsgHandler for ValidationHandler {
             return Ok(HandleMsgOutput::Pending);
         }
 
-        // Collect vote, if msg payload is reduction type
+        // Collect vote, if msg payload is validation type
         if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
             committee,
             p.header(),
@@ -138,7 +138,7 @@ impl MsgHandler for ValidationHandler {
         Ok(HandleMsgOutput::Pending)
     }
 
-    /// Collects the reduction message from former iteration.
+    /// Collects the validation message from former iteration.
     async fn collect_from_past(
         &mut self,
         msg: Message,
@@ -147,7 +147,7 @@ impl MsgHandler for ValidationHandler {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
-        // Collect vote, if msg payload is reduction type
+        // Collect vote, if msg payload is validation type
         if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
             committee,
             p.header(),
