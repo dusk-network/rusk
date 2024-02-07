@@ -109,37 +109,49 @@ impl MsgHandler for ValidationHandler {
             return Ok(HandleMsgOutput::Pending);
         }
 
-        // Collect vote, if msg payload is validation type
-        if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
+        let collect_vote = self.aggr.collect_vote(
             committee,
-            p.header(),
             p.sign_info(),
             &p.vote,
             p.get_step(),
-        ) {
-            // Record result in global round registry
-            _ = self.sv_registry.lock().await.add_step_votes(
-                iteration,
-                &p.vote,
-                sv,
-                StepName::Validation,
-                quorum_reached,
-                committee.excluded().expect("Generator to be excluded"),
-            );
+        );
+        match collect_vote {
+            Ok((sv, quorum_reached)) => {
+                // Record result in global round registry
+                _ = self.sv_registry.lock().await.add_step_votes(
+                    iteration,
+                    &p.vote,
+                    sv,
+                    StepName::Validation,
+                    quorum_reached,
+                    committee.excluded().expect("Generator to be excluded"),
+                );
 
-            if quorum_reached {
-                let vote = p.vote;
+                if quorum_reached {
+                    let vote = p.vote;
 
-                let quorum_type = match vote {
-                    Vote::NoCandidate => QuorumType::NoCandidate,
-                    Vote::Invalid(_) => QuorumType::Invalid,
-                    Vote::Valid(_) => QuorumType::Valid,
-                    Vote::NoQuorum => {
-                        return Err(ConsensusError::InvalidVote(vote));
-                    }
-                };
-                info!(event = "quorum reached", %vote);
-                return Ok(final_result(sv, vote, quorum_type));
+                    let quorum_type = match vote {
+                        Vote::NoCandidate => QuorumType::NoCandidate,
+                        Vote::Invalid(_) => QuorumType::Invalid,
+                        Vote::Valid(_) => QuorumType::Valid,
+                        Vote::NoQuorum => {
+                            return Err(ConsensusError::InvalidVote(vote));
+                        }
+                    };
+                    info!(event = "quorum reached", %vote);
+                    return Ok(final_result(sv, vote, quorum_type));
+                }
+            }
+
+            Err(error) => {
+                warn!(
+                    event = "Cannot collect vote",
+                    ?error,
+                    from = p.sign_info().signer.to_bs58(),
+                    vote = %p.vote,
+                    msg_step = p.get_step(),
+                    msg_round = p.header().round,
+                );
             }
         }
 
@@ -161,28 +173,39 @@ impl MsgHandler for ValidationHandler {
         }
 
         // Collect vote, if msg payload is validation type
-        if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
+        let collect_vote = self.aggr.collect_vote(
             committee,
-            p.header(),
             p.sign_info(),
             &p.vote,
             p.get_step(),
-        ) {
-            // Record result in global round registry
-            if let Some(quorum_msg) =
-                self.sv_registry.lock().await.add_step_votes(
-                    p.header().iteration,
-                    &p.vote,
-                    sv,
-                    StepName::Validation,
-                    quorum_reached,
-                    committee.excluded().expect("Generator to be excluded"),
-                )
-            {
-                return Ok(HandleMsgOutput::Ready(quorum_msg));
+        );
+
+        match collect_vote {
+            Ok((sv, quorum_reached)) => {
+                if let Some(quorum_msg) =
+                    self.sv_registry.lock().await.add_step_votes(
+                        p.header().iteration,
+                        &p.vote,
+                        sv,
+                        StepName::Validation,
+                        quorum_reached,
+                        committee.excluded().expect("Generator to be excluded"),
+                    )
+                {
+                    return Ok(HandleMsgOutput::Ready(quorum_msg));
+                }
+            }
+            Err(error) => {
+                warn!(
+                    event = "Cannot collect vote",
+                    ?error,
+                    from = p.sign_info().signer.to_bs58(),
+                    vote = %p.vote,
+                    msg_step = p.get_step(),
+                    msg_round = p.header().round,
+                );
             }
         }
-
         Ok(HandleMsgOutput::Pending)
     }
 

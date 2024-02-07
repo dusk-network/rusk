@@ -10,10 +10,11 @@ use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Signature, StepVotes};
 use node_data::message::payload::Vote;
-use node_data::message::{ConsensusHeader, SignInfo};
+use node_data::message::SignInfo;
 use std::collections::BTreeMap;
 use std::fmt;
-use tracing::{debug, error, warn};
+use thiserror::Error;
+use tracing::{debug, error};
 
 /// Aggregator collects votes per a block hash by aggregating signatures of
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
@@ -23,22 +24,39 @@ pub struct Aggregator(
     BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
 );
 
+#[derive(Debug, Error)]
+pub enum AggregatorError {
+    #[error("Vote already aggregated")]
+    DuplicatedVote,
+    #[error("Vote from member not in the committee")]
+    NotCommitteeMember,
+    #[error("Invalid signature to aggregate {0}")]
+    InvalidSignature(dusk_bls12_381_sign::Error),
+}
+
+impl From<dusk_bls12_381_sign::Error> for AggregatorError {
+    fn from(value: dusk_bls12_381_sign::Error) -> Self {
+        Self::InvalidSignature(value)
+    }
+}
+
 impl Aggregator {
     pub fn collect_vote(
         &mut self,
         committee: &Committee,
-        header: &ConsensusHeader,
         sign_info: &SignInfo,
         vote: &Vote,
         msg_step: u16,
-    ) -> Option<(StepVotes, bool)> {
+    ) -> Result<(StepVotes, bool), AggregatorError> {
         let signature = sign_info.signature.inner();
         let signer = &sign_info.signer;
 
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
-        let weight = committee.votes_for(signer)?;
+        let weight = committee
+            .votes_for(signer)
+            .ok_or(AggregatorError::NotCommitteeMember)?;
 
         let (aggr_sign, cluster) =
             self.0.entry((msg_step, vote.clone())).or_default();
@@ -52,21 +70,11 @@ impl Aggregator {
         // committee, then a single vote is taken into account (if more votes
         // for the same slot are propagated, those are discarded).
         if cluster.contains_key(signer) {
-            warn!(
-                event = "discarded duplicated vote",
-                from = signer.to_bs58(),
-                %vote,
-                msg_step,
-                msg_round = header.round,
-            );
-            return None;
+            return Err(AggregatorError::DuplicatedVote);
         }
 
         // Aggregate Signatures
-        if let Err(e) = aggr_sign.add(signature) {
-            error!("{:?}", e);
-            return None;
-        }
+        aggr_sign.add(signature)?;
 
         // An committee member is allowed to vote only once per a single
         // step. Its vote has a weight value depending on how many times it
@@ -114,7 +122,7 @@ impl Aggregator {
             );
         }
 
-        Some((step_votes, quorum_reached))
+        Ok((step_votes, quorum_reached))
     }
 }
 
@@ -142,7 +150,7 @@ impl AggrSignature {
         &mut self,
         data: &[u8; 48],
     ) -> Result<(), dusk_bls12_381_sign::Error> {
-        let sig = BlsSignature::from_bytes(data)?;
+        let sig = dusk_bls12_381_sign::Signature::from_bytes(data)?;
 
         let aggr_sig = match self.data {
             Some(data) => data.aggregate(&[sig]),
@@ -279,7 +287,6 @@ mod tests {
             let (vote, msg) =
                 input.get(expected_members[i]).expect("invalid index");
 
-            let h = msg.header();
             let sign_info = msg.sign_info();
             let step = msg.get_step();
 
@@ -288,7 +295,7 @@ mod tests {
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
                 let (sv, quorum_reached) = a
-                    .collect_vote(&c, h, sign_info, &vote, step)
+                    .collect_vote(&c, sign_info, &vote, step)
                     .expect("failed to reach quorum");
 
                 assert!(quorum_reached, "quorum should be reached");
@@ -305,7 +312,7 @@ mod tests {
 
             // Check collected votes
             let (_, quorum_reached) =
-                a.collect_vote(&c, h, sign_info, &vote, step).unwrap();
+                a.collect_vote(&c, sign_info, &vote, step).unwrap();
 
             assert!(!quorum_reached, "quorum should not be reached yet");
 
@@ -314,9 +321,10 @@ mod tests {
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
-                assert!(a
-                    .collect_vote(&c, h, sign_info, &vote, step)
-                    .is_none());
+                match a.collect_vote(&c, sign_info, &vote, step) {
+                    Err(AggregatorError::DuplicatedVote) => {}
+                    _ => panic!("Vote should be discarded"),
+                }
             }
         }
     }

@@ -81,31 +81,44 @@ impl MsgHandler for RatificationHandler {
         }
 
         // Collect vote, if msg payload is of ratification type
-        if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
+        let collect_vote = self.aggregator.collect_vote(
             committee,
-            p.header(),
             p.sign_info(),
             &p.vote,
             p.get_step(),
-        ) {
-            // Record any signature in global registry
-            _ = self.sv_registry.lock().await.add_step_votes(
-                iteration,
-                &p.vote,
-                sv,
-                StepName::Ratification,
-                quorum_reached,
-                committee.excluded().expect("Generator to be excluded"),
-            );
+        );
 
-            if quorum_reached {
-                return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
-                    ru,
+        match collect_vote {
+            Ok((sv, quorum_reached)) => {
+                // Record any signature in global registry
+                _ = self.sv_registry.lock().await.add_step_votes(
                     iteration,
-                    p.vote,
-                    p.validation_result.sv,
+                    &p.vote,
                     sv,
-                )));
+                    StepName::Ratification,
+                    quorum_reached,
+                    committee.excluded().expect("Generator to be excluded"),
+                );
+
+                if quorum_reached {
+                    return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
+                        ru,
+                        iteration,
+                        p.vote,
+                        p.validation_result.sv,
+                        sv,
+                    )));
+                }
+            }
+            Err(error) => {
+                warn!(
+                    event = "Cannot collect vote",
+                    ?error,
+                    from = p.sign_info().signer.to_bs58(),
+                    vote = %p.vote,
+                    msg_step = p.get_step(),
+                    msg_round = p.header().round,
+                );
             }
         }
 
@@ -122,27 +135,40 @@ impl MsgHandler for RatificationHandler {
         let p = Self::unwrap_msg(msg)?;
 
         // Collect vote, if msg payload is ratification type
-        if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
+        let collect_vote = self.aggregator.collect_vote(
             committee,
-            p.header(),
             p.sign_info(),
             &p.vote,
             p.get_step(),
-        ) {
-            // Record any signature in global registry
-            if let Some(quorum_msg) =
-                self.sv_registry.lock().await.add_step_votes(
-                    p.header().iteration,
-                    &p.vote,
-                    sv,
-                    StepName::Ratification,
-                    quorum_reached,
-                    committee.excluded().expect("Generator to be excluded"),
-                )
-            {
-                return Ok(HandleMsgOutput::Ready(quorum_msg));
+        );
+
+        match collect_vote {
+            Ok((sv, quorum_reached)) => {
+                // Record any signature in global registry
+                if let Some(quorum_msg) =
+                    self.sv_registry.lock().await.add_step_votes(
+                        p.header().iteration,
+                        &p.vote,
+                        sv,
+                        StepName::Ratification,
+                        quorum_reached,
+                        committee.excluded().expect("Generator to be excluded"),
+                    )
+                {
+                    return Ok(HandleMsgOutput::Ready(quorum_msg));
+                };
             }
-        }
+            Err(error) => {
+                warn!(
+                    event = "Cannot collect vote",
+                    ?error,
+                    from = p.sign_info().signer.to_bs58(),
+                    vote = %p.vote,
+                    msg_step = p.get_step(),
+                    msg_round = p.header().round,
+                );
+            }
+        };
 
         Ok(HandleMsgOutput::Pending)
     }
