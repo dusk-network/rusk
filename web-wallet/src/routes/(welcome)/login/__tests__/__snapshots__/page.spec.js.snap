@@ -135,7 +135,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
       <a
         aria-disabled="false"
         class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/setup"
+        href="/some-base-path/setup"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -159,6 +159,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
       </a>
       <!--&lt;Anchor&gt;-->
       <!--&lt;AnchorButton&gt;-->
+      <!--&lt;AppAnchorButton&gt;-->
     </footer>
   </section>
   <!--&lt;+page&gt;-->
@@ -250,7 +251,7 @@ exports[`Login > Password workflow > should show the password field and the link
           <a
             aria-disabled="false"
             class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal"
-            href="/setup/restore"
+            href="/some-base-path/setup/restore"
           >
             <span
               class="dusk-anchor-button__text"
@@ -261,6 +262,7 @@ exports[`Login > Password workflow > should show the password field and the link
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
         </form>
       </article>
       
@@ -315,7 +317,7 @@ exports[`Login > Password workflow > should show the password field and the link
       <a
         aria-disabled="false"
         class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/setup"
+        href="/some-base-path/setup"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -339,6 +341,7 @@ exports[`Login > Password workflow > should show the password field and the link
       </a>
       <!--&lt;Anchor&gt;-->
       <!--&lt;AnchorButton&gt;-->
+      <!--&lt;AppAnchorButton&gt;-->
     </footer>
   </section>
   <!--&lt;+page&gt;-->

@@ -373,7 +373,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
+          href="/some-base-path/dashboard/transactions"
         >
           <span
             class="dusk-anchor-button__text"
@@ -384,6 +384,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <details
@@ -786,7 +787,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
+          href="/some-base-path/dashboard/transactions"
         >
           <span
             class="dusk-anchor-button__text"
@@ -797,6 +798,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <svg
@@ -1201,7 +1203,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
+          href="/some-base-path/dashboard/transactions"
         >
           <span
             class="dusk-anchor-button__text"
@@ -1212,6 +1214,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <div
@@ -1240,6 +1243,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
                 tg874534tddsghdtst54hdfh795h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -1346,6 +1350,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
                 tg874534tddsghdtst54hdfh794h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -1426,6 +1431,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
                 tg874534tddsghdtst54hdfh793h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -1506,6 +1512,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
                 tg874534tddsghdtst54hdfh792h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -1612,6 +1619,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
                 tg874534tddsghdtst54hdfh791h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>

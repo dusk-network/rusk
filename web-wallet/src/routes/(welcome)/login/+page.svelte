@@ -2,15 +2,16 @@
 
 <script>
 	import { mdiArrowLeft, mdiFileKeyOutline, mdiKeyOutline } from "@mdi/js";
-	import { goto } from "$app/navigation";
 	import { validateMnemonic } from "bip39";
 	import { setKey } from "lamb";
+
 	import {
-		AnchorButton,
 		Button,
 		Card,
 		Textbox
 	} from "$lib/dusk/components";
+	import { AppAnchorButton } from "$lib/components";
+	import { goto } from "$lib/navigation";
 	import { settingsStore, walletStore } from "$lib/stores";
 	import { decryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
 	import loginInfoStorage from "$lib/services/loginInfoStorage";
@@ -113,7 +114,7 @@
 				{/if}
 				<Button variant="secondary" text="Unlock Wallet" type="submit"/>
 				{#if modeLabel === "Password"}
-					<AnchorButton variant="quaternary" href="/setup/restore" text="Forgot Password?"/>
+					<AppAnchorButton variant="quaternary" href="/setup/restore" text="Forgot Password?"/>
 				{/if}
 			</form>
 		</Card>
@@ -126,7 +127,7 @@
 		</Card>
 	</div>
 	<footer class="login-footer">
-		<AnchorButton
+		<AppAnchorButton
 			href="/setup"
 			variant="tertiary"
 			icon={{ path: mdiArrowLeft }}

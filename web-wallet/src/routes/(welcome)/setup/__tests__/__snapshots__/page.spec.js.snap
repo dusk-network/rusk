@@ -34,7 +34,7 @@ exports[`Setup > should render the Setup page 1`] = `
           <a
             aria-disabled="false"
             class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-            href="/setup/create"
+            href="/some-base-path/setup/create"
           >
             <svg
               class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -58,11 +58,12 @@ exports[`Setup > should render the Setup page 1`] = `
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
            
           <a
             aria-disabled="false"
             class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-            href="/setup/restore/"
+            href="/some-base-path/setup/restore/"
           >
             <svg
               class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -86,6 +87,7 @@ exports[`Setup > should render the Setup page 1`] = `
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
         </div>
          
         <css-doodle
@@ -131,7 +133,7 @@ exports[`Setup > should render the Setup page 1`] = `
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-          href="/login"
+          href="/some-base-path/login"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -155,6 +157,7 @@ exports[`Setup > should render the Setup page 1`] = `
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </div>
     </div>
   </section>

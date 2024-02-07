@@ -2,13 +2,13 @@
 
 <script>
 	import {
-		AnchorButton,
 		ErrorDetails,
 		Icon,
 		Throbber
 	} from "$lib/dusk/components";
 	import { mdiCheckDecagramOutline, mdiCloseThick } from "@mdi/js";
 	import { makeClassName } from "$lib/dusk/string";
+	import { AppAnchorButton } from "$lib/components";
 
 	/** @type {string|undefined} */
 	export let className = undefined;
@@ -49,7 +49,7 @@
 		/>
 		<span>{successMessage}</span>
 		<slot name="success-content" {result}/>
-		<AnchorButton
+		<AppAnchorButton
 			href="/dashboard"
 			on:click={handleGoHomeClick}
 			variant="tertiary"
@@ -65,7 +65,7 @@
 			summary={errorMessage}
 		/>
 		<slot name="error-content"/>
-		<AnchorButton
+		<AppAnchorButton
 			href="/dashboard"
 			on:click={handleGoHomeClick}
 			variant="tertiary"

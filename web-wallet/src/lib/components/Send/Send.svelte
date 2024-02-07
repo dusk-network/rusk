@@ -10,7 +10,6 @@
 	import { validateAddress } from "$lib/dusk/string";
 	import { logo } from "$lib/dusk/icons";
 	import {
-		AnchorButton,
 		Badge,
 		Button,
 		Icon,
@@ -19,6 +18,7 @@
 		WizardStep
 	} from "$lib/dusk/components";
 	import {
+		AppAnchorButton,
 		ContractStatusesList,
 		GasFee,
 		GasSettings,
@@ -242,7 +242,7 @@
 			>
 				<svelte:fragment slot="success-content" let:result={hash}>
 					{#if hash}
-						<AnchorButton
+						<AppAnchorButton
 							href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
 							on:click={resetOperation}
 							text="VIEW ON BLOCK EXPLORER"

@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AppAnchor > should render an \`Anchor\` with the base path prepended to the \`href\` attribute, if the \`href\` represents an absolute URL 1`] = `
+<a
+  class="dusk-anchor foo bar"
+  href="/some-base-path/setup"
+  id="some-id"
+>
+  <span>
+    some text
+  </span>
+</a>
+`;

@@ -5,8 +5,6 @@
 	import { fade } from "svelte/transition";
 	import { logo } from "$lib/dusk/icons";
 	import {
-		Anchor,
-		AnchorButton,
 		Badge,
 		ErrorDetails,
 		Icon,
@@ -15,6 +13,9 @@
 	import { createFeeFormatter, createTransferFormatter } from "$lib/dusk/currency";
 	import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
 	import { sortByHeightDesc } from "$lib/transactions";
+
+	import AppAnchor from "../AppAnchor/AppAnchor.svelte";
+	import AppAnchorButton from "../AppAnchorButton/AppAnchorButton.svelte";
 
 	/** @type {String} */
 	export let language;
@@ -54,14 +55,14 @@
 	<header class="transactions__header">
 		<h3 class="h4">Transactions</h3>
 		{#if limit}
-			<AnchorButton
+			<AppAnchorButton
 				className="transactions__footer-button"
 				href="/dashboard/transactions"
 				text="View all transactions"
 				variant="tertiary"
 			/>
 		{:else}
-			<AnchorButton
+			<AppAnchorButton
 				className="transactions__footer-button"
 				href="/dashboard"
 				text="Back"
@@ -81,7 +82,7 @@
 						<dt class="transactions-list__term">Hash</dt>
 						<dd class="transactions-list__datum transactions-list__datum--hash">
 							<samp>
-								<Anchor
+								<AppAnchor
 									href="https://explorer.dusk.network/transactions/transaction?id={transaction.id}"
 									rel="noopener noreferrer"
 									target="_blank"
@@ -90,7 +91,7 @@
 										transaction.id,
 										calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
 									)}
-								</Anchor>
+								</AppAnchor>
 							</samp>
 						</dd>
 						{#if transaction.tx_type}
@@ -140,7 +141,6 @@
 	{:catch e}
 		<ErrorDetails summary="Error getting transactions" error={e}/>
 	{/await}
-
 </article>
 
 <style lang="postcss">

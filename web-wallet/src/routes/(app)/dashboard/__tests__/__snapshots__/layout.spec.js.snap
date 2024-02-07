@@ -61,7 +61,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal dusk-icon-button footer__anchor-button"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="Settings"
-            href="/settings"
+            href="/some-base-path/settings"
           >
             <svg
               class="dusk-icon dusk-icon--size--large dusk-anchor-button__icon"
@@ -80,6 +80,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
         </div>
       </nav>
     </footer>
@@ -174,7 +175,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal dusk-icon-button footer__anchor-button"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="Settings"
-            href="/settings"
+            href="/some-base-path/settings"
           >
             <svg
               class="dusk-icon dusk-icon--size--large dusk-anchor-button__icon"
@@ -193,6 +194,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
         </div>
       </nav>
     </footer>
@@ -273,7 +275,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal dusk-icon-button footer__anchor-button"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="Settings"
-            href="/settings"
+            href="/some-base-path/settings"
           >
             <svg
               class="dusk-icon dusk-icon--size--large dusk-anchor-button__icon"
@@ -292,6 +294,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
         </div>
       </nav>
     </footer>

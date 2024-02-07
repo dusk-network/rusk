@@ -1,7 +1,9 @@
 <script>
 	import { getContext } from "svelte";
-	import { AnchorButton, Button, Stepper } from "$lib/dusk/components";
+	import { Button, Stepper } from "$lib/dusk/components";
 	import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
+
+	import { AppAnchorButton } from "$lib/components";
 
 	/** @type {Number} */
 	export let step;
@@ -88,7 +90,7 @@
 			<div class="dusk-wizard__step-navigation">
 				{#if !hideBackButton}
 					{#if backButton?.isAnchor}
-						<AnchorButton
+						<AppAnchorButton
 							{...getButtonProps(backButton, "Back", mdiArrowLeft)}
 							href={backButton?.href ?? "#"}
 						/>
@@ -101,7 +103,7 @@
 				{/if}
 
 				{#if nextButton?.isAnchor}
-					<AnchorButton
+					<AppAnchorButton
 						{...getButtonProps(nextButton, "Next", mdiArrowRight, true)}
 						href={nextButton?.href ?? "#"}
 					/>

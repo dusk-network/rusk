@@ -8,11 +8,11 @@ import {
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { generateMnemonic } from "bip39";
-import * as appNavigation from "$app/navigation";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
 import { setKey } from "lamb";
 import { get } from "svelte/store";
 import { addresses } from "$lib/mock-data";
+import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
 import { encryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
@@ -43,7 +43,7 @@ describe("Restore", async () => {
 	const seed = getSeedFromMnemonic(mnemonic);
 	const userId = (await new Wallet(seed).getPsks())[0];
 	const getWalletSpy = vi.spyOn(walletService, "getWallet");
-	const gotoSpy = vi.spyOn(appNavigation, "goto");
+	const gotoSpy = vi.spyOn(navigation, "goto");
 	const settingsResetSpy = vi.spyOn(settingsStore, "reset");
 	const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
 	const readTextMock = vi.fn().mockResolvedValue(mnemonic);

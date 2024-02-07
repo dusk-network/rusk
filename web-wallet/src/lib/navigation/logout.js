@@ -1,5 +1,5 @@
-import { goto } from "$app/navigation";
 
+import { goto } from "$lib/navigation";
 import { walletStore } from "$lib/stores";
 
 /**

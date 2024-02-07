@@ -13,7 +13,7 @@ import { settingsStore, walletStore } from "$lib/stores";
 import { setKey } from "lamb";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
 import { getSeedFromMnemonic } from "$lib/wallet";
-import * as appNavigation from "$app/navigation";
+import * as navigation from "$lib/navigation";
 import * as bip39 from "bip39";
 import * as walletService from "$lib/services/wallet";
 import * as shuffleArray from "$lib/dusk/array";
@@ -44,7 +44,7 @@ describe("Create", async () => {
 	const generateMnemonicSpy = vi.spyOn(bip39, "generateMnemonic").mockReturnValue(mnemonic);
 	const shuffleArraySpy = vi.spyOn(shuffleArray, "shuffleArray").mockReturnValue(mnemonicShuffled);
 	const getWalletSpy = vi.spyOn(walletService, "getWallet");
-	const gotoSpy = vi.spyOn(appNavigation, "goto");
+	const gotoSpy = vi.spyOn(navigation, "goto");
 	const settingsResetSpy = vi.spyOn(settingsStore, "reset");
 	const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
 

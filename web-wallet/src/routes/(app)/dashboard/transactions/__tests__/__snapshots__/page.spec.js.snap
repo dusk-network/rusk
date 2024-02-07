@@ -84,7 +84,7 @@ exports[`Dashboard > should render the transactions page 1`] = `
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled transactions__footer-button"
-          href="/dashboard"
+          href="/some-base-path/dashboard"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -108,6 +108,7 @@ exports[`Dashboard > should render the transactions page 1`] = `
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <details

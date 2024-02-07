@@ -12,7 +12,6 @@ import {
 	fireEvent,
 	render
 } from "@testing-library/svelte";
-import * as SvelteKit from "@sveltejs/kit";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
 
 import * as navigation from "$lib/navigation";
@@ -24,7 +23,7 @@ import Layout from "../+layout.svelte";
 
 describe("App layout.js", () => {
 	const getPsksSpy = vi.spyOn(Wallet.prototype, "getPsks").mockResolvedValue(addresses);
-	const redirectSpy = vi.spyOn(SvelteKit, "redirect");
+	const redirectSpy = vi.spyOn(navigation, "redirect");
 
 	afterEach(() => {
 		getPsksSpy.mockClear();

@@ -11,9 +11,7 @@
 	} from "@mdi/js";
 	import { mapWith, rename } from "lamb";
 
-	import { logout } from "$lib/navigation";
 	import {
-		AnchorButton,
 		Badge,
 		Button,
 		ErrorDetails,
@@ -21,10 +19,11 @@
 		Select,
 		Switch
 	} from "$lib/dusk/components";
-	import { GasControls } from "$lib/components";
+	import { AppAnchorButton, GasControls } from "$lib/components";
 	import { currencies } from "$lib/dusk/currency";
 	import { gasStore, settingsStore, walletStore } from "$lib/stores";
 	import { areValidGasSettings } from "$lib/contracts";
+	import { logout } from "$lib/navigation";
 
 	const resetWallet = () => walletStore.clearLocalData().then(() => {
 		settingsStore.reset();
@@ -226,7 +225,7 @@
 </section>
 
 <div class="settings-actions">
-	<AnchorButton
+	<AppAnchorButton
 		href="/dashboard"
 		disabled={!isGasValid}
 		variant="tertiary"

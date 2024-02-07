@@ -30,6 +30,8 @@ The application defines these variables by reading a local `.env` file containin
 N.B. the current `0.1.2` version of the library has no option to pick the network and uses the `LOCAL_NODE` only. The current testnet address is set in that variable in the example below:
 
 ```
+# can be empty string, must start with a slash otherwise, must not end with a slash
+VITE_BASE_PATH=""
 VITE_CONTRACT_STAKE_DISABLED=false
 VITE_CONTRACT_TRANSFER_DISABLED=false
 VITE_CURRENT_NODE=${VITE_LOCAL_NODE}

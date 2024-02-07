@@ -1,4 +1,6 @@
 export { default as AddressPicker } from "./AddressPicker/AddressPicker.svelte";
+export { default as AppAnchor } from "./AppAnchor/AppAnchor.svelte";
+export { default as AppAnchorButton } from "./AppAnchorButton/AppAnchorButton.svelte";
 export { default as Balance } from "./Balance/Balance.svelte";
 export { default as ContractOperations } from "./ContractOperations/ContractOperations.svelte";
 export { default as ContractStatusesList } from "./ContractStatusesList/ContractStatusesList.svelte";

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add possibility to serve the web wallet from a sub folder [#1362]
+
 ### Changed
 
 - Refactor beta notice as constant [#1469]
@@ -138,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1469]: https://github.com/dusk-network/rusk/issues/1469
 [#1470]: https://github.com/dusk-network/rusk/issues/1470
 [#1471]: https://github.com/dusk-network/rusk/issues/1471
+[#1362]: https://github.com/dusk-network/rusk/issues/1362
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet

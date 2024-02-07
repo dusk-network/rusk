@@ -1,8 +1,9 @@
 import { cleanup, render } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
-import { settingsStore } from "$lib/stores";
+import { base } from "$app/paths";
 
+import { settingsStore } from "$lib/stores";
 import { transactions } from "$lib/mock-data";
 import { sortByHeightDesc } from "$lib/transactions";
 import { createFeeFormatter, createTransferFormatter } from "$lib/dusk/currency";
@@ -145,7 +146,7 @@ describe("Transactions", () => {
 		const viewAllTransactionAnchor = getByRole("link", { name: "View all transactions" });
 
 		expect(viewAllTransactionAnchor).toBeInTheDocument();
-		expect(viewAllTransactionAnchor).toHaveAttribute("href", "/dashboard/transactions");
+		expect(viewAllTransactionAnchor).toHaveAttribute("href", `${base}/dashboard/transactions`);
 	});
 
 	it("displays the \"Back\" CTA if no limit is supplied", async () => {
@@ -158,7 +159,7 @@ describe("Transactions", () => {
 		const viewAllTransactionAnchor = getByRole("link", { name: "Back" });
 
 		expect(viewAllTransactionAnchor).toBeInTheDocument();
-		expect(viewAllTransactionAnchor).toHaveAttribute("href", "/dashboard");
+		expect(viewAllTransactionAnchor).toHaveAttribute("href", `${base}/dashboard`);
 	});
 
 	it("handles error state when items are rejected", async () => {

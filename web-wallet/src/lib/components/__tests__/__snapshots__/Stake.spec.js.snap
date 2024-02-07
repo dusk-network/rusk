@@ -340,6 +340,7 @@ exports[`Stake > should render the Stake notice 1`] = `
             HERE
           </a>
           <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
           , and that I will lose funds if I have not done so correctly.
         </p>
          

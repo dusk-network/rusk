@@ -11,8 +11,6 @@
 
 	import {
 		Agreement,
-		Anchor,
-		AnchorButton,
 		Badge,
 		Button,
 		Card,
@@ -23,6 +21,8 @@
 	} from "$lib/dusk/components";
 
 	import {
+		AppAnchor,
+		AppAnchorButton,
 		ContractStatusesList,
 		GasFee,
 		GasSettings,
@@ -165,11 +165,11 @@
 						iconPath={mdiAlertOutline}
 						heading="Only stake if you have a node set up!">
 						<p class="staking-warning">
-							I understand that I have set up a node properly, as described <Anchor
+							I understand that I have set up a node properly, as described <AppAnchor
 								class="staking-warning__step-node-setup-link"
 								rel="noopener noreferrer"
 								target="_blank"
-								href="https://docs.dusk.network/getting-started/node-setup/overview">HERE</Anchor>, and that I will lose funds if I have not done so correctly.</p>
+								href="https://docs.dusk.network/getting-started/node-setup/overview">HERE</AppAnchor>, and that I will lose funds if I have not done so correctly.</p>
 
 						<Agreement
 							className="staking-warning__agreement"
@@ -297,7 +297,7 @@
 			>
 				<svelte:fragment slot="success-content" let:result={hash}>
 					{#if hash}
-						<AnchorButton
+						<AppAnchorButton
 							href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
 							on:click={resetOperation}
 							text="VIEW ON BLOCK EXPLORER"

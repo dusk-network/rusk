@@ -41,7 +41,7 @@ exports[`OperationResult > should accept a custom message for the failure state 
   <a
     aria-disabled="false"
     class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
-    href="/dashboard"
+    href="/some-base-path/dashboard"
   >
     <span
       class="dusk-anchor-button__text"
@@ -52,6 +52,7 @@ exports[`OperationResult > should accept a custom message for the failure state 
   </a>
   <!--&lt;Anchor&gt;-->
   <!--&lt;AnchorButton&gt;-->
+  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;
 
@@ -116,7 +117,7 @@ exports[`OperationResult > should accept a custom message for the successful sta
   <a
     aria-disabled="false"
     class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
-    href="/dashboard"
+    href="/some-base-path/dashboard"
   >
     <span
       class="dusk-anchor-button__text"
@@ -127,6 +128,7 @@ exports[`OperationResult > should accept a custom message for the successful sta
   </a>
   <!--&lt;Anchor&gt;-->
   <!--&lt;AnchorButton&gt;-->
+  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;
 
@@ -206,7 +208,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
   <a
     aria-disabled="false"
     class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
-    href="/dashboard"
+    href="/some-base-path/dashboard"
   >
     <span
       class="dusk-anchor-button__text"
@@ -217,6 +219,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
   </a>
   <!--&lt;Anchor&gt;-->
   <!--&lt;AnchorButton&gt;-->
+  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;
 
@@ -246,7 +249,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
   <a
     aria-disabled="false"
     class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
-    href="/dashboard"
+    href="/some-base-path/dashboard"
   >
     <span
       class="dusk-anchor-button__text"
@@ -257,5 +260,6 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
   </a>
   <!--&lt;Anchor&gt;-->
   <!--&lt;AnchorButton&gt;-->
+  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;

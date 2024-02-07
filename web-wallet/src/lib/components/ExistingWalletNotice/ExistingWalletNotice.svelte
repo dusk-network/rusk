@@ -1,9 +1,6 @@
 <script>
-	import {
-		AnchorButton,
-		Button,
-		Card
-	} from "$lib/dusk/components";
+	import { Button, Card } from "$lib/dusk/components";
+	import { AppAnchorButton } from "$lib/components";
 	import { mdiAlertOutline } from "@mdi/js";
 
 	/** @type {boolean} */
@@ -18,7 +15,7 @@
 				you will need to wait for the wallet to sync.
 			</p>
 			<div class="flex gap-1 w-100">
-				<AnchorButton
+				<AppAnchorButton
 					className="flex-1"
 					href="/setup"
 					text="Back"

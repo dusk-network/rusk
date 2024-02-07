@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AppAnchorButton > should render an \`AnchorButton\` with the base path prepended to the \`href\` attribute, if the \`href\` represents an absolute URL 1`] = `
+<div>
+  <a
+    aria-disabled="false"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal foo bar"
+    href="/some-base-path/setup"
+    id="some-id"
+  >
+    
+  </a>
+  <!--&lt;Anchor&gt;-->
+  <!--&lt;AnchorButton&gt;-->
+  <!--&lt;AppAnchorButton&gt;-->
+</div>
+`;

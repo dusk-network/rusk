@@ -1,4 +1,4 @@
-import { redirect } from "@sveltejs/kit";
+import { redirect } from "$lib/navigation";
 
 /** @type {import('./$types').PageLoad} */
 export function load () {
