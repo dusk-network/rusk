@@ -4,12 +4,10 @@
 	import { onDestroy } from "svelte";
 	import { fade } from "svelte/transition";
 	import {
-		compose,
 		filterWith,
 		find,
 		hasKeyValue,
-		last,
-		take
+		last
 	} from "lamb";
 	import {
 		mdiDatabaseOutline,
@@ -17,10 +15,7 @@
 	} from "@mdi/js";
 
 	import {
-		AnchorButton,
-		Card,
-		Tabs,
-		Throbber
+		Tabs
 	} from "$lib/dusk/components";
 	import {
 		StakeContract,
@@ -37,7 +32,6 @@
 		walletStore
 	} from "$lib/stores";
 	import { contractDescriptors } from "$lib/contracts";
-	import { sortByHeightDesc } from "$lib/transactions";
 
 	/** @type {import('./$types').PageData} */
 	export let data;
@@ -52,12 +46,6 @@
 
 	/** @type {(descriptors: ContractDescriptor[]) => ContractDescriptor[]} */
 	const getEnabledContracts = filterWith(hasKeyValue("disabled", false));
-
-	/** @type {(transactions: Transaction[]) => Transaction[]} */
-	const getTransactionsShortlist = compose(
-		take(dashboardTransactionLimit),
-		sortByHeightDesc
-	);
 
 	/** @param {CustomEvent} event */
 	function handleSetGasSettings ({ detail }) {
@@ -137,24 +125,10 @@
 	{/if}
 
 	{#if currentOperation === "" && selectedTab === "transfer" }
-		{#await walletStore.getTransactionsHistory()}
-			<Throbber className="loading"/>
-		{:then transactions}
-			<Transactions transactions={getTransactionsShortlist(transactions)}>
-				<h3 class="h4" slot="heading">Transactions</h3>
-				<AnchorButton
-					className="view-transactions"
-					slot="controls"
-					href="/dashboard/transactions"
-					text="View all transactions"
-					variant="tertiary"
-				/>
-			</Transactions>
-		{:catch e}
-			<Card heading="Error getting transactions">
-				<pre>{e}</pre>
-			</Card>
-		{/await}
+		<Transactions
+			items={walletStore.getTransactionsHistory()}
+			{language}
+			limit={dashboardTransactionLimit}/>
 	{/if}
 </div>
 
@@ -189,13 +163,5 @@
 			padding: 1rem 1.375rem;
 			gap: var(--default-gap);
 		}
-	}
-
-	:global(.view-transactions) {
-		width: 100%;
-	}
-
-	:global(.loading) {
-		align-self: center;
 	}
 </style>

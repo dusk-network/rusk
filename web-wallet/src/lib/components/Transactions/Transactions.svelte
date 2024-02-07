@@ -1,24 +1,40 @@
 <script>
-	import { mdiContain	} from "@mdi/js";
+	import { compose, take } from "lamb";
+	import { mdiArrowLeft, mdiContain } from "@mdi/js";
+	import { onMount } from "svelte";
 	import { fade } from "svelte/transition";
 	import { logo } from "$lib/dusk/icons";
 	import {
-		Anchor, Badge, Icon, Tooltip
+		Anchor,
+		AnchorButton,
+		Badge,
+		ErrorDetails,
+		Icon,
+		Throbber
 	} from "$lib/dusk/components";
 	import { createFeeFormatter, createTransferFormatter } from "$lib/dusk/currency";
-	import { settingsStore } from "$lib/stores";
 	import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
-	import { onMount } from "svelte";
+	import { sortByHeightDesc } from "$lib/transactions";
 
-	/** @type Transaction[] */
-	export let transactions;
+	/** @type {String} */
+	export let language;
 
-	const { language } = $settingsStore;
+	/** @type {Number | Undefined} */
+	export let limit = undefined;
+
 	const transferFormatter = createTransferFormatter(language);
 	const feeFormatter = createFeeFormatter(language);
 
+	/** @type {Promise<Transaction[]>} */
+	export let items;
+
 	/** @type {Number} */
 	let screenWidth = window.innerWidth;
+
+	/** @type {(transactions: Transaction[]) => Transaction[]} */
+	const getOrderedTransactions = limit
+		? compose(take(limit), sortByHeightDesc)
+		: sortByHeightDesc;
 
 	onMount(() => {
 		const resizeObserver = new ResizeObserver(entries => {
@@ -36,85 +52,107 @@
 
 <article in:fade|global class="transactions">
 	<header class="transactions__header">
-		<slot name="heading"/>
+		<h3 class="h4">Transactions</h3>
 	</header>
 
-	<div class="transactions__lists">
-		{#if transactions.length}
-			{#each transactions as transaction (transaction.id)}
-				<dl class="transactions-list">
-					<dt class="transactions-list__term">Hash</dt>
-					<dd class="transactions-list__datum transactions-list__datum--hash">
-						<samp>
-							<Anchor
-								href="https://explorer.dusk.network/transactions/transaction?id={transaction.id}"
-								rel="noopener noreferrer"
-								target="_blank"
-							>
-								{middleEllipsis(
-									transaction.id,
-									calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
-								)}
-							</Anchor>
-						</samp>
-					</dd>
-					{#if transaction.tx_type}
-						<dt class="transactions-list__term">Type</dt>
-						<dd class="transactions-list__datum">
-							<Badge className="w-100" text={transaction.tx_type}/>
+	{#await items}
+		<Throbber className="loading"/>
+	{:then transactions}
+		<div class="transactions__lists">
+			{#if transactions.length}
+				{#each getOrderedTransactions(transactions) as transaction (transaction.id)}
+					<dl class="transactions-list">
+						<dt class="transactions-list__term">Hash</dt>
+						<dd class="transactions-list__datum transactions-list__datum--hash">
+							<samp>
+								<Anchor
+									href="https://explorer.dusk.network/transactions/transaction?id={transaction.id}"
+									rel="noopener noreferrer"
+									target="_blank"
+								>
+									{middleEllipsis(
+										transaction.id,
+										calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
+									)}
+								</Anchor>
+							</samp>
 						</dd>
-					{/if}
-					<dt class="transactions-list__term">Block</dt>
-					<dd class="transactions-list__datum">
-						{new Intl.NumberFormat(language).format(transaction.block_height)}
-					</dd>
-					<dt class="transactions-list__term">Amount</dt>
-					<dd class="transactions-list__datum">
-						{transferFormatter(transaction.amount)}
-						<Icon
-							className="transactions-list__icon"
-							path={logo}
-							data-tooltip-id="transactions-tooltip"
-							data-tooltip-text="DUSK"
-							data-tooltip-place="top"
-						/>
-					</dd>
-					{#if transaction.direction === "Out"}
-						<dt class="transactions-list__term">Fee</dt>
+						{#if transaction.tx_type}
+							<dt class="transactions-list__term">Type</dt>
+							<dd class="transactions-list__datum">
+								<Badge className="w-100" text={transaction.tx_type}/>
+							</dd>
+						{/if}
+						<dt class="transactions-list__term">Block</dt>
 						<dd class="transactions-list__datum">
-							{feeFormatter(transaction.fee)}
+							{new Intl.NumberFormat(language).format(transaction.block_height)}
+						</dd>
+						<dt class="transactions-list__term">Amount</dt>
+						<dd class="transactions-list__datum">
+							{transferFormatter(transaction.amount)}
 							<Icon
 								className="transactions-list__icon"
 								path={logo}
-								data-tooltip-id="transactions-tooltip"
+								data-tooltip-id="main-tooltip"
 								data-tooltip-text="DUSK"
 								data-tooltip-place="top"
 							/>
 						</dd>
-					{/if}
-				</dl>
-			{/each}
-		{:else}
-			<div class="transactions-list__empty">
-				<Icon path={mdiContain} size="large"/>
-				<p>You have no transaction history</p>
-			</div>
-		{/if}
-	</div>
+						{#if transaction.direction === "Out"}
+							<dt class="transactions-list__term">Fee</dt>
+							<dd class="transactions-list__datum">
+								{feeFormatter(transaction.fee)}
+								<Icon
+									className="transactions-list__icon"
+									path={logo}
+									data-tooltip-id="main-tooltip"
+									data-tooltip-text="DUSK"
+									data-tooltip-place="top"
+								/>
+							</dd>
+						{/if}
+					</dl>
+				{/each}
+			{:else}
+				<div class="transactions-list__empty">
+					<Icon path={mdiContain} size="large"/>
+					<p>You have no transaction history</p>
+				</div>
+			{/if}
+		</div>
+
+	{:catch e}
+		<ErrorDetails summary="Error getting transactions" error={e}/>
+	{/await}
 
 	<footer class="transactions__footer">
-		{#if transactions.length}
-			<slot name="controls"/>
+		{#if limit}
+			<AnchorButton
+				className="transactions__footer-button"
+				href="/dashboard/transactions"
+				text="View all transactions"
+				variant="tertiary"
+			/>
+		{:else}
+			<AnchorButton
+				className="transactions__footer-button"
+				href="/dashboard"
+				text="Back"
+				variant="tertiary"
+				icon={{ path: mdiArrowLeft }}
+			/>
 		{/if}
 	</footer>
 </article>
-
-<Tooltip id="transactions-tooltip"/>
 
 <style lang="postcss">
 .transactions {
 	border-radius: 1.25em;
 	background: var(--surface-color);
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 
 	&__header {
 		padding: 1.375em 1em;
@@ -127,16 +165,25 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.625em;
+		flex: 1;
+		overflow-y: auto;
 	}
 
 	&__footer {
-		display: flex;
 		padding: 1em 1.375em;
-		justify-content: space-between;
-		gap: 0.625em;
+		display: flex;
+		margin-top: auto;
+	}
+
+	:global(.transactions__footer-button) {
+		width: 100%;
+	}
+
+	:global(.loading) {
+		width: 100%;
+		align-self: center;
 	}
 }
-
 .transactions-list {
 	display: grid;
 	grid-template-columns: max-content auto;
