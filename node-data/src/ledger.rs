@@ -258,7 +258,7 @@ impl BlockWithLabel {
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct StepVotes {
     pub bitset: u64,
-    pub aggregate_signature: Signature,
+    pub(crate) aggregate_signature: Signature,
 }
 
 impl StepVotes {
@@ -271,6 +271,10 @@ impl StepVotes {
 
     pub fn is_empty(&self) -> bool {
         self.bitset == 0 || self.aggregate_signature.is_zeroed()
+    }
+
+    pub fn aggregate_signature(&self) -> &Signature {
+        &self.aggregate_signature
     }
 }
 

@@ -322,7 +322,7 @@ impl Serializable for ValidationResult {
         let vote = Vote::read(r)?;
         let quorum = QuorumType::read(r)?;
 
-        Ok(ValidationResult { sv, vote, quorum })
+        Ok(ValidationResult::new(sv, vote, quorum))
     }
 }
 

@@ -588,9 +588,27 @@ pub mod payload {
         derive(fake::Dummy, Eq, PartialEq)
     )]
     pub struct ValidationResult {
-        pub quorum: QuorumType,
-        pub vote: Vote,
-        pub sv: StepVotes,
+        pub(crate) quorum: QuorumType,
+        pub(crate) vote: Vote,
+        pub(crate) sv: StepVotes,
+    }
+
+    impl ValidationResult {
+        pub fn new(sv: StepVotes, vote: Vote, quorum: QuorumType) -> Self {
+            Self { sv, vote, quorum }
+        }
+
+        pub fn quorum(&self) -> QuorumType {
+            self.quorum
+        }
+
+        pub fn sv(&self) -> &StepVotes {
+            &self.sv
+        }
+
+        pub fn vote(&self) -> &Vote {
+            &self.vote
+        }
     }
 
     #[derive(Debug, Clone, Eq, PartialEq)]
@@ -1142,10 +1160,7 @@ mod tests {
             sign_info: sign_info.clone(),
         });
 
-        assert_serialize(ledger::StepVotes {
-            bitset: 12345,
-            aggregate_signature: [4; 48].into(),
-        });
+        assert_serialize(ledger::StepVotes::new([4; 48], 12345));
 
         assert_serialize(payload::Validation {
             header: consensus_header.clone(),
@@ -1153,32 +1168,25 @@ mod tests {
             sign_info: sign_info.clone(),
         });
 
+        let validation_result = ValidationResult::new(
+            ledger::StepVotes::new([1; 48], 12345),
+            payload::Vote::Valid([5; 32]),
+            payload::QuorumType::Valid,
+        );
+
         assert_serialize(payload::Ratification {
             header: consensus_header.clone(),
             vote: payload::Vote::Valid([4; 32]),
             sign_info: sign_info.clone(),
-            validation_result: ValidationResult {
-                sv: ledger::StepVotes {
-                    bitset: 12345,
-                    aggregate_signature: [1; 48].into(),
-                },
-                quorum: payload::QuorumType::Valid,
-                vote: payload::Vote::Valid([5; 32]),
-            },
+            validation_result,
             timestamp: 1_000_000,
         });
 
         assert_serialize(payload::Quorum {
             header: consensus_header.clone(),
             vote: payload::Vote::Valid([4; 32]),
-            validation: ledger::StepVotes {
-                bitset: 12345,
-                aggregate_signature: [1; 48].into(),
-            },
-            ratification: ledger::StepVotes {
-                bitset: 98765,
-                aggregate_signature: [2; 48].into(),
-            },
+            validation: ledger::StepVotes::new([1; 48], 12345),
+            ratification: ledger::StepVotes::new([2; 48], 98765),
         });
     }
 
