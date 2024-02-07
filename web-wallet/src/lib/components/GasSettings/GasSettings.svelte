@@ -1,8 +1,7 @@
 <script>
-	import { slide } from "svelte/transition";
 	import { Button } from "$lib/dusk/components";
 	import { GasControls, GasFee } from "$lib/components";
-	import { createEventDispatcher, onMount } from "svelte";
+	import { createEventDispatcher } from "svelte";
 
 	/** @type {number} */
 	export let limit;
@@ -26,20 +25,6 @@
 	let isExpanded = false;
 
 	const dispatch = createEventDispatcher();
-
-	onMount(() => {
-		let inputPrice = false;
-		let	inputLimit = false;
-		let validGasLimits = false;
-
-		inputPrice = !!(price >= priceLower && price <= limitUpper);
-
-		inputLimit = !!(limit >= limitLower && limit <= limitUpper);
-
-		validGasLimits = !!(inputPrice && inputLimit);
-
-		dispatch("checkGasLimits", validGasLimits);
-	});
 </script>
 
 <div class="gas-settings">
@@ -56,19 +41,17 @@
 			/>
 		</dd>
 	</dl>
-	{#if isExpanded}
-		<div in:slide|global class="gas-settings">
-			<GasControls
-				on:setGasSettings={(event) => { dispatch("setGasSettings", event.detail); }}
-				on:checkGasLimits={(event) => {dispatch("checkGasLimits", event.detail); }}
-				{limit}
-				{limitLower}
-				{limitUpper}
-				{price}
-				{priceLower}
-			/>
-		</div>
-	{/if}
+	<div class="gas-settings" style="display: { isExpanded ? "block" : "none" }">
+		<GasControls
+			on:setGasSettings={(event) => { dispatch("setGasSettings", event.detail); }}
+			on:checkGasLimits={(event) => { dispatch("checkGasLimits", event.detail); }}
+			{limit}
+			{limitLower}
+			{limitUpper}
+			{price}
+			{priceLower}
+		/>
+	</div>
 </div>
 
 <style lang="postcss">
