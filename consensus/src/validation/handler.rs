@@ -24,11 +24,8 @@ fn final_result(
     vote: Vote,
     quorum: QuorumType,
 ) -> HandleMsgOutput {
-    let msg = Message::from_validation_result(payload::ValidationResult {
-        sv,
-        vote,
-        quorum,
-    });
+    let p = payload::ValidationResult::new(sv, vote, quorum);
+    let msg = Message::from_validation_result(p);
 
     HandleMsgOutput::Ready(msg)
 }

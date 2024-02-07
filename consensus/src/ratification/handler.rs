@@ -29,7 +29,7 @@ pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
-    pub(crate) validation_result: ValidationResult,
+    validation_result: ValidationResult,
     pub(crate) curr_iteration: u8,
 }
 
@@ -105,7 +105,7 @@ impl MsgHandler for RatificationHandler {
                         ru,
                         iteration,
                         p.vote,
-                        p.validation_result.sv,
+                        *p.validation_result.sv(),
                         sv,
                     )));
                 }
@@ -237,7 +237,8 @@ impl RatificationHandler {
         round_committees: &RoundCommittees,
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
-        match result.quorum {
+        // TODO: Check all quorums
+        match result.quorum() {
             QuorumType::Valid | QuorumType::NoCandidate => {
                 if let Some(generator) = round_committees.get_generator(iter) {
                     if let Some(validation_committee) =
@@ -254,9 +255,8 @@ impl RatificationHandler {
                         verify_votes(
                             header,
                             StepName::Validation,
-                            &result.vote,
-                            result.sv.bitset,
-                            result.sv.aggregate_signature.inner(),
+                            result.vote(),
+                            result.sv(),
                             validation_committee,
                             &cfg,
                         )?;
@@ -271,6 +271,6 @@ impl RatificationHandler {
             }
             _ => {}
         }
-        Err(ConsensusError::InvalidValidation(result.quorum))
+        Err(ConsensusError::InvalidValidation(result.quorum()))
     }
 }

@@ -98,15 +98,7 @@ pub async fn verify_step_votes(
     let set = committees_set.read().await;
     let committee = set.get(&cfg).expect("committee to be created");
 
-    verify_votes(
-        header,
-        step_name,
-        vote,
-        sv.bitset,
-        sv.aggregate_signature.inner(),
-        committee,
-        &cfg,
-    )
+    verify_votes(header, step_name, vote, sv, committee, &cfg)
 }
 
 #[derive(Default)]
@@ -125,11 +117,12 @@ pub fn verify_votes(
     header: &ConsensusHeader,
     msg_type: StepName,
     vote: &Vote,
-    bitset: u64,
-    signature: &[u8; 48],
+    step_votes: &StepVotes,
     committee: &Committee,
     cfg: &sortition::Config,
 ) -> Result<QuorumResult, StepSigError> {
+    let bitset = step_votes.bitset;
+    let signature = step_votes.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
 
     let total = committee.total_occurrences(&sub_committee);

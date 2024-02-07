@@ -8,7 +8,7 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
-use node_data::ledger::{to_str, Signature, StepVotes};
+use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::SignInfo;
 use std::collections::BTreeMap;
@@ -95,15 +95,12 @@ impl Aggregator {
             signature = to_str(signature),
         );
 
-        let s = aggr_sign
+        let aggregate_signature = aggr_sign
             .aggregated_bytes()
             .expect("Signature to exist after aggregating");
         let bitset = committee.bits(cluster);
 
-        let step_votes = StepVotes {
-            bitset,
-            aggregate_signature: Signature::from(s),
-        };
+        let step_votes = StepVotes::new(aggregate_signature, bitset);
 
         let quorum_reached = match &vote {
             Vote::Valid(_) => total >= committee.super_majority_quorum(),
@@ -118,7 +115,7 @@ impl Aggregator {
                 target = quorum_target,
                 bitset,
                 step = msg_step,
-                signature = to_str(&s),
+                signature = to_str(&aggregate_signature),
             );
         }
 
