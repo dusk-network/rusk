@@ -11,7 +11,6 @@
     setKey,
     when,
   } from "lamb";
-  import { mdiCloseThick } from "@mdi/js";
 
   import { createCurrencyFormatter } from "$lib/dusk/currency";
   import { getLastTransactionHash } from "$lib/transactions";
@@ -26,7 +25,7 @@
     ContractStatusesList,
     Stake,
   } from "$lib/components";
-  import { ErrorDetails, Icon, Throbber } from "$lib/dusk/components";
+  import { Suspense } from "$lib/dusk/components";
 
   /** @type {ContractDescriptor} */
   export let descriptor;
@@ -128,52 +127,35 @@
 </script>
 
 {#key currentOperation}
-  {#await walletStore.getStakeInfo()}
-    <Throbber className="stake-throbber" />
-  {:then stakeInfo}
-    {@const statuses = getStatuses(stakeInfo, balance.maximum)}
-    {@const operations = isSyncOK
-      ? getOperations(descriptor.operations, stakeInfo)
-      : disableAllOperations(descriptor.operations)}
-    {#if isStakeOperation(currentOperation)}
-      <Stake
-        execute={executeOperations[currentOperation]}
-        flow={currentOperation}
-        formatter={duskFormatter}
-        {gasLimits}
-        {gasSettings}
-        on:operationChange
-        on:suppressStakingNotice
-        rewards={stakeInfo.reward}
-        spendable={balance.maximum}
-        staked={stakeInfo.amount}
-        {statuses}
-        {hideStakingNotice}
-      />
-    {:else}
-      <ContractStatusesList items={statuses} />
-      <ContractOperations items={operations} on:operationChange />
-    {/if}
-  {:catch stakeInfoError}
-    <div class="fetch-stake-info-error">
-      <Icon path={mdiCloseThick} size="large" />
-      <ErrorDetails
-        error={stakeInfoError}
-        summary="Failed to retrieve stake info"
-      />
-    </div>
-  {/await}
+  <Suspense
+    errorMessage="Failed to retrieve stake info"
+    errorVariant="details"
+    waitFor={walletStore.getStakeInfo()}
+  >
+    <svelte:fragment slot="success-content" let:result={stakeInfo}>
+      {@const statuses = getStatuses(stakeInfo, balance.maximum)}
+      {@const operations = isSyncOK
+        ? getOperations(descriptor.operations, stakeInfo)
+        : disableAllOperations(descriptor.operations)}
+      {#if isStakeOperation(currentOperation)}
+        <Stake
+          execute={executeOperations[currentOperation]}
+          flow={currentOperation}
+          formatter={duskFormatter}
+          {gasLimits}
+          {gasSettings}
+          on:operationChange
+          on:suppressStakingNotice
+          rewards={stakeInfo.reward}
+          spendable={balance.maximum}
+          staked={stakeInfo.amount}
+          {statuses}
+          {hideStakingNotice}
+        />
+      {:else}
+        <ContractStatusesList items={statuses} />
+        <ContractOperations items={operations} on:operationChange />
+      {/if}
+    </svelte:fragment>
+  </Suspense>
 {/key}
-
-<style lang="postcss">
-  :global(.stake-throbber) {
-    align-self: center;
-  }
-
-  .fetch-stake-info-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--default-gap);
-  }
-</style>

@@ -1,21 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 
+import { rejectAfter, resolveAfter } from "$lib/dusk/test-helpers";
+
 import { OperationResult } from "..";
 
 vi.useFakeTimers();
-
-/** @type {(delay: number) => Promise<any>} */
-const rejectAfter = (delay) =>
-  new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("some error")), delay);
-  });
-
-/** @type {(delay: number) => Promise<any>} */
-const resolveAfter = (delay) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, delay);
-  });
 
 describe("OperationResult", () => {
   const delay = 1000;
@@ -24,7 +14,7 @@ describe("OperationResult", () => {
 
   const baseProps = {
     onBeforeLeave,
-    operation: resolveAfter(delay),
+    operation: resolveAfter(delay, ""),
   };
 
   const baseOptions = {

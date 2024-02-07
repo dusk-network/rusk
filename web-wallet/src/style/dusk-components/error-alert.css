@@ -1,0 +1,14 @@
+.dusk-error-alert {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--default-gap);
+
+  &.dusk-error-large-gap {
+    gap: var(--large-gap);
+  }
+
+  &.dusk-error-small-gap {
+    gap: var(--small-gap);
+  }
+}

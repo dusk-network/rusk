@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { logo } from "$lib/dusk/icons";
-  import { Badge, ErrorDetails, Icon, Throbber } from "$lib/dusk/components";
+  import { Badge, Icon, Suspense } from "$lib/dusk/components";
   import {
     createFeeFormatter,
     createTransferFormatter,
@@ -68,11 +68,13 @@
       />
     {/if}
   </header>
-
-  {#await items}
-    <Throbber className="loading" />
-  {:then transactions}
-    <div class="transactions__lists">
+  <Suspense
+    className="transactions-list__container"
+    errorMessage="Error getting transactions"
+    errorVariant="details"
+    waitFor={items}
+  >
+    <svelte:fragment slot="success-content" let:result={transactions}>
       {#if transactions.length}
         {#each getOrderedTransactions(transactions) as transaction (transaction.id)}
           <dl class="transactions-list">
@@ -94,7 +96,10 @@
             {#if transaction.tx_type}
               <dt class="transactions-list__term">Type</dt>
               <dd class="transactions-list__datum">
-                <Badge className="w-100" text={transaction.tx_type} />
+                <Badge
+                  className="transactions-list__badge"
+                  text={transaction.tx_type}
+                />
               </dd>
             {/if}
             <dt class="transactions-list__term">Block</dt>
@@ -133,105 +138,98 @@
           <p>You have no transaction history</p>
         </div>
       {/if}
-    </div>
-  {:catch e}
-    <ErrorDetails summary="Error getting transactions" error={e} />
-  {/await}
+    </svelte:fragment>
+  </Suspense>
 </article>
 
 <style lang="postcss">
-  :global(.loading) {
-    margin-bottom: 1em;
-  }
   .transactions {
     border-radius: 1.25em;
     background: var(--surface-color);
     display: flex;
     flex-direction: column;
+    gap: var(--default-gap);
+    padding: 1.375em 1em;
 
     &__header {
-      padding: 1.375em 1em;
       & :global(h3) {
         line-height: 150%;
         margin-bottom: 0.625em;
       }
     }
 
-    &__lists {
-      display: flex;
-      flex-direction: column;
-      gap: 0.625em;
-    }
     :global(.transactions__footer-button) {
       width: 100%;
     }
-
-    :global(.loading) {
-      width: 100%;
-      align-self: center;
-    }
   }
-  .transactions-list {
-    display: grid;
-    grid-template-columns: max-content auto;
 
-    &__term {
-      background-color: var(--background-color-alt);
-      grid-column: 1;
-      line-height: 130%;
-      text-transform: capitalize;
-      padding: 0.3125em 0.625em 0.3125em 1.375em;
+  :global {
+    .transactions-list__container {
+      margin: 1em 0;
     }
 
-    &__datum {
-      grid-column: 2;
-      line-height: 150%;
-      padding: 0.312em 0.625em;
-      display: flex;
-      align-items: center;
-      gap: 0.625em;
-      font-family: var(--mono-font-family);
-      overflow: hidden;
+    .transactions-list {
+      display: grid;
+      grid-template-columns: max-content auto;
 
-      & samp {
-        display: block;
-        white-space: nowrap;
+      &__term {
+        background-color: var(--background-color-alt);
+        grid-column: 1;
+        line-height: 130%;
+        text-transform: capitalize;
+        padding: 0.3125em 0.625em 0.3125em 1.375em;
+      }
+
+      &__datum {
+        grid-column: 2;
+        line-height: 150%;
+        padding: 0.312em 0.625em;
+        display: flex;
+        align-items: center;
+        gap: 0.625em;
+        font-family: var(--mono-font-family);
         overflow: hidden;
+
+        & samp {
+          display: block;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+
+        &--hash {
+          justify-content: center;
+        }
       }
 
-      &--hash {
-        justify-content: center;
+      &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5em;
+        margin-bottom: 1em;
       }
-    }
 
-    &__empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5em;
-      margin-bottom: 1em;
-    }
+      &__badge {
+        flex: 1;
+      }
 
-    :global(&__badge) {
-      flex: 1;
-    }
+      & dt:first-of-type,
+      & dd:first-of-type {
+        padding-top: 1em;
+      }
 
-    & dt:first-of-type,
-    & dd:first-of-type {
-      padding-top: 1em;
-    }
+      & dt:last-of-type,
+      & dd:last-of-type {
+        padding-bottom: 1em;
+      }
 
-    & dt:last-of-type,
-    & dd:last-of-type {
-      padding-bottom: 1em;
-    }
+      & dt:first-of-type {
+        border-top-right-radius: 2em;
+      }
 
-    & dt:first-of-type {
-      border-top-right-radius: 2em;
-    }
-
-    & dt:last-of-type {
-      border-bottom-right-radius: 2em;
+      & dt:last-of-type {
+        border-bottom-right-radius: 2em;
+      }
     }
   }
 </style>

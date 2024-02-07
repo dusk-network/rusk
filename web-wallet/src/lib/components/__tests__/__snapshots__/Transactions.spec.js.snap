@@ -33,7 +33,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
       </header>
        
       <div
-        class="transactions__lists s-j8yKepzodVZ-"
+        class="dusk-suspense transactions-list__container"
       >
         <dl
           class="transactions-list s-j8yKepzodVZ-"
@@ -71,7 +71,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               STAKE
             </span>
@@ -178,7 +178,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
@@ -259,7 +259,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
@@ -305,7 +305,9 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
           </dd>
         </dl>
         
+        
       </div>
+      <!--&lt;Suspense&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
@@ -345,7 +347,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
       </header>
        
       <div
-        class="transactions__lists s-j8yKepzodVZ-"
+        class="dusk-suspense transactions-list__container"
       >
         <dl
           class="transactions-list s-j8yKepzodVZ-"
@@ -383,7 +385,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               STAKE
             </span>
@@ -455,7 +457,9 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
           </dd>
         </dl>
         
+        
       </div>
+      <!--&lt;Suspense&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>

@@ -111,26 +111,32 @@ exports[`Dashboard > should render the transactions page 1`] = `
         <!--&lt;AppAnchorButton&gt;-->
       </header>
        
-      <details
-        class="dusk-error-details dusk-error-details__details"
+      <div
+        class="dusk-suspense transactions-list__container"
       >
-        <summary
-          class="dusk-error-details__summary"
+        <details
+          class="dusk-error-details dusk-error-details__details dusk-suspense__error"
         >
-          Error getting transactions
-        </summary>
-         
-        <pre
-          class="dusk-error-details__error"
-        >
-          			
-          No wallet instance to sync
-          
+          <summary
+            class="dusk-error-details__summary"
+          >
+            Error getting transactions
+          </summary>
+           
+          <pre
+            class="dusk-error-details__error"
+          >
+            			
+            No wallet instance to sync
+            
 		
-        </pre>
-      </details>
-      
-      <!--&lt;ErrorDetails&gt;-->
+          </pre>
+        </details>
+        
+        <!--&lt;ErrorDetails&gt;-->
+         
+      </div>
+      <!--&lt;Suspense&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>

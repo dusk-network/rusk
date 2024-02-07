@@ -1,0 +1,16 @@
+.dusk-suspense {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: var(--default-gap);
+
+  &.dusk-suspense--large-gap {
+    gap: var(--large-gap);
+  }
+
+  &.dusk-suspense--small-gap {
+    gap: var(--small-gap);
+  }
+}

@@ -1,0 +1,81 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ErrorAlert > should pass additional class names and attributes to the rendered element 1`] = `
+<div
+  class="dusk-error-alert foo bar"
+  data-foo="baz"
+  id="some-id"
+>
+  <svg
+    class="dusk-icon dusk-icon--size--large dusk-error-alert__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+   
+  <details
+    class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
+  >
+    <summary
+      class="dusk-error-details__summary"
+    >
+      Some error summary
+    </summary>
+     
+    <pre
+      class="dusk-error-details__error"
+    >
+      			
+      some error message
+      
+		
+    </pre>
+  </details>
+  
+  <!--&lt;ErrorDetails&gt;-->
+</div>
+`;
+
+exports[`ErrorAlert > should render the \`ErrorAlert\` component 1`] = `
+<div
+  class="dusk-error-alert"
+>
+  <svg
+    class="dusk-icon dusk-icon--size--large dusk-error-alert__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+   
+  <details
+    class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
+  >
+    <summary
+      class="dusk-error-details__summary"
+    >
+      Some error summary
+    </summary>
+     
+    <pre
+      class="dusk-error-details__error"
+    >
+      			
+      some error message
+      
+		
+    </pre>
+  </details>
+  
+  <!--&lt;ErrorDetails&gt;-->
+</div>
+`;

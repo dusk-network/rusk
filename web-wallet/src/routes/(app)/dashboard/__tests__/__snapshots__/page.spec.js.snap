@@ -388,26 +388,32 @@ exports[`Dashboard > should render a card when there is an error getting transac
         <!--&lt;AppAnchorButton&gt;-->
       </header>
        
-      <details
-        class="dusk-error-details dusk-error-details__details"
+      <div
+        class="dusk-suspense transactions-list__container"
       >
-        <summary
-          class="dusk-error-details__summary"
+        <details
+          class="dusk-error-details dusk-error-details__details dusk-suspense__error"
         >
-          Error getting transactions
-        </summary>
-         
-        <pre
-          class="dusk-error-details__error"
-        >
-          			
-          some error message
-          
+          <summary
+            class="dusk-error-details__summary"
+          >
+            Error getting transactions
+          </summary>
+           
+          <pre
+            class="dusk-error-details__error"
+          >
+            			
+            some error message
+            
 		
-        </pre>
-      </details>
-      
-      <!--&lt;ErrorDetails&gt;-->
+          </pre>
+        </details>
+        
+        <!--&lt;ErrorDetails&gt;-->
+         
+      </div>
+      <!--&lt;Suspense&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
@@ -803,28 +809,39 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         <!--&lt;AppAnchorButton&gt;-->
       </header>
        
-      <svg
-        class="dusk-throbber loading"
-        height="64px"
-        role="progressbar"
-        viewBox="0 0 128 128"
-        width="64px"
+      <div
+        class="dusk-suspense transactions-list__container"
       >
-        <g>
-          <path
-            d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
-          />
-          <animatetransform
-            attributeName="transform"
-            dur="1800ms"
-            from="0 64 64"
-            repeatCount="indefinite"
-            to="360 64 64"
-            type="rotate"
-          />
-        </g>
-      </svg>
-      <!--&lt;Throbber&gt;-->
+        <svg
+          class="dusk-throbber dusk-suspense__throbber"
+          height="64px"
+          role="progressbar"
+          viewBox="0 0 128 128"
+          width="64px"
+        >
+          <g>
+            <path
+              d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+            />
+            <animatetransform
+              attributeName="transform"
+              dur="1800ms"
+              from="0 64 64"
+              repeatCount="indefinite"
+              to="360 64 64"
+              type="rotate"
+            />
+          </g>
+        </svg>
+        <!--&lt;Throbber&gt;-->
+         
+        <span
+          class="dusk-suspense__pending-message"
+        >
+          
+        </span>
+      </div>
+      <!--&lt;Suspense&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
@@ -1221,7 +1238,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       </header>
        
       <div
-        class="transactions__lists s-j8yKepzodVZ-"
+        class="dusk-suspense transactions-list__container"
       >
         <dl
           class="transactions-list s-j8yKepzodVZ-"
@@ -1259,7 +1276,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               STAKE
             </span>
@@ -1366,7 +1383,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
@@ -1447,7 +1464,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
@@ -1528,7 +1545,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
@@ -1635,7 +1652,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="transactions-list__datum s-j8yKepzodVZ-"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral w-100"
+              class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
@@ -1681,7 +1698,9 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           </dd>
         </dl>
         
+        
       </div>
+      <!--&lt;Suspense&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>

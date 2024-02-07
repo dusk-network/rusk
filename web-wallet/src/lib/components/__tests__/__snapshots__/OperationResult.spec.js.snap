@@ -2,46 +2,51 @@
 
 exports[`OperationResult > should accept a custom message for the failure state 1`] = `
 <div
-  class="operation-result s-iQe6V4SteEBR"
+  class="dusk-suspense dusk-suspense--large-gap operation-result"
 >
-  <svg
-    class="dusk-icon dusk-icon--size--large"
-    role="graphics-symbol"
-    viewBox="0 0 24 24"
+  <div
+    class="dusk-error-alert dusk-error-alert--large-gap dusk-suspense__error"
   >
-    <path
-      d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
-    />
-  </svg>
-  
-  <!--&lt;Icon&gt;-->
-   
-  <details
-    class="dusk-error-details dusk-error-details__details"
-  >
-    <summary
-      class="dusk-error-details__summary"
+    <svg
+      class="dusk-icon dusk-icon--size--large dusk-error-alert__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
     >
-      Transaction failed
-    </summary>
+      <path
+        d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
      
-    <pre
-      class="dusk-error-details__error"
+    <details
+      class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
     >
-      			
-      some error
-      
+      <summary
+        class="dusk-error-details__summary"
+      >
+        Transaction failed
+      </summary>
+       
+      <pre
+        class="dusk-error-details__error"
+      >
+        			
+        some error
+        
 		
-    </pre>
-  </details>
-  
-  <!--&lt;ErrorDetails&gt;-->
-   
+      </pre>
+    </details>
+    
+    <!--&lt;ErrorDetails&gt;-->
+  </div>
+  <!--&lt;ErrorAlert&gt;-->
    
   <a
     aria-disabled="false"
     class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
     href="/some-base-path/dashboard"
+    slot="error-extra-content"
   >
     <span
       class="dusk-anchor-button__text"
@@ -58,10 +63,10 @@ exports[`OperationResult > should accept a custom message for the failure state 
 
 exports[`OperationResult > should accept a custom message for the pending state 1`] = `
 <div
-  class="operation-result s-iQe6V4SteEBR"
+  class="dusk-suspense dusk-suspense--large-gap operation-result"
 >
   <svg
-    class="dusk-throbber"
+    class="dusk-throbber dusk-suspense__throbber"
     height="64px"
     role="progressbar"
     viewBox="0 0 128 128"
@@ -84,7 +89,7 @@ exports[`OperationResult > should accept a custom message for the pending state 
   <!--&lt;Throbber&gt;-->
    
   <span
-    class="s-iQe6V4SteEBR"
+    class="dusk-suspense__pending-message"
   >
     Transaction pending
   </span>
@@ -93,7 +98,7 @@ exports[`OperationResult > should accept a custom message for the pending state 
 
 exports[`OperationResult > should accept a custom message for the successful state 1`] = `
 <div
-  class="operation-result s-iQe6V4SteEBR"
+  class="dusk-suspense dusk-suspense--large-gap operation-result"
 >
   <svg
     class="dusk-icon dusk-icon--size--large"
@@ -134,10 +139,10 @@ exports[`OperationResult > should accept a custom message for the successful sta
 
 exports[`OperationResult > should be able to render the \`OperationResult\` component in a pending state 1`] = `
 <div
-  class="operation-result s-iQe6V4SteEBR"
+  class="dusk-suspense dusk-suspense--large-gap operation-result"
 >
   <svg
-    class="dusk-throbber"
+    class="dusk-throbber dusk-suspense__throbber"
     height="64px"
     role="progressbar"
     viewBox="0 0 128 128"
@@ -160,7 +165,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` comp
   <!--&lt;Throbber&gt;-->
    
   <span
-    class="s-iQe6V4SteEBR"
+    class="dusk-suspense__pending-message"
   >
     
   </span>
@@ -169,46 +174,51 @@ exports[`OperationResult > should be able to render the \`OperationResult\` comp
 
 exports[`OperationResult > should be able to render the \`OperationResult\` in a failure state 1`] = `
 <div
-  class="operation-result s-iQe6V4SteEBR"
+  class="dusk-suspense dusk-suspense--large-gap operation-result"
 >
-  <svg
-    class="dusk-icon dusk-icon--size--large"
-    role="graphics-symbol"
-    viewBox="0 0 24 24"
+  <div
+    class="dusk-error-alert dusk-error-alert--large-gap dusk-suspense__error"
   >
-    <path
-      d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
-    />
-  </svg>
-  
-  <!--&lt;Icon&gt;-->
-   
-  <details
-    class="dusk-error-details dusk-error-details__details"
-  >
-    <summary
-      class="dusk-error-details__summary"
+    <svg
+      class="dusk-icon dusk-icon--size--large dusk-error-alert__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
     >
-      Operation failed
-    </summary>
+      <path
+        d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
      
-    <pre
-      class="dusk-error-details__error"
+    <details
+      class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
     >
-      			
-      some error
-      
+      <summary
+        class="dusk-error-details__summary"
+      >
+        Operation failed
+      </summary>
+       
+      <pre
+        class="dusk-error-details__error"
+      >
+        			
+        some error
+        
 		
-    </pre>
-  </details>
-  
-  <!--&lt;ErrorDetails&gt;-->
-   
+      </pre>
+    </details>
+    
+    <!--&lt;ErrorDetails&gt;-->
+  </div>
+  <!--&lt;ErrorAlert&gt;-->
    
   <a
     aria-disabled="false"
     class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
     href="/some-base-path/dashboard"
+    slot="error-extra-content"
   >
     <span
       class="dusk-anchor-button__text"
@@ -225,7 +235,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
 
 exports[`OperationResult > should be able to render the \`OperationResult\` in a successful state 1`] = `
 <div
-  class="operation-result s-iQe6V4SteEBR"
+  class="dusk-suspense dusk-suspense--large-gap operation-result"
 >
   <svg
     class="dusk-icon dusk-icon--size--large"

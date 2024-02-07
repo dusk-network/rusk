@@ -8,12 +8,14 @@
 @import url("./dusk-components/button.css");
 @import url("./dusk-components/card.css");
 @import url("./dusk-components/checkbox.css");
+@import url("./dusk-components/error-alert.css");
 @import url("./dusk-components/error-details.css");
 @import url("./dusk-components/mnemonic.css");
 @import url("./dusk-components/icon.css");
 @import url("./dusk-components/progress-bar.css");
 @import url("./dusk-components/select.css");
 @import url("./dusk-components/stepper.css");
+@import url("./dusk-components/suspense.css");
 @import url("./dusk-components/switch.css");
 @import url("./dusk-components/tabs.css");
 @import url("./dusk-components/textbox.css");
