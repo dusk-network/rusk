@@ -68,6 +68,12 @@
 	/** @type {boolean} */
 	let validGasLimits = false;
 
+	/** @type {number} */
+	let gasPrice;
+
+	/** @type {number} */
+	let gasLimit;
+
 	/** @type {Record<StakeType, string>} */
 	const overviewLabels = {
 		"stake": "Amount",
@@ -92,7 +98,7 @@
 		}
 	});
 
-	$: luxFee = gasSettings.gasLimit * gasSettings.gasPrice;
+	$: luxFee = gasLimit * gasPrice;
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
 	$: minStake = maxSpendable > 0 ? Math.min(defaultMinStake, maxSpendable) : defaultMinStake;
@@ -152,7 +158,10 @@
 					limitUpper={gasSettings.gasLimitUpper}
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
-					on:setGasSettings
+					on:setGasSettings={(event) => {
+						gasPrice = event.detail.price;
+						gasLimit = event.detail.limit;
+					}}
 					on:checkGasLimits={(event) => {
 						validGasLimits = event.detail;
 						checkAmountValid();
@@ -200,7 +209,10 @@
 						limitUpper={gasSettings.gasLimitUpper}
 						price={gasSettings.gasPrice}
 						priceLower={gasSettings.gasPriceLower}
-						on:setGasSettings
+						on:setGasSettings={(event) => {
+							gasPrice = event.detail.price;
+							gasLimit = event.detail.limit;
+						}}
 						on:checkGasLimits={(event) => {
 							validGasLimits = event.detail;
 							checkAmountValid();
@@ -219,7 +231,7 @@
 			<OperationResult
 				errorMessage="Transaction failed"
 				onBeforeLeave={resetOperation}
-				operation={flow === "stake" ? execute(stakeAmount) : execute()}
+				operation={flow === "stake" ? execute(stakeAmount, gasLimit, gasPrice) : execute(gasLimit, gasPrice)}
 				pendingMessage="Processing transaction"
 				successMessage="Transaction completed"
 			>

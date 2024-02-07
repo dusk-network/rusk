@@ -25,7 +25,7 @@
 		ScanQR
 	} from "$lib/components";
 
-	/** @type {(to: string, amount: number) => Promise<string>} */
+	/** @type {(to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<string>} */
 	export let execute;
 
 	/** @type {(amount: number) => string} */
@@ -61,6 +61,12 @@
 	/** @type {boolean} */
 	let validGasLimits = false;
 
+	/** @type {number} */
+	let gasPrice;
+
+	/** @type {number} */
+	let gasLimit;
+
 	const checkAmountValid = async () => {
 		await tick();
 		isNextButtonDisabled = !(amountInput?.checkValidity() && validGasLimits
@@ -75,7 +81,7 @@
 		checkAmountValid();
 	});
 
-	$: luxFee = gasSettings.gasLimit * gasSettings.gasPrice;
+	$: luxFee = gasLimit * gasPrice;
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
 </script>
@@ -135,7 +141,10 @@
 					limitUpper={gasSettings.gasLimitUpper}
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
-					on:setGasSettings
+					on:setGasSettings={(event) => {
+						gasPrice = event.detail.price;
+						gasLimit = event.detail.limit;
+					}}
 					on:checkGasLimits={(event) => {
 						validGasLimits = event.detail;
 						checkAmountValid();
@@ -228,7 +237,7 @@
 			<OperationResult
 				errorMessage="Transaction failed"
 				onBeforeLeave={resetOperation}
-				operation={execute(address, amount)}
+				operation={execute(address, amount, gasPrice, gasLimit)}
 				pendingMessage="Processing transaction"
 				successMessage="Transaction completed"
 			>
