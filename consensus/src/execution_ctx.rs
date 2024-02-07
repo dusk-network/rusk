@@ -137,22 +137,23 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         loop {
             match time::timeout_at(deadline, inbound.recv()).await {
                 // Inbound message event
-                Ok(result) => {
-                    if let Ok(msg) = result {
-                        if let Some(step_result) =
-                            self.process_inbound_msg(phase.clone(), msg).await
-                        {
-                            self.report_elapsed_time().await;
-                            return Ok(step_result);
-                        }
+                Ok(Ok(msg)) => {
+                    if let Some(step_result) =
+                        self.process_inbound_msg(phase.clone(), msg).await
+                    {
+                        self.report_elapsed_time().await;
+                        return Ok(step_result);
                     }
+                }
+                Ok(Err(e)) => {
+                    warn!("Error while receiving msg: {e}");
                 }
                 // Timeout event. Phase could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     info!(event = "timeout-ed");
 
-                    return self.process_timeout_event(phase.clone()).await;
+                    return self.process_timeout_event(phase).await;
                 }
             }
         }
