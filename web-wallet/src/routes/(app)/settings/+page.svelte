@@ -61,6 +61,8 @@
 	/** @type {Error | null} */
 	let resetError = null;
 
+	let validGasSettings = false;
+
 	$: ({ isSyncing } = $walletStore);
 </script>
 
@@ -140,6 +142,9 @@
 
 							return store;
 						});
+					}}
+					on:checkGasLimits={(event) => {
+						validGasSettings = event.detail;
 					}}
 					limit={gasLimit}
 					limitLower={gasLimitLower}
@@ -223,6 +228,7 @@
 <div class="settings-actions">
 	<AnchorButton
 		href="/dashboard"
+		disabled={!validGasSettings}
 		variant="tertiary"
 		icon={{ path: mdiArrowLeft }}
 		text="Back"/>

@@ -2,13 +2,6 @@
 
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
-	import {
-		always,
-		clamp,
-		clampWithin,
-		compose,
-		when
-	} from "lamb";
 
 	import { Textbox } from "$lib/dusk/components";
 
@@ -29,51 +22,25 @@
 
 	const dispatch = createEventDispatcher();
 
-	// browsers may allow input of invalid characters
-	const toNumber = compose(when(isNaN, always(0)), n => parseInt(n, 10));
-	const toValidLimit = compose(clampWithin(limitLower, limitUpper), toNumber);
-
-	/**
-	 * @param {Number} n
-	 * @param {Number} upperLimit
-	 * @returns {Number}
-	 */
-	const toValidPrice = (n, upperLimit) => clamp(toNumber(n), priceLower, upperLimit);
-
-	function dispatchGasChange () {
-		const validLimit = toValidLimit(limit);
-
-		dispatch("setGasSettings", {
-			limit: validLimit,
-			price: toValidPrice(price, validLimit)
-		});
-
-		checkGasLimits();
-	}
-
-	function handleLimitChange () {
-		const newLimit = toValidLimit(limit);
-
-		if (price > newLimit) {
-			price = toValidPrice(price, newLimit);
-		}
-
-		dispatchGasChange();
-		checkGasLimits();
-	}
-
 	function checkGasLimits () {
 		let inputPrice = false;
 		let	inputLimit = false;
 		let validGasLimits = false;
 
-		inputPrice = !!(price >= priceLower && price <= toValidLimit(limit));
-
-		inputLimit = !!(limit >= limitLower && limit <= limitUpper);
-
-		validGasLimits = !!(inputPrice && inputLimit);
+		if (typeof price === "number" && typeof limit === "number") {
+			inputPrice = !!(price >= priceLower && price <= limit);
+			inputLimit = !!(limit >= limitLower && limit <= limitUpper);
+			validGasLimits = !!(inputPrice && inputLimit);
+		}
 
 		dispatch("checkGasLimits", validGasLimits);
+
+		if (validGasLimits) {
+			dispatch("setGasSettings", {
+				limit: limit,
+				price: price
+			});
+		}
 	}
 
 	onMount(() => {
@@ -88,10 +55,9 @@
 	<Textbox
 		bind:value={price}
 		className="gas-control__input"
-		max={toValidLimit(limit)}
+		max={limit}
 		min={priceLower}
-		on:blur={() => { price = toValidPrice(price, limit); }}
-		on:input={dispatchGasChange}
+		on:input={checkGasLimits}
 		required
 		type="number"
 	/>
@@ -106,8 +72,7 @@
 		className="gas-control__input"
 		max={limitUpper}
 		min={limitLower}
-		on:blur={() => { limit = toValidLimit(limit); }}
-		on:input={handleLimitChange}
+		on:input={checkGasLimits}
 		required
 		type="number"
 	/>
