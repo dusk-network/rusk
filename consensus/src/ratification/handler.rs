@@ -213,9 +213,9 @@ impl RatificationHandler {
         Message::new_quorum(quorum)
     }
 
-    pub(crate) fn reset(&mut self, iteration: u8) {
-        self.validation_result = Default::default();
-        self.curr_iteration = iteration;
+    pub(crate) fn reset(&mut self, iter: u8, validation: ValidationResult) {
+        self.validation_result = validation;
+        self.curr_iteration = iter;
     }
 
     pub(crate) fn validation_result(&self) -> &ValidationResult {

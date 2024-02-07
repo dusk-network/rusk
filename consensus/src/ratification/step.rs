@@ -96,7 +96,6 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         iteration: u8,
     ) {
         let mut handler = self.handler.lock().await;
-        handler.reset(iteration);
 
         // The Validation output must be the vote to cast on the Ratification.
         // There are these possible outputs:
@@ -104,9 +103,9 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         //  - (unsupported) Quorum on Invalid Candidate
         //  - Quorum on Timeout (NilQuorum)
         //  - No Quorum (Validation step time-ed out)
-
-        if let Payload::ValidationResult(p) = &msg.payload {
-            handler.validation_result = p.as_ref().clone();
+        match msg.payload {
+            Payload::ValidationResult(p) => handler.reset(iteration, *p),
+            _ => handler.reset(iteration, Default::default()),
         }
 
         tracing::debug!(
