@@ -43,8 +43,6 @@ pub struct StakeData {
     pub reward: u64,
     /// The signature counter to prevent replay.
     pub counter: u64,
-    /// Flag that indicate if the current amount has ever received a reward.
-    pub rewarded: bool,
 }
 
 impl StakeData {
@@ -77,7 +75,6 @@ impl StakeData {
             amount,
             reward,
             counter: 0,
-            rewarded: false,
         }
     }
 
@@ -115,10 +112,6 @@ impl StakeData {
     /// Increases the held reward by the given `value`.
     pub fn increase_reward(&mut self, value: u64) {
         self.reward += value;
-
-        if self.amount.is_some() {
-            self.rewarded = true;
-        }
     }
 
     /// Removes the total [`amount`] staked.
@@ -126,7 +119,6 @@ impl StakeData {
     /// # Panics
     /// If the stake has no amount.
     pub fn remove_amount(&mut self) -> (u64, BlockHeight) {
-        self.rewarded = false;
         self.amount
             .take()
             .expect("Can't withdraw non-existing amount!")

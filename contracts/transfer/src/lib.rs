@@ -15,7 +15,7 @@ mod error;
 mod state;
 mod tree;
 
-use rusk_abi::{ContractId, STAKE_CONTRACT};
+use rusk_abi::ContractId;
 use state::TransferState;
 
 #[no_mangle]
@@ -160,18 +160,6 @@ unsafe fn add_module_balance(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(module, value)| {
         assert_external_caller();
         STATE.add_balance(module, value)
-    })
-}
-
-#[no_mangle]
-unsafe fn sub_module_balance(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(module, value)| {
-        if rusk_abi::caller() != STAKE_CONTRACT {
-            panic!("Can only be called by the stake contract!")
-        }
-        STATE
-            .sub_balance(&module, value)
-            .expect("Cannot subtract balance")
     })
 }
 
