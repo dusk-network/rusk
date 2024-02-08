@@ -7,7 +7,7 @@ const createEmptyObject = () => ({});
 /** @type {import('./$types').LayoutLoad} */
 export async function load ({ fetch }) {
 	return {
-		currentPrice: fetch("https://api.dusk.network/v1/quote")
+		currentPrice: await fetch("https://api.dusk.network/v1/quote")
 			.then(failureToRejection)
 			.then(res => res.json())
 			.then(getPath("market_data.current_price"))

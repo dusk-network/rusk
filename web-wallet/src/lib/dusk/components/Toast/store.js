@@ -34,7 +34,7 @@ function addToast (type, message, icon) {
 
 /**
  * @param {string} id
- * @param {NodeJS.Timeout} timeout
+ * @param {ReturnType<typeof setTimeout>} timeout
  */
 function deleteToast (id, timeout) {
 	clearTimeout(timeout);

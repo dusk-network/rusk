@@ -70,7 +70,7 @@ describe("Dashboard Layout", () => {
 			expect(fetchMock).toHaveBeenCalledTimes(1);
 			expect(fetchMock).toHaveBeenCalledWith("https://api.dusk.network/v1/quote");
 
-			expect(result.currentPrice).resolves.toStrictEqual(currentPrice.market_data.current_price);
+			expect(result.currentPrice).toStrictEqual(currentPrice.market_data.current_price);
 		});
 
 		it("should return a promise that resolves with an empty object if the expected properties in the returned data are missing", async () => {
@@ -90,8 +90,8 @@ describe("Dashboard Layout", () => {
 			expect(fetchMock).toHaveBeenCalledTimes(2);
 			expect(fetchMock).toHaveBeenNthCalledWith(1, "https://api.dusk.network/v1/quote");
 			expect(fetchMock).toHaveBeenNthCalledWith(2, "https://api.dusk.network/v1/quote");
-			expect(result1.currentPrice).resolves.toStrictEqual({});
-			expect(result2.currentPrice).resolves.toStrictEqual({});
+			expect(result1.currentPrice).toStrictEqual({});
+			expect(result2.currentPrice).toStrictEqual({});
 		});
 
 		it("shoud return a promise that resolves with an empty object if the fetch Response status is not \"ok\"", async () => {
@@ -102,7 +102,7 @@ describe("Dashboard Layout", () => {
 			expect(fetchMock).toHaveBeenCalledTimes(1);
 			expect(fetchMock).toHaveBeenCalledWith("https://api.dusk.network/v1/quote");
 
-			expect(result.currentPrice).resolves.toStrictEqual({});
+			expect(result.currentPrice).toStrictEqual({});
 		});
 
 		it("shoud return a promise that resolves with an empty object if the fetch fails or the Response contains invalid JSON", async () => {
@@ -116,8 +116,8 @@ describe("Dashboard Layout", () => {
 			expect(fetchMock).toHaveBeenCalledTimes(2);
 			expect(fetchMock).toHaveBeenNthCalledWith(1, "https://api.dusk.network/v1/quote");
 			expect(fetchMock).toHaveBeenNthCalledWith(2, "https://api.dusk.network/v1/quote");
-			expect(result1.currentPrice).resolves.toStrictEqual({});
-			expect(result2.currentPrice).resolves.toStrictEqual({});
+			expect(result1.currentPrice).toStrictEqual({});
+			expect(result2.currentPrice).toStrictEqual({});
 		});
 
 		/* eslint-enable no-extra-parens */

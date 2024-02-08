@@ -22,6 +22,7 @@ vi.mock("$lib/stores", async importOriginal => {
 	return {
 		...original,
 		walletStore: {
+			// @ts-ignore
 			...(await vi.importMock("$lib/stores/walletStore")).default,
 			...mockedWalletStore
 		}
