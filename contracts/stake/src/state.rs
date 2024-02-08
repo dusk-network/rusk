@@ -207,6 +207,16 @@ impl StakeState {
             .get_stake_mut(public_key)
             .expect("The stake to slash should exist");
 
+        let (stake_amt, eligibility) = stake
+            .amount
+            .as_mut()
+            .expect("The stake to slash should be active");
+
+        if !stake.rewarded {
+            *eligibility = next_epoch(rusk_abi::block_height());
+            return;
+        }
+
         let staker_funds = stake.reward + stake.amount.unwrap_or_default().0;
 
         // Cannot slash more than the staker funds
@@ -219,10 +229,6 @@ impl StakeState {
             // slash from the stake amount.
             let remaining_slash = to_slash - stake.reward;
             stake.reward = 0;
-            let (stake_amt, _) = stake
-                .amount
-                .as_mut()
-                .expect("Trying to slash more than slashable_amount");
 
             *stake_amt -= remaining_slash;
 
