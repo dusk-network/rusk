@@ -35,7 +35,7 @@ impl Committee {
     /// It executes deterministic sortition algorithm.
     pub fn new(provisioners: &Provisioners, cfg: &sortition::Config) -> Self {
         // Generate committee using deterministic sortition.
-        let res = provisioners.create_committee(cfg);
+        let extracted = provisioners.create_committee(cfg);
 
         let quorum = (cfg.committee_size() as f64
             * config::CONSENSUS_QUORUM_THRESHOLD)
@@ -51,7 +51,7 @@ impl Committee {
             excluded: cfg.exclusion().copied(),
         };
 
-        for member_key in res {
+        for member_key in extracted {
             *committee.members.entry(member_key).or_insert(0) += 1;
         }
 
