@@ -27,6 +27,7 @@ vi.spyOn(global, "btoa").mockImplementation(data => Buffer.from(data, "binary").
 // Adding missing bits in JSDOM
 
 vi.mock("./src/lib/dusk/mocks/IntersectionObserver");
+vi.mock("./src/lib/dusk/mocks/ResizeObserver");
 
 global.IntersectionObserver = IntersectionObserver;
 global.ResizeObserver = ResizeObserver;

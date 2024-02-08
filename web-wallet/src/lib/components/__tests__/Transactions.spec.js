@@ -9,12 +9,6 @@ import { createFeeFormatter, createTransferFormatter } from "$lib/dusk/currency"
 
 import Transactions from "../Transactions/Transactions.svelte";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-	observe: vi.fn(),
-	unobserve: vi.fn(),
-	disconnect: vi.fn()
-}));
-
 vi.useFakeTimers();
 
 describe("Transactions", () => {
