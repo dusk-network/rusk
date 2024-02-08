@@ -639,6 +639,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .unwrap_or_default()
             .average()
             .unwrap_or(MIN_STEP_TIMEOUT)
+            .max(MIN_STEP_TIMEOUT)
+            .min(MAX_STEP_TIMEOUT)
     }
 }
 
