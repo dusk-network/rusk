@@ -51,7 +51,7 @@
 	  RUSK_STATE_PATH=${RUSK_STATE_PATH} cargo r --release -p rusk -- recovery-state --init $GENESIS_PATH
 	  echo "starting node $ID ..."
     echo "${KEYS_PATH}/node_$ID.keys"
-	  RUSK_STATE_PATH=${RUSK_STATE_PATH} ./target/release/rusk --kadcast-bootstrap "$BOOTSTRAP_ADDR" --kadcast-public-address "$PUBLIC_ADDR" --log-type="json" --log-level="debug" --log-filter="dusk_consensus=debug"  --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="$NODE_FOLDER" --http-listen-addr "$WS_LISTEN_ADDR" --delay-on-resp-msg=10 > "${TEMPD}/node_${ID}.log" &
+	  RUSK_STATE_PATH=${RUSK_STATE_PATH} ./target/release/rusk --kadcast-bootstrap "$BOOTSTRAP_ADDR" --kadcast-public-address "$PUBLIC_ADDR" --log-type="json" --log-level="info" --log-filter="dusk_consensus=debug"  --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="$NODE_FOLDER" --http-listen-addr "$WS_LISTEN_ADDR" --delay-on-resp-msg=10 > "${TEMPD}/node_${ID}.log" &
 	}
 
 	## Use ~/.cargo/bin/tokio-console --retain-for 0s http://127.0.0.1:10000 to connect console to first node
