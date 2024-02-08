@@ -360,9 +360,9 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         elapsed: Duration,
     ) -> Result<(), Error> {
         let db_key = match step_name {
-            StepName::Proposal => &MD_AVG_PROPOSAL[..],
-            StepName::Validation => &MD_AVG_VALIDATION[..],
-            StepName::Ratification => &MD_AVG_RATIFICATION[..],
+            StepName::Proposal => MD_AVG_PROPOSAL,
+            StepName::Validation => MD_AVG_VALIDATION,
+            StepName::Ratification => MD_AVG_RATIFICATION,
         };
 
         let db = self.db.read().await;
