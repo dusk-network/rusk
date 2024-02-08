@@ -23,7 +23,6 @@ use node_data::message::{
 };
 
 use crate::user::committee::Committee;
-use crate::user::sortition;
 
 pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
@@ -38,16 +37,13 @@ impl MsgHandler for RatificationHandler {
     fn verify(
         &self,
         msg: &Message,
-        ru: &RoundUpdate,
         iteration: u8,
-        _committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
             p.verify_signature()?;
             Self::verify_validation_result(
                 &msg.header,
-                ru,
                 iteration,
                 round_committees,
                 &p.validation_result,
@@ -232,7 +228,6 @@ impl RatificationHandler {
     /// Verifies either valid or nil quorum of validation output
     fn verify_validation_result(
         header: &ConsensusHeader,
-        ru: &RoundUpdate,
         iter: u8,
         round_committees: &RoundCommittees,
         result: &ValidationResult,
@@ -240,33 +235,20 @@ impl RatificationHandler {
         // TODO: Check all quorums
         match result.quorum() {
             QuorumType::Valid | QuorumType::NoCandidate => {
-                if let Some(generator) = round_committees.get_generator(iter) {
-                    if let Some(validation_committee) =
-                        round_committees.get_validation_committee(iter)
-                    {
-                        let cfg = sortition::Config::new(
-                            ru.seed(),
-                            ru.round,
-                            iter,
-                            StepName::Validation,
-                            Some(generator),
-                        );
+                if let Some(validation_committee) =
+                    round_committees.get_validation_committee(iter)
+                {
+                    verify_votes(
+                        header,
+                        StepName::Validation,
+                        result.vote(),
+                        result.sv(),
+                        validation_committee,
+                    )?;
 
-                        verify_votes(
-                            header,
-                            StepName::Validation,
-                            result.vote(),
-                            result.sv(),
-                            validation_committee,
-                            &cfg,
-                        )?;
-
-                        return Ok(());
-                    } else {
-                        error!("could not get validation committee");
-                    }
+                    return Ok(());
                 } else {
-                    error!("could not get generator");
+                    error!("could not get validation committee");
                 }
             }
             _ => {}

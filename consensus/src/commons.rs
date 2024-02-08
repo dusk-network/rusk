@@ -72,8 +72,8 @@ impl RoundUpdate {
 
 #[derive(Debug, Clone, Copy, Error)]
 pub enum StepSigError {
-    #[error("Failed to reach a quorum at step {0}")]
-    VoteSetTooSmall(u16),
+    #[error("Failed to reach a quorum")]
+    VoteSetTooSmall,
     #[error("Verification error {0}")]
     VerificationFailed(dusk_bls12_381_sign::Error),
     #[error("Empty Apk instance")]

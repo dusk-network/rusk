@@ -66,9 +66,7 @@ impl MsgHandler for ValidationHandler {
     fn verify(
         &self,
         msg: &Message,
-        _ru: &RoundUpdate,
         _iteration: u8,
-        _committee: &Committee,
         _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         match &msg.payload {
