@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change Holdings component design [#1361](https://github.com/dusk-network/rusk/issues/1361)
 - Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component [#1331](https://github.com/dusk-network/rusk/pull/1331)
 
 ### Removed

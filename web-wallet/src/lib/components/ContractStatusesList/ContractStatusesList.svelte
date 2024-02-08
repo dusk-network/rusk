@@ -29,20 +29,25 @@
 	.contract-statuses {
 		background-color: var(--background-color);
 		border-radius: var(--control-border-radius-size);
-		padding: 0.5em 1em;
+		padding: 0.75em;
 		width: 100%;
 		display: flex;
 		flex-direction: row;
 		flex-wrap: wrap;
-		gap: var(--small-gap);
+		gap: 0.625em;
 
 		&__label, &__value {
-			flex: 1 1 calc(50% - var(--small-gap) / 2);
+			flex: 1 1 calc(50% - 0.625em / 2);
+		}
+
+		&__label {
+			padding-left: 0.625em;
 		}
 
 		&__value {
 			display: inline-flex;
 			align-items: center;
+			padding-right: 0.625em;
 			gap: var(--small-gap);
 			text-align: right;
 			font-weight: 600;
