@@ -96,6 +96,7 @@ pub enum ConsensusError {
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
     InvalidValidation(QuorumType),
+    InvalidPrevBlockHash(Hash),
     InvalidQuorumType,
     InvalidVote(Vote),
     FutureEvent,

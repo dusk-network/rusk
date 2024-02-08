@@ -50,6 +50,11 @@ pub trait MsgHandler {
         match msg.compare(ru.round, iteration, step) {
             Status::Past => Err(ConsensusError::PastEvent),
             Status::Present => {
+                let msg_tip = msg.header.prev_block_hash;
+                if msg_tip != ru.hash() {
+                    return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
+                }
+
                 // Ensure the message originates from a committee member.
                 if !committee.is_member(signer) {
                     return Err(ConsensusError::NotCommitteeMember);
