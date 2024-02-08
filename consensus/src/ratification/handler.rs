@@ -15,9 +15,7 @@ use crate::aggregator::Aggregator;
 
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
-use node_data::message::payload::{
-    QuorumType, Ratification, ValidationResult, Vote,
-};
+use node_data::message::payload::{Ratification, ValidationResult, Vote};
 use node_data::message::{
     payload, ConsensusHeader, Message, Payload, StepMessage,
 };
@@ -222,27 +220,19 @@ impl RatificationHandler {
         round_committees: &RoundCommittees,
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
-        // TODO: Check all quorums
-        match result.quorum() {
-            QuorumType::Valid | QuorumType::NoCandidate => {
-                if let Some(validation_committee) =
-                    round_committees.get_validation_committee(iter)
-                {
-                    verify_votes(
-                        header,
-                        StepName::Validation,
-                        result.vote(),
-                        result.sv(),
-                        validation_committee,
-                    )?;
-
-                    return Ok(());
-                } else {
-                    error!("could not get validation committee");
-                }
-            }
-            _ => {}
-        }
-        Err(ConsensusError::InvalidValidation(result.quorum()))
+        let validation_committee = round_committees
+            .get_validation_committee(iter)
+            .ok_or_else(|| {
+                error!("could not get validation committee");
+                ConsensusError::InvalidValidation(result.quorum())
+            })?;
+        verify_votes(
+            header,
+            StepName::Validation,
+            result.vote(),
+            result.sv(),
+            validation_committee,
+        )?;
+        Ok(())
     }
 }

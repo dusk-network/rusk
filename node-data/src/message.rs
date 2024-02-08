@@ -419,11 +419,11 @@ pub mod payload {
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     #[repr(u8)]
     pub enum Vote {
-        #[default]
         NoCandidate = 0,
         Valid(Hash) = 1,
         Invalid(Hash) = 2,
 
+        #[default]
         NoQuorum = 3,
     }
 

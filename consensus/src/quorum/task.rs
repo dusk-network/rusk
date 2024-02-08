@@ -10,7 +10,7 @@ use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use node_data::ledger::{to_str, Block, Certificate};
-use node_data::message::payload::Vote;
+use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{AsyncQueue, Message, Payload, Status};
 
 use crate::quorum::verifiers;
@@ -158,14 +158,21 @@ impl<'p, D: Database> Executor<'p, D> {
             .await
             .ok()?;
 
+            debug!(event = "quorum_collected", ?quorum);
+
             // Publish the quorum
             self.publish(msg.clone()).await;
 
-            if let Vote::Valid(hash) = quorum.vote() {
-                // Create winning block
-                debug!("generate block from quorum msg");
-                let cert = quorum.generate_certificate();
-                return self.create_winning_block(hash, &cert).await;
+            match &quorum.result {
+                RatificationResult::Success(Vote::Valid(hash)) => {
+                    // Create winning block
+                    debug!("generate block from quorum msg");
+                    let cert = quorum.generate_certificate();
+                    return self.create_winning_block(hash, &cert).await;
+                }
+                failed => {
+                    debug!("Valid QUORUM for {failed:?}");
+                }
             }
         }
 

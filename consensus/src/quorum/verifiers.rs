@@ -135,13 +135,14 @@ pub fn verify_votes(
         target_quorum,
     };
 
-    if !quorum_result.quorum_reached() {
+    if vote != &Vote::NoQuorum && !quorum_result.quorum_reached() {
         tracing::error!(
             desc = "vote_set_too_small",
             committee = format!("{:#?}", sub_committee),
             bitset,
             target_quorum,
             total,
+            %vote
         );
         return Err(StepSigError::VoteSetTooSmall);
     }

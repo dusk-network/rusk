@@ -175,7 +175,7 @@ impl CertInfoRegistry {
     fn build_quorum_msg(
         ru: &RoundUpdate,
         iteration: u8,
-        result: &CertificateInfo,
+        cert_info: &CertificateInfo,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
             prev_block_hash: ru.hash(),
@@ -185,9 +185,9 @@ impl CertInfoRegistry {
 
         let payload = payload::Quorum {
             header,
-            result: result.result.clone(),
-            validation: result.cert.validation,
-            ratification: result.cert.ratification,
+            result: cert_info.result.clone(),
+            validation: cert_info.cert.validation,
+            ratification: cert_info.cert.ratification,
         };
 
         Message::new_quorum(payload)

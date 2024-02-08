@@ -144,12 +144,7 @@ impl QuorumMsgSender {
     /// Sends an quorum (internally) to the quorum loop.
     pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
-            // TODO: Change me accordingly to https://github.com/dusk-network/rusk/issues/1268
-            Payload::Quorum(q)
-                if !q.validation.is_empty()
-                    && !q.ratification.is_empty()
-                    && q.vote() != &Vote::NoCandidate =>
-            {
+            Payload::Quorum(q) if !q.ratification.is_empty() => {
                 tracing::debug!(
                     event = "send quorum_msg",
                     vote = %q.vote(),
