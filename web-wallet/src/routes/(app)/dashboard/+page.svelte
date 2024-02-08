@@ -55,6 +55,17 @@
 		}));
 	}
 
+	/**
+	 * @param {keyof import("$lib/stores/stores").SettingsStore} property
+	 * @param {any} value
+	 */
+	function updateSetting (property, value) {
+		settingsStore.update((store) => ({
+			...store,
+			[property]: value
+		}));
+	}
+
 	const enabledContracts = getEnabledContracts(contractDescriptors);
 	const tabItems = enabledContracts.map(({ id, label }) => ({
 		icon: { path: id === "transfer" ? mdiSwapVertical : mdiDatabaseOutline },
@@ -105,6 +116,7 @@
 					<div in:fade class="tabs__contract">
 						<svelte:component
 							descriptor={selectedContract}
+							on:suppressStakingNotice={() => updateSetting("hideStakingNotice", true)}
 							on:operationChange={({ detail }) => updateOperation(detail)}
 							this={selectedTab === "transfer" ? TransferContract : StakeContract}
 						/>

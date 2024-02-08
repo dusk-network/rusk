@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
+- Add running node requirement notice in Staking flow [#1359](https://github.com/dusk-network/rusk/issues/1359)
 - Add `fiatPrice` optional property to Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
 - Add ability to revert words when entering the mnemonic phrase [#1290](https://github.com/dusk-network/rusk/issues/1290)
 - Add missing error handling when querying the quote API [#1322](https://github.com/dusk-network/rusk/issues/1322)

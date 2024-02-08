@@ -18,10 +18,16 @@
 	export let hasToggle = false;
 	export let isToggled = false;
 
+	export let onSurface = false;
+
 	$: classes = makeClassName(["dusk-card", className]);
 </script>
 
-<svelte:element this={tag} {...$$restProps} class={classes}>
+<svelte:element
+	this={tag}
+	{...$$restProps}
+	class={classes}
+	class:dusk-card--on-surface={onSurface}>
 	<header
 		class="dusk-card__header"
 		class:dusk-card__header--toggle-off={hasToggle && !isToggled}>

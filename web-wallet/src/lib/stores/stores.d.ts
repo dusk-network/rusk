@@ -45,3 +45,18 @@ type WalletStoreServices = {
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;
+
+type SettingsStore = {
+	currency: string;
+	darkMode: boolean;
+	dashboardTransactionLimit: number;
+	gasLimit: number;
+	gasLimitLower: number;
+	gasLimitUpper: number;
+	gasPrice: number;
+	gasPriceLower: number;
+	hideStakingNotice: boolean;
+	language: string;
+	network: string;
+	userId: string;
+};

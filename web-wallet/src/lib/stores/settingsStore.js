@@ -10,6 +10,7 @@ const initialState = {
 	gasLimitUpper: parseInt(import.meta.env.VITE_GAS_LIMIT_UPPER, 10),
 	gasPrice: parseInt(import.meta.env.VITE_GAS_PRICE_DEFAULT, 10),
 	gasPriceLower: parseInt(import.meta.env.VITE_GAS_PRICE_LOWER, 10),
+	hideStakingNotice: false,
 	language: browser ? navigator.language : "en",
 	network: "testnet",
 	userId: ""

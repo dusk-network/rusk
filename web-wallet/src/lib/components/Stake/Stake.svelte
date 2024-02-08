@@ -3,20 +3,25 @@
 <script>
 	import { createEventDispatcher, onMount, tick } from "svelte";
 	import { fade } from "svelte/transition";
-	import { mdiDatabaseArrowDownOutline, mdiDatabaseOutline } from "@mdi/js";
+	import { mdiAlertOutline, mdiDatabaseArrowDownOutline, mdiDatabaseOutline } from "@mdi/js";
 
 	import { deductLuxFeeFrom } from "$lib/contracts";
 	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
 	import { logo } from "$lib/dusk/icons";
+
 	import {
+		Agreement,
+		Anchor,
 		AnchorButton,
 		Badge,
 		Button,
+		Card,
 		Icon,
 		Textbox,
 		Wizard,
 		WizardStep
 	} from "$lib/dusk/components";
+
 	import {
 		ContractStatusesList,
 		GasFee,
@@ -49,6 +54,9 @@
 
 	/** @type {ContractStatus[]} */
 	export let statuses;
+
+	/** @type {boolean} */
+	export let hideStakingNotice;
 
 	const defaultMinStake = 1000;
 
@@ -85,6 +93,7 @@
 
 	const dispatch = createEventDispatcher();
 	const resetOperation = () => dispatch("operationChange", "");
+	const suppressStakingNotice = () => dispatch("suppressStakingNotice");
 
 	/**
 	 * @param {{detail:{price:number, limit:number, isValidGas:boolean}}} event
@@ -113,18 +122,70 @@
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
 	$: minStake = maxSpendable > 0 ? Math.min(defaultMinStake, maxSpendable) : defaultMinStake;
+
+	let hideStakingNoticeNextTime = false;
+
+	function getWizardSteps () {
+		if (flow === "stake") {
+			return hideStakingNotice ? 3 : 4;
+		}
+
+		return 2;
+	}
 </script>
 
 <div class="operation">
-	<Wizard steps={flow === "stake" ? 3 : 2} let:key>
+	<Wizard steps={getWizardSteps()} let:key>
 		{#if flow === "stake"}
+			{#if !hideStakingNotice}
+				<!-- STAKING NOTICE STEP -->
+				<WizardStep
+					step={0}
+					{key}
+					backButton={{
+						action: resetOperation,
+						disabled: false
+					}}
+					nextButton={{
+						action: () => {
+							if (hideStakingNoticeNextTime) {
+								suppressStakingNotice();
+							}
+						},
+						icon: null, label: "Agree", variant: "secondary"
+					}}>
+					<Badge
+						text="WARNING"
+						variant="warning"
+					/>
+					<Card
+						onSurface
+						iconPath={mdiAlertOutline}
+						heading="Only stake if you have a node set up!">
+						<p class="staking-warning">
+							I understand that I have set up a node properly, as described <Anchor
+								class="staking-warning__step-node-setup-link"
+								rel="noopener noreferrer"
+								target="_blank"
+								href="https://docs.dusk.network/getting-started/node-setup/overview">HERE</Anchor>, and that I will lose funds if I have not done so correctly.</p>
+
+						<Agreement
+							className="staking-warning__agreement"
+							name="staking-warning"
+							label="Don't show this step again."
+							bind:checked={hideStakingNoticeNextTime}/>
+					</Card>
+				</WizardStep>
+			{/if}
+
+			<!-- ENTER STAKING AMOUNT STEP -->
 			<WizardStep
-				step={0}
+				step={hideStakingNotice ? 0 : 1}
 				{key}
-				backButton={{
+				backButton={hideStakingNotice ? {
 					action: resetOperation,
 					disabled: false
-				}}
+				} : undefined}
 				nextButton={{ disabled: isNextButtonDisabled }}>
 				<ContractStatusesList items={statuses}/>
 				<div class="operation__amount operation__space-between">
@@ -174,8 +235,9 @@
 			</WizardStep>
 		{/if}
 
+		<!-- OPERATION OVERVIEW STEP  -->
 		<WizardStep
-			step={flow === "stake" ? 1 : 0}
+			step={flow === "stake" ? hideStakingNotice ? 1 : 2 : 0}
 			{key}
 			backButton={
 				flow !== "stake"
@@ -194,7 +256,6 @@
 			<div in:fade|global class="operation__stake">
 				<ContractStatusesList items={statuses}/>
 				<Badge
-					className="operation__rewards-notice"
 					text="REVIEW TRANSACTION"
 					variant="warning"
 				/>
@@ -220,8 +281,9 @@
 			</div>
 		</WizardStep>
 
+		<!-- OPERATION RESULT STEP  -->
 		<WizardStep
-			step={flow === "stake" ? 2 : 1}
+			step={flow === "stake" ? hideStakingNotice ? 2 : 3 : 1}
 			{key}
 			showNavigation={false}>
 
@@ -280,5 +342,17 @@
 		:global(&__input-field:invalid) {
 			color: var(--error-color);
 		}
+	}
+
+	.staking-warning {
+		margin-bottom: 1em;
+	}
+
+	:global(.staking-warning__step-node-setup-link) {
+		color: var(--secondary-color-variant-dark)
+	}
+
+	:global(.staking-warning__agreement) {
+		align-items: baseline;
 	}
 </style>
