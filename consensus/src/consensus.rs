@@ -164,11 +164,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let sv_registry =
                 Arc::new(Mutex::new(CertInfoRegistry::new(ru.clone())));
 
-            let proposal_handler =
-                Arc::new(Mutex::new(proposal::handler::ProposalHandler::new(
-                    db.clone(),
-                    sv_registry.clone(),
-                )));
+            let proposal_handler = Arc::new(Mutex::new(
+                proposal::handler::ProposalHandler::new(db.clone()),
+            ));
 
             let validation_handler = Arc::new(Mutex::new(
                 validation::handler::ValidationHandler::new(

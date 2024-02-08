@@ -7,7 +7,6 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::message::payload::Candidate;
@@ -19,7 +18,6 @@ use tokio::sync::Mutex;
 
 pub struct ProposalHandler<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
-    pub(crate) _sv_registry: SafeCertificateInfoRegistry,
 }
 
 #[async_trait]
@@ -71,14 +69,8 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
 }
 
 impl<D: Database> ProposalHandler<D> {
-    pub(crate) fn new(
-        db: Arc<Mutex<D>>,
-        sv_registry: SafeCertificateInfoRegistry,
-    ) -> Self {
-        Self {
-            db,
-            _sv_registry: sv_registry,
-        }
+    pub(crate) fn new(db: Arc<Mutex<D>>) -> Self {
+        Self { db }
     }
 
     fn verify_new_block(
