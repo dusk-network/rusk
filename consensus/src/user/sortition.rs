@@ -82,7 +82,7 @@ pub fn create_sortition_hash(cfg: &Config, counter: u32) -> [u8; 32] {
     reader.as_slice().try_into().expect("Wrong length")
 }
 
-// Generate a score from the given hash and total stake weight
+/// Generate a score from the given hash and total stake weight
 pub fn generate_sortition_score(
     hash: [u8; 32],
     total_weight: &BigInt,
@@ -90,10 +90,6 @@ pub fn generate_sortition_score(
     let num = BigInt::from_bytes_be(Plus, hash.as_slice());
     num % total_weight
 }
-
-// The set of active stakes consists of tuples ,
-// where  is the amount staked and  is the BLS public key corresponding to the
-// stake.
 
 #[cfg(test)]
 mod tests {

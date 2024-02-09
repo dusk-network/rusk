@@ -118,7 +118,8 @@ impl Provisioners {
         &self,
         cfg: &sortition::Config,
     ) -> Vec<PublicKey> {
-        let mut committee: Vec<PublicKey> = vec![];
+        let committee_size = cfg.committee_size();
+        let mut extracted: Vec<PublicKey> = Vec::with_capacity(committee_size);
 
         let mut comm = CommitteeGenerator::from_provisioners(
             self,
@@ -126,43 +127,35 @@ impl Provisioners {
             cfg.exclusion(),
         );
 
-        let mut total_amount_stake =
-            BigInt::from(comm.calc_total_eligible_weight());
+        let mut total_weight = comm.total_weight().into();
 
-        let mut counter: u32 = 0;
-        loop {
-            if total_amount_stake.eq(&BigInt::from(0))
-                || committee.len() == cfg.committee_size()
-            {
-                break;
-            }
+        while extracted.len() != committee_size {
+            let counter = extracted.len() as u32;
 
-            // 1. Compute n ← H(seed ∣∣ round ∣∣ step ∣∣ counter)
+            // 1. Compute n ← H(seed ∣∣ step ∣∣ counter)
             let hash = sortition::create_sortition_hash(cfg, counter);
-            counter += 1;
 
             // 2. Compute d ← n mod s
             let score =
-                sortition::generate_sortition_score(hash, &total_amount_stake);
+                sortition::generate_sortition_score(hash, &total_weight);
 
             // NB: The public key can be extracted multiple times per committee.
             match comm.extract_and_subtract_member(score) {
-                Some((pk, value)) => {
+                Some((pk, subtracted_stake)) => {
                     // append the public key to the committee set.
-                    committee.push(pk);
+                    extracted.push(pk);
 
-                    let subtracted_stake = value;
-                    if total_amount_stake > subtracted_stake {
-                        total_amount_stake -= subtracted_stake;
+                    if total_weight > subtracted_stake {
+                        total_weight -= subtracted_stake;
                     } else {
-                        total_amount_stake = BigInt::from(0);
+                        break;
                     }
                 }
                 None => panic!("invalid score"),
             }
         }
 
-        committee
+        extracted
     }
 
     pub fn get_generator(
@@ -228,8 +221,8 @@ impl<'a> CommitteeGenerator<'a> {
         }
     }
 
-    /// Sums up the total weight of all **eligible** stakes
-    fn calc_total_eligible_weight(&self) -> u64 {
+    /// Sums up the total weight of all stakes
+    fn total_weight(&self) -> u64 {
         self.members.values().map(|m| m.value()).sum()
     }
 

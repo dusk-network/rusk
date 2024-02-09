@@ -21,7 +21,7 @@ tracing-subscriber = { version = "0.3.0", features = [
   "env-filter",
   "json",
 ] }
-clap = { version = "4", features = ["env", "string", "derive"] }
+clap = { version = "=4.4", features = ["env", "string", "derive"] }
 semver = "1.0"
 anyhow = "1.0"
 rustc_tools_util = "0.3"
