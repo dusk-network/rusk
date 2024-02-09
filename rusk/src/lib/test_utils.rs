@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-
+use crate::chain::Rusk;
 use crate::error::Error;
 
 use std::pin::Pin;

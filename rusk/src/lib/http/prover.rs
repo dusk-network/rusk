@@ -4,18 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Serializable;
-use node::vm::VMExecution;
-use rusk_profile::CRS_17_HASH;
 use rusk_prover::{LocalProver, Prover};
-use serde::Serialize;
-use std::sync::{mpsc, Arc};
-use std::thread;
-use tokio::task;
-
-use rusk_abi::ContractId;
-
-use crate::Rusk;
 
 use super::*;
 

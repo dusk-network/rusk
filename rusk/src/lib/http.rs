@@ -48,8 +48,8 @@ use tungstenite::protocol::{CloseFrame, Message};
 use futures_util::stream::iter as stream_iter;
 use futures_util::{SinkExt, StreamExt};
 
-use crate::chain::RuskNode;
-use crate::{Rusk, VERSION};
+use crate::chain::{Rusk, RuskNode};
+use crate::VERSION;
 
 use self::event::{MessageRequest, ResponseData};
 use self::stream::{Listener, Stream};

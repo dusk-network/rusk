@@ -15,8 +15,9 @@ use clap::Parser;
 use node::database::rocksdb;
 use node::database::DB;
 use node::LongLivedService;
+use rusk::chain::Rusk;
 use rusk::http::DataSources;
-use rusk::{Result, Rusk};
+use rusk::Result;
 
 use tracing_subscriber::filter::EnvFilter;
 
