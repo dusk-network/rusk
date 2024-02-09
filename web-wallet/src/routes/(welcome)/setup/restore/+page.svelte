@@ -7,8 +7,13 @@
 	import AllSet from "../AllSet.svelte";
 	import MnemonicAuthenticate from "./MnemonicAuthenticate.svelte";
 	import { Wizard, WizardStep } from "$lib/dusk/components";
+	import { ExistingWalletNotice } from "$lib/components";
+	import { settingsStore } from "$lib/stores";
 	import { initializeWallet, refreshLocalStoragePasswordInfo } from "$lib/wallet";
 	import { goto } from "$app/navigation";
+
+	/** @type {boolean} */
+	let notice = false;
 
 	/** @type {boolean} */
 	let tosAccepted = false;
@@ -28,12 +33,18 @@
 	/** @type {string[]} */
 	let mnemonicPhrase = [];
 
+	const { userId } = $settingsStore;
+
 	$: if (showPasswordSetup) {
 		password = showPasswordSetup ? password : "";
 	}
 </script>
 
-{#if !tosAccepted}
+{#if !notice && userId}
+	<div class="onboarding-wrapper" in:fade|global>
+		<ExistingWalletNotice bind:notice/>
+	</div>
+{:else if !tosAccepted}
 	<div class="onboarding-wrapper" in:fade|global>
 		<TermsOfService bind:tosAccepted/>
 	</div>

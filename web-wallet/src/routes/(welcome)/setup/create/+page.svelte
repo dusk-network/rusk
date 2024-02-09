@@ -7,7 +7,9 @@
 		refreshLocalStoragePasswordInfo
 	} from "$lib/wallet";
 	import { Wizard, WizardStep } from "$lib/dusk/components";
+	import { ExistingWalletNotice } from "$lib/components";
 	import loginInfoStorage from "$lib/services/loginInfoStorage";
+	import { settingsStore } from "$lib/stores";
 	import TermsOfService from "../TermsOfService.svelte";
 	import MnemonicPhrase from "./MnemonicPhrase.svelte";
 	import MnemonicValidate from "./MnemonicValidate.svelte";
@@ -16,6 +18,9 @@
 	import MnemonicPreSetup from "./MnemonicPreSetup.svelte";
 	import PasswordSetup from "../PasswordSetup.svelte";
 	import { goto } from "$app/navigation";
+
+	/** @type {boolean} */
+	let notice = false;
 
 	/** @type {boolean} */
 	let tosAccepted = false;
@@ -41,12 +46,18 @@
 	/** @type {string[]} */
 	let enteredMnemonicPhrase = [];
 
+	const { userId } = $settingsStore;
+
 	$: if (showPasswordSetup) {
 		password = showPasswordSetup ? password : "";
 	}
 </script>
 
-{#if !tosAccepted}
+{#if !notice && userId}
+	<div class="onboarding-wrapper" in:fade|global>
+		<ExistingWalletNotice bind:notice/>
+	</div>
+{:else if !tosAccepted}
 	<div class="onboarding-wrapper" in:fade|global>
 		<TermsOfService bind:tosAccepted/>
 	</div>

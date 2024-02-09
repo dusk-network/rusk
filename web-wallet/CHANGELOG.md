@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add forced log out on inactive tabs [#1373](https://github.com/dusk-network/rusk/issues/1373)
 - Add gas settings validation to block Send and Stake operations if invalid gas settings [#1354](https://github.com/dusk-network/rusk/issues/1354)
 - Add abortable sync [#1401](https://github.com/dusk-network/rusk/issues/1401)
+- Add `existing wallet notice` to wallet create, restore and login flows [#1360](https://github.com/dusk-network/rusk/issues/1360)
+- Add `userId` value to localStorage preferences object during wallet create and restore [#1360](https://github.com/dusk-network/rusk/issues/1360)
 
 ### Changed
 

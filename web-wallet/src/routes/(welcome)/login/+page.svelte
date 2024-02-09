@@ -16,6 +16,12 @@
 	import loginInfoStorage from "$lib/services/loginInfoStorage";
 	import { getWallet } from "$lib/services/wallet";
 
+	const notice = [
+		"Logging in to a new wallet will overwrite the current local wallet cache",
+		", meaning that when you log in again with the previous mnemonic/",
+		"account you will need to wait for the wallet to sync."
+	].join("");
+
 	/**
 	 * @typedef {import("@dusk-network/dusk-wallet-js").Wallet} Wallet
 	 */
@@ -26,6 +32,11 @@
 		const currentAddress = $settingsStore.userId;
 
 		if (defaultAddress !== currentAddress) {
+			// eslint-disable-next-line no-alert
+			if (currentAddress && !window.confirm(notice)) {
+				throw new Error("Existing wallet detected");
+			}
+
 			await wallet.reset();
 			settingsStore.reset();
 			settingsStore.update(setKey("userId", defaultAddress));
@@ -65,9 +76,7 @@
 			.then(getWallet)
 			.then(checkLocalData)
 			.then(wallet => walletStore.init(wallet))
-			.then(() => {
-				goto("/dashboard");
-			})
+			.then(() => goto("/dashboard"))
 			.catch(err => {
 				errorMessage = err.message;
 				fldSecret.focus();

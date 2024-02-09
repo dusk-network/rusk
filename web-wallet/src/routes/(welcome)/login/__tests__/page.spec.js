@@ -42,9 +42,11 @@ describe("Login", async () => {
 	const gotoSpy = vi.spyOn(appNavigation, "goto");
 	const initSpy = vi.spyOn(walletStore, "init");
 	const settingsResetSpy = vi.spyOn(settingsStore, "reset");
+	const confirmSpy = vi.spyOn(window, "confirm");
 
-	afterEach(() => {
+	afterEach(async () => {
 		cleanup();
+		confirmSpy.mockClear();
 		getWalletSpy.mockClear();
 		gotoSpy.mockClear();
 		initSpy.mockClear();
@@ -56,6 +58,7 @@ describe("Login", async () => {
 	});
 
 	afterAll(() => {
+		confirmSpy.mockRestore();
 		getWalletSpy.mockRestore();
 		gotoSpy.mockRestore();
 		initSpy.mockRestore();
@@ -95,7 +98,7 @@ describe("Login", async () => {
 			expect(selectedText).toBe(textInput.value);
 		});
 
-		it("should clear local data and redirect to the dashboard if the user inputs a valid mnemonic different from the last one used", async () => {
+		it("should clear local data and redirect to the dashboard if the user inputs a valid mnemonic with no prior wallet created", async () => {
 			const { container } = render(Login, {});
 			const form = getAsHTMLElement(container, "form");
 			const textInput = getTextInput(container);
@@ -104,6 +107,7 @@ describe("Login", async () => {
 			await fireEvent.submit(form, { currentTarget: form });
 			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
+			expect(confirmSpy).not.toHaveBeenCalled();
 			expect(getWalletSpy).toHaveBeenCalledTimes(1);
 			expect(getWalletSpy).toHaveBeenCalledWith(seed);
 			expect(walletResetSpy).toHaveBeenCalledTimes(1);
@@ -113,6 +117,72 @@ describe("Login", async () => {
 			expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
 			expect(gotoSpy).toHaveBeenCalledTimes(1);
 			expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
+		});
+
+		it("should trigger a notice if the user inputs a valid mnemonic different from the last one used clear local data and direct to dashboard if accepted", async () => {
+			const newUserId = generateMnemonic();
+
+			settingsStore.update(setKey("userId", newUserId));
+			confirmSpy.mockReturnValue(true);
+
+			const { container } = render(Login, {});
+			const form = getAsHTMLElement(container, "form");
+			const textInput = getTextInput(container);
+
+			await fireEvent.input(textInput, { target: { value: mnemonic } });
+			await fireEvent.submit(form, { currentTarget: form });
+			await vi.waitUntil(() => confirmSpy.mock.calls.length > 0);
+
+			expect(confirmSpy).toHaveBeenCalledOnce();
+			expect(getWalletSpy).toHaveBeenCalledTimes(1);
+			expect(getWalletSpy).toHaveBeenCalledWith(seed);
+			expect(walletResetSpy).toHaveBeenCalledTimes(1);
+			expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+			expect(get(settingsStore).userId).toBe(userId);
+			expect(initSpy).toHaveBeenCalledTimes(1);
+			expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
+			expect(gotoSpy).toHaveBeenCalledTimes(1);
+			expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
+		});
+
+		it("should trigger a notice if the user inputs a valid mnemonic different from the last one used and show an error if declined", async () => {
+			const newUserId = generateMnemonic();
+
+			settingsStore.update(setKey("userId", newUserId));
+
+			const errorMessage = "Existing wallet detected";
+
+			walletResetSpy.mockRejectedValueOnce(new Error(errorMessage));
+			confirmSpy.mockReturnValue(false);
+
+			const { container } = render(Login, {});
+			const form = getAsHTMLElement(container, "form");
+			const textInput = getTextInput(container);
+
+			expect(getErrorElement()).toBeNull();
+
+			await fireEvent.input(textInput, { target: { value: mnemonic } });
+			await fireEvent.submit(form, { currentTarget: form });
+			await vi.waitUntil(() => confirmSpy.mock.calls.length > 0);
+
+			expect(confirmSpy).toHaveBeenCalledOnce();
+
+			const errorElement = await vi.waitUntil(getErrorElement);
+			const selectedText = textInput.value.substring(
+				Number(textInput.selectionStart),
+				Number(textInput.selectionEnd)
+			);
+
+			expect(getWalletSpy).toHaveBeenCalledTimes(1);
+			expect(getWalletSpy).toHaveBeenCalledWith(seed);
+			expect(walletResetSpy).not.toHaveBeenCalled();
+			expect(settingsResetSpy).not.toHaveBeenCalled();
+			expect(get(settingsStore).userId).not.toBe(userId);
+			expect(initSpy).not.toHaveBeenCalled();
+			expect(gotoSpy).not.toHaveBeenCalled();
+			expect(errorElement?.textContent).toBe(errorMessage);
+			expect(textInput).toHaveFocus();
+			expect(selectedText).toBe(textInput.value);
 		});
 
 		it("should not clear local data if the entered mnemonic is the last one used", async () => {
@@ -126,6 +196,7 @@ describe("Login", async () => {
 			await fireEvent.submit(form, { currentTarget: form });
 			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
+			expect(confirmSpy).not.toHaveBeenCalled();
 			expect(getWalletSpy).toHaveBeenCalledTimes(1);
 			expect(getWalletSpy).toHaveBeenCalledWith(seed);
 			expect(walletResetSpy).not.toHaveBeenCalled();
@@ -137,39 +208,9 @@ describe("Login", async () => {
 			expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
 		});
 
-		it("should show an error if the clearing of local data fails", async () => {
-			const errorMessage = "Failed to delete data";
-
-			walletResetSpy.mockRejectedValueOnce(new Error(errorMessage));
-
-			const { container } = render(Login, {});
-			const form = getAsHTMLElement(container, "form");
-			const textInput = getTextInput(container);
-
-			expect(getErrorElement()).toBeNull();
-
-			await fireEvent.input(textInput, { target: { value: mnemonic } });
-			await fireEvent.submit(form, { currentTarget: form });
-
-			const errorElement = await vi.waitUntil(getErrorElement);
-			const selectedText = textInput.value.substring(
-				Number(textInput.selectionStart),
-				Number(textInput.selectionEnd)
-			);
-
-			expect(getWalletSpy).toHaveBeenCalledTimes(1);
-			expect(getWalletSpy).toHaveBeenCalledWith(seed);
-			expect(walletResetSpy).toHaveBeenCalledTimes(1);
-			expect(settingsResetSpy).not.toHaveBeenCalled();
-			expect(get(settingsStore).userId).not.toBe(userId);
-			expect(initSpy).not.toHaveBeenCalled();
-			expect(gotoSpy).not.toHaveBeenCalled();
-			expect(errorElement?.textContent).toBe(errorMessage);
-			expect(textInput).toHaveFocus();
-			expect(selectedText).toBe(textInput.value);
-		});
-
 		it("should trim the entered mnemonic before validating it", async () => {
+			settingsStore.update(setKey("userId", userId));
+
 			const { container } = render(Login, {});
 			const form = getAsHTMLElement(container, "form");
 			const textInput = getTextInput(container);
@@ -178,10 +219,11 @@ describe("Login", async () => {
 			await fireEvent.submit(form, { currentTarget: form });
 			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
+			expect(confirmSpy).not.toHaveBeenCalled();
 			expect(getWalletSpy).toHaveBeenCalledTimes(1);
 			expect(getWalletSpy).toHaveBeenCalledWith(seed);
-			expect(walletResetSpy).toHaveBeenCalledTimes(1);
-			expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+			expect(walletResetSpy).not.toHaveBeenCalled();
+			expect(settingsResetSpy).not.toHaveBeenCalled();
 			expect(get(settingsStore).userId).toBe(userId);
 			expect(initSpy).toHaveBeenCalledTimes(1);
 			expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
@@ -219,6 +261,7 @@ describe("Login", async () => {
 				Number(textInput.selectionEnd)
 			);
 
+			expect(confirmSpy).not.toHaveBeenCalled();
 			expect(walletResetSpy).not.toHaveBeenCalled();
 			expect(settingsResetSpy).not.toHaveBeenCalled();
 			expect(initSpy).not.toHaveBeenCalled();
@@ -227,27 +270,7 @@ describe("Login", async () => {
 			expect(selectedText).toBe(textInput.value);
 		});
 
-		it("should clear local data and redirect to the dashboard if the user inputs the correct password different from the last one used", async () => {
-			const { container } = render(Login, {});
-			const form = getAsHTMLElement(container, "form");
-			const textInput = getTextInput(container);
-
-			await fireEvent.input(textInput, { target: { value: pwd } });
-			await fireEvent.submit(form, { currentTarget: form });
-			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
-
-			expect(getWalletSpy).toHaveBeenCalledTimes(1);
-			expect(getWalletSpy).toHaveBeenCalledWith(seed);
-			expect(walletResetSpy).toHaveBeenCalledTimes(1);
-			expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-			expect(get(settingsStore).userId).toBe(userId);
-			expect(initSpy).toHaveBeenCalledTimes(1);
-			expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
-			expect(gotoSpy).toHaveBeenCalledTimes(1);
-			expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
-		});
-
-		it("should not clear local data if the entered mnemonic is the last one used", async () => {
+		it("should not clear local data if the entered password is for the last used mnemonic", async () => {
 			settingsStore.update(setKey("userId", userId));
 
 			const { container } = render(Login, {});
@@ -258,6 +281,7 @@ describe("Login", async () => {
 			await fireEvent.submit(form, { currentTarget: form });
 			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
+			expect(confirmSpy).not.toHaveBeenCalled();
 			expect(getWalletSpy).toHaveBeenCalledTimes(1);
 			expect(getWalletSpy).toHaveBeenCalledWith(seed);
 			expect(walletResetSpy).not.toHaveBeenCalled();
@@ -269,39 +293,9 @@ describe("Login", async () => {
 			expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
 		});
 
-		it("should show an error if the clearing of local data fails", async () => {
-			const errorMessage = "Failed to delete data";
-
-			walletResetSpy.mockRejectedValueOnce(new Error(errorMessage));
-
-			const { container } = render(Login, {});
-			const form = getAsHTMLElement(container, "form");
-			const textInput = getTextInput(container);
-
-			expect(getErrorElement()).toBeNull();
-
-			await fireEvent.input(textInput, { target: { value: pwd } });
-			await fireEvent.submit(form, { currentTarget: form });
-
-			const errorElement = await vi.waitUntil(getErrorElement);
-			const selectedText = textInput.value.substring(
-				Number(textInput.selectionStart),
-				Number(textInput.selectionEnd)
-			);
-
-			expect(getWalletSpy).toHaveBeenCalledTimes(1);
-			expect(getWalletSpy).toHaveBeenCalledWith(seed);
-			expect(walletResetSpy).toHaveBeenCalledTimes(1);
-			expect(settingsResetSpy).not.toHaveBeenCalled();
-			expect(get(settingsStore).userId).not.toBe(userId);
-			expect(initSpy).not.toHaveBeenCalled();
-			expect(gotoSpy).not.toHaveBeenCalled();
-			expect(errorElement?.textContent).toBe(errorMessage);
-			expect(textInput).toHaveFocus();
-			expect(selectedText).toBe(textInput.value);
-		});
-
 		it("should trim the entered password before validating it", async () => {
+			settingsStore.update(setKey("userId", userId));
+
 			const { container } = render(Login, {});
 			const form = getAsHTMLElement(container, "form");
 			const textInput = getTextInput(container);
@@ -310,10 +304,11 @@ describe("Login", async () => {
 			await fireEvent.submit(form, { currentTarget: form });
 			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
+			expect(confirmSpy).not.toHaveBeenCalled();
 			expect(getWalletSpy).toHaveBeenCalledTimes(1);
 			expect(getWalletSpy).toHaveBeenCalledWith(seed);
-			expect(walletResetSpy).toHaveBeenCalledTimes(1);
-			expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+			expect(walletResetSpy).not.toHaveBeenCalled();
+			expect(settingsResetSpy).not.toHaveBeenCalled();
 			expect(get(settingsStore).userId).toBe(userId);
 			expect(initSpy).toHaveBeenCalledTimes(1);
 			expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
