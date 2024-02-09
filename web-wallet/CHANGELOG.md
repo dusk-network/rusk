@@ -9,25 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `fiatPrice` optional property to Balance component [#1331](https://github.com/dusk-network/rusk/pull/1331)
-- Add ability to revert words when entering the mnemonic phrase [#1333](https://github.com/dusk-network/rusk/pull/1333)
-- Add missing error handling when querying the quote API [#1344](https://github.com/dusk-network/rusk/pull/1334)
+- Add `fiatPrice` optional property to Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
+- Add ability to revert words when entering the mnemonic phrase [#1290](https://github.com/dusk-network/rusk/issues/1290)
+- Add missing error handling when querying the quote API [#1322](https://github.com/dusk-network/rusk/issues/1322)
 
 ### Changed
 
 - Change Holdings component design [#1361](https://github.com/dusk-network/rusk/issues/1361)
-- Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component [#1331](https://github.com/dusk-network/rusk/pull/1331)
+- Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
 - Change `package.json` fields to reflect repo change [#1367](https://github.com/dusk-network/rusk/issues/1367)
 
 ### Removed
 
-- Remove `fiat` property from Balance component [#1331](https://github.com/dusk-network/rusk/pull/1331)
+- Remove `fiat` property from Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
 
 ### Fixed
-
-- Fix Seed Phrase words size [#1337](https://github.com/dusk-network/rusk/pull/1337)
-- Fix colors on red background [#1336](https://github.com/dusk-network/rusk/pull/1336)
-- Fix Transactions table design [#1330](https://github.com/dusk-network/rusk/pull/1330)
+- Fix Changelog to point to issues [#1368](https://github.com/dusk-network/rusk/issues/1368)
+- Fix Seed Phrase words size [#1335](https://github.com/dusk-network/rusk/issues/1335)
+- Fix colors on red background [#1334](https://github.com/dusk-network/rusk/issues/1334)
+- Fix Transactions table design [#1309](https://github.com/dusk-network/rusk/issues/1309)
 
 ## [0.1.0-beta] - 2024-02-02
 
