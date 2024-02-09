@@ -9,38 +9,31 @@
 use crate::error::Error;
 
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::{fs, io};
 
 pub mod chain;
 pub mod error;
 pub mod http;
+#[cfg(feature = "testwallet")]
+mod test_utils;
 pub mod verifier;
 mod version;
 mod vm;
 
 use dusk_bytes::DeserializableSlice;
-use futures::Stream;
-use tokio::spawn;
-use tracing::{error, info};
 
-use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_consensus::operations::VerificationOutput;
-use dusk_pki::{PublicKey, ViewKey};
 use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};
-use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
-use phoenix_core::{Message, Note, Transaction as PhoenixTransaction};
-use poseidon_merkle::Opening as PoseidonOpening;
-use rkyv::validation::validators::DefaultValidator;
-use rkyv::{Archive, Deserialize, Infallible, Serialize};
+use phoenix_core::transaction::StakeData;
+use phoenix_core::Transaction as PhoenixTransaction;
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{
-    CallReceipt, ContractError, ContractId, Error as PiecrustError, Event,
-    Session, StandardBufSerializer, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
+    CallReceipt, ContractError, Error as PiecrustError, Event, Session,
+    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use sha3::{Digest, Sha3_256};
@@ -48,13 +41,7 @@ use sha3::{Digest, Sha3_256};
 pub use version::{VERSION, VERSION_BUILD};
 pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
-const A: usize = 4;
-
 pub type Result<T, E = Error> = core::result::Result<T, E>;
-
-pub type StoredNote = (Note, u64);
-
-pub type GetNotesStream = Pin<Box<dyn Stream<Item = StoredNote> + Send>>;
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../assets/dusk.cpk");
@@ -330,10 +317,6 @@ impl Rusk {
         Ok((spent_txs, verification_output))
     }
 
-    pub fn persist_state(&self) -> Result<()> {
-        Ok(())
-    }
-
     pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
         let mut inner = self.inner.lock();
 
@@ -371,27 +354,6 @@ impl Rusk {
         inner.current_commit
     }
 
-    /// Performs a feeder query returning the leaves of the transfer tree
-    /// starting from the given height. The function will block while executing,
-    /// and the results of the query will be passed through the `receiver`
-    /// counterpart of the given `sender`.
-    ///
-    /// The receiver of the leaves is responsible for deserializing the leaves
-    /// appropriately - i.e. using `rkyv`.
-    pub fn leaves_from_height(
-        &self,
-        height: u64,
-        sender: mpsc::Sender<Vec<u8>>,
-    ) -> Result<()> {
-        self.feeder_query(
-            TRANSFER_CONTRACT,
-            "leaves_from_height",
-            &height,
-            sender,
-            None,
-        )
-    }
-
     /// Returns the nullifiers that already exist from a list of given
     /// `nullifiers`.
     pub fn existing_nullifiers(
@@ -400,40 +362,6 @@ impl Rusk {
     ) -> Result<Vec<BlsScalar>> {
         self.query(TRANSFER_CONTRACT, "existing_nullifiers", nullifiers)
     }
-
-    /// Returns the root of the transfer tree.
-    pub fn tree_root(&self) -> Result<BlsScalar> {
-        info!("Received tree_root request");
-        self.query(TRANSFER_CONTRACT, "root", &())
-    }
-
-    /// Returns the opening of the transfer tree at the given position.
-    pub fn tree_opening(
-        &self,
-        pos: u64,
-    ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>>> {
-        self.query(TRANSFER_CONTRACT, "opening", &pos)
-    }
-
-    /// Returns the "transparent" balance of the given module.
-    pub fn module_balance(&self, contract: ContractId) -> Result<u64> {
-        self.query(TRANSFER_CONTRACT, "module_balance", &contract)
-    }
-
-    /// Returns the message mapped to the given module and public key.
-    pub fn module_message(
-        &self,
-        contract: ContractId,
-        pk: PublicKey,
-    ) -> Result<Option<Message>> {
-        self.query(TRANSFER_CONTRACT, "message", &(contract, pk))
-    }
-
-    /// Returns data about the stake of the given key.
-    pub fn stake(&self, pk: BlsPublicKey) -> Result<Option<StakeData>> {
-        self.query(STAKE_CONTRACT, "get_stake", &pk)
-    }
-
     /// Returns the stakes.
     pub fn provisioners(
         &self,
@@ -446,186 +374,6 @@ impl Rusk {
                 "The contract should only return (pk, stake_data) tuples",
             )
         }))
-    }
-
-    pub fn query_raw<S, V>(
-        &self,
-        contract_id: ContractId,
-        fn_name: S,
-        fn_arg: V,
-    ) -> Result<Vec<u8>>
-    where
-        S: AsRef<str>,
-        V: Into<Vec<u8>>,
-    {
-        let inner = self.inner.lock();
-
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
-
-        session
-            .call_raw(contract_id, fn_name.as_ref(), fn_arg, u64::MAX)
-            .map(|receipt| receipt.data)
-            .map_err(Into::into)
-    }
-
-    fn query<A, R>(
-        &self,
-        contract_id: ContractId,
-        call_name: &str,
-        call_arg: &A,
-    ) -> Result<R>
-    where
-        A: for<'b> Serialize<StandardBufSerializer<'b>>,
-        R: Archive,
-        R::Archived: Deserialize<R, Infallible>
-            + for<'b> CheckBytes<DefaultValidator<'b>>,
-    {
-        let mut results = Vec::with_capacity(1);
-        self.query_seq(contract_id, call_name, call_arg, |r| {
-            results.push(r);
-            None
-        })?;
-        Ok(results.pop().unwrap())
-    }
-
-    fn query_seq<A, R, F>(
-        &self,
-        contract_id: ContractId,
-        call_name: &str,
-        call_arg: &A,
-        mut closure: F,
-    ) -> Result<()>
-    where
-        F: FnMut(R) -> Option<A>,
-        A: for<'b> Serialize<StandardBufSerializer<'b>>,
-        R: Archive,
-        R::Archived: Deserialize<R, Infallible>
-            + for<'b> CheckBytes<DefaultValidator<'b>>,
-    {
-        let inner = self.inner.lock();
-
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
-
-        let mut result = session
-            .call(contract_id, call_name, call_arg, u64::MAX)?
-            .data;
-
-        while let Some(call_arg) = closure(result) {
-            result = session
-                .call(contract_id, call_name, &call_arg, u64::MAX)?
-                .data;
-        }
-
-        session.call::<_, ()>(contract_id, call_name, call_arg, u64::MAX)?;
-
-        Ok(())
-    }
-
-    pub fn feeder_query<A>(
-        &self,
-        contract_id: ContractId,
-        call_name: &str,
-        call_arg: &A,
-        feeder: mpsc::Sender<Vec<u8>>,
-        base_commit: Option<[u8; 32]>,
-    ) -> Result<()>
-    where
-        A: for<'b> Serialize<StandardBufSerializer<'b>>,
-    {
-        let inner = self.inner.lock();
-
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let current_commit = base_commit.unwrap_or(inner.current_commit);
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
-
-        session.feeder_call::<_, ()>(
-            contract_id,
-            call_name,
-            call_arg,
-            feeder,
-        )?;
-
-        Ok(())
-    }
-
-    pub fn feeder_query_raw<S, V>(
-        &self,
-        contract_id: ContractId,
-        call_name: S,
-        call_arg: V,
-        feeder: mpsc::Sender<Vec<u8>>,
-    ) -> Result<()>
-    where
-        S: AsRef<str>,
-        V: Into<Vec<u8>>,
-    {
-        let inner = self.inner.lock();
-
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
-
-        session.feeder_call_raw(
-            contract_id,
-            call_name.as_ref(),
-            call_arg,
-            feeder,
-        )?;
-
-        Ok(())
-    }
-
-    pub async fn get_notes(
-        &self,
-        vk: &[u8],
-        height: u64,
-    ) -> Result<GetNotesStream, Error> {
-        info!("Received GetNotes request");
-
-        let vk = match vk.is_empty() {
-            false => {
-                let vk =
-                    ViewKey::from_slice(vk).map_err(Error::Serialization)?;
-                Some(vk)
-            }
-            true => None,
-        };
-
-        let (sender, receiver) = mpsc::channel();
-
-        // Clone rusk and move it to the thread
-        let rusk = self.clone();
-
-        // Spawn a task responsible for running the feeder query.
-        spawn(async move {
-            if let Err(err) = rusk.leaves_from_height(height, sender) {
-                error!("GetNotes errored: {err}");
-            }
-        });
-
-        // Make a stream from the receiver and map the elements to be the
-        // expected output
-        let stream =
-            tokio_stream::iter(receiver.into_iter().filter_map(move |bytes| {
-                let leaf = rkyv::from_bytes::<TreeLeaf>(&bytes)
-                    .expect("The contract should always return valid leaves");
-                match &vk {
-                    Some(vk) => vk
-                        .owns(&leaf.note)
-                        .then_some((leaf.note, leaf.block_height)),
-                    None => Some((leaf.note, leaf.block_height)),
-                }
-            }));
-
-        Ok(Box::pin(stream) as GetNotesStream)
     }
 }
 

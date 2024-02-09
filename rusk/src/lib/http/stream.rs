@@ -13,7 +13,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use futures::future::FutureExt;
 use hyper::body::HttpBody;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tokio::io::{self, AsyncRead, AsyncWrite, ReadBuf};

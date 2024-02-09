@@ -5,8 +5,8 @@ help: ## Display this help screen
 
 test: ## Run Rusk tests
 	@cargo test \
-		-vvv \
 		--release \
+		--features testwallet \
 		-- --nocapture
 			
 clippy: ## Run clippy
