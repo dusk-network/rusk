@@ -8,25 +8,17 @@ The official [Dusk](https://dusk.network/) protocol node client and smart contra
 _Unstable_ : No guarantees can be made regarding the API stability, the project
 is in development.
 
+## How to run a node
+
+For more information on running a node, see our docs: 
+- [Node Setup](https://docs.dusk.network/getting-started/node-setup/overview)
+- [Node Requirements](https://docs.dusk.network/getting-started/node-setup/node-requirements)
+
 ## Prerequisites
 
 - Rust 1.71 nightly or higher
 - GCC 13 or higher
 - Clang 16 or higher
-
-## Specification Requirements
-
-### Minimum Specifications
-
-| CPU | RAM | Storage | Network Connection |
-| :--- | :--- | :--- | :--- |
-| 2 cores; 2 GHz | 1 GB | 60 GB | 1 Mbps |
-
-### Recommended Specifications
-
-| CPU | RAM | Storage | Network Connection |
-| :--- | :--- | :--- | :--- |
-| 4 cores; 2 GHz | 4 GB | 250 GB | 10 Mbps |
 
 ## Build and Tests
 
@@ -104,12 +96,6 @@ docker run -p 9000:9000/udp -p 8080:8080/tcp rusk
 ```
 
 Port 9000 is used for Kadcast, port 8080 for the HTTP and GraphQL APIs.
-
-## How to run a node
-
-For more information on running a node, see our wiki: 
-- [Setting up a node](https://wiki.dusk.network/en/setting-up-node)
-- [Setting up a node with Docker](https://wiki.dusk.network/en/setting-up-a-node-docker)
 
 ## License
 
