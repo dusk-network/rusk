@@ -83,7 +83,6 @@ impl Aggregator {
         debug_assert!(weight.is_some());
 
         let total = cluster.total_occurrences();
-        let quorum_target = committee.super_majority_quorum();
 
         debug!(
             event = "vote aggregated",
@@ -91,7 +90,8 @@ impl Aggregator {
             from = signer.to_bs58(),
             added = weight,
             total,
-            target = quorum_target,
+            majority = committee.majority_quorum(),
+            super_majority = committee.super_majority_quorum(),
             signature = to_str(signature),
         );
 
@@ -102,11 +102,12 @@ impl Aggregator {
 
         let step_votes = StepVotes::new(aggregate_signature, bitset);
 
-        let quorum_reached = match &vote {
-            Vote::Valid(_) => total >= committee.super_majority_quorum(),
-            _ => total >= committee.majority_quorum(),
+        let quorum_target = match &vote {
+            Vote::Valid(_) => committee.super_majority_quorum(),
+            _ => committee.majority_quorum(),
         };
 
+        let quorum_reached = total > quorum_target;
         if quorum_reached {
             tracing::info!(
                 event = "quorum reached",
