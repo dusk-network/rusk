@@ -4,17 +4,17 @@
 		"url": "https://dusk.network/",
 		"mail": "info@dusk.network"
 	},
-	"bugs": "https://github.com/dusk-network/web-wallet/issues",
+	"bugs": "https://github.com/dusk-network/rusk/issues",
 	"engines": {
 		"node": ">=18.0.0"
 	},
-	"homepage": "https://github.com/dusk-network/web-wallet",
+	"homepage": "https://github.com/dusk-network/rusk/tree/master/web-wallet",
 	"license": "MPL-2.0",
 	"name": "web-wallet",
 	"private": true,
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/dusk-network/web-wallet.git"
+		"url": "https://github.com/dusk-network/rusk.git"
 	},
 	"scripts": {
 		"build": "vite build",
