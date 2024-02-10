@@ -6,10 +6,12 @@
 
 #![allow(unused)]
 
+#[cfg(feature = "node")]
 mod chain;
 mod event;
 #[cfg(feature = "prover")]
 mod prover;
+#[cfg(feature = "node")]
 mod rusk;
 mod stream;
 
@@ -48,6 +50,7 @@ use tungstenite::protocol::{CloseFrame, Message};
 use futures_util::stream::iter as stream_iter;
 use futures_util::{SinkExt, StreamExt};
 
+#[cfg(feature = "node")]
 use crate::chain::{Rusk, RuskNode};
 use crate::VERSION;
 
@@ -57,9 +60,9 @@ use self::stream::{Listener, Stream};
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
 pub struct HttpServer {
-    handle: task::JoinHandle<()>,
+    pub handle: task::JoinHandle<()>,
     local_addr: SocketAddr,
-    _shutdown: broadcast::Sender<Infallible>,
+    pub _shutdown: broadcast::Sender<Infallible>,
 }
 
 impl HttpServer {
@@ -97,7 +100,9 @@ impl HttpServer {
 }
 
 pub struct DataSources {
+    #[cfg(feature = "node")]
     pub rusk: Rusk,
+    #[cfg(feature = "node")]
     pub node: RuskNode,
     #[cfg(feature = "prover")]
     pub prover: rusk_prover::LocalProver,
@@ -122,9 +127,11 @@ impl HandleRequest for DataSources {
             {
                 self.prover.handle(request).await
             }
+            #[cfg(feature = "node")]
             (Target::Contract(_), ..) | (_, "rusk", _) => {
                 self.rusk.handle(request).await
             }
+            #[cfg(feature = "node")]
             (_, "Chain", _) => self.node.handle(request).await,
             _ => Err(anyhow::anyhow!("unsupported target type")),
         }

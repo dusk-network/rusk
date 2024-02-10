@@ -4,10 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "node")]
 pub mod chain;
+#[cfg(feature = "node")]
 pub mod databroker;
-pub mod http;
+#[cfg(feature = "node")]
 pub mod kadcast;
+
+pub mod http;
 
 use std::env;
 use std::str::FromStr;
@@ -16,10 +20,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::args::Args;
 
+#[cfg(feature = "node")]
 use self::chain::ChainConfig;
+#[cfg(feature = "node")]
 use self::databroker::DataBrokerConfig;
-use self::http::HttpConfig;
+#[cfg(feature = "node")]
 use self::kadcast::KadcastConfig;
+
+use self::http::HttpConfig;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Config {
@@ -27,12 +35,15 @@ pub(crate) struct Config {
     log_type: Option<String>,
     log_filter: Option<String>,
 
+    #[cfg(feature = "node")]
     #[serde(default = "DataBrokerConfig::default")]
     pub(crate) databroker: DataBrokerConfig,
 
+    #[cfg(feature = "node")]
     #[serde(default = "KadcastConfig::default")]
     pub(crate) kadcast: KadcastConfig,
 
+    #[cfg(feature = "node")]
     #[serde(default = "ChainConfig::default")]
     pub(crate) chain: ChainConfig,
 
@@ -76,10 +87,15 @@ impl From<&Args> for Config {
             env::set_var("RUSK_PROFILE_PATH", profile);
         }
 
-        rusk_config.kadcast.merge(args);
-        rusk_config.chain.merge(args);
         rusk_config.http.merge(args);
-        rusk_config.databroker.merge(args);
+
+        #[cfg(feature = "node")]
+        {
+            rusk_config.kadcast.merge(args);
+            rusk_config.chain.merge(args);
+            rusk_config.databroker.merge(args);
+        }
+
         rusk_config
     }
 }

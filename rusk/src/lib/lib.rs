@@ -6,11 +6,10 @@
 
 #![feature(lazy_cell)]
 
+#[cfg(feature = "node")]
 pub mod chain;
 mod error;
 pub mod http;
-#[cfg(feature = "testwallet")]
-mod test_utils;
 pub mod verifier;
 mod version;
 
@@ -18,4 +17,8 @@ pub use crate::error::Error;
 pub use version::{VERSION, VERSION_BUILD};
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
+#[cfg(feature = "node")]
 pub use chain::Rusk;
+
+#[cfg(feature = "testwallet")]
+mod test_utils;

@@ -12,20 +12,23 @@ mod config;
 mod ephemeral;
 
 use clap::Parser;
-use node::database::rocksdb;
-use node::database::DB;
-use node::LongLivedService;
+
+#[cfg(feature = "node")]
+use node::{
+    chain::ChainSrv,
+    database::{rocksdb, DB},
+    databroker::DataBrokerSrv,
+    mempool::MempoolSrv,
+    network::Kadcast,
+    LongLivedService, Node,
+};
+#[cfg(feature = "node")]
 use rusk::chain::Rusk;
 use rusk::http::DataSources;
 use rusk::Result;
 
 use tracing_subscriber::filter::EnvFilter;
 
-use node::chain::ChainSrv;
-use node::databroker::DataBrokerSrv;
-use node::mempool::MempoolSrv;
-use node::network::Kadcast;
-use node::Node;
 use rusk::http::HttpServer;
 use tracing::info;
 
@@ -91,42 +94,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
 
-    let state_dir = rusk_profile::get_rusk_state_dir()?;
-    info!("Using state from {state_dir:?}");
-    let rusk = Rusk::new(state_dir)?;
+    #[cfg(feature = "node")]
+    let (rusk, node, service_list) = {
+        let state_dir = rusk_profile::get_rusk_state_dir()?;
+        info!("Using state from {state_dir:?}");
+        let rusk = Rusk::new(state_dir)?;
 
-    info!("Rusk VM loaded");
+        info!("Rusk VM loaded");
 
-    // Set up a node where:
-    // transport layer is Kadcast with message ids from 0 to 255
-    // persistence layer is rocksdb
-    type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
+        // Set up a node where:
+        // transport layer is Kadcast with message ids from 0 to 255
+        // persistence layer is rocksdb
+        type Services =
+            dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
 
-    // Select list of services to enable
-    let service_list: Vec<Box<Services>> = vec![
-        Box::<MempoolSrv>::default(),
-        Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
-        Box::new(DataBrokerSrv::new(config.clone().databroker.into())),
-    ];
+        // Select list of services to enable
+        let service_list: Vec<Box<Services>> = vec![
+            Box::<MempoolSrv>::default(),
+            Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
+            Box::new(DataBrokerSrv::new(config.clone().databroker.into())),
+        ];
 
-    #[cfg(feature = "ephemeral")]
-    let db_path = tempdir.as_ref().map_or_else(
-        || config.chain.db_path(),
-        |t| std::path::Path::to_path_buf(t.path()),
-    );
+        #[cfg(feature = "ephemeral")]
+        let db_path = tempdir.as_ref().map_or_else(
+            || config.chain.db_path(),
+            |t| std::path::Path::to_path_buf(t.path()),
+        );
 
-    #[cfg(not(feature = "ephemeral"))]
-    let db_path = config.chain.db_path();
+        #[cfg(not(feature = "ephemeral"))]
+        let db_path = config.chain.db_path();
 
-    let db = rocksdb::Backend::create_or_open(db_path);
-    let net = Kadcast::new(config.clone().kadcast.into());
+        let db = rocksdb::Backend::create_or_open(db_path);
+        let net = Kadcast::new(config.clone().kadcast.into());
 
-    let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
-
+        let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
+        (rusk, node, service_list)
+    };
     let mut _ws_server = None;
     if config.http.listen {
+        info!("Configuring HTTP");
+
         let handler = DataSources {
+            #[cfg(feature = "node")]
             node: node.clone(),
+            #[cfg(feature = "node")]
             rusk,
             #[cfg(feature = "prover")]
             prover: rusk_prover::LocalProver,
@@ -143,11 +154,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(HttpServer::bind(handler, listen_addr, cert_and_key).await?);
     }
 
+    #[cfg(feature = "node")]
     // node spawn_all is the entry point
     if let Err(e) = node.0.spawn_all(service_list).await {
         tracing::error!("node terminated with err: {}", e);
-        Err(e.into())
-    } else {
-        Ok(())
+        return Err(e.into());
     }
+
+    #[cfg(not(feature = "node"))]
+    if let Some(s) = _ws_server {
+        s.handle.await?;
+    }
+
+    Ok(())
 }
