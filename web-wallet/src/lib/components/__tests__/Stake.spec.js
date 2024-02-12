@@ -13,6 +13,13 @@ import { createCurrencyFormatter } from "$lib/dusk/currency";
 
 import { Stake } from "..";
 
+/**
+ * @param {HTMLElement} input
+ * @param {*} value
+ * @returns {Promise<boolean>}
+ */
+const fireInput = (input, value) => fireEvent.input(input, { target: { value } });
+
 describe("Stake", () => {
 	const formatter = createCurrencyFormatter("en", "DUSK", 9);
 	const lastTxId = "some-id";
@@ -70,7 +77,7 @@ describe("Stake", () => {
 		expect(container.firstChild).toMatchSnapshot();
 	});
 
-	it("should disable the next button if the stake amount is invalid on mount", () => {
+	it("should disable the next button if the stake amount is invalid on mount", async () => {
 		const props = {
 			...baseProps,
 			gasSettings: {
@@ -87,6 +94,7 @@ describe("Stake", () => {
 		const nextButton = getByRole("button", { name: "Next" });
 		const amountInput = getByRole("spinbutton");
 
+		await fireInput(amountInput, 1000);
 		expect(nextButton).toBeDisabled();
 		expect(amountInput.getAttribute("min")).toBe("1000");
 		expect(amountInput.getAttribute("max")).toBe(currentMaxSpendable.toString());
@@ -144,7 +152,8 @@ describe("Stake", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(baseProps.execute).toHaveBeenCalledTimes(1);
-			expect(baseProps.execute).toHaveBeenCalledWith(1000);
+			expect(baseProps.execute)
+				.toHaveBeenCalledWith(1000, baseProps.gasSettings.gasPrice, baseProps.gasSettings.gasLimit);
 
 			const explorerLink = getByRole("link", { name: /explorer/i });
 
@@ -168,7 +177,8 @@ describe("Stake", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(baseProps.execute).toHaveBeenCalledTimes(1);
-			expect(baseProps.execute).toHaveBeenCalledWith(2567);
+			expect(baseProps.execute)
+				.toHaveBeenCalledWith(2567, baseProps.gasSettings.gasPrice, baseProps.gasSettings.gasLimit);
 			expect(getByText("Transaction failed")).toBeInTheDocument();
 			expect(getByText(errorMessage)).toBeInTheDocument();
 		});
@@ -185,7 +195,12 @@ describe("Stake", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(baseProps.execute).toHaveBeenCalledTimes(1);
-			expect(baseProps.execute).toHaveBeenCalledWith(maxSpendable);
+			expect(baseProps.execute)
+				.toHaveBeenCalledWith(
+					maxSpendable,
+					baseProps.gasSettings.gasPrice,
+					baseProps.gasSettings.gasLimit
+				);
 			expect(getByText("Transaction completed")).toBeInTheDocument();
 			expect(() => getByRole("link", { name: /explorer/i })).toThrow();
 		});

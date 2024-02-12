@@ -2,7 +2,6 @@
 	import { slide } from "svelte/transition";
 	import { Button } from "$lib/dusk/components";
 	import { GasControls, GasFee } from "$lib/components";
-	import { createEventDispatcher } from "svelte";
 
 	/** @type {number} */
 	export let limit;
@@ -24,8 +23,6 @@
 
 	/** @type {boolean} */
 	let isExpanded = false;
-
-	const dispatch = createEventDispatcher();
 </script>
 
 <div class="gas-settings">
@@ -43,9 +40,9 @@
 		</dd>
 	</dl>
 	{#if isExpanded}
-		<div in:slide|global class="gas-settings">
+		<div in:slide|global out:slide|global class="gas-settings">
 			<GasControls
-				on:setGasSettings={(event) => { dispatch("setGasSettings", event.detail); }}
+				on:setGasSettings
 				{limit}
 				{limitLower}
 				{limitUpper}

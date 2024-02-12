@@ -65,6 +65,8 @@
 	/** @type {boolean} */
 	let isNextButtonDisabled = false;
 
+	let { gasLimit, gasPrice } = gasSettings;
+
 	/** @type {Record<StakeType, string>} */
 	const overviewLabels = {
 		"stake": "Amount",
@@ -79,6 +81,14 @@
 	const dispatch = createEventDispatcher();
 	const resetOperation = () => dispatch("operationChange", "");
 
+	/**
+	 * @param {{detail:{price:number, limit:number}}} event
+	 */
+	const setGasValues = (event) => {
+		gasPrice = event.detail.price;
+		gasLimit = event.detail.limit;
+	};
+
 	onMount(() => {
 		if (flow === "stake") {
 			stakeInput = document.querySelector(".operation__input-field");
@@ -87,7 +97,7 @@
 		}
 	});
 
-	$: luxFee = gasSettings.gasLimit * gasSettings.gasPrice;
+	$: luxFee = gasLimit * gasPrice;
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
 	$: minStake = maxSpendable > 0 ? Math.min(defaultMinStake, maxSpendable) : defaultMinStake;
@@ -147,7 +157,7 @@
 					limitUpper={gasSettings.gasLimitUpper}
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
-					on:setGasSettings
+					on:setGasSettings={setGasValues}
 				/>
 			</WizardStep>
 		{/if}
@@ -191,7 +201,7 @@
 						limitUpper={gasSettings.gasLimitUpper}
 						price={gasSettings.gasPrice}
 						priceLower={gasSettings.gasPriceLower}
-						on:setGasSettings
+						on:setGasSettings={setGasValues}
 					/>
 				{/if}
 
@@ -206,7 +216,8 @@
 			<OperationResult
 				errorMessage="Transaction failed"
 				onBeforeLeave={resetOperation}
-				operation={flow === "stake" ? execute(stakeAmount) : execute()}
+				operation={flow === "stake" ? execute(stakeAmount, gasPrice, gasLimit)
+					: execute(gasPrice, gasLimit)}
 				pendingMessage="Processing transaction"
 				successMessage="Transaction completed"
 			>

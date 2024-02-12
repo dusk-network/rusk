@@ -49,9 +49,12 @@
 
 	/** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
 	const executeOperations = {
-		"stake": amount => walletStore.stake(amount).then(getLastTransactionHash),
-		"withdraw-rewards": () => walletStore.withdrawReward().then(getLastTransactionHash),
-		"withdraw-stake": () => walletStore.unstake().then(getLastTransactionHash)
+		"stake": (amount, gasPrice, gasLimit) =>
+			walletStore.stake(amount, gasPrice, gasLimit).then(getLastTransactionHash),
+		"withdraw-rewards": (gasPrice, gasLimit) =>
+			walletStore.withdrawReward(gasPrice, gasLimit).then(getLastTransactionHash),
+		"withdraw-stake": (gasPrice, gasLimit) =>
+			walletStore.unstake(gasPrice, gasLimit).then(getLastTransactionHash)
 	};
 
 	/** @type {(operations: ContractOperation[]) => ContractOperation[]} */
@@ -135,7 +138,6 @@
 				formatter={duskFormatter}
 				{gasSettings}
 				on:operationChange
-				on:setGasSettings
 				rewards={stakeInfo.reward}
 				spendable={balance.maximum}
 				staked={stakeInfo.amount}

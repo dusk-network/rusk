@@ -33,15 +33,15 @@ type WalletStoreServices = {
 
 	setCurrentAddress: (address: string) => Promise<void>;
 
-	stake: (amount: number) => Promise<any> & ReturnType<Wallet["stake"]>;
+	stake: (amount: number, gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["stake"]>;
 
 	sync: () => Promise<void>;
 
-	transfer: (to: string, amount: number) => Promise<any> & ReturnType<Wallet["transfer"]>;
+	transfer: (to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["transfer"]>;
 
-	unstake: () => Promise<any> & ReturnType<Wallet["unstake"]>;
+	unstake: (gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["unstake"]>;
 
-	withdrawReward: () => Promise<any> & ReturnType<Wallet["withdrawReward"]>;
+	withdrawReward: (gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["withdrawReward"]>;
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;
