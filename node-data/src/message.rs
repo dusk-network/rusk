@@ -614,9 +614,36 @@ pub mod payload {
     }
 
     #[derive(Debug, Clone, Eq, PartialEq)]
+    #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
+    pub enum RatificationResult {
+        Fail(Vote),
+        Success(Vote),
+    }
+
+    impl From<Vote> for RatificationResult {
+        fn from(vote: Vote) -> Self {
+            match vote {
+                Vote::Valid(hash) => {
+                    RatificationResult::Success(Vote::Valid(hash))
+                }
+                fail => RatificationResult::Fail(fail),
+            }
+        }
+    }
+
+    impl RatificationResult {
+        pub fn vote(&self) -> &Vote {
+            match self {
+                Self::Success(v) => v,
+                Self::Fail(v) => v,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct Quorum {
         pub header: ConsensusHeader,
-        pub vote: Vote,
+        pub result: RatificationResult,
         pub validation: StepVotes,
         pub ratification: StepVotes,
     }
@@ -624,7 +651,7 @@ pub mod payload {
     impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
-            self.vote.write(w)?;
+            self.result.write(w)?;
             self.validation.write(w)?;
             self.ratification.write(w)?;
 
@@ -636,16 +663,16 @@ pub mod payload {
             Self: Sized,
         {
             let header = ConsensusHeader::read(r)?;
-            let vote = Vote::read(r)?;
+            let result = RatificationResult::read(r)?;
 
             let validation = StepVotes::read(r)?;
             let ratification = StepVotes::read(r)?;
 
             Ok(Quorum {
                 header,
-                vote,
                 validation,
                 ratification,
+                result,
             })
         }
     }
@@ -657,6 +684,10 @@ pub mod payload {
                 validation: self.validation,
                 ratification: self.ratification,
             }
+        }
+
+        pub fn vote(&self) -> &Vote {
+            self.result.vote()
         }
     }
 
@@ -1186,7 +1217,7 @@ mod tests {
 
         assert_serialize(payload::Quorum {
             header: consensus_header.clone(),
-            vote: payload::Vote::Valid([4; 32]),
+            result: payload::Vote::Valid([4; 32]).into(),
             validation: ledger::StepVotes::new([1; 48], 12345),
             ratification: ledger::StepVotes::new([2; 48], 98765),
         });
