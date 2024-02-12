@@ -53,7 +53,7 @@ phoenix-core = "0.21"
 tungstenite = "0.20"
 hyper-tungstenite = "0.11"
 hyper = { version = "0.14", features = ["server", "stream", "http1", "http2"] }
-futures = "0.3"
+
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["rt"] }
 tokio-rustls = "0.25"
@@ -65,9 +65,11 @@ transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.12.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
 rusk-prover = { version = "0.3", path = "../rusk-prover", optional = true }
-node = { version = "0.1", path = "../node" }
-dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
-node-data = { version = "0.1", path = "../node-data" }
+
+## node dependencies
+node = { version = "0.1", path = "../node", optional = true }
+dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus", optional = true }
+node-data = { version = "0.1", path = "../node-data", optional = true }
 
 ## Bump to 0.8.7 requires rust 1.71.0 due to `build_hasher_simple_hash_one` feature stabilization
 ahash = "=0.8.6"
@@ -79,6 +81,10 @@ async-graphql = "5.0"
 ## Ephemeral dependencies
 tempfile = { version = "3.2", optional = true }
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", optional = true}
+
+## testwallet dependencies
+
+futures = { version = "0.3", optional = true }
 
 [dev-dependencies]
 test-context = "0.1"
@@ -92,11 +98,13 @@ criterion = "0.5"
 rustc_tools_util = "0.3"
 
 [features]
-default = ["ephemeral", "recovery-state", "recovery-keys", "prover"]
-ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state"]
+default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "node"]
+ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "node"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover"]
+testwallet = ["dep:futures"]
+node = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
 
 [[bench]]
 name = "block_ingestion"

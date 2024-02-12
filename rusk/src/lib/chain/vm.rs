@@ -4,15 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod query;
+
+use tracing::info;
+
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
-use tracing::info;
 
-use crate::{Rusk, MINIMUM_STAKE};
+use super::{Rusk, MINIMUM_STAKE};
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add TLS support for HTTP server
 - Add iteration generator to FailedIterations [#1257]
+- Add `node` feature flag [#1144]
 
 ### Changed
 
@@ -190,6 +191,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
+[#1144]: https://github.com/dusk-network/rusk/issues/1144
 [#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369
 [#327]: https://github.com/dusk-network/rusk/issues/327

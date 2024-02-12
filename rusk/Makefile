@@ -5,8 +5,8 @@ help: ## Display this help screen
 
 test: ## Run Rusk tests
 	@cargo test \
-		-vvv \
 		--release \
+		--features testwallet \
 		-- --nocapture
 			
 clippy: ## Run clippy
@@ -16,6 +16,7 @@ clippy: ## Run clippy
 	@cargo clippy --no-default-features --features recovery-keys --release -- -D warnings
 	@cargo clippy --no-default-features --features recovery-state --release -- -D warnings
 	@cargo clippy --no-default-features --features prover --release -- -D warnings
+	@cargo clippy --no-default-features --features node --release -- -D warnings
 
 build: ## Build rusk binary
 	@cargo build --release

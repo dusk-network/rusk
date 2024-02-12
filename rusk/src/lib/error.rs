@@ -7,7 +7,6 @@
 use std::{fmt, io};
 
 use dusk_bls12_381::BlsScalar;
-use dusk_consensus::operations::VerificationOutput;
 use rusk_abi::dusk::Dusk;
 
 #[derive(Debug)]
@@ -46,7 +45,8 @@ pub enum Error {
     #[cfg(feature = "prover")]
     ProofCreation(rusk_prover::ProverError),
     /// Failed to produce proper state
-    InconsistentState(VerificationOutput),
+    #[cfg(feature = "node")]
+    InconsistentState(dusk_consensus::operations::VerificationOutput),
     /// Other
     Other(Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits
@@ -136,6 +136,7 @@ impl fmt::Display for Error {
             Error::ProofCreation(e) => {
                 write!(f, "Proof creation error: {e}")
             }
+            #[cfg(feature = "node")]
             Error::InconsistentState(verification_output) => {
                 write!(
                     f,
