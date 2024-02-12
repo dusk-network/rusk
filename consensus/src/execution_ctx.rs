@@ -244,7 +244,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         vote = %q.vote,
                     );
 
-                    self.quorum_sender.send(m).await;
+                    self.quorum_sender.send_quorum(m).await;
                 }
 
                 Payload::ValidationResult(validation_result) => {

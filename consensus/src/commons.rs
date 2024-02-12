@@ -141,7 +141,7 @@ impl QuorumMsgSender {
     }
 
     /// Sends an quorum (internally) to the quorum loop.
-    pub(crate) async fn send(&self, msg: Message) {
+    pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
             // TODO: Change me accordingly to https://github.com/dusk-network/rusk/issues/1268
             Payload::Quorum(q)

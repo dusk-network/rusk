@@ -254,7 +254,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // During execution of any step we may encounter that an
                     // quorum is generated for a former or current iteration.
                     if msg.topic() == Topics::Quorum {
-                        sender.send(msg.clone()).await;
+                        sender.send_quorum(msg.clone()).await;
                     }
                 }
 
