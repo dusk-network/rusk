@@ -43,7 +43,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         let msg = Message::new_ratification(ratification);
 
         // Publish ratification vote
-        info!(event = "send_vote", validation_bitset = result.sv.bitset);
+        info!(event = "send_vote", validation_bitset = result.sv().bitset);
 
         // Publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
@@ -68,7 +68,7 @@ pub fn build_ratification_payload(
     let sign_info = message::SignInfo::default();
     let mut ratification = message::payload::Ratification {
         header,
-        vote: result.vote.clone(),
+        vote: result.vote().clone(),
         sign_info,
         validation_result: result.clone(),
         timestamp: get_current_timestamp(),
@@ -91,12 +91,11 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
     pub async fn reinitialize(
         &mut self,
-        msg: &Message,
+        msg: Message,
         round: u64,
         iteration: u8,
     ) {
         let mut handler = self.handler.lock().await;
-        handler.reset(iteration);
 
         // The Validation output must be the vote to cast on the Ratification.
         // There are these possible outputs:
@@ -104,9 +103,9 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         //  - (unsupported) Quorum on Invalid Candidate
         //  - Quorum on Timeout (NilQuorum)
         //  - No Quorum (Validation step time-ed out)
-
-        if let Payload::ValidationResult(p) = &msg.payload {
-            handler.validation_result = p.as_ref().clone();
+        match msg.payload {
+            Payload::ValidationResult(p) => handler.reset(iteration, *p),
+            _ => handler.reset(iteration, Default::default()),
         }
 
         tracing::debug!(
@@ -114,9 +113,9 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             name = self.name(),
             round = round,
             iter = iteration,
-            vote = ?handler.validation_result().vote,
-            fsv_bitset = handler.validation_result().sv.bitset,
-            quorum_type = format!("{:?}", handler.validation_result().quorum)
+            vote = ?handler.validation_result().vote(),
+            fsv_bitset = handler.validation_result().sv().bitset,
+            quorum_type = ?handler.validation_result().quorum()
         )
     }
 
@@ -130,7 +129,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
         if ctx.am_member(committee) {
             let mut handler = self.handler.lock().await;
-            let vote = &handler.validation_result().vote;
+            let vote = handler.validation_result().vote();
 
             let vote_msg = Self::try_vote(
                 &ctx.round_update,

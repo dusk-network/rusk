@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
 use std::time::Duration;
 
 use dusk_consensus::commons::RoundUpdate;
@@ -24,7 +25,7 @@ use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
-use node_data::message::payload::{ValidationResult, Vote};
+use node_data::message::payload::{QuorumType, ValidationResult, Vote};
 use node_data::{
     bls::PublicKey,
     ledger::{Certificate, StepVotes},
@@ -60,7 +61,7 @@ fn create_step_votes(
                 pk.clone(),
                 *sk,
                 mrb_header,
-                Duration::from_millis(1),
+                HashMap::default(),
             );
             let sig = match step {
                 StepName::Validation => {
@@ -74,10 +75,11 @@ fn create_step_votes(
                     dusk_consensus::build_ratification_payload(
                         &ru,
                         iteration,
-                        &ValidationResult {
+                        &ValidationResult::new(
+                            StepVotes::default(),
                             vote,
-                            ..Default::default()
-                        },
+                            QuorumType::Valid,
+                        ),
                     )
                     .sign_info
                     .signature

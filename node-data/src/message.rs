@@ -421,18 +421,8 @@ pub mod payload {
         NoCandidate = 0,
         Valid(Hash) = 1,
         Invalid(Hash) = 2,
-    }
 
-    impl Vote {
-        pub fn signable(&self, round: u64, step: u16) -> Vec<u8> {
-            // This must be equale to Message signable implementation
-            let mut buf = vec![];
-            buf.extend_from_slice(&round.to_le_bytes());
-            buf.extend_from_slice(&step.to_le_bytes());
-            self.write(&mut buf).expect("Writing to vec should succeed");
-
-            buf
-        }
+        NoQuorum = 3,
     }
 
     impl fmt::Display for Vote {
@@ -441,6 +431,7 @@ pub mod payload {
                 Self::NoCandidate => ("NoCandidate", "".into()),
                 Self::Valid(hash) => ("Valid", to_str(hash)),
                 Self::Invalid(hash) => ("Invalid", to_str(hash)),
+                Self::NoQuorum => ("NoQuorum", "".into()),
             };
             write!(f, "Vote: {desc}({hash})")
         }
@@ -459,6 +450,7 @@ pub mod payload {
                     w.write_all(&[2])?;
                     w.write_all(hash)?;
                 }
+                Self::NoQuorum => w.write_all(&[3])?,
             };
             Ok(())
         }
@@ -471,6 +463,7 @@ pub mod payload {
                 0 => Self::NoCandidate,
                 1 => Self::Valid(Self::read_bytes(r)?),
                 2 => Self::Invalid(Self::read_bytes(r)?),
+                3 => Self::NoQuorum,
                 _ => Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "Invalid vote",
@@ -561,19 +554,19 @@ pub mod payload {
             })
         }
     }
-    #[derive(Clone, Copy, Default)]
+    #[derive(Clone, Copy, Debug, Default)]
     #[cfg_attr(
         any(feature = "faker", test),
         derive(fake::Dummy, Eq, PartialEq)
     )]
     pub enum QuorumType {
-        /// Quorum on Valid Candidate
-        ValidQuorum = 0,
-        // Quorum on Invalid Candidate
-        InvalidQuorum = 1,
-        //Quorum on Timeout (NilQuorum)
-        NilQuorum = 2,
-        // NoQuorum
+        /// Supermajority of Valid votes
+        Valid = 0,
+        /// Majority of Invalid votes
+        Invalid = 1,
+        /// Majority of NoCandidate votes
+        NoCandidate = 2,
+        /// No quorum reached (timeout expired)
         #[default]
         NoQuorum = 255,
     }
@@ -581,23 +574,11 @@ pub mod payload {
     impl From<u8> for QuorumType {
         fn from(v: u8) -> QuorumType {
             match v {
-                0 => QuorumType::ValidQuorum,
-                1 => QuorumType::InvalidQuorum,
-                2 => QuorumType::NilQuorum,
+                0 => QuorumType::Valid,
+                1 => QuorumType::Invalid,
+                2 => QuorumType::NoCandidate,
                 _ => QuorumType::NoQuorum,
             }
-        }
-    }
-
-    impl fmt::Debug for QuorumType {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let label = match self {
-                QuorumType::ValidQuorum => "valid_quorum",
-                QuorumType::InvalidQuorum => "invalid_quorum",
-                QuorumType::NilQuorum => "nil_quorum",
-                QuorumType::NoQuorum => "no_quorum",
-            };
-            f.write_str(label)
         }
     }
 
@@ -607,9 +588,27 @@ pub mod payload {
         derive(fake::Dummy, Eq, PartialEq)
     )]
     pub struct ValidationResult {
-        pub quorum: QuorumType,
-        pub vote: Vote,
-        pub sv: StepVotes,
+        pub(crate) quorum: QuorumType,
+        pub(crate) vote: Vote,
+        pub(crate) sv: StepVotes,
+    }
+
+    impl ValidationResult {
+        pub fn new(sv: StepVotes, vote: Vote, quorum: QuorumType) -> Self {
+            Self { sv, vote, quorum }
+        }
+
+        pub fn quorum(&self) -> QuorumType {
+            self.quorum
+        }
+
+        pub fn sv(&self) -> &StepVotes {
+            &self.sv
+        }
+
+        pub fn vote(&self) -> &Vote {
+            &self.vote
+        }
     }
 
     #[derive(Debug, Clone, Eq, PartialEq)]
@@ -1161,10 +1160,7 @@ mod tests {
             sign_info: sign_info.clone(),
         });
 
-        assert_serialize(ledger::StepVotes {
-            bitset: 12345,
-            aggregate_signature: [4; 48].into(),
-        });
+        assert_serialize(ledger::StepVotes::new([4; 48], 12345));
 
         assert_serialize(payload::Validation {
             header: consensus_header.clone(),
@@ -1172,32 +1168,25 @@ mod tests {
             sign_info: sign_info.clone(),
         });
 
+        let validation_result = ValidationResult::new(
+            ledger::StepVotes::new([1; 48], 12345),
+            payload::Vote::Valid([5; 32]),
+            payload::QuorumType::Valid,
+        );
+
         assert_serialize(payload::Ratification {
             header: consensus_header.clone(),
             vote: payload::Vote::Valid([4; 32]),
             sign_info: sign_info.clone(),
-            validation_result: ValidationResult {
-                sv: ledger::StepVotes {
-                    bitset: 12345,
-                    aggregate_signature: [1; 48].into(),
-                },
-                quorum: payload::QuorumType::ValidQuorum,
-                vote: payload::Vote::Valid([5; 32]),
-            },
+            validation_result,
             timestamp: 1_000_000,
         });
 
         assert_serialize(payload::Quorum {
             header: consensus_header.clone(),
             vote: payload::Vote::Valid([4; 32]),
-            validation: ledger::StepVotes {
-                bitset: 12345,
-                aggregate_signature: [1; 48].into(),
-            },
-            ratification: ledger::StepVotes {
-                bitset: 98765,
-                aggregate_signature: [2; 48].into(),
-            },
+            validation: ledger::StepVotes::new([1; 48], 12345),
+            ratification: ledger::StepVotes::new([2; 48], 98765),
         });
     }
 

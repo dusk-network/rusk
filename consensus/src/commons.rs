@@ -72,8 +72,8 @@ impl RoundUpdate {
 
 #[derive(Debug, Clone, Copy, Error)]
 pub enum StepSigError {
-    #[error("Failed to reach a quorum at step {0}")]
-    VoteSetTooSmall(u16),
+    #[error("Failed to reach a quorum")]
+    VoteSetTooSmall,
     #[error("Verification error {0}")]
     VerificationFailed(dusk_bls12_381_sign::Error),
     #[error("Empty Apk instance")]
@@ -88,7 +88,7 @@ impl From<dusk_bls12_381_sign::Error> for StepSigError {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
@@ -96,7 +96,9 @@ pub enum ConsensusError {
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
     InvalidValidation(QuorumType),
+    InvalidPrevBlockHash(Hash),
     InvalidQuorumType,
+    InvalidVote(Vote),
     FutureEvent,
     PastEvent,
     NotCommitteeMember,
@@ -139,35 +141,29 @@ impl QuorumMsgSender {
     }
 
     /// Sends an quorum (internally) to the quorum loop.
-    pub(crate) async fn send(&self, msg: Message) -> bool {
-        if let Payload::Quorum(q) = &msg.payload {
-            if q.validation.is_empty()
-                || q.ratification.is_empty()
-                || q.vote == Vote::NoCandidate
+    pub(crate) async fn send(&self, msg: Message) {
+        match &msg.payload {
             // TODO: Change me accordingly to https://github.com/dusk-network/rusk/issues/1268
+            Payload::Quorum(q)
+                if !q.validation.is_empty()
+                    && !q.ratification.is_empty()
+                    && q.vote != Vote::NoCandidate =>
             {
-                return false;
+                tracing::debug!(
+                    event = "send quorum_msg",
+                    vote = %q.vote,
+                    round = msg.header.round,
+                    iteration = msg.header.iteration,
+                    validation = ?q.validation,
+                    ratification = ?q.ratification,
+                );
             }
-
-            tracing::debug!(
-                event = "send quorum_msg",
-                vote = %q.vote,
-                round = msg.header.round,
-                iteration = msg.header.iteration,
-                validation = ?q.validation,
-                ratification = ?q.ratification,
-            );
-
-            let _ = self
-                .queue
-                .send(msg.clone())
-                .await
-                .map_err(|e| error!("send quorum_msg failed with {:?}", e));
-
-            return true;
+            _ => return,
         }
 
-        false
+        if let Err(e) = self.queue.send(msg).await {
+            error!("send quorum_msg failed with {e:?}")
+        }
     }
 }
 

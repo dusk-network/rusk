@@ -98,15 +98,7 @@ pub async fn verify_step_votes(
     let set = committees_set.read().await;
     let committee = set.get(&cfg).expect("committee to be created");
 
-    verify_votes(
-        header,
-        step_name,
-        vote,
-        sv.bitset,
-        sv.aggregate_signature.inner(),
-        committee,
-        &cfg,
-    )
+    verify_votes(header, step_name, vote, sv, committee)
 }
 
 #[derive(Default)]
@@ -125,17 +117,17 @@ pub fn verify_votes(
     header: &ConsensusHeader,
     msg_type: StepName,
     vote: &Vote,
-    bitset: u64,
-    signature: &[u8; 48],
+    step_votes: &StepVotes,
     committee: &Committee,
-    cfg: &sortition::Config,
 ) -> Result<QuorumResult, StepSigError> {
+    let bitset = step_votes.bitset;
+    let signature = step_votes.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
 
     let total = committee.total_occurrences(&sub_committee);
     let target_quorum = match vote {
-        Vote::NoCandidate => committee.nil_quorum(),
-        _ => committee.quorum(),
+        Vote::Valid(_) => committee.super_majority_quorum(),
+        _ => committee.majority_quorum(),
     };
 
     let quorum_result = QuorumResult {
@@ -147,12 +139,11 @@ pub fn verify_votes(
         tracing::error!(
             desc = "vote_set_too_small",
             committee = format!("{:#?}", sub_committee),
-            cfg = format!("{:#?}", cfg),
             bitset,
             target_quorum,
             total,
         );
-        return Err(StepSigError::VoteSetTooSmall(cfg.step()));
+        return Err(StepSigError::VoteSetTooSmall);
     }
 
     // If bitset=0 this means that we are checking for failed iteration

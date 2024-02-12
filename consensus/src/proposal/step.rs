@@ -41,7 +41,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
 
     pub async fn reinitialize(
         &mut self,
-        _msg: &Message,
+        _msg: Message,
         round: u64,
         iteration: u8,
     ) {

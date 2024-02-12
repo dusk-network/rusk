@@ -9,16 +9,12 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Certificate, IterationInfo, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::{payload, Message};
+use node_data::StepName;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::debug;
-
-pub(crate) enum SvType {
-    Validation,
-    Ratification,
-}
+use tracing::{debug, warn};
 
 #[derive(Clone)]
 struct CertificateInfo {
@@ -53,27 +49,39 @@ impl CertificateInfo {
         }
     }
 
-    pub(crate) fn add_sv(
+    /// Set certificate stepvotes according to [step]. Store [quorum_reached] to
+    /// calculate [CertificateInfo::is_ready]
+    pub(crate) fn set_sv(
         &mut self,
         iter: u8,
         sv: StepVotes,
-        svt: SvType,
+        step: StepName,
         quorum_reached: bool,
     ) {
-        match svt {
-            SvType::Validation => {
+        match step {
+            StepName::Validation => {
                 self.cert.validation = sv;
 
                 if quorum_reached {
                     self.quorum_reached_validation = quorum_reached;
                 }
             }
-            SvType::Ratification => {
+            StepName::Ratification => {
                 self.cert.ratification = sv;
 
                 if quorum_reached {
                     self.quorum_reached_ratification = quorum_reached;
                 }
+            }
+            _ => {
+                warn!(
+                    event = "invalid add_sv",
+                    iter,
+                    data = format!("{}", self),
+                    quorum_reached,
+                    ?step
+                );
+                return;
             }
         }
 
@@ -147,7 +155,7 @@ impl CertInfoRegistry {
         iteration: u8,
         vote: &Vote,
         sv: StepVotes,
-        svt: SvType,
+        step: StepName,
         quorum_reached: bool,
         generator: &PublicKeyBytes,
     ) -> Option<Message> {
@@ -158,7 +166,7 @@ impl CertInfoRegistry {
 
         let cert_info = cert.get_or_insert(vote);
 
-        cert_info.add_sv(iteration, sv, svt, quorum_reached);
+        cert_info.set_sv(iteration, sv, step, quorum_reached);
         cert_info
             .is_ready()
             .then(|| Self::build_quorum_msg(&self.ru, iteration, cert_info))
