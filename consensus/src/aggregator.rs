@@ -107,7 +107,7 @@ impl Aggregator {
             _ => committee.majority_quorum(),
         };
 
-        let quorum_reached = total > quorum_target;
+        let quorum_reached = total >= quorum_target;
         if quorum_reached {
             tracing::info!(
                 event = "quorum reached",
