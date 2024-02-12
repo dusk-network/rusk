@@ -68,54 +68,44 @@ impl MsgHandler for RatificationHandler {
         if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn
-            warn!(
-                event = "drop message",
-                reason = "invalid iteration number",
-                msg_iteration = iteration,
-            );
-            return Ok(HandleMsgOutput::Pending);
+            return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
         // Collect vote, if msg payload is of ratification type
-        let collect_vote = self.aggregator.collect_vote(
-            committee,
-            p.sign_info(),
-            &p.vote,
-            p.get_step(),
-        );
-
-        match collect_vote {
-            Ok((sv, quorum_reached)) => {
-                // Record any signature in global registry
-                _ = self.sv_registry.lock().await.add_step_votes(
-                    iteration,
-                    &p.vote,
-                    sv,
-                    StepName::Ratification,
-                    quorum_reached,
-                    committee.excluded().expect("Generator to be excluded"),
-                );
-
-                if quorum_reached {
-                    return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
-                        ru,
-                        iteration,
-                        p.vote,
-                        *p.validation_result.sv(),
-                        sv,
-                    )));
-                }
-            }
-            Err(error) => {
+        let (sv, quorum_reached) = self
+            .aggregator
+            .collect_vote(committee, p.sign_info(), &p.vote, p.get_step())
+            .map_err(|error| {
+                let vote = p.vote.clone();
                 warn!(
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = %p.vote,
+                    %vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
-            }
+                ConsensusError::InvalidVote(vote)
+            })?;
+
+        // Record any signature in global registry
+        _ = self.sv_registry.lock().await.add_step_votes(
+            iteration,
+            &p.vote,
+            sv,
+            StepName::Ratification,
+            quorum_reached,
+            committee.excluded().expect("Generator to be excluded"),
+        );
+
+        if quorum_reached {
+            return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
+                ru,
+                iteration,
+                p.vote,
+                *p.validation_result.sv(),
+                sv,
+            )));
         }
 
         Ok(HandleMsgOutput::Pending)

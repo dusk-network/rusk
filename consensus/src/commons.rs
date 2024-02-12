@@ -99,6 +99,7 @@ pub enum ConsensusError {
     InvalidPrevBlockHash(Hash),
     InvalidQuorumType,
     InvalidVote(Vote),
+    InvalidMsgIteration(u8),
     FutureEvent,
     PastEvent,
     NotCommitteeMember,

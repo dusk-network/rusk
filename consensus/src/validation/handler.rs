@@ -96,58 +96,47 @@ impl MsgHandler for ValidationHandler {
         if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn
-            warn!(
-                event = "drop message",
-                reason = "invalid iteration number",
-                msg_iteration = iteration,
-            );
-            return Ok(HandleMsgOutput::Pending);
+            return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
-        let collect_vote = self.aggr.collect_vote(
-            committee,
-            p.sign_info(),
-            &p.vote,
-            p.get_step(),
-        );
-        match collect_vote {
-            Ok((sv, quorum_reached)) => {
-                // Record result in global round registry
-                _ = self.sv_registry.lock().await.add_step_votes(
-                    iteration,
-                    &p.vote,
-                    sv,
-                    StepName::Validation,
-                    quorum_reached,
-                    committee.excluded().expect("Generator to be excluded"),
-                );
-
-                if quorum_reached {
-                    let vote = p.vote;
-
-                    let quorum_type = match vote {
-                        Vote::NoCandidate => QuorumType::NoCandidate,
-                        Vote::Invalid(_) => QuorumType::Invalid,
-                        Vote::Valid(_) => QuorumType::Valid,
-                        Vote::NoQuorum => {
-                            return Err(ConsensusError::InvalidVote(vote));
-                        }
-                    };
-                    info!(event = "quorum reached", %vote);
-                    return Ok(final_result(sv, vote, quorum_type));
-                }
-            }
-
-            Err(error) => {
+        let (sv, quorum_reached) = self
+            .aggr
+            .collect_vote(committee, p.sign_info(), &p.vote, p.get_step())
+            .map_err(|error| {
+                let vote = p.vote.clone();
                 warn!(
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = %p.vote,
+                    %vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
-            }
+                ConsensusError::InvalidVote(vote)
+            })?;
+        // Record result in global round registry
+        _ = self.sv_registry.lock().await.add_step_votes(
+            iteration,
+            &p.vote,
+            sv,
+            StepName::Validation,
+            quorum_reached,
+            committee.excluded().expect("Generator to be excluded"),
+        );
+
+        if quorum_reached {
+            let vote = p.vote;
+
+            let quorum_type = match vote {
+                Vote::NoCandidate => QuorumType::NoCandidate,
+                Vote::Invalid(_) => QuorumType::Invalid,
+                Vote::Valid(_) => QuorumType::Valid,
+                Vote::NoQuorum => {
+                    return Err(ConsensusError::InvalidVote(vote));
+                }
+            };
+            info!(event = "quorum reached", %vote);
+            return Ok(final_result(sv, vote, quorum_type));
         }
 
         Ok(HandleMsgOutput::Pending)
