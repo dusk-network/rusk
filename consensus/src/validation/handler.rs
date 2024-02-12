@@ -206,10 +206,6 @@ impl MsgHandler for ValidationHandler {
 
     /// Handles of an event of step execution timeout
     fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(final_result(
-            StepVotes::default(),
-            Vote::NoCandidate,
-            QuorumType::NoQuorum,
-        ))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
