@@ -182,7 +182,13 @@ describe("Send", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(baseProps.execute).toHaveBeenCalledTimes(1);
-			expect(baseProps.execute).toHaveBeenCalledWith(address, amount);
+			expect(baseProps.execute)
+				.toHaveBeenCalledWith(
+					address,
+					amount,
+					baseProps.gasSettings.gasPrice,
+					baseProps.gasSettings.gasLimit
+				);
 
 			const explorerLink = getByRole("link", { name: /explorer/i });
 
@@ -211,7 +217,13 @@ describe("Send", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(baseProps.execute).toHaveBeenCalledTimes(1);
-			expect(baseProps.execute).toHaveBeenCalledWith(address, amount);
+			expect(baseProps.execute)
+				.toHaveBeenCalledWith(
+					address,
+					amount,
+					baseProps.gasSettings.gasPrice,
+					baseProps.gasSettings.gasLimit
+				);
 			expect(getByText("Transaction failed")).toBeInTheDocument();
 			expect(getByText(errorMessage)).toBeInTheDocument();
 		});
@@ -234,7 +246,13 @@ describe("Send", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(baseProps.execute).toHaveBeenCalledTimes(1);
-			expect(baseProps.execute).toHaveBeenCalledWith(address, amount);
+			expect(baseProps.execute)
+				.toHaveBeenCalledWith(
+					address,
+					amount,
+					baseProps.gasSettings.gasPrice,
+					baseProps.gasSettings.gasLimit
+				);
 			expect(getByText("Transaction completed")).toBeInTheDocument();
 			expect(() => getByRole("link", { name: /explorer/i })).toThrow();
 		});

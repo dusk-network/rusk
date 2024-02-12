@@ -47,15 +47,6 @@
 	/** @type {(descriptors: ContractDescriptor[]) => ContractDescriptor[]} */
 	const getEnabledContracts = filterWith(hasKeyValue("disabled", false));
 
-	/** @param {CustomEvent} event */
-	function handleSetGasSettings ({ detail }) {
-		settingsStore.update(store => ({
-			...store,
-			gasLimit: detail.limit,
-			gasPrice: detail.price
-		}));
-	}
-
 	/** @param {string} id */
 	function updateOperation (id) {
 		operationsStore.update((store) => ({
@@ -115,7 +106,6 @@
 						<svelte:component
 							descriptor={selectedContract}
 							on:operationChange={({ detail }) => updateOperation(detail)}
-							on:setGasSettings={handleSetGasSettings}
 							this={selectedTab === "transfer" ? TransferContract : StakeContract}
 						/>
 					</div>

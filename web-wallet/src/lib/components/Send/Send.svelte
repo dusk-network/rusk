@@ -25,7 +25,7 @@
 		ScanQR
 	} from "$lib/components";
 
-	/** @type {(to: string, amount: number) => Promise<string>} */
+	/** @type {(to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<string>} */
 	export let execute;
 
 	/** @type {(amount: number) => string} */
@@ -57,6 +57,8 @@
 
 	let isNextButtonDisabled = false;
 
+	let { gasLimit, gasPrice } = gasSettings;
+
 	const checkAmountValid = () => {
 		isNextButtonDisabled = !amountInput?.checkValidity();
 	};
@@ -69,7 +71,7 @@
 		checkAmountValid();
 	});
 
-	$: luxFee = gasSettings.gasLimit * gasSettings.gasPrice;
+	$: luxFee = gasLimit * gasPrice;
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
 </script>
@@ -129,7 +131,10 @@
 					limitUpper={gasSettings.gasLimitUpper}
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
-					on:setGasSettings
+					on:setGasSettings={(event) => {
+						gasPrice = event.detail.price;
+						gasLimit = event.detail.limit;
+					}}
 				/>
 			</div>
 		</WizardStep>
@@ -218,7 +223,7 @@
 			<OperationResult
 				errorMessage="Transaction failed"
 				onBeforeLeave={resetOperation}
-				operation={execute(address, amount)}
+				operation={execute(address, amount, gasPrice, gasLimit)}
 				pendingMessage="Processing transaction"
 				successMessage="Transaction completed"
 			>

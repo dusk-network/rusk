@@ -13,7 +13,7 @@ import { Wallet } from "@dusk-network/dusk-wallet-js";
 
 import { addresses, transactions } from "$lib/mock-data";
 
-import { settingsStore, walletStore } from "..";
+import { walletStore } from "..";
 
 vi.useFakeTimers();
 
@@ -49,6 +49,10 @@ describe("walletStore", async () => {
 		currentAddress: addresses[0],
 		initialized: true,
 		addresses: addresses
+	};
+	const gas = {
+		price: 1,
+		limit: 30000000
 	};
 
 	afterEach(() => {
@@ -109,28 +113,6 @@ describe("walletStore", async () => {
 			expect(getBalanceSpy).toHaveBeenCalledTimes(1);
 			expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
 			expect(get(walletStore)).toStrictEqual(initializedStore);
-		});
-
-		it("should set the gas settings of the wallet based on the settings store values, and update them when they change", async () => {
-			const { gasLimit, gasPrice, ...rest } = get(settingsStore);
-			const newLimit = gasLimit * 3;
-			const newPrice = gasPrice * 3;
-
-			await walletStore.init(wallet);
-
-			expect(wallet.gasLimit).toBe(gasLimit);
-			expect(wallet.gasPrice).toBe(gasPrice);
-
-			settingsStore.set({
-				...rest,
-				gasLimit: newLimit,
-				gasPrice: newPrice
-			});
-
-			await vi.advanceTimersToNextTimerAsync();
-
-			expect(wallet.gasLimit).toBe(newLimit);
-			expect(wallet.gasPrice).toBe(newPrice);
 		});
 
 		it("should set the sync error in the store if the sync fails", async () => {
@@ -322,7 +304,10 @@ describe("walletStore", async () => {
 		});
 
 		it("should expose a method to allow to stake an amount of Dusk", async () => {
-			await walletStore.stake(10);
+			await walletStore.stake(10, gas.price, gas.limit);
+
+			expect(wallet.gasLimit).toBe(gas.limit);
+			expect(wallet.gasPrice).toBe(gas.price);
 
 			expect(syncSpy).toHaveBeenCalledTimes(2);
 			expect(stakeSpy).toHaveBeenCalledTimes(1);
@@ -334,7 +319,10 @@ describe("walletStore", async () => {
 		});
 
 		it("should expose a method to allow to transfer an amount of Dusk", async () => {
-			await walletStore.transfer(addresses[1], 10);
+			await walletStore.transfer(addresses[1], 10, gas.price, gas.limit);
+
+			expect(wallet.gasLimit).toBe(gas.limit);
+			expect(wallet.gasPrice).toBe(gas.price);
 
 			expect(syncSpy).toHaveBeenCalledTimes(2);
 			expect(transferSpy).toHaveBeenCalledTimes(1);
@@ -346,7 +334,10 @@ describe("walletStore", async () => {
 		});
 
 		it("should expose a method to allow to unstake the current address", async () => {
-			await walletStore.unstake();
+			await walletStore.unstake(gas.price, gas.limit);
+
+			expect(wallet.gasLimit).toBe(gas.limit);
+			expect(wallet.gasPrice).toBe(gas.price);
 
 			expect(syncSpy).toHaveBeenCalledTimes(2);
 			expect(unstakeSpy).toHaveBeenCalledTimes(1);
@@ -358,7 +349,10 @@ describe("walletStore", async () => {
 		});
 
 		it("should expose a method to allow to withdraw a reward", async () => {
-			await walletStore.withdrawReward();
+			await walletStore.withdrawReward(gas.price, gas.limit);
+
+			expect(wallet.gasLimit).toBe(gas.limit);
+			expect(wallet.gasPrice).toBe(gas.price);
 
 			expect(syncSpy).toHaveBeenCalledTimes(2);
 			expect(withdrawRewardSpy).toHaveBeenCalledTimes(1);

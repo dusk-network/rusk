@@ -1,8 +1,6 @@
 import { get, writable } from "svelte/store";
 import { getKey, uniquesBy } from "lamb";
 
-import settingsStore from "./settingsStore";
-
 /**
  * @typedef {import("@dusk-network/dusk-wallet-js").Wallet} Wallet
  */
@@ -32,16 +30,7 @@ const initialState = {
 	isSyncing: false
 };
 
-/* eslint-disable-next-line svelte/require-store-callbacks-use-set-param */
-const walletStore = writable(initialState, () => settingsStore.subscribe(({
-	gasLimit,
-	gasPrice
-}) => {
-	if (walletInstance) {
-		walletInstance.gasLimit = gasLimit;
-		walletInstance.gasPrice = gasPrice;
-	}
-}));
+const walletStore = writable(initialState);
 const { set, subscribe } = walletStore;
 
 /**
@@ -125,8 +114,17 @@ async function setCurrentAddress (address) {
 }
 
 /** @type {import("./stores").WalletStoreServices["stake"]} */
-// @ts-expect-error
-const stake = async amount => syncedAction(() => walletInstance.stake(getCurrentAddress(), amount));
+
+const stake = async (amount, gasPrice, gasLimit) => syncedAction(() => {
+	// @ts-expect-error
+	walletInstance.gasLimit = gasLimit;
+
+	// @ts-expect-error
+	walletInstance.gasPrice = gasPrice;
+
+	// @ts-expect-error
+	return walletInstance.stake(getCurrentAddress(), amount);
+});
 
 /** @type {import("./stores").WalletStoreServices["sync"]} */
 function sync () {
@@ -149,20 +147,44 @@ function sync () {
 }
 
 /** @type {import("./stores").WalletStoreServices["transfer"]} */
-// @ts-expect-error
-const transfer = async (to, amount) => syncedAction(() => walletInstance.transfer(
-	getCurrentAddress(),
-	to,
-	amount
-));
+const transfer = async (to, amount, gasPrice, gasLimit) => syncedAction(() => {
+	// @ts-expect-error
+	walletInstance.gasLimit = gasLimit;
+
+	// @ts-expect-error
+	walletInstance.gasPrice = gasPrice;
+
+	// @ts-expect-error
+	return walletInstance.transfer(
+		getCurrentAddress(),
+		to,
+		amount
+	);
+});
 
 /** @type {import("./stores").WalletStoreServices["unstake"]} */
-// @ts-expect-error
-const unstake = async () => syncedAction(() => walletInstance.unstake(getCurrentAddress()));
+const unstake = async (gasPrice, gasLimit) => syncedAction(() => {
+	// @ts-expect-error
+	walletInstance.gasLimit = gasLimit;
+
+	// @ts-expect-error
+	walletInstance.gasPrice = gasPrice;
+
+	// @ts-expect-error
+	return walletInstance.unstake(getCurrentAddress());
+});
 
 /** @type {import("./stores").WalletStoreServices["withdrawReward"]} */
-// @ts-expect-error
-const withdrawReward = async () => syncedAction(() => walletInstance.withdrawReward(getCurrentAddress()));
+const withdrawReward = async (gasPrice, gasLimit) => syncedAction(() => {
+	// @ts-expect-error
+	walletInstance.gasLimit = gasLimit;
+
+	// @ts-expect-error
+	walletInstance.gasPrice = gasPrice;
+
+	// @ts-expect-error
+	return walletInstance.withdrawReward(getCurrentAddress());
+});
 
 /** @type {import("./stores").WalletStore} */
 export default {

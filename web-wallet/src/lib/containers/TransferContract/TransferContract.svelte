@@ -29,8 +29,9 @@
 	/** @type {ContractDescriptor} */
 	export let descriptor;
 
-	/** @type {(to: string, amount: number) => Promise<string>} */
-	const executeSend = (to, amount) => walletStore.transfer(to, amount).then(getLastTransactionHash);
+	/** @type {(to: string, amount: number, gasPrice:number, gasLimit:number) => Promise<string>} */
+	const executeSend = (to, amount, gasPrice, gasLimit) =>
+		walletStore.transfer(to, amount, gasPrice, gasLimit).then(getLastTransactionHash);
 
 	const collectSettings = collect([
 		pick(["gasLimit", "gasLimitLower", "gasLimitUpper", "gasPrice", "gasPriceLower"]),
@@ -75,7 +76,6 @@
 		formatter={duskFormatter}
 		{gasSettings}
 		on:operationChange
-		on:setGasSettings
 		spendable={balance.maximum}
 		{statuses}
 	/>
