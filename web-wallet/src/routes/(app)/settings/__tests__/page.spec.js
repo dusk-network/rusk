@@ -15,6 +15,19 @@ import { settingsStore, walletStore } from "$lib/stores";
 
 import Settings from "../+page.svelte";
 
+/**
+ * @param {HTMLElement} input
+ * @param {*} value
+ * @returns {Promise<boolean>}
+ */
+const fireInput = (input, value) => fireEvent.input(input, { target: { value } });
+
+/** @param {HTMLElement} element */
+function asInput (element) {
+	// eslint-disable-next-line no-extra-parens
+	return /** @type {HTMLInputElement} */ (element);
+}
+
 vi.mock("$lib/stores", async importOriginal => {
 	/** @type {import("$lib/stores/stores").WalletStore} */
 	const original = await importOriginal();
@@ -73,6 +86,23 @@ describe("Settings", () => {
 
 		expect(resetButton).toHaveAttribute("disabled");
 		expect(resetButton).toHaveAttribute("data-tooltip-disabled", "false");
+	});
+
+	it("should disable the \"Back\" button if invalid gas limit or price are introduced", async () => {
+		const { getByLabelText, getByRole } = render(Settings, {});
+		const priceInput = asInput(getByLabelText(/price/i));
+		const limitInput = asInput(getByLabelText(/limit/i));
+		const backButton = getByRole("link");
+
+		await fireInput(priceInput, 30000000);
+		expect(backButton).toHaveAttribute("aria-disabled", "true");
+		await fireInput(priceInput, 20000000);
+		expect(backButton).toHaveAttribute("aria-disabled", "false");
+
+		await fireInput(limitInput, 3000000000);
+		expect(backButton).toHaveAttribute("aria-disabled", "true");
+		await fireInput(limitInput, 20000000);
+		expect(backButton).toHaveAttribute("aria-disabled", "false");
 	});
 
 	it("should reset wallet store and navigate to login page on clicking the Log Out button", async () => {

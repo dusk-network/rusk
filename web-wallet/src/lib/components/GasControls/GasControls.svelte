@@ -1,12 +1,13 @@
 <svelte:options immutable={true}/>
 
 <script>
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import {
 		always,
 		clamp,
 		clampWithin,
 		compose,
+		isType,
 		when
 	} from "lamb";
 
@@ -47,6 +48,8 @@
 			limit: validLimit,
 			price: toValidPrice(price, validLimit)
 		});
+
+		checkGasLimits();
 	}
 
 	function handleLimitChange () {
@@ -57,7 +60,26 @@
 		}
 
 		dispatchGasChange();
+		checkGasLimits();
 	}
+
+	function checkGasLimits () {
+		let isValidPrice = false;
+		let	isValidLimit = false;
+		let isValidGas = false;
+
+		if ([price, limit].every(isType("Number"))) {
+			isValidPrice = price >= priceLower && price <= limit;
+			isValidLimit = limit >= limitLower && limit <= limitUpper;
+			isValidGas = isValidPrice && isValidLimit;
+		}
+
+		dispatch("gasSettingsValidity", isValidGas);
+	}
+
+	onMount(() => {
+		checkGasLimits();
+	});
 </script>
 
 <label for={undefined} class="gas-control">
@@ -69,7 +91,10 @@
 		className="gas-control__input"
 		max={toValidLimit(limit)}
 		min={priceLower}
-		on:blur={() => { price = toValidPrice(price, limit); }}
+		on:blur={() => {
+			price = toValidPrice(price, limit);
+			checkGasLimits();
+		}}
 		on:input={dispatchGasChange}
 		required
 		type="number"
@@ -85,7 +110,10 @@
 		className="gas-control__input"
 		max={limitUpper}
 		min={limitLower}
-		on:blur={() => { limit = toValidLimit(limit); }}
+		on:blur={() => {
+			limit = toValidLimit(limit);
+			checkGasLimits();
+		}}
 		on:input={handleLimitChange}
 		required
 		type="number"

@@ -84,6 +84,38 @@ describe("GasControls", () => {
 		expect(priceInput.max).toBe("25");
 	});
 
+	it("should dispatch a \"gasSettingsValidity\" event when the price or limit are changed", async () => {
+		const { component, getByLabelText } = render(GasControls, baseOptions);
+		const priceInput = asInput(getByLabelText(/price/i));
+		const limitInput = asInput(getByLabelText(/limit/i));
+
+		component.$on("gasSettingsValidity", eventHandler);
+
+		await fireInput(priceInput, 15);
+
+		expect(eventHandler).toHaveBeenCalledTimes(1);
+		expect(eventHandler.mock.lastCall[0].detail).toBe(true);
+		expect(priceInput.valueAsNumber).toBe(15);
+
+		await fireInput(limitInput, 25);
+
+		expect(eventHandler).toHaveBeenCalledTimes(3);
+		expect(eventHandler.mock.lastCall[0].detail).toBe(true);
+		expect(limitInput.valueAsNumber).toBe(25);
+		expect(priceInput.max).toBe("25");
+
+		await fireInput(priceInput, 30);
+		expect(eventHandler).toHaveBeenCalledTimes(4);
+
+		expect(eventHandler.mock.lastCall[0].detail).toBe(false);
+		expect(priceInput.valueAsNumber).toBe(30);
+
+		await fireInput(limitInput, 105);
+		expect(eventHandler).toHaveBeenCalledTimes(6);
+		expect(eventHandler.mock.lastCall[0].detail).toBe(false);
+		expect(limitInput.valueAsNumber).toBe(105);
+	});
+
 	it("should convert the inputted price to integer, clamp it within its limits, dispatch the event and update the viewed value on blur", async () => {
 		const { component, getByLabelText } = render(GasControls, baseOptions);
 		const priceInput = asInput(getByLabelText(/price/i));
