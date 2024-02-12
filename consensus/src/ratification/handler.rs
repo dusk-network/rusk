@@ -191,7 +191,7 @@ impl RatificationHandler {
 
         let quorum = payload::Quorum {
             header,
-            vote,
+            result: vote.into(),
             validation,
             ratification,
         };

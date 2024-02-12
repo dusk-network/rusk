@@ -161,11 +161,11 @@ impl<'p, D: Database> Executor<'p, D> {
             // Publish the quorum
             self.publish(msg.clone()).await;
 
-            if let Vote::Valid(hash) = quorum.vote {
+            if let Vote::Valid(hash) = quorum.vote() {
                 // Create winning block
                 debug!("generate block from quorum msg");
                 let cert = quorum.generate_certificate();
-                return self.create_winning_block(&hash, &cert).await;
+                return self.create_winning_block(hash, &cert).await;
             }
         }
 

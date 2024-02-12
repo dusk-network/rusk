@@ -7,7 +7,7 @@
 use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Certificate, IterationInfo, StepVotes};
-use node_data::message::payload::Vote;
+use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{payload, Message};
 use node_data::StepName;
 use std::collections::HashMap;
@@ -18,7 +18,7 @@ use tracing::{debug, warn};
 
 #[derive(Clone)]
 struct CertificateInfo {
-    vote: Vote,
+    result: RatificationResult,
     cert: Certificate,
 
     quorum_reached_validation: bool,
@@ -29,8 +29,8 @@ impl fmt::Display for CertificateInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "cert_info: {}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
-            self.vote,
+            "cert_info: {:?}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
+            self.result,
             self.cert.validation,
             self.quorum_reached_validation,
             self.cert.ratification,
@@ -42,7 +42,7 @@ impl fmt::Display for CertificateInfo {
 impl CertificateInfo {
     pub(crate) fn new(vote: Vote) -> Self {
         CertificateInfo {
-            vote,
+            result: vote.into(),
             cert: Certificate::default(),
             quorum_reached_validation: false,
             quorum_reached_ratification: false,
@@ -185,7 +185,7 @@ impl CertInfoRegistry {
 
         let payload = payload::Quorum {
             header,
-            vote: result.vote.clone(),
+            result: result.result.clone(),
             validation: result.cert.validation,
             ratification: result.cert.ratification,
         };

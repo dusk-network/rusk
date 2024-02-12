@@ -28,7 +28,7 @@ pub async fn verify_quorum(
     // Verify validation
     verify_step_votes(
         &quorum.header,
-        &quorum.vote,
+        quorum.vote(),
         &quorum.validation,
         committees_set,
         seed,
@@ -47,7 +47,7 @@ pub async fn verify_quorum(
     // Verify ratification
     verify_step_votes(
         &quorum.header,
-        &quorum.vote,
+        quorum.vote(),
         &quorum.ratification,
         committees_set,
         seed,
