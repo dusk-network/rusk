@@ -83,7 +83,6 @@ tempfile = { version = "3.2", optional = true }
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", optional = true}
 
 ## testwallet dependencies
-
 futures = { version = "0.3", optional = true }
 
 [dev-dependencies]
@@ -109,3 +108,4 @@ node = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
 [[bench]]
 name = "block_ingestion"
 harness = false
+required-features = ["testwallet"]
