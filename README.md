@@ -20,6 +20,17 @@ For more information on running a node, see our docs:
 - GCC 13 or higher
 - Clang 16 or higher
 
+### Rust Installation
+
+Rusk makes use of the nightly toolchain, make sure it is installed. Furthermore, to build the WASM contracts, `wasm-pack` is required.
+
+To install and set the nightly toolchain, and install `wasm-pack`, run:
+```bash
+rustup toolchain install nightly
+rustup default nightly
+cargo install wasm-pack
+```
+
 ## Build and Tests
 
 To build `rusk` from source, Rust, GCC and Clang are required. Once the dependencies are installed, you can simply run the following command to compile everything:
@@ -52,7 +63,7 @@ mkdir -p ~/.dusk/rusk
 cp examples/consensus.keys ~/.dusk/rusk/consensus.keys
 ```
 
-Run a single-node cluster with example's data
+Run a single full-node cluster with example state.
 
 ```bash
 # Generate genesis state
@@ -61,6 +72,15 @@ cargo r --release -p rusk -- recovery-state --init examples/genesis.toml -o /tmp
 # Launch a local ephemeral node
 DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p rusk -- -s /tmp/example.state
 ```
+
+### Prover Node
+
+The node can be build as a prover only as follows:
+```bash
+cargo r --release --no-default-features --features prover -p rusk
+```
+
+This prover node will be accessible on `https://localhost:8080`. Apps like the [wallet-cli](https://github.com/dusk-network/wallet-cli) can be connected to it for quicker and more private local proving.
 
 ## Contracts compilation
 
