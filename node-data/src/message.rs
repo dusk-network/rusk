@@ -649,17 +649,13 @@ pub mod payload {
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct Quorum {
         pub header: ConsensusHeader,
-        pub result: RatificationResult,
-        pub validation: StepVotes,
-        pub ratification: StepVotes,
+        pub cert: Certificate,
     }
 
     impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
-            self.result.write(w)?;
-            self.validation.write(w)?;
-            self.ratification.write(w)?;
+            self.cert.write(w)?;
 
             Ok(())
         }
@@ -669,32 +665,15 @@ pub mod payload {
             Self: Sized,
         {
             let header = ConsensusHeader::read(r)?;
-            let result = RatificationResult::read(r)?;
+            let cert = Certificate::read(r)?;
 
-            let validation = StepVotes::read(r)?;
-            let ratification = StepVotes::read(r)?;
-
-            Ok(Quorum {
-                header,
-                validation,
-                ratification,
-                result,
-            })
+            Ok(Quorum { header, cert })
         }
     }
 
     impl Quorum {
-        /// Generates a certificate from quorum.
-        pub fn generate_certificate(&self) -> Certificate {
-            Certificate {
-                result: self.result,
-                validation: self.validation,
-                ratification: self.ratification,
-            }
-        }
-
         pub fn vote(&self) -> &Vote {
-            self.result.vote()
+            self.cert.result.vote()
         }
     }
 
@@ -1226,9 +1205,11 @@ mod tests {
 
         assert_serialize(payload::Quorum {
             header: consensus_header.clone(),
-            result: payload::Vote::Valid([4; 32]).into(),
-            validation: ledger::StepVotes::new([1; 48], 12345),
-            ratification: ledger::StepVotes::new([2; 48], 98765),
+            cert: Certificate {
+                result: payload::Vote::Valid([4; 32]).into(),
+                validation: ledger::StepVotes::new([1; 48], 12345),
+                ratification: ledger::StepVotes::new([2; 48], 98765),
+            },
         });
     }
 
