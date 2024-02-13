@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
 - Change `package.json` fields to reflect repo change [#1367](https://github.com/dusk-network/rusk/issues/1367)
 - Change `walletStore.js` to receive gasPrice and gasLimit when `transfer` , `stake`, `unstake` and `withdrawRewards` are called [#1353](https://github.com/dusk-network/rusk/issues/1353)
+- Update deprecated Node actions in CI [#1343](https://github.com/dusk-network/rusk/issues/1343)
 
 ### Removed
 
