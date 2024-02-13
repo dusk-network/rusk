@@ -11,7 +11,7 @@ use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
 
-use node_data::message::payload::{InvParam, InvType};
+use node_data::message::payload::{GetData, InvParam, InvType};
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ use async_trait::async_trait;
 use node_data::message::{payload, AsyncQueue};
 use node_data::message::{Payload, Topics};
 use tokio::sync::{RwLock, Semaphore};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
@@ -181,6 +181,8 @@ impl DataBrokerSrv {
             .map(|m| m.src_addr)
             .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
 
+        debug!(event = "handle_request", ?msg);
+
         match &msg.payload {
             // Handle GetCandidate requests
             Payload::GetCandidate(m) => {
@@ -324,6 +326,7 @@ impl DataBrokerSrv {
         let inv = db.read().await.view(|t| {
             let mut inv = payload::Inv::default();
             for i in &m.inv_list {
+                debug!(event = "handle_inv", ?i);
                 match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
@@ -362,7 +365,7 @@ impl DataBrokerSrv {
             return Err(anyhow::anyhow!("no items to fetch"));
         }
 
-        Ok(Message::new_get_data(inv))
+        Ok(Message::new_get_data(GetData { inner: inv }))
     }
 
     /// Handles GetData message request.

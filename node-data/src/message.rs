@@ -138,7 +138,9 @@ impl Serializable for Message {
             Topics::GetCandidate => {
                 Message::new_get_candidate(payload::GetCandidate::read(r)?)
             }
-            Topics::GetData => Message::new_get_data(payload::Inv::read(r)?),
+            Topics::GetData => {
+                Message::new_get_data(payload::GetData::read(r)?)
+            }
             Topics::GetBlocks => {
                 Message::new_get_blocks(payload::GetBlocks::read(r)?)
             }
@@ -236,10 +238,10 @@ impl Message {
     }
 
     /// Creates topics.GetData  message
-    pub fn new_get_data(p: payload::Inv) -> Message {
+    pub fn new_get_data(p: payload::GetData) -> Message {
         Self {
             topic: Topics::GetData,
-            payload: Payload::GetInv(p),
+            payload: Payload::GetData(p),
             ..Default::default()
         }
     }

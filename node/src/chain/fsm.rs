@@ -11,7 +11,7 @@ use crate::{vm, Network};
 
 use crate::database::Ledger;
 use node_data::ledger::{to_str, Block, Label};
-use node_data::message::payload::{GetBlocks, Inv};
+use node_data::message::payload::{GetBlocks, GetData};
 use node_data::message::Message;
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -20,7 +20,7 @@ use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
 use tokio::time::Instant;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
@@ -483,14 +483,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
     /// Requests a block by height from a specified peer
     async fn request_block(&self, height: u64, peer_addr: SocketAddr) {
-        let mut inv = Inv::default();
-        inv.add_block_from_height(height);
+        let mut get_data = GetData::default();
+        get_data.inner.add_block_from_height(height);
+
+        debug!(event = "request block", height, ?peer_addr);
 
         if let Err(err) = self
             .network
             .read()
             .await
-            .send_to_peer(&Message::new_get_data(inv), peer_addr)
+            .send_to_peer(&Message::new_get_data(get_data), peer_addr)
             .await
         {
             warn!("could not request block {err}")
