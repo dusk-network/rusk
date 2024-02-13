@@ -1,12 +1,12 @@
 <svelte:options immutable={true}/>
 
 <script>
-	import { createEventDispatcher, onMount } from "svelte";
+	import { createEventDispatcher, onMount, tick } from "svelte";
 	import { fade } from "svelte/transition";
 	import { mdiDatabaseArrowDownOutline, mdiDatabaseOutline } from "@mdi/js";
 
 	import { deductLuxFeeFrom } from "$lib/contracts";
-	import { luxToDusk } from "$lib/dusk/currency";
+	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
 	import { logo } from "$lib/dusk/icons";
 	import {
 		AnchorButton,
@@ -63,6 +63,9 @@
 	let stakeInput;
 
 	/** @type {boolean} */
+	let isValidGas = true;
+
+	/** @type {boolean} */
 	let isNextButtonDisabled = false;
 
 	let { gasLimit, gasPrice } = gasSettings;
@@ -74,27 +77,36 @@
 		"withdraw-stake": "Withdraw Amount"
 	};
 
-	const checkAmountValid = () => {
-		isNextButtonDisabled = !stakeInput?.checkValidity();
+	const checkAmountValid = async () => {
+		await tick();
+		isNextButtonDisabled = !(stakeInput?.checkValidity() && isValidGas
+			&& (luxFee + duskToLux(stakeAmount) <= duskToLux(spendable)));
 	};
 
 	const dispatch = createEventDispatcher();
 	const resetOperation = () => dispatch("operationChange", "");
 
 	/**
-	 * @param {{detail:{price:number, limit:number}}} event
+	 * @param {{detail:{price:number, limit:number, isValidGas:boolean}}} event
 	 */
 	const setGasValues = (event) => {
-		gasPrice = event.detail.price;
-		gasLimit = event.detail.limit;
+		isValidGas = event.detail.isValidGas;
+
+		if (event.detail.isValidGas) {
+			gasPrice = event.detail.price;
+			gasLimit = event.detail.limit;
+		}
+
+		checkAmountValid();
 	};
 
 	onMount(() => {
 		if (flow === "stake") {
 			stakeInput = document.querySelector(".operation__input-field");
 			stakeAmount = Math.min(minStake, stakeAmount);
-			checkAmountValid();
 		}
+
+		checkAmountValid();
 	});
 
 	$: luxFee = gasLimit * gasPrice;
@@ -157,7 +169,7 @@
 					limitUpper={gasSettings.gasLimitUpper}
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
-					on:setGasSettings={setGasValues}
+					on:gasSettings={setGasValues}
 				/>
 			</WizardStep>
 		{/if}
@@ -201,7 +213,7 @@
 						limitUpper={gasSettings.gasLimitUpper}
 						price={gasSettings.gasPrice}
 						priceLower={gasSettings.gasPriceLower}
-						on:setGasSettings={setGasValues}
+						on:gasSettings={setGasValues}
 					/>
 				{/if}
 

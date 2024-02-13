@@ -40,9 +40,9 @@
 		</dd>
 	</dl>
 	{#if isExpanded}
-		<div in:slide|global out:slide|global class="gas-settings">
+		<div in:slide|global class="gas-settings">
 			<GasControls
-				on:setGasSettings
+				on:gasSettings
 				{limit}
 				{limitLower}
 				{limitUpper}

@@ -14,6 +14,7 @@ import { createCurrencyFormatter } from "$lib/dusk/currency";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 
 import { Send } from "..";
+import { tick } from "svelte";
 
 describe("Send", () => {
 	const formatter = createCurrencyFormatter("en", "DUSK", 9);
@@ -49,7 +50,7 @@ describe("Send", () => {
 			expect(container.firstChild).toMatchSnapshot();
 		});
 
-		it("should disable the next button if the amount is invalid on mount", () => {
+		it("should disable the next button if the amount is invalid on mount", async () => {
 			const props = {
 				...baseProps,
 				gasSettings: {
@@ -61,6 +62,7 @@ describe("Send", () => {
 			const { getByRole } = render(Send, props);
 			const next = getByRole("button", { name: "Next" });
 
+			await tick();
 			expect(next).toBeDisabled();
 		});
 

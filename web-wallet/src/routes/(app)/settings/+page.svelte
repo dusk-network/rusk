@@ -136,16 +136,17 @@
 			</header>
 			<div class="settings-group__multi-control-content">
 				<GasControls
-					on:setGasSettings={(event) => {
-						settingsStore.update(store => {
-							store.gasLimit = event.detail.limit;
-							store.gasPrice = event.detail.price;
+					on:gasSettings={(event) => {
+						if (event.detail.isValidGas) {
+							settingsStore.update(store => {
+								store.gasLimit = event.detail.limit;
+								store.gasPrice = event.detail.price;
 
-							return store;
-						});
-					}}
-					on:gasSettingsValidity={(event) => {
-						isValidGas = event.detail;
+								return store;
+							});
+						}
+
+						isValidGas = event.detail.isValidGas;
 					}}
 					limit={gasLimit}
 					limitLower={gasLimitLower}
