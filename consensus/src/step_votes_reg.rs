@@ -167,15 +167,15 @@ impl CertInfoRegistry {
         let cert_info = cert.get_or_insert(vote);
 
         cert_info.set_sv(iteration, sv, step, quorum_reached);
-        cert_info
-            .is_ready()
-            .then(|| Self::build_quorum_msg(&self.ru, iteration, cert_info))
+        cert_info.is_ready().then(|| {
+            Self::build_quorum_msg(&self.ru, iteration, cert_info.cert)
+        })
     }
 
     fn build_quorum_msg(
         ru: &RoundUpdate,
         iteration: u8,
-        cert_info: &CertificateInfo,
+        cert: Certificate,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
             prev_block_hash: ru.hash(),
@@ -183,12 +183,7 @@ impl CertInfoRegistry {
             iteration,
         };
 
-        let payload = payload::Quorum {
-            header,
-            result: cert_info.cert.result,
-            validation: cert_info.cert.validation,
-            ratification: cert_info.cert.ratification,
-        };
+        let payload = payload::Quorum { header, cert };
 
         Message::new_quorum(payload)
     }

@@ -160,7 +160,7 @@ impl<'p, D: Database> Executor<'p, D> {
 
             debug!(
                 event = "quorum_collected",
-                result = ?quorum.result,
+                result = ?quorum.cert.result,
                 iter = quorum.header.iteration,
                 round = quorum.header.round,
             );
@@ -169,12 +169,11 @@ impl<'p, D: Database> Executor<'p, D> {
             self.publish(msg.clone()).await;
 
             if let RatificationResult::Success(Vote::Valid(hash)) =
-                &quorum.result
+                &quorum.cert.result
             {
                 // Create winning block
                 debug!("generate block from quorum msg");
-                let cert = quorum.generate_certificate();
-                return self.create_winning_block(hash, &cert).await;
+                return self.create_winning_block(hash, &quorum.cert).await;
             }
         }
 

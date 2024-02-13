@@ -29,7 +29,7 @@ pub async fn verify_quorum(
     verify_step_votes(
         &quorum.header,
         quorum.vote(),
-        &quorum.validation,
+        &quorum.cert.validation,
         committees_set,
         seed,
         StepName::Validation,
@@ -38,7 +38,7 @@ pub async fn verify_quorum(
     .map_err(|e| {
         error!(
             desc = "invalid validation",
-            sv = ?quorum.validation,
+            sv = ?quorum.cert.validation,
             hdr = ?quorum.header,
         );
         e
@@ -48,7 +48,7 @@ pub async fn verify_quorum(
     verify_step_votes(
         &quorum.header,
         quorum.vote(),
-        &quorum.ratification,
+        &quorum.cert.ratification,
         committees_set,
         seed,
         StepName::Ratification,
@@ -57,7 +57,7 @@ pub async fn verify_quorum(
     .map_err(|e| {
         error!(
             desc = "invalid ratification",
-            sv = ?quorum.ratification,
+            sv = ?quorum.cert.ratification,
             hdr = ?quorum.header,
         );
         e

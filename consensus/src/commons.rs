@@ -144,14 +144,14 @@ impl QuorumMsgSender {
     /// Sends an quorum (internally) to the quorum loop.
     pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
-            Payload::Quorum(q) if !q.ratification.is_empty() => {
+            Payload::Quorum(q) if !q.cert.ratification.is_empty() => {
                 tracing::debug!(
                     event = "send quorum_msg",
                     vote = ?q.vote(),
                     round = msg.header.round,
                     iteration = msg.header.iteration,
-                    validation = ?q.validation,
-                    ratification = ?q.ratification,
+                    validation = ?q.cert.validation,
+                    ratification = ?q.cert.ratification,
                 );
             }
             _ => return,

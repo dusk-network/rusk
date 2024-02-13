@@ -8,6 +8,7 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use async_trait::async_trait;
+use node_data::ledger::Certificate;
 use node_data::{ledger, StepName};
 use tracing::{error, warn};
 
@@ -188,9 +189,11 @@ impl RatificationHandler {
 
         let quorum = payload::Quorum {
             header,
-            result: vote.into(),
-            validation,
-            ratification,
+            cert: Certificate {
+                result: vote.into(),
+                validation,
+                ratification,
+            },
         };
 
         Message::new_quorum(quorum)
