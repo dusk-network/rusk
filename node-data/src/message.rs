@@ -415,7 +415,7 @@ pub mod payload {
         pub sign_info: SignInfo,
     }
 
-    #[derive(Debug, Clone, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
+    #[derive(Clone, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     #[repr(u8)]
     pub enum Vote {
@@ -427,7 +427,7 @@ pub mod payload {
         NoQuorum = 3,
     }
 
-    impl fmt::Display for Vote {
+    impl fmt::Debug for Vote {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let (desc, hash) = match &self {
                 Self::NoCandidate => ("NoCandidate", "".into()),
