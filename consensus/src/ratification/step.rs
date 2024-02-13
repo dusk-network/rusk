@@ -68,7 +68,7 @@ pub fn build_ratification_payload(
     let sign_info = message::SignInfo::default();
     let mut ratification = message::payload::Ratification {
         header,
-        vote: result.vote().clone(),
+        vote: *result.vote(),
         sign_info,
         validation_result: result.clone(),
         timestamp: get_current_timestamp(),

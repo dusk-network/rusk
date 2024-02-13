@@ -7,7 +7,7 @@
 use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Certificate, IterationInfo, StepVotes};
-use node_data::message::payload::{RatificationResult, Vote};
+use node_data::message::payload::Vote;
 use node_data::message::{payload, Message};
 use node_data::StepName;
 use std::collections::HashMap;
@@ -18,7 +18,6 @@ use tracing::{debug, warn};
 
 #[derive(Clone)]
 struct CertificateInfo {
-    result: RatificationResult,
     cert: Certificate,
 
     quorum_reached_validation: bool,
@@ -30,7 +29,7 @@ impl fmt::Display for CertificateInfo {
         write!(
             f,
             "cert_info: {:?}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
-            self.result,
+            self.cert.result,
             self.cert.validation,
             self.quorum_reached_validation,
             self.cert.ratification,
@@ -42,8 +41,10 @@ impl fmt::Display for CertificateInfo {
 impl CertificateInfo {
     pub(crate) fn new(vote: Vote) -> Self {
         CertificateInfo {
-            result: vote.into(),
-            cert: Certificate::default(),
+            cert: Certificate {
+                result: vote.into(),
+                ..Default::default()
+            },
             quorum_reached_validation: false,
             quorum_reached_ratification: false,
         }
@@ -125,8 +126,7 @@ impl IterationCerts {
 
     fn get_or_insert(&mut self, vote: &Vote) -> &mut CertificateInfo {
         if !self.votes.contains_key(vote) {
-            self.votes
-                .insert(vote.clone(), CertificateInfo::new(vote.clone()));
+            self.votes.insert(*vote, CertificateInfo::new(*vote));
         }
         self.votes.get_mut(vote).expect("Vote to be inserted")
     }
@@ -185,7 +185,7 @@ impl CertInfoRegistry {
 
         let payload = payload::Quorum {
             header,
-            result: cert_info.result.clone(),
+            result: cert_info.cert.result,
             validation: cert_info.cert.validation,
             ratification: cert_info.cert.ratification,
         };

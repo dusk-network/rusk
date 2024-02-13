@@ -58,8 +58,7 @@ impl Aggregator {
             .votes_for(signer)
             .ok_or(AggregatorError::NotCommitteeMember)?;
 
-        let (aggr_sign, cluster) =
-            self.0.entry((msg_step, vote.clone())).or_default();
+        let (aggr_sign, cluster) = self.0.entry((msg_step, *vote)).or_default();
 
         // Each committee has 64 slots.
         //

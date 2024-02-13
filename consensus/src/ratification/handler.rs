@@ -74,16 +74,15 @@ impl MsgHandler for RatificationHandler {
             .aggregator
             .collect_vote(committee, p.sign_info(), &p.vote, p.get_step())
             .map_err(|error| {
-                let vote = p.vote.clone();
                 warn!(
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    ?vote,
+                    ?p.vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
-                ConsensusError::InvalidVote(vote)
+                ConsensusError::InvalidVote(p.vote)
             })?;
 
         // Record any signature in global registry

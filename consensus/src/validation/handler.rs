@@ -103,16 +103,15 @@ impl MsgHandler for ValidationHandler {
             .aggr
             .collect_vote(committee, p.sign_info(), &p.vote, p.get_step())
             .map_err(|error| {
-                let vote = p.vote.clone();
                 warn!(
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    ?vote,
+                    ?p.vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
-                ConsensusError::InvalidVote(vote)
+                ConsensusError::InvalidVote(p.vote)
             })?;
         // Record result in global round registry
         _ = self.sv_registry.lock().await.add_step_votes(
