@@ -17,6 +17,7 @@ use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{Block, Certificate, Header, IterationsInfo, SpentTransaction},
+    message::payload::Vote,
 };
 use tracing::info;
 
@@ -80,7 +81,12 @@ pub fn generator_procedure(
     let mut failed_iterations = IterationsInfo::default();
     for to_slash in &missed_generators {
         failed_iterations.cert_list.push(Some((
-            Certificate::default(),
+            Certificate {
+                result: node_data::message::payload::RatificationResult::Fail(
+                    Vote::NoCandidate,
+                ),
+                ..Default::default()
+            },
             PublicKeyBytes(to_slash.to_bytes()),
         )));
     }
