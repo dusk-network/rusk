@@ -137,7 +137,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
                 handler.validation_result(),
                 ctx.outbound.clone(),
             )
-            .instrument(tracing::info_span!("ratification", %vote))
+            .instrument(tracing::info_span!("ratification", ?vote))
             .await;
 
             // Collect my own vote

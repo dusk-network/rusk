@@ -108,7 +108,7 @@ impl MsgHandler for ValidationHandler {
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    %vote,
+                    ?vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
@@ -135,7 +135,7 @@ impl MsgHandler for ValidationHandler {
                     return Err(ConsensusError::InvalidVote(vote));
                 }
             };
-            info!(event = "quorum reached", %vote);
+            info!(event = "quorum reached", ?vote);
             return Ok(final_result(sv, vote, quorum_type));
         }
 
@@ -184,7 +184,7 @@ impl MsgHandler for ValidationHandler {
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = %p.vote,
+                    vote = ?p.vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );

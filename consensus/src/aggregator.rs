@@ -86,7 +86,7 @@ impl Aggregator {
 
         debug!(
             event = "vote aggregated",
-            %vote,
+            ?vote,
             from = signer.to_bs58(),
             added = weight,
             total,
@@ -111,7 +111,7 @@ impl Aggregator {
         if quorum_reached {
             tracing::info!(
                 event = "quorum reached",
-                %vote,
+                ?vote,
                 total,
                 target = quorum_target,
                 bitset,

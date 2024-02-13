@@ -142,7 +142,7 @@ pub fn verify_votes(
             bitset,
             target_quorum,
             total,
-            %vote
+            ?vote
         );
         return Err(StepSigError::VoteSetTooSmall);
     }

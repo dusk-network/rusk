@@ -158,21 +158,23 @@ impl<'p, D: Database> Executor<'p, D> {
             .await
             .ok()?;
 
-            debug!(event = "quorum_collected", ?quorum);
+            debug!(
+                event = "quorum_collected",
+                result = ?quorum.result,
+                iter = quorum.header.iteration,
+                round = quorum.header.round,
+            );
 
             // Publish the quorum
             self.publish(msg.clone()).await;
 
-            match &quorum.result {
-                RatificationResult::Success(Vote::Valid(hash)) => {
-                    // Create winning block
-                    debug!("generate block from quorum msg");
-                    let cert = quorum.generate_certificate();
-                    return self.create_winning_block(hash, &cert).await;
-                }
-                failed => {
-                    debug!("Valid QUORUM for {failed:?}");
-                }
+            if let RatificationResult::Success(Vote::Valid(hash)) =
+                &quorum.result
+            {
+                // Create winning block
+                debug!("generate block from quorum msg");
+                let cert = quorum.generate_certificate();
+                return self.create_winning_block(hash, &cert).await;
             }
         }
 

@@ -79,7 +79,7 @@ impl MsgHandler for RatificationHandler {
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    %vote,
+                    ?vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
@@ -147,7 +147,7 @@ impl MsgHandler for RatificationHandler {
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = %p.vote,
+                    vote = ?p.vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );

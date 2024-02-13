@@ -147,7 +147,7 @@ impl QuorumMsgSender {
             Payload::Quorum(q) if !q.ratification.is_empty() => {
                 tracing::debug!(
                     event = "send quorum_msg",
-                    vote = %q.vote(),
+                    vote = ?q.vote(),
                     round = msg.header.round,
                     iteration = msg.header.iteration,
                     validation = ?q.validation,
