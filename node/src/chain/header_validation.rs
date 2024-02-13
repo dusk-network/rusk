@@ -226,7 +226,7 @@ pub async fn verify_block_cert(
         }
         Err(e) => {
             return Err(anyhow!(
-                "invalid validation, vote = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+                "invalid validation, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
                 vote,
                 round,
                 iteration,
@@ -253,7 +253,7 @@ pub async fn verify_block_cert(
         }
         Err(e) => {
             return Err(anyhow!(
-                "invalid ratification, vote = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+                "invalid ratification, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
                 vote,
                 round,
                 iteration,
