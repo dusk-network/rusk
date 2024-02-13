@@ -331,6 +331,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     Ok(_) => {
                         if remote_height == acc.get_curr_height().await + 1 {
                             acc.try_accept_block(remote_blk, true).await?;
+                            self.broadcast(msg).await;
                             return Ok(None);
                         }
                     }
@@ -412,6 +413,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         // mode.
 
                         acc.try_accept_block(remote_blk, true).await?;
+                        self.broadcast(msg).await;
+
                         return Ok(None);
                     }
 
@@ -455,9 +458,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // When accepting block from the wire in inSync state, we
             // rebroadcast it
-            if let Err(e) = self.network.write().await.broadcast(msg).await {
-                warn!("Unable to broadcast accepted block: {e}");
-            }
+            self.broadcast(msg).await;
 
             return Ok(None);
         }
@@ -511,6 +512,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         }
 
         Ok(false)
+    }
+
+    async fn broadcast(&self, msg: &Message) {
+        if let Err(e) = self.network.write().await.broadcast(msg).await {
+            warn!("Unable to broadcast accepted block: {e}");
+        }
     }
 }
 
