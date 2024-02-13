@@ -13,7 +13,6 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::to_str;
 use node_data::ledger::Signature;
-use node_data::message::payload::Vote;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
@@ -117,7 +116,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
-            Vote::Valid(self.prev_header.hash),
             self.prev_header.height,
             &candidate_block.prev_block_cert,
             self.prev_header.iteration,
@@ -147,24 +145,21 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     self.prev_header.seed,
                     candidate_block.height,
                 );
-                if pk != &expected_pk {
-                    anyhow::bail!("Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
-                }
+
+                anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
                 let quorums = verify_block_cert(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
-                    Vote::NoCandidate,
                     candidate_block.height,
                     cert,
                     iter as u8,
                 )
                 .await?;
 
-                attested = attested
-                    && quorums.0.quorum_reached()
-                    && quorums.1.quorum_reached();
+                // Ratification quorum is enough to
+                attested = attested && quorums.1.quorum_reached();
             } else {
                 attested = false;
             }
@@ -181,7 +176,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
-            Vote::Valid(candidate_block.hash),
             candidate_block.height,
             &candidate_block.cert,
             candidate_block.iteration,
@@ -196,7 +190,6 @@ pub async fn verify_block_cert(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    vote: Vote,
     round: u64,
     cert: &ledger::Certificate,
     iteration: u8,
@@ -210,10 +203,11 @@ pub async fn verify_block_cert(
         round,
         prev_block_hash,
     };
+    let vote = cert.result.vote();
     // Verify validation
     match verifiers::verify_step_votes(
         &consensus_header,
-        &vote,
+        vote,
         &cert.validation,
         &committee,
         curr_seed,
@@ -240,7 +234,7 @@ pub async fn verify_block_cert(
     // Verify ratification
     match verifiers::verify_step_votes(
         &consensus_header,
-        &vote,
+        vote,
         &cert.ratification,
         &committee,
         curr_seed,
