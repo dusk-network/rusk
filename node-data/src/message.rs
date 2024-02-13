@@ -415,7 +415,7 @@ pub mod payload {
         pub sign_info: SignInfo,
     }
 
-    #[derive(Clone, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
+    #[derive(Clone, Copy, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     #[repr(u8)]
     pub enum Vote {
@@ -613,11 +613,17 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone, Eq, PartialEq)]
+    #[derive(Debug, Clone, Copy, Eq, PartialEq)]
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     pub enum RatificationResult {
         Fail(Vote),
         Success(Vote),
+    }
+
+    impl Default for RatificationResult {
+        fn default() -> Self {
+            Self::Fail(Vote::NoQuorum)
+        }
     }
 
     impl From<Vote> for RatificationResult {
@@ -681,6 +687,7 @@ pub mod payload {
         /// Generates a certificate from quorum.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
+                result: self.result,
                 validation: self.validation,
                 ratification: self.ratification,
             }
@@ -1170,11 +1177,13 @@ mod tests {
             cert: Certificate {
                 validation: ledger::StepVotes::new([6; 48], 22222222),
                 ratification: ledger::StepVotes::new([7; 48], 3333333),
+                ..Default::default()
             },
             iteration: 1,
             prev_block_cert: Certificate {
                 validation: ledger::StepVotes::new([6; 48], 444444444),
                 ratification: ledger::StepVotes::new([7; 48], 55555555),
+                ..Default::default()
             },
             failed_iterations: Default::default(),
         };

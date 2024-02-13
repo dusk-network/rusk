@@ -152,6 +152,7 @@ impl Serializable for Header {
 
 impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.result.write(w)?;
         self.validation.write(w)?;
         self.ratification.write(w)?;
 
@@ -162,10 +163,12 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
+        let result = RatificationResult::read(r)?;
         let validation = StepVotes::read(r)?;
         let ratification = StepVotes::read(r)?;
 
         Ok(Certificate {
+            result,
             validation,
             ratification,
         })

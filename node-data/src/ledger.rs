@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::bls::{self, PublicKeyBytes};
+use crate::message::payload::RatificationResult;
 use crate::Serializable;
 
 use dusk_bytes::DeserializableSlice;
@@ -126,6 +127,7 @@ impl Transaction {
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Certificate {
+    pub result: RatificationResult,
     pub validation: StepVotes,
     pub ratification: StepVotes,
 }
