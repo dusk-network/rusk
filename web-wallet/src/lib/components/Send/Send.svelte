@@ -2,11 +2,11 @@
 
 <script>
 	import { fade } from "svelte/transition";
-	import { createEventDispatcher, onMount } from "svelte";
+	import { createEventDispatcher, onMount, tick } from "svelte";
 	import { mdiArrowUpBoldBoxOutline, mdiWalletOutline } from "@mdi/js";
 
 	import { deductLuxFeeFrom } from "$lib/contracts";
-	import { luxToDusk } from "$lib/dusk/currency";
+	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
 	import { logo } from "$lib/dusk/icons";
 	import {
 		AnchorButton,
@@ -55,12 +55,18 @@
 	/** @type {HTMLInputElement | null} */
 	let amountInput;
 
+	/** @type {boolean} */
+	let isValidGas = true;
+
+	/** @type {boolean} */
 	let isNextButtonDisabled = false;
 
 	let { gasLimit, gasPrice } = gasSettings;
 
-	const checkAmountValid = () => {
-		isNextButtonDisabled = !amountInput?.checkValidity();
+	const checkAmountValid = async () => {
+		await tick();
+		isNextButtonDisabled = !(amountInput?.checkValidity() && isValidGas
+			&& (luxFee + duskToLux(amount) <= duskToLux(spendable)));
 	};
 
 	const dispatch = createEventDispatcher();
@@ -131,9 +137,15 @@
 					limitUpper={gasSettings.gasLimitUpper}
 					price={gasSettings.gasPrice}
 					priceLower={gasSettings.gasPriceLower}
-					on:setGasSettings={(event) => {
-						gasPrice = event.detail.price;
-						gasLimit = event.detail.limit;
+					on:gasSettings={(event) => {
+						isValidGas = event.detail.isValidGas;
+
+						if (event.detail.isValidGas) {
+							gasPrice = event.detail.price;
+							gasLimit = event.detail.limit;
+						}
+
+						checkAmountValid();
 					}}
 				/>
 			</div>

@@ -2,15 +2,7 @@
 
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
-	import {
-		always,
-		clamp,
-		clampWithin,
-		compose,
-		isType,
-		when
-	} from "lamb";
-
+	import { isType } from "lamb";
 	import { Textbox } from "$lib/dusk/components";
 
 	/** @type {Number} */
@@ -30,39 +22,6 @@
 
 	const dispatch = createEventDispatcher();
 
-	// browsers may allow input of invalid characters
-	const toNumber = compose(when(isNaN, always(0)), n => parseInt(n, 10));
-	const toValidLimit = compose(clampWithin(limitLower, limitUpper), toNumber);
-
-	/**
-	 * @param {Number} n
-	 * @param {Number} upperLimit
-	 * @returns {Number}
-	 */
-	const toValidPrice = (n, upperLimit) => clamp(toNumber(n), priceLower, upperLimit);
-
-	function dispatchGasChange () {
-		const validLimit = toValidLimit(limit);
-
-		dispatch("setGasSettings", {
-			limit: validLimit,
-			price: toValidPrice(price, validLimit)
-		});
-
-		checkGasLimits();
-	}
-
-	function handleLimitChange () {
-		const newLimit = toValidLimit(limit);
-
-		if (price > newLimit) {
-			price = toValidPrice(price, newLimit);
-		}
-
-		dispatchGasChange();
-		checkGasLimits();
-	}
-
 	function checkGasLimits () {
 		let isValidPrice = false;
 		let	isValidLimit = false;
@@ -74,7 +33,11 @@
 			isValidGas = isValidPrice && isValidLimit;
 		}
 
-		dispatch("gasSettingsValidity", isValidGas);
+		dispatch("gasSettings", {
+			isValidGas: isValidGas,
+			limit: limit,
+			price: price
+		});
 	}
 
 	onMount(() => {
@@ -89,13 +52,9 @@
 	<Textbox
 		bind:value={price}
 		className="gas-control__input"
-		max={toValidLimit(limit)}
+		max={limit}
 		min={priceLower}
-		on:blur={() => {
-			price = toValidPrice(price, limit);
-			checkGasLimits();
-		}}
-		on:input={dispatchGasChange}
+		on:input={checkGasLimits}
 		required
 		type="number"
 	/>
@@ -110,11 +69,7 @@
 		className="gas-control__input"
 		max={limitUpper}
 		min={limitLower}
-		on:blur={() => {
-			limit = toValidLimit(limit);
-			checkGasLimits();
-		}}
-		on:input={handleLimitChange}
+		on:input={checkGasLimits}
 		required
 		type="number"
 	/>

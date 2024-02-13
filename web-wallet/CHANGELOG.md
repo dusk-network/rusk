@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add missing error handling when querying the quote API [#1322](https://github.com/dusk-network/rusk/issues/1322)
 - Add gas settings validation to settings page [#1352](https://github.com/dusk-network/rusk/issues/1352)
 - Add forced log out on inactive tabs [#1373](https://github.com/dusk-network/rusk/issues/1373)
+- Add gas settings validation to block Send and Stake operations if invalid gas settings [#1354](https://github.com/dusk-network/rusk/issues/1354)
 
 ### Changed
 
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change `package.json` fields to reflect repo change [#1367](https://github.com/dusk-network/rusk/issues/1367)
 - Change `walletStore.js` to receive gasPrice and gasLimit when `transfer` , `stake`, `unstake` and `withdrawRewards` are called [#1353](https://github.com/dusk-network/rusk/issues/1353)
 - Update deprecated Node actions in CI [#1343](https://github.com/dusk-network/rusk/issues/1343)
+- Change `setGasSettings` event to `gasSettings` and include `isValidGas` property in event data [#1354](https://github.com/dusk-network/rusk/issues/1354)
 
 ### Removed
 

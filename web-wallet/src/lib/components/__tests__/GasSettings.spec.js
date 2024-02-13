@@ -49,7 +49,7 @@ describe("GasSettings", () => {
 		expect(container.firstChild).toMatchSnapshot();
 	});
 
-	it("checks setGasSettings event is dispatched on click with the correct event data", async () => {
+	it("checks \"gasSettings\" event is dispatched on click with the correct event data", async () => {
 		const eventHandler = vi.fn();
 		const { component, getByRole, getAllByRole } = render(GasSettings, baseOptions);
 		const editButton = getByRole("button", { name: "EDIT" });
@@ -58,7 +58,7 @@ describe("GasSettings", () => {
 
 		await fireEvent.click(editButton);
 
-		component.$on("setGasSettings", eventHandler);
+		component.$on("gasSettings", eventHandler);
 
 		const [priceInput, limitInput] = getAllByRole("spinbutton");
 
@@ -66,6 +66,7 @@ describe("GasSettings", () => {
 
 		expect(eventHandler).toHaveBeenCalledTimes(1);
 		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
+			isValidGas: true,
 			limit: baseProps.limitLower,
 			price: baseProps.price
 		});
@@ -74,6 +75,7 @@ describe("GasSettings", () => {
 
 		expect(eventHandler).toHaveBeenCalledTimes(2);
 		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
+			isValidGas: true,
 			limit: baseProps.limitLower,
 			price: baseProps.price * 2
 		});
