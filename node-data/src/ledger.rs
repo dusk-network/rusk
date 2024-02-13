@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::bls::{self, PublicKeyBytes};
-use crate::message::payload::RatificationResult;
+use crate::message::payload::{RatificationResult, Vote};
 use crate::Serializable;
 
 use dusk_bytes::DeserializableSlice;
@@ -366,6 +366,7 @@ impl IterationsInfo {
         self.cert_list
         .iter()
         .flatten()
+        .filter(|(c,_)|c.result==RatificationResult::Fail(Vote::NoCandidate))
         .map(|(_, pk)| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
             tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
             io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
