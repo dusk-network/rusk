@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ability to revert words when entering the mnemonic phrase [#1290](https://github.com/dusk-network/rusk/issues/1290)
 - Add missing error handling when querying the quote API [#1322](https://github.com/dusk-network/rusk/issues/1322)
 - Add gas settings validation to settings page [#1352](https://github.com/dusk-network/rusk/issues/1352)
+- Add forced log out on inactive tabs [#1373](https://github.com/dusk-network/rusk/issues/1373)
 
 ### Changed
 

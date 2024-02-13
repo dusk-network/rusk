@@ -10,7 +10,8 @@
 		mdiWalletOutline
 	} from "@mdi/js";
 	import { mapWith, rename } from "lamb";
-	import { goto } from "$app/navigation";
+
+	import { logout } from "$lib/navigation";
 	import {
 		AnchorButton,
 		Badge,
@@ -26,8 +27,7 @@
 
 	const resetWallet = () => walletStore.clearLocalData().then(() => {
 		settingsStore.reset();
-		walletStore.reset();
-		goto("/");
+		logout(false);
 	}).catch(err => { resetError = err; });
 
 	function handleResetWalletClick () {
@@ -234,10 +234,7 @@
 		icon={{ path: mdiArrowLeft }}
 		text="Back"/>
 	<Button
-		on:click={async () => {
-			walletStore.reset();
-			goto("/");
-		}}
+		on:click={() => logout(false)}
 		variant="tertiary"
 		text="Log out"/>
 </div>

@@ -1,0 +1,69 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Forced logout page > should render the page alert the user about the forced logout on mount 1`] = `
+<div>
+  <section
+    class="forced-logout s-1sbyBWavtBQ9"
+  >
+    <div
+      class="dusk-card"
+    >
+      <header
+        class="dusk-card__header"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <h3
+          class="h4"
+        >
+          You have been automatically logged out
+        </h3>
+         
+      </header>
+       
+      <p
+        class="s-1sbyBWavtBQ9"
+      >
+        Another tab or window unlocked a different wallet and replaced
+			the local cache.
+      </p>
+       
+      <p
+        class="s-1sbyBWavtBQ9"
+      >
+        When you log in again with the mnemonic you used in this session,
+			you will need to wait for a full sync.
+      </p>
+    </div>
+    
+    <!--&lt;Card&gt;-->
+     
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal"
+      data-sveltekit-replacestate="true"
+      href="/"
+    >
+      <span
+        class="dusk-anchor-button__text"
+      >
+        HOME
+      </span>
+      
+    </a>
+    <!--&lt;Anchor&gt;-->
+    <!--&lt;AnchorButton&gt;-->
+  </section>
+  <!--&lt;+page&gt;-->
+</div>
+`;

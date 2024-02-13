@@ -8,9 +8,9 @@ import {
 	vi
 } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
-import * as appNavigation from "$app/navigation";
 
 import mockedWalletStore from "../../__mocks__/mockedWalletStore";
+import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
 
 import Settings from "../+page.svelte";
@@ -45,8 +45,7 @@ vi.useFakeTimers();
 
 describe("Settings", () => {
 	const initialWalletStoreState = structuredClone(mockedWalletStore.getMockedStoreValue());
-	const gotoSpy = vi.spyOn(appNavigation, "goto");
-	const resetSpy = vi.spyOn(walletStore, "reset");
+	const logoutSpy = vi.spyOn(navigation, "logout");
 
 	beforeEach(() => {
 		mockedWalletStore.setMockedStoreValue(initialWalletStoreState);
@@ -54,13 +53,11 @@ describe("Settings", () => {
 
 	afterEach(() => {
 		cleanup();
-		gotoSpy.mockClear();
-		resetSpy.mockClear();
+		logoutSpy.mockClear();
 	});
 
 	afterAll(() => {
-		gotoSpy.mockRestore();
-		resetSpy.mockRestore();
+		logoutSpy.mockRestore();
 		vi.doUnmock("$lib/stores");
 	});
 
@@ -113,9 +110,8 @@ describe("Settings", () => {
 		await fireEvent.click(button);
 		await vi.advanceTimersToNextTimerAsync();
 
-		expect(resetSpy).toHaveBeenCalledTimes(1);
-		expect(gotoSpy).toHaveBeenCalledTimes(1);
-		expect(gotoSpy).toHaveBeenCalledWith("/");
+		expect(logoutSpy).toHaveBeenCalledTimes(1);
+		expect(logoutSpy).toHaveBeenCalledWith(false);
 	});
 
 	describe("Resetting the wallet", () => {
@@ -147,9 +143,8 @@ describe("Settings", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-			expect(resetSpy).toHaveBeenCalledTimes(1);
-			expect(gotoSpy).toHaveBeenCalledTimes(1);
-			expect(gotoSpy).toHaveBeenCalledWith("/");
+			expect(logoutSpy).toHaveBeenCalledTimes(1);
+			expect(logoutSpy).toHaveBeenCalledWith(false);
 		});
 
 		it("should do nothing if the user doesn't confirm the reset", async () => {
@@ -166,8 +161,7 @@ describe("Settings", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(settingsResetSpy).not.toHaveBeenCalled();
-			expect(resetSpy).not.toHaveBeenCalled();
-			expect(gotoSpy).not.toHaveBeenCalled();
+			expect(logoutSpy).not.toHaveBeenCalled();
 		});
 
 		it("should show an error if clearing local data fails", async () => {
@@ -184,8 +178,7 @@ describe("Settings", () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(settingsResetSpy).not.toHaveBeenCalled();
-			expect(resetSpy).not.toHaveBeenCalled();
-			expect(gotoSpy).not.toHaveBeenCalled();
+			expect(logoutSpy).not.toHaveBeenCalled();
 			expect(container.firstChild).toMatchSnapshot();
 		});
 	});
