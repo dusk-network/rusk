@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Add running node requirement notice in Staking flow [#1359](https://github.com/dusk-network/rusk/issues/1359)
 - Add `fiatPrice` optional property to Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
 - Add ability to revert words when entering the mnemonic phrase [#1290](https://github.com/dusk-network/rusk/issues/1290)
@@ -33,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove `gasSettings` store update from `dashboard/+page.svelte.js` [#1353](https://github.com/dusk-network/rusk/issues/1353)
 
 ### Fixed
+
+- Fix wizard progression on Stake flow [#1398](https://github.com/dusk-network/rusk/issues/1398)
 - Fix Changelog to point to issues [#1368](https://github.com/dusk-network/rusk/issues/1368)
 - Fix Seed Phrase words size [#1335](https://github.com/dusk-network/rusk/issues/1335)
 - Fix colors on red background [#1334](https://github.com/dusk-network/rusk/issues/1334)

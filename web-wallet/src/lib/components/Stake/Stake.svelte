@@ -1,7 +1,7 @@
 <svelte:options immutable={true}/>
 
 <script>
-	import { createEventDispatcher, onMount, tick } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import { fade } from "svelte/transition";
 	import { mdiAlertOutline, mdiDatabaseArrowDownOutline, mdiDatabaseOutline } from "@mdi/js";
 
@@ -73,8 +73,11 @@
 	/** @type {boolean} */
 	let isValidGas = true;
 
-	/** @type {boolean} */
-	let isNextButtonDisabled = false;
+	$: isStakeAmountValid = stakeAmount >= minStake && stakeAmount <= maxSpendable;
+	$: totalLuxFee = luxFee + duskToLux(stakeAmount);
+	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
+	$: isNextButtonDisabled = flow === "stake"
+		? !(isStakeAmountValid && isValidGas && isFeeWithinLimit) : false;
 
 	let { gasLimit, gasPrice } = gasSettings;
 
@@ -92,12 +95,6 @@
 		"withdraw-rewards": "Withdraw Rewards"
 	};
 
-	const checkAmountValid = async () => {
-		await tick();
-		isNextButtonDisabled = !(stakeInput?.checkValidity() && isValidGas
-			&& (luxFee + duskToLux(stakeAmount) <= duskToLux(spendable)));
-	};
-
 	const dispatch = createEventDispatcher();
 	const resetOperation = () => dispatch("operationChange", "");
 	const suppressStakingNotice = () => dispatch("suppressStakingNotice");
@@ -112,17 +109,12 @@
 			gasPrice = event.detail.price;
 			gasLimit = event.detail.limit;
 		}
-
-		checkAmountValid();
 	};
 
 	onMount(() => {
 		if (flow === "stake") {
-			stakeInput = document.querySelector(".operation__input-field");
 			stakeAmount = Math.min(minStake, stakeAmount);
 		}
-
-		checkAmountValid();
 	});
 
 	$: luxFee = gasLimit * gasPrice;
@@ -206,7 +198,6 @@
 							}
 
 							stakeAmount = maxSpendable;
-							checkAmountValid();
 						}}
 						text="USE MAX"
 					/>
@@ -221,7 +212,6 @@
 						max={maxSpendable}
 						required
 						step="0.000000001"
-						on:input={checkAmountValid}
 					/>
 					<Icon
 						data-tooltip-id="main-tooltip"
