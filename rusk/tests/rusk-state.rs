@@ -72,7 +72,12 @@ where
                 .expect("current commit should exist");
 
         session
-            .call::<_, Note>(TRANSFER_CONTRACT, "push_note", &note, u64::MAX)
+            .call::<_, Note>(
+                TRANSFER_CONTRACT,
+                "push_note",
+                &(0u64, note),
+                u64::MAX,
+            )
             .expect("Pushing note should succeed");
         session
             .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)

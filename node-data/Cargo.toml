@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-phoenix-core = { version = "0.21", features = ["alloc"] }
+phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
 dusk-bytes = "^0.1"
 bytes = "0.6"
 sha3 = "0.10"

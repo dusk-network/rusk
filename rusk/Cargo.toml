@@ -33,8 +33,8 @@ serde_with = { version = "3.1", features = ["hex"] }
 bs58 = "0.4"
 hex = "0.4"
 parking_lot = "0.12"
-rkyv = "0.7"
-bytecheck = "0.6"
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+bytecheck = { version = "0.6", default-features = false }
 dirs = "4"
 
 dusk-schnorr = "0.14"
@@ -49,7 +49,7 @@ dusk-pki = "0.13"
 dusk-bytes = "0.1"
 kadcast = "0.6.0-rc"
 dusk-wallet-core = "0.24.0-plonk.0.16-rc.2"
-phoenix-core = "0.21"
+phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
 tungstenite = "0.20"
 hyper-tungstenite = "0.11"
 hyper = { version = "0.14", features = ["server", "stream", "http1", "http2"] }

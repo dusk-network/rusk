@@ -39,9 +39,6 @@ pub mod hash;
 
 use hash::Hasher;
 
-// re-export `piecrust-uplink` such that `rusk-abi` is the only crate
-pub use piecrust_uplink::*;
-
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 

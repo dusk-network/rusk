@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Change dependencies declarations enforce bytecheck [#1371]
+
 ## [0.2.0] - 2021-07-15
 
 ### Changed
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `transfer-circuits` to Rusk keys scheme [#302]
 
+[#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#327]: https://github.com/dusk-network/rusk/issues/327
 [#302]: https://github.com/dusk-network/rusk/issues/302
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/transfer-circuits-0.1.0

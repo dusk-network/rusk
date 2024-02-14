@@ -12,10 +12,10 @@ dusk-jubjub = "0.13"
 dusk-plonk = "0.16"
 dusk-poseidon = "0.31"
 poseidon-merkle = { version = "0.3", features = ["zk"] }
-dusk-merkle = "0.5"
+dusk-merkle = { version = "0.5", features = ["size_32"] }
 dusk-pki ="0.13"
 dusk-schnorr = "0.14"
-phoenix-core = { version = "0.21", features = ["alloc"] }
+phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
 storage = { version = "0.1", path = "../storage", optional = true }
