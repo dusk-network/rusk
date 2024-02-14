@@ -199,45 +199,62 @@ impl StakeState {
         self.slashed_amount
     }
 
-    /// Slash the given `to_subtract` amount from a `public_key` stake (if
-    /// any). Firstly the amount is subtracted from the reward, if that's
-    /// not enough the stake amount is touched.
+    /// Slash the given `to_slash` amount from a `public_key` reward
+    ///
+    /// If the reward is less than the `to_slash` amount, then the reward is
+    /// depleted and the provisioner eligibility is shifted to the
+    /// next epoch as well
     pub fn slash(&mut self, public_key: &PublicKey, to_slash: u64) {
         let stake = self
             .get_stake_mut(public_key)
             .expect("The stake to slash should exist");
 
-        let staker_funds = stake.reward + stake.amount.unwrap_or_default().0;
+        let to_slash = min(to_slash, stake.reward);
+        stake.reward -= to_slash;
 
-        // Cannot slash more than the staker funds
-        let to_slash = min(to_slash, staker_funds);
-
-        if to_slash <= stake.reward {
-            stake.reward -= to_slash;
-        } else {
-            // Deplete reward and update `to_slash` with the remaining amount to
-            // slash from the stake amount.
-            let remaining_slash = to_slash - stake.reward;
-            stake.reward = 0;
-            let (stake_amt, _) = stake
+        if stake.reward == 0 {
+            let (_, eligibility) = stake
                 .amount
                 .as_mut()
-                .expect("Trying to slash more than slashable_amount");
+                .expect("The stake to slash should be active");
+            *eligibility = next_epoch(rusk_abi::block_height());
+        }
 
-            *stake_amt -= remaining_slash;
+        // Update the total slashed amount
+        self.slashed_amount += to_slash;
+    }
+
+    /// Slash the given `to_slash` amount from a `public_key` stake
+    ///
+    /// If the stake is less than the `to_slash` amount, then the stake is
+    /// depleted
+    pub fn hard_slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+        let stake_info = self
+            .get_stake_mut(public_key)
+            .expect("The stake to slash should exist");
+
+        let stake = stake_info
+            .amount
+            .as_mut()
+            .expect("The stake amount to slash should exist");
+
+        let to_slash = min(to_slash, stake.0);
+        if to_slash > 0 {
+            // Update the staked amount
+            stake.0 -= to_slash;
 
             // Update the module balance to reflect the change in the amount
             // withdrawable from the contract
             let _: bool = rusk_abi::call(
                 TRANSFER_CONTRACT,
                 "sub_module_balance",
-                &(STAKE_CONTRACT, remaining_slash),
+                &(STAKE_CONTRACT, to_slash),
             )
             .expect("Subtracting balance should succeed");
-        }
 
-        // Update the total slashed amount
-        self.slashed_amount += to_slash;
+            // Update the total slashed amount
+            self.slashed_amount += to_slash;
+        }
     }
 
     /// Feeds the host with the stakes.
