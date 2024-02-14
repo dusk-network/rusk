@@ -82,7 +82,7 @@ impl PublicKey {
 
 impl PartialOrd<PublicKey> for PublicKey {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.as_bytes.inner().partial_cmp(other.as_bytes.inner())
+        Some(self.cmp(other))
     }
 }
 
