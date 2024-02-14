@@ -94,8 +94,9 @@ impl CertificateInfo {
         );
     }
 
-    /// Returns `true` if all fields are non-empty and quorum is reached for
-    /// both validation and ratification
+    /// Returns `true` if quorum is reached for both validation and
+    /// ratification, except for NoQuorum votes where only the ratification
+    /// quorum is checked
     fn is_ready(&self) -> bool {
         match self.cert.result {
             RatificationResult::Fail(Vote::NoQuorum) => {
@@ -204,7 +205,7 @@ impl CertInfoRegistry {
         Message::new_quorum(payload)
     }
 
-    pub(crate) fn get_nil_certificates(
+    pub(crate) fn get_failed_certs(
         &self,
         to: u8,
     ) -> Vec<Option<IterationInfo>> {
