@@ -241,10 +241,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         event = "quorum",
                         src = "prev_step",
                         msg_step = m.get_step(),
-                        vote = %q.vote,
+                        vote = ?q.vote(),
                     );
 
-                    self.quorum_sender.send(m).await;
+                    self.quorum_sender.send_quorum(m).await;
                 }
 
                 Payload::ValidationResult(validation_result) => {

@@ -415,19 +415,19 @@ pub mod payload {
         pub sign_info: SignInfo,
     }
 
-    #[derive(Debug, Clone, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
+    #[derive(Clone, Copy, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     #[repr(u8)]
     pub enum Vote {
-        #[default]
         NoCandidate = 0,
         Valid(Hash) = 1,
         Invalid(Hash) = 2,
 
+        #[default]
         NoQuorum = 3,
     }
 
-    impl fmt::Display for Vote {
+    impl fmt::Debug for Vote {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let (desc, hash) = match &self {
                 Self::NoCandidate => ("NoCandidate", "".into()),
@@ -613,20 +613,49 @@ pub mod payload {
         }
     }
 
+    #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+    #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
+    pub enum RatificationResult {
+        Fail(Vote),
+        Success(Vote),
+    }
+
+    impl Default for RatificationResult {
+        fn default() -> Self {
+            Self::Fail(Vote::NoQuorum)
+        }
+    }
+
+    impl From<Vote> for RatificationResult {
+        fn from(vote: Vote) -> Self {
+            match vote {
+                Vote::Valid(hash) => {
+                    RatificationResult::Success(Vote::Valid(hash))
+                }
+                fail => RatificationResult::Fail(fail),
+            }
+        }
+    }
+
+    impl RatificationResult {
+        pub fn vote(&self) -> &Vote {
+            match self {
+                Self::Success(v) => v,
+                Self::Fail(v) => v,
+            }
+        }
+    }
+
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct Quorum {
         pub header: ConsensusHeader,
-        pub vote: Vote,
-        pub validation: StepVotes,
-        pub ratification: StepVotes,
+        pub cert: Certificate,
     }
 
     impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
-            self.vote.write(w)?;
-            self.validation.write(w)?;
-            self.ratification.write(w)?;
+            self.cert.write(w)?;
 
             Ok(())
         }
@@ -636,27 +665,15 @@ pub mod payload {
             Self: Sized,
         {
             let header = ConsensusHeader::read(r)?;
-            let vote = Vote::read(r)?;
+            let cert = Certificate::read(r)?;
 
-            let validation = StepVotes::read(r)?;
-            let ratification = StepVotes::read(r)?;
-
-            Ok(Quorum {
-                header,
-                vote,
-                validation,
-                ratification,
-            })
+            Ok(Quorum { header, cert })
         }
     }
 
     impl Quorum {
-        /// Generates a certificate from quorum.
-        pub fn generate_certificate(&self) -> Certificate {
-            Certificate {
-                validation: self.validation,
-                ratification: self.ratification,
-            }
+        pub fn vote(&self) -> &Vote {
+            self.cert.result.vote()
         }
     }
 
@@ -1139,11 +1156,13 @@ mod tests {
             cert: Certificate {
                 validation: ledger::StepVotes::new([6; 48], 22222222),
                 ratification: ledger::StepVotes::new([7; 48], 3333333),
+                ..Default::default()
             },
             iteration: 1,
             prev_block_cert: Certificate {
                 validation: ledger::StepVotes::new([6; 48], 444444444),
                 ratification: ledger::StepVotes::new([7; 48], 55555555),
+                ..Default::default()
             },
             failed_iterations: Default::default(),
         };
@@ -1186,9 +1205,11 @@ mod tests {
 
         assert_serialize(payload::Quorum {
             header: consensus_header.clone(),
-            vote: payload::Vote::Valid([4; 32]),
-            validation: ledger::StepVotes::new([1; 48], 12345),
-            ratification: ledger::StepVotes::new([2; 48], 98765),
+            cert: Certificate {
+                result: payload::Vote::Valid([4; 32]).into(),
+                validation: ledger::StepVotes::new([1; 48], 12345),
+                ratification: ledger::StepVotes::new([2; 48], 98765),
+            },
         });
     }
 

@@ -124,7 +124,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
     ) {
         // Sign and construct validation message
         let validation = self::build_validation_payload(vote, ru, iteration);
-        info!(event = "send_vote", vote = %validation.vote);
+        info!(event = "send_vote", vote = ?validation.vote);
         let msg = Message::new_validation(validation);
 
         // Publish

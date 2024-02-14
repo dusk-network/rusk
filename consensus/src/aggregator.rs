@@ -58,8 +58,7 @@ impl Aggregator {
             .votes_for(signer)
             .ok_or(AggregatorError::NotCommitteeMember)?;
 
-        let (aggr_sign, cluster) =
-            self.0.entry((msg_step, vote.clone())).or_default();
+        let (aggr_sign, cluster) = self.0.entry((msg_step, *vote)).or_default();
 
         // Each committee has 64 slots.
         //
@@ -86,7 +85,7 @@ impl Aggregator {
 
         debug!(
             event = "vote aggregated",
-            %vote,
+            ?vote,
             from = signer.to_bs58(),
             added = weight,
             total,
@@ -107,11 +106,11 @@ impl Aggregator {
             _ => committee.majority_quorum(),
         };
 
-        let quorum_reached = total > quorum_target;
+        let quorum_reached = total >= quorum_target;
         if quorum_reached {
             tracing::info!(
                 event = "quorum reached",
-                %vote,
+                ?vote,
                 total,
                 target = quorum_target,
                 bitset,

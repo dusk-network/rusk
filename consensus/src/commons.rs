@@ -99,6 +99,7 @@ pub enum ConsensusError {
     InvalidPrevBlockHash(Hash),
     InvalidQuorumType,
     InvalidVote(Vote),
+    InvalidMsgIteration(u8),
     FutureEvent,
     PastEvent,
     NotCommitteeMember,
@@ -141,21 +142,16 @@ impl QuorumMsgSender {
     }
 
     /// Sends an quorum (internally) to the quorum loop.
-    pub(crate) async fn send(&self, msg: Message) {
+    pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
-            // TODO: Change me accordingly to https://github.com/dusk-network/rusk/issues/1268
-            Payload::Quorum(q)
-                if !q.validation.is_empty()
-                    && !q.ratification.is_empty()
-                    && q.vote != Vote::NoCandidate =>
-            {
+            Payload::Quorum(q) if !q.cert.ratification.is_empty() => {
                 tracing::debug!(
                     event = "send quorum_msg",
-                    vote = %q.vote,
+                    vote = ?q.vote(),
                     round = msg.header.round,
                     iteration = msg.header.iteration,
-                    validation = ?q.validation,
-                    ratification = ?q.ratification,
+                    validation = ?q.cert.validation,
+                    ratification = ?q.cert.ratification,
                 );
             }
             _ => return,

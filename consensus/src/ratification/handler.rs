@@ -8,6 +8,7 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use async_trait::async_trait;
+use node_data::ledger::Certificate;
 use node_data::{ledger, StepName};
 use tracing::{error, warn};
 
@@ -15,9 +16,7 @@ use crate::aggregator::Aggregator;
 
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
-use node_data::message::payload::{
-    QuorumType, Ratification, ValidationResult, Vote,
-};
+use node_data::message::payload::{Ratification, ValidationResult, Vote};
 use node_data::message::{
     payload, ConsensusHeader, Message, Payload, StepMessage,
 };
@@ -68,54 +67,43 @@ impl MsgHandler for RatificationHandler {
         if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn
-            warn!(
-                event = "drop message",
-                reason = "invalid iteration number",
-                msg_iteration = iteration,
-            );
-            return Ok(HandleMsgOutput::Pending);
+            return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
         // Collect vote, if msg payload is of ratification type
-        let collect_vote = self.aggregator.collect_vote(
-            committee,
-            p.sign_info(),
-            &p.vote,
-            p.get_step(),
-        );
-
-        match collect_vote {
-            Ok((sv, quorum_reached)) => {
-                // Record any signature in global registry
-                _ = self.sv_registry.lock().await.add_step_votes(
-                    iteration,
-                    &p.vote,
-                    sv,
-                    StepName::Ratification,
-                    quorum_reached,
-                    committee.excluded().expect("Generator to be excluded"),
-                );
-
-                if quorum_reached {
-                    return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
-                        ru,
-                        iteration,
-                        p.vote,
-                        *p.validation_result.sv(),
-                        sv,
-                    )));
-                }
-            }
-            Err(error) => {
+        let (sv, quorum_reached) = self
+            .aggregator
+            .collect_vote(committee, p.sign_info(), &p.vote, p.get_step())
+            .map_err(|error| {
                 warn!(
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = %p.vote,
+                    ?p.vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
-            }
+                ConsensusError::InvalidVote(p.vote)
+            })?;
+
+        // Record any signature in global registry
+        _ = self.sv_registry.lock().await.add_step_votes(
+            iteration,
+            &p.vote,
+            sv,
+            StepName::Ratification,
+            quorum_reached,
+            committee.excluded().expect("Generator to be excluded"),
+        );
+
+        if quorum_reached {
+            return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
+                ru,
+                iteration,
+                p.vote,
+                *p.validation_result.sv(),
+                sv,
+            )));
         }
 
         Ok(HandleMsgOutput::Pending)
@@ -159,7 +147,7 @@ impl MsgHandler for RatificationHandler {
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = %p.vote,
+                    vote = ?p.vote,
                     msg_step = p.get_step(),
                     msg_round = p.header().round,
                 );
@@ -201,9 +189,11 @@ impl RatificationHandler {
 
         let quorum = payload::Quorum {
             header,
-            vote,
-            validation,
-            ratification,
+            cert: Certificate {
+                result: vote.into(),
+                validation,
+                ratification,
+            },
         };
 
         Message::new_quorum(quorum)
@@ -232,27 +222,19 @@ impl RatificationHandler {
         round_committees: &RoundCommittees,
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
-        // TODO: Check all quorums
-        match result.quorum() {
-            QuorumType::Valid | QuorumType::NoCandidate => {
-                if let Some(validation_committee) =
-                    round_committees.get_validation_committee(iter)
-                {
-                    verify_votes(
-                        header,
-                        StepName::Validation,
-                        result.vote(),
-                        result.sv(),
-                        validation_committee,
-                    )?;
-
-                    return Ok(());
-                } else {
-                    error!("could not get validation committee");
-                }
-            }
-            _ => {}
-        }
-        Err(ConsensusError::InvalidValidation(result.quorum()))
+        let validation_committee = round_committees
+            .get_validation_committee(iter)
+            .ok_or_else(|| {
+                error!("could not get validation committee");
+                ConsensusError::InvalidValidation(result.quorum())
+            })?;
+        verify_votes(
+            header,
+            StepName::Validation,
+            result.vote(),
+            result.sv(),
+            validation_committee,
+        )?;
+        Ok(())
     }
 }

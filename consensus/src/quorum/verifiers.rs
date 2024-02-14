@@ -28,8 +28,8 @@ pub async fn verify_quorum(
     // Verify validation
     verify_step_votes(
         &quorum.header,
-        &quorum.vote,
-        &quorum.validation,
+        quorum.vote(),
+        &quorum.cert.validation,
         committees_set,
         seed,
         StepName::Validation,
@@ -38,7 +38,7 @@ pub async fn verify_quorum(
     .map_err(|e| {
         error!(
             desc = "invalid validation",
-            sv = ?quorum.validation,
+            sv = ?quorum.cert.validation,
             hdr = ?quorum.header,
         );
         e
@@ -47,8 +47,8 @@ pub async fn verify_quorum(
     // Verify ratification
     verify_step_votes(
         &quorum.header,
-        &quorum.vote,
-        &quorum.ratification,
+        quorum.vote(),
+        &quorum.cert.ratification,
         committees_set,
         seed,
         StepName::Ratification,
@@ -57,7 +57,7 @@ pub async fn verify_quorum(
     .map_err(|e| {
         error!(
             desc = "invalid ratification",
-            sv = ?quorum.ratification,
+            sv = ?quorum.cert.ratification,
             hdr = ?quorum.header,
         );
         e
@@ -135,13 +135,14 @@ pub fn verify_votes(
         target_quorum,
     };
 
-    if !quorum_result.quorum_reached() {
+    if vote != &Vote::NoQuorum && !quorum_result.quorum_reached() {
         tracing::error!(
             desc = "vote_set_too_small",
             committee = format!("{:#?}", sub_committee),
             bitset,
             target_quorum,
             total,
+            ?vote
         );
         return Err(StepSigError::VoteSetTooSmall);
     }

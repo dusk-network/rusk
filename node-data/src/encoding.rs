@@ -10,7 +10,7 @@ use crate::ledger::{
     StepVotes, Transaction,
 };
 use crate::message::payload::{
-    QuorumType, Ratification, ValidationResult, Vote,
+    QuorumType, Ratification, RatificationResult, ValidationResult, Vote,
 };
 use crate::message::{ConsensusHeader, SignInfo};
 use crate::Serializable;
@@ -152,6 +152,7 @@ impl Serializable for Header {
 
 impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.result.write(w)?;
         self.validation.write(w)?;
         self.ratification.write(w)?;
 
@@ -162,10 +163,12 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
+        let result = RatificationResult::read(r)?;
         let validation = StepVotes::read(r)?;
         let ratification = StepVotes::read(r)?;
 
         Ok(Certificate {
+            result,
             validation,
             ratification,
         })
@@ -191,6 +194,45 @@ impl Serializable for StepVotes {
             bitset,
             aggregate_signature: aggregate_signature.into(),
         })
+    }
+}
+
+impl Serializable for RatificationResult {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        match self {
+            RatificationResult::Fail(v) => {
+                w.write_all(&[0])?;
+                v.write(w)?;
+            }
+
+            RatificationResult::Success(v) => {
+                w.write_all(&[1])?;
+                v.write(w)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let result = match Self::read_u8(r)? {
+            0 => {
+                let vote = Vote::read(r)?;
+                Self::Fail(vote)
+            }
+            1 => {
+                let vote = Vote::read(r)?;
+                Self::Success(vote)
+            }
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid RatificationResult",
+            ))?,
+        };
+        Ok(result)
     }
 }
 
@@ -400,5 +442,10 @@ mod tests {
     #[test]
     fn test_encoding_block() {
         assert_serializable::<Block>();
+    }
+
+    #[test]
+    fn test_encoding_ratification_result() {
+        assert_serializable::<RatificationResult>();
     }
 }

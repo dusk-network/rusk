@@ -68,7 +68,7 @@ pub fn build_ratification_payload(
     let sign_info = message::SignInfo::default();
     let mut ratification = message::payload::Ratification {
         header,
-        vote: result.vote().clone(),
+        vote: *result.vote(),
         sign_info,
         validation_result: result.clone(),
         timestamp: get_current_timestamp(),
@@ -137,7 +137,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
                 handler.validation_result(),
                 ctx.outbound.clone(),
             )
-            .instrument(tracing::info_span!("ratification", %vote))
+            .instrument(tracing::info_span!("ratification", ?vote))
             .await;
 
             // Collect my own vote

@@ -18,7 +18,6 @@ use tracing::{debug, warn};
 
 #[derive(Clone)]
 struct CertificateInfo {
-    vote: Vote,
     cert: Certificate,
 
     quorum_reached_validation: bool,
@@ -29,8 +28,8 @@ impl fmt::Display for CertificateInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "cert_info: {}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
-            self.vote,
+            "cert_info: {:?}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
+            self.cert.result,
             self.cert.validation,
             self.quorum_reached_validation,
             self.cert.ratification,
@@ -42,8 +41,10 @@ impl fmt::Display for CertificateInfo {
 impl CertificateInfo {
     pub(crate) fn new(vote: Vote) -> Self {
         CertificateInfo {
-            vote,
-            cert: Certificate::default(),
+            cert: Certificate {
+                result: vote.into(),
+                ..Default::default()
+            },
             quorum_reached_validation: false,
             quorum_reached_ratification: false,
         }
@@ -125,8 +126,7 @@ impl IterationCerts {
 
     fn get_or_insert(&mut self, vote: &Vote) -> &mut CertificateInfo {
         if !self.votes.contains_key(vote) {
-            self.votes
-                .insert(vote.clone(), CertificateInfo::new(vote.clone()));
+            self.votes.insert(*vote, CertificateInfo::new(*vote));
         }
         self.votes.get_mut(vote).expect("Vote to be inserted")
     }
@@ -167,15 +167,15 @@ impl CertInfoRegistry {
         let cert_info = cert.get_or_insert(vote);
 
         cert_info.set_sv(iteration, sv, step, quorum_reached);
-        cert_info
-            .is_ready()
-            .then(|| Self::build_quorum_msg(&self.ru, iteration, cert_info))
+        cert_info.is_ready().then(|| {
+            Self::build_quorum_msg(&self.ru, iteration, cert_info.cert)
+        })
     }
 
     fn build_quorum_msg(
         ru: &RoundUpdate,
         iteration: u8,
-        result: &CertificateInfo,
+        cert: Certificate,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
             prev_block_hash: ru.hash(),
@@ -183,12 +183,7 @@ impl CertInfoRegistry {
             iteration,
         };
 
-        let payload = payload::Quorum {
-            header,
-            vote: result.vote.clone(),
-            validation: result.cert.validation,
-            ratification: result.cert.ratification,
-        };
+        let payload = payload::Quorum { header, cert };
 
         Message::new_quorum(payload)
     }
