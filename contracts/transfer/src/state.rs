@@ -593,7 +593,7 @@ impl TransferState {
     ) -> Result<(), Error> {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then_some(())
-            .ok_or(Error::ProofVerificationError)
+            .ok_or(Error::ProofVerification)
     }
 }
 

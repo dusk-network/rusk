@@ -13,7 +13,7 @@ pub enum Error {
     MessageNotFound,
     CrossoverNotFound,
     NotEnoughBalance,
-    ProofVerificationError,
+    ProofVerification,
 }
 
 impl From<PhoenixError> for Error {
