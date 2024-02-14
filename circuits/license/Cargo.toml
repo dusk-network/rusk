@@ -13,7 +13,7 @@ dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"
 dusk-poseidon = { version = "0.31", default-features = false, features = ["alloc"] }
 dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }
 dusk-schnorr = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.21", features = ["alloc"] }
+phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
 poseidon-merkle = { version = "0.3", features = ["rkyv-impl"] }
 zk-citadel = "0.5"
 hex = "0.4"
