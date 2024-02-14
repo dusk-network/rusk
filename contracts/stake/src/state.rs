@@ -83,6 +83,7 @@ impl StakeState {
 
         let (value, _) = loaded_stake.remove_amount();
         loaded_stake.increment_counter();
+        loaded_stake.shift_count = 0;
 
         // verify signature
         let digest =
@@ -191,6 +192,9 @@ impl StakeState {
     /// in the map for the key one will be created.
     pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
         let stake = self.load_or_create_stake_mut(public_key);
+        if stake.shift_count > 0 {
+            stake.shift_count -= 1;
+        }
         stake.increase_reward(value);
     }
 
@@ -213,7 +217,9 @@ impl StakeState {
                 .amount
                 .as_mut()
                 .expect("The stake to slash should be active");
-            *eligibility = next_epoch(rusk_abi::block_height());
+            let shift_penalty = stake.shift_count * EPOCH;
+            *eligibility = next_epoch(rusk_abi::block_height()) + shift_penalty;
+            stake.shift_count += 1;
         } else {
             // Cannot slash more than the staker rewards
             let to_slash = min(to_slash, stake.reward);
