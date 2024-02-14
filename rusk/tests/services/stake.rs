@@ -322,9 +322,9 @@ pub async fn slash() -> Result<()> {
     .expect("to work");
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
-    assert_eq!(after_slash.amount, Some((dusk(7.0), 0)));
+    assert_eq!(after_slash.amount, Some((dusk(20.0), 0)));
     let new_balance = rusk.module_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, module_balance - dusk(13.0));
+    assert_eq!(new_balance, module_balance);
     let module_balance = new_balance;
 
     generator_procedure(
@@ -338,15 +338,15 @@ pub async fn slash() -> Result<()> {
     .expect("to work");
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
-    assert_eq!(after_slash.amount, Some((0, 0)));
+    assert_eq!(after_slash.amount, Some((dusk(20.0), 2160)));
     let new_balance = rusk.module_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, module_balance - dusk(7.0));
+    assert_eq!(new_balance, module_balance);
     let module_balance = new_balance;
 
     generator_procedure(
         &rusk,
         &[],
-        BLOCK_HEIGHT,
+        9000,
         BLOCK_GAS_LIMIT,
         vec![to_slash],
         None,
@@ -354,7 +354,7 @@ pub async fn slash() -> Result<()> {
     .expect("to work");
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
-    assert_eq!(after_slash.amount, Some((0, 0)));
+    assert_eq!(after_slash.amount, Some((dusk(20.0), 10800)));
     let new_balance = rusk.module_balance(STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, module_balance);
 
