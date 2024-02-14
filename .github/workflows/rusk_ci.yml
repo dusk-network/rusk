@@ -58,7 +58,7 @@ jobs:
           RUSK_PROFILE_PATH: "/var/opt/build-cache"
         run: make clippy
       - name: "Upload Rusk Artifact"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rusk-artifact
           path: ./target/release/rusk
