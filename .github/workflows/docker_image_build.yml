@@ -21,7 +21,7 @@ jobs:
         run: docker save rusk:latest -o rusk_image.tar
 
       - name: Upload Docker image as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rusk-image
           path: rusk_image.tar
