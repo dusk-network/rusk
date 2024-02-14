@@ -13,7 +13,7 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::to_str;
 use node_data::ledger::Signature;
-use node_data::message::payload::Vote;
+use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
@@ -45,6 +45,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     ///
     /// * `disable_winner_cert_check` - disables the check of the winning
     /// certificate
+    ///
+    /// Returns true if there is a cerificate for each failed iteration, and if
+    /// that certificate has a quorum in the ratification phase.
+    ///
+    /// If there are no failed iterations, it returns true
     pub async fn execute_checks(
         &self,
         candidate_block: &'a ledger::Header,
@@ -117,7 +122,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
-            Vote::Valid(self.prev_header.hash),
             self.prev_header.height,
             &candidate_block.prev_block_cert,
             self.prev_header.iteration,
@@ -127,12 +131,16 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(())
     }
 
+    /// Return true if there is a cerificate for each failed iteration, and if
+    /// that certificate has a quorum in the ratification phase.
+    ///
+    /// If there are no failed iterations, it returns true
     pub async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<bool> {
         // Verify Failed iterations
-        let mut attested = true;
+        let mut all_failed = true;
 
         for (iter, cert) in candidate_block
             .failed_iterations
@@ -142,35 +150,38 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         {
             if let Some((cert, pk)) = cert {
                 info!(event = "verify_cert", cert_type = "failed_cert", iter);
+
+                if let RatificationResult::Success(_) = cert.result {
+                    anyhow::bail!("Failed iterations should not contains a RatificationResult::Success");
+                }
+
                 let expected_pk = self.provisioners.current().get_generator(
                     iter as u8,
                     self.prev_header.seed,
                     candidate_block.height,
                 );
-                if pk != &expected_pk {
-                    anyhow::bail!("Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
-                }
+
+                anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
                 let quorums = verify_block_cert(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
-                    Vote::NoCandidate,
                     candidate_block.height,
                     cert,
                     iter as u8,
                 )
                 .await?;
 
-                attested = attested
-                    && quorums.0.quorum_reached()
-                    && quorums.1.quorum_reached();
+                // Ratification quorum is enough to consider the iteration
+                // failed
+                all_failed = all_failed && quorums.1.quorum_reached();
             } else {
-                attested = false;
+                all_failed = false;
             }
         }
 
-        Ok(attested)
+        Ok(all_failed)
     }
 
     pub async fn verify_winning_cert(
@@ -181,7 +192,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
-            Vote::Valid(candidate_block.hash),
             candidate_block.height,
             &candidate_block.cert,
             candidate_block.iteration,
@@ -196,7 +206,6 @@ pub async fn verify_block_cert(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    vote: Vote,
     round: u64,
     cert: &ledger::Certificate,
     iteration: u8,
@@ -210,10 +219,11 @@ pub async fn verify_block_cert(
         round,
         prev_block_hash,
     };
+    let vote = cert.result.vote();
     // Verify validation
     match verifiers::verify_step_votes(
         &consensus_header,
-        &vote,
+        vote,
         &cert.validation,
         &committee,
         curr_seed,
@@ -240,7 +250,7 @@ pub async fn verify_block_cert(
     // Verify ratification
     match verifiers::verify_step_votes(
         &consensus_header,
-        &vote,
+        vote,
         &cert.ratification,
         &committee,
         curr_seed,

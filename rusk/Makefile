@@ -17,6 +17,7 @@ clippy: ## Run clippy
 	@cargo clippy --no-default-features --features recovery-state --release -- -D warnings
 	@cargo clippy --no-default-features --features prover --release -- -D warnings
 	@cargo clippy --no-default-features --features node --release -- -D warnings
+	@cargo check --benches --features testwallet
 
 build: ## Build rusk binary
 	@cargo build --release

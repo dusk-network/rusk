@@ -644,6 +644,13 @@ pub mod payload {
                 Self::Fail(v) => v,
             }
         }
+
+        pub fn failed(&self) -> bool {
+            match self {
+                Self::Success(_) => false,
+                Self::Fail(_) => true,
+            }
+        }
     }
 
     #[derive(Debug, Clone, Eq, PartialEq)]

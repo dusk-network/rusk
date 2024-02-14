@@ -15,6 +15,7 @@ use rand::rngs::StdRng;
 use rand_core::SeedableRng;
 use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
+use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 use tracing::warn;
@@ -98,7 +99,7 @@ impl std::fmt::Debug for PublicKey {
     }
 }
 /// a wrapper of 96-sized array
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct PublicKeyBytes(pub [u8; PUBLIC_BLS_SIZE]);
 
 impl Default for PublicKeyBytes {
@@ -122,6 +123,12 @@ impl PublicKeyBytes {
         let mut bs = self.to_base58();
         bs.truncate(16);
         bs
+    }
+}
+
+impl Debug for PublicKeyBytes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.to_bs58())
     }
 }
 

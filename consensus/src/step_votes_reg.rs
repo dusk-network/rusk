@@ -7,7 +7,7 @@
 use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Certificate, IterationInfo, StepVotes};
-use node_data::message::payload::Vote;
+use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{payload, Message};
 use node_data::StepName;
 use std::collections::HashMap;
@@ -94,17 +94,28 @@ impl CertificateInfo {
         );
     }
 
-    /// Returns `true` if all fields are non-empty and quorum is reached for
-    /// both validation and ratification
+    /// Returns `true` if quorum is reached for both validation and
+    /// ratification, except for NoQuorum votes where only the ratification
+    /// quorum is checked
     fn is_ready(&self) -> bool {
-        self.has_votes()
-            && self.quorum_reached_validation
-            && self.quorum_reached_ratification
-    }
-
-    /// Returns `true` if the certificate contains at least one vote
-    fn has_votes(&self) -> bool {
-        !self.cert.validation.is_empty() && !self.cert.ratification.is_empty()
+        match self.cert.result {
+            RatificationResult::Fail(Vote::NoQuorum) => {
+                self.quorum_reached_ratification
+            }
+            RatificationResult::Fail(Vote::Invalid(_)) => {
+                self.quorum_reached_validation
+                    && self.quorum_reached_ratification
+            }
+            RatificationResult::Fail(Vote::NoCandidate) => {
+                self.quorum_reached_validation
+                    && self.quorum_reached_ratification
+            }
+            RatificationResult::Success(Vote::Valid(_)) => {
+                self.quorum_reached_validation
+                    && self.quorum_reached_ratification
+            }
+            _ => false,
+        }
     }
 }
 
@@ -122,6 +133,12 @@ impl IterationCerts {
             votes: HashMap::new(),
             generator,
         }
+    }
+
+    fn failed(&self) -> Option<&CertificateInfo> {
+        self.votes
+            .values()
+            .find(|c| c.is_ready() && c.cert.result.failed())
     }
 
     fn get_or_insert(&mut self, vote: &Vote) -> &mut CertificateInfo {
@@ -188,7 +205,7 @@ impl CertInfoRegistry {
         Message::new_quorum(payload)
     }
 
-    pub(crate) fn get_nil_certificates(
+    pub(crate) fn get_failed_certs(
         &self,
         to: u8,
     ) -> Vec<Option<IterationInfo>> {
@@ -199,9 +216,7 @@ impl CertInfoRegistry {
                 self.cert_list
                     .get(&iteration)
                     .and_then(|iter| {
-                        iter.votes
-                            .get(&Vote::NoCandidate)
-                            .map(|ci| (ci, iter.generator))
+                        iter.failed().map(|ci| (ci, iter.generator))
                     })
                     .filter(|(ci, _)| ci.is_ready())
                     .map(|(ci, pk)| (ci.cert, pk)),

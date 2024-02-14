@@ -72,7 +72,7 @@ pub async fn verify_step_votes(
     sv: &StepVotes,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
-    step_name: StepName,
+    step: StepName,
 ) -> Result<QuorumResult, StepSigError> {
     let round = header.round;
     let iteration = header.iteration;
@@ -83,13 +83,8 @@ pub async fn verify_step_votes(
         .provisioners()
         .get_generator(iteration, seed, round);
 
-    let cfg = sortition::Config::new(
-        seed,
-        round,
-        iteration,
-        step_name,
-        Some(generator),
-    );
+    let cfg =
+        sortition::Config::new(seed, round, iteration, step, Some(generator));
 
     if committees_set.read().await.get(&cfg).is_none() {
         let _ = committees_set.write().await.get_or_create(&cfg);
@@ -98,7 +93,7 @@ pub async fn verify_step_votes(
     let set = committees_set.read().await;
     let committee = set.get(&cfg).expect("committee to be created");
 
-    verify_votes(header, step_name, vote, sv, committee)
+    verify_votes(header, step, vote, sv, committee)
 }
 
 #[derive(Default)]
@@ -115,7 +110,7 @@ impl QuorumResult {
 
 pub fn verify_votes(
     header: &ConsensusHeader,
-    msg_type: StepName,
+    step: StepName,
     vote: &Vote,
     step_votes: &StepVotes,
     committee: &Committee,
@@ -135,7 +130,9 @@ pub fn verify_votes(
         target_quorum,
     };
 
-    if vote != &Vote::NoQuorum && !quorum_result.quorum_reached() {
+    let skip_quorum = step == StepName::Validation && vote == &Vote::NoQuorum;
+
+    if !skip_quorum && !quorum_result.quorum_reached() {
         tracing::error!(
             desc = "vote_set_too_small",
             committee = format!("{:#?}", sub_committee),
@@ -157,7 +154,7 @@ pub fn verify_votes(
         let apk = sub_committee.aggregate_pks()?;
 
         // verify signatures
-        verify_step_signature(header, msg_type, vote, apk, signature)?;
+        verify_step_signature(header, step, vote, apk, signature)?;
     }
     // Verification done
     Ok(quorum_result)
@@ -181,13 +178,13 @@ impl Cluster<PublicKey> {
 
 fn verify_step_signature(
     header: &ConsensusHeader,
-    msg_type: StepName,
+    step: StepName,
     vote: &Vote,
     apk: dusk_bls12_381_sign::APK,
     signature: &[u8; 48],
 ) -> Result<(), StepSigError> {
     // Compile message to verify
-    let msg_type = match msg_type {
+    let sign_seed = match step {
         StepName::Validation => payload::Validation::SIGN_SEED,
         StepName::Ratification => payload::Ratification::SIGN_SEED,
         StepName::Proposal => Err(StepSigError::InvalidType)?,
@@ -195,7 +192,7 @@ fn verify_step_signature(
 
     let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
     let mut msg = header.signable();
-    msg.extend_from_slice(msg_type);
+    msg.extend_from_slice(sign_seed);
     vote.write(&mut msg).expect("Writing to vec should succeed");
     apk.verify(&sig, &msg)?;
     Ok(())

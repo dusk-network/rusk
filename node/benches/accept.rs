@@ -25,7 +25,9 @@ use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
-use node_data::message::payload::{QuorumType, ValidationResult, Vote};
+use node_data::message::payload::{
+    QuorumType, RatificationResult, ValidationResult, Vote,
+};
 use node_data::{
     bls::PublicKey,
     ledger::{Certificate, StepVotes},
@@ -147,6 +149,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 &keys[..],
             );
             let cert = Certificate {
+                result: RatificationResult::Success(Vote::Valid(block_hash)),
                 validation,
                 ratification,
             };
@@ -162,7 +165,6 @@ pub fn verify_block_cert(c: &mut Criterion) {
                             [0u8; 32],
                             mrb_header.seed,
                             &provisioners,
-                            Vote::Valid(block_hash),
                             mrb_header.height + 1,
                             &cert,
                             iteration,
