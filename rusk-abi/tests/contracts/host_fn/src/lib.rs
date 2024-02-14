@@ -69,7 +69,7 @@ impl HostFnTest {
     }
 
     pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
-        rusk_abi::owner()
+        rusk_abi::self_owner()
     }
 }
 
