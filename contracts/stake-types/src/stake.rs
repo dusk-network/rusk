@@ -43,6 +43,8 @@ pub struct StakeData {
     pub reward: u64,
     /// The signature counter to prevent replay.
     pub counter: u64,
+    /// How many times this provisioners has been shifted
+    pub shift_count: u64,
 }
 
 impl StakeData {
@@ -75,6 +77,7 @@ impl StakeData {
             amount,
             reward,
             counter: 0,
+            shift_count: 0
         }
     }
 
