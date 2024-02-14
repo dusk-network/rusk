@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change dependencies declarations enforce bytecheck [#1371]
 - Expose `verify_step_votes`. [#50]
 
 ### Removed
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `consensus` release
 
 
+[#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#848]: https://github.com/dusk-network/rusk/issues/848
 
 <!-- OLD CONSENSUS REPO ISSUES -->
