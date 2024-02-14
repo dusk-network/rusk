@@ -13,6 +13,13 @@ pub type BlockHeight = u64;
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
 
+/// Calculate the block height at which the next epoch takes effect.
+#[must_use]
+pub const fn next_epoch(block_height: BlockHeight) -> u64 {
+    let to_next_epoch = EPOCH - (block_height % EPOCH);
+    block_height + to_next_epoch
+}
+
 /// The representation of a public key's stake.
 ///
 /// A user can stake for a particular `amount` larger in value than the
@@ -140,9 +147,7 @@ impl StakeData {
     /// Compute the eligibility of a stake from the starting block height.
     #[must_use]
     pub const fn eligibility_from_height(block_height: BlockHeight) -> u64 {
-        let to_next_epoch = EPOCH - (block_height % EPOCH);
-        let maturity_blocks = EPOCH + to_next_epoch;
-
-        block_height + maturity_blocks
+        let maturity_blocks = EPOCH;
+        next_epoch(block_height) + maturity_blocks
     }
 }

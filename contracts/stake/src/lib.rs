@@ -97,6 +97,13 @@ unsafe fn slash(arg_len: u32) -> u32 {
     })
 }
 
+#[no_mangle]
+unsafe fn hard_slash(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(pk, value)| {
+        assert_external_caller();
+        STATE.hard_slash(&pk, value);
+    })
+}
 /// Asserts the call is made via the transfer contract.
 ///
 /// # Panics
