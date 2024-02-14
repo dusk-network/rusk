@@ -646,6 +646,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
 /// Performs full verification of block header against prev_block header where
 /// prev_block is usually the blockchain tip
+///
+/// Returns true if there is a cerificate for each failed iteration, and if
+/// that certificate has a quorum in the ratification phase.
+///
+/// If there are no failed iterations, it returns true
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     prev_header: &ledger::Header,

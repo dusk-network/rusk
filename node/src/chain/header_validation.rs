@@ -13,6 +13,7 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::to_str;
 use node_data::ledger::Signature;
+use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
@@ -44,6 +45,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     ///
     /// * `disable_winner_cert_check` - disables the check of the winning
     /// certificate
+    ///
+    /// Returns true if there is a cerificate for each failed iteration, and if
+    /// that certificate has a quorum in the ratification phase.
+    ///
+    /// If there are no failed iterations, it returns true
     pub async fn execute_checks(
         &self,
         candidate_block: &'a ledger::Header,
@@ -125,12 +131,16 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(())
     }
 
+    /// Return true if there is a cerificate for each failed iteration, and if
+    /// that certificate has a quorum in the ratification phase.
+    ///
+    /// If there are no failed iterations, it returns true
     pub async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<bool> {
         // Verify Failed iterations
-        let mut attested = true;
+        let mut all_failed = true;
 
         for (iter, cert) in candidate_block
             .failed_iterations
@@ -140,6 +150,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         {
             if let Some((cert, pk)) = cert {
                 info!(event = "verify_cert", cert_type = "failed_cert", iter);
+
+                if let RatificationResult::Success(_) = cert.result {
+                    anyhow::bail!("Failed iterations should not contains a RatificationResult::Success");
+                }
+
                 let expected_pk = self.provisioners.current().get_generator(
                     iter as u8,
                     self.prev_header.seed,
@@ -158,14 +173,15 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 )
                 .await?;
 
-                // Ratification quorum is enough to
-                attested = attested && quorums.1.quorum_reached();
+                // Ratification quorum is enough to consider the iteration
+                // failed
+                all_failed = all_failed && quorums.1.quorum_reached();
             } else {
-                attested = false;
+                all_failed = false;
             }
         }
 
-        Ok(attested)
+        Ok(all_failed)
     }
 
     pub async fn verify_winning_cert(
