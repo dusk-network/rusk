@@ -33,7 +33,7 @@
 	"type": "module",
 	"version": "1.0.0-beta",
 	"dependencies": {
-		"@dusk-network/dusk-wallet-js": "0.3.2",
+		"@dusk-network/dusk-wallet-js": "0.4.1",
 		"@floating-ui/dom": "1.5.3",
 		"@mdi/js": "7.3.67",
 		"bip39": "3.1.0",

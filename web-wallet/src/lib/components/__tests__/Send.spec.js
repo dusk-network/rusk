@@ -7,7 +7,6 @@ import {
 	vi
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import "jsdom-worker";
 
 import { deductLuxFeeFrom } from "$lib/contracts";
 import { createCurrencyFormatter } from "$lib/dusk/currency";

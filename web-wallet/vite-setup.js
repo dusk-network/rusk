@@ -6,16 +6,10 @@ import * as matchers from "@testing-library/jest-dom/matchers";
 import { expect, vi } from "vitest";
 import { readable } from "svelte/store";
 import crypto from "node:crypto";
+import "jsdom-worker";
 
 import { IntersectionObserver, ResizeObserver } from "./src/lib/dusk/mocks";
-import init from "./__mocks__/initDuskWalletCore.js";
 import Wallet from "./__mocks__/Wallet.js";
-
-// Mocking the wallet core wasm
-vi.doMock(
-	"@dusk-network/dusk-wallet-core/dusk_wallet_core_bg.wasm?init",
-	() => ({ default: vi.fn(init) })
-);
 
 // Mocking the Wallet
 vi.doMock(

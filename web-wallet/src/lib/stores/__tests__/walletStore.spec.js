@@ -22,7 +22,7 @@ describe("walletStore", async () => {
 	const wallet = new Wallet([]);
 
 	const getBalanceSpy = vi.spyOn(Wallet.prototype, "getBalance").mockResolvedValue(balance);
-	const getPsksSpy = vi.spyOn(Wallet.prototype, "getPsks").mockReturnValue(addresses);
+	const getPsksSpy = vi.spyOn(Wallet.prototype, "getPsks").mockResolvedValue(addresses);
 	const historySpy = vi.spyOn(Wallet.prototype, "history").mockResolvedValue(transactions);
 	const resetSpy = vi.spyOn(Wallet.prototype, "reset").mockResolvedValue(void 0);
 	const stakeInfoSpy = vi.spyOn(Wallet.prototype, "stakeInfo").mockResolvedValue({});
@@ -104,6 +104,7 @@ describe("walletStore", async () => {
 				isSyncing: true,
 				addresses: addresses
 			});
+
 			expect(getPsksSpy).toHaveBeenCalledTimes(1);
 			expect(getBalanceSpy).not.toHaveBeenCalled();
 
@@ -223,6 +224,9 @@ describe("walletStore", async () => {
 				isSyncing: true,
 				addresses: addresses
 			});
+
+			await vi.advanceTimersToNextTimerAsync();
+
 			expect(getPsksSpy).toHaveBeenCalledTimes(1);
 			expect(getBalanceSpy).toHaveBeenCalledTimes(1);
 			expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
