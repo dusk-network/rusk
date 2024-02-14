@@ -37,6 +37,7 @@ describe("Stake", () => {
 			gasPrice: 1,
 			gasPriceLower: 1
 		},
+		hideStakingNotice: true,
 		rewards: 345,
 		spendable: 10000,
 		staked: 278,
@@ -64,6 +65,22 @@ describe("Stake", () => {
 	afterEach(() => {
 		cleanup();
 		baseProps.execute.mockClear();
+	});
+
+	it("should render the Stake notice", () => {
+		const options = {
+			...baseOptions.target,
+			props: {
+				...baseProps,
+				hideStakingNotice: false
+			}
+		};
+
+		vi.spyOn(Math, "random").mockReturnValue(42);
+
+		const { container } = render(Stake, options);
+
+		expect(container.firstChild).toMatchSnapshot();
 	});
 
 	it("should render the Stake component", () => {

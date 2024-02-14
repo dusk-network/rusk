@@ -3,7 +3,6 @@
 <script>
 	import {
 		collect,
-		find,
 		getKey,
 		hasKeyValue,
 		map,
@@ -82,12 +81,6 @@
 	);
 
 	/**
-	 * @param {ContractOperation[]} operations
-	 * @returns {boolean}
-	 */
-	const isStakingDisabled = operations => find(operations, hasKeyValue("id", "stake"))?.disabled ?? true;
-
-	/**
 	 * @param {WalletStakeInfo} stakeInfo
 	 * @param {number} spendable
 	 * @returns {ContractStatus[]}
@@ -117,6 +110,7 @@
 		gasSettings,
 		language
 	] = collectSettings($settingsStore);
+	const { hideStakingNotice } = $settingsStore;
 	$: ({ balance, error, isSyncing } = $walletStore);
 	$: isSyncOK = !(isSyncing || !!error);
 	$: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
@@ -138,20 +132,14 @@
 				formatter={duskFormatter}
 				{gasSettings}
 				on:operationChange
+				on:suppressStakingNotice
 				rewards={stakeInfo.reward}
 				spendable={balance.maximum}
 				staked={stakeInfo.amount}
 				{statuses}
+				{hideStakingNotice}
 			/>
 		{:else}
-			{#if isStakingDisabled(operations)}
-				<div class="info">
-					<p>
-						Third-party staking will be enabled at the start of the upcoming incentivized testnet
-						and will begin to accrue real rewards as well. Stay tuned for more information.
-					</p>
-				</div>
-			{/if}
 			<ContractStatusesList items={statuses}/>
 			<ContractOperations items={operations} on:operationChange/>
 		{/if}
@@ -179,10 +167,5 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--default-gap);
-	}
-
-	.info {
-		font-size: .8em;
-		padding: 0.5em 1em;
 	}
 </style>

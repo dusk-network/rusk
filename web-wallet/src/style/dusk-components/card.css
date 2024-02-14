@@ -4,6 +4,10 @@
 	padding: 1.3em 2em;
 }
 
+.dusk-card--on-surface {
+	background-color: var(--on-primary-color);
+}
+
 .dusk-card__icon {
 	margin-right: .4em;
 	font-size: 1.1em;
@@ -25,6 +29,6 @@
 
 .dusk-card pre {
 	overflow-x: auto;
-	tab-width: 4;
+	tab-size: 4;
 	padding: 1em 0;
 }
