@@ -46,6 +46,7 @@ impl Rusk {
     ) -> Result<R>
     where
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
+        A::Archived: for<'b> bytecheck::CheckBytes<DefaultValidator<'b>>,
         R: Archive,
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
@@ -68,6 +69,7 @@ impl Rusk {
     where
         F: FnMut(R) -> Option<A>,
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
+        A::Archived: for<'b> bytecheck::CheckBytes<DefaultValidator<'b>>,
         R: Archive,
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
@@ -104,6 +106,7 @@ impl Rusk {
     ) -> Result<()>
     where
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
+        A::Archived: for<'b> bytecheck::CheckBytes<DefaultValidator<'b>>,
     {
         let inner = self.inner.lock();
 

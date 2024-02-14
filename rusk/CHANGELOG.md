@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Change dependencies declarations enforce bytecheck [#1371]
+- Fixed tests passing incorrect arguments [#1371]
+
 ### Added
 
+- Add type constrains for bytecheck [#1371]
 - Add TLS support for HTTP server
 - Add iteration generator to FailedIterations [#1257]
 - Add `node` feature flag [#1144]
@@ -189,6 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
