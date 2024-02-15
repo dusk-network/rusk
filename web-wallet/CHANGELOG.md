@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update deprecated Node actions in CI [#1343](https://github.com/dusk-network/rusk/issues/1343)
 - Change `setGasSettings` event to `gasSettings` and include `isValidGas` property in event data [#1354](https://github.com/dusk-network/rusk/issues/1354)
 - Change "withdraw stake" label to "unstake" [#1403](https://github.com/dusk-network/rusk/issues/1403)
+- Update dusk-wallet-js to 0.4.1 [#1315](https://github.com/dusk-network/rusk/issues/1315)
 
 ### Removed
 

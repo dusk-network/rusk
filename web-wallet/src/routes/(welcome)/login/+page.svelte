@@ -22,7 +22,7 @@
 
 	/** @type {(wallet: Wallet) => Promise<Wallet>} */
 	async function checkLocalData (wallet) {
-		const defaultAddress = wallet.getPsks()[0];
+		const defaultAddress = (await wallet.getPsks())[0];
 		const currentAddress = $settingsStore.userId;
 
 		if (defaultAddress !== currentAddress) {
@@ -64,9 +64,7 @@
 		getSeed(secretText.trim())
 			.then(getWallet)
 			.then(checkLocalData)
-			.then(wallet => {
-				walletStore.init(wallet);
-			})
+			.then(wallet => walletStore.init(wallet))
 			.then(() => {
 				goto("/dashboard");
 			})

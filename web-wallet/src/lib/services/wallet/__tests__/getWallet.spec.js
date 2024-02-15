@@ -8,23 +8,27 @@ import { enumerables } from "lamb";
 import { generateMnemonic } from "bip39";
 
 import { getSeedFromMnemonic } from "$lib/wallet";
-
 import { getWallet } from "..";
 
 vi.unmock("@dusk-network/dusk-wallet-js");
 
 describe("getWallet", () => {
-	it("should get a Wallet instance using a seed", async () => {
+	it("should get a Wallet instance using a seed", () => {
 		const mnemonic = generateMnemonic();
 		const seed = getSeedFromMnemonic(mnemonic);
-		const wallet = await getWallet(seed);
+		const wallet = getWallet(seed);
+		const walletPublicMembers = [
+			...enumerables(wallet),
+			...Object.getOwnPropertyNames(Object.getPrototypeOf(wallet))
+		];
 
-		expect(enumerables(wallet)).toMatchInlineSnapshot(`
+		expect(walletPublicMembers).toMatchInlineSnapshot(`
 			[
 			  "wasm",
 			  "seed",
 			  "gasLimit",
 			  "gasPrice",
+			  "constructor",
 			  "getBalance",
 			  "getPsks",
 			  "sync",

@@ -5,7 +5,6 @@ import {
 	it
 } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import "jsdom-worker";
 
 import { ScanQR } from "..";
 

@@ -14,6 +14,7 @@ import { get } from "svelte/store";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
 import { setKey } from "lamb";
 
+import { addresses } from "$lib/mock-data";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 import { settingsStore, walletStore } from "$lib/stores";
 import { encryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
@@ -29,17 +30,18 @@ function getTextInput (container) {
 }
 
 describe("Login", async () => {
+	const walletGetPsksSpy = vi.spyOn(Wallet.prototype, "getPsks").mockResolvedValue(addresses);
+	const walletResetSpy = vi.spyOn(Wallet.prototype, "reset").mockResolvedValue(void 0);
 	const mnemonic = generateMnemonic();
 	const pwd = "some pwd";
 	const loginInfo = await encryptMnemonic(mnemonic, pwd);
 	const seed = getSeedFromMnemonic(mnemonic);
-	const userId = new Wallet(seed).getPsks()[0];
+	const userId = (await new Wallet(seed).getPsks())[0];
 	const getErrorElement = () => document.querySelector(".login__error");
 	const getWalletSpy = vi.spyOn(walletService, "getWallet");
 	const gotoSpy = vi.spyOn(appNavigation, "goto");
 	const initSpy = vi.spyOn(walletStore, "init");
 	const settingsResetSpy = vi.spyOn(settingsStore, "reset");
-	const walletResetSpy = vi.spyOn(Wallet.prototype, "reset").mockResolvedValue(void 0);
 
 	afterEach(() => {
 		cleanup();
@@ -48,6 +50,7 @@ describe("Login", async () => {
 		initSpy.mockClear();
 		settingsStore.reset();
 		settingsResetSpy.mockClear();
+		walletGetPsksSpy.mockClear();
 		walletResetSpy.mockClear();
 		walletStore.reset();
 	});
@@ -57,6 +60,7 @@ describe("Login", async () => {
 		gotoSpy.mockRestore();
 		initSpy.mockRestore();
 		settingsResetSpy.mockRestore();
+		walletGetPsksSpy.mockRestore();
 		walletResetSpy.mockRestore();
 	});
 
