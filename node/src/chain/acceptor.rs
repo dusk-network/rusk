@@ -284,7 +284,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         .await?;
 
         // TODO: Remove this variable, it's only used for log purpose
-        let mut final_from_rolling = false;
+        // Final from rolling
+        let mut ffr = false;
 
         // Define new block label
         let label = match (attested, mrb.is_final()) {
@@ -309,7 +310,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             Some(Label::Attested) => {} // just continue scan
                         };
                     }
-                    final_from_rolling = true;
+                    ffr = true;
                     anyhow::Ok(Label::Final)
                 })?
             }
@@ -398,7 +399,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             generator = mrb.inner().header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
             label = format!("{:?}", label),
-            final_from_rolling
+            ffr
         );
 
         // Restart Consensus.
