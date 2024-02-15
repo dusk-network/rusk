@@ -107,12 +107,10 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         })?;
 
         // Verify seed field
-        if candidate_block.height > 1 {
-            self.verify_seed_field(
-                candidate_block.seed.inner(),
-                candidate_block.generator_bls_pubkey.inner(),
-            )?;
-        }
+        self.verify_seed_field(
+            candidate_block.seed.inner(),
+            candidate_block.generator_bls_pubkey.inner(),
+        )?;
 
         Ok(())
     }
