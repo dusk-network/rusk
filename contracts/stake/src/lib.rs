@@ -134,10 +134,14 @@ unsafe fn set_slashed_amount(arg_len: u32) -> u32 {
 /// Asserts the call is made via the transfer contract.
 ///
 /// # Panics
-/// When the `caller` is not [`rusk_abi::TRANSFER_CONTRACT`].
+/// When the `caller`s owner is not transfer contract's owner.
 fn assert_transfer_caller() {
-    if rusk_abi::caller() != rusk_abi::TRANSFER_CONTRACT {
-        panic!("Can only be called from the transfer contract");
+    let transfer_owner =
+        rusk_abi::owner_raw(rusk_abi::TRANSFER_CONTRACT).unwrap();
+    let caller_id = rusk_abi::caller();
+    match rusk_abi::owner_raw(caller_id) {
+        Some(caller_owner) if caller_owner.eq(&transfer_owner) => (),
+        _ => panic!("Can only be called from the transfer contract"),
     }
 }
 
