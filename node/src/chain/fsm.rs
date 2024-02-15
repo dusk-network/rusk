@@ -662,7 +662,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             self.pool.insert(key, blk.clone());
         }
 
-        error!(event = "block saved", len = self.pool.len());
+        debug!(event = "block saved", len = self.pool.len());
 
         Ok(false)
     }
