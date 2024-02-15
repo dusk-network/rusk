@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Ids for data and logic transfer contracts [#1235]
-- New ABIs: `owner_raw`, `self_owner_raw` [#1235] 
+- Add ABI for `owner(_raw)`, `self_owner(_raw)` [#1235] 
 
 ## [0.11.0] - 2023-10-12
 
