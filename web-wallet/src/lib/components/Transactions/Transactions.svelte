@@ -53,6 +53,22 @@
 <article in:fade|global class="transactions">
 	<header class="transactions__header">
 		<h3 class="h4">Transactions</h3>
+		{#if limit}
+			<AnchorButton
+				className="transactions__footer-button"
+				href="/dashboard/transactions"
+				text="View all transactions"
+				variant="tertiary"
+			/>
+		{:else}
+			<AnchorButton
+				className="transactions__footer-button"
+				href="/dashboard"
+				text="Back"
+				variant="tertiary"
+				icon={{ path: mdiArrowLeft }}
+			/>
+		{/if}
 	</header>
 
 	{#await items}
@@ -125,39 +141,24 @@
 		<ErrorDetails summary="Error getting transactions" error={e}/>
 	{/await}
 
-	<footer class="transactions__footer">
-		{#if limit}
-			<AnchorButton
-				className="transactions__footer-button"
-				href="/dashboard/transactions"
-				text="View all transactions"
-				variant="tertiary"
-			/>
-		{:else}
-			<AnchorButton
-				className="transactions__footer-button"
-				href="/dashboard"
-				text="Back"
-				variant="tertiary"
-				icon={{ path: mdiArrowLeft }}
-			/>
-		{/if}
-	</footer>
 </article>
 
 <style lang="postcss">
+
+:global(.loading) {
+	margin-bottom: 1em;
+}
 .transactions {
 	border-radius: 1.25em;
 	background: var(--surface-color);
-	height: 100%;
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
 
 	&__header {
 		padding: 1.375em 1em;
 		& :global(h3) {
 			line-height: 150%;
+			margin-bottom: .625em;
 		}
 	}
 
@@ -165,16 +166,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.625em;
-		flex: 1;
-		overflow-y: auto;
 	}
-
-	&__footer {
-		padding: 1em 1.375em;
-		display: flex;
-		margin-top: auto;
-	}
-
 	:global(.transactions__footer-button) {
 		width: 100%;
 	}
