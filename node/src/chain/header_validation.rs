@@ -7,6 +7,7 @@
 use crate::database;
 use crate::database::Ledger;
 use anyhow::anyhow;
+use dusk_bytes::Serializable;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -17,8 +18,14 @@ use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
+use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::info;
+
+// TODO: Use thiserror instead of anyhow
+
+#[derive(Debug, Error)]
+enum HeaderVerificationErr {}
 
 /// An implementation of the all validation checks of a candidate block header
 /// according to current context
@@ -98,6 +105,32 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
             Ok(())
         })?;
+
+        // Verify seed field
+        if candidate_block.height > 1 {
+            self.verify_seed_field(
+                candidate_block.seed.inner(),
+                candidate_block.generator_bls_pubkey.inner(),
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn verify_seed_field(
+        &self,
+        seed: &[u8; 48],
+        pk_bytes: &[u8; 96],
+    ) -> anyhow::Result<()> {
+        let pk = dusk_bls12_381_sign::PublicKey::from_bytes(pk_bytes)
+            .map_err(|err| anyhow!("invalid pk bytes: {:?}", err))?;
+
+        let signature = dusk_bls12_381_sign::Signature::from_bytes(seed)
+            .map_err(|err| anyhow!("invalid signature bytes: {}", err))?;
+
+        dusk_bls12_381_sign::APK::from(&pk)
+            .verify(&signature, &self.prev_header.seed.inner()[..])
+            .map_err(|err| anyhow!("invalid seed: {:?}", err))?;
 
         Ok(())
     }
