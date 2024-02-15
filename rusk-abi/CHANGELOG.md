@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change dependencies declarations enforce bytecheck [#1371]
 - Update `piecrust` from `0.15` to `0.16`
 - Update `piecrust-uplink` from `0.10` to `0.11`
+- Changed owner to self_owner [#1235]
+
+### Added
+
+- Ids for data and logic transfer contracts [#1235]
+- New ABIs: `owner_raw`, `self_owner_raw` [#1235] 
 
 ## [0.11.0] - 2023-10-12
 
@@ -199,6 +205,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1228]: https://github.com/dusk-network/rusk/issues/1228
+[#1235]: https://github.com/dusk-network/rusk/issues/1235
 [#945]: https://github.com/dusk-network/rusk/issues/945
 [#937]: https://github.com/dusk-network/rusk/issues/937
 [#874]: https://github.com/dusk-network/rusk/issues/874
