@@ -111,6 +111,7 @@ describe("walletStore", async () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(syncSpy).toHaveBeenCalledTimes(1);
+			expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 			expect(getBalanceSpy).toHaveBeenCalledTimes(1);
 			expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
 			expect(get(walletStore)).toStrictEqual(initializedStore);
@@ -140,6 +141,7 @@ describe("walletStore", async () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(syncSpy).toHaveBeenCalledTimes(1);
+			expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 			expect(getBalanceSpy).not.toHaveBeenCalled();
 			expect(get(walletStore)).toStrictEqual({
 				...storeWhileLoading,
@@ -163,6 +165,7 @@ describe("walletStore", async () => {
 			await vi.advanceTimersToNextTimerAsync();
 
 			expect(syncSpy).toHaveBeenCalledTimes(1);
+			expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 
 			syncSpy.mockClear();
 
@@ -176,6 +179,7 @@ describe("walletStore", async () => {
 			await syncPromise1;
 
 			expect(syncSpy).toHaveBeenCalledTimes(1);
+			expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 
 			const syncPromise4 = walletStore.sync();
 
@@ -185,6 +189,46 @@ describe("walletStore", async () => {
 			await syncPromise4;
 
 			walletStore.reset();
+		});
+	});
+
+	describe("Abort sync", () => {
+		const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
+
+		afterEach(() => {
+			abortControllerSpy.mockClear();
+		});
+
+		afterAll(() => {
+			abortControllerSpy.mockRestore();
+		});
+
+		it("should expose a method to abort a sync that is in progress", async () => {
+			await walletStore.init(wallet);
+
+			walletStore.abortSync();
+
+			await vi.advanceTimersToNextTimerAsync();
+
+			expect(syncSpy).toHaveBeenCalledTimes(1);
+			expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+			expect(abortControllerSpy).toHaveBeenCalledTimes(1);
+		});
+
+		it("should do nothing if there is no sync in progress", async () => {
+			walletStore.reset();
+
+			await walletStore.init(wallet);
+			await vi.advanceTimersToNextTimerAsync();
+
+			expect(syncSpy).toHaveBeenCalledTimes(1);
+			expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+
+			syncSpy.mockClear();
+
+			walletStore.abortSync();
+
+			expect(abortControllerSpy).not.toHaveBeenCalled();
 		});
 	});
 
