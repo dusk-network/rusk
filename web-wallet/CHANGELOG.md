@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add gas settings validation to settings page [#1352](https://github.com/dusk-network/rusk/issues/1352)
 - Add forced log out on inactive tabs [#1373](https://github.com/dusk-network/rusk/issues/1373)
 - Add gas settings validation to block Send and Stake operations if invalid gas settings [#1354](https://github.com/dusk-network/rusk/issues/1354)
+- Add abortable sync [#1401](https://github.com/dusk-network/rusk/issues/1401)
 
 ### Changed
 
@@ -27,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change `setGasSettings` event to `gasSettings` and include `isValidGas` property in event data [#1354](https://github.com/dusk-network/rusk/issues/1354)
 - Change "withdraw stake" label to "unstake" [#1403](https://github.com/dusk-network/rusk/issues/1403)
 - Update dusk-wallet-js to 0.4.1 [#1315](https://github.com/dusk-network/rusk/issues/1315)
+- Change logout flow to abort a sync if in progress [#1401](https://github.com/dusk-network/rusk/issues/1401)
+- Update dusk-wallet-js to 0.4.2 [#1401](https://github.com/dusk-network/rusk/issues/1401)
 
 ### Removed
 

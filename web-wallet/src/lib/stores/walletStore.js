@@ -9,6 +9,9 @@ import { getKey, uniquesBy } from "lamb";
  * @typedef {import("./stores").WalletStoreServices["getTransactionsHistory"]} GetTransactionsHistory
  */
 
+/** @type {AbortController} */
+let syncController;
+
 /** @type {Promise<void> | null} */
 let syncPromise = null;
 
@@ -51,6 +54,8 @@ const getCurrentAddress = () => get(walletStore).currentAddress;
 
 /** @type {(action: (...args: any[]) => Promise<any>) => Promise<void>} */
 const syncedAction = action => sync().then(action).finally(sync);
+
+const abortSync = () => syncPromise && syncController?.abort();
 
 /** @type {() => Promise<void>} */
 const clearLocalData = async () => walletInstance?.reset();
@@ -137,7 +142,8 @@ function sync () {
 
 		set({ ...store, error: null, isSyncing: true });
 
-		syncPromise = walletInstance.sync().then(
+		syncController = new AbortController();
+		syncPromise = walletInstance.sync({ signal: syncController.signal }).then(
 			updateAfterSync,
 			error => { set({ ...store, error, isSyncing: false }); }
 		).finally(() => { syncPromise = null; });
@@ -188,6 +194,7 @@ const withdrawReward = async (gasPrice, gasLimit) => syncedAction(() => {
 
 /** @type {import("./stores").WalletStore} */
 export default {
+	abortSync,
 	clearLocalData,
 	clearLocalDataAndInit,
 	getStakeInfo,

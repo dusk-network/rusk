@@ -20,6 +20,7 @@ describe("logout", () => {
 
 	afterEach(() => {
 		gotoSpy.mockClear();
+		vi.mocked(walletStore.abortSync).mockClear();
 		vi.mocked(walletStore.reset).mockClear();
 	});
 
@@ -31,14 +32,16 @@ describe("logout", () => {
 	it("should reset the wallet store and redirect the user to the homepage, if the logout is not forced", async () => {
 		await logout(false);
 
+		expect(walletStore.abortSync).toHaveBeenCalledTimes(1);
 		expect(walletStore.reset).toHaveBeenCalledTimes(1);
 		expect(gotoSpy).toHaveBeenCalledTimes(1);
 		expect(gotoSpy).toHaveBeenCalledWith("/");
 	});
 
-	it("should add a `forcedLogout` querystring parameter if the logout is forced", async () => {
+	it("should redirect to `/forced-logout` if the logout is forced", async () => {
 		await logout(true);
 
+		expect(walletStore.abortSync).toHaveBeenCalledTimes(1);
 		expect(walletStore.reset).toHaveBeenCalledTimes(1);
 		expect(gotoSpy).toHaveBeenCalledTimes(1);
 		expect(gotoSpy).toHaveBeenCalledWith("/forced-logout");

@@ -18,6 +18,8 @@ type WalletStoreContent = {
 };
 
 type WalletStoreServices = {
+	abortSync: () => void;
+
 	clearLocalData: () => Promise<void>;
 
 	clearLocalDataAndInit: (wallet: Wallet) => Promise<void>;
