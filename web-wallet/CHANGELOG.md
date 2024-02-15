@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change `walletStore.js` to receive gasPrice and gasLimit when `transfer` , `stake`, `unstake` and `withdrawRewards` are called [#1353](https://github.com/dusk-network/rusk/issues/1353)
 - Update deprecated Node actions in CI [#1343](https://github.com/dusk-network/rusk/issues/1343)
 - Change `setGasSettings` event to `gasSettings` and include `isValidGas` property in event data [#1354](https://github.com/dusk-network/rusk/issues/1354)
+- Change "withdraw stake" label to "unstake" [#1403](https://github.com/dusk-network/rusk/issues/1403)
 
 ### Removed
 

@@ -120,7 +120,7 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       <span
         class="dusk-button__text"
       >
-        withdraw stake
+        unstake
       </span>
       
     </button>
