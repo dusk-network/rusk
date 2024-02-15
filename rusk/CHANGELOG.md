@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change rusk::provisioners to filter out slashed stakes [#1257]
 - Change block processing to slash failed-iteration provisioners [#1257]
 - Change FailedIterations to include only nil quorum certificates [#1257]
+- Adjusted gas usage in services' tests [#1235]
 
 ### Removed
 
@@ -197,6 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
+[#1235]: https://github.com/dusk-network/rusk/issues/1235
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
 [#401]: https://github.com/dusk-network/rusk/issues/401
