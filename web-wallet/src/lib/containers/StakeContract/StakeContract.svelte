@@ -42,18 +42,18 @@
 	/** @type {Record<string, (info: WalletStakeInfo) => boolean>} */
 	const disablingConditions = {
 		"stake": info => !info.has_key || info.has_staked,
-		"withdraw-rewards": info => info.reward <= 0,
-		"withdraw-stake": info => !info.has_staked
+		"unstake": info => !info.has_staked,
+		"withdraw-rewards": info => info.reward <= 0
 	};
 
 	/** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
 	const executeOperations = {
 		"stake": (amount, gasPrice, gasLimit) =>
 			walletStore.stake(amount, gasPrice, gasLimit).then(getLastTransactionHash),
+		"unstake": (gasPrice, gasLimit) =>
+			walletStore.unstake(gasPrice, gasLimit).then(getLastTransactionHash),
 		"withdraw-rewards": (gasPrice, gasLimit) =>
-			walletStore.withdrawReward(gasPrice, gasLimit).then(getLastTransactionHash),
-		"withdraw-stake": (gasPrice, gasLimit) =>
-			walletStore.unstake(gasPrice, gasLimit).then(getLastTransactionHash)
+			walletStore.withdrawReward(gasPrice, gasLimit).then(getLastTransactionHash)
 	};
 
 	/** @type {(operations: ContractOperation[]) => ContractOperation[]} */
@@ -62,8 +62,8 @@
 	/** @type {(operationId: string) => operationId is StakeType} */
 	const isStakeOperation = operationId => [
 		"stake",
-		"withdraw-rewards",
-		"withdraw-stake"
+		"unstake",
+		"withdraw-rewards"
 	].includes(operationId);
 
 	/**

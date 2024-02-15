@@ -32,8 +32,8 @@ describe("ContractOperations", () => {
 			primary: true
 		}, {
 			disabled: false,
-			id: "withdraw-stake",
-			label: "withdraw stake",
+			id: "unstake",
+			label: "unstake",
 			primary: false
 		}, {
 			disabled: false,

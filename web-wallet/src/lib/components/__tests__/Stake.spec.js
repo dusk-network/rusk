@@ -164,7 +164,7 @@ describe("Stake", () => {
 			expect(amountInput).toHaveValue(1000);
 
 			await fireEvent.click(getByRole("button", { name: "Next" }));
-			await fireEvent.click(getByRole("button", { name: "STAKE" }));
+			await fireEvent.click(getByRole("button", { name: "Stake" }));
 
 			await vi.advanceTimersToNextTimerAsync();
 
@@ -189,7 +189,7 @@ describe("Stake", () => {
 
 			await fireEvent.input(amountInput, { target: { value: 2567 } });
 			await fireEvent.click(getByRole("button", { name: "Next" }));
-			await fireEvent.click(getByRole("button", { name: "STAKE" }));
+			await fireEvent.click(getByRole("button", { name: "Stake" }));
 
 			await vi.advanceTimersToNextTimerAsync();
 
@@ -207,7 +207,7 @@ describe("Stake", () => {
 
 			await fireEvent.click(getByRole("button", { name: "USE MAX" }));
 			await fireEvent.click(getByRole("button", { name: "Next" }));
-			await fireEvent.click(getByRole("button", { name: "STAKE" }));
+			await fireEvent.click(getByRole("button", { name: "Stake" }));
 
 			await vi.advanceTimersToNextTimerAsync();
 

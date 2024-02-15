@@ -63,8 +63,8 @@
 	/** @type {number} */
 	let stakeAmount = {
 		"stake": defaultMinStake,
-		"withdraw-rewards": rewards,
-		"withdraw-stake": staked
+		"unstake": staked,
+		"withdraw-rewards": rewards
 	}[flow];
 
 	/** @type {HTMLInputElement|null} */
@@ -79,10 +79,17 @@
 	let { gasLimit, gasPrice } = gasSettings;
 
 	/** @type {Record<StakeType, string>} */
+	const confirmLabels = {
+		"stake": "Stake",
+		"unstake": "Unstake",
+		"withdraw-rewards": "Withdraw"
+	};
+
+	/** @type {Record<StakeType, string>} */
 	const overviewLabels = {
 		"stake": "Amount",
-		"withdraw-rewards": "Withdraw Rewards",
-		"withdraw-stake": "Withdraw Amount"
+		"unstake": "Unstake Amount",
+		"withdraw-rewards": "Withdraw Rewards"
 	};
 
 	const checkAmountValid = async () => {
@@ -250,7 +257,7 @@
 					path: flow === "stake" ? mdiDatabaseOutline : mdiDatabaseArrowDownOutline,
 					position: "before"
 				},
-				label: flow === "stake" ? "STAKE" : "WITHDRAW",
+				label: confirmLabels[flow],
 				variant: "secondary"
 			}}>
 			<div in:fade|global class="operation__stake">
