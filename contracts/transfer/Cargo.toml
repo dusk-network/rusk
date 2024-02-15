@@ -11,7 +11,6 @@ dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv
 dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-poseidon = { version = "0.31", default-features = false, features = ["alloc"] }
 poseidon-merkle = { version = "0.3", features = ["rkyv-impl"] }
 phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
 dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }

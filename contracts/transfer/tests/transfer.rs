@@ -19,7 +19,7 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{
     ContractData, ContractError, ContractId, Error, Session, TRANSFER_CONTRACT,
-    VM,
+    TRANSFER_DATA_CONTRACT, TRANSFER_LOGIC_CONTRACT, VM,
 };
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuitOneTwo,
@@ -57,7 +57,13 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     vm: &VM,
     psk: &PublicSpendKey,
 ) -> Session {
-    let transfer_bytecode = include_bytes!(
+    let transfer_data_bytecode = include_bytes!(
+        "../../../target/wasm64-unknown-unknown/release/transfer_data_contract.wasm"
+    );
+    let transfer_proxy_bytecode = include_bytes!(
+        "../../../target/wasm64-unknown-unknown/release/transfer_proxy_contract.wasm"
+    );
+    let transfer_logic_bytecode = include_bytes!(
         "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let alice_bytecode = include_bytes!(
@@ -71,8 +77,26 @@ fn instantiate<Rng: RngCore + CryptoRng>(
 
     session
         .deploy(
-            transfer_bytecode,
-            ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+            transfer_data_bytecode,
+            ContractData::builder(OWNER).contract_id(TRANSFER_DATA_CONTRACT),
+            POINT_LIMIT,
+        )
+        .expect("Deploying the transfer contract should succeed");
+
+    session
+        .deploy(
+            transfer_logic_bytecode,
+            ContractData::builder(OWNER).contract_id(TRANSFER_LOGIC_CONTRACT),
+            POINT_LIMIT,
+        )
+        .expect("Deploying the transfer contract should succeed");
+
+    session
+        .deploy(
+            transfer_proxy_bytecode,
+            ContractData::builder(OWNER)
+                .contract_id(TRANSFER_CONTRACT)
+                .constructor_arg(&TRANSFER_LOGIC_CONTRACT),
             POINT_LIMIT,
         )
         .expect("Deploying the transfer contract should succeed");
