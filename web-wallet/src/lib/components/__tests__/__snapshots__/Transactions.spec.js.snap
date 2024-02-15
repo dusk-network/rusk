@@ -14,6 +14,21 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         >
           Transactions
         </h3>
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
       </header>
        
       <div
@@ -287,25 +302,6 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         </dl>
         
       </div>
-       
-      <footer
-        class="transactions__footer s-j8yKepzodVZ-"
-      >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            View all transactions
-          </span>
-          
-        </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-      </footer>
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
@@ -326,6 +322,21 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
         >
           Transactions
         </h3>
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
       </header>
        
       <div
@@ -439,25 +450,6 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
         </dl>
         
       </div>
-       
-      <footer
-        class="transactions__footer s-j8yKepzodVZ-"
-      >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            View all transactions
-          </span>
-          
-        </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-      </footer>
     </article>
     <!--&lt;Transactions&gt;-->
   </div>

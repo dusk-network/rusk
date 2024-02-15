@@ -369,6 +369,21 @@ exports[`Dashboard > should render a card when there is an error getting transac
         >
           Transactions
         </h3>
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
       </header>
        
       <details
@@ -391,25 +406,6 @@ exports[`Dashboard > should render a card when there is an error getting transac
       </details>
       
       <!--&lt;ErrorDetails&gt;-->
-       
-      <footer
-        class="transactions__footer s-j8yKepzodVZ-"
-      >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            View all transactions
-          </span>
-          
-        </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-      </footer>
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
@@ -786,6 +782,21 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         >
           Transactions
         </h3>
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
       </header>
        
       <svg
@@ -810,25 +821,6 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         </g>
       </svg>
       <!--&lt;Throbber&gt;-->
-       
-      <footer
-        class="transactions__footer s-j8yKepzodVZ-"
-      >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            View all transactions
-          </span>
-          
-        </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-      </footer>
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
@@ -1205,6 +1197,21 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           Transactions
         </h3>
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+          href="/dashboard/transactions"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            View all transactions
+          </span>
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
       </header>
        
       <div
@@ -1664,25 +1671,6 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         </dl>
         
       </div>
-       
-      <footer
-        class="transactions__footer s-j8yKepzodVZ-"
-      >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            View all transactions
-          </span>
-          
-        </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-      </footer>
     </article>
     <!--&lt;Transactions&gt;-->
   </div>

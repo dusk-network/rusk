@@ -80,32 +80,7 @@ exports[`Dashboard > should render the transactions page 1`] = `
         >
           Transactions
         </h3>
-      </header>
-       
-      <details
-        class="dusk-error-details dusk-error-details__details"
-      >
-        <summary
-          class="dusk-error-details__summary"
-        >
-          Error getting transactions
-        </summary>
          
-        <pre
-          class="dusk-error-details__error"
-        >
-          			
-          No wallet instance to sync
-          
-		
-        </pre>
-      </details>
-      
-      <!--&lt;ErrorDetails&gt;-->
-       
-      <footer
-        class="transactions__footer s-j8yKepzodVZ-"
-      >
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled transactions__footer-button"
@@ -133,7 +108,28 @@ exports[`Dashboard > should render the transactions page 1`] = `
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
-      </footer>
+      </header>
+       
+      <details
+        class="dusk-error-details dusk-error-details__details"
+      >
+        <summary
+          class="dusk-error-details__summary"
+        >
+          Error getting transactions
+        </summary>
+         
+        <pre
+          class="dusk-error-details__error"
+        >
+          			
+          No wallet instance to sync
+          
+		
+        </pre>
+      </details>
+      
+      <!--&lt;ErrorDetails&gt;-->
     </article>
     <!--&lt;Transactions&gt;-->
   </div>
