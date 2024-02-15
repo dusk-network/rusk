@@ -11,6 +11,8 @@ members = [
     "contracts/stake-types",
     "contracts/governance",
     "contracts/transfer",
+    "contracts/transfer-proxy",
+    "contracts/transfer-data",
     "contracts/transfer-types",
     "contracts/license",
 
