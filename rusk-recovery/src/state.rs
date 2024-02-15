@@ -14,8 +14,10 @@ use ff::Field;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::{ContractData, ContractId, Session, VM};
-use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{
+    ContractData, ContractId, Session, LICENSE_CONTRACT, STAKE_CONTRACT,
+    TRANSFER_CONTRACT, TRANSFER_DATA_CONTRACT, TRANSFER_LOGIC_CONTRACT, VM,
+};
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -177,7 +179,15 @@ fn generate_empty_state<P: AsRef<Path>>(
     let vm = rusk_abi::new_vm(state_dir)?;
     let mut session = rusk_abi::new_genesis_session(&vm);
 
-    let transfer_code = include_bytes!(
+    let transfer_data_code = include_bytes!(
+        "../../target/wasm64-unknown-unknown/release/transfer_data_contract.wasm"
+    );
+
+    let transfer_proxy_code = include_bytes!(
+        "../../target/wasm64-unknown-unknown/release/transfer_proxy_contract.wasm"
+    );
+
+    let transfer_logic_code = include_bytes!(
         "../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
 
@@ -189,10 +199,34 @@ fn generate_empty_state<P: AsRef<Path>>(
         "../../target/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
+    info!(
+        "{} Genesis Transfer Data Contract",
+        theme.action("Deploying")
+    );
+    session.deploy(
+        transfer_data_code,
+        ContractData::builder(snapshot.owner())
+            .contract_id(TRANSFER_DATA_CONTRACT),
+        u64::MAX,
+    )?;
+
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
     session.deploy(
-        transfer_code,
-        ContractData::builder(snapshot.owner()).contract_id(TRANSFER_CONTRACT),
+        transfer_logic_code,
+        ContractData::builder(snapshot.owner())
+            .contract_id(TRANSFER_LOGIC_CONTRACT),
+        u64::MAX,
+    )?;
+
+    info!(
+        "{} Genesis Transfer Proxy Contract",
+        theme.action("Deploying")
+    );
+    session.deploy(
+        transfer_proxy_code,
+        ContractData::builder(snapshot.owner())
+            .constructor_arg(&TRANSFER_LOGIC_CONTRACT)
+            .contract_id(TRANSFER_CONTRACT),
         u64::MAX,
     )?;
 
