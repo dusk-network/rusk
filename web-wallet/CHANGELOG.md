@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix Stake button is always disabled [#1410](https://github.com/dusk-network/rusk/issues/1410)
 - Fix wizard progression on Stake flow [#1398](https://github.com/dusk-network/rusk/issues/1398)
 - Fix Changelog to point to issues [#1368](https://github.com/dusk-network/rusk/issues/1368)
 - Fix Seed Phrase words size [#1335](https://github.com/dusk-network/rusk/issues/1335)

@@ -41,7 +41,7 @@
 
 	/** @type {Record<string, (info: WalletStakeInfo) => boolean>} */
 	const disablingConditions = {
-		"stake": info => !info.has_key || info.has_staked,
+		"stake": info => info.has_staked,
 		"unstake": info => !info.has_staked,
 		"withdraw-rewards": info => info.reward <= 0
 	};
