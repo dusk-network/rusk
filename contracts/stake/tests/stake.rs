@@ -19,8 +19,10 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{CallReceipt, ContractData, ContractError, Error, Session, VM};
-use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{
+    CallReceipt, ContractData, ContractError, Error, Session, STAKE_CONTRACT,
+    TRANSFER_CONTRACT, TRANSFER_DATA_CONTRACT, TRANSFER_LOGIC_CONTRACT, VM,
+};
 use stake_contract_types::{
     stake_signature_message, unstake_signature_message,
     withdraw_signature_message, Stake, StakeData, Unstake, Withdraw,
@@ -48,7 +50,13 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     vm: &VM,
     psk: &PublicSpendKey,
 ) -> Session {
-    let transfer_bytecode = include_bytes!(
+    let transfer_data_bytecode = include_bytes!(
+        "../../../target/wasm64-unknown-unknown/release/transfer_data_contract.wasm"
+    );
+    let transfer_proxy_bytecode = include_bytes!(
+        "../../../target/wasm64-unknown-unknown/release/transfer_proxy_contract.wasm"
+    );
+    let transfer_logic_bytecode = include_bytes!(
         "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let stake_bytecode = include_bytes!(
@@ -59,8 +67,26 @@ fn instantiate<Rng: RngCore + CryptoRng>(
 
     session
         .deploy(
-            transfer_bytecode,
-            ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+            transfer_data_bytecode,
+            ContractData::builder(OWNER).contract_id(TRANSFER_DATA_CONTRACT),
+            POINT_LIMIT,
+        )
+        .expect("Deploying the transfer contract should succeed");
+
+    session
+        .deploy(
+            transfer_logic_bytecode,
+            ContractData::builder(OWNER).contract_id(TRANSFER_LOGIC_CONTRACT),
+            POINT_LIMIT,
+        )
+        .expect("Deploying the transfer contract should succeed");
+
+    session
+        .deploy(
+            transfer_proxy_bytecode,
+            ContractData::builder(OWNER)
+                .contract_id(TRANSFER_CONTRACT)
+                .constructor_arg(&TRANSFER_LOGIC_CONTRACT),
             POINT_LIMIT,
         )
         .expect("Deploying the transfer contract should succeed");
