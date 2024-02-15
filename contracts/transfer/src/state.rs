@@ -4,16 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::alloc::string::ToString;
 use crate::circuits::*;
 use crate::error::Error;
-use crate::tree::Tree;
 
-use alloc::collections::btree_map::Entry;
-use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::DeserializableSlice;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use phoenix_core::transaction::*;
@@ -21,46 +19,28 @@ use phoenix_core::{Crossover, Fee, Message, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
+    TRANSFER_CONTRACT, TRANSFER_DATA_CONTRACT, TRANSFER_LOGIC_CONTRACT,
 };
 use transfer_contract_types::{Mint, Stct, Wfco, WfcoRaw, Wfct, Wfctc};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
 
-pub struct TransferState {
-    tree: Tree,
-    nullifiers: BTreeSet<BlsScalar>,
-    roots: BTreeSet<BlsScalar>,
-    balances: BTreeMap<ContractId, u64>,
-    message_mapping:
-        BTreeMap<ContractId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
-    message_mapping_set: BTreeMap<ContractId, StealthAddress>,
-    var_crossover: Option<Crossover>,
-    var_crossover_addr: Option<StealthAddress>,
-}
+pub struct TransferOps;
 
-impl TransferState {
-    pub const fn new() -> TransferState {
-        TransferState {
-            tree: Tree::new(),
-            nullifiers: BTreeSet::new(),
-            roots: BTreeSet::new(),
-            balances: BTreeMap::new(),
-            message_mapping: BTreeMap::new(),
-            message_mapping_set: BTreeMap::new(),
-            var_crossover: None,
-            var_crossover_addr: None,
-        }
+impl TransferOps {
+    fn is_transfer_caller() -> bool {
+        let transfer_owner = rusk_abi::owner_raw(TRANSFER_CONTRACT).unwrap();
+        let caller_id = rusk_abi::caller();
+        matches!(rusk_abi::owner_raw(caller_id), Some(caller_owner) if caller_owner.eq(&transfer_owner))
     }
 
     pub fn mint(&mut self, mint: Mint) -> bool {
-        // Only the stake contract can mint notes to a particular stealth
-        // address. This happens when the reward for staking and participating
-        // in the consensus is withdrawn.
-        if rusk_abi::caller() != STAKE_CONTRACT
-            && !rusk_abi::caller().is_uninitialized()
-        {
-            panic!("Can only be called by the stake contract!")
+        // Only the stake and transfer contracts can mint notes to a particular
+        // stealth address. This happens when the reward for staking and
+        // participating in the consensus is withdrawn.
+        if rusk_abi::caller() != STAKE_CONTRACT && !Self::is_transfer_caller() {
+            panic!("Can only be called by the stake and transfer contracts!")
         }
 
         let note =
@@ -114,8 +94,11 @@ impl TransferState {
         true
     }
 
-    pub fn withdraw_from_contract_transparent(&mut self, wfct: Wfct) -> bool {
-        let address = rusk_abi::caller();
+    pub fn withdraw_from_contract_transparent(
+        &mut self,
+        wfct: Wfct,
+        from_address: ContractId,
+    ) -> bool {
         let mut pi = Vec::with_capacity(3);
 
         pi.push(wfct.value.into());
@@ -123,7 +106,7 @@ impl TransferState {
 
         //  1. a ∈ B↦
         //  2. B_a↦ ← B_a↦ − v
-        self.sub_balance(&address, wfct.value)
+        self.sub_balance(&from_address, wfct.value)
             .expect("Failed to subtract the balance from the provided address");
 
         //  3. N↦.append(N_p^t)
@@ -142,14 +125,18 @@ impl TransferState {
     pub fn withdraw_from_contract_transparent_raw(
         &mut self,
         wfct_raw: transfer_contract_types::WfctRaw,
+        from_address: ContractId,
     ) -> bool {
         let note = Note::from_slice(wfct_raw.note.as_slice())
             .expect("Failed to deserialize note");
-        self.withdraw_from_contract_transparent(Wfct {
-            value: wfct_raw.value,
-            note,
-            proof: wfct_raw.proof,
-        })
+        self.withdraw_from_contract_transparent(
+            Wfct {
+                value: wfct_raw.value,
+                note,
+                proof: wfct_raw.proof,
+            },
+            from_address,
+        )
     }
 
     pub fn send_to_contract_obfuscated(&mut self, stco: Stco) -> bool {
@@ -209,22 +196,24 @@ impl TransferState {
         true
     }
 
-    pub fn withdraw_from_contract_obfuscated(&mut self, wfco: Wfco) -> bool {
-        let address = rusk_abi::caller();
+    pub fn withdraw_from_contract_obfuscated(
+        &mut self,
+        wfco: Wfco,
+        from_address: ContractId,
+    ) -> bool {
+        let (change_psk_a, change_psk_b) =
+            match rusk_abi::payment_info(from_address)
+                .expect("Querying the payment info should succeed")
+            {
+                PaymentInfo::Obfuscated(Some(k))
+                | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
 
-        let (change_psk_a, change_psk_b) = match rusk_abi::payment_info(address)
-            .expect("Querying the payment info should succeed")
-        {
-            PaymentInfo::Obfuscated(Some(k)) | PaymentInfo::Any(Some(k)) => {
-                (*k.A(), *k.B())
-            }
+                PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
+                    (JubJubExtended::identity(), JubJubExtended::identity())
+                }
 
-            PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
-                (JubJubExtended::identity(), JubJubExtended::identity())
-            }
-
-            _ => panic!("The caller doesn't accept obfuscated notes"),
-        };
+                _ => panic!("The caller doesn't accept obfuscated notes"),
+            };
 
         let mut pi = alloc::vec![
             wfco.message.value_commitment().into(),
@@ -241,17 +230,17 @@ impl TransferState {
         //  2. pk ∈ M_a↦
         //  3. M_a↦.delete(pk)
         self.take_message_from_address_key(
-            &address,
+            &from_address,
             wfco.message_address.pk_r(),
         )
         .expect(
             "Failed to take a message from the provided address/key mapping!",
         );
 
-        self.push_message(address, wfco.change_address, wfco.change);
+        self.push_message(from_address, wfco.change_address, wfco.change);
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        match rusk_abi::payment_info(address)
+        match rusk_abi::payment_info(from_address)
             .expect("Querying the payment info should succeed")
         {
             PaymentInfo::Obfuscated(_) | PaymentInfo::Any(_) => (),
@@ -271,28 +260,31 @@ impl TransferState {
     pub fn withdraw_from_contract_obfuscated_raw(
         &mut self,
         wfco_raw: WfcoRaw,
+        from_address: ContractId,
     ) -> bool {
         let output = Note::from_slice(wfco_raw.output.as_slice())
             .expect("Failed to deserialize note");
-        self.withdraw_from_contract_obfuscated(Wfco {
-            message: wfco_raw.message,
-            message_address: wfco_raw.message_address,
-            change: wfco_raw.change,
-            change_address: wfco_raw.change_address,
-            output,
-            proof: wfco_raw.proof,
-        })
+        self.withdraw_from_contract_obfuscated(
+            Wfco {
+                message: wfco_raw.message,
+                message_address: wfco_raw.message_address,
+                change: wfco_raw.change,
+                change_address: wfco_raw.change_address,
+                output,
+                proof: wfco_raw.proof,
+            },
+            from_address,
+        )
     }
 
     pub fn withdraw_from_contract_transparent_to_contract(
         &mut self,
         wfctc: Wfctc,
+        from_address: ContractId,
     ) -> bool {
-        let from = rusk_abi::caller();
-
         //  1. from ∈ B↦
         //  2. B_from↦ ← B_from↦ − v
-        self.sub_balance(&from, wfctc.value).expect(
+        self.sub_balance(&from_address, wfctc.value).expect(
             "Failed to subtract the balance from the provided address!",
         );
 
@@ -303,8 +295,8 @@ impl TransferState {
         true
     }
 
-    /// Spends the inputs and creates the given UTXO, and executes the contract
-    /// call if present. It performs all checks necessary to ensure the
+    /// Spends the inputs and creates the given UTXO.
+    /// It performs all checks necessary to ensure the
     /// transaction is valid - hash matches, anchor has been a root of the
     /// tree, proof checks out, etc...
     ///
@@ -320,22 +312,30 @@ impl TransferState {
     /// change in state.
     ///
     /// [`refund`]: [`TransferState::refund`]
-    pub fn spend_and_execute(
-        &mut self,
-        tx: Transaction,
-    ) -> Result<Vec<u8>, ContractError> {
+    pub fn spend(&mut self, tx: Transaction) -> Result<Vec<u8>, ContractError> {
         //  1. α ∈ R
         if !self.root_exists(&tx.anchor) {
             panic!("Anchor not found in the state!");
         }
 
         //  2. ν[] !∈ Nullifiers
-        if self.any_nullifier_exists(&tx.nullifiers) {
+        let nullifier_exists = rusk_abi::call::<Vec<BlsScalar>, bool>(
+            TRANSFER_DATA_CONTRACT,
+            "any_nullifier_exists",
+            &tx.nullifiers,
+        )
+        .expect("nullifiers query should succeed");
+        if nullifier_exists {
             panic!("A provided nullifier already exists!");
         }
 
         //  3. Nullifiers.append(ν[])
-        self.nullifiers.extend(&tx.nullifiers);
+        rusk_abi::call::<Vec<BlsScalar>, ()>(
+            TRANSFER_DATA_CONTRACT,
+            "extend_nullifiers",
+            &tx.nullifiers,
+        )
+        .expect("extending nullifiers should succeed");
 
         //  4. if |C|=0 then set C ← (0,0,0)
         //  Crossover is received as option
@@ -343,7 +343,12 @@ impl TransferState {
         //  5. N↦.append((No.R[], No.pk[])
         //  6. Notes.append(No[])
         let block_height = rusk_abi::block_height();
-        self.tree.extend_notes(block_height, tx.outputs.clone());
+        rusk_abi::call::<(u64, Vec<Note>), ()>(
+            TRANSFER_DATA_CONTRACT,
+            "extend_notes",
+            &(block_height, tx.outputs.clone()),
+        )
+        .expect("extending notes should succeed");
 
         //  7. g_l < 2^64
         //  8. g_pmin < g_p
@@ -354,12 +359,31 @@ impl TransferState {
         }
 
         // 11. if ∣k∣≠0 then call(k)
-        self.var_crossover = tx.crossover;
-        self.var_crossover_addr.replace(*tx.fee.stealth_address());
+        rusk_abi::call::<(Option<Crossover>, Option<StealthAddress>), ()>(
+            TRANSFER_DATA_CONTRACT,
+            "set_crossover",
+            &(tx.crossover, Some(*tx.fee.stealth_address())),
+        )
+        .expect("set_crossover call should succeed");
 
+        Ok(Vec::new())
+    }
+    /// Executes the contract call if present.
+    ///
+    /// This function guarantees that it will not panic.
+    pub fn execute(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<Vec<u8>, ContractError> {
         let mut result = Ok(Vec::new());
 
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
+            if contract_id == TRANSFER_DATA_CONTRACT.to_bytes() {
+                return Err(ContractError::Panic("Transfer data contract can only be called from the transfer contract".to_string()));
+            }
+            if contract_id == TRANSFER_LOGIC_CONTRACT.to_bytes() {
+                return Err(ContractError::Panic("Transfer logic contract can only be called from the transfer contract".to_string()));
+            }
             result = rusk_abi::call_raw(
                 ContractId::from_bytes(contract_id),
                 &fn_name,
@@ -389,7 +413,14 @@ impl TransferState {
             self.push_note(block_height, remainder);
         }
 
-        if let Some(crossover) = self.var_crossover {
+        let (crossover, _) = rusk_abi::call::<
+            (),
+            (Option<Crossover>, Option<StealthAddress>),
+        >(
+            TRANSFER_DATA_CONTRACT, "get_crossover", &()
+        )
+        .expect("get_crossover call should succeed");
+        if let Some(crossover) = crossover {
             let note = Note::from((fee, crossover));
             self.push_note(block_height, note);
         }
@@ -400,8 +431,13 @@ impl TransferState {
     /// Note: the method `update_root` needs to be called after the last note is
     /// pushed.
     pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
+        let pos = rusk_abi::call::<(u64, Note), u64>(
+            TRANSFER_DATA_CONTRACT,
+            "push_note",
+            &(block_height, note),
+        )
+        .expect("push_note call should succeed");
         let tree_leaf = TreeLeaf { block_height, note };
-        let pos = self.tree.push(tree_leaf.clone());
         rusk_abi::emit("TREE_LEAF", (pos, tree_leaf));
         self.get_note(pos)
             .expect("There should be a note that was just inserted")
@@ -410,33 +446,41 @@ impl TransferState {
     /// Feeds the host with the leaves in the tree, starting from the given
     /// height.
     pub fn leaves_from_height(&self, height: u64) {
-        for leaf in self.tree.leaves(height) {
-            rusk_abi::feed(leaf.clone());
-        }
+        rusk_abi::call::<u64, ()>(
+            TRANSFER_DATA_CONTRACT,
+            "leaves_from_height",
+            &height,
+        )
+        .expect("leaves_from_height query should succeed");
     }
 
     /// Feeds the host with the leaves in the tree, starting from the given
     /// position.
     pub fn leaves_from_pos(&self, pos: u64) {
-        for leaf in self.tree.leaves_pos(pos) {
-            rusk_abi::feed(leaf.clone());
-        }
+        rusk_abi::call::<u64, ()>(
+            TRANSFER_DATA_CONTRACT,
+            "leaves_from_pos",
+            &pos,
+        )
+        .expect("leaves_from_pos query should succeed");
     }
 
-    /// Update the root for of the tree.
+    /// Update the root of the tree.
     pub fn update_root(&mut self) {
-        let root = self.tree.root();
-        self.roots.insert(root);
+        rusk_abi::call::<(), ()>(TRANSFER_DATA_CONTRACT, "update_root", &())
+            .expect("update_root call should succeed");
     }
 
     /// Get the root of the tree.
     pub fn root(&self) -> BlsScalar {
-        self.tree.root()
+        rusk_abi::call::<(), BlsScalar>(TRANSFER_DATA_CONTRACT, "root", &())
+            .expect("root query should succeed")
     }
 
     /// Get the count of the notes in the tree.
     pub fn num_notes(&self) -> u64 {
-        self.tree.leaves_len()
+        rusk_abi::call::<(), u64>(TRANSFER_DATA_CONTRACT, "num_notes", &())
+            .expect("num_notes query should succeed")
     }
 
     /// Get the opening
@@ -444,37 +488,46 @@ impl TransferState {
         &self,
         pos: u64,
     ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>> {
-        self.tree.opening(pos)
+        rusk_abi::call::<u64, Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>>>(
+            TRANSFER_DATA_CONTRACT,
+            "opening",
+            &pos,
+        )
+        .expect("opening query should succeed")
     }
 
     /// Takes some nullifiers and returns a vector containing the ones that
     /// already exists in the contract
     pub fn existing_nullifiers(
         &self,
-        nullifiers: Vec<BlsScalar>,
+        nullifiers: &Vec<BlsScalar>,
     ) -> Vec<BlsScalar> {
-        nullifiers
-            .into_iter()
-            .filter_map(|n| self.nullifiers.get(&n).map(|_| n))
-            .collect()
+        rusk_abi::call::<Vec<BlsScalar>, Vec<BlsScalar>>(
+            TRANSFER_DATA_CONTRACT,
+            "existing_nullifiers",
+            nullifiers,
+        )
+        .expect("calling existing nullifiers should succeed")
     }
 
     /// Return the balance of a given contract.
     pub fn balance(&self, contract_id: &ContractId) -> u64 {
-        self.balances.get(contract_id).copied().unwrap_or_default()
+        rusk_abi::call(
+            TRANSFER_DATA_CONTRACT,
+            "get_module_balance",
+            contract_id,
+        )
+        .expect("balance query should succeed")
     }
 
     /// Add balance to the given contract
     pub fn add_balance(&mut self, contract: ContractId, value: u64) {
-        match self.balances.entry(contract) {
-            Entry::Vacant(ve) => {
-                ve.insert(value);
-            }
-            Entry::Occupied(mut oe) => {
-                let v = oe.get_mut();
-                *v += value
-            }
-        }
+        rusk_abi::call::<(ContractId, u64), ()>(
+            TRANSFER_DATA_CONTRACT,
+            "add_module_balance",
+            &(contract, value),
+        )
+        .expect("add_module_balance call should succeed");
     }
 
     pub fn message(
@@ -482,24 +535,21 @@ impl TransferState {
         contract: &ContractId,
         pk: &PublicKey,
     ) -> Option<Message> {
-        let map = self.message_mapping.get(contract)?;
-        let message = map.get(&pk.to_bytes())?;
-
-        Some(*message)
+        rusk_abi::call::<(ContractId, PublicKey), Option<Message>>(
+            TRANSFER_DATA_CONTRACT,
+            "message",
+            &(*contract, *pk),
+        )
+        .expect("message call should succeed")
     }
 
     fn get_note(&self, pos: u64) -> Option<Note> {
-        self.tree.get(pos).map(|l| l.note)
-    }
-
-    fn any_nullifier_exists(&self, nullifiers: &[BlsScalar]) -> bool {
-        for nullifier in nullifiers {
-            if self.nullifiers.contains(nullifier) {
-                return true;
-            }
-        }
-
-        false
+        rusk_abi::call::<u64, Option<Note>>(
+            TRANSFER_DATA_CONTRACT,
+            "get_note",
+            &pos,
+        )
+        .expect("get_note query should succeed")
     }
 
     fn take_message_from_address_key(
@@ -507,15 +557,22 @@ impl TransferState {
         contract: &ContractId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
-        self.message_mapping
-            .get_mut(contract)
-            .ok_or(Error::MessageNotFound)?
-            .remove(&pk.to_bytes())
-            .ok_or(Error::MessageNotFound)
+        rusk_abi::call::<(ContractId, PublicKey), Option<Message>>(
+            TRANSFER_DATA_CONTRACT,
+            "take_message_from_address_key",
+            &(*contract, *pk),
+        )
+        .expect("take_message_from_address_key call should succeed")
+        .ok_or(Error::MessageNotFound)
     }
 
     fn root_exists(&self, root: &BlsScalar) -> bool {
-        self.roots.get(root).is_some()
+        rusk_abi::call::<BlsScalar, bool>(
+            TRANSFER_DATA_CONTRACT,
+            "root_exists",
+            root,
+        )
+        .expect("root_exists query should succeed")
     }
 
     fn push_note_current_height(&mut self, note: Note) -> Note {
@@ -528,21 +585,13 @@ impl TransferState {
         address: &ContractId,
         value: u64,
     ) -> Result<(), Error> {
-        match self.balances.get_mut(address) {
-            Some(balance) => {
-                let (bal, underflow) = balance.overflowing_sub(value);
-
-                if underflow {
-                    Err(Error::NotEnoughBalance)
-                } else {
-                    *balance = bal;
-
-                    Ok(())
-                }
-            }
-
-            _ => Err(Error::NotEnoughBalance),
-        }
+        rusk_abi::call::<(ContractId, u64), Option<()>>(
+            TRANSFER_DATA_CONTRACT,
+            "sub_balance",
+            &(*address, value),
+        )
+        .expect("sub_balance call should succeed")
+        .ok_or(Error::NotEnoughBalance)
     }
 
     fn push_message(
@@ -551,39 +600,22 @@ impl TransferState {
         message_address: StealthAddress,
         message: Message,
     ) {
-        let mut to_insert: Option<BTreeMap<[u8; PublicKey::SIZE], Message>> =
-            None;
-
-        match self.message_mapping.get_mut(&address) {
-            Some(map) => {
-                map.insert(message_address.pk_r().to_bytes(), message);
-            }
-
-            None => {
-                let mut map: BTreeMap<[u8; PublicKey::SIZE], Message> =
-                    BTreeMap::default();
-                map.insert(message_address.pk_r().to_bytes(), message);
-                to_insert.replace(map);
-            }
-        }
-
-        if let Some(map) = to_insert {
-            self.message_mapping.insert(address, map);
-        }
-
-        self.message_mapping_set.insert(address, message_address);
+        rusk_abi::call::<(ContractId, StealthAddress, Message), ()>(
+            TRANSFER_DATA_CONTRACT,
+            "push_message",
+            &(address, message_address, message),
+        )
+        .expect("push_message call should succeed");
     }
 
     fn take_crossover(&mut self) -> Result<(Crossover, StealthAddress), Error> {
-        let crossover =
-            self.var_crossover.take().ok_or(Error::CrossoverNotFound)?;
-
-        let sa = self
-            .var_crossover_addr
-            .take()
-            .ok_or(Error::CrossoverNotFound)?;
-
-        Ok((crossover, sa))
+        rusk_abi::call::<(), Option<(Crossover, StealthAddress)>>(
+            TRANSFER_DATA_CONTRACT,
+            "take_crossover",
+            &(),
+        )
+        .expect("take_crossover call should succeed")
+        .ok_or(Error::CrossoverNotFound)
     }
 
     fn assert_proof(
@@ -632,41 +664,4 @@ fn verify_tx_proof(tx: &Transaction) -> bool {
         .expect("No circuit available for given number of inputs!")
         .to_vec();
     rusk_abi::verify_proof(vd, tx.proof.clone(), pis)
-}
-
-#[cfg(test)]
-mod test_transfer {
-    use super::*;
-
-    #[test]
-    fn find_existing_nullifiers() {
-        let mut transfer = TransferState::new();
-
-        let (zero, one, two, three, ten, eleven) = (
-            BlsScalar::from(0),
-            BlsScalar::from(1),
-            BlsScalar::from(2),
-            BlsScalar::from(3),
-            BlsScalar::from(10),
-            BlsScalar::from(11),
-        );
-
-        let existing = transfer
-            .existing_nullifiers(vec![zero, one, two, three, ten, eleven]);
-
-        assert_eq!(existing.len(), 0);
-
-        for i in 1..10 {
-            transfer.nullifiers.insert(BlsScalar::from(i));
-        }
-
-        let existing = transfer
-            .existing_nullifiers(vec![zero, one, two, three, ten, eleven]);
-
-        assert_eq!(existing.len(), 3);
-
-        assert!(existing.contains(&one));
-        assert!(existing.contains(&two));
-        assert!(existing.contains(&three));
-    }
 }
