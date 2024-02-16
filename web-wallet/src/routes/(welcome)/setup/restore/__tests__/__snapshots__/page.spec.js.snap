@@ -1,6 +1,384 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Restore > should render the Terms of Service step of the Restore flow 1`] = `
+exports[`Restore > should render the Existing Wallet notice step of the Restore flow if there is a userId saved in localStorage 1`] = `
+<div>
+  <div
+    class="onboarding-wrapper s-03q11ctojZzO"
+  >
+    <section
+      class="flex flex-col flex-1"
+    >
+      <div
+        class="dusk-card"
+      >
+        <header
+          class="dusk-card__header"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4"
+          >
+            Existing Wallet Detected
+          </h3>
+           
+        </header>
+         
+        <div
+          class="flex flex-col gap-1"
+        >
+          <p>
+            Logging in to a new wallet will overwrite the current local wallet cache,
+				meaning that when you log in again with the previous mnemonic/account
+				you will need to wait for the wallet to sync.
+          </p>
+           
+          <div
+            class="flex gap-1 w-100"
+          >
+            <a
+              aria-disabled="false"
+              class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
+              href="/setup"
+            >
+              <span
+                class="dusk-anchor-button__text"
+              >
+                Back
+              </span>
+              
+            </a>
+            <!--&lt;Anchor&gt;-->
+            <!--&lt;AnchorButton&gt;-->
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
+              type="button"
+            >
+              <span
+                class="dusk-button__text"
+              >
+                Proceed
+              </span>
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+        </div>
+      </div>
+      
+      <!--&lt;Card&gt;-->
+    </section>
+    <!--&lt;ExistingWalletNotice&gt;-->
+  </div>
+  
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Restore > should render the Mnemonic Authenticate step after accepting the Existing Wallet Notice and the Terms of Service 1`] = `
+<div>
+  <div
+    class="dusk-wizard dusk-wizard--full-height"
+  >
+    <h2
+      class="h1 s-03q11ctojZzO"
+      slot="heading"
+    >
+      Enter
+      <br
+        class="s-03q11ctojZzO"
+      />
+       
+      <mark
+        class="s-03q11ctojZzO"
+      >
+        Mnemonic Phrase
+      </mark>
+    </h2>
+     
+    <div
+      class="dusk-stepper"
+      role="tablist"
+    >
+      <div
+        class="dusk-stepper__progress-bar"
+      >
+        <div
+          class="dusk-stepper__progress-filler"
+          style="width: 0%;"
+        />
+      </div>
+       
+      <div
+        class="dusk-stepper__steps"
+      >
+        <div
+          aria-disabled="true"
+          aria-selected="true"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        />
+        <div
+          aria-disabled="true"
+          aria-selected="false"
+          class="dusk-stepper__step"
+        />
+        <div
+          aria-disabled="true"
+          aria-selected="false"
+          class="dusk-stepper__step"
+        />
+      </div>
+    </div>
+    <!--&lt;Stepper&gt;-->
+     
+    <div
+      class="dusk-card"
+    >
+      <header
+        class="dusk-card__header"
+      >
+         
+        <h3
+          class="h4"
+        >
+          Enter your Mnemonic Phrase
+        </h3>
+         
+      </header>
+       
+      <div
+        class="flex flex-col gap-1"
+      >
+        <div
+          class="dusk-mnemonic"
+        >
+          <div
+            class="dusk-mnemonic__actions-wrapper"
+          >
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+              type="button"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M19,20H5V4H7V7H17V4H19M12,2A1,1 0 0,1 13,3A1,1 0 0,1 12,4A1,1 0 0,1 11,3A1,1 0 0,1 12,2M19,2H14.82C14.4,0.84 13.3,0 12,0C10.7,0 9.6,0.84 9.18,2H5A2,2 0 0,0 3,4V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V4A2,2 0 0,0 19,2Z"
+                />
+              </svg>
+              
+              <!--&lt;Icon&gt;-->
+               
+              <span
+                class="dusk-button__text"
+              >
+                Paste seed phrase
+              </span>
+              
+            </button>
+            <!--&lt;Button&gt;-->
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+              disabled=""
+              type="button"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
+                />
+              </svg>
+              
+              <!--&lt;Icon&gt;-->
+               
+              <span
+                class="dusk-button__text"
+              >
+                Undo
+              </span>
+              
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+           
+          <ol
+            class="dusk-words"
+          >
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+            <li
+              class="dusk-words__word"
+            >
+              _____
+            </li>
+          </ol>
+          <!--&lt;Words&gt;-->
+           
+          <div
+            class="dusk-mnemonic__authenticate-actions-wrapper"
+          >
+            <input
+              class="dusk-textbox dusk-textbox-text"
+              maxlength="8"
+              placeholder="Enter word 1"
+              type="text"
+            />
+            
+            <!--&lt;Textbox&gt;-->
+             
+            
+          </div>
+        </div>
+        <!--&lt;Mnemonic&gt;-->
+      </div>
+    </div>
+    
+    <!--&lt;Card&gt;-->
+    <!--&lt;MnemonicAuthenticate&gt;-->
+     
+    <div
+      class="dusk-wizard__step-navigation"
+    >
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+        href="/setup"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <span
+          class="dusk-anchor-button__text"
+        >
+          Back
+        </span>
+        
+        
+      </a>
+      <!--&lt;Anchor&gt;-->
+      <!--&lt;AnchorButton&gt;-->
+      
+       
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        disabled=""
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          Next
+        </span>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </button>
+      <!--&lt;Button&gt;-->
+    </div>
+    
+    
+    <!--&lt;WizardStep&gt;-->
+     
+    
+    <!--&lt;WizardStep&gt;-->
+     
+    
+    <!--&lt;WizardStep&gt;-->
+  </div>
+  <!--&lt;Wizard&gt;-->
+  
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Restore > should render the Terms of Service step of the Restore flow if there is no userId saved in localStorage 1`] = `
 <div>
   <div
     class="onboarding-wrapper s-03q11ctojZzO"
