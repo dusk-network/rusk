@@ -10,7 +10,7 @@ use std::time::Duration;
 pub const CONSENSUS_MAX_ITER: u8 = 255;
 
 /// Number of consecutive attested blocks needed to consider a final block.
-pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 5;
+pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 20;
 
 /// Percentage number that determines quorums.
 pub const SUPERMAJORITY_THRESHOLD: f64 = 0.67;
