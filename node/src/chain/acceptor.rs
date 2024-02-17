@@ -287,6 +287,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Final from rolling
         let mut ffr = false;
 
+        // FIXME: Remove later, adjust CONSENSUS_ROLLING_FINALITY_THRESHOLD
+        // based on block height
+        let consensus_rolling_finality_threshold =
+            if blk.header().height <= 50645 {
+                5
+            } else {
+                CONSENSUS_ROLLING_FINALITY_THRESHOLD
+            };
+
         // Define new block label
         let label = match (attested, mrb.is_final()) {
             (true, true) => Label::Final,
@@ -294,7 +303,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             (true, _) => {
                 let current = blk.header().height;
                 let target = current
-                    .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
+                    .checked_sub(consensus_rolling_finality_threshold)
                     .unwrap_or_default();
                 self.db.read().await.view(|t| {
                     for h in (target..current).rev() {

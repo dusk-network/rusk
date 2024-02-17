@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change dependencies declarations enforce bytecheck [#1371]
 - Expose `verify_step_votes`. [#50]
+- Increase `CONSENSUS_ROLLING_FINALITY_THRESHOLD` from 5 to 20.
 
 ### Removed
 
