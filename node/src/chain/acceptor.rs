@@ -457,10 +457,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip (most recent block) after reverting
-        let mut blk = Block::default();
         let mut label: Label = Label::Attested;
-
-        self.db.read().await.update(|t| {
+        let blk = self.db.read().await.update(|t| {
             let mut height = curr_height;
             while height != 0 {
                 let b = Ledger::fetch_block_by_height(t, height)?
@@ -473,8 +471,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             || anyhow::anyhow!("could not fetch block label"),
                         )?;
 
-                    blk = b;
-                    break;
+                    return Ok(b);
                 }
 
                 info!(
@@ -486,11 +483,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
 
                 // Delete any rocksdb record related to this block
-                t.delete_block(&blk)?;
+                t.delete_block(&b)?;
 
                 // Attempt to resubmit transactions back to mempool.
                 // An error here is not considered critical.
-                for tx in blk.txs().iter() {
+                for tx in b.txs().iter() {
                     if let Err(e) = Mempool::add_tx(t, tx) {
                         warn!("failed to resubmit transactions: {e}")
                     };
@@ -499,7 +496,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 height -= 1;
             }
 
-            Ok(())
+            Err(anyhow!("not found"))
         })?;
 
         if blk.header().state_hash != target_state_hash {
