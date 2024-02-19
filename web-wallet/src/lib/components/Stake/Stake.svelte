@@ -73,11 +73,8 @@
 	/** @type {boolean} */
 	let isValidGas = true;
 
-	$: isStakeAmountValid = stakeAmount >= minStake && stakeAmount <= maxSpendable;
-	$: totalLuxFee = luxFee + duskToLux(stakeAmount);
-	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
-	$: isNextButtonDisabled = flow === "stake"
-		? !(isStakeAmountValid && isValidGas && isFeeWithinLimit) : false;
+	/** @type {boolean} */
+	let hideStakingNoticeNextTime = false;
 
 	let { gasLimit, gasPrice } = gasSettings;
 
@@ -121,8 +118,11 @@
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
 	$: minStake = maxSpendable > 0 ? Math.min(defaultMinStake, maxSpendable) : defaultMinStake;
-
-	let hideStakingNoticeNextTime = false;
+	$: isStakeAmountValid = stakeAmount >= minStake && stakeAmount <= maxSpendable;
+	$: totalLuxFee = luxFee + duskToLux(stakeAmount);
+	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
+	$: isNextButtonDisabled = flow === "stake"
+		? !(isStakeAmountValid && isValidGas && isFeeWithinLimit) : false;
 
 	function getWizardSteps () {
 		if (flow === "stake") {

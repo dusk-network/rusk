@@ -2,7 +2,7 @@
 
 <script>
 	import { fade } from "svelte/transition";
-	import { createEventDispatcher, onMount, tick } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import { mdiArrowUpBoldBoxOutline, mdiWalletOutline } from "@mdi/js";
 
 	import { deductLuxFeeFrom } from "$lib/contracts";
@@ -63,23 +63,22 @@
 
 	let { gasLimit, gasPrice } = gasSettings;
 
-	const checkAmountValid = async () => {
-		await tick();
-		isNextButtonDisabled = !(amountInput?.checkValidity() && isValidGas
-			&& (luxFee + duskToLux(amount) <= duskToLux(spendable)));
-	};
+	const minAmount = 0.000000001;
 
 	const dispatch = createEventDispatcher();
 	const resetOperation = () => dispatch("operationChange", "");
 
 	onMount(() => {
 		amountInput = document.querySelector(".operation__input-field");
-		checkAmountValid();
 	});
 
 	$: luxFee = gasLimit * gasPrice;
 	$: fee = formatter(luxToDusk(luxFee));
 	$: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
+	$: isAmountValid = amount >= minAmount && amount <= maxSpendable;
+	$: totalLuxFee = luxFee + duskToLux(amount);
+	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
+	$: isNextButtonDisabled = !(isAmountValid && isValidGas && isFeeWithinLimit);
 </script>
 
 <div class="operation">
@@ -106,7 +105,6 @@
 							}
 
 							amount = maxSpendable;
-							checkAmountValid();
 						}}
 						text="USE MAX"
 					/>
@@ -118,10 +116,9 @@
 						bind:value={amount}
 						required
 						type="number"
-						min={0.000000001}
+						min={minAmount}
 						max={maxSpendable}
 						step="0.000000001"
-						on:input={checkAmountValid}
 					/>
 					<Icon
 						data-tooltip-id="main-tooltip"
@@ -144,8 +141,6 @@
 							gasPrice = event.detail.price;
 							gasLimit = event.detail.limit;
 						}
-
-						checkAmountValid();
 					}}
 				/>
 			</div>
