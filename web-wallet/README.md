@@ -46,6 +46,7 @@ VITE_STAKE_CONTRACT="02000000000000000000000000000000000000000000000000000000000
 VITE_TESTNET_NODE="https://nodes.dusk.network/"
 VITE_TESTNET_PROVER_NODE="https://provers.dusk.network/"
 VITE_TRANSFER_CONTRACT="0100000000000000000000000000000000000000000000000000000000000000"
+VITE_GET_QUOTE_API_ENDPOINT="https://api.dusk.network/v1/quote"
 ```
 
 To run a local node different steps are needed, so please read the [related section](#running-a-local-rusk-node).
