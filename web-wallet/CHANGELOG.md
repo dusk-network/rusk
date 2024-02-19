@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dusk-wallet-js to 0.4.1 [#1315](https://github.com/dusk-network/rusk/issues/1315)
 - Change logout flow to abort a sync if in progress [#1401](https://github.com/dusk-network/rusk/issues/1401)
 - Update dusk-wallet-js to 0.4.2 [#1401](https://github.com/dusk-network/rusk/issues/1401)
+- Update login flow tests [#1423](https://github.com/dusk-network/rusk/issues/1423)
 
 ### Removed
 
