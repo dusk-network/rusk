@@ -161,13 +161,23 @@ const TRANSFER_PROXY_PROTECTED_METHODS: &'static [&'static str] = &[
 ];
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn protected_transfer_methods() -> Result<()> {
+pub async fn protected_transfer_methods_data() -> Result<()> {
     for method in TRANSFER_DATA_PROTECTED_METHODS {
         test_protected_method(*method, TRANSFER_DATA_CONTRACT)?;
     }
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn protected_transfer_methods_logic() -> Result<()> {
     for method in TRANSFER_LOGIC_PROTECTED_METHODS {
         test_protected_method(*method, TRANSFER_LOGIC_CONTRACT)?;
     }
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn protected_transfer_methods_proxy() -> Result<()> {
     for method in TRANSFER_PROXY_PROTECTED_METHODS {
         test_protected_method(*method, TRANSFER_CONTRACT)?;
     }
