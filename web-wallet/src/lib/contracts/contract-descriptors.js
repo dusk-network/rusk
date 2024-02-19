@@ -7,7 +7,9 @@
  */
 export default [
   {
-    disabled: import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED === "true",
+    disabled:
+      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED &&
+      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED === "true",
     id: "transfer",
     label: "Transact",
     operations: [
@@ -26,7 +28,9 @@ export default [
     ],
   },
   {
-    disabled: import.meta.env.VITE_CONTRACT_STAKE_DISABLED === "true",
+    disabled:
+      import.meta.env.VITE_CONTRACT_STAKE_DISABLED &&
+      import.meta.env.VITE_CONTRACT_STAKE_DISABLED === "true",
     id: "staking",
     label: "Stake",
     operations: [

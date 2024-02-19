@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add message when no contracts have been enabled [#1317]
 - Add `eslint-config-prettier` as explicit dependency [#1509]
 - Add format check to CI and `checks` script [#1504]
 - Add `vitest-canvas-mock` dependency to replace `canvas` [#1506]
@@ -128,6 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1308]: https://github.com/dusk-network/rusk/issues/1308
 [#1309]: https://github.com/dusk-network/rusk/issues/1309
 [#1311]: https://github.com/dusk-network/rusk/issues/1311
+[#1317]: https://github.com/dusk-network/rusk/issues/1317
 [#1322]: https://github.com/dusk-network/rusk/issues/1322
 [#1323]: https://github.com/dusk-network/rusk/issues/1323
 [#1334]: https://github.com/dusk-network/rusk/issues/1334
