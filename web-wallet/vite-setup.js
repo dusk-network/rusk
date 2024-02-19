@@ -6,9 +6,11 @@ import * as matchers from "@testing-library/jest-dom/matchers";
 import { expect, vi } from "vitest";
 import { readable } from "svelte/store";
 import crypto from "node:crypto";
+import ResizeObserver from "resize-observer-polyfill";
 import "jsdom-worker";
 
-import { IntersectionObserver, ResizeObserver } from "./src/lib/dusk/mocks";
+import { IntersectionObserver } from "./src/lib/dusk/mocks";
+
 import Wallet from "./__mocks__/Wallet.js";
 
 // Mocking the Wallet
@@ -27,10 +29,9 @@ vi.spyOn(global, "btoa").mockImplementation(data => Buffer.from(data, "binary").
 // Adding missing bits in JSDOM
 
 vi.mock("./src/lib/dusk/mocks/IntersectionObserver");
-vi.mock("./src/lib/dusk/mocks/ResizeObserver");
+vi.stubGlobal("ResizeObserver", ResizeObserver);
 
 global.IntersectionObserver = IntersectionObserver;
-global.ResizeObserver = ResizeObserver;
 
 /*
  * Need to set it this way for Node 20, otherwise

@@ -60,6 +60,7 @@
 		"jsdom": "23.0.0",
 		"jsdom-worker": "0.3.0",
 		"postcss-nested": "6.0.1",
+		"resize-observer-polyfill": "1.5.1",
 		"svelte": "4.2.7",
 		"svelte-check": "3.6.2",
 		"svelte-preprocess": "5.1.1",
