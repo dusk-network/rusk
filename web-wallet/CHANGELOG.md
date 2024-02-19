@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add abortable sync [#1401](https://github.com/dusk-network/rusk/issues/1401)
 - Add `existing wallet notice` to wallet create, restore and login flows [#1360](https://github.com/dusk-network/rusk/issues/1360)
 - Add `userId` value to localStorage preferences object during wallet create and restore [#1360](https://github.com/dusk-network/rusk/issues/1360)
+- Add wallet restore flow tests [#1416](https://github.com/dusk-network/rusk/issues/1416)
 
 ### Changed
 
@@ -41,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix restore flow allowing invalid mnemonic to be used to log in [#1416](https://github.com/dusk-network/rusk/issues/1416)
 - Fix Transactions table remains hidden for some screen resolutions [#1412](https://github.com/dusk-network/rusk/issues/1412)
 - Fix Stake button is always disabled [#1410](https://github.com/dusk-network/rusk/issues/1410)
 - Fix wizard progression on Stake flow [#1398](https://github.com/dusk-network/rusk/issues/1398)
