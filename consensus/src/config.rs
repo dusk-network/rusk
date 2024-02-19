@@ -10,7 +10,7 @@ use std::time::Duration;
 pub const CONSENSUS_MAX_ITER: u8 = 255;
 
 /// Number of consecutive attested blocks needed to consider a final block.
-pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 5;
+pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 20;
 
 /// Percentage number that determines quorums.
 pub const SUPERMAJORITY_THRESHOLD: f64 = 0.67;
@@ -34,6 +34,6 @@ pub const RELAX_ITERATION_THRESHOLD: u8 = 10;
 /// Emergency mode is enabled only for the last N iterations
 pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = CONSENSUS_MAX_ITER - 9;
 
-pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(2);
+pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(5);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(30);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
