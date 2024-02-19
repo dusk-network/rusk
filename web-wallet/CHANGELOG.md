@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove `fiat` property from Balance component [#1323](https://github.com/dusk-network/rusk/issues/1323)
 - Remove `gasSettings` store update from `dashboard/+page.svelte.js` [#1353](https://github.com/dusk-network/rusk/issues/1353)
+- Remove the use of `checkValidity()` in Send and Stake flow amounts validity checks [#1391](https://github.com/dusk-network/rusk/issues/1391)
 
 ### Fixed
 
