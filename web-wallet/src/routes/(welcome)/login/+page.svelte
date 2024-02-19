@@ -70,7 +70,10 @@
 
 	/** @type {import("svelte/elements").FormEventHandler<HTMLFormElement>} */
 	function handleUnlockWalletSubmit () {
-		const getSeed = loginInfo ? getSeedFromInfo(loginInfo) : getSeedFromMnemonicAsync;
+		/** @type {(mnemonic: string) => Promise<Uint8Array>} */
+		const getSeed = loginInfo
+			? getSeedFromInfo(loginInfo)
+			: mnemonic => getSeedFromMnemonicAsync(mnemonic.toLowerCase());
 
 		getSeed(secretText.trim())
 			.then(getWallet)

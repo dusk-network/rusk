@@ -235,14 +235,14 @@ describe("Login", async () => {
 			expect(selectedText).toBe(textInput.value);
 		});
 
-		it("should trim the entered mnemonic before validating it", async () => {
+		it("should trim and lower case the entered mnemonic before validating it", async () => {
 			settingsStore.update(setKey("userId", userId));
 
 			const { container } = render(Login, {});
 			const form = getAsHTMLElement(container, "form");
 			const textInput = getTextInput(container);
 
-			await fireEvent.input(textInput, { target: { value: `  \t${mnemonic} \t  ` } });
+			await fireEvent.input(textInput, { target: { value: `  \t${mnemonic.toUpperCase()} \t  ` } });
 			await fireEvent.submit(form, { currentTarget: form });
 			await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 

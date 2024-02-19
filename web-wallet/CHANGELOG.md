@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix Seed Phrase words size [#1335](https://github.com/dusk-network/rusk/issues/1335)
 - Fix colors on red background [#1334](https://github.com/dusk-network/rusk/issues/1334)
 - Fix Transactions table design [#1309](https://github.com/dusk-network/rusk/issues/1309)
+- Fix can't unlock the wallet with upper case words [#1417](https://github.com/dusk-network/rusk/issues/1417)
 
 ## [0.1.0-beta] - 2024-02-02
 
