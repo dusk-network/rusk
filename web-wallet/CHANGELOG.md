@@ -9,14 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add wallet restore flow tests [#1416]
-- Add missing login flow tests [#1423]
-
 ### Changed
 
 ### Removed
 
 - Remove the use of `checkValidity()` in Send and Stake flow amounts validity checks [#1391]
+
+### Fixed
+
+## [0.2.1] - 2024-02-20
+
+### Added
+
+- Add wallet restore flow tests [#1416]
+- Add missing login flow tests [#1423]
 
 ### Fixed
 
@@ -98,5 +104,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.2.1]: https://github.com/dusk-network/rusk/tree/web-wallet-0.2.1
 [0.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.2.0
 [0.1.0-beta]: https://github.com/dusk-network/rusk/tree/web-wallet-0.1.0-beta
