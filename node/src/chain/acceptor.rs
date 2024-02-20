@@ -349,8 +349,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 header.height,
             );
 
-            for (_, slashed) in
-                header.failed_iterations.cert_list.iter().flatten()
+            for slashed in header.failed_iterations.to_missed_generators_bytes()
             {
                 info!("Slashed {}", slashed.to_base58())
             }
