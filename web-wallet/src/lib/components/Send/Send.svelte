@@ -7,6 +7,7 @@
 
 	import { deductLuxFeeFrom } from "$lib/contracts";
 	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
+	import { validateAddress } from "$lib/dusk/string";
 	import { logo } from "$lib/dusk/icons";
 	import {
 		AnchorButton,
@@ -79,6 +80,8 @@
 	$: totalLuxFee = luxFee + duskToLux(amount);
 	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
 	$: isNextButtonDisabled = !(isAmountValid && isValidGas && isFeeWithinLimit);
+
+	$: addressValidationResult = validateAddress(address);
 </script>
 
 <div class="operation">
@@ -148,7 +151,7 @@
 		<WizardStep
 			step={1}
 			{key}
-			nextButton={{ disabled: address.length === 0 }}
+			nextButton={{ disabled: !addressValidationResult.isValid }}
 		>
 			<div in:fade|global class="operation__send">
 				<ContractStatusesList items={statuses}/>
@@ -166,7 +169,8 @@
 					/>
 				</div>
 				<Textbox
-					className="operation__send-address"
+					className="operation__send-address
+						{!addressValidationResult.isValid ? "operation__send-address--invalid" : ""}"
 					type="multiline"
 					bind:value={address}
 				/>
@@ -325,5 +329,9 @@
 
 	.review-transaction__value {
 		font-weight: bold;
+	}
+
+	:global(.operation__send-address--invalid) {
+			color: var(--error-color);
 	}
 </style>

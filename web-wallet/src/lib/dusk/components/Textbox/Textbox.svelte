@@ -25,7 +25,7 @@
 		inputElement?.select();
 	}
 
-	const classes = makeClassName([
+	$: classes = makeClassName([
 		"dusk-textbox",
 		`dusk-textbox-${type}`,
 		className

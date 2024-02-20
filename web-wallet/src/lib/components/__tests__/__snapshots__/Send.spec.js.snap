@@ -77,7 +77,8 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         </div>
          
         <textarea
-          class="dusk-textbox dusk-textbox-multiline operation__send-address"
+          class="dusk-textbox dusk-textbox-multiline operation__send-address
+						operation__send-address--invalid"
         />
         
         <!--&lt;Textbox&gt;-->
@@ -560,7 +561,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
             <span
               class="s-m9vn8aRVZTU1"
             >
-              aB5rL7yC2zK9eV3xH1gQ6fP4jD8sM0iU2oX7wG9nZ8lT3hU4jP5mK8nS6qJ3wF4aA9bB2cC5dD8eE7
+              47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM
             </span>
           </dd>
         </dl>

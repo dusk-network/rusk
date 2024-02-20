@@ -34,8 +34,12 @@ describe("Send", () => {
 			value: "1,000.000000000"
 		}]
 	};
-	const address =
+
+	const invalidAddress =
 		"aB5rL7yC2zK9eV3xH1gQ6fP4jD8sM0iU2oX7wG9nZ8lT3hU4jP5mK8nS6qJ3wF4aA9bB2cC5dD8eE7";
+
+	const address =
+		"47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
 
 	afterEach(() => {
 		cleanup();
@@ -117,7 +121,22 @@ describe("Send", () => {
 			expect(nextButton).toBeDisabled();
 		});
 
-		it("should enable the next button if the user inputs an address", async () => {
+		it("should disable the next button if the address is invalid empty", async () => {
+			const { getByRole } = render(Send, baseProps);
+
+			await fireEvent.click(getByRole("button", { name: "Next" }));
+
+			const nextButton = getByRole("button", { name: "Next" });
+			const addressInput = getByRole("textbox");
+
+			await fireEvent.input(addressInput, { target: { value: invalidAddress } });
+
+			expect(addressInput).toHaveValue(invalidAddress);
+
+			expect(nextButton).toBeDisabled();
+		});
+
+		it("should enable the next button if the user inputs a valid address", async () => {
 			const { getByRole } = render(Send, baseProps);
 
 			await fireEvent.click(getByRole("button", { name: "Next" }));
