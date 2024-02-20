@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change Get Quote API Endpoint to env variable [#1311]
 - Change Holdings component design [#1361]
 - Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component [#1323]
 - Change `package.json` fields to reflect repo change [#1367]
@@ -78,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ISSUES -->
 [#1359]: https://github.com/dusk-network/rusk/issues/1359
+[#1311]: https://github.com/dusk-network/rusk/issues/1311
 [#1323]: https://github.com/dusk-network/rusk/issues/1323
 [#1290]: https://github.com/dusk-network/rusk/issues/1290
 [#1322]: https://github.com/dusk-network/rusk/issues/1322

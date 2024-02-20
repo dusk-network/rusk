@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => {
 				VITE_GAS_PRICE_DEFAULT: env.VITE_GAS_PRICE_DEFAULT,
 				VITE_GAS_PRICE_LOWER: env.VITE_GAS_PRICE_LOWER,
 				VITE_GAS_PRICE_UPPER: env.VITE_GAS_PRICE_UPPER,
+				VITE_GET_QUOTE_API_ENDPOINT: env.VITE_GET_QUOTE_API_ENDPOINT,
 				VITE_STAKING_ENABLED: env.VITE_STAKING_ENABLED,
 				VITE_TRANSFER_ENABLED: env.VITE_TRANSFER_ENABLED
 			}
@@ -76,7 +77,8 @@ export default defineConfig(({ mode }) => {
 				VITE_GAS_LIMIT_LOWER: "10000000",
 				VITE_GAS_LIMIT_UPPER: "1000000000",
 				VITE_GAS_PRICE_DEFAULT: "1",
-				VITE_GAS_PRICE_LOWER: "1"
+				VITE_GAS_PRICE_LOWER: "1",
+				VITE_GET_QUOTE_API_ENDPOINT: "https://api.dusk.network/v1/quote"
 			},
 			environment: "jsdom",
 			include: ["src/**/*.{test,spec}.{js,ts}"],
