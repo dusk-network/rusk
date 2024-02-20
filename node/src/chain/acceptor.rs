@@ -24,7 +24,7 @@ use stake_contract_types::Unstake;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::Validator;
@@ -198,13 +198,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .get_provisioner(pk.inner())?
                     .ok_or(anyhow::anyhow!("Provisioner should exists"))?;
                 if stake.value() < MINIMUM_STAKE {
-                    new_prov.remove_stake(&pk).ok_or(anyhow::anyhow!(
-                        "Removed a not existing stake"
-                    ))?;
+                    let removed = new_prov.remove_stake(&pk).ok_or(
+                        anyhow::anyhow!("Removed a not existing stake"),
+                    )?;
+                    debug!("SELECTIVE: Removed stake {removed:?}");
                 } else {
-                    new_prov.replace_stake(pk, stake).ok_or(
+                    debug!("SELECTIVE: New stake {stake:?}");
+                    let replaced = new_prov.replace_stake(pk, stake).ok_or(
                         anyhow::anyhow!("Replaced a not existing stake"),
                     )?;
+                    debug!("SELECTIVE: Old stake {replaced:?}");
                 }
             }
             // Update new prov
