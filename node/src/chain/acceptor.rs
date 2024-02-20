@@ -35,7 +35,7 @@ use crate::database::rocksdb::{
 };
 
 const DUSK: u64 = 1_000_000_000;
-const MINIMUM_STAKE: u64 = 1_000_000 * DUSK;
+const MINIMUM_STAKE: u64 = 1_000 * DUSK;
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
