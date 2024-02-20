@@ -363,15 +363,24 @@ impl IterationsInfo {
     pub fn to_missed_generators(
         &self,
     ) -> Result<Vec<dusk_bls12_381_sign::PublicKey>, io::Error> {
-        self.cert_list
-        .iter()
-        .flatten()
-        .filter(|(c,_)|c.result==RatificationResult::Fail(Vote::NoCandidate))
-        .map(|(_, pk)| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
+        self.to_missed_generators_bytes()
+        .map(|pk| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
             tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
             io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
         }))
         .collect()
+    }
+
+    pub fn to_missed_generators_bytes(
+        &self,
+    ) -> impl Iterator<Item = &PublicKeyBytes> {
+        self.cert_list
+            .iter()
+            .flatten()
+            .filter(|(c, _)| {
+                c.result == RatificationResult::Fail(Vote::NoCandidate)
+            })
+            .map(|(_, pk)| pk)
     }
 }
 
