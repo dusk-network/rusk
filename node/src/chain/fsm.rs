@@ -251,7 +251,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let curr_h = acc.get_curr_height().await;
 
         if blk.header().height == curr_h + 1 {
-            acc.try_accept_block(blk, true).await?;
+            acc.try_accept_block(blk, None, true).await?;
         }
 
         info!(event = "entering in-sync", height = curr_h);
@@ -330,8 +330,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 {
                     Ok(_) => {
                         if remote_height == acc.get_curr_height().await + 1 {
-                            acc.try_accept_block(remote_blk, true).await?;
-                            self.broadcast(msg).await;
+                            acc.try_accept_block(remote_blk, Some(msg), true)
+                                .await?;
                             return Ok(None);
                         }
                     }
@@ -412,9 +412,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         // in in_Sync mode instead of switching to Out-Of-Sync
                         // mode.
 
-                        acc.try_accept_block(remote_blk, true).await?;
-                        self.broadcast(msg).await;
-
+                        acc.try_accept_block(remote_blk, Some(msg), true)
+                            .await?;
                         return Ok(None);
                     }
 
@@ -433,7 +432,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
         // Try accepting consecutive block
         if remote_height == local_header.height + 1 {
-            let label = acc.try_accept_block(remote_blk, true).await?;
+            let label =
+                acc.try_accept_block(remote_blk, Some(msg), true).await?;
 
             // On first final block accepted while we're inSync, clear
             // blacklisted blocks
@@ -455,10 +455,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     }
                 }
             }
-
-            // When accepting block from the wire in inSync state, we
-            // rebroadcast it
-            self.broadcast(msg).await;
 
             return Ok(None);
         }
@@ -512,12 +508,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         }
 
         Ok(false)
-    }
-
-    async fn broadcast(&self, msg: &Message) {
-        if let Err(e) = self.network.write().await.broadcast(msg).await {
-            warn!("Unable to broadcast accepted block: {e}");
-        }
     }
 }
 
@@ -623,7 +613,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         // Try accepting consecutive block
         if h == acc.get_curr_height().await + 1 {
-            acc.try_accept_block(blk, false).await?;
+            acc.try_accept_block(blk, None, false).await?;
 
             if let Some(metadata) = &msg.metadata {
                 if metadata.src_addr == self.peer_addr {
@@ -637,7 +627,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             // available
             for height in (h + 1)..(self.range.1 + 1) {
                 if let Some(blk) = self.pool.get(&height) {
-                    acc.try_accept_block(blk, false).await?;
+                    acc.try_accept_block(blk, None, false).await?;
                 } else {
                     break;
                 }
