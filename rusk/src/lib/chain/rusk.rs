@@ -348,6 +348,10 @@ impl Rusk {
             )
         }))
     }
+
+    pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
+        self.query(STAKE_CONTRACT, "get_stake", pk)
+    }
 }
 
 fn accept(
