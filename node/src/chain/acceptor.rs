@@ -194,20 +194,22 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         } else {
             let mut new_prov = provisioners_list.current().clone();
             for pk in changed_prov {
-                let stake = vm
-                    .get_provisioner(pk.inner())?
-                    .ok_or(anyhow::anyhow!("Provisioner should exists"))?;
-                if stake.value() < MINIMUM_STAKE {
-                    let removed = new_prov.remove_stake(&pk).ok_or(
-                        anyhow::anyhow!("Removed a not existing stake"),
-                    )?;
-                    debug!("SELECTIVE: Removed stake {removed:?}");
-                } else {
-                    debug!("SELECTIVE: New stake {stake:?}");
-                    let replaced = new_prov.replace_stake(pk, stake).ok_or(
-                        anyhow::anyhow!("Replaced a not existing stake"),
-                    )?;
-                    debug!("SELECTIVE: Old stake {replaced:?}");
+                match vm.get_provisioner(pk.inner())? {
+                    Some(stake) if stake.value() >= MINIMUM_STAKE => {
+                        debug!("SELECTIVE: New stake {stake:?}");
+                        let replaced = new_prov
+                            .replace_stake(pk, stake)
+                            .ok_or(anyhow::anyhow!(
+                                "Replaced a not existing stake"
+                            ))?;
+                        debug!("SELECTIVE: Old stake {replaced:?}");
+                    }
+                    _ => {
+                        let removed = new_prov.remove_stake(&pk).ok_or(
+                            anyhow::anyhow!("Removed a not existing stake"),
+                        )?;
+                        debug!("SELECTIVE: Removed stake {removed:?}");
+                    }
                 }
             }
             // Update new prov
