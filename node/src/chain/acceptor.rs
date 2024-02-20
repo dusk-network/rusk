@@ -265,6 +265,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn try_accept_block(
         &mut self,
         blk: &Block,
+        msg: Option<&Message>,
         enable_consensus: bool,
     ) -> anyhow::Result<Label> {
         let mut task = self.task.write().await;
@@ -341,6 +342,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 Ok(txs)
             })?;
+
+            // (Re)broadcast a fully valid block before any call to
+            // get_provisioners to speed up its propagation
+            if let Some(msg) = msg {
+                let _ = self.network.read().await.broadcast(msg).await.map_err(
+                    |err| warn!("Unable to broadcast accepted block: {err}"),
+                );
+            }
 
             self.log_missing_iterations(
                 provisioners_list.current(),
@@ -456,28 +465,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip (most recent block) after reverting
-        let mut label: Label = Label::Attested;
-        let blk = self.db.read().await.update(|t| {
+        let (blk, label) = self.db.read().await.update(|t| {
             let mut height = curr_height;
             while height != 0 {
                 let b = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
+                let label =
+                    t.fetch_block_label_by_height(h.height)?.ok_or_else(
+                        || anyhow::anyhow!("could not fetch block label"),
+                    )?;
 
                 if h.state_hash == target_state_hash {
-                    label =
-                        t.fetch_block_label_by_height(h.height)?.ok_or_else(
-                            || anyhow::anyhow!("could not fetch block label"),
-                        )?;
-
-                    return Ok(b);
+                    return Ok((b, label));
                 }
 
                 info!(
                     event = "block deleted",
                     height = h.height,
                     iter = h.iteration,
-                    label = format!("{:?}", label),
+                    label = ?label,
                     hash = hex::encode(h.hash)
                 );
 
