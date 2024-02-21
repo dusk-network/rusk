@@ -72,12 +72,34 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
     }
 }
 
-const EPOCH: u64 = 2160;
+const STAKE: &str = "stake";
+const UNSTAKE: &str = "unstake";
 const STAKE_CONTRACT: [u8; 32] = stake_contract_id();
 const fn stake_contract_id() -> [u8; 32] {
     let mut bytes = [0u8; 32];
     bytes[0] = 2;
     bytes
+}
+
+#[derive(Debug)]
+enum ProvisionerChange {
+    Stake(PublicKey),
+    Unstake(PublicKey),
+    Slash(PublicKey),
+}
+
+impl ProvisionerChange {
+    fn into_public_key(self) -> PublicKey {
+        match self {
+            ProvisionerChange::Slash(pk) => pk,
+            ProvisionerChange::Unstake(pk) => pk,
+            ProvisionerChange::Stake(pk) => pk,
+        }
+    }
+
+    fn is_stake(&self) -> bool {
+        matches!(self, ProvisionerChange::Stake(_))
+    }
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
@@ -185,30 +207,31 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             ContextProvisioners,
         >,
     ) -> Result<()> {
-        // FIXME: Change `changed_provisioners` to return the status of changes.
-        // That way, we can handle everything here without asking for
-        // `get_provisioner`
+        let src = "selective";
         let changed_prov = Self::changed_provisioners(blk, txs)?;
         if changed_prov.is_empty() {
             provisioners_list.remove_previous();
         } else {
             let mut new_prov = provisioners_list.current().clone();
-            for pk in changed_prov {
+            for change in changed_prov {
+                let is_stake = change.is_stake();
+                info!(event = "provisioner_update", src, ?change);
+                let pk = change.into_public_key();
+                let prov = pk.to_bs58();
                 match vm.get_provisioner(pk.inner())? {
                     Some(stake) if stake.value() >= MINIMUM_STAKE => {
-                        debug!("SELECTIVE: New stake {stake:?}");
-                        let replaced = new_prov
-                            .replace_stake(pk, stake)
-                            .ok_or(anyhow::anyhow!(
-                                "Replaced a not existing stake"
-                            ))?;
-                        debug!("SELECTIVE: Old stake {replaced:?}");
+                        debug!(event = "new_stake", src, prov, ?stake);
+                        let replaced = new_prov.replace_stake(pk, stake);
+                        if replaced.is_none() && !is_stake {
+                            anyhow::bail!("Replaced a not existing stake")
+                        };
+                        debug!(event = "old_stake", src, prov, ?replaced);
                     }
                     _ => {
                         let removed = new_prov.remove_stake(&pk).ok_or(
                             anyhow::anyhow!("Removed a not existing stake"),
                         )?;
-                        debug!("SELECTIVE: Removed stake {removed:?}");
+                        debug!(event = "removed_stake", src, prov, ?removed);
                     }
                 }
             }
@@ -221,40 +244,62 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     fn changed_provisioners(
         blk: &Block,
         txs: &[SpentTransaction],
-    ) -> Result<Vec<PublicKey>> {
-        // Update provisioners at every epoch (where new stakes take effect)
-        if blk.header().height % EPOCH == 0 {
-            anyhow::bail!("Epoch changed");
-        }
-
+    ) -> Result<Vec<ProvisionerChange>> {
         let mut changed_provisioners = vec![];
 
         // Update provisioners if a slash has been applied
         for bytes in blk.header().failed_iterations.to_missed_generators_bytes()
         {
-            changed_provisioners.push(bytes.0.try_into().map_err(|e| {
+            let slashed = bytes.0.try_into().map_err(|e| {
                 anyhow::anyhow!("Cannot deserialize bytes {e:?}")
-            })?);
+            })?;
+            changed_provisioners.push(ProvisionerChange::Slash(slashed));
         }
 
-        // FIX_ME: This relies on stakeContract to being called only by the
-        // transfer contract
-        let unstake_calldata = txs
-            .iter()
-            .filter(|t| t.err.is_none())
-            .filter_map(|t| match &t.inner.inner.call {
-                Some((STAKE_CONTRACT, f, data)) if f == "unstake" => Some(data),
-                _ => None,
+        // FIX_ME: This relies on the stake contract being called only by the
+        // transfer contract. We should change this once third-party contracts
+        // hit the chain.
+        let stake_calls =
+            txs.iter().filter(|t| t.err.is_none()).filter_map(|t| {
+                match &t.inner.inner.call {
+                    Some((STAKE_CONTRACT, fn_name, data))
+                        if (fn_name == STAKE || fn_name == UNSTAKE) =>
+                    {
+                        Some((fn_name, data))
+                    }
+                    _ => None,
+                }
             });
 
-        for calldata in unstake_calldata {
-            let unstake: Unstake = rkyv::from_bytes(calldata).map_err(|e| {
-                anyhow::anyhow!("Cannot deserialize rkyv {e:?}")
-            })?;
-            changed_provisioners.push(PublicKey::new(unstake.public_key))
+        for (f, data) in stake_calls {
+            changed_provisioners.push(Self::parse_stake_call(f, data)?);
         }
 
         Ok(changed_provisioners)
+    }
+
+    fn parse_stake_call(
+        fn_name: &str,
+        calldata: &[u8],
+    ) -> Result<ProvisionerChange> {
+        let change = match fn_name {
+            UNSTAKE => {
+                let unstake: Unstake =
+                    rkyv::from_bytes(calldata).map_err(|e| {
+                        anyhow::anyhow!("Cannot deserialize unstake rkyv {e:?}")
+                    })?;
+                ProvisionerChange::Unstake(PublicKey::new(unstake.public_key))
+            }
+            STAKE => {
+                let stake: stake_contract_types::Stake =
+                    rkyv::from_bytes(calldata).map_err(|e| {
+                        anyhow::anyhow!("Cannot deserialize stake rkyv {e:?}")
+                    })?;
+                ProvisionerChange::Stake(PublicKey::new(stake.public_key))
+            }
+            e => unreachable!("Parsing unexpected method: {e}"),
+        };
+        Ok(change)
     }
 
     /// Updates most_recent_block together with provisioners list.

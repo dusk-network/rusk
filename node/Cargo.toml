@@ -25,7 +25,7 @@ tracing-subscriber = { version = "0.3", features = [
 async-channel = "1.7"
 
 stake-contract-types = { version = "0.0.1-rc.2", path = "../contracts/stake-types" }
-rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+rkyv = "0.7"
 
 rocksdb_lib = { package = "rocksdb", version = "0.21", default-features = false }
 dusk-bytes = "^0.1"
