@@ -14,12 +14,6 @@ import { stakeInfo, transactions } from "$lib/mock-data";
 import Dashboard from "../+page.svelte";
 import { walletStore } from "$lib/stores";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-	observe: vi.fn(),
-	unobserve: vi.fn(),
-	disconnect: vi.fn()
-}));
-
 vi.mock("$lib/stores", async importOriginal => {
 	/** @type {import("$lib/stores/stores").WalletStore} */
 	const original = await importOriginal();
