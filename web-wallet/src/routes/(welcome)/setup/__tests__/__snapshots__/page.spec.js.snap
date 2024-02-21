@@ -158,6 +158,20 @@ exports[`Setup > should render the Setup page 1`] = `
       </div>
     </div>
   </section>
+   
+  <footer
+    class="setup-footer s-yhWmfXbY838u"
+  >
+    <span
+      class="s-yhWmfXbY838u"
+    >
+      Web Wallet v
+      0.1.5
+       (
+      hash1234 2024-01-12
+      )
+    </span>
+  </footer>
   <!--&lt;+page&gt;-->
 </div>
 `;
