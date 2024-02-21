@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::{
-    operations::CallParams, operations::VerificationOutput,
-    user::provisioners::Provisioners,
+    operations::{CallParams, VerificationOutput},
+    user::{provisioners::Provisioners, stake::Stake},
 };
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
@@ -45,6 +46,8 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         base_commit: [u8; 32],
     ) -> anyhow::Result<Provisioners>;
+
+    fn get_provisioner(&self, pk: &PublicKey) -> anyhow::Result<Option<Stake>>;
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;
 

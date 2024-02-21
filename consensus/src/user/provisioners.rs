@@ -86,6 +86,18 @@ impl Provisioners {
         self.members.entry(pubkey_bls).or_insert_with(|| stake);
     }
 
+    pub fn replace_stake(
+        &mut self,
+        pubkey_bls: PublicKey,
+        stake: Stake,
+    ) -> Option<Stake> {
+        self.members.insert(pubkey_bls, stake)
+    }
+
+    pub fn remove_stake(&mut self, pubkey_bls: &PublicKey) -> Option<Stake> {
+        self.members.remove(pubkey_bls)
+    }
+
     /// Adds a new member with reward=0 and elibile_since=0.
     ///
     /// Useful for implementing unit tests.

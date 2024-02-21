@@ -148,6 +148,21 @@ impl VMExecution for Rusk {
         self.query_provisioners(Some(base_commit))
     }
 
+    fn get_provisioner(
+        &self,
+        pk: &dusk_bls12_381_sign::PublicKey,
+    ) -> anyhow::Result<Option<Stake>> {
+        let stake = self
+            .provisioner(pk)
+            .map_err(|e| anyhow::anyhow!("Cannot get provisioner {e}"))?
+            .and_then(|stake| {
+                stake.amount.map(|(value, eligibility)| {
+                    Stake::new(value, stake.reward, eligibility)
+                })
+            });
+        Ok(stake)
+    }
+
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
         Ok(self.state_root())
     }
