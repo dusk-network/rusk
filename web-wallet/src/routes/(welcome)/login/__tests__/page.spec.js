@@ -26,7 +26,7 @@ import Login from "../+page.svelte";
 /** @param {HTMLElement} container */
 function getTextInput (container) {
 	// eslint-disable-next-line no-extra-parens
-	return /** @type {HTMLInputElement} */ (container.querySelector("[type='password'"));
+	return /** @type {HTMLInputElement} */ (container.querySelector("[type='password']"));
 }
 
 describe("Login", async () => {

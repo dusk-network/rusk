@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix typo in routes/welcome/__tests__/page.spec.js [#1445]
+
 ## [0.2.1] - 2024-02-20
 
 ### Added
@@ -103,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1423]: https://github.com/dusk-network/rusk/issues/1423
 [#1391]: https://github.com/dusk-network/rusk/issues/1391
 [#1417]: https://github.com/dusk-network/rusk/issues/1417
+[#1445]: https://github.com/dusk-network/rusk/issues/1445
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
