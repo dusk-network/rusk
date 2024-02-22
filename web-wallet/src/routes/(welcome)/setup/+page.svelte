@@ -41,6 +41,10 @@
 	</div>
 </section>
 
+<footer class="setup-footer">
+	<span>Web Wallet v{import.meta.env.APP_VERSION} ({import.meta.env.APP_BUILD_INFO})</span>
+</footer>
+
 <style lang="postcss">
 	.setup-content {
 		flex: 1;
@@ -68,5 +72,9 @@
 
 	.setup-heading {
 		position: relative;
+	}
+
+	.setup-footer {
+		font-size: .75em;
 	}
 </style>

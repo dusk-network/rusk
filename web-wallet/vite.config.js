@@ -3,9 +3,14 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig, loadEnv } from "vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import * as childProcess from "child_process";
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd());
+	const buildDate = new Date().toISOString().substring(0, 10);
+	const buildHash = childProcess.execSync("git log -1 --grep='web-wallet:' --format=format:'%h'");
+	const APP_VERSION = process.env.npm_package_version ?? "unknown";
+	const APP_BUILD_INFO = `${buildHash.toString() || "unknown"} ${buildDate}`;
 	const commonPlugins = [
 		sveltekit(),
 		nodePolyfills({
@@ -14,11 +19,16 @@ export default defineConfig(({ mode }) => {
 		})
 	];
 
+	// needed to use %sveltekit.env.PUBLIC_APP_VERSION% in app.html
+	process.env.PUBLIC_APP_VERSION = APP_VERSION;
+
 	return {
 		define: {
 			"CONFIG": {
 				LOCAL_STORAGE_APP_KEY: process.env.npm_package_name
 			},
+			"import.meta.env.APP_BUILD_INFO": JSON.stringify(APP_BUILD_INFO),
+			"import.meta.env.APP_VERSION": JSON.stringify(APP_VERSION),
 			"process.env": {
 				CURRENT_NODE: env.VITE_CURRENT_NODE,
 				CURRENT_PROVER_NODE: env.VITE_CURRENT_PROVER_NODE,
@@ -62,6 +72,8 @@ export default defineConfig(({ mode }) => {
 				include: ["src/**"]
 			},
 			env: {
+				APP_BUILD_INFO: "hash1234 2024-01-12",
+				APP_VERSION: "0.1.5",
 				CURRENT_NODE: "http://127.0.0.1:8080/",
 				CURRENT_PROVER_NODE: "http://127.0.0.1:8080/",
 				LOCAL_NODE: "http://127.0.0.1:8080/",

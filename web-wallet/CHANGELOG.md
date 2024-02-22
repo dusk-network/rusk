@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add visible version, commit hash and build date [#1441]
+
 ### Changed
 
 ### Removed
@@ -105,7 +107,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1423]: https://github.com/dusk-network/rusk/issues/1423
 [#1391]: https://github.com/dusk-network/rusk/issues/1391
 [#1417]: https://github.com/dusk-network/rusk/issues/1417
+<<<<<<< HEAD
 [#1445]: https://github.com/dusk-network/rusk/issues/1445
+=======
+[#1441]: https://github.com/dusk-network/rusk/issues/1441
+>>>>>>> e0c2a641 (web-wallet: Add visible version, commit hash and build date)
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
