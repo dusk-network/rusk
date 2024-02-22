@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
+- Add Create Wallet flow tests [#1443]
 - Add visible version, commit hash and build date [#1441]
 - Add Address validation (Transfer flow) [#1377]
 
@@ -114,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1445]: https://github.com/dusk-network/rusk/issues/1445
 [#1441]: https://github.com/dusk-network/rusk/issues/1441
 [#1460]: https://github.com/dusk-network/rusk/issues/1460
+[#1443]: https://github.com/dusk-network/rusk/issues/1443
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet

@@ -89,7 +89,7 @@
 				Backup<br/>
 				<mark>Mnemonic Phrase</mark>
 			</h2>
-			<MnemonicPhrase bind:mnemonicPhrase={mnemonicPhrase}/>
+			<MnemonicPhrase bind:mnemonicPhrase/>
 		</WizardStep>
 		<WizardStep
 			step={2}
@@ -107,8 +107,8 @@
 			</h2>
 			<MnemonicValidate
 				bind:isValid={isValidMnemonic}
-				bind:enteredMnemonicPhrase={enteredMnemonicPhrase}
-				bind:mnemonicPhrase={mnemonicPhrase}
+				bind:enteredMnemonicPhrase
+				bind:mnemonicPhrase
 			/>
 		</WizardStep>
 		<WizardStep
