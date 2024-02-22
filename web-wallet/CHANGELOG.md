@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add visible version, commit hash and build date [#1441]
+- Add Address validation (Transfer flow) [#1377]
 
 ### Changed
+
+- Change Get Quote API Endpoint to env variable [#1311]
 
 ### Removed
 
@@ -19,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix typo in routes/welcome/__tests__/page.spec.js [#1445]
+- Fix typo in routes/welcome/\_\_tests\_\_/page.spec.js [#1445]
 
 ## [0.2.1] - 2024-02-20
 
@@ -50,7 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Change Get Quote API Endpoint to env variable [#1311]
 - Change Holdings component design [#1361]
 - Change `fiatCurrency`, `locale`, `tokenCurrency`, `token` to required properties in Balance component [#1323]
 - Change `package.json` fields to reflect repo change [#1367]
@@ -96,6 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1367]: https://github.com/dusk-network/rusk/issues/1367
 [#1353]: https://github.com/dusk-network/rusk/issues/1353
 [#1343]: https://github.com/dusk-network/rusk/issues/1343
+[#1377]: https://github.com/dusk-network/rusk/issues/1377
 [#1403]: https://github.com/dusk-network/rusk/issues/1403
 [#1412]: https://github.com/dusk-network/rusk/issues/1412
 [#1410]: https://github.com/dusk-network/rusk/issues/1410
@@ -107,11 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1423]: https://github.com/dusk-network/rusk/issues/1423
 [#1391]: https://github.com/dusk-network/rusk/issues/1391
 [#1417]: https://github.com/dusk-network/rusk/issues/1417
-<<<<<<< HEAD
 [#1445]: https://github.com/dusk-network/rusk/issues/1445
-=======
 [#1441]: https://github.com/dusk-network/rusk/issues/1441
->>>>>>> e0c2a641 (web-wallet: Add visible version, commit hash and build date)
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet

@@ -2,3 +2,4 @@ export { default as calculateAdaptiveCharCount } from "./calculateAdaptiveCharCo
 export { default as hexStringToBytes } from "./hexStringToBytes";
 export { default as makeClassName } from "./makeClassName";
 export { default as middleEllipsis } from "./middleEllipsis";
+export { default as validateAddress } from "./validateAddress";
