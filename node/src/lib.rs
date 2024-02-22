@@ -166,10 +166,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
 
     pub async fn initialize(
         &self,
-        service_list: &mut Vec<Box<dyn LongLivedService<N, DB, VM>>>,
+        services: &mut [Box<dyn LongLivedService<N, DB, VM>>],
     ) -> anyhow::Result<()> {
         // Run lazy-initialization of all registered services
-        for mut service in service_list.into_iter() {
+        for service in services.iter_mut() {
             info!("initialize service {}", service.name());
             service
                 .initialize(

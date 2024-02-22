@@ -93,6 +93,15 @@ impl DataBrokerSrv {
 impl<N: Network, DB: database::DB, VM: vm::VMExecution>
     LongLivedService<N, DB, VM> for DataBrokerSrv
 {
+    async fn initialize(
+        &mut self,
+        _network: Arc<RwLock<N>>,
+        _db: Arc<RwLock<DB>>,
+        _vm: Arc<RwLock<VM>>,
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
+
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
