@@ -44,21 +44,49 @@ const TOPICS: &[u8] = &[
 const ACCEPT_BLOCK_TIMEOUT_SEC: Duration = Duration::from_secs(20);
 const HEARTBEAT_SEC: Duration = Duration::from_secs(1);
 
-pub struct ChainSrv {
+pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Inbound wire messages queue
     inbound: AsyncQueue<Message>,
     keys_path: String,
+    acceptor: Option<Arc<RwLock<Acceptor<N, DB, VM>>>>,
 }
 
 #[async_trait]
 impl<N: Network, DB: database::DB, VM: vm::VMExecution>
-    LongLivedService<N, DB, VM> for ChainSrv
+    LongLivedService<N, DB, VM> for ChainSrv<N, DB, VM>
 {
-    async fn execute(
+    async fn initialize(
         &mut self,
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
+    ) -> anyhow::Result<()> {
+        let mrb = Self::load_most_recent_block(db.clone(), vm.clone()).await?;
+
+        let state_hash = mrb.inner().header().state_hash;
+        let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
+
+        // Initialize Acceptor
+        let acc = Acceptor::init_consensus(
+            &self.keys_path,
+            mrb,
+            provisioners_list,
+            db,
+            network.clone(),
+            vm.clone(),
+        )
+        .await?;
+
+        self.acceptor = Some(Arc::new(RwLock::new(acc)));
+
+        Ok(())
+    }
+
+    async fn execute(
+        &mut self,
+        network: Arc<RwLock<N>>,
+        _db: Arc<RwLock<DB>>,
+        _vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         // Register routes
         LongLivedService::<N, DB, VM>::add_routes(
@@ -69,23 +97,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        // Restore/Load most recent block
-        let mrb = Self::load_most_recent_block(db.clone(), vm.clone()).await?;
-
-        let state_hash = mrb.inner().header().state_hash;
-        let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
-
-        // Initialize Acceptor and trigger consensus task
-        let acc = Acceptor::init_consensus(
-            &self.keys_path,
-            mrb,
-            provisioners_list,
-            db,
-            network.clone(),
-            vm.clone(),
-        )
-        .await?;
-        let acc = Arc::new(RwLock::new(acc));
+        let acc = self.acceptor.as_mut().unwrap();
+        acc.write().await.spawn_task().await;
 
         // Start-up FSM instance
         let mut fsm = SimpleFSM::new(acc.clone(), network.clone());
@@ -200,11 +213,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
     }
 }
 
-impl ChainSrv {
+impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     pub fn new(keys_path: String) -> Self {
         Self {
             inbound: Default::default(),
             keys_path,
+            acceptor: None,
         }
     }
 
@@ -213,7 +227,7 @@ impl ChainSrv {
     /// Panics
     ///
     /// If register entry is read but block is not found.
-    async fn load_most_recent_block<DB: database::DB, VM: vm::VMExecution>(
+    async fn load_most_recent_block(
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
     ) -> Result<BlockWithLabel> {

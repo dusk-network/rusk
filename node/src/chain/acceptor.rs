@@ -161,11 +161,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             acc.try_revert(RevertTarget::LastFinalizedState).await?;
         }
 
-        acc.spawn_task().await;
         Ok(acc)
     }
 
-    async fn spawn_task(&self) {
+    pub async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
 
