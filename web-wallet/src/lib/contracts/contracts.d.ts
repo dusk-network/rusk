@@ -7,10 +7,7 @@ type ContractDescriptor = {
 
 type ContractGasSettings = {
 	gasLimit: number;
-	gasLimitLower: number;
-	gasLimitUpper: number;
 	gasPrice: number;
-	gasPriceLower: number;
 };
 
 type ContractOperation = {

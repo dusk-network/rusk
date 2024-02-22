@@ -2,6 +2,8 @@
 	import { slide } from "svelte/transition";
 	import { Button } from "$lib/dusk/components";
 	import { GasControls, GasFee } from "$lib/components";
+	import { areValidGasSettings } from "$lib/contracts";
+	import { onMount } from "svelte";
 
 	/** @type {number} */
 	export let limit;
@@ -23,6 +25,12 @@
 
 	/** @type {boolean} */
 	let isExpanded = false;
+
+	onMount(() => {
+		if (!areValidGasSettings(price, limit)) {
+			isExpanded = true;
+		}
+	});
 </script>
 
 <div class="gas-settings">

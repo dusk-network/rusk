@@ -7,7 +7,6 @@ import {
 	vi
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-
 import { deductLuxFeeFrom } from "$lib/contracts";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
 
@@ -32,9 +31,11 @@ describe("Stake", () => {
 		formatter,
 		gasSettings: {
 			gasLimit: 20000000,
+			gasPrice: 1
+		},
+		gasLimits: {
 			gasLimitLower: 10000000,
-			gasLimitUpper: 1000000000,
-			gasPrice: 1,
+			gasLimitUpper: 2900000000,
 			gasPriceLower: 1
 		},
 		hideStakingNotice: true,

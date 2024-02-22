@@ -16,6 +16,7 @@
 	import { createCurrencyFormatter } from "$lib/dusk/currency";
 	import { getLastTransactionHash } from "$lib/transactions";
 	import {
+		gasStore,
 		operationsStore,
 		settingsStore,
 		walletStore
@@ -33,6 +34,8 @@
 
 	/** @type {ContractDescriptor} */
 	export let descriptor;
+
+	const gasLimits = $gasStore;
 
 	const collectSettings = collect([
 		pick(["gasLimit", "gasLimitLower", "gasLimitUpper", "gasPrice", "gasPriceLower"]),
@@ -130,6 +133,7 @@
 				execute={executeOperations[currentOperation]}
 				flow={currentOperation}
 				formatter={duskFormatter}
+				{gasLimits}
 				{gasSettings}
 				on:operationChange
 				on:suppressStakingNotice

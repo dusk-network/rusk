@@ -5,7 +5,7 @@
 	import { fade } from "svelte/transition";
 	import { mdiAlertOutline, mdiDatabaseArrowDownOutline, mdiDatabaseOutline } from "@mdi/js";
 
-	import { deductLuxFeeFrom } from "$lib/contracts";
+	import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
 	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
 	import { logo } from "$lib/dusk/icons";
 
@@ -58,6 +58,9 @@
 	/** @type {boolean} */
 	export let hideStakingNotice;
 
+	/** @type {import("$lib/stores/stores").GasStoreContent} */
+	export let gasLimits;
+
 	const defaultMinStake = 1000;
 
 	/** @type {number} */
@@ -71,10 +74,8 @@
 	let stakeInput;
 
 	/** @type {boolean} */
-	let isValidGas = true;
-
-	/** @type {boolean} */
 	let hideStakingNoticeNextTime = false;
+	let isGasValid = false;
 
 	let { gasLimit, gasPrice } = gasSettings;
 
@@ -97,12 +98,12 @@
 	const suppressStakingNotice = () => dispatch("suppressStakingNotice");
 
 	/**
-	 * @param {{detail:{price:number, limit:number, isValidGas:boolean}}} event
+	 * @param {{detail:{price:number, limit:number}}} event
 	 */
 	const setGasValues = (event) => {
-		isValidGas = event.detail.isValidGas;
+		isGasValid = areValidGasSettings(event.detail.price, event.detail.limit);
 
-		if (event.detail.isValidGas) {
+		if (isGasValid) {
 			gasPrice = event.detail.price;
 			gasLimit = event.detail.limit;
 		}
@@ -112,6 +113,8 @@
 		if (flow === "stake") {
 			stakeAmount = Math.min(minStake, stakeAmount);
 		}
+
+		isGasValid = areValidGasSettings(gasPrice, gasLimit);
 	});
 
 	$: luxFee = gasLimit * gasPrice;
@@ -122,7 +125,7 @@
 	$: totalLuxFee = luxFee + duskToLux(stakeAmount);
 	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
 	$: isNextButtonDisabled = flow === "stake"
-		? !(isStakeAmountValid && isValidGas && isFeeWithinLimit) : false;
+		? !(isStakeAmountValid && isGasValid && isFeeWithinLimit) : false;
 
 	function getWizardSteps () {
 		if (flow === "stake") {
@@ -223,10 +226,10 @@
 				<GasSettings
 					{fee}
 					limit={gasSettings.gasLimit}
-					limitLower={gasSettings.gasLimitLower}
-					limitUpper={gasSettings.gasLimitUpper}
+					limitLower={gasLimits.gasLimitLower}
+					limitUpper={gasLimits.gasLimitUpper}
 					price={gasSettings.gasPrice}
-					priceLower={gasSettings.gasPriceLower}
+					priceLower={gasLimits.gasPriceLower}
 					on:gasSettings={setGasValues}
 				/>
 			</WizardStep>
@@ -267,10 +270,10 @@
 					<GasSettings
 						{fee}
 						limit={gasSettings.gasLimit}
-						limitLower={gasSettings.gasLimitLower}
-						limitUpper={gasSettings.gasLimitUpper}
+						limitLower={gasLimits.gasLimitLower}
+						limitUpper={gasLimits.gasLimitUpper}
 						price={gasSettings.gasPrice}
-						priceLower={gasSettings.gasPriceLower}
+						priceLower={gasLimits.gasPriceLower}
 						on:gasSettings={setGasValues}
 					/>
 				{/if}

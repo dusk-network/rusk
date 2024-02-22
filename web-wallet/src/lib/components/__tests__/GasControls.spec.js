@@ -57,7 +57,7 @@ describe("GasControls", () => {
 		expect(container).toMatchSnapshot();
 	});
 
-	it("should dispatch a \"gasSettings\" event when the price or the limit are changed with valid gas settings", async () => {
+	it("should dispatch a \"gasSettings\" event when the price or the limit are changed", async () => {
 		const { component, getByLabelText } = render(GasControls, baseOptions);
 		const priceInput = asInput(getByLabelText(/price/i));
 		const limitInput = asInput(getByLabelText(/limit/i));
@@ -68,7 +68,6 @@ describe("GasControls", () => {
 
 		expect(eventHandler).toHaveBeenCalledTimes(1);
 		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
-			isValidGas: true,
 			limit: baseProps.limit,
 			price: 15
 		});
@@ -78,40 +77,10 @@ describe("GasControls", () => {
 
 		expect(eventHandler).toHaveBeenCalledTimes(2);
 		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
-			isValidGas: true,
 			limit: 25,
 			price: 15
 		});
 		expect(limitInput.valueAsNumber).toBe(25);
 		expect(priceInput.max).toBe("25");
-	});
-
-	it("should dispatch a \"gasSettings\" event when the price or the limit are changed with invalid gas settings", async () => {
-		const { component, getByLabelText } = render(GasControls, baseOptions);
-		const priceInput = asInput(getByLabelText(/price/i));
-		const limitInput = asInput(getByLabelText(/limit/i));
-
-		component.$on("gasSettings", eventHandler);
-
-		await fireInput(priceInput, 25);
-
-		expect(eventHandler).toHaveBeenCalledTimes(1);
-		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
-			isValidGas: false,
-			limit: baseProps.limit,
-			price: 25
-		});
-		expect(priceInput.valueAsNumber).toBe(25);
-
-		await fireInput(limitInput, 105);
-
-		expect(eventHandler).toHaveBeenCalledTimes(2);
-		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
-			isValidGas: false,
-			limit: 105,
-			price: 25
-		});
-		expect(limitInput.valueAsNumber).toBe(105);
-		expect(priceInput.max).toBe("105");
 	});
 });

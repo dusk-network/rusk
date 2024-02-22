@@ -2,7 +2,6 @@
 
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
-	import { isType } from "lamb";
 	import { Textbox } from "$lib/dusk/components";
 
 	/** @type {Number} */
@@ -22,26 +21,15 @@
 
 	const dispatch = createEventDispatcher();
 
-	function checkGasLimits () {
-		let isValidPrice = false;
-		let	isValidLimit = false;
-		let isValidGas = false;
-
-		if ([price, limit].every(isType("Number"))) {
-			isValidPrice = price >= priceLower && price <= limit;
-			isValidLimit = limit >= limitLower && limit <= limitUpper;
-			isValidGas = isValidPrice && isValidLimit;
-		}
-
+	function dispatchGasLimits () {
 		dispatch("gasSettings", {
-			isValidGas: isValidGas,
 			limit: limit,
 			price: price
 		});
 	}
 
 	onMount(() => {
-		checkGasLimits();
+		dispatchGasLimits();
 	});
 </script>
 
@@ -54,7 +42,7 @@
 		className="gas-control__input"
 		max={limit}
 		min={priceLower}
-		on:input={checkGasLimits}
+		on:input={dispatchGasLimits}
 		required
 		type="number"
 	/>
@@ -69,7 +57,7 @@
 		className="gas-control__input"
 		max={limitUpper}
 		min={limitLower}
-		on:input={checkGasLimits}
+		on:input={dispatchGasLimits}
 		required
 		type="number"
 	/>

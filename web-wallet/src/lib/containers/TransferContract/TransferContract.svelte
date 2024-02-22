@@ -15,6 +15,7 @@
 	import { createCurrencyFormatter } from "$lib/dusk/currency";
 	import { getLastTransactionHash } from "$lib/transactions";
 	import {
+		gasStore,
 		operationsStore,
 		settingsStore,
 		walletStore
@@ -34,7 +35,7 @@
 		walletStore.transfer(to, amount, gasPrice, gasLimit).then(getLastTransactionHash);
 
 	const collectSettings = collect([
-		pick(["gasLimit", "gasLimitLower", "gasLimitUpper", "gasPrice", "gasPriceLower"]),
+		pick(["gasLimit", "gasPrice"]),
 		getKey("language")
 	]);
 	const isEnabledSend = allOf([
@@ -42,11 +43,10 @@
 		hasKeyValue("id", "send")
 	]);
 
+	const gasLimits = $gasStore;
+
 	$: ({ currentOperation } = $operationsStore);
-	$: [
-		gasSettings,
-		language
-	] = collectSettings($settingsStore);
+	$: [gasSettings, language] = collectSettings($settingsStore);
 	$: ({
 		balance,
 		currentAddress,
@@ -74,6 +74,7 @@
 	<Send
 		execute={executeSend}
 		formatter={duskFormatter}
+		{gasLimits}
 		{gasSettings}
 		on:operationChange
 		spendable={balance.maximum}

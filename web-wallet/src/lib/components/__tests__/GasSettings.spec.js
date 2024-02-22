@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 
 import { GasSettings } from "..";
 import { get } from "svelte/store";
-import { settingsStore } from "$lib/stores";
+import { gasStore, settingsStore } from "$lib/stores";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
 
 describe("GasSettings", () => {
@@ -23,7 +23,8 @@ describe("GasSettings", () => {
 		limitLower: 10000000,
 		limitUpper: 1000000000,
 		price: 1,
-		priceLower: 1
+		priceLower: 1,
+		gasStore: gasStore
 	};
 
 	const baseOptions = {
@@ -66,7 +67,6 @@ describe("GasSettings", () => {
 
 		expect(eventHandler).toHaveBeenCalledTimes(1);
 		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
-			isValidGas: true,
 			limit: baseProps.limitLower,
 			price: baseProps.price
 		});
@@ -75,7 +75,6 @@ describe("GasSettings", () => {
 
 		expect(eventHandler).toHaveBeenCalledTimes(2);
 		expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
-			isValidGas: true,
 			limit: baseProps.limitLower,
 			price: baseProps.price * 2
 		});
