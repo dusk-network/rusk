@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix typo in routes/welcome/\_\_tests\_\_/page.spec.js [#1445]
+- Fix missing whitespace when Transaction list is empty [#1460]
 
 ## [0.2.1] - 2024-02-20
 
@@ -112,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1417]: https://github.com/dusk-network/rusk/issues/1417
 [#1445]: https://github.com/dusk-network/rusk/issues/1445
 [#1441]: https://github.com/dusk-network/rusk/issues/1441
+[#1460]: https://github.com/dusk-network/rusk/issues/1460
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet

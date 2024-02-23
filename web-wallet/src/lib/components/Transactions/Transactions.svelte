@@ -214,6 +214,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 0.5em;
+		margin-bottom: 1em;
 	}
 
 	:global(&__badge) {
