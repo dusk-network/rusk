@@ -13,10 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Improved performance of get_provisioners [#1447]
 - Change dependencies declarations enforce bytecheck [#1371]
 - Removed 'phoenix-core' dependency [#1138]
 
 ## [0.7.0] - 2023-12-15
 
+[#1447]: https://github.com/dusk-network/rusk/issues/1447
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1138]: https://github.com/dusk-network/rusk/issues/1138
