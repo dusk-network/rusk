@@ -70,15 +70,15 @@ describe("Restore", async () => {
 		walletGetPsksSpy.mockRestore();
 	});
 
-	it("should render the Terms of Service step of the Restore flow if there is no userId saved in localStorage", () => {
+	it("should render the Existing Wallet notice step of the Restore flow if there is a userId saved in localStorage", () => {
+		settingsStore.update(setKey("userId", userId));
+
 		const { container } = render(Restore);
 
 		expect(container.firstChild).toMatchSnapshot();
 	});
 
-	it("should render the Existing Wallet notice step of the Restore flow if there is a userId saved in localStorage", () => {
-		settingsStore.update(setKey("userId", userId));
-
+	it("should render the Terms of Service step of the Restore flow if there is no userId saved in localStorage", () => {
 		const { container } = render(Restore);
 
 		expect(container.firstChild).toMatchSnapshot();

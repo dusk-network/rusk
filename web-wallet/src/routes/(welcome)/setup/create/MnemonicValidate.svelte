@@ -24,7 +24,7 @@
 	<div class="flex flex-col gap-1">
 		<p>Ensure you have backed up the Mnemonic phrase.</p>
 		<Mnemonic
-			bind:enteredMnemonicPhrase={enteredMnemonicPhrase}
+			bind:enteredMnemonicPhrase
 			mnemonicPhrase={shuffleArray(mnemonicPhrase)}
 			type="validate"
 		/>
