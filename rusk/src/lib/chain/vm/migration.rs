@@ -80,14 +80,12 @@ impl Migration {
                 MIGRATION_GAS_LIMIT,
             )?
             .data;
-        session
-            .call::<_, ()>(
-                new_contract,
-                "set_slashed_amount",
-                &slashed_amount,
-                MIGRATION_GAS_LIMIT,
-            )?
-            .data;
+        session.call::<_, ()>(
+            new_contract,
+            "set_slashed_amount",
+            &slashed_amount,
+            MIGRATION_GAS_LIMIT,
+        )?;
         Ok(())
     }
 

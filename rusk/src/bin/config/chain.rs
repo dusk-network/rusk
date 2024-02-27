@@ -30,7 +30,7 @@ impl ChainConfig {
         }
 
         // Override config migration_height
-        if let Some(migration_height) = args.migration_height.clone() {
+        if let Some(migration_height) = args.migration_height {
             self.migration_height = Some(migration_height)
         }
     }
