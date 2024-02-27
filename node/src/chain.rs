@@ -97,7 +97,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        let acc = self.acceptor.as_mut().unwrap();
+        let acc = self.acceptor.as_mut().expect("initialize is called");
         acc.write().await.spawn_task().await;
 
         // Start-up FSM instance
