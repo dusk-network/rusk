@@ -30,6 +30,7 @@ pub struct Rusk {
     pub(crate) tip: Arc<RwLock<RuskTip>>,
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
+    migration_height: Option<u64>,
 }
 
 #[derive(Clone)]

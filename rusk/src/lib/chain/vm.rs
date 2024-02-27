@@ -124,6 +124,7 @@ impl VMExecution for Rusk {
 
         let inner = self.inner.lock();
         let r = Migration::migrate(
+            self.migration_height,
             &inner.vm,
             inner.current_commit,
             blk.header().height,

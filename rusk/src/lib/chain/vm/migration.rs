@@ -11,7 +11,6 @@ use std::sync::mpsc;
 use std::time::SystemTime;
 use tracing::info;
 
-const MIGRATION_BLOCK: u64 = 12;
 const MIGRATION_GAS_LIMIT: u64 = 1_000_000_000;
 
 const NEW_STAKE_CONTRACT_BYTECODE: &[u8] = include_bytes!(
@@ -22,12 +21,14 @@ pub struct Migration;
 
 impl Migration {
     pub fn migrate(
+        migration_height: Option<u64>,
         vm: &VM,
         current_commit: [u8; 32],
         block_height: u64,
     ) -> anyhow::Result<()> {
-        if block_height != MIGRATION_BLOCK {
-            return Ok(());
+        match migration_height {
+            Some(h) if h == block_height => (),
+            _ => return Ok(()),
         }
         info!("MIGRATING STAKE CONTRACT");
         let mut session =
