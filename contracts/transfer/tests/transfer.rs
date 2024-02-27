@@ -72,7 +72,9 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     session
         .deploy(
             transfer_bytecode,
-            ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+            ContractData::builder()
+                .owner(OWNER)
+                .contract_id(TRANSFER_CONTRACT),
             POINT_LIMIT,
         )
         .expect("Deploying the transfer contract should succeed");
@@ -80,7 +82,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     session
         .deploy(
             alice_bytecode,
-            ContractData::builder(OWNER).contract_id(ALICE_ID),
+            ContractData::builder().owner(OWNER).contract_id(ALICE_ID),
             POINT_LIMIT,
         )
         .expect("Deploying the alice contract should succeed");
@@ -88,7 +90,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     session
         .deploy(
             bob_bytecode,
-            ContractData::builder(OWNER).contract_id(BOB_ID),
+            ContractData::builder().owner(OWNER).contract_id(BOB_ID),
             POINT_LIMIT,
         )
         .expect("Deploying the bob contract should succeed");
