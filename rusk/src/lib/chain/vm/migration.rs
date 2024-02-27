@@ -14,7 +14,7 @@ use tracing::info;
 const MIGRATION_GAS_LIMIT: u64 = 1_000_000_000;
 
 const NEW_STAKE_CONTRACT_BYTECODE: &[u8] = include_bytes!(
-    "../../../../../target/wasm32-unknown-unknown/release/stake_contract_v2.wasm"
+    "../../../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
 );
 
 pub struct Migration;
@@ -72,6 +72,22 @@ impl Migration {
                 MIGRATION_GAS_LIMIT,
             )?;
         }
+        let slashed_amount = session
+            .call::<_, u64>(
+                old_contract,
+                "slashed_amount",
+                &(),
+                MIGRATION_GAS_LIMIT,
+            )?
+            .data;
+        session
+            .call::<_, ()>(
+                new_contract,
+                "set_slashed_amount",
+                &slashed_amount,
+                MIGRATION_GAS_LIMIT,
+            )?
+            .data;
         Ok(())
     }
 
