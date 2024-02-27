@@ -69,7 +69,9 @@ fn initialize() -> Session {
     session
         .deploy(
             bytecode,
-            ContractData::builder(TEST_OWNER).contract_id(LICENSE_CONTRACT_ID),
+            ContractData::builder()
+                .owner(TEST_OWNER)
+                .contract_id(LICENSE_CONTRACT_ID),
             POINT_LIMIT,
         )
         .expect("Deploying the license contract should succeed");
