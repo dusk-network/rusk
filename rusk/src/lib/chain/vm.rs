@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod migration;
 mod query;
 
 use tracing::info;
 
+use crate::chain::vm::migration::Migration;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
@@ -119,6 +121,16 @@ impl VMExecution for Rusk {
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")
             })?;
+
+        let inner = self.inner.lock();
+        let r = Migration::migrate(
+            &inner.vm,
+            inner.current_commit,
+            blk.header().height,
+        );
+        if r.is_err() {
+            info!("MIGRATION RESULT={:?}", r);
+        }
 
         Ok((txs, state_root))
     }
