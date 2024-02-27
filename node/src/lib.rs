@@ -87,6 +87,13 @@ pub trait Network: Send + Sync + 'static {
 pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
     Send + Sync
 {
+    async fn initialize(
+        &mut self,
+        network: Arc<RwLock<N>>,
+        database: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
+    ) -> anyhow::Result<()>;
+
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
@@ -155,6 +162,25 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
 
     pub fn network(&self) -> Arc<RwLock<N>> {
         self.network.clone()
+    }
+
+    pub async fn initialize(
+        &self,
+        services: &mut [Box<dyn LongLivedService<N, DB, VM>>],
+    ) -> anyhow::Result<()> {
+        // Run lazy-initialization of all registered services
+        for service in services.iter_mut() {
+            info!("initialize service {}", service.name());
+            service
+                .initialize(
+                    self.network.clone(),
+                    self.database.clone(),
+                    self.vm_handler.clone(),
+                )
+                .await?;
+        }
+
+        Ok(())
     }
 
     /// Sets up and runs a list of services.

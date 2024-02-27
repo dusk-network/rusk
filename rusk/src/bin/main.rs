@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     #[cfg(feature = "node")]
-    let (rusk, node, service_list) = {
+    let (rusk, node, mut service_list) = {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
         let rusk = Rusk::new(state_dir)?;
@@ -152,6 +152,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         _ws_server =
             Some(HttpServer::bind(handler, listen_addr, cert_and_key).await?);
+    }
+
+    #[cfg(feature = "node")]
+    // initialize all registered services
+    if let Err(err) = node.0.initialize(&mut service_list).await {
+        tracing::error!("node initialization  failed: {}", err);
+        return Err(err.into());
     }
 
     #[cfg(feature = "node")]
