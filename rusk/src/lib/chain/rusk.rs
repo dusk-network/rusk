@@ -37,7 +37,10 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
 });
 
 impl Rusk {
-    pub fn new<P: AsRef<Path>>(dir: P) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(
+        dir: P,
+        migration_height: Option<u64>,
+    ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
 
@@ -66,6 +69,7 @@ impl Rusk {
             tip,
             vm,
             dir: dir.into(),
+            migration_height,
         })
     }
 

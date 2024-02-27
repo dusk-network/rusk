@@ -55,6 +55,10 @@ pub struct Args {
     pub consensus_keys_path: Option<PathBuf>,
 
     #[clap(long)]
+    /// height at which migration will be performed
+    pub migration_height: Option<u64>,
+
+    #[clap(long)]
     /// Delay in milliseconds to mitigate UDP drops for DataBroker service in
     /// localnet
     pub delay_on_resp_msg: Option<u64>,

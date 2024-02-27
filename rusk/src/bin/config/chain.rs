@@ -14,6 +14,7 @@ use crate::args::Args;
 pub(crate) struct ChainConfig {
     db_path: Option<PathBuf>,
     consensus_keys_path: Option<PathBuf>,
+    migration_height: Option<u64>,
 }
 
 impl ChainConfig {
@@ -26,6 +27,11 @@ impl ChainConfig {
         // Overwrite config db-path
         if let Some(db_path) = args.db_path.clone() {
             self.db_path = Some(db_path);
+        }
+
+        // Override config migration_height
+        if let Some(migration_height) = args.migration_height.clone() {
+            self.migration_height = Some(migration_height)
         }
     }
 
@@ -51,5 +57,9 @@ impl ChainConfig {
             .as_path()
             .display()
             .to_string()
+    }
+
+    pub(crate) fn migration_height(&self) -> Option<u64> {
+        self.migration_height
     }
 }
