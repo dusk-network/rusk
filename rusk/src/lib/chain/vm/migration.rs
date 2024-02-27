@@ -34,11 +34,6 @@ impl Migration {
         let mut session =
             rusk_abi::new_session(vm, current_commit, block_height)?;
         let start = SystemTime::now();
-        Self::display_stake_contract_version(
-            &mut session,
-            "before migration",
-            MIGRATION_GAS_LIMIT,
-        );
         session = session.migrate(
             STAKE_CONTRACT,
             NEW_STAKE_CONTRACT_BYTECODE,
