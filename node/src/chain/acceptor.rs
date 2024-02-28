@@ -187,10 +187,36 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Payload::Candidate(_)
             | Payload::Validation(_)
             | Payload::Ratification(_) => {
-                self.task.read().await.main_inbound.send(msg).await?;
+                let task = self.task.read().await;
+                if !task.is_running() {
+                    let _ = self
+                        .network
+                        .read()
+                        .await
+                        .broadcast(&msg)
+                        .await
+                        .map_err(|err| {
+                            warn!("Unable to broadcast accepted block: {err}")
+                        });
+                }
+
+                task.main_inbound.send(msg).await?;
             }
             Payload::Quorum(_) => {
-                self.task.read().await.quorum_inbound.send(msg).await?;
+                let task = self.task.read().await;
+                if !task.is_running() {
+                    let _ = self
+                        .network
+                        .read()
+                        .await
+                        .broadcast(&msg)
+                        .await
+                        .map_err(|err| {
+                            warn!("Unable to broadcast accepted block: {err}")
+                        });
+                }
+
+                task.quorum_inbound.send(msg).await?;
             }
             _ => warn!("invalid inbound message"),
         }
