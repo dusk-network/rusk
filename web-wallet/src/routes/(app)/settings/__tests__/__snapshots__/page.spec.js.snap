@@ -161,8 +161,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           <p
             class="s-EBshooXNO1eQ"
           >
-            These functionalities are currently disabled in the beta
-					version of the web wallet and will be enabled in a future update.
+            These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.
           </p>
         </div>
       </article>
@@ -296,8 +295,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           <p
             class="s-EBshooXNO1eQ"
           >
-            This functionality is currently disabled in the beta
-					version of the web wallet and will be enabled in a future update.
+            These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.
           </p>
            
           <label
@@ -867,8 +865,7 @@ exports[`Settings > should render the settings page 1`] = `
           <p
             class="s-EBshooXNO1eQ"
           >
-            These functionalities are currently disabled in the beta
-					version of the web wallet and will be enabled in a future update.
+            These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.
           </p>
         </div>
       </article>
@@ -1002,8 +999,7 @@ exports[`Settings > should render the settings page 1`] = `
           <p
             class="s-EBshooXNO1eQ"
           >
-            This functionality is currently disabled in the beta
-					version of the web wallet and will be enabled in a future update.
+            These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.
           </p>
            
           <label
