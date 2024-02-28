@@ -972,8 +972,13 @@ pub struct AsyncQueue<M: Clone> {
     sender: async_channel::Sender<M>,
 }
 
-impl<M: Clone> Default for AsyncQueue<M> {
-    fn default() -> Self {
+impl<M: Clone> AsyncQueue<M> {
+    pub fn bounded(cap: usize) -> Self {
+        let (sender, receiver) = async_channel::bounded(cap);
+        Self { receiver, sender }
+    }
+
+    pub fn unbounded() -> Self {
         let (sender, receiver) = async_channel::unbounded();
         Self { receiver, sender }
     }
