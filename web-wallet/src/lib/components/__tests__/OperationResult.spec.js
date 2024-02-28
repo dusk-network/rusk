@@ -11,16 +11,16 @@ import { OperationResult } from "..";
 
 vi.useFakeTimers();
 
+/** @type {(delay: number) => Promise<any>} */
+const rejectAfter = delay => new Promise((_, reject) => {
+	setTimeout(() => reject(new Error("some error")), delay);
+});
+
+/** @type {(delay: number) => Promise<any>} */
+const resolveAfter = delay => new Promise(resolve => { setTimeout(resolve, delay); });
+
 describe("OperationResult", () => {
 	const delay = 1000;
-
-	/** @type {(delay: number) => Promise<any>} */
-	const rejectAfter = ms => new Promise((resolve, reject) => {
-		setTimeout(() => reject(new Error("some error")), ms);
-	});
-
-	/** @type {(delay: number) => Promise<any>} */
-	const resolveAfter = ms => new Promise(resolve => { setTimeout(resolve, ms); });
 
 	const onBeforeLeave = vi.fn();
 
