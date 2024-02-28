@@ -65,6 +65,9 @@
 	let isValidGas = false;
 
 	$: ({ isSyncing } = $walletStore);
+
+	// eslint-disable-next-line max-len
+	const betaNotice = "These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.";
 </script>
 
 <section class="settings">
@@ -122,10 +125,7 @@
 						variant="secondary"
 					/>
 				</div>
-				<p>
-					These functionalities are currently disabled in the beta
-					version of the web wallet and will be enabled in a future update.
-				</p>
+				<p>{betaNotice}</p>
 			</div>
 		</article>
 		<hr/>
@@ -178,10 +178,7 @@
 					/>
 
 				</label>
-				<p>
-					This functionality is currently disabled in the beta
-					version of the web wallet and will be enabled in a future update.
-				</p>
+				<p>{betaNotice}</p>
 				<label class="settings-group__control settings-group__control--with-label" for={undefined}>
 					<span>Currency</span>
 					<Select

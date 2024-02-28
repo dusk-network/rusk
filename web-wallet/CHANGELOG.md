@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactor beta notice as constant [#1469]
+
 ### Removed
 
 - Remove extraneous code block in MnemonicAuthenticate [#1470]
@@ -15,9 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mismatch between param and JSDoc param's type definition (OperationResult.spec.js) [#1471]
 
+
 ## [0.3.0] - 2024-02-28
 
 ### Added
+
 - Add Create Wallet flow tests [#1443]
 - Add visible version, commit hash and build date [#1441]
 - Add Address validation (Transfer flow) [#1377]
@@ -125,6 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1441]: https://github.com/dusk-network/rusk/issues/1441
 [#1460]: https://github.com/dusk-network/rusk/issues/1460
 [#1443]: https://github.com/dusk-network/rusk/issues/1443
+[#1469]: https://github.com/dusk-network/rusk/issues/1469
 [#1470]: https://github.com/dusk-network/rusk/issues/1470
 [#1471]: https://github.com/dusk-network/rusk/issues/1471
 
