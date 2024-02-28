@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove extraneous code block in MnemonicAuthenticate [#1470]
 
+### Fixed
+
+- Mismatch between param and JSDoc param's type definition (OperationResult.spec.js) [#1471]
+
 ## [0.3.0] - 2024-02-28
 
 ### Added
@@ -122,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1460]: https://github.com/dusk-network/rusk/issues/1460
 [#1443]: https://github.com/dusk-network/rusk/issues/1443
 [#1470]: https://github.com/dusk-network/rusk/issues/1470
+[#1471]: https://github.com/dusk-network/rusk/issues/1471
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
