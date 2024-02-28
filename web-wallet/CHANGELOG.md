@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Remove extraneous code block in MnemonicAuthenticate [#1470]
+
 ## [0.3.0] - 2024-02-28
 
 ### Added
@@ -117,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1441]: https://github.com/dusk-network/rusk/issues/1441
 [#1460]: https://github.com/dusk-network/rusk/issues/1460
 [#1443]: https://github.com/dusk-network/rusk/issues/1443
+[#1470]: https://github.com/dusk-network/rusk/issues/1470
 
 <!-- VERSIONS -->
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet

@@ -14,10 +14,8 @@
 	export let enteredMnemonicPhrase = [];
 
 	$: isValid = validateMnemonic(enteredMnemonicPhrase.join(" "), wordlists.english);
-	$: {
-		if (enteredMnemonicPhrase.filter(word => word !== "").length === wordLimit && !isValid) {
-			toast("error", "Invalid mnemonic phrase", mdiAlertOutline);
-		}
+	$: if (enteredMnemonicPhrase.filter(word => word !== "").length === wordLimit && !isValid) {
+		toast("error", "Invalid mnemonic phrase", mdiAlertOutline);
 	}
 </script>
 
