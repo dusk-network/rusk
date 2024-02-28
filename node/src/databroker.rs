@@ -83,7 +83,7 @@ impl DataBrokerSrv {
         let permits = conf.max_ongoing_requests;
         Self {
             conf,
-            requests: AsyncQueue::default(),
+            requests: AsyncQueue::bounded(permits),
             limit_ongoing_requests: Arc::new(Semaphore::new(permits)),
         }
     }

@@ -235,7 +235,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         self.remove_route(response_msg_topic.into()).await;
 
         let res = {
-            let queue = AsyncQueue::default();
+            let queue = AsyncQueue::bounded(1000);
             // register a temporary route that will be unregister on drop
             self.add_route(response_msg_topic.into(), queue.clone())
                 .await?;

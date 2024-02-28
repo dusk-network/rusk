@@ -30,6 +30,8 @@ use node_data::{ledger, Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
 
+pub(crate) const QUEUE_LIMIT: usize = 10_000;
+
 /// Consensus Service Task is responsible for running the consensus layer.
 ///
 /// It manages consensus lifecycle and provides a way to interact with it.
@@ -66,10 +68,10 @@ impl Task {
         );
 
         Self {
-            quorum_inbound: AsyncQueue::default(),
-            main_inbound: AsyncQueue::default(),
-            outbound: AsyncQueue::default(),
-            result: AsyncQueue::default(),
+            quorum_inbound: AsyncQueue::bounded(QUEUE_LIMIT),
+            main_inbound: AsyncQueue::bounded(QUEUE_LIMIT),
+            outbound: AsyncQueue::bounded(QUEUE_LIMIT),
+            result: AsyncQueue::bounded(QUEUE_LIMIT),
             running_task: None,
             task_id: 0,
             keys,
@@ -156,6 +158,10 @@ impl Task {
                 warn!("Unable to send cancel for abort")
             };
         }
+    }
+
+    pub(crate) fn is_running(&self) -> bool {
+        self.running_task.is_some()
     }
 }
 
