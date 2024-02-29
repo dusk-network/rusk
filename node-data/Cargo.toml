@@ -26,6 +26,7 @@ async-channel = "1.7"
 chrono = "0.4"
 bs58 = { version = "0.4" }
 tracing = "0.1"
+anyhow = "1"
 
 
 [dev-dependencies]
