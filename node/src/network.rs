@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::net::SocketAddr;
+use std::net::{AddrParseError, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -100,21 +100,30 @@ pub struct Kadcast<const N: usize> {
 }
 
 impl<const N: usize> Kadcast<N> {
-    pub fn new(conf: Config) -> Self {
+    pub fn new(conf: Config) -> Result<Self, AddrParseError> {
         const INIT: Option<AsyncQueue<Message>> = None;
         let routes = Arc::new(RwLock::new([INIT; N]));
 
         const INIT_FN: Option<BoxedFilter> = None;
         let filters = Arc::new(RwLock::new([INIT_FN; N]));
 
-        Kadcast {
+        info!(
+            "Loading network with public_address {} and private_address {:?}",
+            &conf.public_address, &conf.listen_address
+        );
+        let listener = Listener {
             routes: routes.clone(),
             filters: filters.clone(),
-            peer: Peer::new(conf.clone(), Listener { routes, filters })
-                .unwrap(),
+        };
+        let peer = Peer::new(conf.clone(), listener)?;
+
+        Ok(Kadcast {
+            routes,
+            filters,
+            peer,
             conf,
             counter: AtomicU64::new(0),
-        }
+        })
     }
 
     pub fn route_internal(&self, msg: Message) {
