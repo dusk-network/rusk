@@ -142,7 +142,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             db: db.clone(),
             vm: vm.clone(),
             network: network.clone(),
-            task: RwLock::new(Task::new_with_keys(keys_path.to_string())),
+            task: RwLock::new(Task::new_with_keys(keys_path.to_string())?),
         };
 
         // NB. After restart, state_root returned by VM is always the last

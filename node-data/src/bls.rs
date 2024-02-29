@@ -138,11 +138,11 @@ impl Debug for PublicKeyBytes {
 pub fn load_keys(
     path: String,
     pwd: String,
-) -> (dusk_bls12_381_sign::SecretKey, PublicKey) {
+) -> anyhow::Result<(dusk_bls12_381_sign::SecretKey, PublicKey)> {
     let path_buf = PathBuf::from(path);
-    let (pk, sk) = read_from_file(path_buf, &pwd);
+    let (pk, sk) = read_from_file(path_buf, &pwd)?;
 
-    (sk, PublicKey::new(pk))
+    Ok((sk, PublicKey::new(pk)))
 }
 
 /// Fetches BLS public and secret keys from an encrypted consensus keys file.
@@ -151,10 +151,10 @@ pub fn load_keys(
 fn read_from_file(
     path: PathBuf,
     pwd: &str,
-) -> (
+) -> anyhow::Result<(
     dusk_bls12_381_sign::PublicKey,
     dusk_bls12_381_sign::SecretKey,
-) {
+)> {
     use serde::Deserialize;
 
     /// Bls key pair helper structure
@@ -166,36 +166,45 @@ fn read_from_file(
 
     // attempt to load and decode wallet
     println!("{path:?}");
-    let ciphertext =
-        fs::read(path).expect("path should be valid consensus keys file");
+    let ciphertext = fs::read(&path).map_err(|e| {
+        anyhow::anyhow!(
+            "{} should be valid consensus keys file {e}",
+            path.display()
+        )
+    })?;
 
     let mut hasher = Sha256::new();
     hasher.update(pwd.as_bytes());
     let hashed_pwd = hasher.finalize().to_vec();
 
-    let bytes = decrypt(&ciphertext[..], &hashed_pwd).unwrap_or_else(|_| {
-        let hashed_pwd = blake3::hash(pwd.as_bytes());
-        let bytes = decrypt(&ciphertext[..], hashed_pwd.as_bytes())
-            .expect("Invalid consensus keys password");
-        warn!("Your consensus keys are in the old format");
-        warn!("Consider to export them using a new version of the wallet");
-        bytes
-    });
+    let bytes = match decrypt(&ciphertext[..], &hashed_pwd) {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            let bytes = decrypt(&ciphertext[..], &hashed_pwd).map_err(|e| {
+                anyhow::anyhow!("Invalid consensus keys password {e}")
+            })?;
+            warn!("Your consensus keys are in the old format");
+            warn!("Consider to export them using a new version of the wallet");
+            bytes
+        }
+    };
 
-    let keys: BlsKeyPair =
-        serde_json::from_slice(&bytes).expect("keys files should contain json");
+    let keys: BlsKeyPair = serde_json::from_slice(&bytes)
+        .map_err(|e| anyhow::anyhow!("keys files should contain json {e}"))?;
 
-    let sk = dusk_bls12_381_sign::SecretKey::from_slice(
-        &base64::decode(keys.secret_key_bls).expect("sk should be base64")[..],
-    )
-    .expect("sk should be valid");
+    let sk_bytes = base64::decode(keys.secret_key_bls)
+        .map_err(|e| anyhow::anyhow!("sk should be base64 {e}"))?;
+
+    let sk = dusk_bls12_381_sign::SecretKey::from_slice(&sk_bytes)
+        .map_err(|e| anyhow::anyhow!("sk should be valid {e:?}"))?;
 
     let pk = dusk_bls12_381_sign::PublicKey::from_slice(
-        &base64::decode(keys.public_key_bls).expect("pk should be base64")[..],
+        &base64::decode(keys.public_key_bls)
+            .map_err(|e| anyhow::anyhow!("pk should be base64 {e}"))?[..],
     )
-    .expect("pk should be valid");
+    .map_err(|e| anyhow::anyhow!("pk should be valid {e:?}"))?;
 
-    (pk, sk)
+    Ok((pk, sk))
 }
 
 fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
@@ -224,7 +233,7 @@ pub fn load_provisioners_keys(
         path.push_str(&format!("node_{i}.keys"));
         let path_buf = PathBuf::from(path);
 
-        let (pk, sk) = read_from_file(path_buf, &pwd);
+        let (pk, sk) = read_from_file(path_buf, &pwd).unwrap();
 
         keys.push((sk, PublicKey::new(pk)));
     }

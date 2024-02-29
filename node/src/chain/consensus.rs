@@ -56,18 +56,18 @@ pub(crate) struct Task {
 impl Task {
     /// Creates a new consensus task with the given keys encrypted with password
     /// from env var DUSK_CONSENSUS_KEYS_PASS.
-    pub(crate) fn new_with_keys(path: String) -> Self {
+    pub(crate) fn new_with_keys(path: String) -> anyhow::Result<Self> {
         let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
-            .expect("DUSK_CONSENSUS_KEYS_PASS not set");
+            .map_err(|_| anyhow::anyhow!("DUSK_CONSENSUS_KEYS_PASS not set"))?;
         info!(event = "loading consensus keys", path = path);
-        let keys = node_data::bls::load_keys(path, pwd);
+        let keys = node_data::bls::load_keys(path, pwd)?;
 
         info!(
             event = "loaded consensus keys",
             pubkey = format!("{:?}", keys.1)
         );
 
-        Self {
+        Ok(Self {
             quorum_inbound: AsyncQueue::bounded(QUEUE_LIMIT),
             main_inbound: AsyncQueue::bounded(QUEUE_LIMIT),
             outbound: AsyncQueue::bounded(QUEUE_LIMIT),
@@ -75,7 +75,7 @@ impl Task {
             running_task: None,
             task_id: 0,
             keys,
-        }
+        })
     }
 
     pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
@@ -351,6 +351,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 error!("{err}");
                 Error::Failed
             })?;
+        let _ = db.update(|m| {
+            for t in &discarded_txs {
+                let _ = m.delete_tx(t.hash());
+            }
+            Ok(())
+        });
 
         Ok(Output {
             txs: executed_txs,
