@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let db_path = config.chain.db_path();
 
         let db = rocksdb::Backend::create_or_open(db_path);
-        let net = Kadcast::new(config.clone().kadcast.into());
+        let net = Kadcast::new(config.clone().kadcast.into())?;
 
         let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
         (rusk, node, service_list)
@@ -157,7 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "node")]
     // initialize all registered services
     if let Err(err) = node.0.initialize(&mut service_list).await {
-        tracing::error!("node initialization  failed: {}", err);
+        tracing::error!("node initialization failed: {err}");
         return Err(err.into());
     }
 
