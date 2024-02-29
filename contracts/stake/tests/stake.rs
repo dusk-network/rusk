@@ -860,3 +860,89 @@ fn stake_withdraw_unstake() {
 
     println!("UNSTAKE : {gas_spent} gas");
 }
+
+#[test]
+fn reward_slash() -> Result<()> {
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let ssk = SecretSpendKey::random(rng);
+    let psk = PublicSpendKey::from(&ssk);
+
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
+
+    let mut session = instantiate(rng, vm, &psk);
+
+    let reward_amount = dusk(10.0);
+    let slash_amount = dusk(5.0);
+
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "reward",
+        &(pk, reward_amount),
+        u64::MAX,
+    )?;
+    assert_event(&receipt.events, "reward", &pk, reward_amount);
+
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "slash",
+        &(pk, slash_amount),
+        u64::MAX,
+    )?;
+    assert_event(&receipt.events, "slash", &pk, slash_amount);
+    Ok(())
+}
+
+#[test]
+fn stake_hard_slash() -> Result<()> {
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let ssk = SecretSpendKey::random(rng);
+    let psk = PublicSpendKey::from(&ssk);
+
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
+
+    let mut session = instantiate(rng, vm, &psk);
+
+    let balance = dusk(14.0);
+    let hard_slash_amount = dusk(5.0);
+    let block_height = 0;
+
+    let stake_data = StakeData {
+        reward: 0,
+        amount: Some((balance, block_height)),
+        counter: 0,
+    };
+
+    session.call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "add_module_balance",
+        &(STAKE_CONTRACT, balance),
+        u64::MAX,
+    )?;
+
+    session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "insert_stake",
+        &(pk, stake_data),
+        u64::MAX,
+    )?;
+
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "hard_slash",
+        &(pk, hard_slash_amount),
+        u64::MAX,
+    )?;
+    assert_event(&receipt.events, "hard_slash", &pk, hard_slash_amount);
+
+    Ok(())
+}
