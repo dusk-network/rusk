@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let db_path = config.chain.db_path();
 
         let db = rocksdb::Backend::create_or_open(db_path);
-        let net = Kadcast::new(config.clone().kadcast.into());
+        let net = Kadcast::new(config.clone().kadcast.into())?;
 
         let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
         (rusk, node, service_list)
