@@ -67,3 +67,17 @@ pub struct Withdraw {
     /// A nonce to prevent replay.
     pub nonce: BlsScalar,
 }
+
+///
+/// Events
+
+/// Event emitted after a stake contract operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakingEvent {
+    /// Public key which is relevant to the event.
+    pub public_key: PublicKey,
+    /// Value of the relevant operation, be it stake, unstake, withdrawal,
+    /// reward, or slash.
+    pub value: u64,
+}
