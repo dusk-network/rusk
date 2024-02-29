@@ -11,7 +11,6 @@ function mockReadableStore(initialValue) {
 
   return {
     getMockedStoreValue,
-    set,
     setMockedStoreValue,
     subscribe,
   };
