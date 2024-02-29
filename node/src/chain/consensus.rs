@@ -345,6 +345,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 error!("{err}");
                 Error::Failed
             })?;
+        let _ = db.update(|m| {
+            for t in &discarded_txs {
+                let _ = m.delete_tx(t.hash());
+            }
+            Ok(())
+        });
 
         Ok(Output {
             txs: executed_txs,
