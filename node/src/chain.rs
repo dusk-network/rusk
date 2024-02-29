@@ -177,7 +177,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         | Payload::Ratification(_)
                         | Payload::Quorum(_) => {
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
-                                warn!("Unable to reroute_msg to the acceptor: {e}");
+                                warn!("msg discarded: {e}");
                             }
                         }
                         _ => warn!("invalid inbound message"),
@@ -216,7 +216,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     pub fn new(keys_path: String) -> Self {
         Self {
-            inbound: Default::default(),
+            inbound: AsyncQueue::bounded(consensus::QUEUE_LIMIT),
             keys_path,
             acceptor: None,
         }

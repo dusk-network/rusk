@@ -187,10 +187,20 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Payload::Candidate(_)
             | Payload::Validation(_)
             | Payload::Ratification(_) => {
-                self.task.read().await.main_inbound.send(msg).await?;
+                let task = self.task.read().await;
+                if !task.is_running() {
+                    broadcast(&self.network, &msg).await;
+                }
+
+                task.main_inbound.send(msg).await?;
             }
             Payload::Quorum(_) => {
-                self.task.read().await.quorum_inbound.send(msg).await?;
+                let task = self.task.read().await;
+                if !task.is_running() {
+                    broadcast(&self.network, &msg).await;
+                }
+
+                task.quorum_inbound.send(msg).await?;
             }
             _ => warn!("invalid inbound message"),
         }
@@ -455,9 +465,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             // (Re)broadcast a fully valid block before any call to
             // get_provisioners to speed up its propagation
             if let Some(msg) = msg {
-                let _ = self.network.read().await.broadcast(msg).await.map_err(
-                    |err| warn!("Unable to broadcast accepted block: {err}"),
-                );
+                broadcast(&self.network, msg).await;
             }
 
             self.log_missing_iterations(
@@ -760,6 +768,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .max(MIN_STEP_TIMEOUT)
             .min(MAX_STEP_TIMEOUT)
     }
+}
+
+async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
+    let _ = network.read().await.broadcast(msg).await.map_err(|err| {
+        warn!("Unable to broadcast msg: {:?} {err} ", msg.topic())
+    });
 }
 
 /// Performs full verification of block header against prev_block header where

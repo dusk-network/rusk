@@ -133,6 +133,21 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         blk: &Block,
         msg: &Message,
     ) -> anyhow::Result<()> {
+        if blk.header().height
+            > self.acc.read().await.get_curr_height().await + 1
+        {
+            // Rebroadcast a block from future
+            let _ =
+                self.network
+                    .read()
+                    .await
+                    .broadcast(msg)
+                    .await
+                    .map_err(|err| {
+                        warn!("Unable to broadcast accepted block: {err}")
+                    });
+        }
+
         // Filter out blocks that have already been marked as
         // blacklisted upon successful fallback execution.
         if self

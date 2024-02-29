@@ -121,6 +121,8 @@ impl<'p, D: Database> Executor<'p, D> {
                             0,
                             msg.clone(),
                         );
+
+                        self.publish(msg.clone()).await;
                     }
                     Status::Present => {
                         if let Some(block) = self.collect_inbound_msg(msg).await

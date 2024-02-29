@@ -299,6 +299,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             Err(ConsensusError::FutureEvent) => {
                 trace!("future msg {:?}", msg);
 
+                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
+                    error!("unable to re-publish a handled msg {:?}", err)
+                });
+
                 self.future_msgs.lock().await.put_event(
                     msg.header.round,
                     msg.get_step(),

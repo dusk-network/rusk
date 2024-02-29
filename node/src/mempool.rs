@@ -15,6 +15,7 @@ use tokio::sync::RwLock;
 use tracing::{error, warn};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
+const MAX_PENDING_TX: usize = 10000;
 
 #[derive(Debug, Error)]
 enum TxAcceptanceError {
@@ -36,9 +37,16 @@ impl From<anyhow::Error> for TxAcceptanceError {
     }
 }
 
-#[derive(Default)]
 pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
+}
+
+impl Default for MempoolSrv {
+    fn default() -> Self {
+        Self {
+            inbound: AsyncQueue::bounded(MAX_PENDING_TX),
+        }
+    }
 }
 
 pub struct TxFilter {}
