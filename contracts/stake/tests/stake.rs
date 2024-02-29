@@ -18,12 +18,16 @@ use phoenix_core::{Fee, Note, Transaction};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
+use rkyv::{check_archived_root, Deserialize, Infallible};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{CallReceipt, ContractData, ContractError, Error, Session, VM};
+use rusk_abi::{
+    CallReceipt, ContractData, ContractError, Error, Event, Session, VM,
+};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use stake_contract_types::{
     stake_signature_message, unstake_signature_message,
-    withdraw_signature_message, Stake, StakeData, Unstake, Withdraw,
+    withdraw_signature_message, Stake, StakeData, StakingEvent, Unstake,
+    Withdraw,
 };
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
@@ -194,6 +198,31 @@ fn execute(
     receipt.events.extend(refund_receipt.events);
 
     Ok(receipt)
+}
+
+fn assert_event<S>(
+    events: &Vec<Event>,
+    topic: S,
+    should_pk: &PublicKey,
+    should_amount: u64,
+) where
+    S: AsRef<str>,
+{
+    let event = events
+        .iter()
+        .find(|e| e.topic == topic.as_ref())
+        .expect("event should exist in the event list");
+    let staking_event_data =
+        check_archived_root::<StakingEvent>(event.data.as_slice())
+            .expect("Stake event data should deserialize correctly");
+    let staking_event_data: StakingEvent = staking_event_data
+        .deserialize(&mut Infallible)
+        .expect("Infallible");
+    assert_eq!(staking_event_data.value, should_amount);
+    assert_eq!(
+        staking_event_data.public_key.to_bytes(),
+        should_pk.to_bytes()
+    );
 }
 
 #[test]
@@ -369,6 +398,9 @@ fn stake_withdraw_unstake() {
 
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+
+    assert_event(&receipt.events, "stake", &pk, GENESIS_VALUE / 2);
+
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
@@ -395,7 +427,7 @@ fn stake_withdraw_unstake() {
 
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
-    session
+    let receipt = session
         .call::<_, ()>(
             STAKE_CONTRACT,
             "reward",
@@ -403,6 +435,8 @@ fn stake_withdraw_unstake() {
             POINT_LIMIT,
         )
         .expect("Rewarding a key should succeed");
+
+    assert_event(&receipt.events, "reward", &pk, REWARD_AMOUNT);
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
@@ -586,6 +620,9 @@ fn stake_withdraw_unstake() {
 
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+
+    assert_event(&receipt.events, "withdraw", &pk, REWARD_AMOUNT);
+
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
@@ -814,6 +851,9 @@ fn stake_withdraw_unstake() {
 
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+
+    assert_event(&receipt.events, "unstake", &pk, GENESIS_VALUE / 2);
+
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
