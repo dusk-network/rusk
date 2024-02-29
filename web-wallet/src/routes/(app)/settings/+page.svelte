@@ -23,7 +23,8 @@
 	} from "$lib/dusk/components";
 	import { GasControls } from "$lib/components";
 	import { currencies } from "$lib/dusk/currency";
-	import { settingsStore, walletStore } from "$lib/stores";
+	import { gasStore, settingsStore, walletStore } from "$lib/stores";
+	import { areValidGasSettings } from "$lib/contracts";
 
 	const resetWallet = () => walletStore.clearLocalData().then(() => {
 		settingsStore.reset();
@@ -45,24 +46,24 @@
 		currency,
 		darkMode,
 		gasLimit,
-		gasLimitLower,
-		gasLimitUpper,
 		gasPrice,
-		gasPriceLower,
 		network
 	} = $settingsStore;
+	const {
+		gasLimitLower,
+		gasLimitUpper,
+		gasPriceLower
+	} = $gasStore;
 	const networks = [
 		{ label: "testnet", value: "testnet" },
 		{ disabled: true, label: "mainnet", value: "mainnet" }
 	];
 
 	let isDarkMode = darkMode;
+	let isGasValid = false;
 
 	/** @type {Error | null} */
 	let resetError = null;
-
-	/** @type {Boolean} */
-	let isValidGas = false;
 
 	$: ({ isSyncing } = $walletStore);
 
@@ -137,7 +138,9 @@
 			<div class="settings-group__multi-control-content">
 				<GasControls
 					on:gasSettings={(event) => {
-						if (event.detail.isValidGas) {
+						isGasValid = areValidGasSettings(event.detail.price, event.detail.limit);
+
+						if (isGasValid) {
 							settingsStore.update(store => {
 								store.gasLimit = event.detail.limit;
 								store.gasPrice = event.detail.price;
@@ -145,8 +148,6 @@
 								return store;
 							});
 						}
-
-						isValidGas = event.detail.isValidGas;
 					}}
 					limit={gasLimit}
 					limitLower={gasLimitLower}
@@ -227,7 +228,7 @@
 <div class="settings-actions">
 	<AnchorButton
 		href="/dashboard"
-		disabled={!isValidGas}
+		disabled={!isGasValid}
 		variant="tertiary"
 		icon={{ path: mdiArrowLeft }}
 		text="Back"/>

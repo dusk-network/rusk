@@ -10,14 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refactor beta notice as constant [#1469]
+- Refactor `settingsStore` and create readable `gasStore` to store `limitLower`, `limitUpper`, `priceLower` [#1308]
 
 ### Removed
 
 - Remove extraneous code block in MnemonicAuthenticate [#1470]
+- Remove `limitLower`, `limitUpper`, `priceLower` from `settingsStore` [#1308]
 
 ### Fixed
 
 - Mismatch between param and JSDoc param's type definition (OperationResult.spec.js) [#1471]
+- Fix gas limits update on ENV change [#1308]
 
 
 ## [0.3.0] - 2024-02-28
@@ -101,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add initial commit
 
 <!-- ISSUES -->
+[#1308]: https://github.com/dusk-network/rusk/issues/1308
 [#1359]: https://github.com/dusk-network/rusk/issues/1359
 [#1311]: https://github.com/dusk-network/rusk/issues/1311
 [#1323]: https://github.com/dusk-network/rusk/issues/1323

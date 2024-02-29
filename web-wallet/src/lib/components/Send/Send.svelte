@@ -5,7 +5,7 @@
 	import { createEventDispatcher, onMount } from "svelte";
 	import { mdiArrowUpBoldBoxOutline, mdiWalletOutline } from "@mdi/js";
 
-	import { deductLuxFeeFrom } from "$lib/contracts";
+	import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
 	import { duskToLux, luxToDusk } from "$lib/dusk/currency";
 	import { validateAddress } from "$lib/dusk/string";
 	import { logo } from "$lib/dusk/icons";
@@ -41,6 +41,9 @@
 	/** @type {ContractStatus[]} */
 	export let statuses;
 
+	/** @type {import("$lib/stores/stores").GasStoreContent} */
+	export let gasLimits;
+
 	/** @type {number} */
 	let amount = 1;
 
@@ -57,10 +60,8 @@
 	let amountInput;
 
 	/** @type {boolean} */
-	let isValidGas = true;
-
-	/** @type {boolean} */
 	let isNextButtonDisabled = false;
+	let isGasValid = false;
 
 	let { gasLimit, gasPrice } = gasSettings;
 
@@ -71,6 +72,7 @@
 
 	onMount(() => {
 		amountInput = document.querySelector(".operation__input-field");
+		isGasValid = areValidGasSettings(gasPrice, gasLimit);
 	});
 
 	$: luxFee = gasLimit * gasPrice;
@@ -79,7 +81,7 @@
 	$: isAmountValid = amount >= minAmount && amount <= maxSpendable;
 	$: totalLuxFee = luxFee + duskToLux(amount);
 	$: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
-	$: isNextButtonDisabled = !(isAmountValid && isValidGas && isFeeWithinLimit);
+	$: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
 
 	$: addressValidationResult = validateAddress(address);
 </script>
@@ -133,14 +135,14 @@
 				<GasSettings
 					{fee}
 					limit={gasSettings.gasLimit}
-					limitLower={gasSettings.gasLimitLower}
-					limitUpper={gasSettings.gasLimitUpper}
+					limitLower={gasLimits.gasLimitLower}
+					limitUpper={gasLimits.gasLimitUpper}
 					price={gasSettings.gasPrice}
-					priceLower={gasSettings.gasPriceLower}
+					priceLower={gasLimits.gasPriceLower}
 					on:gasSettings={(event) => {
-						isValidGas = event.detail.isValidGas;
+						isGasValid = areValidGasSettings(event.detail.price, event.detail.limit);
 
-						if (event.detail.isValidGas) {
+						if (isGasValid) {
 							gasPrice = event.detail.price;
 							gasLimit = event.detail.limit;
 						}

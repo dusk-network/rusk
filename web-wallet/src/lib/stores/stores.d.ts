@@ -53,12 +53,17 @@ type SettingsStore = {
 	darkMode: boolean;
 	dashboardTransactionLimit: number;
 	gasLimit: number;
-	gasLimitLower: number;
-	gasLimitUpper: number;
 	gasPrice: number;
-	gasPriceLower: number;
 	hideStakingNotice: boolean;
 	language: string;
 	network: string;
 	userId: string;
 };
+
+type GasStoreContent = {
+	gasLimitLower: number,
+	gasLimitUpper: number,
+	gasPriceLower: number
+}
+
+type GasStore = Readable<GasStoreContent>;
