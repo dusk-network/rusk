@@ -157,7 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "node")]
     // initialize all registered services
     if let Err(err) = node.0.initialize(&mut service_list).await {
-        tracing::error!("node initialization  failed: {}", err);
+        tracing::error!("node initialization failed: {err}");
         return Err(err.into());
     }
 
