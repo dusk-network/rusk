@@ -182,7 +182,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn reroute_msg(
         &self,
         msg: Message,
-    ) -> Result<(), async_channel::SendError<Message>> {
+    ) -> Result<(), async_channel::TrySendError<Message>> {
+        let curr_tip = self.get_curr_height().await;
+
+        // Enqueue consensus msg only if local tip is close enough to the
+        // network tip.
+        let enable_enqueue =
+            msg.header.round >= curr_tip && msg.header.round < (curr_tip + 10);
+
         match &msg.payload {
             Payload::Candidate(_)
             | Payload::Validation(_)
@@ -192,7 +199,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     broadcast(&self.network, &msg).await;
                 }
 
-                task.main_inbound.send(msg).await?;
+                if enable_enqueue {
+                    task.main_inbound.try_send(msg)?;
+                }
             }
             Payload::Quorum(_) => {
                 let task = self.task.read().await;
@@ -200,7 +209,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     broadcast(&self.network, &msg).await;
                 }
 
-                task.quorum_inbound.send(msg).await?;
+                if enable_enqueue {
+                    task.quorum_inbound.try_send(msg)?;
+                }
             }
             _ => warn!("invalid inbound message"),
         }
