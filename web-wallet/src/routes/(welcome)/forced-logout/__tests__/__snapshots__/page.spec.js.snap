@@ -52,7 +52,7 @@ exports[`Forced logout page > should render the page alert the user about the fo
       aria-disabled="false"
       class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal"
       data-sveltekit-replacestate="true"
-      href="/"
+      href="/some-base-path/"
     >
       <span
         class="dusk-anchor-button__text"
@@ -63,6 +63,7 @@ exports[`Forced logout page > should render the page alert the user about the fo
     </a>
     <!--&lt;Anchor&gt;-->
     <!--&lt;AnchorButton&gt;-->
+    <!--&lt;AppAnchorButton&gt;-->
   </section>
   <!--&lt;+page&gt;-->
 </div>

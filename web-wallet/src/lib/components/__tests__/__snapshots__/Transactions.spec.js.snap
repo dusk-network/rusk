@@ -18,7 +18,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
+          href="/some-base-path/dashboard/transactions"
         >
           <span
             class="dusk-anchor-button__text"
@@ -29,6 +29,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <div
@@ -57,6 +58,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
                 tg874534tddsghdtst54hdfh795h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -163,6 +165,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
                 tg874534tddsghdtst54hdfh794h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -243,6 +246,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
                 tg874534tddsghdtst54hdfh793h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
@@ -326,7 +330,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
         <a
           aria-disabled="false"
           class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
-          href="/dashboard/transactions"
+          href="/some-base-path/dashboard/transactions"
         >
           <span
             class="dusk-anchor-button__text"
@@ -337,6 +341,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
         </a>
         <!--&lt;Anchor&gt;-->
         <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <div
@@ -365,6 +370,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
                 tg874534tddsghdtst54hdfh795h
               </a>
               <!--&lt;Anchor&gt;-->
+              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>

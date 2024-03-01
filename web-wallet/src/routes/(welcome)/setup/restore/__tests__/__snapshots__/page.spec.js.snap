@@ -49,7 +49,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
             <a
               aria-disabled="false"
               class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/setup"
+              href="/some-base-path/setup"
             >
               <span
                 class="dusk-anchor-button__text"
@@ -60,6 +60,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
             </a>
             <!--&lt;Anchor&gt;-->
             <!--&lt;AnchorButton&gt;-->
+            <!--&lt;AppAnchorButton&gt;-->
              
             <button
               class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
@@ -311,7 +312,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
       <a
         aria-disabled="false"
         class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/setup"
+        href="/some-base-path/setup"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -335,6 +336,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
       </a>
       <!--&lt;Anchor&gt;-->
       <!--&lt;AnchorButton&gt;-->
+      <!--&lt;AppAnchorButton&gt;-->
       
        
       <button
@@ -415,6 +417,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
               Terms & Privacy Policy
             </a>
             <!--&lt;Anchor&gt;-->
+            <!--&lt;AppAnchor&gt;-->
              govern your use of our services,
 			including data handling and user responsibilities.
 			Your privacy and security are our top priorities.
@@ -426,7 +429,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
             <a
               aria-disabled="false"
               class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/setup"
+              href="/some-base-path/setup"
             >
               <span
                 class="dusk-anchor-button__text"
@@ -437,6 +440,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
             </a>
             <!--&lt;Anchor&gt;-->
             <!--&lt;AnchorButton&gt;-->
+            <!--&lt;AppAnchorButton&gt;-->
              
             <button
               class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"

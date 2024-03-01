@@ -3,7 +3,7 @@
 <script>
 	import "css-doodle";
 	import Animation from "./Animation.svelte";
-	import { AnchorButton } from "$lib/dusk/components";
+	import { AppAnchorButton } from "$lib/components";
 	import {
 		mdiKeyOutline,
 		mdiRestore,
@@ -20,19 +20,19 @@
 
 		<div class="setup-content__options">
 			<div class="setup-content__options-group">
-				<AnchorButton
+				<AppAnchorButton
 					href="/setup/create"
 					variant="primary"
 					text="Create new wallet"
 					icon={{ path: mdiWalletOutline }}/>
-				<AnchorButton
+				<AppAnchorButton
 					href="/setup/restore/"
 					variant="tertiary"
 					text="Restore Wallet"
 					icon={{ path: mdiRestore }}/>
 			</div>
 			<Animation/>
-			<AnchorButton
+			<AppAnchorButton
 				href="/login"
 				variant="secondary"
 				text="Access wallet"

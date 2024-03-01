@@ -663,7 +663,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <a
       aria-disabled="false"
       class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-      href="/dashboard"
+      href="/some-base-path/dashboard"
     >
       <svg
         class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -687,6 +687,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     </a>
     <!--&lt;Anchor&gt;-->
     <!--&lt;AnchorButton&gt;-->
+    <!--&lt;AppAnchorButton&gt;-->
      
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1349,7 +1350,7 @@ exports[`Settings > should render the settings page 1`] = `
     <a
       aria-disabled="false"
       class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-      href="/dashboard"
+      href="/some-base-path/dashboard"
     >
       <svg
         class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -1373,6 +1374,7 @@ exports[`Settings > should render the settings page 1`] = `
     </a>
     <!--&lt;Anchor&gt;-->
     <!--&lt;AnchorButton&gt;-->
+    <!--&lt;AppAnchorButton&gt;-->
      
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"

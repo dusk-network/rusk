@@ -17,7 +17,7 @@
 	import AllSet from "../AllSet.svelte";
 	import MnemonicPreSetup from "./MnemonicPreSetup.svelte";
 	import PasswordSetup from "../PasswordSetup.svelte";
-	import { goto } from "$app/navigation";
+	import { goto } from "$lib/navigation";
 
 	/** @type {boolean} */
 	let notice = false;

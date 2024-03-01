@@ -59,6 +59,12 @@ vi.mock("$app/environment", () => ({
 	version: "any"
 }));
 
+// Mock app paths
+vi.mock("$app/paths", async importOriginal => ({
+	...await importOriginal(),
+	get base () { return "/some-base-path"; }
+}));
+
 // Mock SvelteKit runtime module $app/navigation
 vi.mock("$app/navigation", () => ({
 	afterNavigate: () => {},

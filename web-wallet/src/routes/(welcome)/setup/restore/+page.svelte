@@ -10,7 +10,7 @@
 	import { ExistingWalletNotice } from "$lib/components";
 	import { settingsStore } from "$lib/stores";
 	import { initializeWallet, refreshLocalStoragePasswordInfo } from "$lib/wallet";
-	import { goto } from "$app/navigation";
+	import { goto } from "$lib/navigation";
 
 	/** @type {boolean} */
 	let notice = false;

@@ -9,13 +9,13 @@ import {
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { generateMnemonic } from "bip39";
-import * as appNavigation from "$app/navigation";
 import { get } from "svelte/store";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
 import { setKey } from "lamb";
 
 import { addresses } from "$lib/mock-data";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
+import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
 import { encryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
@@ -39,7 +39,7 @@ describe("Login", async () => {
 	const userId = (await new Wallet(seed).getPsks())[0];
 	const getErrorElement = () => document.querySelector(".login__error");
 	const getWalletSpy = vi.spyOn(walletService, "getWallet");
-	const gotoSpy = vi.spyOn(appNavigation, "goto");
+	const gotoSpy = vi.spyOn(navigation, "goto");
 	const initSpy = vi.spyOn(walletStore, "init");
 	const settingsResetSpy = vi.spyOn(settingsStore, "reset");
 	const confirmSpy = vi.spyOn(window, "confirm");

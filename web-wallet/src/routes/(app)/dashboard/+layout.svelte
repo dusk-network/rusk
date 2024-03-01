@@ -7,13 +7,13 @@
 		mdiTimerSand
 	} from "@mdi/js";
 	import {
-		AnchorButton,
 		Button,
 		CircularIcon,
 		Icon,
 		ProgressBar
 	} from "$lib/dusk/components";
 	import { settingsStore, walletStore } from "$lib/stores";
+	import { AppAnchorButton } from "$lib/components";
 
 	$: ({ network } = $settingsStore);
 	$: ({ isSyncing, error } = $walletStore);
@@ -82,7 +82,7 @@
 						variant="quaternary"
 					/>
 				{/if}
-				<AnchorButton
+				<AppAnchorButton
 					variant="quaternary"
 					className="footer__anchor-button"
 					icon={{ path: mdiCogOutline, size: "large" }}

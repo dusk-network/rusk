@@ -2,7 +2,8 @@
 	import { onMount } from "svelte";
 	import { mdiAlertOutline } from "@mdi/js";
 
-	import { AnchorButton, Card } from "$lib/dusk/components";
+	import { Card } from "$lib/dusk/components";
+	import { AppAnchorButton } from "$lib/components";
 
 	onMount(() => {
 		// eslint-disable-next-line no-alert
@@ -27,7 +28,7 @@
 			you will need to wait for a full sync.
 		</p>
 	</Card>
-	<AnchorButton
+	<AppAnchorButton
 		data-sveltekit-replacestate
 		href="/"
 		variant="secondary"

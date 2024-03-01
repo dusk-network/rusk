@@ -3033,7 +3033,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       <a
         aria-disabled="false"
         class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/setup"
+        href="/some-base-path/setup"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -3057,6 +3057,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       </a>
       <!--&lt;Anchor&gt;-->
       <!--&lt;AnchorButton&gt;-->
+      <!--&lt;AppAnchorButton&gt;-->
       
        
       <button
@@ -3158,7 +3159,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
             <a
               aria-disabled="false"
               class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/setup"
+              href="/some-base-path/setup"
             >
               <span
                 class="dusk-anchor-button__text"
@@ -3169,6 +3170,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
             </a>
             <!--&lt;Anchor&gt;-->
             <!--&lt;AnchorButton&gt;-->
+            <!--&lt;AppAnchorButton&gt;-->
              
             <button
               class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
@@ -3231,6 +3233,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
               Terms & Privacy Policy
             </a>
             <!--&lt;Anchor&gt;-->
+            <!--&lt;AppAnchor&gt;-->
              govern your use of our services,
 			including data handling and user responsibilities.
 			Your privacy and security are our top priorities.
@@ -3242,7 +3245,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
             <a
               aria-disabled="false"
               class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/setup"
+              href="/some-base-path/setup"
             >
               <span
                 class="dusk-anchor-button__text"
@@ -3253,6 +3256,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
             </a>
             <!--&lt;Anchor&gt;-->
             <!--&lt;AnchorButton&gt;-->
+            <!--&lt;AppAnchorButton&gt;-->
              
             <button
               class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
