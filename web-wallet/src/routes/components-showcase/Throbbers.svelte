@@ -1,7 +1,7 @@
 <script>
-	import { Throbber } from "$lib/dusk/components";
+  import { Throbber } from "$lib/dusk/components";
 </script>
 
 <section>
-	<Throbber/>
+  <Throbber />
 </section>

@@ -1,11 +1,4 @@
-import {
-	afterAll,
-	afterEach,
-	describe,
-	expect,
-	it,
-	vi
-} from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { addresses } from "$lib/mock-data";
 import Create from "../+page.svelte";
@@ -25,394 +18,415 @@ import loginInfoStorage from "$lib/services/loginInfoStorage";
  * @param {*} value
  * @returns {Promise<boolean>}
  */
-const fireInput = (input, value) => fireEvent.input(input, { target: { value } });
+const fireInput = (input, value) =>
+  fireEvent.input(input, { target: { value } });
 
 /** @param {HTMLElement} element */
-function asInput (element) {
-	// eslint-disable-next-line no-extra-parens
-	return /** @type {HTMLInputElement} */ (element);
+function asInput(element) {
+  // eslint-disable-next-line no-extra-parens
+  return /** @type {HTMLInputElement} */ (element);
 }
 
 describe("Create", async () => {
-	const walletGetPsksSpy = vi.spyOn(Wallet.prototype, "getPsks").mockResolvedValue(addresses);
-	const mnemonic = "cart dad sail wreck robot grit combine noble rap farm slide sad";
-	const mnemonicShuffled = ["grit", "wreck", "cart", "dad", "rap",
-		"sail", "robot", "combine", "noble", "slide", "sad", "farm"];
-	const pwd = "passwordpassword";
-	const seed = getSeedFromMnemonic(mnemonic);
-	const userId = (await new Wallet(seed).getPsks())[0];
-	const generateMnemonicSpy = vi.spyOn(bip39, "generateMnemonic").mockReturnValue(mnemonic);
-	const shuffleArraySpy = vi.spyOn(shuffleArray, "shuffleArray").mockReturnValue(mnemonicShuffled);
-	const getWalletSpy = vi.spyOn(walletService, "getWallet");
-	const gotoSpy = vi.spyOn(navigation, "goto");
-	const settingsResetSpy = vi.spyOn(settingsStore, "reset");
-	const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
+  const walletGetPsksSpy = vi
+    .spyOn(Wallet.prototype, "getPsks")
+    .mockResolvedValue(addresses);
+  const mnemonic =
+    "cart dad sail wreck robot grit combine noble rap farm slide sad";
+  const mnemonicShuffled = [
+    "grit",
+    "wreck",
+    "cart",
+    "dad",
+    "rap",
+    "sail",
+    "robot",
+    "combine",
+    "noble",
+    "slide",
+    "sad",
+    "farm",
+  ];
+  const pwd = "passwordpassword";
+  const seed = getSeedFromMnemonic(mnemonic);
+  const userId = (await new Wallet(seed).getPsks())[0];
+  const generateMnemonicSpy = vi
+    .spyOn(bip39, "generateMnemonic")
+    .mockReturnValue(mnemonic);
+  const shuffleArraySpy = vi
+    .spyOn(shuffleArray, "shuffleArray")
+    .mockReturnValue(mnemonicShuffled);
+  const getWalletSpy = vi.spyOn(walletService, "getWallet");
+  const gotoSpy = vi.spyOn(navigation, "goto");
+  const settingsResetSpy = vi.spyOn(settingsStore, "reset");
+  const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
+
+  afterEach(async () => {
+    cleanup();
+    settingsStore.reset();
+    walletGetPsksSpy.mockClear();
+    generateMnemonicSpy.mockClear();
+    shuffleArraySpy.mockClear();
+    clearAndInitSpy.mockClear();
+    getWalletSpy.mockClear();
+    gotoSpy.mockClear();
+    settingsResetSpy.mockClear();
+  });
+
+  afterAll(() => {
+    walletGetPsksSpy.mockRestore();
+    generateMnemonicSpy.mockRestore();
+    shuffleArraySpy.mockRestore();
+    clearAndInitSpy.mockRestore();
+    getWalletSpy.mockRestore();
+    gotoSpy.mockRestore();
+    settingsResetSpy.mockRestore();
+  });
+
+  it("should render the Existing Wallet notice step of the Create flow if there is a userId saved in localStorage", () => {
+    settingsStore.update(setKey("userId", userId));
+
+    const { container } = render(Create);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-	afterEach(async () => {
-		cleanup();
-		settingsStore.reset();
-		walletGetPsksSpy.mockClear();
-		generateMnemonicSpy.mockClear();
-		shuffleArraySpy.mockClear();
-		clearAndInitSpy.mockClear();
-		getWalletSpy.mockClear();
-		gotoSpy.mockClear();
-		settingsResetSpy.mockClear();
-	});
+  it("should render the Terms of Service step of the Create flow if there is no userId saved in localStorage", () => {
+    const { container } = render(Create);
 
-	afterAll(() => {
-		walletGetPsksSpy.mockRestore();
-		generateMnemonicSpy.mockRestore();
-		shuffleArraySpy.mockRestore();
-		clearAndInitSpy.mockRestore();
-		getWalletSpy.mockRestore();
-		gotoSpy.mockRestore();
-		settingsResetSpy.mockRestore();
-	});
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-	it("should render the Existing Wallet notice step of the Create flow if there is a userId saved in localStorage", () => {
-		settingsStore.update(setKey("userId", userId));
+  it("should render the `Securely store your seed phrase!` agreement step after the ToS", async () => {
+    const { container, getByRole } = render(Create);
 
-		const { container } = render(Create);
+    const mathRandomSpy = vi.spyOn(Math, "random").mockReturnValue(42);
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-	it("should render the Terms of Service step of the Create flow if there is no userId saved in localStorage", () => {
-		const { container } = render(Create);
+    expect(container.firstChild).toMatchSnapshot();
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    mathRandomSpy.mockRestore();
+  });
 
-	it("should render the `Securely store your seed phrase!` agreement step after the ToS", async () => {
-		const { container, getByRole } = render(Create);
+  it("should not allow the user proceed unless both agreement checks are selected on the `Securely store your seed phrase!` step", async () => {
+    const { getByRole, getAllByRole } = render(Create);
 
-		const mathRandomSpy = vi.spyOn(Math, "random").mockReturnValue(42);
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    const firstCheckbox = getAllByRole("checkbox")[0];
+    const secondCheckbox = getAllByRole("checkbox")[1];
+    const nextButton = getByRole("button", { name: "Next" });
 
-		expect(container.firstChild).toMatchSnapshot();
+    // Select the first checkbox
+    await fireEvent.click(firstCheckbox);
 
-		mathRandomSpy.mockRestore();
-	});
+    // Ensure Next is disabled
+    expect(nextButton).toBeDisabled();
 
-	it("should not allow the user proceed unless both agreement checks are selected on the `Securely store your seed phrase!` step", async () => {
-		const { getByRole, getAllByRole } = render(Create);
+    // Unselect the first checkbox
+    await fireEvent.click(firstCheckbox);
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    // Select the second checkbox
+    await fireEvent.click(secondCheckbox);
 
-		const firstCheckbox = getAllByRole("checkbox")[0];
-		const secondCheckbox = getAllByRole("checkbox")[1];
-		const nextButton = getByRole("button", { name: "Next" });
+    // Ensure Next is disabled
+    expect(getByRole("button", { name: "Next" })).toBeDisabled();
 
-		// Select the first checkbox
-		await fireEvent.click(firstCheckbox);
+    // Select first checkbox too
+    await fireEvent.click(firstCheckbox);
 
-		// Ensure Next is disabled
-		expect(nextButton).toBeDisabled();
+    // Ensure Next is enabled
+    expect(nextButton).toBeEnabled();
+  });
 
-		// Unselect the first checkbox
-		await fireEvent.click(firstCheckbox);
+  it("correctly renders the Mnemonic Preview page", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		// Select the second checkbox
-		await fireEvent.click(secondCheckbox);
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		// Ensure Next is disabled
-		expect(getByRole("button", { name: "Next" })).toBeDisabled();
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		// Select first checkbox too
-		await fireEvent.click(firstCheckbox);
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		// Ensure Next is enabled
-		expect(nextButton).toBeEnabled();
-	});
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-	it("correctly renders the Mnemonic Preview page", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+  it("correctly renders the Mnemonic Verification page", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-	it("correctly renders the Mnemonic Verification page", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+  it("doesn't let the user proceed if they have entered mismatching Mnemonic", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    const wordButtonsWrapper = container.getElementsByClassName(
+      "dusk-mnemonic__validate-actions-wrapper"
+    )[0];
 
-	it("doesn't let the user proceed if they have entered mismatching Mnemonic", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+    const wordButtons = Array.from(wordButtonsWrapper.children);
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    wordButtons.forEach(async (button) => {
+      await fireEvent.click(button);
+    });
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await tick();
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(container.firstChild).toMatchSnapshot();
 
-		const wordButtonsWrapper =
-			container.getElementsByClassName("dusk-mnemonic__validate-actions-wrapper")[0];
+    expect(getByRole("button", { name: "Next" })).toBeDisabled();
+  });
 
-		const wordButtons = Array.from(wordButtonsWrapper.children);
+  it("lets the user proceed if they have entered a matching Mnemonic", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		wordButtons.forEach(async button => {
-			await fireEvent.click(button);
-		});
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await tick();
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		expect(container.firstChild).toMatchSnapshot();
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(getByRole("button", { name: "Next" })).toBeDisabled();
-	});
+    const mnemonicSplit = mnemonic.split(" ");
 
-	it("lets the user proceed if they have entered a matching Mnemonic", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await tick();
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    expect(container.firstChild).toMatchSnapshot();
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(getByRole("button", { name: "Next" })).toBeEnabled();
+  });
 
-		const mnemonicSplit = mnemonic.split(" ");
+  it("ensures that the Undo button on the Mnemonic Validate step works as expected", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await tick();
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		expect(container.firstChild).toMatchSnapshot();
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(getByRole("button", { name: "Next" })).toBeEnabled();
-	});
+    const mnemonicSplit = mnemonic.split(" ");
 
-	it("ensures that the Undo button on the Mnemonic Validate step works as expected", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await tick();
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await fireEvent.click(getByRole("button", { name: "Undo" }));
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(container.firstChild).toMatchSnapshot();
 
-		const mnemonicSplit = mnemonic.split(" ");
+    expect(getByRole("button", { name: "Next" })).toBeDisabled();
+  });
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+  it("ensures the Password step renders as expected", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		await tick();
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await fireEvent.click(getByRole("button", { name: "Undo" }));
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		expect(container.firstChild).toMatchSnapshot();
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(getByRole("button", { name: "Next" })).toBeDisabled();
-	});
+    const mnemonicSplit = mnemonic.split(" ");
 
-	it("ensures the Password step renders as expected", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await tick();
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    // Password disabled
+    expect(container.firstChild).toMatchSnapshot();
 
-		const mnemonicSplit = mnemonic.split(" ");
+    await fireEvent.click(getByRole("switch"));
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+    // Password enabled
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-		await tick();
+  it("ensures the Swap To Native Dusk step renders as expected", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		// Password disabled
-		expect(container.firstChild).toMatchSnapshot();
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		await fireEvent.click(getByRole("switch"));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		// Password enabled
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    const mnemonicSplit = mnemonic.split(" ");
 
-	it("ensures the Swap To Native Dusk step renders as expected", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await tick();
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-		const mnemonicSplit = mnemonic.split(" ");
+  it("ensures the All Done step renders as expected", async () => {
+    const { container, getByRole, getAllByRole } = render(Create);
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await tick();
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    const mnemonicSplit = mnemonic.split(" ");
 
-	it("ensures the All Done step renders as expected", async () => {
-		const { container, getByRole, getAllByRole } = render(Create);
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    await tick();
 
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
-		const mnemonicSplit = mnemonic.split(" ");
+  it("should initialize the wallet without setting a password", async () => {
+    const { getByRole, getAllByRole } = render(Create);
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+    // ToS step
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		await tick();
+    // Mnemonic Agreement step
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    // Mnemonic Generate step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-	it("should initialize the wallet without setting a password", async () => {
-		const { getByRole, getAllByRole } = render(Create);
+    // Mnemonic Validate step
+    const mnemonicSplit = mnemonic.split(" ");
 
-		// ToS step
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		// Mnemonic Agreement step
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await tick();
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		// Mnemonic Generate step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    // Set Password step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(loginInfoStorage.get()).toBeNull();
 
-		// Mnemonic Validate step
-		const mnemonicSplit = mnemonic.split(" ");
+    // Swap ERC20 to Native Dusk step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+    // All Done step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		await tick();
+    await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+    expect(getWalletSpy).toHaveBeenCalledTimes(1);
+    expect(getWalletSpy).toHaveBeenCalledWith(seed);
+    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
+    expect(gotoSpy).toHaveBeenCalledTimes(1);
+    expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
+  });
 
-		// Set Password step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		expect(loginInfoStorage.get()).toBeNull();
+  it("should initialize the wallet encrypted mnemonic saved in localStorage", async () => {
+    const { getByPlaceholderText, getByRole, getAllByRole } = render(Create);
 
-		// Swap ERC20 to Native Dusk step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    // ToS step
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
 
-		// All Done step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    // Mnemonic Agreement step
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
 
-		await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-		expect(getWalletSpy).toHaveBeenCalledTimes(1);
-		expect(getWalletSpy).toHaveBeenCalledWith(seed);
-		expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-		expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
-		expect(gotoSpy).toHaveBeenCalledTimes(1);
-		expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
-	});
+    // Mnemonic Generate step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-	it("should initialize the wallet encrypted mnemonic saved in localStorage", async () => {
-		const { getByPlaceholderText, getByRole, getAllByRole } = render(Create);
+    // Mnemonic Validate step
+    const mnemonicSplit = mnemonic.split(" ");
 
-		// ToS step
-		await fireEvent.click(getByRole("button", { name: "Accept" }));
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
 
-		// Mnemonic Agreement step
-		await fireEvent.click(getAllByRole("checkbox")[0]);
-		await fireEvent.click(getAllByRole("checkbox")[1]);
+    await tick();
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		// Mnemonic Generate step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    // Set Password step
+    expect(loginInfoStorage.get()).toBeNull();
 
-		// Mnemonic Validate step
-		const mnemonicSplit = mnemonic.split(" ");
+    await fireEvent.click(getByRole("switch"));
 
-		mnemonicSplit.forEach(async word => {
-			await fireEvent.click(getByRole("button", { name: word }));
-		});
+    await fireInput(asInput(getByPlaceholderText("Set Password")), pwd);
+    await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);
 
-		await tick();
+    expect(loginInfoStorage.get()).toBeNull();
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await vi.waitFor(() => {
+      expect(loginInfoStorage.get()).not.toBeNull();
+    });
 
-		await fireEvent.click(getByRole("button", { name: "Next" }));
+    // Swap ERC20 to Native Dusk step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		// Set Password step
-		expect(loginInfoStorage.get()).toBeNull();
+    // All Done step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
 
-		await fireEvent.click(getByRole("switch"));
+    await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-		await fireInput(asInput(getByPlaceholderText("Set Password")), pwd);
-		await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);
-
-		expect(loginInfoStorage.get()).toBeNull();
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-		await vi.waitFor(() => {
-			expect(loginInfoStorage.get()).not.toBeNull();
-		});
-
-		// Swap ERC20 to Native Dusk step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-
-		// All Done step
-		await fireEvent.click(getByRole("button", { name: "Next" }));
-
-		await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
-
-		expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-		expect(getWalletSpy).toHaveBeenCalledTimes(1);
-		expect(getWalletSpy).toHaveBeenCalledWith(seed);
-		expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-		expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
-		expect(gotoSpy).toHaveBeenCalledTimes(1);
-		expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
-	});
+    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+    expect(getWalletSpy).toHaveBeenCalledTimes(1);
+    expect(getWalletSpy).toHaveBeenCalledWith(seed);
+    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
+    expect(gotoSpy).toHaveBeenCalledTimes(1);
+    expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
+  });
 });

@@ -6,12 +6,12 @@ const currentAddress = addresses[0];
 
 /** @type {import("$lib/stores/stores").WalletStoreContent} */
 const content = {
-	addresses,
-	balance,
-	currentAddress,
-	error: null,
-	initialized: true,
-	isSyncing: false
+  addresses,
+  balance,
+  currentAddress,
+  error: null,
+  initialized: true,
+  isSyncing: false,
 };
 
 export default mockReadableStore(content);

@@ -6,13 +6,13 @@
  * @param {Response} response
  * @returns {Promise<Response>}
  */
-const failureToRejection = response => (
-	response.ok
-		? Promise.resolve(response)
-		: Promise.reject(new Error(
-			`HTTP Request failed - ${response.statusText}`,
-			{ cause: response }
-		))
-);
+const failureToRejection = (response) =>
+  response.ok
+    ? Promise.resolve(response)
+    : Promise.reject(
+        new Error(`HTTP Request failed - ${response.statusText}`, {
+          cause: response,
+        })
+      );
 
 export default failureToRejection;

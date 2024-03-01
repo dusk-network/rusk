@@ -22,15 +22,15 @@ const uniquesById = uniquesBy(getKey("id"));
 
 /** @type {import("./stores").WalletStoreContent} */
 const initialState = {
-	addresses: [],
-	balance: {
-		maximum: 0,
-		value: 0
-	},
-	currentAddress: "",
-	error: null,
-	initialized: false,
-	isSyncing: false
+  addresses: [],
+  balance: {
+    maximum: 0,
+    value: 0,
+  },
+  currentAddress: "",
+  error: null,
+  initialized: false,
+  isSyncing: false,
 };
 
 const walletStore = writable(initialState);
@@ -44,16 +44,16 @@ const { set, subscribe } = walletStore;
  * @param {WalletStakeInfo} stakeInfo
  * @returns {WalletStakeInfo}
  */
-const fixStakeInfo = stakeInfo => ({
-	...stakeInfo,
-	amount: stakeInfo.amount ?? 0,
-	reward: stakeInfo.reward ?? 0
+const fixStakeInfo = (stakeInfo) => ({
+  ...stakeInfo,
+  amount: stakeInfo.amount ?? 0,
+  reward: stakeInfo.reward ?? 0,
 });
 
 const getCurrentAddress = () => get(walletStore).currentAddress;
 
 /** @type {(action: (...args: any[]) => Promise<any>) => Promise<void>} */
-const syncedAction = action => sync().then(action).finally(sync);
+const syncedAction = (action) => sync().then(action).finally(sync);
 
 const abortSync = () => syncPromise && syncController?.abort();
 
@@ -61,151 +61,159 @@ const abortSync = () => syncPromise && syncController?.abort();
 const clearLocalData = async () => walletInstance?.reset();
 
 /** @type {(wallet: Wallet) => Promise<void>} */
-const clearLocalDataAndInit = wallet => wallet.reset().then(() => init(wallet));
+const clearLocalDataAndInit = (wallet) =>
+  wallet.reset().then(() => init(wallet));
 
 /** @type {import("./stores").WalletStoreServices["getStakeInfo"]} */
-// @ts-expect-error
-const getStakeInfo = async () => sync().then(() => walletInstance.stakeInfo(getCurrentAddress()))
-	.then(fixStakeInfo);
+const getStakeInfo = async () =>
+  sync()
+    // @ts-expect-error
+    .then(() => walletInstance.stakeInfo(getCurrentAddress()))
+    .then(fixStakeInfo);
 
 /** @type {GetTransactionsHistory} */
 
-// @ts-expect-error
-const getTransactionsHistory = async () => sync().then(() => walletInstance.history(getCurrentAddress()))
-	.then(uniquesById);
+const getTransactionsHistory = async () =>
+  sync()
+    // @ts-expect-error
+    .then(() => walletInstance.history(getCurrentAddress()))
+    .then(uniquesById);
 
-function reset () {
-	walletInstance = null;
-	set(initialState);
+function reset() {
+  walletInstance = null;
+  set(initialState);
 }
 
-async function updateAfterSync () {
-	const store = get(walletStore);
+async function updateAfterSync() {
+  const store = get(walletStore);
 
-	// @ts-expect-error
-	const balance = await walletInstance.getBalance(store.currentAddress);
+  // @ts-expect-error
+  const balance = await walletInstance.getBalance(store.currentAddress);
 
-	set({
-		...store,
-		balance,
-		isSyncing: false
-	});
+  set({
+    ...store,
+    balance,
+    isSyncing: false,
+  });
 }
 
 /** @param {Wallet} wallet */
-async function init (wallet) {
-	walletInstance = wallet;
+async function init(wallet) {
+  walletInstance = wallet;
 
-	const addresses = await walletInstance.getPsks();
-	const currentAddress = addresses[0];
+  const addresses = await walletInstance.getPsks();
+  const currentAddress = addresses[0];
 
-	set({
-		...initialState,
-		addresses,
-		currentAddress,
-		initialized: true
-
-	});
-	sync();
+  set({
+    ...initialState,
+    addresses,
+    currentAddress,
+    initialized: true,
+  });
+  sync();
 }
 
 /** @type {import("./stores").WalletStoreServices["setCurrentAddress"]} */
-async function setCurrentAddress (address) {
-	const store = get(walletStore);
+async function setCurrentAddress(address) {
+  const store = get(walletStore);
 
-	return store.addresses.includes(address)
-		? Promise.resolve(set({ ...store, currentAddress: address })).then(sync)
-		: Promise.reject(new Error("The received address is not in the list"));
+  return store.addresses.includes(address)
+    ? Promise.resolve(set({ ...store, currentAddress: address })).then(sync)
+    : Promise.reject(new Error("The received address is not in the list"));
 }
 
 /** @type {import("./stores").WalletStoreServices["stake"]} */
 
-const stake = async (amount, gasPrice, gasLimit) => syncedAction(() => {
-	// @ts-expect-error
-	walletInstance.gasLimit = gasLimit;
+const stake = async (amount, gasPrice, gasLimit) =>
+  syncedAction(() => {
+    // @ts-expect-error
+    walletInstance.gasLimit = gasLimit;
 
-	// @ts-expect-error
-	walletInstance.gasPrice = gasPrice;
+    // @ts-expect-error
+    walletInstance.gasPrice = gasPrice;
 
-	// @ts-expect-error
-	return walletInstance.stake(getCurrentAddress(), amount);
-});
+    // @ts-expect-error
+    return walletInstance.stake(getCurrentAddress(), amount);
+  });
 
 /** @type {import("./stores").WalletStoreServices["sync"]} */
-function sync () {
-	if (!walletInstance) {
-		throw new Error("No wallet instance to sync");
-	}
+function sync() {
+  if (!walletInstance) {
+    throw new Error("No wallet instance to sync");
+  }
 
-	if (!syncPromise) {
-		const store = get(walletStore);
+  if (!syncPromise) {
+    const store = get(walletStore);
 
-		set({ ...store, error: null, isSyncing: true });
+    set({ ...store, error: null, isSyncing: true });
 
-		syncController = new AbortController();
-		syncPromise = walletInstance.sync({ signal: syncController.signal }).then(
-			updateAfterSync,
-			error => { set({ ...store, error, isSyncing: false }); }
-		).finally(() => { syncPromise = null; });
-	}
+    syncController = new AbortController();
+    syncPromise = walletInstance
+      .sync({ signal: syncController.signal })
+      .then(updateAfterSync, (error) => {
+        set({ ...store, error, isSyncing: false });
+      })
+      .finally(() => {
+        syncPromise = null;
+      });
+  }
 
-	return syncPromise;
+  return syncPromise;
 }
 
 /** @type {import("./stores").WalletStoreServices["transfer"]} */
-const transfer = async (to, amount, gasPrice, gasLimit) => syncedAction(() => {
-	// @ts-expect-error
-	walletInstance.gasLimit = gasLimit;
+const transfer = async (to, amount, gasPrice, gasLimit) =>
+  syncedAction(() => {
+    // @ts-expect-error
+    walletInstance.gasLimit = gasLimit;
 
-	// @ts-expect-error
-	walletInstance.gasPrice = gasPrice;
+    // @ts-expect-error
+    walletInstance.gasPrice = gasPrice;
 
-	// @ts-expect-error
-	return walletInstance.transfer(
-		getCurrentAddress(),
-		to,
-		amount
-	);
-});
+    // @ts-expect-error
+    return walletInstance.transfer(getCurrentAddress(), to, amount);
+  });
 
 /** @type {import("./stores").WalletStoreServices["unstake"]} */
-const unstake = async (gasPrice, gasLimit) => syncedAction(() => {
-	// @ts-expect-error
-	walletInstance.gasLimit = gasLimit;
+const unstake = async (gasPrice, gasLimit) =>
+  syncedAction(() => {
+    // @ts-expect-error
+    walletInstance.gasLimit = gasLimit;
 
-	// @ts-expect-error
-	walletInstance.gasPrice = gasPrice;
+    // @ts-expect-error
+    walletInstance.gasPrice = gasPrice;
 
-	// @ts-expect-error
-	return walletInstance.unstake(getCurrentAddress());
-});
+    // @ts-expect-error
+    return walletInstance.unstake(getCurrentAddress());
+  });
 
 /** @type {import("./stores").WalletStoreServices["withdrawReward"]} */
-const withdrawReward = async (gasPrice, gasLimit) => syncedAction(() => {
-	// @ts-expect-error
-	walletInstance.gasLimit = gasLimit;
+const withdrawReward = async (gasPrice, gasLimit) =>
+  syncedAction(() => {
+    // @ts-expect-error
+    walletInstance.gasLimit = gasLimit;
 
-	// @ts-expect-error
-	walletInstance.gasPrice = gasPrice;
+    // @ts-expect-error
+    walletInstance.gasPrice = gasPrice;
 
-	// @ts-expect-error
-	return walletInstance.withdrawReward(getCurrentAddress());
-});
+    // @ts-expect-error
+    return walletInstance.withdrawReward(getCurrentAddress());
+  });
 
 /** @type {import("./stores").WalletStore} */
 export default {
-	abortSync,
-	clearLocalData,
-	clearLocalDataAndInit,
-	getStakeInfo,
-	getTransactionsHistory,
-	init,
-	reset,
-	setCurrentAddress,
-	stake,
-	subscribe,
-	sync,
-	transfer,
-	unstake,
-	withdrawReward
+  abortSync,
+  clearLocalData,
+  clearLocalDataAndInit,
+  getStakeInfo,
+  getTransactionsHistory,
+  init,
+  reset,
+  setCurrentAddress,
+  stake,
+  subscribe,
+  sync,
+  transfer,
+  unstake,
+  withdrawReward,
 };

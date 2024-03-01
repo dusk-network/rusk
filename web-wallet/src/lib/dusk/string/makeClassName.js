@@ -1,26 +1,22 @@
 import {
-	condition,
-	filterWith,
-	joinWith,
-	keys,
-	pickIf,
-	pipe,
-	uniques
+  condition,
+  filterWith,
+  joinWith,
+  keys,
+  pickIf,
+  pipe,
+  uniques,
 } from "lamb";
 
 const joinWithSpace = joinWith(" ");
 
 const makeClassNameFromArray = pipe([
-	filterWith(Boolean),
-	uniques,
-	joinWithSpace
+  filterWith(Boolean),
+  uniques,
+  joinWithSpace,
 ]);
 
-const makeClassNameFromObject = pipe([
-	pickIf(Boolean),
-	keys,
-	joinWithSpace
-]);
+const makeClassNameFromObject = pipe([pickIf(Boolean), keys, joinWithSpace]);
 
 /**
  * Utility function to build a CSS class name string.<br/>
@@ -38,6 +34,10 @@ const makeClassNameFromObject = pipe([
  * makeClassName({}) // => ""
  * makeClassName([]) // => ""
  */
-const makeClassName = condition(Array.isArray, makeClassNameFromArray, makeClassNameFromObject);
+const makeClassName = condition(
+  Array.isArray,
+  makeClassNameFromArray,
+  makeClassNameFromObject
+);
 
 export default makeClassName;

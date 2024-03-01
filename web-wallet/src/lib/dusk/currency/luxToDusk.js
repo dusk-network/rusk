@@ -5,6 +5,6 @@
  * @param {number} n
  * @returns {number}
  */
-const luxToDusk = n => n * 1e-9;
+const luxToDusk = (n) => n * 1e-9;
 
 export default luxToDusk;

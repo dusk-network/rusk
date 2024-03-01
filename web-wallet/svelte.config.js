@@ -9,20 +9,17 @@ const fallBackBase = env.VITE_BASE_PATH ? `${env.VITE_BASE_PATH}/` : "";
 
 /** @type {import("@sveltejs/kit").Config} */
 const config = {
-	kit: {
-		adapter: adapter({ fallback: `${fallBackBase}index.html` }),
-		paths: { base: env.VITE_BASE_PATH }
-	},
-	preprocess: [
-		preprocess({
-			postcss: {
-				plugins: [
-					autoprefixer,
-					postCSSNested
-				]
-			}
-		})
-	]
+  kit: {
+    adapter: adapter({ fallback: `${fallBackBase}index.html` }),
+    paths: { base: env.VITE_BASE_PATH },
+  },
+  preprocess: [
+    preprocess({
+      postcss: {
+        plugins: [autoprefixer, postCSSNested],
+      },
+    }),
+  ],
 };
 
 export default config;

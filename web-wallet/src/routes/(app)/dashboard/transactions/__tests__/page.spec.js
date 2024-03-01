@@ -3,23 +3,23 @@ import { cleanup, render } from "@testing-library/svelte";
 import Transactions from "../+page.svelte";
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
-	observe: vi.fn(),
-	unobserve: vi.fn(),
-	disconnect: vi.fn()
+  disconnect: vi.fn(),
+  observe: vi.fn(),
+  unobserve: vi.fn(),
 }));
 
 vi.useFakeTimers();
 
 describe("Dashboard", () => {
-	afterEach(cleanup);
+  afterEach(cleanup);
 
-	const currentPrice = { usd: 0.5 };
+  const currentPrice = { usd: 0.5 };
 
-	it("should render the transactions page", async () => {
-		const { container } = render(Transactions, { data: { currentPrice } });
+  it("should render the transactions page", async () => {
+    const { container } = render(Transactions, { data: { currentPrice } });
 
-		await vi.advanceTimersToNextTimerAsync();
+    await vi.advanceTimersToNextTimerAsync();
 
-		expect(container.firstChild).toMatchSnapshot();
-	});
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

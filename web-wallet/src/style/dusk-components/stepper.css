@@ -1,38 +1,38 @@
 .dusk-stepper {
-	position: relative;
-	width: 100%;
+  position: relative;
+  width: 100%;
 }
 
 .dusk-stepper__progress-bar {
-	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
-	width: 100%;
-	height: var(--progress-bar-height);
-	background-color: var(--progress-bg-color);
-	border-radius: var(--control-border-radius-size);
-	overflow: hidden;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: var(--progress-bar-height);
+  background-color: var(--progress-bg-color);
+  border-radius: var(--control-border-radius-size);
+  overflow: hidden;
 }
 
 .dusk-stepper__progress-filler {
-	height: 100%;
-	background-color: var(--progress-filler-color);
+  height: 100%;
+  background-color: var(--progress-filler-color);
 }
 
 .dusk-stepper__steps {
-	display: flex;
-	justify-content: space-between;
-	width: 100%;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .dusk-stepper__step {
-	width: 0.625em;
-	height: 0.625em;
-	background-color: var(--progress-bg-color);
-	border-radius: 50%;
-	z-index: 1;
+  width: 0.625em;
+  height: 0.625em;
+  background-color: var(--progress-bg-color);
+  border-radius: 50%;
+  z-index: 1;
 }
 
 .dusk-stepper__step--processed {
-	background-color: var(--progress-filler-color);
+  background-color: var(--progress-filler-color);
 }

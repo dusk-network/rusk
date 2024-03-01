@@ -5,11 +5,11 @@ Web Wallet website.
 ## TOC
 
 - [Web Wallet](#web-wallet)
-    - [TOC](#toc)
-    - [Build system and dev environment](#build-system-and-dev-environment)
-	- [Environment variables](#environment-variables)
+  - [TOC](#toc)
+  - [Build system and dev environment](#build-system-and-dev-environment)
+  - [Environment variables](#environment-variables)
     - [NPM scripts](#npm-scripts)
-	- [Running a local Rusk node](#running-a-local-rusk-node)
+  - [Running a local Rusk node](#running-a-local-rusk-node)
 
 ## Build system and dev environment
 
@@ -23,6 +23,7 @@ As the application uses the [Web Crypto API](https://developer.mozilla.org/en-US
 The staging environment is at https://web-wallet-staging-oxs3z.ondigitalocean.app/
 
 ## Environment variables
+
 The `dusk-wallet-js` library uses some [environment variables](https://github.com/dusk-network/dusk-wallet-js/blob/main/.env).
 
 The application defines these variables by reading a local `.env` file containing the same variables used in the `dusk-wallet-js`, with the addition of the `VITE_` prefix.

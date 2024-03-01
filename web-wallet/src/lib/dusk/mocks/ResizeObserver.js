@@ -1,16 +1,16 @@
 export default class ResizeObserver {
-	/** @param {Function} callback */
-	constructor (callback) {
-		this.#callback = callback;
-	}
+  /** @param {Function} callback */
+  constructor(callback) {
+    this.#callback = callback;
+  }
 
-	#callback;
+  #callback;
 
-	disconnect () {}
+  disconnect() {}
 
-	observe () {
-		this.#callback();
-	}
+  observe() {
+    this.#callback();
+  }
 
-	unobserve () {}
+  unobserve() {}
 }

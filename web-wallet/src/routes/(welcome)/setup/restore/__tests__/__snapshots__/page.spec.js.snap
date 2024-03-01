@@ -38,9 +38,9 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
           class="flex flex-col gap-1"
         >
           <p>
-            Logging in to a new wallet will overwrite the current local wallet cache,
-				meaning that when you log in again with the previous mnemonic/account
-				you will need to wait for the wallet to sync.
+            Logging in to a new wallet will overwrite the current local wallet
+        cache, meaning that when you log in again with the previous
+        mnemonic/account you will need to wait for the wallet to sync.
           </p>
            
           <div
@@ -418,9 +418,8 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
             </a>
             <!--&lt;Anchor&gt;-->
             <!--&lt;AppAnchor&gt;-->
-             govern your use of our services,
-			including data handling and user responsibilities.
-			Your privacy and security are our top priorities.
+             govern your use of our services, including data handling and user responsibilities.
+        Your privacy and security are our top priorities.
           </p>
            
           <div

@@ -32,17 +32,21 @@
  * returns a calculated value based on custom parameters
  */
 
-function calculateAdaptiveCharCount (
-	width,
-	minWidth = 320,
-	maxWidth = 640,
-	minCharacters = 5,
-	maxCharacters = 18
+function calculateAdaptiveCharCount(
+  width,
+  minWidth = 320,
+  maxWidth = 640,
+  minCharacters = 5,
+  maxCharacters = 18
 ) {
-	const characters =
-		minCharacters + (width - minWidth) * (maxCharacters - minCharacters) / (maxWidth - minWidth);
+  const characters =
+    minCharacters +
+    ((width - minWidth) * (maxCharacters - minCharacters)) /
+      (maxWidth - minWidth);
 
-	return Math.round(Math.max(minCharacters, Math.min(characters, maxCharacters)));
+  return Math.round(
+    Math.max(minCharacters, Math.min(characters, maxCharacters))
+  );
 }
 
 export default calculateAdaptiveCharCount;

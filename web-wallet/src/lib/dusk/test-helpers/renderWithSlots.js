@@ -19,10 +19,18 @@ import SlotContent from "./SlotContent.svelte";
  * @param {DefaultSlot} slots
  * @returns {CreateRenderer}
  */
-const renderWithSlots = slots => (Component, options, renderOptions) => render(
-	SlotContent,
-	{ ...options, props: { Component, componentOptions: options?.props, text: slots.default } },
-	renderOptions
-);
+const renderWithSlots = (slots) => (Component, options, renderOptions) =>
+  render(
+    SlotContent,
+    {
+      ...options,
+      props: {
+        Component,
+        componentOptions: options?.props,
+        text: slots.default,
+      },
+    },
+    renderOptions
+  );
 
 export default renderWithSlots;

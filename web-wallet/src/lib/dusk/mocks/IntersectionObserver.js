@@ -1,15 +1,21 @@
 export default class IntersectionObserver {
-	get root () { return document; }
+  get root() {
+    return document;
+  }
 
-	get rootMargin () { return "0px 0px 0px 0px"; }
+  get rootMargin() {
+    return "0px 0px 0px 0px";
+  }
 
-	get thresholds () { return [0]; }
+  get thresholds() {
+    return [0];
+  }
 
-	disconnect () {}
+  disconnect() {}
 
-	observe () {}
+  observe() {}
 
-	takeRecords () {}
+  takeRecords() {}
 
-	unobserve () {}
+  unobserve() {}
 }
