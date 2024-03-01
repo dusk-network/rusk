@@ -21,8 +21,7 @@ use tracing::{error, info, trace, warn};
 
 mod frame;
 
-const MAX_QUEUE_SIZE: usize = 1000;
-const MAX_PENDING_SENDERS: u64 = 100;
+const MAX_PENDING_SENDERS: u64 = 1000;
 
 type RoutesList<const N: usize> = [Option<AsyncQueue<Message>>; N];
 type FilterList<const N: usize> = [Option<BoxedFilter>; N];
@@ -264,7 +263,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         self.remove_route(response_msg_topic.into()).await;
 
         let res = {
-            let queue = AsyncQueue::bounded(MAX_QUEUE_SIZE);
+            let queue = AsyncQueue::unbounded();
             // register a temporary route that will be unregister on drop
             self.add_route(response_msg_topic.into(), queue.clone())
                 .await?;

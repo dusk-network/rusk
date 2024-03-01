@@ -22,8 +22,6 @@ use node_data::message::{Payload, Topics};
 use tokio::sync::{RwLock, Semaphore};
 use tracing::{debug, info, warn};
 
-const QUEUE_LIMIT: usize = 10_000;
-
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
     Topics::GetMempool as u8,
@@ -85,7 +83,7 @@ impl DataBrokerSrv {
         let permits = conf.max_ongoing_requests;
         Self {
             conf,
-            requests: AsyncQueue::bounded(QUEUE_LIMIT),
+            requests: AsyncQueue::unbounded(),
             limit_ongoing_requests: Arc::new(Semaphore::new(permits)),
         }
     }
