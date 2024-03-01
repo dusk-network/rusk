@@ -30,8 +30,6 @@ use node_data::{ledger, Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
 
-pub(crate) const QUEUE_LIMIT: usize = 10_000;
-
 /// Consensus Service Task is responsible for running the consensus layer.
 ///
 /// It manages consensus lifecycle and provides a way to interact with it.
@@ -68,10 +66,10 @@ impl Task {
         );
 
         Ok(Self {
-            quorum_inbound: AsyncQueue::bounded(QUEUE_LIMIT),
-            main_inbound: AsyncQueue::bounded(QUEUE_LIMIT),
-            outbound: AsyncQueue::bounded(QUEUE_LIMIT),
-            result: AsyncQueue::bounded(QUEUE_LIMIT),
+            quorum_inbound: AsyncQueue::unbounded(),
+            main_inbound: AsyncQueue::unbounded(),
+            outbound: AsyncQueue::unbounded(),
+            result: AsyncQueue::unbounded(),
             running_task: None,
             task_id: 0,
             keys,

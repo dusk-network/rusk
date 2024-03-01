@@ -216,7 +216,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     pub fn new(keys_path: String) -> Self {
         Self {
-            inbound: AsyncQueue::bounded(consensus::QUEUE_LIMIT),
+            inbound: AsyncQueue::unbounded(),
             keys_path,
             acceptor: None,
         }

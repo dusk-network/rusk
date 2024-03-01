@@ -17,11 +17,11 @@ use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
-use tracing::{error, info, trace};
+use tracing::{error, info, trace, warn};
 
 mod frame;
 
-const MAX_QUEUE_SIZE: usize = 1000;
+const MAX_PENDING_SENDERS: u64 = 1000;
 
 type RoutesList<const N: usize> = [Option<AsyncQueue<Message>>; N];
 type FilterList<const N: usize> = [Option<BoxedFilter>; N];
@@ -29,18 +29,34 @@ type FilterList<const N: usize> = [Option<BoxedFilter>; N];
 pub struct Listener<const N: usize> {
     routes: Arc<RwLock<RoutesList<N>>>,
     filters: Arc<RwLock<FilterList<N>>>,
+
+    /// Number of awaiting senders.
+    pending_senders: Arc<AtomicU64>,
 }
 
 impl<const N: usize> Listener<N> {
     fn reroute(&self, topic: u8, msg: Message) -> anyhow::Result<()> {
+        if self.pending_senders.fetch_add(1, Ordering::Relaxed)
+            >= MAX_PENDING_SENDERS
+        {
+            // High value of this field means either a message consumer is
+            // blocked or it's too slow on processing a wire msg
+            self.pending_senders.store(0, Ordering::Relaxed);
+            warn!("too many sender jobs: {}", MAX_PENDING_SENDERS);
+        }
+
+        let counter = self.pending_senders.clone();
         let routes = self.routes.clone();
 
+        // Sender task
         tokio::spawn(async move {
             if let Some(Some(queue)) = routes.read().await.get(topic as usize) {
-                if let Err(e) = queue.send(msg.clone()).await {
+                if let Err(e) = queue.send(msg).await {
                     error!("Unable to reroute message with topic {topic}: {e}");
                 };
             };
+
+            counter.fetch_sub(1, Ordering::Relaxed);
         });
 
         Ok(())
@@ -116,6 +132,7 @@ impl<const N: usize> Kadcast<N> {
         let listener = Listener {
             routes: routes.clone(),
             filters: filters.clone(),
+            pending_senders: Arc::new(AtomicU64::new(0)),
         };
         let peer = Peer::new(conf.clone(), listener)?;
 
@@ -246,7 +263,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         self.remove_route(response_msg_topic.into()).await;
 
         let res = {
-            let queue = AsyncQueue::bounded(MAX_QUEUE_SIZE);
+            let queue = AsyncQueue::unbounded();
             // register a temporary route that will be unregister on drop
             self.add_route(response_msg_topic.into(), queue.clone())
                 .await?;
