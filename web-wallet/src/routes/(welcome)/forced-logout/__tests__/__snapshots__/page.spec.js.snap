@@ -34,15 +34,15 @@ exports[`Forced logout page > should render the page alert the user about the fo
       <p
         class="s-1sbyBWavtBQ9"
       >
-        Another tab or window unlocked a different wallet and replaced
-			the local cache.
+        Another tab or window unlocked a different wallet and replaced the local
+      cache.
       </p>
        
       <p
         class="s-1sbyBWavtBQ9"
       >
-        When you log in again with the mnemonic you used in this session,
-			you will need to wait for a full sync.
+        When you log in again with the mnemonic you used in this session, you will
+      need to wait for a full sync.
       </p>
     </div>
     

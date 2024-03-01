@@ -7,11 +7,15 @@
  * @returns {(value: number | bigint) => string}
  */
 const createFormatter = (locale, currency, digits) => {
-	const formatter = currency.toUpperCase() === "DUSK"
-		? new Intl.NumberFormat(locale, { minimumFractionDigits: digits })
-		: new Intl.NumberFormat(locale, { currency: currency, style: "currency" });
+  const formatter =
+    currency.toUpperCase() === "DUSK"
+      ? new Intl.NumberFormat(locale, { minimumFractionDigits: digits })
+      : new Intl.NumberFormat(locale, {
+          currency: currency,
+          style: "currency",
+        });
 
-	return value => formatter.format(value);
+  return (value) => formatter.format(value);
 };
 
 export default createFormatter;

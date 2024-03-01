@@ -104,7 +104,8 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
         class="flex flex-col gap-1"
       >
         <p>
-          Please make sure to write your phrase down and save it in a secure location.
+          Please make sure to write your phrase down and save it in a secure
+      location.
         </p>
          
         <ol
@@ -1798,7 +1799,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
         class="s-p4ikGGAJA5YG"
       />
       
-				Setup
+        Setup
     </h2>
      
     <div
@@ -1907,10 +1908,10 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       <p
         class="s-3JrRpWchV-SQ"
       >
-        Setting a password for your web wallet is optional. Doing so allows you
-		the convenience of opening your wallet file using a password, but it
-		weakens the overall security. Not using a password requires you to input
-		the full mnemonic to open your wallet.
+        Setting a password for your web wallet is optional. Doing so allows you the
+    convenience of opening your wallet file using a password, but it weakens the
+    overall security. Not using a password requires you to input the full
+    mnemonic to open your wallet.
       </p>
     </div>
     <!--&lt;PasswordSetup&gt;-->
@@ -2011,7 +2012,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         class="s-p4ikGGAJA5YG"
       />
       
-				Setup
+        Setup
     </h2>
      
     <div
@@ -2157,10 +2158,10 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       <p
         class="s-3JrRpWchV-SQ"
       >
-        Setting a password for your web wallet is optional. Doing so allows you
-		the convenience of opening your wallet file using a password, but it
-		weakens the overall security. Not using a password requires you to input
-		the full mnemonic to open your wallet.
+        Setting a password for your web wallet is optional. Doing so allows you the
+    convenience of opening your wallet file using a password, but it weakens the
+    overall security. Not using a password requires you to input the full
+    mnemonic to open your wallet.
       </p>
     </div>
     <!--&lt;PasswordSetup&gt;-->
@@ -2261,7 +2262,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
         class="s-p4ikGGAJA5YG"
       />
       
-				to 
+        to 
       <mark
         class="s-p4ikGGAJA5YG"
       >
@@ -2320,8 +2321,8 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
     <!--&lt;Stepper&gt;-->
      
     <p>
-      The ERC20 token swap functionality is currently disabled
-	and will be provided after the launch of the Dusk mainnet.
+      The ERC20 token swap functionality is currently disabled and will be provided
+  after the launch of the Dusk mainnet.
     </p>
      
     <button
@@ -3021,8 +3022,8 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       <!--&lt;Icon&gt;-->
        
       <p>
-        To proceed, please check all the relevant boxes.
-		Dusk will not save and cannot retrieve your passphrase.
+        To proceed, please check all the relevant boxes. Dusk will not save and
+    cannot retrieve your passphrase.
       </p>
     </div>
     <!--&lt;MnemonicPreSetup&gt;-->
@@ -3148,9 +3149,9 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
           class="flex flex-col gap-1"
         >
           <p>
-            Logging in to a new wallet will overwrite the current local wallet cache,
-				meaning that when you log in again with the previous mnemonic/account
-				you will need to wait for the wallet to sync.
+            Logging in to a new wallet will overwrite the current local wallet
+        cache, meaning that when you log in again with the previous
+        mnemonic/account you will need to wait for the wallet to sync.
           </p>
            
           <div
@@ -3234,9 +3235,8 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
             </a>
             <!--&lt;Anchor&gt;-->
             <!--&lt;AppAnchor&gt;-->
-             govern your use of our services,
-			including data handling and user responsibilities.
-			Your privacy and security are our top priorities.
+             govern your use of our services, including data handling and user responsibilities.
+        Your privacy and security are our top priorities.
           </p>
            
           <div

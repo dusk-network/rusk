@@ -1,9 +1,4 @@
-import {
-	describe,
-	expect,
-	it,
-	vi
-} from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { enumerables } from "lamb";
 import { generateMnemonic } from "bip39";
 
@@ -13,16 +8,16 @@ import { getWallet } from "..";
 vi.unmock("@dusk-network/dusk-wallet-js");
 
 describe("getWallet", () => {
-	it("should get a Wallet instance using a seed", () => {
-		const mnemonic = generateMnemonic();
-		const seed = getSeedFromMnemonic(mnemonic);
-		const wallet = getWallet(seed);
-		const walletPublicMembers = [
-			...enumerables(wallet),
-			...Object.getOwnPropertyNames(Object.getPrototypeOf(wallet))
-		];
+  it("should get a Wallet instance using a seed", () => {
+    const mnemonic = generateMnemonic();
+    const seed = getSeedFromMnemonic(mnemonic);
+    const wallet = getWallet(seed);
+    const walletPublicMembers = [
+      ...enumerables(wallet),
+      ...Object.getOwnPropertyNames(Object.getPrototypeOf(wallet)),
+    ];
 
-		expect(walletPublicMembers).toMatchInlineSnapshot(`
+    expect(walletPublicMembers).toMatchInlineSnapshot(`
 			[
 			  "wasm",
 			  "seed",
@@ -41,5 +36,5 @@ describe("getWallet", () => {
 			  "reset",
 			]
 		`);
-	});
+  });
 });

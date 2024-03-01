@@ -7,16 +7,16 @@ import { randomInt } from "lamb";
  * @returns {T[]} The shuffled array.
  */
 
-function shuffleArray (array) {
-	const shuffledArray = [...array];
+function shuffleArray(array) {
+  const shuffledArray = [...array];
 
-	for (let i = shuffledArray.length - 1; i > 0; i--) {
-		const j = randomInt(0, i);
+  for (let i = shuffledArray.length - 1; i > 0; i--) {
+    const j = randomInt(0, i);
 
-		[shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
-	}
+    [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+  }
 
-	return shuffledArray;
+  return shuffledArray;
 }
 
 export default shuffleArray;

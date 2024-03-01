@@ -5,13 +5,13 @@
  * @returns {(value: number | bigint) => string}
  */
 const createFormatter = (locale) => {
-	const formatter = new Intl.NumberFormat(locale, {
-		maximumFractionDigits: 9,
-		minimumFractionDigits: 2,
-		signDisplay: "exceptZero"
-	});
+  const formatter = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 9,
+    minimumFractionDigits: 2,
+    signDisplay: "exceptZero",
+  });
 
-	return value => formatter.format(value);
+  return (value) => formatter.format(value);
 };
 
 export default createFormatter;

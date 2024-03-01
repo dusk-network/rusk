@@ -10,6 +10,7 @@ import { duskToLux, luxToDusk } from "$lib/dusk/currency";
  * @param {number} luxFee
  * @returns {number}
  */
-const deductLuxFeeFrom = (duskAmount, luxFee) => +luxToDusk(duskToLux(duskAmount) - luxFee).toFixed(9);
+const deductLuxFeeFrom = (duskAmount, luxFee) =>
+  +luxToDusk(duskToLux(duskAmount) - luxFee).toFixed(9);
 
 export default deductLuxFeeFrom;

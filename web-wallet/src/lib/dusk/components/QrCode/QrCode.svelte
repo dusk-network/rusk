@@ -1,54 +1,54 @@
 <script>
-	import * as QRCode from "qrcode";
-	import { createEventDispatcher } from "svelte";
-	import { makeClassName } from "$lib/dusk/string";
+  import * as QRCode from "qrcode";
+  import { createEventDispatcher } from "svelte";
+  import { makeClassName } from "$lib/dusk/string";
 
-	/** @type {String | Undefined} */
-	export let className = undefined;
+  /** @type {String | Undefined} */
+  export let className = undefined;
 
-	/** @type {String} */
-	export let value = "";
+  /** @type {String} */
+  export let value = "";
 
-	/** @type {Number} */
-	export let width = 200;
+  /** @type {Number} */
+  export let width = 200;
 
-	/** @type {String} */
-	export let qrColor = "#101";
+  /** @type {String} */
+  export let qrColor = "#101";
 
-	/** @type {String} */
-	export let bgColor = "#fff";
+  /** @type {String} */
+  export let bgColor = "#fff";
 
-	const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-	/** @type {Promise<String>} */
-	let dataUrlPromise;
+  /** @type {Promise<String>} */
+  let dataUrlPromise;
 
-	$: if (width || qrColor || bgColor) {
-		dataUrlPromise = getDataUrl();
-	}
+  $: if (width || qrColor || bgColor) {
+    dataUrlPromise = getDataUrl();
+  }
 
-	const getDataUrl = () =>
-		QRCode.toDataURL(value, {
-			color: {
-				dark: qrColor,
-				light: bgColor
-			},
-			width
-		}).catch((/** @type {String} */ error) => {
-			dispatch("error", error);
+  const getDataUrl = () =>
+    QRCode.toDataURL(value, {
+      color: {
+        dark: qrColor,
+        light: bgColor,
+      },
+      width,
+    }).catch((/** @type {String} */ error) => {
+      dispatch("error", error);
 
-			return Promise.reject(error);
-		});
+      return Promise.reject(error);
+    });
 </script>
 
 {#await dataUrlPromise then url}
-	<img
-		{...$$restProps}
-		class={makeClassName(["dusk-qr-code", className])}
-		src={url}
-		alt="Key QR code"
-	/>
+  <img
+    {...$$restProps}
+    class={makeClassName(["dusk-qr-code", className])}
+    src={url}
+    alt="Key QR code"
+  />
 {:catch error}
-	<p>Unable to get QR code</p>
-	<p>{error}</p>
+  <p>Unable to get QR code</p>
+  <p>{error}</p>
 {/await}

@@ -1,32 +1,32 @@
 .dusk-icon {
-	--icon-size: 1.2em;
-	--scaler: 1.5;
+  --icon-size: 1.2em;
+  --scaler: 1.5;
 }
 
 .dusk-icon--size--normal {
-	height: var(--icon-size);
-	width: var(--icon-size);
+  height: var(--icon-size);
+  width: var(--icon-size);
 }
 
 .dusk-icon--size--large {
-	height: calc(var(--icon-size) * var(--scaler));
-	width: calc(var(--icon-size) * var(--scaler));
+  height: calc(var(--icon-size) * var(--scaler));
+  width: calc(var(--icon-size) * var(--scaler));
 }
 
 .dusk-icon--size--small {
-	height: calc(var(--icon-size) / var(--scaler));
-	width: calc(var(--icon-size) / var(--scaler));
+  height: calc(var(--icon-size) / var(--scaler));
+  width: calc(var(--icon-size) / var(--scaler));
 }
 
 .dusk-icon--circular {
-	display: flex;
-	border-radius: 50%;
-	justify-content: center;
-	align-items: center;
-	aspect-ratio: 1/1;
+  display: flex;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1/1;
 }
 
 .dusk-icon--circular svg {
-	max-width: 70%;
-	height: 70%;
+  max-width: 70%;
+  height: 70%;
 }

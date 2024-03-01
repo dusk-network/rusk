@@ -1,12 +1,12 @@
 type MnemonicEncryptInfo = {
-	data: Uint8Array;
-	iv: Uint8Array;
-	salt: Uint8Array;
+  data: Uint8Array;
+  iv: Uint8Array;
+  salt: Uint8Array;
 };
 
 type WalletStakeInfo = {
-	amount: number,
-	reward: number,
-	has_key: boolean,
-	has_staked: boolean
+  amount: number;
+  reward: number;
+  has_key: boolean;
+  has_staked: boolean;
 };

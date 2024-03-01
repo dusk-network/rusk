@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Refactor beta notice as constant [#1469]
 - Refactor `settingsStore` and create readable `gasStore` to store `limitLower`, `limitUpper`, `priceLower` [#1308]
+- Refactor add Prettier for formatting and format all files [#1458]
 
 ### Removed
 
@@ -25,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mismatch between param and JSDoc param's type definition (OperationResult.spec.js) [#1471]
 - Fix gas limits update on ENV change [#1308]
-
 
 ## [0.3.0] - 2024-02-28
 
@@ -108,6 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add initial commit
 
 <!-- ISSUES -->
+
+[#1458]: https://github.com/dusk-network/rusk/issues/1458
 [#1308]: https://github.com/dusk-network/rusk/issues/1308
 [#1359]: https://github.com/dusk-network/rusk/issues/1359
 [#1311]: https://github.com/dusk-network/rusk/issues/1311
@@ -145,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1362]: https://github.com/dusk-network/rusk/issues/1362
 
 <!-- VERSIONS -->
+
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
 [0.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.3.0
 [0.2.1]: https://github.com/dusk-network/rusk/tree/web-wallet-0.2.1

@@ -6,64 +6,79 @@ type TransactionsStoreContent = { transactions: Transaction[] };
 type TransactionsStore = Readable<TransactionsStoreContent>;
 
 type WalletStoreContent = {
-	balance: {
-		maximum: number;
-		value: number;
-	};
-	currentAddress: string;
-	error: Error | null;
-	initialized: boolean;
-	addresses: string[];
-	isSyncing: boolean;
+  balance: {
+    maximum: number;
+    value: number;
+  };
+  currentAddress: string;
+  error: Error | null;
+  initialized: boolean;
+  addresses: string[];
+  isSyncing: boolean;
 };
 
 type WalletStoreServices = {
-	abortSync: () => void;
+  abortSync: () => void;
 
-	clearLocalData: () => Promise<void>;
+  clearLocalData: () => Promise<void>;
 
-	clearLocalDataAndInit: (wallet: Wallet) => Promise<void>;
+  clearLocalDataAndInit: (wallet: Wallet) => Promise<void>;
 
-	getStakeInfo: () => Promise<any> & ReturnType<Wallet["stakeInfo"]>;
+  getStakeInfo: () => Promise<any> & ReturnType<Wallet["stakeInfo"]>;
 
-	// The return type apparently is not in a promise here
-	getTransactionsHistory: () => Promise<ReturnType<Wallet["history"]>>;
+  // The return type apparently is not in a promise here
+  getTransactionsHistory: () => Promise<ReturnType<Wallet["history"]>>;
 
-	init: (wallet: Wallet) => Promise<void>;
+  init: (wallet: Wallet) => Promise<void>;
 
-	reset: () => void;
+  reset: () => void;
 
-	setCurrentAddress: (address: string) => Promise<void>;
+  setCurrentAddress: (address: string) => Promise<void>;
 
-	stake: (amount: number, gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["stake"]>;
+  stake: (
+    amount: number,
+    gasPrice: number,
+    gasLimit: number
+  ) => Promise<any> & ReturnType<Wallet["stake"]>;
 
-	sync: () => Promise<void>;
+  sync: () => Promise<void>;
 
-	transfer: (to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["transfer"]>;
+  transfer: (
+    to: string,
+    amount: number,
+    gasPrice: number,
+    gasLimit: number
+  ) => Promise<any> & ReturnType<Wallet["transfer"]>;
 
-	unstake: (gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["unstake"]>;
+  unstake: (
+    gasPrice: number,
+    gasLimit: number
+  ) => Promise<any> & ReturnType<Wallet["unstake"]>;
 
-	withdrawReward: (gasPrice: number, gasLimit: number) => Promise<any> & ReturnType<Wallet["withdrawReward"]>;
+  withdrawReward: (
+    gasPrice: number,
+    gasLimit: number
+  ) => Promise<any> & ReturnType<Wallet["withdrawReward"]>;
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;
 
 type SettingsStore = {
-	currency: string;
-	darkMode: boolean;
-	dashboardTransactionLimit: number;
-	gasLimit: number;
-	gasPrice: number;
-	hideStakingNotice: boolean;
-	language: string;
-	network: string;
-	userId: string;
+  currency: string;
+  darkMode: boolean;
+  dashboardTransactionLimit: number;
+  gasLimit: number;
+  gasPrice: number;
+  hideStakingNotice: boolean;
+  language: string;
+  network: string;
+  userId: string;
 };
 
 type GasStoreContent = {
-	gasLimitLower: number,
-	gasLimitUpper: number,
-	gasPriceLower: number
-}
+  gasLimitLower: number;
+  gasLimitUpper: number;
+  gasPriceLower: number;
+};
 
 type GasStore = Readable<GasStoreContent>;

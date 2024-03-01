@@ -1,9 +1,9 @@
 .dusk-anchor,
 .dusk-anchor:visited {
-	color: var(--secondary-color);
+  color: var(--secondary-color);
 }
 
 .dusk-anchor:hover,
 .dusk-anchor:active {
-	color: var(--secondary-color-variant-light);
+  color: var(--secondary-color-variant-light);
 }

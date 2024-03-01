@@ -1,56 +1,57 @@
 .dusk-tabs {
-	color: var(--on-surface-color);
+  color: var(--on-surface-color);
 }
 
 .dusk-button.dusk-icon-button.dusk-tab-scroll-button {
-	padding: 0;
-	border: 0;
+  padding: 0;
+  border: 0;
 }
 
 .dusk-button.dusk-icon-button.dusk-tab-scroll-button:enabled:focus {
-	box-shadow: none;
+  box-shadow: none;
 }
 
 .dusk-button.dusk-icon-button.dusk-tab-scroll-button > .dusk-icon {
-	width: var(--control-icon-size);
-	height: var(--control-icon-size);
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
 }
 
 .dusk-tab-item {
-	border-radius: var(--control-border-radius-size) var(--control-border-radius-size) 0 0;
-	font-size: 1.125em;
-	padding: var(--control-padding);
-	gap: .62em;
+  border-radius: var(--control-border-radius-size)
+    var(--control-border-radius-size) 0 0;
+  font-size: 1.125em;
+  padding: var(--control-padding);
+  gap: 0.62em;
 }
 
 .dusk-tab-item,
 .dusk-tab-item > * {
-	transition-delay: 0s;
-	transition-duration: .4s;
-	transition-property: background-color, border-color, color, transform;
-	transition-timing-function: ease-in-out;
+  transition-delay: 0s;
+  transition-duration: 0.4s;
+  transition-property: background-color, border-color, color, transform;
+  transition-timing-function: ease-in-out;
 }
 
 .dusk-tab-item:focus-visible {
-	color: var(--secondary-color);
-	outline: 0 none;
+  color: var(--secondary-color);
+  outline: 0 none;
 }
 
 .dusk-tab-item:hover:not(.dusk-tab-item__selected),
 .dusk-tab-item:focus-visible > * {
-	transform: translateY(-0.3em);
+  transform: translateY(-0.3em);
 }
 
 .dusk-tab-item__selected {
-	background-color: var(--surface-color);
-	color: var(--secondary-color);
+  background-color: var(--surface-color);
+  color: var(--secondary-color);
 }
 
 .dusk-tab-item__selected > .dusk-tab-label {
-	color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .dusk-tab-item > .dusk-icon {
-	width: var(--control-icon-size);
-	height: var(--control-icon-size);
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
 }

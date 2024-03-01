@@ -1,12 +1,12 @@
 .dusk-tooltip {
-	position: fixed;
-	display: inline-block;
-	width: max-content;
-	max-width: 40%;
-	white-space: break-spaces;
-	z-index: 1;
+  position: fixed;
+  display: inline-block;
+  width: max-content;
+  max-width: 40%;
+  white-space: break-spaces;
+  z-index: 1;
 }
 
 .dusk-tooltip[aria-hidden="true"] {
-	visibility: hidden;
+  visibility: hidden;
 }

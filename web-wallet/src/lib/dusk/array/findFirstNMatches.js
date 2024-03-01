@@ -1,4 +1,3 @@
-
 /**
  * Finds the first N matches in an array of words that start with a given prefix.
  * @note The matching is case-sensitive.
@@ -7,27 +6,27 @@
  * @param {number} numMatches – The number of matches to find.
  * @returns {string[]} The first N matches.
  */
-function findFirstNMatches (words, prefix, numMatches) {
-	/**
-	 * @type {string[]}
-	 */
-	const matches = [];
+function findFirstNMatches(words, prefix, numMatches) {
+  /**
+   * @type {string[]}
+   */
+  const matches = [];
 
-	if (numMatches <= 0) {
-		return matches;
-	}
+  if (numMatches <= 0) {
+    return matches;
+  }
 
-	for (const word of words) {
-		if (word.startsWith(prefix)) {
-			matches.push(word);
-		}
+  for (const word of words) {
+    if (word.startsWith(prefix)) {
+      matches.push(word);
+    }
 
-		if (matches.length === numMatches) {
-			break;
-		}
-	}
+    if (matches.length === numMatches) {
+      break;
+    }
+  }
 
-	return matches;
+  return matches;
 }
 
 export default findFirstNMatches;

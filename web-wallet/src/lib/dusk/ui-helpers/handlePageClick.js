@@ -6,29 +6,29 @@
  * @param {boolean} config.enabled - Whether the outside click listener is active.
  * @param {Function} config.callback - Callback to execute when an outside click is detected.
  */
-export function handlePageClick (node, { enabled: initialEnabled, callback }) {
-	// @ts-ignore
-	const handleClick = event => {
-		if (node && !node.contains(event.target) && !event.defaultPrevented) {
-			callback();
-		}
-	};
+export function handlePageClick(node, { enabled: initialEnabled, callback }) {
+  // @ts-ignore
+  const handleClick = (event) => {
+    if (node && !node.contains(event.target) && !event.defaultPrevented) {
+      callback();
+    }
+  };
 
-	// @ts-ignore
-	function update ({ enabled }) {
-		if (enabled) {
-			window.addEventListener("click", handleClick);
-		} else {
-			window.removeEventListener("click", handleClick);
-		}
-	}
+  // @ts-ignore
+  function update({ enabled }) {
+    if (enabled) {
+      window.addEventListener("click", handleClick);
+    } else {
+      window.removeEventListener("click", handleClick);
+    }
+  }
 
-	update({ enabled: initialEnabled });
+  update({ enabled: initialEnabled });
 
-	return {
-		destroy () {
-			window.removeEventListener("click", handleClick);
-		},
-		update
-	};
+  return {
+    destroy() {
+      window.removeEventListener("click", handleClick);
+    },
+    update,
+  };
 }
