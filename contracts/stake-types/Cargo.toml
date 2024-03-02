@@ -7,7 +7,7 @@ license = "MPL-2.0"
 
 [dependencies]
 dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
-dusk-bls12_381-sign = { version = "0.5", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381-sign = { version = "0.6", default-features = false, features = ["rkyv-impl"] }
 dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 

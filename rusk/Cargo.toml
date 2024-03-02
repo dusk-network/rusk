@@ -43,7 +43,7 @@ poseidon-merkle = { version = "0.3", features = ["rkyv-impl", "size_32"] }
 sha3 = "0.10"
 dusk-plonk = "0.16"
 dusk-bls12_381 = "0.12"
-dusk-bls12_381-sign = "0.5"
+dusk-bls12_381-sign = "0.6"
 dusk-jubjub = "0.13"
 dusk-pki = "0.13"
 dusk-bytes = "0.1"
