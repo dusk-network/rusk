@@ -23,7 +23,7 @@ exports[`Card > renders the Card component with a heading 1`] = `
 </div>
 `;
 
-exports[`Card > renders the the Card component with an icon when iconPath is provided 1`] = `
+exports[`Card > renders the Card component with an icon when iconPath is provided 1`] = `
 <div>
   <div
     class="dusk-card"
