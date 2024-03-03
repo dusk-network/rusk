@@ -64,7 +64,7 @@ To run a local node different steps are needed, so please read the [related sect
 - `npm run lint:fix`: runs ESLint with the `--fix` flag to fix formatting errors
 - `npm run preview` previews the production build
 - `npm test` runs the test suite
-- `npm run test:coverage` runs the test suite and generate the code coverage report in the `coverage` folder
+- `npm run test:coverage` runs the test suite and generates the code coverage report in the `coverage` folder
 - `npm run test:watch` runs the test suite in watch mode
 - `npm run typecheck` runs the type checker
 - `npm run typecheck:watch` runs the type checker in watch mode
