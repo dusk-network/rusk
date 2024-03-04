@@ -17,15 +17,15 @@ use std::sync::{mpsc, Arc, RwLock};
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet};
 use ff::Field;
-use parking_lot::MutexGuard;
+use parking_lot::RwLockWriteGuard;
 use phoenix_core::transaction::TreeLeaf;
 use phoenix_core::Note;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::chain::{Rusk, RuskInner};
+use rusk::chain::{Rusk, RuskTip};
 use rusk::Result;
 use rusk_abi::dusk::LUX;
-use rusk_abi::TRANSFER_CONTRACT;
+use rusk_abi::{TRANSFER_CONTRACT, VM};
 use tempfile::tempdir;
 use tokio::task;
 use tracing::info;
@@ -55,7 +55,7 @@ fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<TreeLeaf>> {
 
 fn push_note<'a, F, T>(rusk: &'a Rusk, after_push: F) -> T
 where
-    F: FnOnce(MutexGuard<'a, RuskInner>) -> T,
+    F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
 {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -65,10 +65,10 @@ where
 
     let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
 
-    rusk.with_inner(|mut inner| {
-        let current_commit = inner.current_commit;
+    rusk.with_tip(|mut tip, vm| {
+        let current_commit = tip.current;
         let mut session =
-            rusk_abi::new_session(&inner.vm, current_commit, BLOCK_HEIGHT)
+            rusk_abi::new_session(vm, current_commit, BLOCK_HEIGHT)
                 .expect("current commit should exist");
 
         session
@@ -84,9 +84,9 @@ where
             .expect("Updating root should succeed");
 
         let commit_id = session.commit().expect("Committing should succeed");
-        inner.current_commit = commit_id;
+        tip.current = commit_id;
 
-        after_push(inner)
+        after_push(tip, vm)
     })
 }
 
@@ -98,7 +98,7 @@ pub fn rusk_state_accepted() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp)?;
 
-    push_note(&rusk, |_inner| {});
+    push_note(&rusk, |_tip, _vm| {});
 
     let leaves = leaves_from_height(&rusk, 0)?;
 
@@ -128,8 +128,8 @@ pub fn rusk_state_finalized() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp)?;
 
-    push_note(&rusk, |mut inner| {
-        inner.base_commit = inner.current_commit;
+    push_note(&rusk, |mut tip, _vm| {
+        tip.base = tip.current;
     });
 
     let leaves = leaves_from_height(&rusk, 0)?;

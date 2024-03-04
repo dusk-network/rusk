@@ -8,8 +8,10 @@ use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::{fs, io};
 
-use parking_lot::{Mutex, MutexGuard};
+use parking_lot::{RwLock, RwLockWriteGuard};
 use sha3::{Digest, Sha3_256};
+use tokio::task;
+use tracing::warn;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
@@ -21,11 +23,11 @@ use phoenix_core::Transaction as PhoenixTransaction;
 use rusk_abi::dusk::Dusk;
 use rusk_abi::{
     CallReceipt, ContractError, Error as PiecrustError, Event, Session,
-    STAKE_CONTRACT, TRANSFER_CONTRACT,
+    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 
-use super::{coinbase_value, emission_amount, Rusk, RuskInner};
+use super::{coinbase_value, emission_amount, Rusk, RuskTip};
 use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
@@ -53,16 +55,16 @@ impl Rusk {
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
 
-        let vm = rusk_abi::new_vm(dir)?;
+        let vm = Arc::new(rusk_abi::new_vm(dir)?);
 
-        let inner = Arc::new(Mutex::new(RuskInner {
-            current_commit: base_commit,
-            base_commit,
-            vm,
+        let tip = Arc::new(RwLock::new(RuskTip {
+            current: base_commit,
+            base: base_commit,
         }));
 
         Ok(Self {
-            inner,
+            tip,
+            vm,
             dir: dir.into(),
         })
     }
@@ -76,11 +78,7 @@ impl Rusk {
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
-        let inner = self.inner.lock();
-
-        let current_commit = inner.current_commit;
-        let mut session =
-            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
+        let mut session = self.session(block_height, None)?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -101,11 +99,7 @@ impl Rusk {
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
-                        session = rusk_abi::new_session(
-                            &inner.vm,
-                            current_commit,
-                            block_height,
-                        )?;
+                        session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
@@ -171,11 +165,7 @@ impl Rusk {
         txs: &[Transaction],
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let inner = self.inner.lock();
-
-        let current_commit = inner.current_commit;
-        let mut session =
-            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
+        let mut session = self.session(block_height, None)?;
 
         accept(
             &mut session,
@@ -201,11 +191,7 @@ impl Rusk {
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut inner = self.inner.lock();
-
-        let current_commit = inner.current_commit;
-        let mut session =
-            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
+        let mut session = self.session(block_height, None)?;
 
         let (spent_txs, verification_output) = accept(
             &mut session,
@@ -224,8 +210,7 @@ impl Rusk {
             }
         }
 
-        let commit_id = session.commit()?;
-        inner.current_commit = commit_id;
+        self.set_current_commit(session.commit()?);
 
         Ok((spent_txs, verification_output))
     }
@@ -244,11 +229,7 @@ impl Rusk {
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut inner = self.inner.lock();
-
-        let current_commit = inner.current_commit;
-        let mut session =
-            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
+        let mut session = self.session(block_height, None)?;
 
         let (spent_txs, verification_output) = accept(
             &mut session,
@@ -267,39 +248,25 @@ impl Rusk {
             }
         }
 
-        let commit_id = session.commit()?;
-        inner.current_commit = commit_id;
-
-        // Delete all commits except the previous base commit, and the current
-        // commit
-        let mut delete_commits = inner.vm.commits();
-        delete_commits.retain(|c| {
-            c != &inner.current_commit
-                && c != &inner.base_commit
-                && c != &current_commit
-        });
-        for commit in delete_commits {
-            inner.vm.delete_commit(commit)?;
-        }
+        let commit = session.commit()?;
+        self.set_base_and_delete(commit);
 
         let commit_id_path = to_rusk_state_id_path(&self.dir);
-        fs::write(commit_id_path, commit_id)?;
-
-        inner.base_commit = commit_id;
+        fs::write(commit_id_path, commit)?;
 
         Ok((spent_txs, verification_output))
     }
 
     pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
-        let mut inner = self.inner.lock();
+        let mut tip = self.tip.write();
 
-        let commits = &inner.vm.commits();
+        let commits = self.vm.commits();
         if !commits.contains(&state_hash) {
             return Err(Error::CommitNotFound(state_hash));
         }
 
-        inner.current_commit = state_hash;
-        Ok(inner.current_commit)
+        tip.current = state_hash;
+        Ok(tip.current)
     }
 
     pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
@@ -307,24 +274,25 @@ impl Rusk {
     }
 
     /// Perform an action with the underlying data structure.
-    pub fn with_inner<'a, F, T>(&'a self, closure: F) -> T
+    ///
+    /// This should **not be used** internally, to avoid locking the structure
+    /// for too long of a period of time.
+    pub fn with_tip<'a, F, T>(&'a self, closure: F) -> T
     where
-        F: FnOnce(MutexGuard<'a, RuskInner>) -> T,
+        F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
     {
-        let inner = self.inner.lock();
-        closure(inner)
+        let tip = self.tip.write();
+        closure(tip, &self.vm)
     }
 
     /// Get the base root.
     pub fn base_root(&self) -> [u8; 32] {
-        let inner = self.inner.lock();
-        inner.base_commit
+        self.tip.read().base
     }
 
     /// Get the current state root.
     pub fn state_root(&self) -> [u8; 32] {
-        let inner = self.inner.lock();
-        inner.current_commit
+        self.tip.read().current
     }
 
     /// Returns the nullifiers that already exist from a list of given
@@ -335,6 +303,7 @@ impl Rusk {
     ) -> Result<Vec<BlsScalar>> {
         self.query(TRANSFER_CONTRACT, "existing_nullifiers", nullifiers)
     }
+
     /// Returns the stakes.
     pub fn provisioners(
         &self,
@@ -351,6 +320,60 @@ impl Rusk {
 
     pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
         self.query(STAKE_CONTRACT, "get_stake", pk)
+    }
+
+    pub(crate) fn session(
+        &self,
+        block_height: u64,
+        commit: Option<[u8; 32]>,
+    ) -> Result<Session> {
+        let commit = commit.unwrap_or_else(|| {
+            let tip = self.tip.read();
+            tip.current
+        });
+
+        let session = rusk_abi::new_session(&self.vm, commit, block_height)?;
+
+        Ok(session)
+    }
+
+    pub(crate) fn set_current_commit(&self, commit: [u8; 32]) {
+        let mut tip = self.tip.write();
+        tip.current = commit;
+    }
+
+    pub(crate) fn set_base_and_delete(&self, commit: [u8; 32]) {
+        let mut tip = self.tip.write();
+
+        let current_commit = tip.current;
+        let base_commit = tip.base;
+
+        tip.current = commit;
+        tip.base = commit;
+
+        // Delete all commits except the previous base commit, and the current
+        // commit. Deleting commits is blocking, meaning it will wait until any
+        // process using the commit is done. This includes any queries that are
+        // currently executing.
+        // Since we do want commits to be deleted, but don't want block
+        // finalization to wait, we spawn a new task to delete the commits.
+        task::spawn(delete_all_commits(
+            self.vm.clone(),
+            [current_commit, base_commit, commit],
+        ));
+    }
+}
+
+async fn delete_all_commits<const N: usize>(
+    vm: Arc<VM>,
+    retain: [[u8; 32]; N],
+) {
+    for commit in vm.commits() {
+        if !retain.contains(&commit) {
+            if let Err(err) = vm.delete_commit(commit) {
+                warn!("failed deleting commit {}: {err}", hex::encode(commit));
+            }
+        }
     }
 }
 
