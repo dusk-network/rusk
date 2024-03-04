@@ -351,28 +351,27 @@ impl Rusk {
         tip.current = commit;
         tip.base = commit;
 
+        // We will delete all commits except the previous base commit, the
+        // previous current commit and the new commit.
+        let mut commits_to_delete = self.vm.commits();
+        commits_to_delete.retain(|c| {
+            *c != current_commit && *c != base_commit && *c != commit
+        });
+
         // Delete all commits except the previous base commit, and the current
         // commit. Deleting commits is blocking, meaning it will wait until any
         // process using the commit is done. This includes any queries that are
         // currently executing.
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
-        task::spawn(delete_all_commits(
-            self.vm.clone(),
-            [current_commit, base_commit, commit],
-        ));
+        task::spawn(delete_commits(self.vm.clone(), commits_to_delete));
     }
 }
 
-async fn delete_all_commits<const N: usize>(
-    vm: Arc<VM>,
-    retain: [[u8; 32]; N],
-) {
-    for commit in vm.commits() {
-        if !retain.contains(&commit) {
-            if let Err(err) = vm.delete_commit(commit) {
-                warn!("failed deleting commit {}: {err}", hex::encode(commit));
-            }
+async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
+    for commit in commits {
+        if let Err(err) = vm.delete_commit(commit) {
+            warn!("failed deleting commit {}: {err}", hex::encode(commit));
         }
     }
 }
