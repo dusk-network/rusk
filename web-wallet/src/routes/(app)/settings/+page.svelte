@@ -7,7 +7,6 @@
     mdiCheckNetworkOutline,
     mdiGasStationOutline,
     mdiRestoreAlert,
-    mdiWalletOutline,
   } from "@mdi/js";
   import { mapWith, rename } from "lamb";
 
@@ -97,29 +96,6 @@
         }}
         options={networks}
       />
-    </article>
-    <hr />
-    <article class="settings-group">
-      <header class="settings-group__header">
-        <Icon path={mdiWalletOutline} />
-        <h3 class="h4 settings-group__heading">Wallet</h3>
-      </header>
-
-      <div class="settings-group__multi-control-content">
-        <div
-          class="settings-group__control settings-group__control--with-label"
-        >
-          <span>Recovery file</span>
-          <Button disabled={true} text="Export" variant="secondary" />
-        </div>
-        <div
-          class="settings-group__control settings-group__control--with-label"
-        >
-          <span>Key-Pair file</span>
-          <Button disabled={true} text="Export" variant="secondary" />
-        </div>
-        <p>{betaNotice}</p>
-      </div>
     </article>
     <hr />
     <article class="settings-group">

@@ -1,7 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { mdiArrowLeft, mdiFileKeyOutline, mdiKeyOutline } from "@mdi/js";
+  import { mdiArrowLeft, mdiKeyOutline } from "@mdi/js";
   import { validateMnemonic } from "bip39";
   import { setKey } from "lamb";
 
@@ -118,14 +118,6 @@
           />
         {/if}
       </form>
-    </Card>
-    <Card tag="article" heading="Upload DAT file" iconPath={mdiFileKeyOutline}>
-      <Button
-        className="alt-login"
-        variant="tertiary"
-        text="Choose file"
-        disabled={true}
-      />
     </Card>
   </div>
   <footer class="login-footer">

@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove DAT file UI references [#1498]
 - Remove `mockDerivedStore` [#1285]
 - Remove extraneous code block in MnemonicAuthenticate [#1470]
 - Remove `limitLower`, `limitUpper`, `priceLower` from `settingsStore` [#1308]
@@ -111,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ISSUES -->
 
+[#1498]: https://github.com/dusk-network/rusk/issues/1498
 [#1285]: https://github.com/dusk-network/rusk/issues/1285
 [#1458]: https://github.com/dusk-network/rusk/issues/1458
 [#1308]: https://github.com/dusk-network/rusk/issues/1308
