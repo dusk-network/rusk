@@ -85,48 +85,6 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
       </article>
       
       <!--&lt;Card&gt;-->
-       
-      <article
-        class="dusk-card"
-      >
-        <header
-          class="dusk-card__header"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M14 2H6A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2M18 20H6V4H13V9H18M12.83 15A3 3 0 1 0 12.83 17H14V19H16V17H17V15M10 17A1 1 0 1 1 11 16A1 1 0 0 1 10 17Z"
-            />
-          </svg>
-          
-          <!--&lt;Icon&gt;-->
-           
-          <h3
-            class="h4"
-          >
-            Upload DAT file
-          </h3>
-           
-        </header>
-         
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal alt-login"
-          disabled=""
-          type="button"
-        >
-          <span
-            class="dusk-button__text"
-          >
-            Choose file
-          </span>
-        </button>
-        <!--&lt;Button&gt;-->
-      </article>
-      
-      <!--&lt;Card&gt;-->
     </div>
      
     <footer
@@ -264,48 +222,6 @@ exports[`Login > Password workflow > should show the password field and the link
           <!--&lt;AnchorButton&gt;-->
           <!--&lt;AppAnchorButton&gt;-->
         </form>
-      </article>
-      
-      <!--&lt;Card&gt;-->
-       
-      <article
-        class="dusk-card"
-      >
-        <header
-          class="dusk-card__header"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M14 2H6A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2M18 20H6V4H13V9H18M12.83 15A3 3 0 1 0 12.83 17H14V19H16V17H17V15M10 17A1 1 0 1 1 11 16A1 1 0 0 1 10 17Z"
-            />
-          </svg>
-          
-          <!--&lt;Icon&gt;-->
-           
-          <h3
-            class="h4"
-          >
-            Upload DAT file
-          </h3>
-           
-        </header>
-         
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal alt-login"
-          disabled=""
-          type="button"
-        >
-          <span
-            class="dusk-button__text"
-          >
-            Choose file
-          </span>
-        </button>
-        <!--&lt;Button&gt;-->
       </article>
       
       <!--&lt;Card&gt;-->
