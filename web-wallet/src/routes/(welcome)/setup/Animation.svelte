@@ -6,7 +6,7 @@
     :container {
       perspective: 15vmin;
       transform: scale(0.5) translateY(-10%);
-      --deg: @p (-180deg, 180deg);
+      --deg: @p(-180deg, 180deg);
       opacity: 0.4;
     }
 
@@ -14,10 +14,10 @@
     @place: center;
     @size: 18vmin;
 
-    border: 1px solid @p (--color);
+    border: 1px solid @p(--color);
     will-change: transform opacity;
-    animation: scale-up @p (--delay) linear infinite;
-    animation-delay: calc(-@p (--delay) / @I * @i);
+    animation: scale-up @p(--delay) linear infinite;
+    animation-delay: calc(-@p(--delay) / @I * @i);
 
     @keyframes scale-up {
       0%,
