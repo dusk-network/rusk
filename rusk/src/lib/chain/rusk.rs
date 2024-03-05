@@ -11,7 +11,7 @@ use std::{fs, io};
 use parking_lot::{RwLock, RwLockWriteGuard};
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::warn;
+use tracing::debug;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
@@ -371,7 +371,7 @@ impl Rusk {
 async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
     for commit in commits {
         if let Err(err) = vm.delete_commit(commit) {
-            warn!("failed deleting commit {}: {err}", hex::encode(commit));
+            debug!("failed deleting commit {}: {err}", hex::encode(commit));
         }
     }
 }
