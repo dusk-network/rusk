@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix animation not visbile on landing screen [#1501]
 - Mismatch between param and JSDoc param's type definition (OperationResult.spec.js) [#1471]
 - Fix gas limits update on ENV change [#1308]
 
@@ -112,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ISSUES -->
 
+[#1501]: https://github.com/dusk-network/rusk/issues/1501
 [#1498]: https://github.com/dusk-network/rusk/issues/1498
 [#1285]: https://github.com/dusk-network/rusk/issues/1285
 [#1458]: https://github.com/dusk-network/rusk/issues/1458
