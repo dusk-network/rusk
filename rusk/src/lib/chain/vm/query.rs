@@ -25,12 +25,9 @@ impl Rusk {
         S: AsRef<str>,
         V: Into<Vec<u8>>,
     {
-        let inner = self.inner.lock();
-
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+        let mut session = self.session(0, None)?;
 
         session
             .call_raw(contract_id, fn_name.as_ref(), fn_arg, u64::MAX)
@@ -74,12 +71,9 @@ impl Rusk {
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
     {
-        let inner = self.inner.lock();
-
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+        let mut session = self.session(0, None)?;
 
         let mut result = session
             .call(contract_id, call_name, call_arg, u64::MAX)?
@@ -108,12 +102,9 @@ impl Rusk {
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
         A::Archived: for<'b> bytecheck::CheckBytes<DefaultValidator<'b>>,
     {
-        let inner = self.inner.lock();
-
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
-        let current_commit = base_commit.unwrap_or(inner.current_commit);
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+        let mut session = self.session(0, base_commit)?;
 
         session.feeder_call::<_, ()>(
             contract_id,
@@ -136,12 +127,9 @@ impl Rusk {
         S: AsRef<str>,
         V: Into<Vec<u8>>,
     {
-        let inner = self.inner.lock();
-
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
-        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+        let mut session = self.session(0, None)?;
 
         session.feeder_call_raw(
             contract_id,

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::chain::Rusk;
+use crate::chain::{Rusk, RuskTip};
 use crate::error::Error;
 
 use std::pin::Pin;
@@ -19,10 +19,11 @@ use tracing::{error, info};
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_pki::{PublicKey, ViewKey};
+use parking_lot::RwLockWriteGuard;
 use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
 use phoenix_core::{Message, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
-use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
 
 const A: usize = 4;
 
@@ -128,5 +129,17 @@ impl Rusk {
             }));
 
         Ok(Box::pin(stream) as GetNotesStream)
+    }
+
+    /// Perform an action with the underlying data structure.
+    ///
+    /// This should **not be used** internally, to avoid locking the structure
+    /// for too long of a period of time.
+    pub fn with_tip<'a, F, T>(&'a self, closure: F) -> T
+    where
+        F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
+    {
+        let tip = self.tip.write();
+        closure(tip, &self.vm)
     }
 }
