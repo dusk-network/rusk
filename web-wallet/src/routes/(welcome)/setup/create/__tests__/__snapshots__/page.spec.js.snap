@@ -1723,12 +1723,12 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
        
       <img
         alt="All Set"
-        class="s--G1EbtQcnqSG"
+        class="all-set__illustration"
         height="182"
-        id="all_set_illustration"
-        src="/images/onboarding/all_set_illustration.svg"
+        src="/some-base-path/images/onboarding/all_set_illustration.svg"
         width="205"
       />
+      <!--&lt;AppImage&gt;-->
     </div>
     
     <!--&lt;Card&gt;-->

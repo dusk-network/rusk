@@ -7,8 +7,14 @@
   /** @type {import('./$types').PageData} */
   export let data;
 
-  const { currentPrice } = data;
+  /** @type {number | undefined} */
+  let fiatPrice;
+
   const { currency, language } = $settingsStore;
+
+  data.currentPrice.then((prices) => {
+    fiatPrice = prices[currency.toLowerCase()];
+  });
 
   $: ({ balance } = $walletStore);
 </script>
@@ -18,7 +24,7 @@
 
   <Balance
     fiatCurrency={currency}
-    fiatPrice={currentPrice[currency.toLowerCase()]}
+    {fiatPrice}
     locale={language}
     tokenCurrency="DUSK"
     tokens={balance.value}

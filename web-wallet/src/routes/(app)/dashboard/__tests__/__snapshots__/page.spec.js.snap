@@ -523,15 +523,6 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         <!--&lt;Icon&gt;-->
       </p>
        
-      <p
-        class="dusk-balance__fiat"
-      >
-        <strong>
-          (
-          $1,172.50
-          )
-        </strong>
-      </p>
        
        
       <div

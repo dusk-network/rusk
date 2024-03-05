@@ -1,4 +1,5 @@
 <css-doodle class="animation">
+  <!-- prettier-ignore -->
   <style>
     --color: var(--home-box-color);
     --delay: 80s;

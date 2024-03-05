@@ -33,17 +33,17 @@ function addToast(type, message, icon) {
     ];
   });
 
-  const timeoutID = setTimeout(() => {
+  const timeoutID = window.setTimeout(() => {
     deleteToast(id, timeoutID);
   }, get(toastTimer));
 }
 
 /**
  * @param {string} id
- * @param {NodeJS.Timeout} timeout
+ * @param {number} timeout
  */
 function deleteToast(id, timeout) {
-  clearTimeout(timeout);
+  window.clearTimeout(timeout);
 
   // Deletes toast from store queue
   toastList.update((store) => {

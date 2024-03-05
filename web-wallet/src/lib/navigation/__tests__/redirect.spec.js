@@ -1,36 +1,38 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import * as SvelteKit from "@sveltejs/kit";
+import { redirect as svelteKitRedirect } from "@sveltejs/kit";
 import { base } from "$app/paths";
 
 import { redirect } from "..";
 
+vi.mock("@sveltejs/kit");
+
 describe("redirect", () => {
-  const redirectSpy = vi.spyOn(SvelteKit, "redirect");
+  const redirectMock = vi.mocked(svelteKitRedirect);
 
   afterEach(() => {
-    redirectSpy.mockClear();
+    redirectMock.mockClear();
   });
 
   afterAll(() => {
-    redirectSpy.mockRestore();
+    vi.doUnmock("@sveltejs/kit");
   });
 
   it("should add the defined base path to SvelteKit's `redirect` calls for absolute paths", () => {
     redirect(300, "/");
     redirect(301, "/foo/path");
 
-    expect(redirectSpy).toHaveBeenCalledTimes(2);
-    expect(redirectSpy).toHaveBeenNthCalledWith(1, 300, `${base}/`);
-    expect(redirectSpy).toHaveBeenNthCalledWith(2, 301, `${base}/foo/path`);
+    expect(redirectMock).toHaveBeenCalledTimes(2);
+    expect(redirectMock).toHaveBeenNthCalledWith(1, 300, `${base}/`);
+    expect(redirectMock).toHaveBeenNthCalledWith(2, 301, `${base}/foo/path`);
   });
 
   it("should add nothing for relative paths and complete string URLs", async () => {
     redirect(300, "foo/bar");
     redirect(300, "http://example.com/");
 
-    expect(redirectSpy).toHaveBeenCalledTimes(2);
-    expect(redirectSpy).toHaveBeenNthCalledWith(1, 300, "foo/bar");
-    expect(redirectSpy).toHaveBeenNthCalledWith(2, 300, "http://example.com/");
+    expect(redirectMock).toHaveBeenCalledTimes(2);
+    expect(redirectMock).toHaveBeenNthCalledWith(1, 300, "foo/bar");
+    expect(redirectMock).toHaveBeenNthCalledWith(2, 300, "http://example.com/");
   });
 
   it("should do nothing if the received path is an URL object", async () => {
@@ -38,7 +40,7 @@ describe("redirect", () => {
 
     redirect(300, url);
 
-    expect(redirectSpy).toHaveBeenCalledTimes(1);
-    expect(redirectSpy).toHaveBeenCalledWith(300, url);
+    expect(redirectMock).toHaveBeenCalledTimes(1);
+    expect(redirectMock).toHaveBeenCalledWith(300, url);
   });
 });
