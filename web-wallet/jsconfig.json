@@ -10,10 +10,6 @@
     "skipLibCheck": false,
     "sourceMap": true,
     "strict": true,
-    "paths": {
-      "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"]
-    },
     "types": ["./node_modules/@testing-library/jest-dom/types/vitest.d.ts"]
   }
 }

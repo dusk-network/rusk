@@ -1,4 +1,5 @@
 <script>
+  import { AppImage } from "$lib/components";
   import { Card } from "$lib/dusk/components";
 
   /** @type {string} */
@@ -6,17 +7,17 @@
 </script>
 
 <Card heading="You are all set!">
-  <img
+  <AppImage
+    alt="All Set"
+    className="all-set__illustration"
+    height="182"
     src={allSetIllustration}
     width="205"
-    height="182"
-    id="all_set_illustration"
-    alt="All Set"
   />
 </Card>
 
-<style>
-  #all_set_illustration {
+<style lang="postcss">
+  :global(.all-set__illustration) {
     display: block;
     width: 50%;
     margin: 1em auto;

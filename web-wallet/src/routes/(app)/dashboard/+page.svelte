@@ -15,9 +15,14 @@
   /** @type {import('./$types').PageData} */
   export let data;
 
-  const { currentPrice } = data;
+  /** @type {number | undefined} */
+  let fiatPrice;
 
   const { currency, dashboardTransactionLimit, language } = $settingsStore;
+
+  data.currentPrice.then((prices) => {
+    fiatPrice = prices[currency.toLowerCase()];
+  });
 
   /** @type {(descriptors: ContractDescriptor[]) => ContractDescriptor[]} */
   const getEnabledContracts = filterWith(hasKeyValue("disabled", false));
@@ -66,7 +71,7 @@
 
   <Balance
     fiatCurrency={currency}
-    fiatPrice={currentPrice[currency.toLowerCase()]}
+    {fiatPrice}
     locale={language}
     tokenCurrency="DUSK"
     tokens={balance.value}

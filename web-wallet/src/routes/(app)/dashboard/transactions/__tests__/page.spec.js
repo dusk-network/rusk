@@ -13,7 +13,7 @@ vi.useFakeTimers();
 describe("Dashboard", () => {
   afterEach(cleanup);
 
-  const currentPrice = { usd: 0.5 };
+  const currentPrice = Promise.resolve({ usd: 0.5 });
 
   it("should render the transactions page", async () => {
     const { container } = render(Transactions, { data: { currentPrice } });

@@ -7,6 +7,7 @@ const createEmptyObject = () => ({});
 /** @type {import('./$types').LayoutLoad} */
 export async function load({ fetch }) {
   return {
+    /** @type {Promise<Record<string, number>>} */
     currentPrice: fetch(import.meta.env.VITE_GET_QUOTE_API_ENDPOINT)
       .then(failureToRejection)
       .then((res) => res.json())

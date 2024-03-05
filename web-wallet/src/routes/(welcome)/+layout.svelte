@@ -1,5 +1,9 @@
+<script>
+  import { AppImage } from "$lib/components";
+</script>
+
 <header>
-  <img src="/dusk_logo.svg" alt="Dusk Logo" width="129" height="31" />
+  <AppImage src="/dusk_logo.svg" alt="Dusk Logo" width="129" height="31" />
 </header>
 
 <slot />

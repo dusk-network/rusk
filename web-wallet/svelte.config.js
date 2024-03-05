@@ -11,7 +11,10 @@ const fallBackBase = env.VITE_BASE_PATH ? `${env.VITE_BASE_PATH}/` : "";
 const config = {
   kit: {
     adapter: adapter({ fallback: `${fallBackBase}index.html` }),
-    paths: { base: env.VITE_BASE_PATH },
+
+    paths: {
+      base: /** @type {"" | `/${string}` | undefined} */ (env.VITE_BASE_PATH),
+    },
   },
   preprocess: [
     preprocess({

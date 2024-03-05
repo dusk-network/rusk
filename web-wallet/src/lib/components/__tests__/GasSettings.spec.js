@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 
 import { GasSettings } from "..";
 import { get } from "svelte/store";
-import { gasStore, settingsStore } from "$lib/stores";
+import { settingsStore } from "$lib/stores";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
 
 describe("GasSettings", () => {
@@ -15,7 +15,6 @@ describe("GasSettings", () => {
 
   const baseProps = {
     fee: fee,
-    gasStore: gasStore,
     limit: 20000000,
     limitLower: 10000000,
     limitUpper: 1000000000,

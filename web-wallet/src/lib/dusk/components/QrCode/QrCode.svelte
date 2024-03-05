@@ -1,7 +1,9 @@
 <script>
   import * as QRCode from "qrcode";
   import { createEventDispatcher } from "svelte";
+
   import { makeClassName } from "$lib/dusk/string";
+  import { AppImage } from "$lib/components";
 
   /** @type {String | Undefined} */
   export let className = undefined;
@@ -42,11 +44,11 @@
 </script>
 
 {#await dataUrlPromise then url}
-  <img
+  <AppImage
     {...$$restProps}
-    class={makeClassName(["dusk-qr-code", className])}
-    src={url}
     alt="Key QR code"
+    className={makeClassName(["dusk-qr-code", className])}
+    src={url}
   />
 {:catch error}
   <p>Unable to get QR code</p>
