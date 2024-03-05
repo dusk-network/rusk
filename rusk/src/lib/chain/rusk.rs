@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::{fs, io};
 
-use parking_lot::{RwLock, RwLockWriteGuard};
+use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::debug;
@@ -271,18 +271,6 @@ impl Rusk {
 
     pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
         self.revert(self.base_root())
-    }
-
-    /// Perform an action with the underlying data structure.
-    ///
-    /// This should **not be used** internally, to avoid locking the structure
-    /// for too long of a period of time.
-    pub fn with_tip<'a, F, T>(&'a self, closure: F) -> T
-    where
-        F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
-    {
-        let tip = self.tip.write();
-        closure(tip, &self.vm)
     }
 
     /// Get the base root.
