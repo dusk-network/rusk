@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `eslint-config-prettier` as explicit dependency [#1509]
 - Add format check to CI and `checks` script [#1504]
 - Add `vitest-canvas-mock` dependency to replace `canvas` [#1506]
 - Add `AppImage` component [#1284]
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove orphan dependency `@zerodevx/svelte-toast` [#1509]
 - Remove `canvas` dependency [#1506]
 - Remove DAT file UI references [#1498]
 - Remove `mockDerivedStore` [#1285]
@@ -161,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1284]: https://github.com/dusk-network/rusk/issues/1284
 [#1506]: https://github.com/dusk-network/rusk/issues/1506
 [#1504]: https://github.com/dusk-network/rusk/issues/1504
+[#1509]: https://github.com/dusk-network/rusk/issues/1509
 
 <!-- VERSIONS -->
 
