@@ -99,10 +99,6 @@ export default defineConfig(({ mode }) => {
       },
       environment: "jsdom",
       include: ["src/**/*.{test,spec}.{js,ts}"],
-
-      // needed for the `canvas` dependency
-      // see https://vitest.dev/config/#pool
-      pool: "forks",
       setupFiles: ["./vite-setup.js"],
     },
   };

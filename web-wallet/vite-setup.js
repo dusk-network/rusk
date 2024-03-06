@@ -7,6 +7,7 @@ import { expect, vi } from "vitest";
 import { readable } from "svelte/store";
 import crypto from "node:crypto";
 import "jsdom-worker";
+import "vitest-canvas-mock";
 
 import { IntersectionObserver, ResizeObserver } from "./src/lib/dusk/mocks";
 import Wallet from "./__mocks__/Wallet.js";
