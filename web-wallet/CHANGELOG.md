@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `vitest-canvas-mock` dependency to replace `canvas` [#1506]
 - Add `AppImage` component [#1284]
 - Add possibility to serve the web wallet from a sub folder [#1362]
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove `canvas` dependency [#1506]
 - Remove DAT file UI references [#1498]
 - Remove `mockDerivedStore` [#1285]
 - Remove extraneous code block in MnemonicAuthenticate [#1470]
@@ -156,6 +158,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1471]: https://github.com/dusk-network/rusk/issues/1471
 [#1362]: https://github.com/dusk-network/rusk/issues/1362
 [#1284]: https://github.com/dusk-network/rusk/issues/1284
+[#1506]: https://github.com/dusk-network/rusk/issues/1506
 
 <!-- VERSIONS -->
 
