@@ -47,6 +47,10 @@ jobs:
         run: npm ci
         working-directory: ./web-wallet
 
+      - name: Formatting check
+        run: npm run format
+        working-directory: ./web-wallet
+
       - name: Linting
         run: npm run lint
         working-directory: ./web-wallet

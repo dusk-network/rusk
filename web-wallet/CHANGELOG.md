@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add format check to CI and `checks` script [#1504]
 - Add `vitest-canvas-mock` dependency to replace `canvas` [#1506]
 - Add `AppImage` component [#1284]
 - Add possibility to serve the web wallet from a sub folder [#1362]
@@ -159,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1362]: https://github.com/dusk-network/rusk/issues/1362
 [#1284]: https://github.com/dusk-network/rusk/issues/1284
 [#1506]: https://github.com/dusk-network/rusk/issues/1506
+[#1504]: https://github.com/dusk-network/rusk/issues/1504
 
 <!-- VERSIONS -->
 
