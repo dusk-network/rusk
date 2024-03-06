@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "checks": "npm run lint && npm run typecheck && npm test",
+    "checks": "npm run format && npm run lint && npm run typecheck && npm test",
     "dev": "vite dev",
     "dev:host": "vite dev --host",
     "format": "prettier . --check",
