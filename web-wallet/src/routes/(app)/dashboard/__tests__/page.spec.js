@@ -48,10 +48,15 @@ describe("Dashboard", () => {
   it("should render the dashboard page and show a throbber while transactions are loading", async () => {
     const { container } = render(Dashboard, baseProps);
 
-    expect(container.querySelector(".dusk-balance__fiat")).toBeNull();
+    expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
+
     expect(container.firstChild).toMatchSnapshot();
 
     await vi.advanceTimersToNextTimerAsync();
+
+    expect(
+      container.querySelector(".dusk-balance__fiat--visible")
+    ).toBeTruthy();
 
     expect(container.querySelector(".dusk-balance__fiat")).toHaveTextContent(
       formatter(expectedFiat)
