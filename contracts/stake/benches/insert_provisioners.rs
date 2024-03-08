@@ -13,9 +13,10 @@ use rusk_abi::{
 };
 use stake_contract_types::StakeData;
 use std::sync::mpsc;
+use std::time::Instant;
 
 const SAMPLE_SIZE: usize = 10;
-const NUM_STAKES: usize = 1000;
+const NUM_STAKES: usize = 8000;
 
 const OWNER: [u8; 32] = [0; 32];
 const POINT_LIMIT: u64 = 0x100000000;
@@ -80,10 +81,9 @@ fn do_get_provisioners(
     }))
 }
 
-fn do_insert_stake<Rng: RngCore + CryptoRng>(
+fn create_stake<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
-    session: &mut Session,
-) -> Result<(), Error> {
+) -> (PublicKey, StakeData) {
     let stake_data = StakeData {
         amount: Some((TEST_STAKE, 0)),
         counter: 1,
@@ -91,34 +91,46 @@ fn do_insert_stake<Rng: RngCore + CryptoRng>(
     };
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
-    session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "insert_stake",
-        &(pk, stake_data),
-        POINT_LIMIT,
-    )?;
+    (pk, stake_data)
+}
+
+fn insert_stakes(
+    stakes: Vec<(PublicKey, StakeData)>,
+    session: &mut Session,
+) -> Result<(), Error> {
+    for (pk, stake_data) in stakes {
+        session
+            .call::<_, ()>(
+                STAKE_CONTRACT,
+                "insert_stake",
+                &(pk, stake_data),
+                POINT_LIMIT,
+            )?
+            .data;
+    }
     Ok(())
 }
 
-fn get_provisioners(c: &mut Criterion) {
+fn insert_provisioners(c: &mut Criterion) {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let mut session = instantiate(vm);
-
+    let mut stakes = vec![];
     for _ in 0..NUM_STAKES {
-        do_insert_stake(rng, &mut session)
-            .expect("inserting stake should succeed");
+        stakes.push(create_stake(rng));
     }
-
-    c.bench_function("get_provisioners", |b| {
+    let mut session = instantiate(vm);
+    c.bench_function("insert_provisioners", |b| {
         b.iter(|| {
-            let _: Vec<(PublicKey, StakeData)> =
-                do_get_provisioners(&mut session)
-                    .expect("getting provisioners should succeed")
-                    .collect();
+            // at second iter, session already contains stakes, but it's still
+            // ok to bench since that "insert_stakes" currently replace
+            insert_stakes(stakes.clone(), &mut session)
+                .expect("getting provisioners should succeed");
+            let expected =
+                do_get_provisioners(&mut session).expect("towork").count();
+            assert_eq!(expected, NUM_STAKES)
         });
     });
 }
@@ -126,6 +138,6 @@ fn get_provisioners(c: &mut Criterion) {
 criterion_group!(
     name = benches;
     config = config();
-    targets = get_provisioners
+    targets = insert_provisioners
 );
 criterion_main!(benches);
