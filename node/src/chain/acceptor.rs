@@ -395,7 +395,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn try_accept_block(
         &mut self,
         blk: &Block,
-        msg: Option<&Message>,
         enable_consensus: bool,
     ) -> anyhow::Result<Label> {
         let mut task = self.task.write().await;
@@ -414,7 +413,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         )
         .await?;
 
-        // TODO: Remove this variable, it's only used for log purpose
         // Final from rolling
         let mut ffr = false;
 
@@ -472,12 +470,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 Ok(txs)
             })?;
-
-            // (Re)broadcast a fully valid block before any call to
-            // get_provisioners to speed up its propagation
-            if let Some(msg) = msg {
-                broadcast(&self.network, msg).await;
-            }
 
             self.log_missing_iterations(
                 provisioners_list.current(),
