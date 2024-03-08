@@ -55,6 +55,10 @@ pub const TRANSFER_CONTRACT: ContractId = reserved(0x1);
 pub const STAKE_CONTRACT: ContractId = reserved(0x2);
 /// ID of the genesis license contract
 pub const LICENSE_CONTRACT: ContractId = reserved(0x3);
+/// ID of the genesis transfer data contract
+pub const TRANSFER_DATA_CONTRACT: ContractId = reserved(0x4);
+/// ID of the genesis transfer logic contract
+pub const TRANSFER_LOGIC_CONTRACT: ContractId = reserved(0x5);
 
 #[inline]
 const fn reserved(b: u8) -> ContractId {

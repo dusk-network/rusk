@@ -4,6 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "abi")]
+use dusk_bytes::Serializable;
+#[cfg(feature = "abi")]
+use dusk_pki::PublicSpendKey;
+#[cfg(feature = "abi")]
+use rkyv::{archived_root, Deserialize, Infallible};
+// re-export `piecrust-uplink` such that `rusk-abi` is the only crate
 pub use piecrust_uplink::*;
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
@@ -69,4 +76,33 @@ pub fn payment_info(
     contract: ContractId,
 ) -> Result<crate::PaymentInfo, ContractError> {
     call(contract, "payment_info", &())
+}
+
+/// Query owner of a given contract.
+#[cfg(feature = "abi")]
+pub fn owner(contract: ContractId) -> Option<PublicSpendKey> {
+    owner_raw(contract).map(|buf| {
+        let ret = unsafe { archived_root::<PublicSpendKey>(buf.as_slice()) };
+        ret.deserialize(&mut Infallible).expect("Infallible")
+    })
+}
+
+/// Query owner of a given contract.
+#[cfg(feature = "abi")]
+pub fn self_owner() -> PublicSpendKey {
+    let buf = self_owner_raw();
+    let ret = unsafe { archived_root::<PublicSpendKey>(buf.as_slice()) };
+    ret.deserialize(&mut Infallible).expect("Infallible")
+}
+
+/// Query raw owner of a given contract.
+#[cfg(feature = "abi")]
+pub fn owner_raw(contract: ContractId) -> Option<[u8; PublicSpendKey::SIZE]> {
+    piecrust_uplink::owner(contract)
+}
+
+/// Query raw self owner.
+#[cfg(feature = "abi")]
+pub fn self_owner_raw() -> [u8; PublicSpendKey::SIZE] {
+    piecrust_uplink::self_owner()
 }
