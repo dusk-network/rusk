@@ -13,9 +13,8 @@ use tracing::info;
 
 const MIGRATION_GAS_LIMIT: u64 = 1_000_000_000;
 
-const NEW_STAKE_CONTRACT_BYTECODE: &[u8] = include_bytes!(
-    "../../../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
-);
+const NEW_STAKE_CONTRACT_BYTECODE: &[u8] =
+    include_bytes!("../../../assets/stake_contract.wasm");
 
 pub struct Migration;
 

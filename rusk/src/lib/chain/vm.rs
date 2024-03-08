@@ -122,11 +122,11 @@ impl VMExecution for Rusk {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")
             })?;
 
-        let inner = self.inner.lock();
+        let current_commit = self.state_root();
         let r = Migration::migrate(
             self.migration_height,
-            &inner.vm,
-            inner.current_commit,
+            &self.vm,
+            current_commit,
             blk.header().height,
         );
         if r.is_err() {
