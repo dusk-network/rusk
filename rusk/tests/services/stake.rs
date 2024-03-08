@@ -320,6 +320,16 @@ pub async fn slash() -> Result<()> {
         None,
     )
     .expect("to work");
+
+    let last_changes = rusk
+        .last_provisioners_change(None)
+        .unwrap()
+        .collect::<Vec<_>>();
+    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let prev = prev.expect("to have something");
+    assert_eq!(prev.reward, dusk(3.0));
+    assert_eq!(prev.amount, Some((dusk(20.0), 0)));
+
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
     assert_eq!(after_slash.amount, Some((dusk(20.0), 2160)));
@@ -330,12 +340,22 @@ pub async fn slash() -> Result<()> {
     generator_procedure(
         &rusk,
         &[],
-        BLOCK_HEIGHT,
+        BLOCK_HEIGHT + 1,
         BLOCK_GAS_LIMIT,
         vec![to_slash],
         None,
     )
     .expect("to work");
+
+    let last_changes = rusk
+        .last_provisioners_change(None)
+        .unwrap()
+        .collect::<Vec<_>>();
+    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let prev = prev.expect("to have something");
+    assert_eq!(prev.reward, 0);
+    assert_eq!(prev.amount, Some((dusk(20.0), 2160)));
+
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
     assert_eq!(after_slash.amount, Some((dusk(20.0), 2160)));
@@ -352,6 +372,16 @@ pub async fn slash() -> Result<()> {
         None,
     )
     .expect("to work");
+
+    let last_changes = rusk
+        .last_provisioners_change(None)
+        .unwrap()
+        .collect::<Vec<_>>();
+    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let prev = prev.expect("to have something");
+    assert_eq!(prev.reward, 0);
+    assert_eq!(prev.amount, Some((dusk(20.0), 2160)));
+
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
     assert_eq!(after_slash.amount, Some((dusk(20.0), 10800)));
@@ -361,19 +391,34 @@ pub async fn slash() -> Result<()> {
     generator_procedure(
         &rusk,
         &[],
-        BLOCK_HEIGHT,
+        9001,
         BLOCK_GAS_LIMIT,
         vec![wallet.public_key(1).unwrap()],
         None,
     )
     .expect_err("Slashing a public key that never staked must fail");
 
+    //Ensure we still have changes, because generator procedure failed
+    let last_changes = rusk
+        .last_provisioners_change(None)
+        .unwrap()
+        .collect::<Vec<_>>();
+    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let prev = prev.expect("to have something");
+    assert_eq!(prev.reward, 0);
+    assert_eq!(prev.amount, Some((dusk(20.0), 2160)));
+
+    generator_procedure(&rusk, &[], 9001, BLOCK_GAS_LIMIT, vec![], None)
+        .expect("To work properly");
+    let last_changes = rusk
+        .last_provisioners_change(None)
+        .unwrap()
+        .collect::<Vec<_>>();
+    assert_eq!(0, last_changes.len(), "No changes expected");
+
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
-    info!(
-        "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
-    );
+    info!("New root: {}", hex::encode(new_root));
     assert_ne!(original_root, new_root, "Root should have changed");
 
     Ok(())
