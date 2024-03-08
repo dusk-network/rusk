@@ -60,7 +60,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
     let contract_id = session
         .deploy(
             bytecode,
-            ContractData::builder(get_owner().to_bytes()),
+            ContractData::builder().owner(get_owner().to_bytes()),
             POINT_LIMIT,
         )
         .expect("Deploying module should succeed");

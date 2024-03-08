@@ -66,7 +66,9 @@ fn deploy_governance_contract(
     );
     session.deploy(
         bytecode,
-        ContractData::builder(governance.owner()).contract_id(contract_id),
+        ContractData::builder()
+            .owner(governance.owner())
+            .contract_id(contract_id),
         u64::MAX,
     )?;
 
@@ -192,21 +194,27 @@ fn generate_empty_state<P: AsRef<Path>>(
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
     session.deploy(
         transfer_code,
-        ContractData::builder(snapshot.owner()).contract_id(TRANSFER_CONTRACT),
+        ContractData::builder()
+            .owner(snapshot.owner())
+            .contract_id(TRANSFER_CONTRACT),
         u64::MAX,
     )?;
 
     info!("{} Genesis Stake Contract", theme.action("Deploying"));
     session.deploy(
         stake_code,
-        ContractData::builder(snapshot.owner()).contract_id(STAKE_CONTRACT),
+        ContractData::builder()
+            .owner(snapshot.owner())
+            .contract_id(STAKE_CONTRACT),
         u64::MAX,
     )?;
 
     info!("{} Genesis License Contract", theme.action("Deploying"));
     session.deploy(
         license_code,
-        ContractData::builder(snapshot.owner()).contract_id(LICENSE_CONTRACT),
+        ContractData::builder()
+            .owner(snapshot.owner())
+            .contract_id(LICENSE_CONTRACT),
         u64::MAX,
     )?;
 
