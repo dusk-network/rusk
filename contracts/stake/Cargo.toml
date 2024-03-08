@@ -30,3 +30,8 @@ hex = "0.4"
 rand = "0.8"
 poseidon-merkle = { version = "0.3", features = ["rkyv-impl"] }
 ff = { version = "0.13", default-features = false }
+criterion = "0.4"
+
+[[bench]]
+name = "get_provisioners"
+harness = false
