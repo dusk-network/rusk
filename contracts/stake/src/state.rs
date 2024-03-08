@@ -250,6 +250,13 @@ impl StakeState {
                 .as_mut()
                 .expect("The stake to slash should be active");
             *eligibility = next_epoch(rusk_abi::block_height());
+            rusk_abi::emit(
+                "shifted",
+                StakingEvent {
+                    public_key: *public_key,
+                    value: *eligibility,
+                },
+            );
         }
 
         // Update the total slashed amount
