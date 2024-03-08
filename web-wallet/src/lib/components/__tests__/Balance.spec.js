@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { skipIn } from "lamb";
-
 import { Balance } from "..";
 
 describe("Balance", () => {
@@ -62,9 +61,20 @@ describe("Balance", () => {
     expect(container.firstChild).toHaveAttribute("id", "new-balance");
   });
 
-  it("should skip rendering the fiat value if the fiat price is `undefined`", () => {
+  it("should not display the fiat value if the fiat price is `undefined`", () => {
     const props = skipIn(baseProps, ["fiatPrice"]);
     const { container } = render(Balance, { ...baseOptions, props });
+
+    expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("should not display the fiat value if there are no tokens", () => {
+    const props = { ...baseProps, tokens: 0 };
+    const { container } = render(Balance, { ...baseOptions, props });
+
+    expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
 
     expect(container.firstChild).toMatchSnapshot();
   });

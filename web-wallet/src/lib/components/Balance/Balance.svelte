@@ -47,12 +47,13 @@
       data-tooltip-place="right"
     />
   </p>
-  {#if fiatPrice}
-    <p class="dusk-balance__fiat">
-      <strong>
-        ({fiatFormatter(fiatPrice * tokens)})
-      </strong>
-    </p>
-  {/if}
+  <p
+    class="dusk-balance__fiat"
+    class:dusk-balance__fiat--visible={fiatPrice !== undefined && tokens}
+  >
+    <strong>
+      ({fiatFormatter(fiatPrice ? fiatPrice * tokens : 0)})
+    </strong>
+  </p>
   <Tooltip id="balance-tooltip" />
 </article>

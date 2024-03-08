@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix animation not visbile on landing screen [#1501]
+- Fix layout shift (Balance component) [#1514]
+- Fix animation not visible on landing screen [#1501]
 - Mismatch between param and JSDoc param's type definition (OperationResult.spec.js) [#1471]
 - Fix gas limits update on ENV change [#1308]
 
@@ -121,49 +122,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ISSUES -->
 
-[#1501]: https://github.com/dusk-network/rusk/issues/1501
-[#1498]: https://github.com/dusk-network/rusk/issues/1498
+[#1284]: https://github.com/dusk-network/rusk/issues/1284
 [#1285]: https://github.com/dusk-network/rusk/issues/1285
-[#1458]: https://github.com/dusk-network/rusk/issues/1458
-[#1308]: https://github.com/dusk-network/rusk/issues/1308
-[#1359]: https://github.com/dusk-network/rusk/issues/1359
-[#1311]: https://github.com/dusk-network/rusk/issues/1311
-[#1323]: https://github.com/dusk-network/rusk/issues/1323
 [#1290]: https://github.com/dusk-network/rusk/issues/1290
+[#1308]: https://github.com/dusk-network/rusk/issues/1308
+[#1309]: https://github.com/dusk-network/rusk/issues/1309
+[#1311]: https://github.com/dusk-network/rusk/issues/1311
 [#1322]: https://github.com/dusk-network/rusk/issues/1322
+[#1323]: https://github.com/dusk-network/rusk/issues/1323
+[#1334]: https://github.com/dusk-network/rusk/issues/1334
+[#1335]: https://github.com/dusk-network/rusk/issues/1335
+[#1343]: https://github.com/dusk-network/rusk/issues/1343
 [#1352]: https://github.com/dusk-network/rusk/issues/1352
-[#1373]: https://github.com/dusk-network/rusk/issues/1373
+[#1353]: https://github.com/dusk-network/rusk/issues/1353
 [#1354]: https://github.com/dusk-network/rusk/issues/1354
-[#1401]: https://github.com/dusk-network/rusk/issues/1401
+[#1359]: https://github.com/dusk-network/rusk/issues/1359
 [#1360]: https://github.com/dusk-network/rusk/issues/1360
 [#1361]: https://github.com/dusk-network/rusk/issues/1361
+[#1362]: https://github.com/dusk-network/rusk/issues/1362
 [#1367]: https://github.com/dusk-network/rusk/issues/1367
-[#1353]: https://github.com/dusk-network/rusk/issues/1353
-[#1343]: https://github.com/dusk-network/rusk/issues/1343
+[#1373]: https://github.com/dusk-network/rusk/issues/1373
 [#1377]: https://github.com/dusk-network/rusk/issues/1377
-[#1403]: https://github.com/dusk-network/rusk/issues/1403
-[#1412]: https://github.com/dusk-network/rusk/issues/1412
-[#1410]: https://github.com/dusk-network/rusk/issues/1410
-[#1398]: https://github.com/dusk-network/rusk/issues/1398
-[#1335]: https://github.com/dusk-network/rusk/issues/1335
-[#1334]: https://github.com/dusk-network/rusk/issues/1334
-[#1309]: https://github.com/dusk-network/rusk/issues/1309
-[#1416]: https://github.com/dusk-network/rusk/issues/1416
-[#1423]: https://github.com/dusk-network/rusk/issues/1423
 [#1391]: https://github.com/dusk-network/rusk/issues/1391
+[#1398]: https://github.com/dusk-network/rusk/issues/1398
+[#1401]: https://github.com/dusk-network/rusk/issues/1401
+[#1403]: https://github.com/dusk-network/rusk/issues/1403
+[#1410]: https://github.com/dusk-network/rusk/issues/1410
+[#1412]: https://github.com/dusk-network/rusk/issues/1412
+[#1416]: https://github.com/dusk-network/rusk/issues/1416
 [#1417]: https://github.com/dusk-network/rusk/issues/1417
-[#1445]: https://github.com/dusk-network/rusk/issues/1445
+[#1423]: https://github.com/dusk-network/rusk/issues/1423
 [#1441]: https://github.com/dusk-network/rusk/issues/1441
-[#1460]: https://github.com/dusk-network/rusk/issues/1460
 [#1443]: https://github.com/dusk-network/rusk/issues/1443
+[#1445]: https://github.com/dusk-network/rusk/issues/1445
+[#1458]: https://github.com/dusk-network/rusk/issues/1458
+[#1460]: https://github.com/dusk-network/rusk/issues/1460
 [#1469]: https://github.com/dusk-network/rusk/issues/1469
 [#1470]: https://github.com/dusk-network/rusk/issues/1470
 [#1471]: https://github.com/dusk-network/rusk/issues/1471
-[#1362]: https://github.com/dusk-network/rusk/issues/1362
-[#1284]: https://github.com/dusk-network/rusk/issues/1284
-[#1506]: https://github.com/dusk-network/rusk/issues/1506
+[#1498]: https://github.com/dusk-network/rusk/issues/1498
+[#1501]: https://github.com/dusk-network/rusk/issues/1501
 [#1504]: https://github.com/dusk-network/rusk/issues/1504
+[#1506]: https://github.com/dusk-network/rusk/issues/1506
 [#1509]: https://github.com/dusk-network/rusk/issues/1509
+[#1514]: https://github.com/dusk-network/rusk/issues/1514
 
 <!-- VERSIONS -->
 

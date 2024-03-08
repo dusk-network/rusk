@@ -110,7 +110,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
       </p>
        
       <p
-        class="dusk-balance__fiat"
+        class="dusk-balance__fiat dusk-balance__fiat--visible"
       >
         <strong>
           (
@@ -523,6 +523,15 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         <!--&lt;Icon&gt;-->
       </p>
        
+      <p
+        class="dusk-balance__fiat"
+      >
+        <strong>
+          (
+          $0.00
+          )
+        </strong>
+      </p>
        
        
       <div
@@ -931,7 +940,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       </p>
        
       <p
-        class="dusk-balance__fiat"
+        class="dusk-balance__fiat dusk-balance__fiat--visible"
       >
         <strong>
           (
