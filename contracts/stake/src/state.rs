@@ -31,6 +31,8 @@ pub struct StakeState {
     slashed_amount: u64,
 }
 
+const STAKE_CONTRACT_VERSION: u64 = 8;
+
 impl StakeState {
     pub const fn new() -> Self {
         Self {
@@ -231,6 +233,11 @@ impl StakeState {
         self.slashed_amount
     }
 
+    /// Version of the stake contract
+    pub fn get_version(&self) -> u64 {
+        STAKE_CONTRACT_VERSION
+    }
+
     /// Slash the given `to_slash` amount from a `public_key` reward
     ///
     /// If the reward is less than the `to_slash` amount, then the reward is
@@ -310,6 +317,11 @@ impl StakeState {
                 },
             );
         }
+    }
+
+    /// Sets the slashed amount
+    pub fn set_slashed_amount(&mut self, slashed_amount: u64) {
+        self.slashed_amount = slashed_amount;
     }
 
     /// Feeds the host with the stakes.
