@@ -12,7 +12,7 @@ use crate::{vm, Network};
 use crate::database::Ledger;
 use node_data::ledger::{to_str, Block, Label};
 use node_data::message::payload::{GetBlocks, GetData};
-use node_data::message::Message;
+use node_data::message::{Message, Metadata};
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
@@ -128,10 +128,15 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.acc.write().await.restart_consensus().await;
     }
 
-    pub async fn on_event(
+    /// Handles an event of a block occurrence.
+    ///
+    /// A block event could originate from either local consensus execution, a
+    /// wire Block message (topics::Block), or a wire Quorum message
+    /// (topics::Quorum).
+    pub async fn on_block_event(
         &mut self,
         blk: &Block,
-        msg: &Message,
+        metadata: Option<Metadata>,
     ) -> anyhow::Result<()> {
         // Filter out blocks that have already been marked as
         // blacklisted upon successful fallback execution.
@@ -153,7 +158,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
         match &mut self.curr {
             State::InSync(ref mut curr) => {
-                if let Some((b, peer_addr)) = curr.on_event(blk, msg).await? {
+                if let Some((b, peer_addr)) =
+                    curr.on_block_event(blk, metadata).await?
+                {
                     // Transition from InSync to OutOfSync state
                     curr.on_exiting().await;
 
@@ -167,7 +174,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 }
             }
             State::OutOfSync(ref mut curr) => {
-                if curr.on_event(blk, msg).await? {
+                if curr.on_block_event(blk, metadata).await? {
                     // Transition from OutOfSync to InSync state
                     curr.on_exiting().await;
 
@@ -262,10 +269,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     /// performed when exiting the state
     async fn on_exiting(&mut self) {}
 
-    async fn on_event(
+    async fn on_block_event(
         &mut self,
         remote_blk: &Block,
-        msg: &Message,
+        metadata: Option<Metadata>,
     ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
         let mut acc = self.acc.write().await;
         let local_header = acc.tip_header().await;
@@ -418,7 +425,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing blocks from the
                     // main chain.
-                    if let Some(metadata) = &msg.metadata {
+                    if let Some(metadata) = &metadata {
                         let res = (remote_blk.clone(), metadata.src_addr);
                         return Ok(Some(res));
                     } else {
@@ -440,7 +447,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // If the accepted block is the one requested to presync peer,
             // switch to OutOfSync/Syncing mode
-            if let Some(metadata) = &msg.metadata {
+            if let Some(metadata) = &metadata {
                 if let Some(presync) = &mut self.presync {
                     if metadata.src_addr == presync.peer_addr
                         && remote_height == presync.start_height() + 1
@@ -459,7 +466,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         // Block with height higher than (tip + 1) is received
         // Before switching to outOfSync mode and download missing blocks,
         // ensure that the Peer does know next valid block
-        if let Some(metadata) = &msg.metadata {
+        if let Some(metadata) = &metadata {
             if self.presync.is_none() {
                 self.presync = Some(PresyncInfo::new(
                     metadata.src_addr,
@@ -584,10 +591,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.clear();
     }
 
-    pub async fn on_event(
+    pub async fn on_block_event(
         &mut self,
         blk: &Block,
-        msg: &Message,
+        metadata: Option<Metadata>,
     ) -> anyhow::Result<bool> {
         let mut acc = self.acc.write().await;
         let h = blk.header().height;
@@ -612,7 +619,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         if h == acc.get_curr_height().await + 1 {
             acc.try_accept_block(blk, false).await?;
 
-            if let Some(metadata) = &msg.metadata {
+            if let Some(metadata) = &metadata {
                 if metadata.src_addr == self.peer_addr {
                     // reset expiry_time only if we receive a valid block from
                     // the syncing peer.

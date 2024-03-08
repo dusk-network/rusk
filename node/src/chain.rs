@@ -127,9 +127,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 blk_hash = to_str(&blk.header().hash),
                             );
 
-                            // Handles a block that originates from local consensus
-                            // TODO: Remove the redundant blk.clone()
-                            if let Err(err) = fsm.on_event(&blk, &Message::new_block(blk.clone())).await  {
+                            // Handle a block that originates from local consensus execution
+                            if let Err(err) = fsm.on_block_event(&blk, None).await  {
                                 // Internal consensus execution has produced an invalid block
                                 error!(event = "failed_consensus",  ?err);
                                 failed_consensus = true;
@@ -162,9 +161,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 src = "wire",
                                 blk_height = blk.header().height,
                                 blk_hash = to_str(&blk.header().hash),
+                                metadata = ?msg.metadata,
                             );
 
-                            if let Err(e) = fsm.on_event(blk, &msg).await  {
+                            // Handle a block that originates from a network peer.
+                            // By disabling block broadcast, a block may be received from a peer
+                            // only after explicit request (on demand).
+                            if let Err(e) = fsm.on_block_event(blk, msg.metadata).await  {
                                  error!(event = "fsm::on_event failed", src = "wire", err = format!("{}",e));
                             } else {
                                 timeout = Self::next_timeout();
