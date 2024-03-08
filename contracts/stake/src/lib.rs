@@ -76,7 +76,20 @@ unsafe fn stakes(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.stakes())
 }
 
+#[no_mangle]
+unsafe fn prev_state_changes(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.prev_state_changes())
+}
+
 // "Management" transactions
+
+#[no_mangle]
+unsafe fn before_state_transition(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| {
+        assert_external_caller();
+        STATE.before_state_transition()
+    })
+}
 
 #[no_mangle]
 unsafe fn insert_stake(arg_len: u32) -> u32 {

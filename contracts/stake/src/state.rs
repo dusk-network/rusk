@@ -29,6 +29,12 @@ use transfer_contract_types::*;
 pub struct StakeState {
     stakes: BTreeMap<[u8; PublicKey::SIZE], (StakeData, PublicKey)>,
     slashed_amount: u64,
+    previous_block_state:
+        BTreeMap<[u8; PublicKey::SIZE], (Option<StakeData>, PublicKey)>,
+    // This is needed just to keep track of blocks to automatically clear the
+    // prev_block_state. Future implementations will rely on
+    // `before_state_transition` to handle that
+    previous_block_height: u64,
 }
 
 const STAKE_CONTRACT_VERSION: u64 = 8;
@@ -38,10 +44,26 @@ impl StakeState {
         Self {
             stakes: BTreeMap::new(),
             slashed_amount: 0u64,
+            previous_block_state: BTreeMap::new(),
+            previous_block_height: 0,
+        }
+    }
+
+    pub fn before_state_transition(&mut self) {
+        self.previous_block_state.clear()
+    }
+
+    fn clear_prev_if_needed(&mut self) {
+        let current_height = rusk_abi::block_height();
+        if current_height != self.previous_block_height {
+            self.previous_block_height = current_height;
+            self.before_state_transition();
         }
     }
 
     pub fn stake(&mut self, stake: Stake) {
+        self.clear_prev_if_needed();
+
         if stake.value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
@@ -81,13 +103,22 @@ impl StakeState {
                 value: stake.value,
             },
         );
+
+        let key = stake.public_key.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert((None, stake.public_key));
     }
 
     pub fn unstake(&mut self, unstake: Unstake) {
+        self.clear_prev_if_needed();
+
         // remove the stake from a key and increment the signature counter
         let loaded_stake = self
             .get_stake_mut(&unstake.public_key)
             .expect("A stake should exist in the map to be unstaked!");
+
+        let prev_value = Some(loaded_stake.clone());
 
         let counter = loaded_stake.counter();
 
@@ -123,6 +154,11 @@ impl StakeState {
                 value,
             },
         );
+
+        let key = unstake.public_key.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert((prev_value, unstake.public_key));
     }
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {
@@ -217,6 +253,8 @@ impl StakeState {
     /// Rewards a `public_key` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
     pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
+        self.clear_prev_if_needed();
+
         let stake = self.load_or_create_stake_mut(public_key);
         stake.increase_reward(value);
         rusk_abi::emit(
@@ -244,9 +282,13 @@ impl StakeState {
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
     pub fn slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+        self.clear_prev_if_needed();
+
         let stake = self
             .get_stake_mut(public_key)
             .expect("The stake to slash should exist");
+
+        let prev_value = Some(stake.clone());
 
         let to_slash = min(to_slash, stake.reward);
         stake.reward -= to_slash;
@@ -276,6 +318,11 @@ impl StakeState {
                 value: to_slash,
             },
         );
+
+        let key = public_key.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert((prev_value, *public_key));
     }
 
     /// Slash the given `to_slash` amount from a `public_key` stake
@@ -283,9 +330,13 @@ impl StakeState {
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
     pub fn hard_slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+        self.clear_prev_if_needed();
+
         let stake_info = self
             .get_stake_mut(public_key)
             .expect("The stake to slash should exist");
+
+        let prev_value = Some(stake_info.clone());
 
         let stake = stake_info
             .amount
@@ -317,6 +368,11 @@ impl StakeState {
                 },
             );
         }
+
+        let key = public_key.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert((prev_value, *public_key));
     }
 
     /// Sets the slashed amount
@@ -327,6 +383,13 @@ impl StakeState {
     /// Feeds the host with the stakes.
     pub fn stakes(&self) {
         for (stake_data, pk) in self.stakes.values() {
+            rusk_abi::feed((*pk, stake_data.clone()));
+        }
+    }
+
+    /// Feeds the host with previous state of the changed provisioners.
+    pub fn prev_state_changes(&self) {
+        for (stake_data, pk) in self.previous_block_state.values() {
             rusk_abi::feed((*pk, stake_data.clone()));
         }
     }
