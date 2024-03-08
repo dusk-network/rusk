@@ -306,6 +306,41 @@ impl Rusk {
         }))
     }
 
+    /// Fetches the previous state data for stake changes in the contract.
+    ///
+    /// Communicates with the stake contract to obtain information about the
+    /// state data before the last changes. Optionally takes a base commit
+    /// hash to query changes since a specific point in time.
+    ///
+    /// # Arguments
+    ///
+    /// - `base_commit`: An optional base commit hash indicating the starting
+    ///   point for querying changes.
+    ///
+    /// # Returns
+    ///
+    /// Returns a Result containing an iterator over tuples. Each tuple consists
+    /// of a `BlsPublicKey` and an optional `StakeData`, representing the
+    /// state data before the last changes in the stake contract.
+    pub fn last_provisioners_change(
+        &self,
+        base_commit: Option<[u8; 32]>,
+    ) -> Result<impl Iterator<Item = (BlsPublicKey, Option<StakeData>)>> {
+        let (sender, receiver) = mpsc::channel();
+        self.feeder_query(
+            STAKE_CONTRACT,
+            "prev_state_changes",
+            &(),
+            sender,
+            base_commit,
+        )?;
+        Ok(receiver.into_iter().map(|bytes| {
+            rkyv::from_bytes::<(BlsPublicKey, Option<StakeData>)>(&bytes).expect(
+                "The contract should only return (pk, Option<stake_data>) tuples",
+            )
+        }))
+    }
+
     pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
         self.query(STAKE_CONTRACT, "get_stake", pk)
     }
