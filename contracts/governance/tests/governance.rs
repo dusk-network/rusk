@@ -47,7 +47,9 @@ fn instantiate(
     session
         .deploy(
             governance_bytecode,
-            ContractData::builder(OWNER).contract_id(GOVERNANCE_ID),
+            ContractData::builder()
+                .owner(OWNER)
+                .contract_id(GOVERNANCE_ID),
             POINT_LIMIT,
         )
         .expect("Deploying the governance contract should succeed");
