@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove box-shadow from components [#1519]
 - Remove orphan dependency `@zerodevx/svelte-toast` [#1509]
 - Remove `canvas` dependency [#1506]
 - Remove DAT file UI references [#1498]
@@ -168,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1506]: https://github.com/dusk-network/rusk/issues/1506
 [#1509]: https://github.com/dusk-network/rusk/issues/1509
 [#1514]: https://github.com/dusk-network/rusk/issues/1514
+[#1519]: https://github.com/dusk-network/rusk/issues/1519
 
 <!-- VERSIONS -->
 
