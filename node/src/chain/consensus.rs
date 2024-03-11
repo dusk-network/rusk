@@ -321,10 +321,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         let vm = self.vm.read().await;
 
-        Ok(vm.verify_state_transition(blk).map_err(|err| {
-            error!("failed to call VST {}", err);
-            Error::Failed
-        })?)
+        Ok(vm
+            .verify_state_transition(blk, self.provisioners.current())
+            .map_err(|err| {
+                error!("failed to call VST {}", err);
+                Error::Failed
+            })?)
     }
 
     async fn execute_state_transition(
@@ -340,9 +342,15 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 let txs = view.get_txs_sorted_by_fee().map_err(|err| {
                     anyhow::anyhow!("failed to get mempool txs: {}", err)
                 })?;
-                let ret = vm.execute_state_transition(&params, txs).map_err(
-                    |err| anyhow::anyhow!("failed to call EST {}", err),
-                )?;
+                let ret = vm
+                    .execute_state_transition(
+                        &params,
+                        txs,
+                        self.provisioners.current(),
+                    )
+                    .map_err(|err| {
+                        anyhow::anyhow!("failed to call EST {}", err)
+                    })?;
                 Ok(ret)
             })
             .map_err(|err: anyhow::Error| {
