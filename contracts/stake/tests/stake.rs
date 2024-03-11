@@ -4,23 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::mpsc;
+pub mod common;
 
+use crate::common::assert::assert_event;
+use crate::common::init::instantiate;
+use crate::common::utils::*;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::prelude::*;
+use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use ff::Field;
-use phoenix_core::transaction::{TreeLeaf, TRANSFER_TREE_DEPTH};
 use phoenix_core::{Fee, Note, Transaction};
-use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
-use rand::{CryptoRng, RngCore, SeedableRng};
+use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{CallReceipt, ContractData, ContractError, Error, Session, VM};
-use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::STAKE_CONTRACT;
 use stake_contract_types::{
     stake_signature_message, unstake_signature_message,
     withdraw_signature_message, Stake, StakeData, Unstake, Withdraw,
@@ -32,169 +31,7 @@ use transfer_circuits::{
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
-const POINT_LIMIT: u64 = 0x100000000;
-
-type Result<T, E = Error> = core::result::Result<T, E>;
-
-const OWNER: [u8; 32] = [0; 32];
-
-const H: usize = TRANSFER_TREE_DEPTH;
-const A: usize = 4;
-
-/// Instantiate the virtual machine with the transfer contract deployed, with a
-/// single note owned by the given public spend key.
-fn instantiate<Rng: RngCore + CryptoRng>(
-    rng: &mut Rng,
-    vm: &VM,
-    psk: &PublicSpendKey,
-) -> Session {
-    let transfer_bytecode = include_bytes!(
-        "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
-    );
-    let stake_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
-    );
-
-    let mut session = rusk_abi::new_genesis_session(vm);
-
-    session
-        .deploy(
-            transfer_bytecode,
-            ContractData::builder()
-                .owner(OWNER)
-                .contract_id(TRANSFER_CONTRACT),
-            POINT_LIMIT,
-        )
-        .expect("Deploying the transfer contract should succeed");
-
-    session
-        .deploy(
-            stake_bytecode,
-            ContractData::builder()
-                .owner(OWNER)
-                .contract_id(STAKE_CONTRACT),
-            POINT_LIMIT,
-        )
-        .expect("Deploying the stake contract should succeed");
-
-    let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
-
-    // push genesis note to the contract
-    session
-        .call::<_, Note>(
-            TRANSFER_CONTRACT,
-            "push_note",
-            &(0u64, genesis_note),
-            POINT_LIMIT,
-        )
-        .expect("Pushing genesis note should succeed");
-
-    update_root(&mut session).expect("Updating the root should succeed");
-
-    // sets the block height for all subsequent operations to 1
-    let base = session.commit().expect("Committing should succeed");
-
-    rusk_abi::new_session(vm, base, 1)
-        .expect("Instantiating new session should succeed")
-}
-
-fn leaves_from_height(
-    session: &mut Session,
-    height: u64,
-) -> Result<Vec<TreeLeaf>> {
-    let (feeder, receiver) = mpsc::channel();
-
-    session.feeder_call::<_, ()>(
-        TRANSFER_CONTRACT,
-        "leaves_from_height",
-        &height,
-        feeder,
-    )?;
-
-    Ok(receiver
-        .iter()
-        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
-        .collect())
-}
-fn update_root(session: &mut Session) -> Result<()> {
-    session
-        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn root(session: &mut Session) -> Result<BlsScalar> {
-    session
-        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn opening(
-    session: &mut Session,
-    pos: u64,
-) -> Result<Option<PoseidonOpening<(), H, A>>> {
-    session
-        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn prover_verifier(circuit_name: &str) -> (Prover, Verifier) {
-    let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
-        .expect(&format!(
-            "There should be circuit data stored for {}",
-            circuit_name
-        ));
-    let (pk, vd) = circuit_profile
-        .get_keys()
-        .expect(&format!("there should be keys stored for {}", circuit_name));
-
-    let prover = Prover::try_from_bytes(pk).unwrap();
-    let verifier = Verifier::try_from_bytes(vd).unwrap();
-
-    (prover, verifier)
-}
-
-fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
-    vk: ViewKey,
-    iter: I,
-) -> Vec<Note> {
-    iter.into_iter().filter(|note| vk.owns(note)).collect()
-}
-
-/// Executes a transaction, returning the call receipt
-fn execute(
-    session: &mut Session,
-    tx: Transaction,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>> {
-    // Spend the inputs and execute the call. If this errors the transaction is
-    // unspendable.
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        &tx,
-        tx.fee.gas_limit,
-    )?;
-
-    // Ensure all gas is consumed if there's an error in the contract call
-    if receipt.data.is_err() {
-        receipt.gas_spent = receipt.gas_limit;
-    }
-
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
-    let refund_receipt = session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &(tx.fee, receipt.gas_spent),
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
-
-    receipt.events.extend(refund_receipt.events);
-
-    Ok(receipt)
-}
+const POINT_LIMIT: u64 = 0x100_000_000;
 
 #[test]
 fn stake_withdraw_unstake() {
@@ -214,7 +51,7 @@ fn stake_withdraw_unstake() {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let mut session = instantiate(rng, vm, &psk);
+    let mut session = instantiate(rng, vm, &psk, GENESIS_VALUE);
 
     let leaves = leaves_from_height(&mut session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -369,6 +206,9 @@ fn stake_withdraw_unstake() {
 
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+
+    assert_event(&receipt.events, "stake", &pk, GENESIS_VALUE / 2);
+
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
@@ -395,7 +235,7 @@ fn stake_withdraw_unstake() {
 
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
-    session
+    let receipt = session
         .call::<_, ()>(
             STAKE_CONTRACT,
             "reward",
@@ -403,6 +243,8 @@ fn stake_withdraw_unstake() {
             POINT_LIMIT,
         )
         .expect("Rewarding a key should succeed");
+
+    assert_event(&receipt.events, "reward", &pk, REWARD_AMOUNT);
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
@@ -586,6 +428,9 @@ fn stake_withdraw_unstake() {
 
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+
+    assert_event(&receipt.events, "withdraw", &pk, REWARD_AMOUNT);
+
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
@@ -814,6 +659,9 @@ fn stake_withdraw_unstake() {
 
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+
+    assert_event(&receipt.events, "unstake", &pk, GENESIS_VALUE / 2);
+
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");

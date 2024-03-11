@@ -31,6 +31,8 @@ pub struct StakeState {
     slashed_amount: u64,
 }
 
+const STAKE_CONTRACT_VERSION: u64 = 8;
+
 impl StakeState {
     pub const fn new() -> Self {
         Self {
@@ -71,6 +73,14 @@ impl StakeState {
 
         let _: bool = rusk_abi::call(transfer_module, "stct", &stct)
             .expect("Sending note to contract should succeed");
+
+        rusk_abi::emit(
+            "stake",
+            StakingEvent {
+                public_key: stake.public_key,
+                value: stake.value,
+            },
+        );
     }
 
     pub fn unstake(&mut self, unstake: Unstake) {
@@ -105,6 +115,14 @@ impl StakeState {
             },
         )
         .expect("Withdrawing note from contract should be successful");
+
+        rusk_abi::emit(
+            "unstake",
+            StakingEvent {
+                public_key: unstake.public_key,
+                value,
+            },
+        );
     }
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {
@@ -152,6 +170,14 @@ impl StakeState {
             },
         )
         .expect("Minting a reward note should succeed");
+
+        rusk_abi::emit(
+            "withdraw",
+            StakingEvent {
+                public_key: withdraw.public_key,
+                value: reward,
+            },
+        );
     }
 
     /// Gets a reference to a stake.
@@ -193,11 +219,23 @@ impl StakeState {
     pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
         let stake = self.load_or_create_stake_mut(public_key);
         stake.increase_reward(value);
+        rusk_abi::emit(
+            "reward",
+            StakingEvent {
+                public_key: *public_key,
+                value,
+            },
+        );
     }
 
     /// Total amount slashed from the genesis
     pub fn slashed_amount(&self) -> u64 {
         self.slashed_amount
+    }
+
+    /// Version of the stake contract
+    pub fn get_version(&self) -> u64 {
+        STAKE_CONTRACT_VERSION
     }
 
     /// Slash the given `to_slash` amount from a `public_key` reward
@@ -219,10 +257,25 @@ impl StakeState {
                 .as_mut()
                 .expect("The stake to slash should be active");
             *eligibility = next_epoch(rusk_abi::block_height());
+            rusk_abi::emit(
+                "shifted",
+                StakingEvent {
+                    public_key: *public_key,
+                    value: *eligibility,
+                },
+            );
         }
 
         // Update the total slashed amount
         self.slashed_amount += to_slash;
+
+        rusk_abi::emit(
+            "slash",
+            StakingEvent {
+                public_key: *public_key,
+                value: to_slash,
+            },
+        );
     }
 
     /// Slash the given `to_slash` amount from a `public_key` stake
@@ -255,7 +308,20 @@ impl StakeState {
 
             // Update the total slashed amount
             self.slashed_amount += to_slash;
+
+            rusk_abi::emit(
+                "hard_slash",
+                StakingEvent {
+                    public_key: *public_key,
+                    value: to_slash,
+                },
+            );
         }
+    }
+
+    /// Sets the slashed amount
+    pub fn set_slashed_amount(&mut self, slashed_amount: u64) {
+        self.slashed_amount = slashed_amount;
     }
 
     /// Feeds the host with the stakes.
