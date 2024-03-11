@@ -2,3 +2,4 @@ Cargo.lock
 **/target
 **/*.rs.bk
 .rusk
+.DS_Store
