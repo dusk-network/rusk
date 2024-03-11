@@ -291,33 +291,36 @@ impl StakeState {
         let prev_value = Some(stake.clone());
 
         let to_slash = min(to_slash, stake.reward);
-        stake.reward -= to_slash;
 
-        if stake.reward == 0 {
-            let (_, eligibility) = stake
-                .amount
-                .as_mut()
-                .expect("The stake to slash should be active");
-            *eligibility = next_epoch(rusk_abi::block_height());
+        if to_slash > 0 {
+            stake.reward -= to_slash;
+
             rusk_abi::emit(
-                "shifted",
+                "slash",
                 StakingEvent {
                     public_key: *public_key,
-                    value: *eligibility,
+                    value: to_slash,
                 },
             );
         }
 
+        if stake.reward == 0 {
+            // stake.amount can be None if the provisioner unstake in the same
+            // block
+            if let Some((_, eligibility)) = stake.amount.as_mut() {
+                *eligibility = next_epoch(rusk_abi::block_height()) + EPOCH;
+                rusk_abi::emit(
+                    "shifted",
+                    StakingEvent {
+                        public_key: *public_key,
+                        value: *eligibility,
+                    },
+                );
+            }
+        }
+
         // Update the total slashed amount
         self.slashed_amount += to_slash;
-
-        rusk_abi::emit(
-            "slash",
-            StakingEvent {
-                public_key: *public_key,
-                value: to_slash,
-            },
-        );
 
         let key = public_key.to_bytes();
         self.previous_block_state
