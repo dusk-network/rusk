@@ -4,12 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod migration;
+pub mod migration;
 mod query;
 
 use tracing::info;
 
-use crate::chain::vm::migration::Migration;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
@@ -24,6 +23,7 @@ impl VMExecution for Rusk {
         &self,
         params: &CallParams,
         txs: I,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
         Vec<Transaction>,
@@ -38,6 +38,7 @@ impl VMExecution for Rusk {
                 params.generator_pubkey.inner(),
                 txs,
                 &params.missed_generators[..],
+                provisioners,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -49,6 +50,7 @@ impl VMExecution for Rusk {
     fn verify_state_transition(
         &self,
         blk: &Block,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
@@ -63,6 +65,7 @@ impl VMExecution for Rusk {
                 &generator,
                 blk.txs(),
                 &blk.header().failed_iterations.to_missed_generators()?,
+                provisioners,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
@@ -72,6 +75,7 @@ impl VMExecution for Rusk {
     fn accept(
         &self,
         blk: &Block,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
@@ -90,6 +94,7 @@ impl VMExecution for Rusk {
                     event_hash: blk.header().event_hash,
                 }),
                 &blk.header().failed_iterations.to_missed_generators()?,
+                provisioners,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
@@ -99,6 +104,7 @@ impl VMExecution for Rusk {
     fn finalize(
         &self,
         blk: &Block,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received finalize request");
         let generator = blk.header().generator_bls_pubkey;
@@ -117,21 +123,11 @@ impl VMExecution for Rusk {
                     event_hash: blk.header().event_hash,
                 }),
                 &blk.header().failed_iterations.to_missed_generators()?,
+                provisioners,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")
             })?;
-
-        let current_commit = self.state_root();
-        let r = Migration::migrate(
-            self.migration_height,
-            &self.vm,
-            current_commit,
-            blk.header().height,
-        );
-        if r.is_err() {
-            info!("MIGRATION RESULT={:?}", r);
-        }
 
         Ok((txs, state_root))
     }
