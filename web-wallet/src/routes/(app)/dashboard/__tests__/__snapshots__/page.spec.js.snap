@@ -133,6 +133,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
     </article>
     <!--&lt;Balance&gt;-->
      
+     
     <article
       class="tabs s-qpUp5WgwgSGx"
     >
@@ -546,6 +547,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
       <!--&lt;Tooltip&gt;-->
     </article>
     <!--&lt;Balance&gt;-->
+     
      
     <article
       class="tabs s-qpUp5WgwgSGx"
@@ -962,6 +964,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       <!--&lt;Tooltip&gt;-->
     </article>
     <!--&lt;Balance&gt;-->
+     
      
     <article
       class="tabs s-qpUp5WgwgSGx"
