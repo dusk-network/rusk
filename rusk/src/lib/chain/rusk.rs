@@ -203,6 +203,7 @@ impl Rusk {
     ///   * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
+    #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
         block_height: u64,
@@ -255,6 +256,7 @@ impl Rusk {
     /// * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing None value
     ///   disables the check.
+    #[allow(clippy::too_many_arguments)]
     pub fn finalize_transactions(
         &self,
         block_height: u64,
@@ -402,6 +404,7 @@ async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn accept(
     mut session: Session,
     block_height: u64,

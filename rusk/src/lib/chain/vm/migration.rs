@@ -57,7 +57,7 @@ impl Migration {
             session.call::<_, ()>(
                 new_contract,
                 "insert_stake",
-                &(pk.clone(), stake_data.clone()),
+                &(pk, stake_data.clone()),
                 MIGRATION_GAS_LIMIT,
             )?;
         }
