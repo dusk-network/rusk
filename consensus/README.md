@@ -15,7 +15,7 @@ The SA consensus is divided into _rounds_, each of which creates a new block. In
   if votes reach a quorum of $2/3$ (i.e., 67% of the committee), the validation outputs $B$, otherwise NIL;
 
   3. _Ratification_: in this phase, if the output of the Validation is not NIL, a second _committee_, also extracted from the _Eligible Provisioners_, vote on the candidate block $B$;
-  if votes reach the quorum, an quorum message (containing the votes of the two Validation and Ratification phases) is broadcast;
+  if votes reach the quorum, a quorum message (containing the votes of the two Validation and Ratification phases) is broadcast;
 
 Note: the extraction process, used in the all phases, is implemented using the _Deterministic Sortition_ algorithm [^3]. 
 
