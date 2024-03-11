@@ -9,11 +9,14 @@ use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
 
-use crate::database::Ledger;
+use crate::database::{Candidate, Ledger};
 use node_data::ledger::{to_str, Block, Label};
-use node_data::message::payload::{GetBlocks, GetData};
-use node_data::message::{Message, Metadata};
+use node_data::message::payload::{
+    GetBlocks, GetData, RatificationResult, Vote,
+};
+use node_data::message::{payload, Message, Metadata};
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Formatter};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
 use std::time::Duration;
@@ -192,6 +195,98 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 }
             }
         }
+        Ok(())
+    }
+
+    /// Handles a Quorum message.
+    ///
+    /// Ideally, the winning block will be built from the quorum certificate
+    /// and candidate block. If the candidate is not found then the
+    /// winning block will be requested from the network/peer.
+    pub(crate) async fn on_quorum_msg(
+        &mut self,
+        quorum: &payload::Quorum,
+        msg: &Message,
+    ) -> anyhow::Result<()> {
+        let res = match quorum.cert.result {
+            RatificationResult::Success(Vote::Valid(hash)) => {
+                let acc = self.acc.read().await;
+                let local_header = acc.tip_header().await;
+                let remote_height = msg.header.round;
+
+                // Quorum from future
+                if remote_height > local_header.height + 1 {
+                    debug!(
+                        event = "Quorum from future",
+                        hash = to_str(&hash),
+                        height = remote_height,
+                    );
+
+                    // Request by hash
+                    request_block(
+                        &self.network,
+                        BlockRequest::ByHash(hash),
+                        msg.metadata.as_ref().unwrap().src_addr,
+                    )
+                    .await;
+
+                    Ok(None)
+                } else {
+                    // If the quorum msg belongs to the next block,
+                    // if the quorum msg belongs to a block of current round
+                    // with different hash:
+                    // Then try to fetch the corresponding candidate and
+                    // redirect to on_block_event
+                    if (remote_height == local_header.height + 1)
+                        || (remote_height == local_header.height
+                            && local_header.hash != hash)
+                    {
+                        match acc
+                            .db
+                            .read()
+                            .await
+                            .view(|t| t.fetch_candidate_block(&hash))
+                        {
+                            Ok(b) => Ok(b),
+                            Err(err) => {
+                                error!(
+                                    event = "Candidate not found",
+                                    hash = to_str(&hash),
+                                    height = remote_height,
+                                    err = ?err,
+                                );
+
+                                // Request by hash
+                                request_block(
+                                    &self.network,
+                                    BlockRequest::ByHash(hash),
+                                    msg.metadata.as_ref().unwrap().src_addr,
+                                )
+                                .await;
+
+                                Err(err)
+                            }
+                        }
+                    } else {
+                        Ok(None)
+                    }
+                }
+            }
+            _ => Ok(None),
+        }?;
+
+        if let Some(mut block) = res {
+            info!(
+                event = "block received",
+                src = "quorum_msg",
+                blk_height = block.header().height,
+                blk_hash = to_str(&block.header().hash),
+            );
+
+            block.set_certificate(quorum.cert);
+            self.on_block_event(&block, msg.metadata.clone()).await?;
+        }
+
         Ok(())
     }
 
@@ -475,29 +570,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 ));
             }
 
-            self.request_block(local_header.height + 1, metadata.src_addr)
-                .await;
+            request_block(
+                &self.network,
+                BlockRequest::ByHeight(local_header.height + 1),
+                metadata.src_addr,
+            )
+            .await;
         }
 
         Ok(None)
-    }
-
-    /// Requests a block by height from a specified peer
-    async fn request_block(&self, height: u64, peer_addr: SocketAddr) {
-        let mut get_data = GetData::default();
-        get_data.inner.add_block_from_height(height);
-
-        debug!(event = "request block", height, ?peer_addr);
-
-        if let Err(err) = self
-            .network
-            .read()
-            .await
-            .send_to_peer(&Message::new_get_data(get_data), peer_addr)
-            .await
-        {
-            warn!("could not request block {err}")
-        };
     }
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
@@ -677,4 +758,49 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         Ok(false)
     }
+}
+
+enum BlockRequest {
+    ByHeight(u64),
+    ByHash([u8; 32]),
+}
+impl Debug for BlockRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BlockRequest::ByHeight(height) => {
+                write!(f, "BlockRequest::ByHeight({})", height)
+            }
+            BlockRequest::ByHash(hash) => {
+                write!(f, "BlockRequest::ByHash({})", to_str(hash))
+            }
+        }
+    }
+}
+
+/// Requests a block by height from a specified peer
+async fn request_block<N: Network>(
+    network: &Arc<RwLock<N>>,
+    req: BlockRequest,
+    peer_addr: SocketAddr,
+) {
+    let mut get_data = GetData::default();
+    match req {
+        BlockRequest::ByHeight(height) => {
+            get_data.inner.add_block_from_height(height);
+        }
+        BlockRequest::ByHash(hash) => {
+            get_data.inner.add_block_from_hash(hash);
+        }
+    };
+
+    debug!(event = "request block", ?req, ?peer_addr);
+
+    if let Err(err) = network
+        .read()
+        .await
+        .send_to_peer(&Message::new_get_data(get_data), peer_addr)
+        .await
+    {
+        warn!("could not request block {err}")
+    };
 }
