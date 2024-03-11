@@ -177,11 +177,19 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         // Re-route message to the acceptor
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_)
-                        | Payload::Quorum(_) => {
+                        | Payload::Ratification(_) => {
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
                                 warn!("msg discarded: {e}");
                             }
+                        },
+                        Payload::Quorum(payload) => {
+                            if let Err(e) = acc.read().await.reroute_msg(msg.clone()).await {
+                                warn!("msg discarded: {e}");
+                            }
+
+                            if let Err(err) = fsm.on_quorum_msg(payload, &msg).await {
+                                warn!(event = "quorum msg", ?err);
+                            };
                         }
                         _ => warn!("invalid inbound message"),
                     }
