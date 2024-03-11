@@ -27,6 +27,7 @@ use rand::SeedableRng;
 use tempfile::tempdir;
 
 use common::state::new_state;
+use dusk_consensus::user::provisioners::Provisioners;
 
 fn load_txs() -> Vec<Transaction> {
     const TXS_BYTES: &[u8] = include_bytes!("block");
@@ -97,6 +98,7 @@ pub fn accept_benchmark(c: &mut Criterion) {
                             txs,
                             None,
                             &[],
+                            &Provisioners::empty(),
                         )
                         .expect("Accepting transactions should succeed");
 
