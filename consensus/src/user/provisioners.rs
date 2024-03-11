@@ -24,6 +24,12 @@ pub struct Provisioners {
     members: BTreeMap<PublicKey, Stake>,
 }
 
+impl Provisioners {
+    pub fn iter(&self) -> impl Iterator<Item = (&PublicKey, &Stake)> {
+        self.members.iter()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ContextProvisioners {
     current: Provisioners,
