@@ -17,6 +17,7 @@ use std::mem;
 use super::committee::Committee;
 
 pub const DUSK: u64 = 1_000_000_000;
+const MINIMUM_STAKE: u64 = 1_000 * DUSK;
 
 #[derive(Clone, Debug)]
 pub struct Provisioners {
@@ -117,9 +118,9 @@ impl Provisioners {
         &self,
         round: u64,
     ) -> impl Iterator<Item = (&PublicKey, &Stake)> {
-        self.members
-            .iter()
-            .filter(move |(_, m)| m.is_eligible(round))
+        self.members.iter().filter(move |(_, m)| {
+            m.is_eligible(round) && m.value() >= MINIMUM_STAKE
+        })
     }
 
     /// Runs the deterministic sortition algorithm which determines the
