@@ -34,9 +34,6 @@ use crate::database::rocksdb::{
     MD_STATE_ROOT_KEY,
 };
 
-const DUSK: u64 = 1_000_000_000;
-const MINIMUM_STAKE: u64 = 1_000 * DUSK;
-
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
     Commit([u8; 32]),
@@ -86,6 +83,7 @@ enum ProvisionerChange {
     Stake(PublicKey),
     Unstake(PublicKey),
     Slash(PublicKey),
+    Reward(PublicKey),
 }
 
 impl ProvisionerChange {
@@ -94,6 +92,7 @@ impl ProvisionerChange {
             ProvisionerChange::Slash(pk) => pk,
             ProvisionerChange::Unstake(pk) => pk,
             ProvisionerChange::Stake(pk) => pk,
+            ProvisionerChange::Reward(pk) => pk,
         }
     }
 
@@ -239,7 +238,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let pk = change.into_public_key();
                 let prov = pk.to_bs58();
                 match vm.get_provisioner(pk.inner())? {
-                    Some(stake) if stake.value() >= MINIMUM_STAKE => {
+                    Some(stake) => {
                         debug!(event = "new_stake", src, prov, ?stake);
                         let replaced = new_prov.replace_stake(pk, stake);
                         if replaced.is_none() && !is_stake {
@@ -265,7 +264,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         blk: &Block,
         txs: &[SpentTransaction],
     ) -> Result<Vec<ProvisionerChange>> {
-        let mut changed_provisioners = vec![];
+        let generator = blk.header().generator_bls_pubkey.0;
+        let generator = generator
+            .try_into()
+            .map_err(|e| anyhow::anyhow!("Cannot deserialize bytes {e:?}"))?;
+        let reward = ProvisionerChange::Reward(generator);
+        let mut changed_provisioners = vec![reward];
 
         // Update provisioners if a slash has been applied
         for bytes in blk.header().failed_iterations.to_missed_generators_bytes()
