@@ -164,10 +164,9 @@ impl VMExecution for Rusk {
         let stake = self
             .provisioner(pk)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioner {e}"))?
-            .and_then(|stake| {
-                stake.amount.map(|(value, eligibility)| {
-                    Stake::new(value, stake.reward, eligibility)
-                })
+            .map(|stake| {
+                let (value, eligibility) = stake.amount.unwrap_or_default();
+                Stake::new(value, stake.reward, eligibility)
             });
         Ok(stake)
     }
@@ -206,12 +205,11 @@ impl Rusk {
         let provisioners = self
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .filter_map(|(key, stake)| {
-                stake.amount.map(|(value, eligibility)| {
-                    let stake = Stake::new(value, stake.reward, eligibility);
-                    let pubkey_bls = node_data::bls::PublicKey::new(key);
-                    (pubkey_bls, stake)
-                })
+            .map(|(key, stake)| {
+                let (value, eligibility) = stake.amount.unwrap_or_default();
+                let stake = Stake::new(value, stake.reward, eligibility);
+                let pubkey_bls = node_data::bls::PublicKey::new(key);
+                (pubkey_bls, stake)
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
