@@ -24,7 +24,7 @@ impl Migration {
         session: Session,
         block_height: u64,
         provisioners: &Provisioners,
-    ) -> anyhow::Result<Session> {
+    ) -> crate::Result<Session> {
         match migration_height {
             Some(h) if h == block_height => (),
             _ => return Ok(session),

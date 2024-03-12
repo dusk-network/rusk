@@ -11,7 +11,7 @@ use std::{fs, io};
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::{debug, info};
+use tracing::{debug, error};
 
 use crate::chain::vm::migration::Migration;
 use dusk_bls12_381::BlsScalar;
@@ -85,7 +85,18 @@ impl Rusk {
         provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
+
+        let mut session = Migration::migrate(
+            self.migration_height,
+            session,
+            block_height,
+            provisioners,
+        )
+        .map_err(|e| {
+            error!("Error while migrating: {e}");
+            e
+        })?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -148,17 +159,6 @@ impl Rusk {
             missed_generators,
             &mut event_hasher,
         )?;
-
-        let r = Migration::migrate(
-            self.migration_height,
-            session,
-            block_height,
-            provisioners,
-        );
-        if r.is_err() {
-            info!("MIGRATION RESULT={:?}", r);
-        }
-        let session = r.expect("migration should succeed");
 
         let state_root = session.root();
         let event_hash = event_hasher.finalize().into();
@@ -430,7 +430,7 @@ async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
 
 #[allow(clippy::too_many_arguments)]
 fn accept(
-    mut session: Session,
+    session: Session,
     block_height: u64,
     block_gas_limit: u64,
     generator: &BlsPublicKey,
@@ -439,6 +439,17 @@ fn accept(
     provisioners: &Provisioners,
     migration_height: Option<u64>,
 ) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
+    let mut session = Migration::migrate(
+        migration_height,
+        session,
+        block_height,
+        provisioners,
+    )
+    .map_err(|e| {
+        error!("Error while migrating: {e}");
+        e
+    })?;
+
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
@@ -475,17 +486,6 @@ fn accept(
         missed_generators,
         &mut event_hasher,
     )?;
-
-    let r = Migration::migrate(
-        migration_height,
-        session,
-        block_height,
-        provisioners,
-    );
-    if r.is_err() {
-        info!("MIGRATION RESULT={:?}", r);
-    }
-    let session = r.expect("migration should succeed");
 
     let state_root = session.root();
     let event_hash = event_hasher.finalize().into();
