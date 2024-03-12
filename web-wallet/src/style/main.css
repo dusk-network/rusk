@@ -10,8 +10,9 @@
 @import url("./dusk-components/checkbox.css");
 @import url("./dusk-components/error-alert.css");
 @import url("./dusk-components/error-details.css");
-@import url("./dusk-components/mnemonic.css");
+@import url("./dusk-components/field-button-group.css");
 @import url("./dusk-components/icon.css");
+@import url("./dusk-components/mnemonic.css");
 @import url("./dusk-components/progress-bar.css");
 @import url("./dusk-components/select.css");
 @import url("./dusk-components/stepper.css");
@@ -25,9 +26,9 @@
 @import url("./dusk-components/wizard.css");
 @import url("./dusk-components/words.css");
 @import url("./app-components/headings.css");
+@import url("./app-components/horizontal-rules.css");
 @import url("./app-components/marks.css");
 @import url("./app-components/notice.css");
-@import url("./app-components/horizontal-rules.css");
 
 @font-face {
   font-family: "Soehne";

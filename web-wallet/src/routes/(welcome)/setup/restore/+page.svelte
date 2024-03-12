@@ -8,7 +8,7 @@
   import MnemonicAuthenticate from "./MnemonicAuthenticate.svelte";
   import { Wizard, WizardStep } from "$lib/dusk/components";
   import { ExistingWalletNotice } from "$lib/components";
-  import { settingsStore } from "$lib/stores";
+  import { mnemonicPhraseResetStore, settingsStore } from "$lib/stores";
   import {
     initializeWallet,
     refreshLocalStoragePasswordInfo,
@@ -34,7 +34,7 @@
   let isValidMnemonic = false;
 
   /** @type {string[]} */
-  let mnemonicPhrase = [];
+  let mnemonicPhrase = $mnemonicPhraseResetStore;
 
   const { userId } = $settingsStore;
 
@@ -59,7 +59,7 @@
       showStepper={true}
       backButton={{
         disabled: false,
-        href: "/setup",
+        href: "/",
         isAnchor: true,
       }}
       nextButton={{

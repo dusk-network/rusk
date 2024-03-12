@@ -1,0 +1,12 @@
+.dusk-field-button-group {
+  width: 100%;
+  background-color: white;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  justify-content: space-between;
+  gap: var(--small-gap);
+  background-color: var(--control-bg-color);
+  /* calculated using the formula outerRadius = innerRadius+padding */
+  border-radius: 1.875em;
+}

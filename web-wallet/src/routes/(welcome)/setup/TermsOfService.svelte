@@ -20,7 +20,7 @@
       <div class="flex gap-1 w-100">
         <AppAnchorButton
           className="flex-1"
-          href="/setup"
+          href="/"
           text="Cancel"
           variant="tertiary"
         />

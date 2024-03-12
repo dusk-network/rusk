@@ -33,7 +33,7 @@ describe("App layout.js", () => {
     redirectSpy.mockRestore();
   });
 
-  it("should check if a wallet is missing in the `walletStore` and redirect the user to the login page", async () => {
+  it("should check if a wallet is missing in the `walletStore` and redirect the user to the landing page", async () => {
     // @ts-ignore
     await expect(load()).rejects.toThrow();
 
