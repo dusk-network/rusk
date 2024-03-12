@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Ledger, Mempool, Metadata};
+use crate::database::{self, Candidate, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::{ConsensusError, TimeoutSet};
@@ -24,6 +24,7 @@ use stake_contract_types::Unstake;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 use tracing::{debug, info, warn};
 
 use super::consensus::Task;
@@ -36,6 +37,7 @@ use crate::database::rocksdb::{
 
 const DUSK: u64 = 1_000_000_000;
 const MINIMUM_STAKE: u64 = 1_000 * DUSK;
+const CANDIDATES_DELETION_OFFSET: u64 = 10;
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -503,17 +505,43 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             anyhow::Ok(())
         }?;
 
-        // Delete from mempool any transaction already included in the block
-        self.db.read().await.update(|update| {
-            for tx in mrb.inner().txs().iter() {
-                database::Mempool::delete_tx(update, tx.hash())?;
-                let nullifiers = tx.to_nullifiers();
-                for orphan_tx in update.get_txs_by_nullifiers(&nullifiers) {
-                    database::Mempool::delete_tx(update, orphan_tx)?;
+        // Clean up the database
+        let count = self
+            .db
+            .read()
+            .await
+            .update(|t| {
+                // Delete any candidate block older than TIP - OFFSET
+                let threshold = mrb
+                    .inner()
+                    .header()
+                    .height
+                    .checked_sub(CANDIDATES_DELETION_OFFSET)
+                    .unwrap_or(0);
+                Candidate::delete(t, |height| height <= threshold)?;
+
+                // Delete from mempool any transaction already included in the
+                // block
+                for tx in mrb.inner().txs().iter() {
+                    let _ = Mempool::delete_tx(t, tx.hash())
+                        .map_err(|e| warn!("Error while deleting tx: {e}"));
+
+                    let nullifiers = tx.to_nullifiers();
+                    for orphan_tx in t.get_txs_by_nullifiers(&nullifiers) {
+                        let _ = Mempool::delete_tx(t, orphan_tx).map_err(|e| {
+                            warn!("Error while deleting orphan_tx: {e}")
+                        });
+                    }
                 }
-            }
-            Ok(())
-        })?;
+                Ok(Candidate::count(t))
+            })
+            .map_err(|e| warn!("Error while cleaning up the database: {e}"));
+
+        debug!(
+            event = "stats",
+            height = mrb.inner().header().height,
+            candidates_count = count.unwrap_or_default(),
+        );
 
         let fsv_bitset = mrb.inner().header().cert.validation.bitset;
         let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
