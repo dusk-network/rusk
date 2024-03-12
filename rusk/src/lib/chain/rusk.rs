@@ -235,17 +235,6 @@ impl Rusk {
             }
         }
 
-        let r = Migration::migrate(
-            self.migration_height,
-            session,
-            block_height,
-            provisioners,
-        );
-        if r.is_err() {
-            info!("MIGRATION RESULT={:?}", r);
-        }
-        let session = r.expect("migration should succeed");
-
         self.set_current_commit(session.commit()?);
 
         Ok((spent_txs, verification_output))
