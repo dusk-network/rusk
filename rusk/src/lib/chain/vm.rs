@@ -15,7 +15,7 @@ use dusk_consensus::user::stake::Stake;
 use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
-use super::{Rusk, MINIMUM_STAKE};
+use super::Rusk;
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
@@ -197,12 +197,6 @@ impl Rusk {
         let provisioners = self
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .filter(|(_, stake)| {
-                stake
-                    .amount
-                    .map(|(amount, _)| amount >= MINIMUM_STAKE)
-                    .unwrap_or_default()
-            })
             .filter_map(|(key, stake)| {
                 stake.amount.map(|(value, eligibility)| {
                     let stake = Stake::new(value, stake.reward, eligibility);
