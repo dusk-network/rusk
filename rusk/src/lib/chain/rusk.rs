@@ -111,9 +111,7 @@ impl Rusk {
                         continue;
                     }
 
-                    for event in receipt.events {
-                        update_hasher(&mut event_hasher, event);
-                    }
+                    update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
                     dusk_spent += gas_spent * tx.fee.gas_price;
@@ -141,6 +139,7 @@ impl Rusk {
             dusk_spent,
             generator,
             missed_generators,
+            &mut event_hasher,
         )?;
 
         let state_root = session.root();
@@ -418,9 +417,7 @@ fn accept(
         let tx = &unspent_tx.inner;
         let receipt = execute(session, tx)?;
 
-        for event in receipt.events {
-            update_hasher(&mut event_hasher, event);
-        }
+        update_hasher(&mut event_hasher, &receipt.events);
         let gas_spent = receipt.gas_spent;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
@@ -443,6 +440,7 @@ fn accept(
         dusk_spent,
         generator,
         missed_generators,
+        &mut event_hasher,
     )?;
 
     let state_root = session.root();
@@ -503,10 +501,12 @@ fn execute(
     Ok(receipt)
 }
 
-fn update_hasher(hasher: &mut Sha3_256, event: Event) {
-    hasher.update(event.source.as_bytes());
-    hasher.update(event.topic.as_bytes());
-    hasher.update(event.data);
+fn update_hasher(hasher: &mut Sha3_256, events: &[Event]) {
+    for event in events {
+        hasher.update(event.source.as_bytes());
+        hasher.update(event.topic.as_bytes());
+        hasher.update(&event.data);
+    }
 }
 
 fn reward_slash_and_update_root(
@@ -515,34 +515,46 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
     slashing: &[BlsPublicKey],
+    event_hasher: &mut Sha3_256,
 ) -> Result<()> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
-    session.call::<_, ()>(
+    let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
         &(*DUSK_KEY, dusk_value),
         u64::MAX,
     )?;
-    session.call::<_, ()>(
+    update_hasher(event_hasher, &r.events);
+
+    let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
         &(*generator, generator_value),
         u64::MAX,
     )?;
+    update_hasher(event_hasher, &r.events);
+
     let slash_amount = emission_amount(block_height);
 
     for to_slash in slashing {
-        session.call::<_, ()>(
+        let r = session.call::<_, ()>(
             STAKE_CONTRACT,
             "slash",
             &(*to_slash, slash_amount),
             u64::MAX,
         )?;
+        update_hasher(event_hasher, &r.events);
     }
 
-    session.call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)?;
+    let r = session.call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "update_root",
+        &(),
+        u64::MAX,
+    )?;
+    update_hasher(event_hasher, &r.events);
 
     Ok(())
 }
