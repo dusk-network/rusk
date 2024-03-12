@@ -24,7 +24,6 @@ use stake_contract_types::Unstake;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tokio::time::sleep;
 use tracing::{debug, info, warn};
 
 use super::consensus::Task;
@@ -516,8 +515,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .inner()
                     .header()
                     .height
-                    .checked_sub(CANDIDATES_DELETION_OFFSET)
-                    .unwrap_or(0);
+                    .saturating_sub(CANDIDATES_DELETION_OFFSET);
+
                 Candidate::delete(t, |height| height <= threshold)?;
 
                 // Delete from mempool any transaction already included in the
