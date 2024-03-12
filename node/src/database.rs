@@ -90,6 +90,12 @@ pub trait Candidate {
         hash: &[u8],
     ) -> Result<Option<ledger::Block>>;
     fn clear_candidates(&self) -> Result<()>;
+
+    fn delete<F>(&self, closure: F) -> Result<()>
+    where
+        F: FnOnce(u64) -> bool + std::marker::Copy;
+
+    fn count(&self) -> usize;
 }
 
 pub trait Mempool {
