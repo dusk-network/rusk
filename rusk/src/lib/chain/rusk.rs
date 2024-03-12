@@ -111,9 +111,7 @@ impl Rusk {
                         continue;
                     }
 
-                    for event in receipt.events {
-                        update_hasher(&mut event_hasher, event);
-                    }
+                    update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
                     dusk_spent += gas_spent * tx.fee.gas_price;
@@ -418,9 +416,7 @@ fn accept(
         let tx = &unspent_tx.inner;
         let receipt = execute(session, tx)?;
 
-        for event in receipt.events {
-            update_hasher(&mut event_hasher, event);
-        }
+        update_hasher(&mut event_hasher, &receipt.events);
         let gas_spent = receipt.gas_spent;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
@@ -503,10 +499,12 @@ fn execute(
     Ok(receipt)
 }
 
-fn update_hasher(hasher: &mut Sha3_256, event: Event) {
-    hasher.update(event.source.as_bytes());
-    hasher.update(event.topic.as_bytes());
-    hasher.update(event.data);
+fn update_hasher(hasher: &mut Sha3_256, events: &[Event]) {
+    for event in events {
+        hasher.update(event.source.as_bytes());
+        hasher.update(event.topic.as_bytes());
+        hasher.update(&event.data);
+    }
 }
 
 fn reward_slash_and_update_root(
