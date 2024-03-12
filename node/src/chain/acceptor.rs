@@ -34,9 +34,6 @@ use crate::database::rocksdb::{
     MD_STATE_ROOT_KEY,
 };
 
-const DUSK: u64 = 1_000_000_000;
-const MINIMUM_STAKE: u64 = 1_000 * DUSK;
-
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
     Commit([u8; 32]),
@@ -239,7 +236,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let pk = change.into_public_key();
                 let prov = pk.to_bs58();
                 match vm.get_provisioner(pk.inner())? {
-                    Some(stake) if stake.value() >= MINIMUM_STAKE => {
+                    Some(stake) => {
                         debug!(event = "new_stake", src, prov, ?stake);
                         let replaced = new_prov.replace_stake(pk, stake);
                         if replaced.is_none() && !is_stake {
