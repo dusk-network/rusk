@@ -113,12 +113,11 @@ impl wallet::StateClient for TestStateClient {
             .ok_or(Error::OpeningPositionNotFound(*note.pos()))
     }
 
-    fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         let stake = self
             .rusk
-            .provisioners(None)?
-            .find(|(pk, _)| pk == _pk)
-            .map(|(_, stake)| StakeInfo {
+            .provisioner(pk)?
+            .map(|stake| StakeInfo {
                 amount: stake.amount,
                 counter: stake.counter,
                 reward: stake.reward,
