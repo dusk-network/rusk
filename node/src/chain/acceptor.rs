@@ -21,7 +21,7 @@ use node_data::message::Payload;
 
 use node_data::{Serializable, StepName};
 use stake_contract_types::Unstake;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
@@ -100,6 +100,12 @@ impl ProvisionerChange {
         matches!(self, ProvisionerChange::Stake(_))
     }
 }
+
+pub static DUSK_KEY: LazyLock<PublicKey> = LazyLock::new(|| {
+    let dusk_cpk_bytes = include_bytes!("../../../rusk/src/assets/dusk.cpk");
+    PublicKey::try_from(*dusk_cpk_bytes)
+        .expect("Dusk consensus public key to be valid")
+});
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Initializes a new `Acceptor` struct,
@@ -269,7 +275,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .try_into()
             .map_err(|e| anyhow::anyhow!("Cannot deserialize bytes {e:?}"))?;
         let reward = ProvisionerChange::Reward(generator);
-        let mut changed_provisioners = vec![reward];
+        let dusk_reward = ProvisionerChange::Reward(DUSK_KEY.clone());
+        let mut changed_provisioners = vec![reward, dusk_reward];
 
         // Update provisioners if a slash has been applied
         for bytes in blk.header().failed_iterations.to_missed_generators_bytes()
