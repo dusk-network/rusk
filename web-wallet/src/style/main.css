@@ -115,15 +115,20 @@ svg {
 :is(
     .dusk-anchor-button:not(.dusk-anchor-button__disabled),
     .dusk-button:enabled,
-    .dusk-checkbox:enabled,
     .dusk-select:enabled,
     .dusk-switch[aria-disabled="false"][aria-readonly="false"],
     .dusk-textbox:read-write:enabled,
     *[role="menuitem"]
   ):focus {
   border-color: var(--secondary-color-variant-dark);
-  outline: var(--control-border-size) solid var(--secondary-color-variant-dark);
-  outline-offset: -0.125rem;
+  box-shadow: inset 0 0 0 var(--control-border-size)
+    var(--secondary-color-variant-dark);
+  outline: 0 none;
+}
+
+.dusk-checkbox:enabled:focus {
+  border-color: var(--secondary-color-variant-dark);
+  outline: 0 none;
 }
 
 @media (max-width: 500px), (max-height: 500px) {
