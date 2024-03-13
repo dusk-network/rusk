@@ -73,6 +73,7 @@ export default defineConfig(({ mode }) => {
         all: true,
         exclude: ["**/*.d.ts", "src/routes/components-showcase/**"],
         include: ["src/**"],
+        provider: "istanbul",
       },
       env: {
         APP_BUILD_INFO: "hash1234 2024-01-12",
