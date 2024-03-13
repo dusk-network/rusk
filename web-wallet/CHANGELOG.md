@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2024-03-13
+
 ### Added
 
 - Add message when no contracts have been enabled [#1317]
@@ -174,6 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.4.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.4.0
 [0.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.3.0
 [0.2.1]: https://github.com/dusk-network/rusk/tree/web-wallet-0.2.1
 [0.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.2.0
