@@ -13,6 +13,7 @@ use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::operations::CallParams;
+use dusk_consensus::user::provisioners::Provisioners;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::{
     bls::PublicKeyBytes,
@@ -30,7 +31,7 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     let (_, commit_id) = state::deploy(dir, snapshot)
         .expect("Deploying initial state should succeed");
 
-    let rusk = Rusk::new(dir).expect("Instantiating rusk should succeed");
+    let rusk = Rusk::new(dir, None).expect("Instantiating rusk should succeed");
 
     assert_eq!(
         commit_id,
@@ -98,8 +99,12 @@ pub fn generator_procedure(
         missed_generators,
     };
 
-    let (transfer_txs, discarded, execute_output) =
-        rusk.execute_state_transition(&call_params, txs.into_iter())?;
+    let (transfer_txs, discarded, execute_output) = rusk
+        .execute_state_transition(
+            &call_params,
+            txs.into_iter(),
+            &Provisioners::empty(),
+        )?;
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
@@ -125,10 +130,12 @@ pub fn generator_procedure(
     )
     .expect("valid block");
 
-    let verify_output = rusk.verify_state_transition(&block)?;
+    let verify_output =
+        rusk.verify_state_transition(&block, &Provisioners::empty())?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output) = rusk.accept(&block)?;
+    let (accept_txs, accept_output) =
+        rusk.accept(&block, &Provisioners::empty())?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 

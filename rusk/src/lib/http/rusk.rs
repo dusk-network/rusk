@@ -96,14 +96,15 @@ impl Rusk {
         let prov: Vec<_> = self
             .provisioners(None)
             .expect("Cannot query state for provisioners")
-            .filter_map(|(key, stake)| {
+            .map(|(key, stake)| {
                 let key = bs58::encode(key.to_bytes()).into_string();
                 let (amount, eligibility) = stake.amount.unwrap_or_default();
-                (amount > 0).then_some(Provisioner {
+                Provisioner {
                     amount,
                     eligibility,
                     key,
-                })
+                    reward: stake.reward,
+                }
             })
             .collect();
 
@@ -121,4 +122,5 @@ struct Provisioner {
     key: String,
     amount: u64,
     eligibility: u64,
+    reward: u64,
 }

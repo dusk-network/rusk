@@ -11,12 +11,14 @@ use std::{fs, io};
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::debug;
+use tracing::{debug, error};
 
+use crate::chain::vm::migration::Migration;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::VerificationOutput;
+use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{SpentTransaction, Transaction};
 use phoenix_core::transaction::StakeData;
 use phoenix_core::Transaction as PhoenixTransaction;
@@ -37,7 +39,10 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
 });
 
 impl Rusk {
-    pub fn new<P: AsRef<Path>>(dir: P) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(
+        dir: P,
+        migration_height: Option<u64>,
+    ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
 
@@ -66,6 +71,7 @@ impl Rusk {
             tip,
             vm,
             dir: dir.into(),
+            migration_height,
         })
     }
 
@@ -76,9 +82,21 @@ impl Rusk {
         generator: &BlsPublicKey,
         txs: I,
         missed_generators: &[BlsPublicKey],
+        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
+
+        let mut session = Migration::migrate(
+            self.migration_height,
+            session,
+            block_height,
+            provisioners,
+        )
+        .map_err(|e| {
+            error!("Error while migrating: {e}");
+            e
+        })?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -163,17 +181,21 @@ impl Rusk {
         generator: &BlsPublicKey,
         txs: &[Transaction],
         missed_generators: &[BlsPublicKey],
+        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
 
         accept(
-            &mut session,
+            session,
             block_height,
             block_gas_limit,
             generator,
             txs,
             missed_generators,
+            provisioners,
+            self.migration_height,
         )
+        .map(|(a, b, _)| (a, b))
     }
 
     /// Accept the given transactions.
@@ -181,6 +203,7 @@ impl Rusk {
     ///   * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
+    #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
         block_height: u64,
@@ -189,16 +212,19 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
+        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
 
-        let (spent_txs, verification_output) = accept(
-            &mut session,
+        let (spent_txs, verification_output, session) = accept(
+            session,
             block_height,
             block_gas_limit,
             &generator,
             &txs[..],
             missed_generators,
+            provisioners,
+            self.migration_height,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -219,6 +245,7 @@ impl Rusk {
     /// * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing None value
     ///   disables the check.
+    #[allow(clippy::too_many_arguments)]
     pub fn finalize_transactions(
         &self,
         block_height: u64,
@@ -227,16 +254,19 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
+        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
 
-        let (spent_txs, verification_output) = accept(
-            &mut session,
+        let (spent_txs, verification_output, session) = accept(
+            session,
             block_height,
             block_gas_limit,
             &generator,
             &txs[..],
             missed_generators,
+            provisioners,
+            self.migration_height,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -363,14 +393,28 @@ async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn accept(
-    session: &mut Session,
+    session: Session,
     block_height: u64,
     block_gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
     missed_generators: &[BlsPublicKey],
-) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+    provisioners: &Provisioners,
+    migration_height: Option<u64>,
+) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
+    let mut session = Migration::migrate(
+        migration_height,
+        session,
+        block_height,
+        provisioners,
+    )
+    .map_err(|e| {
+        error!("Error while migrating: {e}");
+        e
+    })?;
+
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
@@ -380,7 +424,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let receipt = execute(session, tx)?;
+        let receipt = execute(&mut session, tx)?;
 
         update_hasher(&mut event_hasher, &receipt.events);
         let gas_spent = receipt.gas_spent;
@@ -400,7 +444,7 @@ fn accept(
     }
 
     reward_slash_and_update_root(
-        session,
+        &mut session,
         block_height,
         dusk_spent,
         generator,
@@ -417,6 +461,7 @@ fn accept(
             state_root,
             event_hash,
         },
+        session,
     ))
 }
 

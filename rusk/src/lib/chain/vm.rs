@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod migration;
 mod query;
 
 use tracing::info;
@@ -22,6 +23,7 @@ impl VMExecution for Rusk {
         &self,
         params: &CallParams,
         txs: I,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
         Vec<Transaction>,
@@ -36,6 +38,7 @@ impl VMExecution for Rusk {
                 params.generator_pubkey.inner(),
                 txs,
                 &params.missed_generators[..],
+                provisioners,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -47,6 +50,7 @@ impl VMExecution for Rusk {
     fn verify_state_transition(
         &self,
         blk: &Block,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
@@ -61,6 +65,7 @@ impl VMExecution for Rusk {
                 &generator,
                 blk.txs(),
                 &blk.header().failed_iterations.to_missed_generators()?,
+                provisioners,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
@@ -70,6 +75,7 @@ impl VMExecution for Rusk {
     fn accept(
         &self,
         blk: &Block,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
@@ -88,6 +94,7 @@ impl VMExecution for Rusk {
                     event_hash: blk.header().event_hash,
                 }),
                 &blk.header().failed_iterations.to_missed_generators()?,
+                provisioners,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
@@ -97,6 +104,7 @@ impl VMExecution for Rusk {
     fn finalize(
         &self,
         blk: &Block,
+        provisioners: &Provisioners,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received finalize request");
         let generator = blk.header().generator_bls_pubkey;
@@ -115,6 +123,7 @@ impl VMExecution for Rusk {
                     event_hash: blk.header().event_hash,
                 }),
                 &blk.header().failed_iterations.to_missed_generators()?,
+                provisioners,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")
@@ -155,10 +164,9 @@ impl VMExecution for Rusk {
         let stake = self
             .provisioner(pk)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioner {e}"))?
-            .and_then(|stake| {
-                stake.amount.map(|(value, eligibility)| {
-                    Stake::new(value, stake.reward, eligibility)
-                })
+            .map(|stake| {
+                let (value, eligibility) = stake.amount.unwrap_or_default();
+                Stake::new(value, stake.reward, eligibility)
             });
         Ok(stake)
     }
@@ -197,12 +205,11 @@ impl Rusk {
         let provisioners = self
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .filter_map(|(key, stake)| {
-                stake.amount.map(|(value, eligibility)| {
-                    let stake = Stake::new(value, stake.reward, eligibility);
-                    let pubkey_bls = node_data::bls::PublicKey::new(key);
-                    (pubkey_bls, stake)
-                })
+            .map(|(key, stake)| {
+                let (value, eligibility) = stake.amount.unwrap_or_default();
+                let stake = Stake::new(value, stake.reward, eligibility);
+                let pubkey_bls = node_data::bls::PublicKey::new(key);
+                (pubkey_bls, stake)
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
