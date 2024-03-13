@@ -121,14 +121,9 @@ svg {
     .dusk-textbox:read-write:enabled,
     *[role="menuitem"]
   ):focus {
-  border-color: color-mix(
-    in srgb,
-    var(--secondary-color-variant-dark) 80%,
-    transparent
-  );
-  box-shadow: 0 0 0.5em
-    color-mix(in srgb, var(--secondary-color-variant-dark) 60%, transparent);
-  outline: 0 none;
+  border-color: var(--secondary-color-variant-dark);
+  outline: var(--control-border-size) solid var(--secondary-color-variant-dark);
+  outline-offset: -0.125rem;
 }
 
 @media (max-width: 500px), (max-height: 500px) {
