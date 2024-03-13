@@ -8,7 +8,9 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::user::provisioners::Provisioners;
 use phoenix_core::transaction::StakeData;
 use rusk_abi::{ContractData, ContractId, Error, Session, STAKE_CONTRACT};
-use std::time::SystemTime;
+use std::io;
+use std::sync::mpsc;
+use std::time::Instant;
 use tracing::info;
 
 const MIGRATION_GAS_LIMIT: u64 = 1_000_000_000;
@@ -30,8 +32,8 @@ impl Migration {
             _ => return Ok(session),
         }
         info!("MIGRATING STAKE CONTRACT");
-        let start = SystemTime::now();
-        let session = session.migrate(
+        let start = Instant::now();
+        let mut session = session.migrate(
             STAKE_CONTRACT,
             NEW_STAKE_CONTRACT_BYTECODE,
             ContractData::builder(),
@@ -40,11 +42,31 @@ impl Migration {
                 Self::migrate_stakes(new_contract, session, provisioners)
             },
         )?;
-        let stop = SystemTime::now();
         info!(
-            "STAKE CONTRACT MIGRATION FINISHED: {:?}",
-            stop.duration_since(start).expect("duration should work")
+            "MIGRATION FINISHED: {:?}",
+            Instant::now().duration_since(start)
         );
+
+        info!("Performing sanity checks");
+
+        let start = Instant::now();
+        let new_list = Self::query_provisioners(&mut session)?;
+        info!("Get new list: {:?}", Instant::now().duration_since(start));
+
+        let start = Instant::now();
+        let old_list = Self::old_provisioners(provisioners);
+
+        // Assert both new_list and provisioner_list are identical
+        if let Some((a, b)) = new_list.zip(old_list).find(|(a, b)| (a != b)) {
+            tracing::error!("new = {a:?}");
+            tracing::error!("old = {b:?}");
+            Err(io::Error::new(io::ErrorKind::Other, "Wrong migration"))?;
+        }
+        info!(
+            "Sanity checks OK: {:?}",
+            Instant::now().duration_since(start)
+        );
+
         Ok(session)
     }
 
@@ -53,7 +75,7 @@ impl Migration {
         session: &mut Session,
         provisioners: &Provisioners,
     ) -> Result<(), Error> {
-        for (pk, stake_data) in Self::do_get_provisioners(provisioners)? {
+        for (pk, stake_data) in Self::old_provisioners(provisioners) {
             session.call::<_, ()>(
                 new_contract,
                 "insert_stake",
@@ -64,10 +86,23 @@ impl Migration {
         Ok(())
     }
 
-    fn do_get_provisioners(
+    fn query_provisioners(
+        session: &mut Session,
+    ) -> crate::Result<impl Iterator<Item = (PublicKey, StakeData)>> {
+        let (sender, receiver) = mpsc::channel();
+
+        session.feeder_call::<_, ()>(STAKE_CONTRACT, "stakes", &(), sender)?;
+        Ok(receiver.into_iter().map(|bytes| {
+            rkyv::from_bytes::<(PublicKey, StakeData)>(&bytes).expect(
+                "The contract should only return (pk, stake_data) tuples",
+            )
+        }))
+    }
+
+    fn old_provisioners(
         provisioners: &Provisioners,
-    ) -> anyhow::Result<impl Iterator<Item = (PublicKey, StakeData)> + '_> {
-        Ok(provisioners.iter().map(|(pk, stake)| {
+    ) -> impl Iterator<Item = (PublicKey, StakeData)> + '_ {
+        provisioners.iter().map(|(pk, stake)| {
             (
                 *pk.inner(),
                 StakeData {
@@ -76,6 +111,6 @@ impl Migration {
                     counter: stake.counter,
                 },
             )
-        }))
+        })
     }
 }
