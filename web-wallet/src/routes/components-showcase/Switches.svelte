@@ -16,10 +16,6 @@
     <Switch bind:value on:change={handleSwitchChange} />
   </div>
   <div>
-    <span>Readonly switch:</span>
-    <Switch readOnly={true} />
-  </div>
-  <div>
     <span>Disabled switch:</span>
     <Switch disabled={true} />
   </div>

@@ -108,7 +108,7 @@ svg {
 .dusk-button:enabled,
 .dusk-checkbox:enabled,
 .dusk-select:enabled,
-.dusk-switch[aria-disabled="false"][aria-readonly="false"],
+.dusk-switch[aria-disabled="false"],
 .dusk-textbox:enabled,
 *[role="menuitem"] {
   transition: all 0.2s linear 0s;
@@ -118,7 +118,7 @@ svg {
     .dusk-anchor-button:not(.dusk-anchor-button__disabled),
     .dusk-button:enabled,
     .dusk-select:enabled,
-    .dusk-switch[aria-disabled="false"][aria-readonly="false"],
+    .dusk-switch[aria-disabled="false"],
     .dusk-textbox:read-write:enabled,
     *[role="menuitem"]
   ):focus {

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `OperationResult` to infer error messages from arbitrary values [#1524]
 - Update Tabs to use native scroll behavior [#1320]
 
+### Fixed
+
+- Fix missing focus border on switch component [#1537]
+
 ## [0.4.0] - 2024-03-13
 
 ### Added
@@ -179,6 +183,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1514]: https://github.com/dusk-network/rusk/issues/1514
 [#1519]: https://github.com/dusk-network/rusk/issues/1519
 [#1524]: https://github.com/dusk-network/rusk/issues/1524
+[#1537]: https://github.com/dusk-network/rusk/issues/1537
 
 <!-- VERSIONS -->
 
