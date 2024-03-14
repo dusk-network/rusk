@@ -418,6 +418,8 @@ declare module "lamb" {
     g: (...args: A) => B
   ): (...values: A) => C;
 
+  function identity<T>(value: T): T;
+
   function partial<Args extends (any | __)[], F extends AnyFunction>(
     fn: F,
     args: Args
@@ -503,9 +505,22 @@ declare module "lamb" {
    * *****     LOGIC     ***** *
    * ------------------------- */
 
+  function adapter<T, Fns extends UnaryFunction<T, any>[]>(
+    functions: Fns
+  ): (value: T) => ReturnType<Fns[number]>;
+
   function allOf<T, P extends (value: T) => boolean>(predicates: Array<P>): P;
 
   function anyOf<T, P extends (value: T) => boolean>(predicates: Array<P>): P;
+
+  function casus<T, U, TT extends T>(
+    predicate: Predicate<T, TT>,
+    fn: UnaryFunction<T, U>
+  ): (value: T) => U | undefined;
+  function casus<T, U>(
+    predicate: UnaryFunction<T, boolean>,
+    fn: UnaryFunction<T, U>
+  ): (value: T) => U | undefined;
 
   function condition<T, U extends T, TR, FR, P extends Predicate<T, U>>(
     predicate: P,
@@ -600,6 +615,18 @@ declare module "lamb" {
     source: S
   ): Array<K>;
 
+  function keySatisfies<
+    S extends Record<PropertyKey, any>,
+    K extends keyof S,
+    U extends S[K],
+    P extends Predicate<S[K], U>,
+  >(predicate: P, key: K): (source: S) => boolean;
+  function keySatisfies<
+    S extends Record<PropertyKey, any>,
+    K extends keyof S,
+    P extends UnaryFunction<S[K], boolean>,
+  >(predicate: P, key: K): (source: S) => boolean;
+
   function mapValues<
     T,
     U,
@@ -677,5 +704,8 @@ declare module "lamb" {
 
   function isUndefined(value: any): value is undefined;
 
+  function type(source: any): string;
+
   function isType<T, U extends T>(typeName: string): Predicate<T, U>;
+  function isType(typeName: string): (source: any) => boolean;
 }

@@ -1,10 +1,12 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { ErrorDetails, Icon, Throbber } from "$lib/dusk/components";
-  import { mdiCheckDecagramOutline, mdiCloseThick } from "@mdi/js";
+  import { mdiCheckDecagramOutline } from "@mdi/js";
+
   import { makeClassName } from "$lib/dusk/string";
-  import { AppAnchorButton } from "$lib/components";
+  import { Icon, Suspense } from "$lib/dusk/components";
+
+  import { AppAnchorButton } from "..";
 
   /** @type {string|undefined} */
   export let className = undefined;
@@ -34,11 +36,14 @@
   $: classes = makeClassName(["operation-result", className]);
 </script>
 
-<div class={classes}>
-  {#await operation}
-    <Throbber />
-    <span>{pendingMessage}</span>
-  {:then result}
+<Suspense
+  className={classes}
+  {errorMessage}
+  gap="large"
+  {pendingMessage}
+  waitFor={operation}
+>
+  <svelte:fragment slot="success-content" let:result>
     <Icon path={mdiCheckDecagramOutline} size="large" />
     <span>{successMessage}</span>
     <slot name="success-content" {result} />
@@ -48,29 +53,24 @@
       variant="tertiary"
       text="HOME"
     />
-  {:catch error}
-    <Icon path={mdiCloseThick} size="large" />
-    <ErrorDetails {error} summary={errorMessage} />
-    <slot name="error-content" />
-    <AppAnchorButton
-      href="/dashboard"
-      on:click={handleGoHomeClick}
-      variant="tertiary"
-      text="HOME"
-    />
-  {/await}
-</div>
+  </svelte:fragment>
+  <AppAnchorButton
+    href="/dashboard"
+    on:click={handleGoHomeClick}
+    slot="error-extra-content"
+    text="HOME"
+    variant="tertiary"
+  />
+</Suspense>
 
 <style lang="postcss">
-  .operation-result {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--large-gap);
-    padding: 1.5em 0;
+  :global {
+    .operation-result {
+      padding: 1.5em 0;
 
-    :global(.dusk-anchor-button) {
-      width: 100%;
+      .dusk-anchor-button {
+        width: 100%;
+      }
     }
   }
 </style>

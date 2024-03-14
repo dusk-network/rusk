@@ -1,0 +1,232 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Suspense > should accept a custom message for the failure state 1`] = `
+<div
+  class="dusk-suspense"
+>
+  <div
+    class="dusk-error-alert dusk-suspense__error"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--large dusk-error-alert__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    <details
+      class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
+    >
+      <summary
+        class="dusk-error-details__summary"
+      >
+        Operation failed
+      </summary>
+       
+      <pre
+        class="dusk-error-details__error"
+      >
+        			
+        some error
+        
+		
+      </pre>
+    </details>
+    
+    <!--&lt;ErrorDetails&gt;-->
+  </div>
+  <!--&lt;ErrorAlert&gt;-->
+   
+</div>
+`;
+
+exports[`Suspense > should accept a custom message for the pending state 1`] = `
+<div
+  class="dusk-suspense"
+>
+  <svg
+    class="dusk-throbber dusk-suspense__throbber"
+    height="64px"
+    role="progressbar"
+    viewBox="0 0 128 128"
+    width="64px"
+  >
+    <g>
+      <path
+        d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+      />
+      <animatetransform
+        attributeName="transform"
+        dur="1800ms"
+        from="0 64 64"
+        repeatCount="indefinite"
+        to="360 64 64"
+        type="rotate"
+      />
+    </g>
+  </svg>
+  <!--&lt;Throbber&gt;-->
+   
+  <span
+    class="dusk-suspense__pending-message"
+  >
+    Operation pending
+  </span>
+</div>
+`;
+
+exports[`Suspense > should be able to render the \`Suspense\` component in a pending state 1`] = `
+<div
+  class="dusk-suspense"
+>
+  <svg
+    class="dusk-throbber dusk-suspense__throbber"
+    height="64px"
+    role="progressbar"
+    viewBox="0 0 128 128"
+    width="64px"
+  >
+    <g>
+      <path
+        d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+      />
+      <animatetransform
+        attributeName="transform"
+        dur="1800ms"
+        from="0 64 64"
+        repeatCount="indefinite"
+        to="360 64 64"
+        type="rotate"
+      />
+    </g>
+  </svg>
+  <!--&lt;Throbber&gt;-->
+   
+  <span
+    class="dusk-suspense__pending-message"
+  >
+    
+  </span>
+</div>
+`;
+
+exports[`Suspense > should be able to render the \`Suspense\` in a failure state with the "alert" variant as a default 1`] = `
+<div
+  class="dusk-suspense"
+>
+  <div
+    class="dusk-error-alert dusk-suspense__error"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--large dusk-error-alert__icon"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M20 6.91L17.09 4L12 9.09L6.91 4L4 6.91L9.09 12L4 17.09L6.91 20L12 14.91L17.09 20L20 17.09L14.91 12L20 6.91Z"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    <details
+      class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
+    >
+      <summary
+        class="dusk-error-details__summary"
+      >
+        Error
+      </summary>
+       
+      <pre
+        class="dusk-error-details__error"
+      >
+        			
+        some error
+        
+		
+      </pre>
+    </details>
+    
+    <!--&lt;ErrorDetails&gt;-->
+  </div>
+  <!--&lt;ErrorAlert&gt;-->
+   
+</div>
+`;
+
+exports[`Suspense > should be able to render the \`Suspense\` in a failure state with the "details" error variant 1`] = `
+<div
+  class="dusk-suspense"
+>
+  <details
+    class="dusk-error-details dusk-error-details__details dusk-suspense__error"
+  >
+    <summary
+      class="dusk-error-details__summary"
+    >
+      Error
+    </summary>
+     
+    <pre
+      class="dusk-error-details__error"
+    >
+      			
+      some error
+      
+		
+    </pre>
+  </details>
+  
+  <!--&lt;ErrorDetails&gt;-->
+   
+</div>
+`;
+
+exports[`Suspense > should be able to render the \`Suspense\` in a successful state 1`] = `
+<div
+  class="dusk-suspense"
+/>
+`;
+
+exports[`Suspense > should pass additional class names and attributes to the rendered element 1`] = `
+<div
+  class="dusk-suspense foo bar"
+  data-baz="baz"
+  id="some-id"
+>
+  <svg
+    class="dusk-throbber dusk-suspense__throbber"
+    height="64px"
+    role="progressbar"
+    viewBox="0 0 128 128"
+    width="64px"
+  >
+    <g>
+      <path
+        d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+      />
+      <animatetransform
+        attributeName="transform"
+        dur="1800ms"
+        from="0 64 64"
+        repeatCount="indefinite"
+        to="360 64 64"
+        type="rotate"
+      />
+    </g>
+  </svg>
+  <!--&lt;Throbber&gt;-->
+   
+  <span
+    class="dusk-suspense__pending-message"
+  >
+    
+  </span>
+</div>
+`;

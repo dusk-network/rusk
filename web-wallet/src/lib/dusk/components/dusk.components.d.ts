@@ -20,6 +20,8 @@ type WizardButtonProps = {
   action?: () => void;
 };
 
+type GapSize = "small" | "normal" | "large";
+
 type IconSize = "small" | "normal" | "large";
 
 type GroupedSelectOptions = Record<string, SelectOption[] | string[]>;
@@ -29,6 +31,8 @@ type SelectOption = {
   label?: string;
   value: string;
 };
+
+type SuspenceErrorVariant = "alert" | "details";
 
 type TabItem = {
   icon?: IconProp;
