@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update `OperationResult` to infer error messages from arbitrary values [#1524]
+- Update Tabs to use native scroll behavior [#1320]
 
 ## [0.4.0] - 2024-03-13
 
@@ -137,6 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1309]: https://github.com/dusk-network/rusk/issues/1309
 [#1311]: https://github.com/dusk-network/rusk/issues/1311
 [#1317]: https://github.com/dusk-network/rusk/issues/1317
+[#1320]: https://github.com/dusk-network/rusk/issues/1320
 [#1322]: https://github.com/dusk-network/rusk/issues/1322
 [#1323]: https://github.com/dusk-network/rusk/issues/1323
 [#1334]: https://github.com/dusk-network/rusk/issues/1334

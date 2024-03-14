@@ -353,34 +353,4 @@ describe("Tabs", () => {
     firstTabGetRectSpy.mockRestore();
     lastTabGetRectSpy.mockRestore();
   });
-
-  it("should scroll the tabs on a wheel event if there is a deltaX", async () => {
-    const { container } = render(Tabs, baseOptions);
-    const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
-    const eventInfo1 = { deltaX: 0 };
-    const eventInfo2 = { deltaX: 100 };
-
-    await fireEvent.wheel(tabsList, eventInfo1);
-    await fireEvent.wheel(tabsList, eventInfo2);
-
-    expect(scrollBySpy).toHaveBeenCalledTimes(2);
-    expect(scrollBySpy).toHaveBeenNthCalledWith(1, eventInfo1.deltaX, 0);
-    expect(scrollBySpy).toHaveBeenNthCalledWith(2, eventInfo2.deltaX, 0);
-  });
-
-  it("should scroll the tabs on a touch move", async () => {
-    const { container } = render(Tabs, baseOptions);
-    const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
-    const touchStartInfo = { targetTouches: [{ clientX: 10 }] };
-    const touchMoveInfo = { targetTouches: [{ clientX: 100 }] };
-
-    // "magic number" calculated with the current algorithm
-    const expectedScrollX = -54;
-
-    await fireEvent.touchStart(tabsList, touchStartInfo);
-    await fireEvent.touchMove(tabsList, touchMoveInfo);
-
-    expect(scrollBySpy).toHaveBeenCalledTimes(1);
-    expect(scrollBySpy).toHaveBeenCalledWith(expectedScrollX, 0);
-  });
 });

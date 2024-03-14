@@ -7,7 +7,6 @@
   import { isGTE, isLTE } from "lamb";
 
   import { Button, Icon } from "$lib/dusk/components";
-  import { lerp } from "$lib/dusk/math";
   import { makeClassName } from "$lib/dusk/string";
 
   import "./Tabs.css";
@@ -26,9 +25,6 @@
 
   /** @type {Number} */
   let rafID = 0;
-
-  let scrollLeftStart = 0;
-  let touchStartX = 0;
 
   const dispatch = createEventDispatcher();
 
@@ -56,26 +52,6 @@
 
     /** @param {HTMLLIElement} tab */
     return (tab) => checkSide(tab.getBoundingClientRect()[side]);
-  }
-
-  /** @type {import("svelte/elements").TouchEventHandler<HTMLUListElement>} */
-  function handleTouchMove(event) {
-    const scrollX = tabsList.scrollLeft;
-    const deltaX = event.targetTouches[0].clientX - touchStartX;
-    const amount = lerp(deltaX, scrollX - scrollLeftStart, 0.4);
-
-    tabsList.scrollBy(-amount, 0);
-  }
-
-  /** @type {import("svelte/elements").TouchEventHandler<HTMLUListElement>} */
-  function handleTouchStart(event) {
-    scrollLeftStart = tabsList.scrollLeft;
-    touchStartX = event.targetTouches[0].clientX;
-  }
-
-  /** @type {import("svelte/elements").WheelEventHandler<HTMLUListElement>} */
-  function handleWheel(event) {
-    tabsList.scrollBy(event.deltaX, 0);
   }
 
   // @ts-ignore
@@ -204,9 +180,6 @@
     bind:this={tabsList}
     class="dusk-tabs-list"
     on:scroll={updateScrollStatus}
-    on:touchmove|preventDefault={handleTouchMove}
-    on:touchstart={handleTouchStart}
-    on:wheel|preventDefault={handleWheel}
     role="tablist"
   >
     {#each items as item (item.id)}
