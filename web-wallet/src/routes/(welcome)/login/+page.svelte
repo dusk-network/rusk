@@ -1,45 +1,40 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { mdiArrowLeft, mdiKeyOutline } from "@mdi/js";
-  import { validateMnemonic } from "bip39";
-  import { setKey } from "lamb";
-
-  import { Button, Card, Textbox } from "$lib/dusk/components";
+  import { FieldButtonGroup } from "$lib/dusk/components";
   import { AppAnchorButton } from "$lib/components";
+  import { mdiRestore, mdiWalletOutline } from "@mdi/js";
+
+  import { validateMnemonic } from "bip39";
+
   import { goto } from "$lib/navigation";
-  import { settingsStore, walletStore } from "$lib/stores";
+  import {
+    mnemonicPhraseResetStore,
+    settingsStore,
+    walletStore,
+  } from "$lib/stores";
   import { decryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
   import { getWallet } from "$lib/services/wallet";
-
-  const notice = [
-    "Logging in to a new wallet will overwrite the current local wallet cache",
-    ", meaning that when you log in again with the previous mnemonic/",
-    "account you will need to wait for the wallet to sync.",
-  ].join("");
 
   /**
    * @typedef {import("@dusk-network/dusk-wallet-js").Wallet} Wallet
    */
 
-  /** @type {(wallet: Wallet) => Promise<Wallet>} */
+  const existingWalletDetectedErrorMessage =
+    "Mismatched wallet address detected";
+
+  /**
+   * Validates if the wallet's default address matches the current user's address.
+   * @param {Wallet} wallet - The wallet object to be checked.
+   */
   async function checkLocalData(wallet) {
-    const defaultAddress = (await wallet.getPsks())[0];
-    const currentAddress = $settingsStore.userId;
+    const [defaultAddress] = await wallet.getPsks();
+    const currentUserAddress = $settingsStore.userId;
 
-    if (defaultAddress !== currentAddress) {
-      // eslint-disable-next-line no-alert
-      if (currentAddress && !window.confirm(notice)) {
-        throw new Error("Existing wallet detected");
-      }
-
-      await wallet.reset();
-      settingsStore.reset();
-      settingsStore.update(setKey("userId", defaultAddress));
+    if (defaultAddress !== currentUserAddress) {
+      throw new Error(existingWalletDetectedErrorMessage);
     }
-
-    return wallet;
   }
 
   /** @type {(mnemonic: string) => Promise<Uint8Array>} */
@@ -57,7 +52,7 @@
   const loginInfo = loginInfoStorage.get();
   const modeLabel = loginInfo ? "Password" : "Mnemonic phrase";
 
-  /** @type {Textbox} */
+  /** @type {FieldButtonGroup} */
   let fldSecret;
 
   /** @type {string} */
@@ -67,96 +62,116 @@
   let errorMessage = "";
 
   /** @type {import("svelte/elements").FormEventHandler<HTMLFormElement>} */
-  function handleUnlockWalletSubmit() {
+  async function handleUnlockWalletSubmit() {
     /** @type {(mnemonic: string) => Promise<Uint8Array>} */
     const getSeed = loginInfo
       ? getSeedFromInfo(loginInfo)
       : (mnemonic) => getSeedFromMnemonicAsync(mnemonic.toLowerCase());
 
-    getSeed(secretText.trim())
-      .then(getWallet)
-      .then(checkLocalData)
-      .then((wallet) => walletStore.init(wallet))
-      .then(() => goto("/dashboard"))
-      .catch((err) => {
-        errorMessage = err.message;
-        fldSecret.focus();
-        fldSecret.select();
-      });
+    try {
+      const seed = await getSeed(secretText.trim());
+      const wallet = getWallet(seed);
+      await checkLocalData(wallet);
+      walletStore.init(wallet);
+      goto("/dashboard");
+    } catch (err) {
+      if (err instanceof Error) {
+        handleUnlockError(err);
+      }
+    }
+  }
+
+  /** @param { Error } error */
+  function handleUnlockError(error) {
+    if (error.message === existingWalletDetectedErrorMessage) {
+      const enteredMnemonicPhrase = secretText.split(" ");
+      mnemonicPhraseResetStore.set(enteredMnemonicPhrase);
+      goto("/setup/restore");
+      return;
+    }
+    errorMessage = error.message;
+    fldSecret.focus();
+    fldSecret.select();
   }
 </script>
 
-<section class="login">
+<section class="landing-content">
   <h2 class="h1">
-    Unleash <mark>RWA</mark> and<br />
-    <mark>Decentralized Finance</mark>
+    Unlocking the Future: <br />
+    Your <mark>DUSK</mark> Native Wallet
   </h2>
-  <div class="login">
-    <Card tag="article" iconPath={mdiKeyOutline} heading={modeLabel}>
-      <form
-        class="login__form"
-        on:submit|preventDefault={handleUnlockWalletSubmit}
-      >
-        <Textbox
-          bind:this={fldSecret}
-          bind:value={secretText}
-          name="secret"
-          placeholder={modeLabel}
-          required
-          type="password"
-          autocomplete={loginInfo ? "current-password" : undefined}
-        />
-        {#if errorMessage}
-          <span class="login__error">{errorMessage}</span>
-        {/if}
-        <Button variant="secondary" text="Unlock Wallet" type="submit" />
-        {#if modeLabel === "Password"}
-          <AppAnchorButton
-            variant="quaternary"
-            href="/setup/restore"
-            text="Forgot Password?"
-          />
-        {/if}
-      </form>
-    </Card>
+
+  <div class="landing-content__options">
+    <form on:submit|preventDefault={handleUnlockWalletSubmit}>
+      <FieldButtonGroup
+        bind:this={fldSecret}
+        bind:value={secretText}
+        type="password"
+        name="secret"
+        autocomplete="current-password"
+        placeholder={modeLabel}
+        buttonText="Unlock"
+      />
+
+      {#if errorMessage}
+        <span class="login__error">{errorMessage}</span>
+      {/if}
+    </form>
+    <div class="landing-content__options-group">
+      <AppAnchorButton
+        href="/setup/create"
+        variant="primary"
+        text="New"
+        icon={{ path: mdiWalletOutline }}
+      />
+      <AppAnchorButton
+        on:click={() => mnemonicPhraseResetStore.set([])}
+        href="/setup/restore"
+        variant="tertiary"
+        text="Restore"
+        icon={{ path: mdiRestore }}
+      />
+    </div>
   </div>
-  <footer class="login-footer">
-    <AppAnchorButton
-      href="/setup"
-      variant="tertiary"
-      icon={{ path: mdiArrowLeft }}
-      text="Back"
-    />
-  </footer>
 </section>
 
+<footer class="landing-footer">
+  <span
+    >Web Wallet v{import.meta.env.APP_VERSION} ({import.meta.env
+      .APP_BUILD_INFO})</span
+  >
+</footer>
+
 <style lang="postcss">
-  .login,
-  .login-footer,
-  .login__form {
+  .landing-content {
+    flex: 1;
     display: flex;
     flex-direction: column;
-  }
-
-  .login {
-    height: 100%;
-    overflow-y: auto;
     gap: var(--large-gap);
+    height: 100%;
 
-    &__form {
-      gap: var(--default-gap);
-    }
+    &__options {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
 
-    &__error {
-      color: var(--error);
+      &-group {
+        display: grid;
+        gap: var(--default-gap);
+        width: 100%;
+        grid-template-columns: 1fr 1fr;
+      }
     }
   }
 
-  .login-footer {
-    gap: var(--default-gap);
+  .landing-footer {
+    font-size: 0.75em;
   }
 
-  :global(.alt-login) {
-    width: 100%;
+  .login__error {
+    color: var(--error);
+    display: block;
+    margin: 0.5em 1em;
   }
 </style>

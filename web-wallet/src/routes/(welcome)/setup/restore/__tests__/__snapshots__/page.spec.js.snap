@@ -38,9 +38,10 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
           class="flex flex-col gap-1"
         >
           <p>
-            Logging in to a new wallet will overwrite the current local wallet
-        cache, meaning that when you log in again with the previous
-        mnemonic/account you will need to wait for the wallet to sync.
+            Initializing a new wallet will replace your existing local wallet cache,
+        erasing any stored data. Ensure you have securely backed up your current
+        wallet's seed phrase to prevent loss. Proceeding without a backup can
+        lead to irreversible loss of access to your assets.
           </p>
            
           <div
@@ -49,7 +50,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
             <a
               aria-disabled="false"
               class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/some-base-path/setup"
+              href="/some-base-path/"
             >
               <span
                 class="dusk-anchor-button__text"
@@ -312,7 +313,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
       <a
         aria-disabled="false"
         class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/some-base-path/setup"
+        href="/some-base-path/"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
@@ -428,7 +429,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
             <a
               aria-disabled="false"
               class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/some-base-path/setup"
+              href="/some-base-path/"
             >
               <span
                 class="dusk-anchor-button__text"

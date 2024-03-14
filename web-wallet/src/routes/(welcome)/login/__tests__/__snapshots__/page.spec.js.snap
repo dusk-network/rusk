@@ -1,73 +1,47 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Login > Mnemonic phrase workflow > should render the login page and show the field to enter the mnemonic phrase, if there is no login info stored 1`] = `
+exports[`Login > Mnemonic phrase workflow > should render the login page with a mnemonic phrase field 1`] = `
 <div>
   <section
-    class="login s-diEOsynXV9Ac"
+    class="landing-content s-diEOsynXV9Ac"
   >
     <h2
       class="h1 s-diEOsynXV9Ac"
     >
-      Unleash 
-      <mark
-        class="s-diEOsynXV9Ac"
-      >
-        RWA
-      </mark>
-       and
+      Unlocking the Future: 
       <br
         class="s-diEOsynXV9Ac"
       />
-       
+      
+    Your 
       <mark
         class="s-diEOsynXV9Ac"
       >
-        Decentralized Finance
+        DUSK
       </mark>
+       Native Wallet
     </h2>
      
     <div
-      class="login s-diEOsynXV9Ac"
+      class="landing-content__options s-diEOsynXV9Ac"
     >
-      <article
-        class="dusk-card"
+      <form
+        class="s-diEOsynXV9Ac"
       >
-        <header
-          class="dusk-card__header"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
-            />
-          </svg>
-          
-          <!--&lt;Icon&gt;-->
-           
-          <h3
-            class="h4"
-          >
-            Mnemonic phrase
-          </h3>
-           
-        </header>
-         
-        <form
-          class="login__form s-diEOsynXV9Ac"
+        <div
+          class="dusk-field-button-group"
         >
           <input
+            autocomplete="current-password"
             class="dusk-textbox dusk-textbox-password"
             name="secret"
             placeholder="Mnemonic phrase"
             required=""
+            tabindex="0"
             type="password"
           />
           
           <!--&lt;Textbox&gt;-->
-           
            
           <button
             class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
@@ -76,111 +50,126 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
             <span
               class="dusk-button__text"
             >
-              Unlock Wallet
+              Unlock
             </span>
           </button>
           <!--&lt;Button&gt;-->
-           
-        </form>
-      </article>
-      
-      <!--&lt;Card&gt;-->
-    </div>
-     
-    <footer
-      class="login-footer s-diEOsynXV9Ac"
-    >
-      <a
-        aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/some-base-path/setup"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
-          />
-        </svg>
-        
-        <!--&lt;Icon&gt;-->
+        </div>
+        <!--&lt;FieldButtonGroup&gt;-->
          
-        <span
-          class="dusk-anchor-button__text"
-        >
-          Back
-        </span>
-        
-        
-      </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AnchorButton&gt;-->
-      <!--&lt;AppAnchorButton&gt;-->
-    </footer>
-  </section>
-  <!--&lt;+page&gt;-->
-</div>
-`;
-
-exports[`Login > Password workflow > should show the password field and the link to restore the wallet if there is login info stored 1`] = `
-<div>
-  <section
-    class="login s-diEOsynXV9Ac"
-  >
-    <h2
-      class="h1 s-diEOsynXV9Ac"
-    >
-      Unleash 
-      <mark
-        class="s-diEOsynXV9Ac"
-      >
-        RWA
-      </mark>
-       and
-      <br
-        class="s-diEOsynXV9Ac"
-      />
+      </form>
        
-      <mark
-        class="s-diEOsynXV9Ac"
+      <div
+        class="landing-content__options-group s-diEOsynXV9Ac"
       >
-        Decentralized Finance
-      </mark>
-    </h2>
-     
-    <div
-      class="login s-diEOsynXV9Ac"
-    >
-      <article
-        class="dusk-card"
-      >
-        <header
-          class="dusk-card__header"
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+          href="/some-base-path/setup/create"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+              d="M5,3C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V16.72C21.59,16.37 22,15.74 22,15V9C22,8.26 21.59,7.63 21,7.28V5A2,2 0 0,0 19,3H5M5,5H19V7H13A2,2 0 0,0 11,9V15A2,2 0 0,0 13,17H19V19H5V5M13,9H20V15H13V9M16,10.5A1.5,1.5 0 0,0 14.5,12A1.5,1.5 0 0,0 16,13.5A1.5,1.5 0 0,0 17.5,12A1.5,1.5 0 0,0 16,10.5Z"
             />
           </svg>
           
           <!--&lt;Icon&gt;-->
            
-          <h3
-            class="h4"
+          <span
+            class="dusk-anchor-button__text"
           >
-            Password
-          </h3>
-           
-        </header>
+            New
+          </span>
+          
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
          
-        <form
-          class="login__form s-diEOsynXV9Ac"
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+          href="/some-base-path/setup/restore"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Restore
+          </span>
+          
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
+      </div>
+    </div>
+  </section>
+   
+  <footer
+    class="landing-footer s-diEOsynXV9Ac"
+  >
+    <span
+      class="s-diEOsynXV9Ac"
+    >
+      Web Wallet v
+      0.1.5
+       (
+      hash1234 2024-01-12
+      )
+    </span>
+  </footer>
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Login > Password workflow > should render the login page with a password field 1`] = `
+<div>
+  <section
+    class="landing-content s-diEOsynXV9Ac"
+  >
+    <h2
+      class="h1 s-diEOsynXV9Ac"
+    >
+      Unlocking the Future: 
+      <br
+        class="s-diEOsynXV9Ac"
+      />
+      
+    Your 
+      <mark
+        class="s-diEOsynXV9Ac"
+      >
+        DUSK
+      </mark>
+       Native Wallet
+    </h2>
+     
+    <div
+      class="landing-content__options s-diEOsynXV9Ac"
+    >
+      <form
+        class="s-diEOsynXV9Ac"
+      >
+        <div
+          class="dusk-field-button-group"
         >
           <input
             autocomplete="current-password"
@@ -188,11 +177,11 @@ exports[`Login > Password workflow > should show the password field and the link
             name="secret"
             placeholder="Password"
             required=""
+            tabindex="0"
             type="password"
           />
           
           <!--&lt;Textbox&gt;-->
-           
            
           <button
             class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
@@ -201,65 +190,92 @@ exports[`Login > Password workflow > should show the password field and the link
             <span
               class="dusk-button__text"
             >
-              Unlock Wallet
+              Unlock
             </span>
           </button>
           <!--&lt;Button&gt;-->
-           
-          <a
-            aria-disabled="false"
-            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal"
-            href="/some-base-path/setup/restore"
-          >
-            <span
-              class="dusk-anchor-button__text"
-            >
-              Forgot Password?
-            </span>
-            
-          </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
-        </form>
-      </article>
-      
-      <!--&lt;Card&gt;-->
-    </div>
-     
-    <footer
-      class="login-footer s-diEOsynXV9Ac"
-    >
-      <a
-        aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
-        href="/some-base-path/setup"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
-          />
-        </svg>
-        
-        <!--&lt;Icon&gt;-->
+        </div>
+        <!--&lt;FieldButtonGroup&gt;-->
          
-        <span
-          class="dusk-anchor-button__text"
+      </form>
+       
+      <div
+        class="landing-content__options-group s-diEOsynXV9Ac"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+          href="/some-base-path/setup/create"
         >
-          Back
-        </span>
-        
-        
-      </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AnchorButton&gt;-->
-      <!--&lt;AppAnchorButton&gt;-->
-    </footer>
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5,3C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V16.72C21.59,16.37 22,15.74 22,15V9C22,8.26 21.59,7.63 21,7.28V5A2,2 0 0,0 19,3H5M5,5H19V7H13A2,2 0 0,0 11,9V15A2,2 0 0,0 13,17H19V19H5V5M13,9H20V15H13V9M16,10.5A1.5,1.5 0 0,0 14.5,12A1.5,1.5 0 0,0 16,13.5A1.5,1.5 0 0,0 17.5,12A1.5,1.5 0 0,0 16,10.5Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            New
+          </span>
+          
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+          href="/some-base-path/setup/restore"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Restore
+          </span>
+          
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+        <!--&lt;AppAnchorButton&gt;-->
+      </div>
+    </div>
   </section>
+   
+  <footer
+    class="landing-footer s-diEOsynXV9Ac"
+  >
+    <span
+      class="s-diEOsynXV9Ac"
+    >
+      Web Wallet v
+      0.1.5
+       (
+      hash1234 2024-01-12
+      )
+    </span>
+  </footer>
   <!--&lt;+page&gt;-->
 </div>
 `;

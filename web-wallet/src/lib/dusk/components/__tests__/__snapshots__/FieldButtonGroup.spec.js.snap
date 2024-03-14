@@ -1,0 +1,61 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FieldButtonGroup > renders the component with default values 1`] = `
+<div
+  class="dusk-field-button-group"
+>
+  <input
+    autocomplete="off"
+    class="dusk-textbox dusk-textbox-text"
+    name="test"
+    placeholder=""
+    required=""
+    tabindex="0"
+    type="text"
+  />
+  
+  <!--&lt;Textbox&gt;-->
+   
+  <button
+    class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
+    type="submit"
+  >
+    <span
+      class="dusk-button__text"
+    >
+      Submit
+    </span>
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;
+
+exports[`FieldButtonGroup > updates input value on change 1`] = `
+<div
+  class="dusk-field-button-group"
+>
+  <input
+    autocomplete="off"
+    class="dusk-textbox dusk-textbox-text"
+    name="test"
+    placeholder=""
+    required=""
+    tabindex="0"
+    type="text"
+  />
+  
+  <!--&lt;Textbox&gt;-->
+   
+  <button
+    class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
+    type="submit"
+  >
+    <span
+      class="dusk-button__text"
+    >
+      Submit
+    </span>
+  </button>
+  <!--&lt;Button&gt;-->
+</div>
+`;

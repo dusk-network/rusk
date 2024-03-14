@@ -8,6 +8,7 @@ export { default as Checkbox } from "./Checkbox/Checkbox.svelte";
 export { default as CircularIcon } from "./Icon/CircularIcon.svelte";
 export { default as ErrorAlert } from "./ErrorAlert/ErrorAlert.svelte";
 export { default as ErrorDetails } from "./ErrorDetails/ErrorDetails.svelte";
+export { default as FieldButtonGroup } from "./FieldButtonGroup/FieldButtonGroup.svelte";
 export { default as Icon } from "./Icon/Icon.svelte";
 export { default as Mnemonic } from "./Mnemonic/Mnemonic.svelte";
 export { default as ProgressBar } from "./ProgressBar/ProgressBar.svelte";

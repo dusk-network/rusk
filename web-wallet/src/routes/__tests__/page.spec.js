@@ -15,11 +15,11 @@ describe("Main +page.js", () => {
     redirectSpy.mockRestore();
   });
 
-  it("should redirect the user to the setup page", async () => {
+  it("should redirect the user to the landing page", async () => {
     // @ts-ignore
     expect(async () => await load()).rejects.toThrow();
 
     expect(redirectSpy).toHaveBeenCalledTimes(1);
-    expect(redirectSpy).toHaveBeenCalledWith(301, "/setup");
+    expect(redirectSpy).toHaveBeenCalledWith(301, "/login");
   });
 });

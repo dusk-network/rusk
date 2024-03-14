@@ -69,7 +69,7 @@
       showStepper={true}
       backButton={{
         disabled: false,
-        href: "/setup",
+        href: "/",
         isAnchor: true,
       }}
       nextButton={{ disabled: !agreementAccepted }}
