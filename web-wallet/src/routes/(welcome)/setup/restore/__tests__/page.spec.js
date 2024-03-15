@@ -6,7 +6,11 @@ import { setKey } from "lamb";
 import { get } from "svelte/store";
 import { addresses } from "$lib/mock-data";
 import * as navigation from "$lib/navigation";
-import { settingsStore, walletStore } from "$lib/stores";
+import {
+  mnemonicPhraseResetStore,
+  settingsStore,
+  walletStore,
+} from "$lib/stores";
 import { encryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
 import * as walletService from "$lib/services/wallet";
@@ -204,5 +208,15 @@ describe("Restore", async () => {
     expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("should reset the Restore Mnemonic store on unmount", () => {
+    const { unmount } = render(Restore);
+
+    mnemonicPhraseResetStore.set([mnemonic]);
+
+    unmount();
+
+    expect(get(mnemonicPhraseResetStore)).toStrictEqual([]);
   });
 });

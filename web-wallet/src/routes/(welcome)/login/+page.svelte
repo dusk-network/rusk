@@ -3,40 +3,33 @@
 <script>
   import { mdiArrowLeft, mdiKeyOutline } from "@mdi/js";
   import { validateMnemonic } from "bip39";
-  import { setKey } from "lamb";
 
   import { Button, Card, Textbox } from "$lib/dusk/components";
   import { AppAnchorButton } from "$lib/components";
   import { goto } from "$lib/navigation";
-  import { settingsStore, walletStore } from "$lib/stores";
+  import {
+    mnemonicPhraseResetStore,
+    settingsStore,
+    walletStore,
+  } from "$lib/stores";
   import { decryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
   import { getWallet } from "$lib/services/wallet";
 
-  const notice = [
-    "Logging in to a new wallet will overwrite the current local wallet cache",
-    ", meaning that when you log in again with the previous mnemonic/",
-    "account you will need to wait for the wallet to sync.",
-  ].join("");
-
   /**
    * @typedef {import("@dusk-network/dusk-wallet-js").Wallet} Wallet
    */
+
+  const localDataCheckErrorMsg =
+    "Mismatched wallet address or no existing wallet";
 
   /** @type {(wallet: Wallet) => Promise<Wallet>} */
   async function checkLocalData(wallet) {
     const defaultAddress = (await wallet.getPsks())[0];
     const currentAddress = $settingsStore.userId;
 
-    if (defaultAddress !== currentAddress) {
-      // eslint-disable-next-line no-alert
-      if (currentAddress && !window.confirm(notice)) {
-        throw new Error("Existing wallet detected");
-      }
-
-      await wallet.reset();
-      settingsStore.reset();
-      settingsStore.update(setKey("userId", defaultAddress));
+    if (!currentAddress || currentAddress !== defaultAddress) {
+      throw new Error(localDataCheckErrorMsg);
     }
 
     return wallet;
@@ -79,6 +72,12 @@
       .then((wallet) => walletStore.init(wallet))
       .then(() => goto("/dashboard"))
       .catch((err) => {
+        if (err.message === localDataCheckErrorMsg) {
+          const enteredMnemonicPhrase = secretText.split(" ");
+          mnemonicPhraseResetStore.set(enteredMnemonicPhrase);
+          goto("/setup/restore");
+          return;
+        }
         errorMessage = err.message;
         fldSecret.focus();
         fldSecret.select();
@@ -100,11 +99,11 @@
         <Textbox
           bind:this={fldSecret}
           bind:value={secretText}
-          name="secret"
+          name={loginInfo ? "password" : "mnemonic"}
           placeholder={modeLabel}
           required
           type="password"
-          autocomplete={loginInfo ? "current-password" : undefined}
+          autocomplete="current-password"
         />
         {#if errorMessage}
           <span class="login__error">{errorMessage}</span>

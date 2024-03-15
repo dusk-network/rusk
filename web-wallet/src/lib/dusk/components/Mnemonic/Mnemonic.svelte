@@ -38,6 +38,9 @@
     enteredMnemonicPhrase = Array(wordLimit).fill("");
   }
 
+  const isTriggeredByLogin =
+    enteredMnemonicPhrase.some((word) => word !== "") && currentIndex === 0;
+
   /**
    * @param {string} word
    * @param {string} index
@@ -118,63 +121,67 @@
 </script>
 
 <div {...$$restProps} class={classes}>
-  <div class="dusk-mnemonic__actions-wrapper">
-    {#if type === "authenticate" && shouldShowPaste}
+  {#if !isTriggeredByLogin}
+    <div class="dusk-mnemonic__actions-wrapper">
+      {#if type === "authenticate" && shouldShowPaste}
+        <Button
+          icon={{ path: mdiContentPaste }}
+          text="Paste seed phrase"
+          variant="tertiary"
+          on:click={pasteSeed}
+        />
+      {/if}
       <Button
-        icon={{ path: mdiContentPaste }}
-        text="Paste seed phrase"
+        disabled={!currentIndex}
+        on:click={undoLastWord}
+        icon={{ path: mdiRedoVariant }}
+        text="Undo"
         variant="tertiary"
-        on:click={pasteSeed}
       />
-    {/if}
-    <Button
-      disabled={!currentIndex}
-      on:click={undoLastWord}
-      icon={{ path: mdiRedoVariant }}
-      text="Undo"
-      variant="tertiary"
-    />
-  </div>
+    </div>
+  {/if}
 
   <Words words={enteredMnemonicPhrase} />
 
-  <div
-    class={type === "authenticate"
-      ? "dusk-mnemonic__authenticate-actions-wrapper"
-      : "dusk-mnemonic__validate-actions-wrapper"}
-  >
-    {#if type === "authenticate" && enteredWordIndex.includes("")}
-      <Textbox
-        placeholder={`Enter word ${currentIndex + 1}`}
-        bind:this={textboxElement}
-        on:keydown={(e) =>
-          handleKeyDownOnAuthenticateTextbox(e, currentIndex.toString())}
-        maxlength={8}
-        type="text"
-        bind:value={currentInput}
-      />
-      {#if suggestions.length}
-        <div class="dusk-mnemonic__suggestions-wrapper">
-          {#each suggestions as suggestion, index (`${suggestion}-${index}`)}
-            <Button
-              variant="tertiary"
-              text={suggestion}
-              data-value={suggestion}
-              on:click={handleWordButtonClick}
-            />
-          {/each}
-        </div>
-      {/if}
-    {:else}
-      {#each mnemonicPhrase as word, index (`${word}-${index}`)}
-        <Button
-          variant="tertiary"
-          text={word}
-          data-value={word}
-          disabled={enteredWordIndex.includes(index.toString())}
-          on:click={(e) => handleWordButtonClick(e, index.toString())}
+  {#if !isTriggeredByLogin}
+    <div
+      class={type === "authenticate"
+        ? "dusk-mnemonic__authenticate-actions-wrapper"
+        : "dusk-mnemonic__validate-actions-wrapper"}
+    >
+      {#if type === "authenticate" && enteredWordIndex.includes("")}
+        <Textbox
+          placeholder={`Enter word ${currentIndex + 1}`}
+          bind:this={textboxElement}
+          on:keydown={(e) =>
+            handleKeyDownOnAuthenticateTextbox(e, currentIndex.toString())}
+          maxlength={8}
+          type="text"
+          bind:value={currentInput}
         />
-      {/each}
-    {/if}
-  </div>
+        {#if suggestions.length}
+          <div class="dusk-mnemonic__suggestions-wrapper">
+            {#each suggestions as suggestion, index (`${suggestion}-${index}`)}
+              <Button
+                variant="tertiary"
+                text={suggestion}
+                data-value={suggestion}
+                on:click={handleWordButtonClick}
+              />
+            {/each}
+          </div>
+        {/if}
+      {:else}
+        {#each mnemonicPhrase as word, index (`${word}-${index}`)}
+          <Button
+            variant="tertiary"
+            text={word}
+            data-value={word}
+            disabled={enteredWordIndex.includes(index.toString())}
+            on:click={(e) => handleWordButtonClick(e, index.toString())}
+          />
+        {/each}
+      {/if}
+    </div>
+  {/if}
 </div>
