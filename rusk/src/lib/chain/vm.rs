@@ -166,7 +166,7 @@ impl VMExecution for Rusk {
             .map_err(|e| anyhow::anyhow!("Cannot get provisioner {e}"))?
             .map(|stake| {
                 let (value, eligibility) = stake.amount.unwrap_or_default();
-                Stake::new(value, stake.reward, eligibility)
+                Stake::new(value, stake.reward, eligibility, stake.counter)
             });
         Ok(stake)
     }
@@ -207,7 +207,8 @@ impl Rusk {
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
             .map(|(key, stake)| {
                 let (value, eligibility) = stake.amount.unwrap_or_default();
-                let stake = Stake::new(value, stake.reward, eligibility);
+                let stake =
+                    Stake::new(value, stake.reward, eligibility, stake.counter);
                 let pubkey_bls = node_data::bls::PublicKey::new(key);
                 (pubkey_bls, stake)
             });
