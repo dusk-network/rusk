@@ -103,10 +103,14 @@ impl Migration {
         provisioners: &Provisioners,
     ) -> impl Iterator<Item = (PublicKey, StakeData)> + '_ {
         provisioners.iter().map(|(pk, stake)| {
+            let amount = match stake.value() {
+                0 => None,
+                value => Some((value, stake.eligible_since)),
+            };
             (
                 *pk.inner(),
                 StakeData {
-                    amount: Some((stake.value(), stake.eligible_since)),
+                    amount,
                     reward: stake.reward,
                     counter: stake.counter,
                 },
