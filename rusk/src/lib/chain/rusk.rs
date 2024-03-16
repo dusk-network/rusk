@@ -108,6 +108,11 @@ impl Rusk {
         let mut event_hasher = Sha3_256::new();
 
         for unspent_tx in txs {
+            // Don't include transactions if migration is triggered otherwise
+            // the session rollback will not re-execute migration
+            if Some(block_height) == self.migration_height {
+                continue;
+            }
             let tx = unspent_tx.inner.clone();
             match execute(&mut session, &tx) {
                 Ok(receipt) => {
