@@ -12,6 +12,7 @@ import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 import mockedWalletStore from "../../__mocks__/mockedWalletStore";
 import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
+import loginInfoStorage from "$lib/services/loginInfoStorage";
 
 import Settings from "../+page.svelte";
 
@@ -124,20 +125,23 @@ describe("Settings", () => {
       .mockResolvedValue(void 0);
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const settingsResetSpy = vi.spyOn(settingsStore, "reset");
+    const loginInfoStorageSpy = vi.spyOn(loginInfoStorage, "remove");
 
     afterEach(() => {
       clearDataSpy.mockClear();
       confirmSpy.mockClear();
       settingsResetSpy.mockClear();
+      loginInfoStorageSpy.mockClear();
     });
 
     afterAll(() => {
       clearDataSpy.mockRestore();
       confirmSpy.mockRestore();
       settingsResetSpy.mockRestore();
+      loginInfoStorageSpy.mockRestore();
     });
 
-    it("should clear local data and settings and then log out the user if the reset button is clicked and the user confirms the operation", async () => {
+    it("should clear local data, settings, and login info before logging out the user if the reset button is clicked and the user confirms the operation", async () => {
       const { getByRole } = render(Settings);
       const resetButton = getByRole("button", { name: /reset/i });
 
@@ -148,6 +152,7 @@ describe("Settings", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
+      expect(loginInfoStorageSpy).toHaveBeenCalledTimes(1);
       expect(settingsResetSpy).toHaveBeenCalledTimes(1);
       expect(logoutSpy).toHaveBeenCalledTimes(1);
       expect(logoutSpy).toHaveBeenCalledWith(false);
@@ -166,6 +171,7 @@ describe("Settings", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
+      expect(loginInfoStorageSpy).not.toHaveBeenCalled();
       expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(logoutSpy).not.toHaveBeenCalled();
     });
