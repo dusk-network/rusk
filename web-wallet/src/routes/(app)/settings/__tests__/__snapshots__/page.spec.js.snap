@@ -556,7 +556,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal settings-group__button--state--danger"
           data-tooltip-disabled="true"
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="Impossible to reset while a sync is in progress"
+          data-tooltip-text="Not allowed to reset while syncing"
           data-tooltip-type="warning"
           type="button"
         >
@@ -1157,7 +1157,7 @@ exports[`Settings > should render the settings page 1`] = `
           class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal settings-group__button--state--danger"
           data-tooltip-disabled="true"
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="Impossible to reset while a sync is in progress"
+          data-tooltip-text="Not allowed to reset while syncing"
           data-tooltip-type="warning"
           type="button"
         >

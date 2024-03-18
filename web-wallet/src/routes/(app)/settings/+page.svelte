@@ -191,7 +191,7 @@
         disabled={isSyncing}
         data-tooltip-disabled={!isSyncing}
         data-tooltip-id="main-tooltip"
-        data-tooltip-text="Impossible to reset while a sync is in progress"
+        data-tooltip-text="Not allowed to reset while syncing"
         data-tooltip-type="warning"
         on:click={handleResetWalletClick}
         text="Reset Wallet"
