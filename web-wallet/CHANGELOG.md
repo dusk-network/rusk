@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add autocomplete attribute on the login field [#1533]
+
 ### Changed
 
 - Update copy on Reset Wallet while syncing [#1552]
+- Trigger the Restore flow if a user tries to access a new wallet [#1535]
 - Update `OperationResult` to infer error messages from arbitrary values [#1524]
 - Update Tabs to use native scroll behavior [#1320]
 
@@ -184,6 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1514]: https://github.com/dusk-network/rusk/issues/1514
 [#1519]: https://github.com/dusk-network/rusk/issues/1519
 [#1524]: https://github.com/dusk-network/rusk/issues/1524
+[#1533]: https://github.com/dusk-network/rusk/issues/1533
+[#1535]: https://github.com/dusk-network/rusk/issues/1535
 [#1537]: https://github.com/dusk-network/rusk/issues/1537
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
 

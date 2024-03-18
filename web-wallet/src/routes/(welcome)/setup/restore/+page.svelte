@@ -8,12 +8,13 @@
   import MnemonicAuthenticate from "./MnemonicAuthenticate.svelte";
   import { Wizard, WizardStep } from "$lib/dusk/components";
   import { ExistingWalletNotice } from "$lib/components";
-  import { settingsStore } from "$lib/stores";
+  import { mnemonicPhraseResetStore, settingsStore } from "$lib/stores";
   import {
     initializeWallet,
     refreshLocalStoragePasswordInfo,
   } from "$lib/wallet";
   import { goto } from "$lib/navigation";
+  import { onDestroy } from "svelte";
 
   /** @type {boolean} */
   let notice = false;
@@ -34,13 +35,17 @@
   let isValidMnemonic = false;
 
   /** @type {string[]} */
-  let mnemonicPhrase = [];
+  let mnemonicPhrase = $mnemonicPhraseResetStore;
 
   const { userId } = $settingsStore;
 
   $: if (showPasswordSetup) {
     password = showPasswordSetup ? password : "";
   }
+
+  onDestroy(() => {
+    mnemonicPhraseResetStore.set([]);
+  });
 </script>
 
 {#if !notice && userId}

@@ -59,8 +59,9 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
           class="login__form s-diEOsynXV9Ac"
         >
           <input
+            autocomplete="current-password"
             class="dusk-textbox dusk-textbox-password"
-            name="secret"
+            name="mnemonic"
             placeholder="Mnemonic phrase"
             required=""
             type="password"
@@ -185,7 +186,7 @@ exports[`Login > Password workflow > should show the password field and the link
           <input
             autocomplete="current-password"
             class="dusk-textbox dusk-textbox-password"
-            name="secret"
+            name="password"
             placeholder="Password"
             required=""
             type="password"

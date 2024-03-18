@@ -11,9 +11,10 @@
   <Card iconPath={mdiAlertOutline} heading="Existing Wallet Detected">
     <div class="flex flex-col gap-1">
       <p>
-        Logging in to a new wallet will overwrite the current local wallet
-        cache, meaning that when you log in again with the previous
-        mnemonic/account you will need to wait for the wallet to sync.
+        Initializing a new wallet will replace your existing local wallet cache,
+        erasing any stored data. Ensure you have securely backed up your current
+        wallet's seed phrase to prevent loss. Proceeding without a backup can
+        lead to irreversible loss of access to your assets.
       </p>
       <div class="flex gap-1 w-100">
         <AppAnchorButton
