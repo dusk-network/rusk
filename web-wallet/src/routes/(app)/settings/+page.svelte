@@ -23,11 +23,16 @@
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
   import { areValidGasSettings } from "$lib/contracts";
   import { logout } from "$lib/navigation";
+  import loginInfoStorage from "$lib/services/loginInfoStorage";
+
+  const confirmResetMessage =
+    "Confirm you've saved your recovery phrase before resetting the wallet. Proceed?";
 
   const resetWallet = () =>
     walletStore
       .clearLocalData()
       .then(() => {
+        loginInfoStorage.remove();
         settingsStore.reset();
         logout(false);
       })
@@ -37,7 +42,7 @@
 
   function handleResetWalletClick() {
     // eslint-disable-next-line no-alert
-    if (confirm("Are you sure you want to reset the wallet?")) {
+    if (confirm(confirmResetMessage)) {
       resetError = null;
       resetWallet();
     }

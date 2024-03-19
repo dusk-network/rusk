@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update copy on Reset Wallet while syncing [#1552]
 - Trigger the Restore flow if a user tries to access a new wallet [#1535]
+- Clear the login info storage on "Reset Wallet" (Settings) [#1551]
 - Update `OperationResult` to infer error messages from arbitrary values [#1524]
 - Update Tabs to use native scroll behavior [#1320]
 
@@ -193,6 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1533]: https://github.com/dusk-network/rusk/issues/1533
 [#1535]: https://github.com/dusk-network/rusk/issues/1535
 [#1537]: https://github.com/dusk-network/rusk/issues/1537
+[#1551]: https://github.com/dusk-network/rusk/issues/1551
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
 
