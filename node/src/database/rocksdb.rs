@@ -33,6 +33,7 @@ const CF_LEDGER_HEADER: &str = "cf_ledger_header";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
 const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
+const CF_CANDIDATES_HEIGHT: &str = "cf_candidates_height";
 const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
@@ -77,6 +78,11 @@ impl Backend {
             .cf_handle(CF_CANDIDATES)
             .expect("candidates column family must exist");
 
+        let candidates_height_cf = self
+            .rocksdb
+            .cf_handle(CF_CANDIDATES_HEIGHT)
+            .expect("candidates column family must exist");
+
         let mempool_cf = self
             .rocksdb
             .cf_handle(CF_MEMPOOL)
@@ -107,6 +113,7 @@ impl Backend {
         DBTransaction::<'_, OptimisticTransactionDB> {
             inner,
             candidates_cf,
+            candidates_height_cf,
             ledger_cf,
             ledger_txs_cf,
             mempool_cf,
@@ -150,6 +157,10 @@ impl DB for Backend {
             ColumnFamilyDescriptor::new(CF_LEDGER_TXS, Options::default()),
             ColumnFamilyDescriptor::new(CF_LEDGER_HEIGHT, Options::default()),
             ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
+            ColumnFamilyDescriptor::new(
+                CF_CANDIDATES_HEIGHT,
+                Options::default(),
+            ),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts.clone()),
@@ -203,6 +214,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     // TODO: pack all column families into a single array
     // Candidates column family
     candidates_cf: &'db ColumnFamily,
+    candidates_height_cf: &'db ColumnFamily,
 
     // Ledger column families
     ledger_cf: &'db ColumnFamily,
@@ -400,7 +412,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 }
 
+/// Implementation of the `Candidate` trait for `DBTransaction<'db, DB>`.
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
+    /// Stores a candidate block in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `b` - The block to store.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the block is successfully stored, or an error if the
+    /// operation fails.
     fn store_candidate_block(&self, b: ledger::Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
@@ -408,9 +431,23 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         self.inner
             .put_cf(self.candidates_cf, b.header().hash, serialized)?;
 
+        let key = serialize_key(b.header().height, b.header().hash)?;
+        self.inner
+            .put_cf(self.candidates_height_cf, key, b.header().hash)?;
+
         Ok(())
     }
 
+    /// Fetches a candidate block from the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `hash` - The hash of the block to fetch.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Some(block))` if the block is found, `Ok(None)` if the block
+    /// is not found, or an error if the operation fails.
     fn fetch_candidate_block(
         &self,
         hash: &[u8],
@@ -424,18 +461,51 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(None)
     }
 
-    /// Deletes all items from CF_CANDIDATES column family
-    fn clear_candidates(&self) -> Result<()> {
+    /// Deletes candidate-related items from the database based on a closure.
+    ///
+    /// # Arguments
+    ///
+    /// * `closure` - If the closure returns `true`, the block will be deleted.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn delete<F>(&self, closure: F) -> Result<()>
+    where
+        F: FnOnce(u64) -> bool + std::marker::Copy,
+    {
         let iter = self
             .inner
-            .iterator_cf(self.candidates_cf, IteratorMode::Start);
+            .iterator_cf(self.candidates_height_cf, IteratorMode::Start);
 
-        // Iterate through the CF_CANDIDATES column family and delete all items
-        for (key, _) in iter.map(Result::unwrap) {
-            self.inner.delete_cf(self.candidates_cf, key)?;
+        for (key, hash) in iter.map(Result::unwrap) {
+            let (height, _) = deserialize_key(&mut &key.to_vec()[..])?;
+            if closure(height) {
+                self.inner.delete_cf(self.candidates_cf, hash)?;
+                self.inner.delete_cf(self.candidates_height_cf, key)?;
+            }
         }
 
         Ok(())
+    }
+
+    fn count(&self) -> usize {
+        let iter = self
+            .inner
+            .iterator_cf(self.candidates_height_cf, IteratorMode::Start);
+
+        iter.count()
+    }
+
+    /// Deletes all items from the `CF_CANDIDATES` column family.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn clear_candidates(&self) -> Result<()> {
+        self.delete(|_| true)
     }
 }
 
@@ -482,7 +552,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         // Map Fee_Hash to Null to facilitate sort-by-fee
         self.inner.put_cf(
             self.fees_cf,
-            serialize_fee_key(tx.gas_price(), hash)?,
+            serialize_key(tx.gas_price(), hash)?,
             vec![0],
         )?;
 
@@ -522,7 +592,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             // Delete Fee_Hash
             self.inner.delete_cf(
                 self.fees_cf,
-                serialize_fee_key(tx.gas_price(), hash)?,
+                serialize_key(tx.gas_price(), hash)?,
             )?;
 
             return Ok(true);
@@ -565,7 +635,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         // Iterate all keys from the end in reverse lexicographic order
         while iter.valid() {
             if let Some(key) = iter.key() {
-                let (_, tx_hash) = deserialize_fee_key(&mut &key.to_vec()[..])?;
+                let (_, tx_hash) = deserialize_key(&mut &key.to_vec()[..])?;
 
                 txs_list.push(tx_hash);
             }
@@ -621,7 +691,7 @@ impl<DB: DBAccess> Iterator for MemPoolFeeIterator<'_, DB> {
             true => {
                 if let Some(key) = self.iter.key() {
                     let (gas_price, hash) =
-                        deserialize_fee_key(&mut &key.to_vec()[..]).ok()?;
+                        deserialize_key(&mut &key.to_vec()[..]).ok()?;
                     self.iter.prev();
                     Some((gas_price, hash))
                 } else {
@@ -687,24 +757,21 @@ impl<'db, DB: DBAccess> Metadata for DBTransaction<'db, DB> {
     }
 }
 
-fn serialize_fee_key(fee: u64, hash: [u8; 32]) -> std::io::Result<Vec<u8>> {
+fn serialize_key(value: u64, hash: [u8; 32]) -> std::io::Result<Vec<u8>> {
     let mut w = vec![];
-    std::io::Write::write_all(&mut w, &fee.to_be_bytes())?;
+    std::io::Write::write_all(&mut w, &value.to_be_bytes())?;
     std::io::Write::write_all(&mut w, &hash)?;
     Ok(w)
 }
 
-fn deserialize_fee_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
-    // Read fee
+fn deserialize_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
     let mut buf = [0u8; 8];
     r.read_exact(&mut buf)?;
-    let fee = u64::from_be_bytes(buf);
-
-    // Read tx hash
+    let value = u64::from_be_bytes(buf);
     let mut hash = [0u8; 32];
     r.read_exact(&mut hash[..])?;
 
-    Ok((fee, hash))
+    Ok((value, hash))
 }
 
 struct HeaderRecord {

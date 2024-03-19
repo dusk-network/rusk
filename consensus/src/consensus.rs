@@ -134,9 +134,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         }
 
         // Tear-down procedure
-        // Delete all candidates
-        self.db.lock().await.delete_candidate_blocks();
-
         // Abort all tasks
         abort(&mut quorum_task_handle).await;
         abort(&mut main_task_handle).await;

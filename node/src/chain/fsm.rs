@@ -9,11 +9,14 @@ use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
 
-use crate::database::Ledger;
+use crate::database::{Candidate, Ledger};
 use node_data::ledger::{to_str, Block, Label};
-use node_data::message::payload::{GetBlocks, GetData};
-use node_data::message::Message;
+use node_data::message::payload::{
+    GetBlocks, GetData, RatificationResult, Vote,
+};
+use node_data::message::{payload, Message, Metadata};
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Formatter};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
 use std::time::Duration;
@@ -128,26 +131,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.acc.write().await.restart_consensus().await;
     }
 
-    pub async fn on_event(
+    /// Handles an event of a block occurrence.
+    ///
+    /// A block event could originate from either local consensus execution, a
+    /// wire Block message (topics::Block), or a wire Quorum message
+    /// (topics::Quorum).
+    pub async fn on_block_event(
         &mut self,
         blk: &Block,
-        msg: &Message,
+        metadata: Option<Metadata>,
     ) -> anyhow::Result<()> {
-        if blk.header().height
-            > self.acc.read().await.get_curr_height().await + 1
-        {
-            // Rebroadcast a block from future
-            let _ =
-                self.network
-                    .read()
-                    .await
-                    .broadcast(msg)
-                    .await
-                    .map_err(|err| {
-                        warn!("Unable to broadcast accepted block: {err}")
-                    });
-        }
-
         // Filter out blocks that have already been marked as
         // blacklisted upon successful fallback execution.
         if self
@@ -168,7 +161,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
         match &mut self.curr {
             State::InSync(ref mut curr) => {
-                if let Some((b, peer_addr)) = curr.on_event(blk, msg).await? {
+                if let Some((b, peer_addr)) =
+                    curr.on_block_event(blk, metadata).await?
+                {
                     // Transition from InSync to OutOfSync state
                     curr.on_exiting().await;
 
@@ -182,7 +177,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 }
             }
             State::OutOfSync(ref mut curr) => {
-                if curr.on_event(blk, msg).await? {
+                if curr.on_block_event(blk, metadata).await? {
                     // Transition from OutOfSync to InSync state
                     curr.on_exiting().await;
 
@@ -200,6 +195,98 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 }
             }
         }
+        Ok(())
+    }
+
+    /// Handles a Quorum message.
+    ///
+    /// Ideally, the winning block will be built from the quorum certificate
+    /// and candidate block. If the candidate is not found then the
+    /// winning block will be requested from the network/peer.
+    pub(crate) async fn on_quorum_msg(
+        &mut self,
+        quorum: &payload::Quorum,
+        msg: &Message,
+    ) -> anyhow::Result<()> {
+        let res = match quorum.cert.result {
+            RatificationResult::Success(Vote::Valid(hash)) => {
+                let acc = self.acc.read().await;
+                let local_header = acc.tip_header().await;
+                let remote_height = msg.header.round;
+
+                // Quorum from future
+                if remote_height > local_header.height + 1 {
+                    debug!(
+                        event = "Quorum from future",
+                        hash = to_str(&hash),
+                        height = remote_height,
+                    );
+
+                    // Request by hash
+                    request_block(
+                        &self.network,
+                        BlockRequest::ByHash(hash),
+                        msg.metadata.as_ref().unwrap().src_addr,
+                    )
+                    .await;
+
+                    Ok(None)
+                } else {
+                    // If the quorum msg belongs to the next block,
+                    // if the quorum msg belongs to a block of current round
+                    // with different hash:
+                    // Then try to fetch the corresponding candidate and
+                    // redirect to on_block_event
+                    if (remote_height == local_header.height + 1)
+                        || (remote_height == local_header.height
+                            && local_header.hash != hash)
+                    {
+                        match acc
+                            .db
+                            .read()
+                            .await
+                            .view(|t| t.fetch_candidate_block(&hash))
+                        {
+                            Ok(b) => Ok(b),
+                            Err(err) => {
+                                error!(
+                                    event = "Candidate not found",
+                                    hash = to_str(&hash),
+                                    height = remote_height,
+                                    err = ?err,
+                                );
+
+                                // Request by hash
+                                request_block(
+                                    &self.network,
+                                    BlockRequest::ByHash(hash),
+                                    msg.metadata.as_ref().unwrap().src_addr,
+                                )
+                                .await;
+
+                                Err(err)
+                            }
+                        }
+                    } else {
+                        Ok(None)
+                    }
+                }
+            }
+            _ => Ok(None),
+        }?;
+
+        if let Some(mut block) = res {
+            info!(
+                event = "block received",
+                src = "quorum_msg",
+                blk_height = block.header().height,
+                blk_hash = to_str(&block.header().hash),
+            );
+
+            block.set_certificate(quorum.cert);
+            self.on_block_event(&block, msg.metadata.clone()).await?;
+        }
+
         Ok(())
     }
 
@@ -266,7 +353,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let curr_h = acc.get_curr_height().await;
 
         if blk.header().height == curr_h + 1 {
-            acc.try_accept_block(blk, None, true).await?;
+            acc.try_accept_block(blk, true).await?;
         }
 
         info!(event = "entering in-sync", height = curr_h);
@@ -277,10 +364,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     /// performed when exiting the state
     async fn on_exiting(&mut self) {}
 
-    async fn on_event(
+    async fn on_block_event(
         &mut self,
         remote_blk: &Block,
-        msg: &Message,
+        metadata: Option<Metadata>,
     ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
         let mut acc = self.acc.write().await;
         let local_header = acc.tip_header().await;
@@ -345,8 +432,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 {
                     Ok(_) => {
                         if remote_height == acc.get_curr_height().await + 1 {
-                            acc.try_accept_block(remote_blk, Some(msg), true)
-                                .await?;
+                            acc.try_accept_block(remote_blk, true).await?;
                             return Ok(None);
                         }
                     }
@@ -427,15 +513,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         // in in_Sync mode instead of switching to Out-Of-Sync
                         // mode.
 
-                        acc.try_accept_block(remote_blk, Some(msg), true)
-                            .await?;
+                        acc.try_accept_block(remote_blk, true).await?;
                         return Ok(None);
                     }
 
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing blocks from the
                     // main chain.
-                    if let Some(metadata) = &msg.metadata {
+                    if let Some(metadata) = &metadata {
                         let res = (remote_blk.clone(), metadata.src_addr);
                         return Ok(Some(res));
                     } else {
@@ -447,8 +532,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
         // Try accepting consecutive block
         if remote_height == local_header.height + 1 {
-            let label =
-                acc.try_accept_block(remote_blk, Some(msg), true).await?;
+            let label = acc.try_accept_block(remote_blk, true).await?;
 
             // On first final block accepted while we're inSync, clear
             // blacklisted blocks
@@ -458,7 +542,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // If the accepted block is the one requested to presync peer,
             // switch to OutOfSync/Syncing mode
-            if let Some(metadata) = &msg.metadata {
+            if let Some(metadata) = &metadata {
                 if let Some(presync) = &mut self.presync {
                     if metadata.src_addr == presync.peer_addr
                         && remote_height == presync.start_height() + 1
@@ -477,7 +561,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         // Block with height higher than (tip + 1) is received
         // Before switching to outOfSync mode and download missing blocks,
         // ensure that the Peer does know next valid block
-        if let Some(metadata) = &msg.metadata {
+        if let Some(metadata) = &metadata {
             if self.presync.is_none() {
                 self.presync = Some(PresyncInfo::new(
                     metadata.src_addr,
@@ -486,29 +570,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 ));
             }
 
-            self.request_block(local_header.height + 1, metadata.src_addr)
-                .await;
+            request_block(
+                &self.network,
+                BlockRequest::ByHeight(local_header.height + 1),
+                metadata.src_addr,
+            )
+            .await;
         }
 
         Ok(None)
-    }
-
-    /// Requests a block by height from a specified peer
-    async fn request_block(&self, height: u64, peer_addr: SocketAddr) {
-        let mut get_data = GetData::default();
-        get_data.inner.add_block_from_height(height);
-
-        debug!(event = "request block", height, ?peer_addr);
-
-        if let Err(err) = self
-            .network
-            .read()
-            .await
-            .send_to_peer(&Message::new_get_data(get_data), peer_addr)
-            .await
-        {
-            warn!("could not request block {err}")
-        };
     }
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
@@ -602,10 +672,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.clear();
     }
 
-    pub async fn on_event(
+    pub async fn on_block_event(
         &mut self,
         blk: &Block,
-        msg: &Message,
+        metadata: Option<Metadata>,
     ) -> anyhow::Result<bool> {
         let mut acc = self.acc.write().await;
         let h = blk.header().height;
@@ -628,9 +698,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         // Try accepting consecutive block
         if h == acc.get_curr_height().await + 1 {
-            acc.try_accept_block(blk, None, false).await?;
+            acc.try_accept_block(blk, false).await?;
 
-            if let Some(metadata) = &msg.metadata {
+            if let Some(metadata) = &metadata {
                 if metadata.src_addr == self.peer_addr {
                     // reset expiry_time only if we receive a valid block from
                     // the syncing peer.
@@ -642,7 +712,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             // available
             for height in (h + 1)..(self.range.1 + 1) {
                 if let Some(blk) = self.pool.get(&height) {
-                    acc.try_accept_block(blk, None, false).await?;
+                    acc.try_accept_block(blk, false).await?;
                 } else {
                     break;
                 }
@@ -688,4 +758,49 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         Ok(false)
     }
+}
+
+enum BlockRequest {
+    ByHeight(u64),
+    ByHash([u8; 32]),
+}
+impl Debug for BlockRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BlockRequest::ByHeight(height) => {
+                write!(f, "BlockRequest::ByHeight({})", height)
+            }
+            BlockRequest::ByHash(hash) => {
+                write!(f, "BlockRequest::ByHash({})", to_str(hash))
+            }
+        }
+    }
+}
+
+/// Requests a block by height from a specified peer
+async fn request_block<N: Network>(
+    network: &Arc<RwLock<N>>,
+    req: BlockRequest,
+    peer_addr: SocketAddr,
+) {
+    let mut get_data = GetData::default();
+    match req {
+        BlockRequest::ByHeight(height) => {
+            get_data.inner.add_block_from_height(height);
+        }
+        BlockRequest::ByHash(hash) => {
+            get_data.inner.add_block_from_hash(hash);
+        }
+    };
+
+    debug!(event = "request block", ?req, ?peer_addr);
+
+    if let Err(err) = network
+        .read()
+        .await
+        .send_to_peer(&Message::new_get_data(get_data), peer_addr)
+        .await
+    {
+        warn!("could not request block {err}")
+    };
 }
