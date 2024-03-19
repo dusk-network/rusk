@@ -56,4 +56,5 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]>;
     fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]>;
+    fn revert_to_epoch(&self) -> anyhow::Result<[u8; 32]>;
 }

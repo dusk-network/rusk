@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Keep last epoch state commit as a reversion target [#1094]
 - Allow state transitions to be executed in parallel with queries [#970]
 - Change dependencies declarations enforce bytecheck [#1371]
 - Fixed tests passing incorrect arguments [#1371]
@@ -200,6 +201,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
+[#1094]: https://github.com/dusk-network/rusk/issues/1094
 [#970]: https://github.com/dusk-network/rusk/issues/970
 [#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369

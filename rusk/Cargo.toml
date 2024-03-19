@@ -48,6 +48,7 @@ dusk-jubjub = "0.13"
 dusk-pki = "0.13"
 dusk-bytes = "0.1"
 kadcast = "0.6.0-rc"
+stake-contract-types = { version = "0.0.1-rc.2", path = "../contracts/stake-types" }
 dusk-wallet-core = "0.24.0-plonk.0.16-rc.2"
 phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
 tungstenite = "0.20"
@@ -59,7 +60,6 @@ tokio-util = { version = "0.7", features = ["rt"] }
 tokio-rustls = "0.25"
 rustls-pemfile = "2"
 async-trait = "0.1"
-
 
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }

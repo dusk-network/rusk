@@ -186,6 +186,14 @@ impl VMExecution for Rusk {
 
         Ok(state_hash)
     }
+
+    fn revert_to_epoch(&self) -> anyhow::Result<[u8; 32]> {
+        let state_hash = self.revert_to_epoch_root().map_err(|inner| {
+            anyhow::anyhow!("Cannot revert to finalized: {inner}")
+        })?;
+
+        Ok(state_hash)
+    }
 }
 
 impl Rusk {

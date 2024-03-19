@@ -23,6 +23,7 @@ pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 pub struct RuskTip {
     pub current: [u8; 32],
     pub base: [u8; 32],
+    pub epoch: Option<[u8; 32]>,
 }
 
 #[derive(Clone)]

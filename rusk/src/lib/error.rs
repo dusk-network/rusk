@@ -51,6 +51,8 @@ pub enum Error {
     Other(Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits
     CommitNotFound([u8; 32]),
+    /// Last epoch not found when expected
+    LastEpochNotFound,
 }
 
 impl std::error::Error for Error {}
@@ -145,6 +147,9 @@ impl fmt::Display for Error {
             }
             Error::CommitNotFound(commit_id) => {
                 write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
+            }
+            Error::LastEpochNotFound => {
+                write!(f, "Last epoch not found when expected")
             }
         }
     }

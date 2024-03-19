@@ -159,7 +159,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if mrb_height > 0 && mrb_state_hash != state_root {
             info!("revert to last finalized state");
             // Revert to last known finalized state.
-            acc.try_revert(RevertTarget::LastFinalizedState).await?;
+            if let Err(err) =
+                acc.try_revert(RevertTarget::LastFinalizedState).await
+            {
+                warn!("Reverting to last epoch: Failed to revert to last finalized state: {err}");
+                acc.try_revert(RevertTarget::LastEpoch).await?;
+            }
         }
 
         Ok(acc)
@@ -610,7 +615,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 anyhow::Ok(state_hash)
             }
-            RevertTarget::LastEpoch => unimplemented!(),
+            RevertTarget::LastEpoch => {
+                let vm = self.vm.read().await;
+                let state_hash = vm.revert_to_epoch()?;
+
+                info!(
+                    event = "vm reverted",
+                    state_root = hex::encode(state_hash),
+                    label = "last_epoch"
+                );
+
+                anyhow::Ok(state_hash)
+            }
         }?;
 
         // Delete any block until we reach the target_state_hash, the
