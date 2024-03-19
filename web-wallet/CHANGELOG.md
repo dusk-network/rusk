@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix error message overflowing in `ErrorDetails` component [#1547]
 - Fix missing focus border on switch component [#1537]
 
 ## [0.4.0] - 2024-03-13
@@ -192,6 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1533]: https://github.com/dusk-network/rusk/issues/1533
 [#1535]: https://github.com/dusk-network/rusk/issues/1535
 [#1537]: https://github.com/dusk-network/rusk/issues/1537
+[#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
 
 <!-- VERSIONS -->

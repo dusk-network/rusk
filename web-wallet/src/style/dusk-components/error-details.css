@@ -16,5 +16,5 @@
   margin-top: var(--default-gap);
   font-size: 0.875em;
   white-space: pre-line;
-  word-break: keep-all;
+  word-break: break-word;
 }
