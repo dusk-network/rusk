@@ -5,11 +5,10 @@
   import { createNumberFormatter } from "$lib/dusk/number";
   import { settingsStore } from "$lib/stores";
 
-  let currentBlock = 150640; // palceholder
-
   $: ({ language } = $settingsStore);
-
-  let numberFormatter = createNumberFormatter(language);
+  
+  const currentBlock = 150640; // palceholder
+  const numberFormatter = createNumberFormatter(language);
 </script>
 
 <Card heading="Current Block Height">
