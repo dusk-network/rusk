@@ -1,0 +1,68 @@
+name: explorer CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'explorer/**'
+              - '.github/workflows/explorer_ci.yml'
+  lint-test:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+
+    name: Node 20.x
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setting up Node 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          scope: "@dusk-network"
+
+      - name: Installing dev dependencies
+        run: npm ci
+        working-directory: ./explorer
+
+      - name: Formatting check
+        run: npm run format
+        working-directory: ./explorer
+
+      - name: Linting
+        run: npm run lint
+        working-directory: ./explorer
+
+      - name: Type checks
+        run: npm run typecheck
+        working-directory: ./explorer
+
+      - name: Run the test suite
+        run: npm test
+        working-directory: ./explorer
+
+      - name: Building the app
+        run: npm run build
+        working-directory: ./explorer

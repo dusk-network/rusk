@@ -27,6 +27,7 @@ jobs:
           filters: |
             run-ci:
               - '!(web-wallet/**/*|.github/workflows/webwallet_ci.yml)'
+              - '!(explorer/**/*|.github/workflows/explorer_ci.yml)'
   analyze:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true'

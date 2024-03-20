@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Blocks > should render the Blocks page 1`] = `
+<div>
+  <div>
+    All Blocks
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;

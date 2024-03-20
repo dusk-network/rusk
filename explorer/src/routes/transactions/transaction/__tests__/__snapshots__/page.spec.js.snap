@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Transaction > should render the Transaction page 1`] = `
+<div>
+  <div>
+    Individual Transaction
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;
