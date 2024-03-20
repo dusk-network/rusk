@@ -23,8 +23,8 @@
   /** @type {ButtonSize} */
   export let size = "normal";
 
-  /** @type {ButtonVariant } */
-  export let variant = "primary";
+  /** @type {ButtonVariant} */
+  export let variant = "secondary";
 
   /** @type {String | Undefined} */
   export let text = undefined;

@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Main layout > should render the main layout 1`] = `
+<div>
+  <main
+    class="app s-7IPF32Wcq3s8"
+  >
+    <h1
+      class="visible-hidden s-7IPF32Wcq3s8"
+    >
+      Dusk Web Wallet
+    </h1>
+     
+  </main>
+   
+   
+  <div
+    aria-hidden="true"
+    class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+    id="main-tooltip"
+    role="tooltip"
+    style="left: 0px; top: 0px;"
+  >
+    
+  </div>
+  <!--&lt;Tooltip&gt;-->
+   
+  <ul
+    class="dusk-toast"
+  />
+  <!--&lt;Toast&gt;-->
+  <!--&lt;+layout&gt;-->
+</div>
+`;

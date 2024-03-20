@@ -4,7 +4,7 @@ exports[`AppAnchorButton > should render an \`AnchorButton\` with the base path 
 <div>
   <a
     aria-disabled="false"
-    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal foo bar"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal foo bar"
     href="/some-base-path/setup"
     id="some-id"
   >

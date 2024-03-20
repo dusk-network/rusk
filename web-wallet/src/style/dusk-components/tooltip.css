@@ -20,15 +20,18 @@
 }
 
 .dusk-tooltip.dusk-tooltip-info {
-  background-color: var(--secondary-color);
+  background-color: var(--info-color);
+  color: var(--on-info-color);
 }
 
 .dusk-tooltip.dusk-tooltip-success {
   background-color: var(--success-color);
+  color: var(--on-success-color);
 }
 
 .dusk-tooltip.dusk-tooltip-warning {
   background-color: var(--warning-color);
+  color: var(--on-warning-color);
 }
 
 .dusk-tooltip::after {

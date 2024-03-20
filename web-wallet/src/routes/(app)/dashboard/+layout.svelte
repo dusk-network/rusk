@@ -55,9 +55,7 @@
       <div class="footer__network-status">
         <CircularIcon
           className="footer__network-status-icon footer__network-status-icon--{iconVariant}"
-          color={error
-            ? "var(--footer-icon-error-color)"
-            : "var(--footer-icon-color)"}
+          color="var(--on-{iconVariant}-color)"
           bgColor="var(--{iconVariant}-color)"
           data-tooltip-disabled={!error}
           data-tooltip-id="main-tooltip"

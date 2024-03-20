@@ -6,6 +6,7 @@
   border-radius: var(--control-border-radius-size);
   border-style: solid;
   border-width: var(--control-border-size);
+  color: var(--control-text-color);
 }
 
 .dusk-textbox:disabled,

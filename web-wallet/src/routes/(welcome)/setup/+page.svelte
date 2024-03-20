@@ -18,7 +18,7 @@
       <div class="setup-content__options-group">
         <AppAnchorButton
           href="/setup/create"
-          variant="primary"
+          variant="secondary"
           text="Create new wallet"
           icon={{ path: mdiWalletOutline }}
         />

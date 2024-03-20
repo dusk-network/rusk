@@ -1,31 +1,34 @@
 .dusk-badge {
   padding: 0.3em 1em;
   border-radius: var(--control-border-radius-size);
-  line-height: 1;
+  line-height: 0.875;
   text-transform: uppercase;
   font-size: 0.875em;
   border-style: solid;
-  border-width: 2px;
+  border-width: 0.125em;
   text-align: center;
 }
 
 .dusk-badge--variant-neutral {
   background-color: transparent;
-  border-color: var(--primary-color);
+  border-color: var(--on-background-color);
+  color: var(--on-background-color);
 }
 
 .dusk-badge--variant-warning {
   background-color: var(--warning-color);
   border-color: var(--warning-color);
+  color: var(--on-warning-color);
 }
 
 .dusk-badge--variant-error {
   background-color: var(--error-color);
-  color: var(--on-error-color);
   border-color: var(--error-color);
+  color: var(--on-error-color);
 }
 
 .dusk-badge--variant-success {
   background-color: var(--success-color);
   border-color: var(--success-color);
+  color: var(--on-success-color);
 }

@@ -5,7 +5,7 @@
 }
 
 .dusk-card--on-surface {
-  background-color: var(--on-primary-color);
+  background-color: var(--background-color);
 }
 
 .dusk-card__icon {

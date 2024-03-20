@@ -198,19 +198,13 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
              
             <div
               aria-checked="false"
-              aria-disabled="true"
+              aria-disabled="false"
               class="dusk-switch"
               role="switch"
-              tabindex="-1"
+              tabindex="0"
             />
             <!--&lt;Switch&gt;-->
           </label>
-           
-          <p
-            class="s-EBshooXNO1eQ"
-          >
-            These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.
-          </p>
            
           <label
             class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
@@ -817,19 +811,13 @@ exports[`Settings > should render the settings page 1`] = `
              
             <div
               aria-checked="false"
-              aria-disabled="true"
+              aria-disabled="false"
               class="dusk-switch"
               role="switch"
-              tabindex="-1"
+              tabindex="0"
             />
             <!--&lt;Switch&gt;-->
           </label>
-           
-          <p
-            class="s-EBshooXNO1eQ"
-          >
-            These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.
-          </p>
            
           <label
             class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"

@@ -1,14 +1,23 @@
 import { persisted } from "svelte-persisted-store";
 import { browser } from "$app/environment";
 
+const browserDefaults = browser
+  ? {
+      darkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
+      language: navigator.language,
+    }
+  : {
+      darkMode: false,
+      language: "en",
+    };
+
 const initialState = {
+  ...browserDefaults,
   currency: "USD",
-  darkMode: false,
   dashboardTransactionLimit: 5,
   gasLimit: parseInt(import.meta.env.VITE_GAS_LIMIT_DEFAULT, 10),
   gasPrice: parseInt(import.meta.env.VITE_GAS_PRICE_DEFAULT, 10),
   hideStakingNotice: false,
-  language: browser ? navigator.language : "en",
   network: "testnet",
   userId: "",
 };
