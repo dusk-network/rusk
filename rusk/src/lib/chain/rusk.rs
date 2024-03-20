@@ -117,6 +117,7 @@ impl Rusk {
                     break;
                 }
             }
+            let tx_id = hex::encode(unspent_tx.hash());
             // Don't include transactions if migration is triggered otherwise
             // the session rollback will not re-execute migration
             if Some(block_height) == self.migration_height {
@@ -124,11 +125,11 @@ impl Rusk {
                 break;
             }
             if unspent_tx.inner.fee().gas_limit > block_gas_left {
-                info!("Skipping due gas_limit greater than left: {block_gas_left}");
+                info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
             }
-            let tx = unspent_tx.inner.clone();
-            match execute(&mut session, &tx) {
+
+            match execute(&mut session, &unspent_tx.inner) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -149,21 +150,24 @@ impl Rusk {
                         continue;
                     }
 
+                    // We're currently ignoring the result of successful calls
+                    let err = receipt.data.err().map(|e| format!("{e}"));
+                    info!("Tx {tx_id} executed with {gas_spent} gas and err {err:?}");
+
                     update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
-                    dusk_spent += gas_spent * tx.fee.gas_price;
-
+                    let gas_price = unspent_tx.inner.fee.gas_price;
+                    dusk_spent += gas_spent * gas_price;
                     spent_txs.push(SpentTransaction {
-                        inner: unspent_tx.clone(),
+                        inner: unspent_tx,
                         gas_spent,
                         block_height,
-                        // We're currently ignoring the result of successful
-                        // calls
-                        err: receipt.data.err().map(|e| format!("{e}")),
+                        err,
                     });
                 }
-                Err(_) => {
+                Err(e) => {
+                    info!("discard tx {tx_id} due to {e:?}");
                     // An unspendable transaction should be discarded
                     discarded_txs.push(unspent_tx);
                     continue;
