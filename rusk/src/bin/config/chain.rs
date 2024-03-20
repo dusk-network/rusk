@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,8 @@ pub(crate) struct ChainConfig {
     db_path: Option<PathBuf>,
     consensus_keys_path: Option<PathBuf>,
     migration_height: Option<u64>,
+    #[serde(with = "humantime_serde")]
+    generation_timeout: Option<Duration>,
 }
 
 impl ChainConfig {
@@ -61,5 +63,9 @@ impl ChainConfig {
 
     pub(crate) fn migration_height(&self) -> Option<u64> {
         self.migration_height
+    }
+
+    pub(crate) fn generation_timeout(&self) -> Option<Duration> {
+        self.generation_timeout
     }
 }

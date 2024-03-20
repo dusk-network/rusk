@@ -22,15 +22,9 @@ pub struct Migration;
 
 impl Migration {
     pub fn migrate(
-        migration_height: Option<u64>,
         session: Session,
-        block_height: u64,
         provisioners: &Provisioners,
     ) -> crate::Result<Session> {
-        match migration_height {
-            Some(h) if h == block_height => (),
-            _ => return Ok(session),
-        }
         info!("MIGRATING STAKE CONTRACT");
         let start = Instant::now();
         let mut session = session.migrate(

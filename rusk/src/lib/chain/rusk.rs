@@ -6,6 +6,7 @@
 
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
+use std::time::{Duration, Instant};
 use std::{fs, io};
 
 use parking_lot::RwLock;
@@ -17,7 +18,7 @@ use crate::chain::vm::migration::Migration;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::VerificationOutput;
+use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{SpentTransaction, Transaction};
 use phoenix_core::transaction::StakeData;
@@ -42,6 +43,7 @@ impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
         migration_height: Option<u64>,
+        generation_timeout: Option<Duration>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -72,31 +74,32 @@ impl Rusk {
             vm,
             dir: dir.into(),
             migration_height,
+            generation_timeout,
         })
     }
 
     pub fn execute_transactions<I: Iterator<Item = Transaction>>(
         &self,
-        block_height: u64,
-        block_gas_limit: u64,
-        generator: &BlsPublicKey,
+        params: &CallParams,
         txs: I,
-        missed_generators: &[BlsPublicKey],
         provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
-        let session = self.session(block_height, None)?;
+        let started = Instant::now();
 
-        let mut session = Migration::migrate(
-            self.migration_height,
-            session,
-            block_height,
-            provisioners,
-        )
-        .map_err(|e| {
-            error!("Error while migrating: {e}");
-            e
-        })?;
+        let block_height = params.round;
+        let block_gas_limit = params.block_gas_limit;
+        let generator = params.generator_pubkey.inner();
+        let missed_generators = &params.missed_generators[..];
+
+        let mut session = self.session(block_height, None)?;
+        if self.migration_height == Some(block_height) {
+            session =
+                Migration::migrate(session, provisioners).map_err(|e| {
+                    error!("Error while migrating: {e}");
+                    e
+                })?
+        };
 
         let mut block_gas_left = block_gas_limit;
 
@@ -108,6 +111,12 @@ impl Rusk {
         let mut event_hasher = Sha3_256::new();
 
         for unspent_tx in txs {
+            if let Some(timeout) = self.generation_timeout {
+                if started.elapsed() > timeout {
+                    info!("execute_transactions timeout triggered {timeout:?}");
+                    break;
+                }
+            }
             // Don't include transactions if migration is triggered otherwise
             // the session rollback will not re-execute migration
             if Some(block_height) == self.migration_height {
@@ -450,16 +459,13 @@ fn accept(
     provisioners: &Provisioners,
     migration_height: Option<u64>,
 ) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
-    let mut session = Migration::migrate(
-        migration_height,
-        session,
-        block_height,
-        provisioners,
-    )
-    .map_err(|e| {
-        error!("Error while migrating: {e}");
-        e
-    })?;
+    let mut session = session;
+    if migration_height == Some(block_height) {
+        session = Migration::migrate(session, provisioners).map_err(|e| {
+            error!("Error while migrating: {e}");
+            e
+        })?
+    };
 
     let mut block_gas_left = block_gas_limit;
 

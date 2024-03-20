@@ -32,14 +32,7 @@ impl VMExecution for Rusk {
         info!("Received execute_state_transition request");
 
         let (txs, discarded_txs, verification_output) = self
-            .execute_transactions(
-                params.round,
-                params.block_gas_limit,
-                params.generator_pubkey.inner(),
-                txs,
-                &params.missed_generators[..],
-                provisioners,
-            )
+            .execute_transactions(params, txs, provisioners)
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
             })?;

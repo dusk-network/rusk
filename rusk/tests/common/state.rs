@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
+use std::{path::Path, time::Duration};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
@@ -31,7 +31,8 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     let (_, commit_id) = state::deploy(dir, snapshot)
         .expect("Deploying initial state should succeed");
 
-    let rusk = Rusk::new(dir, None).expect("Instantiating rusk should succeed");
+    let rusk =
+        Rusk::new(dir, None, None).expect("Instantiating rusk should succeed");
 
     assert_eq!(
         commit_id,
