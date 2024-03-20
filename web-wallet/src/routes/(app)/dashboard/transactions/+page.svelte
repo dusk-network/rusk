@@ -16,7 +16,7 @@
     fiatPrice = prices[currency.toLowerCase()];
   });
 
-  $: ({ balance } = $walletStore);
+  $: ({ balance, isSyncing, error } = $walletStore);
 </script>
 
 <div class="transactions">
@@ -30,7 +30,12 @@
     tokens={balance.value}
   />
 
-  <Transactions items={walletStore.getTransactionsHistory()} {language} />
+  <Transactions
+    items={walletStore.getTransactionsHistory()}
+    {language}
+    {isSyncing}
+    syncError={error}
+  />
 </div>
 
 <style lang="postcss">

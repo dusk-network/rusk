@@ -25,7 +25,7 @@
     ContractStatusesList,
     Stake,
   } from "$lib/components";
-  import { Suspense } from "$lib/dusk/components";
+  import { Suspense, Throbber } from "$lib/dusk/components";
 
   /** @type {ContractDescriptor} */
   export let descriptor;
@@ -132,6 +132,13 @@
     errorVariant="details"
     waitFor={walletStore.getStakeInfo()}
   >
+    <svelte:fragment slot="pending-content">
+      {#if !isSyncing && !error}
+        <Throbber />
+      {:else}
+        <p>Data will load after a successful sync.</p>
+      {/if}
+    </svelte:fragment>
     <svelte:fragment slot="success-content" let:result={stakeInfo}>
       {@const statuses = getStatuses(stakeInfo, balance.maximum)}
       {@const operations = isSyncOK

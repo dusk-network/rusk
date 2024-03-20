@@ -813,7 +813,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         class="dusk-suspense transactions-list__container"
       >
         <svg
-          class="dusk-throbber dusk-suspense__throbber"
+          class="dusk-throbber"
           height="64px"
           role="progressbar"
           viewBox="0 0 128 128"
@@ -834,12 +834,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
           </g>
         </svg>
         <!--&lt;Throbber&gt;-->
-         
-        <span
-          class="dusk-suspense__pending-message"
-        >
-          
-        </span>
+        
       </div>
       <!--&lt;Suspense&gt;-->
     </article>

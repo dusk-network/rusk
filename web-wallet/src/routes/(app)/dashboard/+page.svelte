@@ -57,7 +57,7 @@
   let selectedTab = tabItems[0]?.id ?? "";
 
   $: selectedContract = find(enabledContracts, hasKeyValue("id", selectedTab));
-  $: ({ balance, currentAddress, addresses } = $walletStore);
+  $: ({ balance, currentAddress, addresses, isSyncing, error } = $walletStore);
   $: ({ currentOperation } = $operationsStore);
 
   onDestroy(() => {
@@ -127,6 +127,8 @@
       items={walletStore.getTransactionsHistory()}
       {language}
       limit={dashboardTransactionLimit}
+      {isSyncing}
+      syncError={error}
     />
   {/if}
 </div>

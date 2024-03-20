@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Data load and sync UI appearing at the same time [#1545]
 - Fix error message overflowing in `ErrorDetails` component [#1547]
 - Fix missing focus border on switch component [#1537]
 
@@ -195,6 +196,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1535]: https://github.com/dusk-network/rusk/issues/1535
 [#1537]: https://github.com/dusk-network/rusk/issues/1537
 [#1551]: https://github.com/dusk-network/rusk/issues/1551
+[#1545]: https://github.com/dusk-network/rusk/issues/1545
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
 
