@@ -13,6 +13,25 @@
   font-family: monospace;
 }
 
+.address-picker__copy-address-button-wrapper {
+  background-color: var(--secondary-color);
+  border-radius: 50%;
+}
+
+.address-picker__copy-address-button {
+  aspect-ratio: 1/1;
+  width: 1.5em;
+}
+
+.address-picker__copy-address-button:hover {
+  cursor: copy;
+}
+
+.address-picker__copy-address-button,
+.address-picker__copy-address-button:hover {
+  color: var(--primary-color) !important;
+}
+
 .address-picker__address {
   max-width: 100%;
   all: unset;
