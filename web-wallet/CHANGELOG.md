@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add option to sync from a custom block height on Wallet Restoration [#1568]
 - Add autocomplete attribute on the login field [#1533]
 
 ### Changed
@@ -197,6 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1551]: https://github.com/dusk-network/rusk/issues/1551
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
+[#1568]: https://github.com/dusk-network/rusk/issues/1568
 
 <!-- VERSIONS -->
 
