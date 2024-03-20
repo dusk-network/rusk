@@ -1,10 +1,11 @@
 <script>
+  import { AppAnchor } from "$lib/components";
   import { Card } from "$lib/dusk/components";
   import CopyField from "$lib/dusk/components/CopyField/CopyField.svelte";
   import { createNumberFormatter } from "$lib/dusk/number";
   import { settingsStore } from "$lib/stores";
 
-  let currentBlock = 150640;
+  let currentBlock = 150640; // palceholder
 
   $: ({ language } = $settingsStore);
 
@@ -16,7 +17,6 @@
     <p>
       Store the current block height in case you want to resync from it next
       time you reset your wallet. This can significantly reduce the sync time.
-      Find out more in our docs.
     </p>
 
     <CopyField
@@ -24,5 +24,13 @@
       displayValue={numberFormatter(currentBlock)}
       rawValue={String(currentBlock)}
     ></CopyField>
+
+    <small>
+      This can later be retrieved from Settings. Find out more in our <AppAnchor
+        href="#"
+        rel="noopener noreferrer"
+        target="_blank">docs</AppAnchor
+      >.
+    </small>
   </div></Card
 >

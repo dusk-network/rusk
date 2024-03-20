@@ -1,5 +1,5 @@
 /**
- * Creates a locale aware currency formatter for fiat or DUSK
+ * Creates a locale aware number formatter
  *
  * @param {String} locale A BCP 47 language tag
  * @param {Number|Undefined} digits The minimum fraction digits that should display
