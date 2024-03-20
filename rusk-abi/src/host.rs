@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
@@ -15,6 +17,7 @@ use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::{Proof, Verifier};
 use dusk_schnorr::Signature;
+use lru::LruCache;
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -100,9 +103,12 @@ fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 fn host_verify_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        verify_proof(vd, proof, pis)
-    })
+    let result = memoized_plonk_verify(&arg_buf[..arg_len as usize]);
+
+    let bytes = rkyv::to_bytes::<_, 1024>(&result).unwrap();
+
+    arg_buf[..bytes.len()].copy_from_slice(&bytes);
+    bytes.len() as u32
 }
 
 fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
@@ -125,6 +131,59 @@ pub fn hash(bytes: Vec<u8>) -> BlsScalar {
 /// Compute the poseidon hash of the given scalars
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     dusk_poseidon::sponge::hash(&scalars)
+}
+
+/// A simple LRU cache for plonk verification.
+///
+/// # Safety
+/// `f` should not panic.
+unsafe fn with_verification_cache<T, F>(f: F) -> T
+where
+    F: FnOnce(MutexGuard<LruCache<[u8; blake2b_simd::OUTBYTES], bool>>) -> T,
+{
+    const VERIFICATION_CACHE_SIZE: usize = 256;
+
+    static CACHE: OnceLock<
+        Mutex<LruCache<[u8; blake2b_simd::OUTBYTES], bool>>,
+    > = OnceLock::new();
+
+    CACHE
+        .get_or_init(|| {
+            Mutex::new(LruCache::new(
+                NonZeroUsize::new(VERIFICATION_CACHE_SIZE).unwrap(),
+            ))
+        })
+        .lock()
+        .map(f)
+        .unwrap()
+}
+
+fn memoized_plonk_verify(arg: &[u8]) -> bool {
+    unsafe {
+        let hash: [u8; blake2b_simd::OUTBYTES] =
+            *blake2b_simd::blake2b(arg).as_array();
+
+        let verified =
+            with_verification_cache(|mut cache| cache.get(&hash).copied());
+
+        // If the proof verification has been memoized with the se arguments,
+        // return the result
+        if let Some(v) = verified {
+            return v;
+        }
+
+        // Otherwise, verify the proof and cache the result
+        let root =
+            rkyv::archived_root::<(Vec<u8>, Vec<u8>, Vec<PublicInput>)>(arg);
+        let (vd, proof, pis) = root.deserialize(&mut rkyv::Infallible).unwrap();
+        let verified = verify_proof(vd, proof, pis);
+
+        with_verification_cache(|mut cache| {
+            cache.put(hash, verified);
+        });
+
+        verified
+    }
 }
 
 /// Verify a proof is valid for a given circuit type and public inputs

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Memoize the `verify_proof` function [#1228]
+
 ### Changed
 
 - Change dependencies declarations enforce bytecheck [#1371]
@@ -194,6 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add README.md
 
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
+[#1228]: https://github.com/dusk-network/rusk/issues/1228
 [#945]: https://github.com/dusk-network/rusk/issues/945
 [#937]: https://github.com/dusk-network/rusk/issues/937
 [#874]: https://github.com/dusk-network/rusk/issues/874
