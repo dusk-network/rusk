@@ -11,7 +11,7 @@ use std::{fs, io};
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::{debug, error};
+use tracing::{debug, error, info, warn};
 
 use crate::chain::vm::migration::Migration;
 use dusk_bls12_381::BlsScalar;
@@ -111,6 +111,11 @@ impl Rusk {
             // Don't include transactions if migration is triggered otherwise
             // the session rollback will not re-execute migration
             if Some(block_height) == self.migration_height {
+                info!("Skipping transactions due to migration_height");
+                break;
+            }
+            if unspent_tx.inner.fee().gas_limit > block_gas_left {
+                info!("Skipping due gas_limit greater than left: {block_gas_left}");
                 continue;
             }
             let tx = unspent_tx.inner.clone();
@@ -122,6 +127,7 @@ impl Rusk {
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
+                        warn!("This is not supposed to happen with conservative tx inclusion");
                         session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
