@@ -1,8 +1,7 @@
 <script>
-  import { Button } from "$lib/dusk/components";
   import { mdiContentCopy } from "@mdi/js";
-  import { toast } from "../Toast/store";
-  import Textbox from "../Textbox/Textbox.svelte";
+  import { Button, Textbox } from "$lib/dusk/components";
+  import { toast } from "$lib/dusk/components/Toast/store";
 
   /** @type {string} */
   export let name;

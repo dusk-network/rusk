@@ -1,12 +1,11 @@
 <script>
-  import { AppAnchor } from "$lib/components";
+  import { AppAnchor, CopyField } from "$lib/components";
   import { Card } from "$lib/dusk/components";
-  import CopyField from "$lib/dusk/components/CopyField/CopyField.svelte";
   import { createNumberFormatter } from "$lib/dusk/number";
   import { settingsStore } from "$lib/stores";
 
   $: ({ language } = $settingsStore);
-  
+
   const currentBlock = 150640; // palceholder
   const numberFormatter = createNumberFormatter(language);
 </script>
