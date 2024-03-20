@@ -5,6 +5,7 @@ export { default as AppImage } from "./AppImage/AppImage.svelte";
 export { default as Balance } from "./Balance/Balance.svelte";
 export { default as ContractOperations } from "./ContractOperations/ContractOperations.svelte";
 export { default as ContractStatusesList } from "./ContractStatusesList/ContractStatusesList.svelte";
+export { default as CopyField } from "./CopyField/CopyField.svelte";
 export { default as ExistingWalletNotice } from "./ExistingWalletNotice/ExistingWalletNotice.svelte";
 export { default as GasControls } from "./GasControls/GasControls.svelte";
 export { default as GasFee } from "./GasFee/GasFee.svelte";
