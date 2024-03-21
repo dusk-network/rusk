@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
+use blake2b_simd::Params;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, OnceLock};
@@ -103,12 +104,9 @@ fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 fn host_verify_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let result = memoized_plonk_verify(&arg_buf[..arg_len as usize]);
-
-    let bytes = rkyv::to_bytes::<_, 1024>(&result).unwrap();
-
-    arg_buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
+    wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
+        verify_proof(vd, proof, pis)
+    })
 }
 
 fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
@@ -158,31 +156,17 @@ where
         .unwrap()
 }
 
-fn memoized_plonk_verify(arg: &[u8]) -> bool {
+fn get_cache(hash: [u8; blake2b_simd::OUTBYTES]) -> Option<bool> {
+    // SAFETY: The cache never panics
+    unsafe { with_verification_cache(|mut cache| cache.get(&hash).copied()) }
+}
+
+fn put_cache(hash: [u8; blake2b_simd::OUTBYTES], verified: bool) {
+    // SAFETY: The cache never panics
     unsafe {
-        let hash: [u8; blake2b_simd::OUTBYTES] =
-            *blake2b_simd::blake2b(arg).as_array();
-
-        let verified =
-            with_verification_cache(|mut cache| cache.get(&hash).copied());
-
-        // If the proof verification has been memoized with the se arguments,
-        // return the result
-        if let Some(v) = verified {
-            return v;
-        }
-
-        // Otherwise, verify the proof and cache the result
-        let root =
-            rkyv::archived_root::<(Vec<u8>, Vec<u8>, Vec<PublicInput>)>(arg);
-        let (vd, proof, pis) = root.deserialize(&mut rkyv::Infallible).unwrap();
-        let verified = verify_proof(vd, proof, pis);
-
         with_verification_cache(|mut cache| {
             cache.put(hash, verified);
         });
-
-        verified
     }
 }
 
@@ -195,6 +179,22 @@ pub fn verify_proof(
     proof: Vec<u8>,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
+    let mut hasher = Params::default().to_state();
+
+    hasher.update(&verifier_data);
+    hasher.update(&proof);
+    public_inputs
+        .iter()
+        .for_each(|pi| pi.update_hasher(&mut hasher));
+
+    let hash = *hasher.finalize().as_array();
+
+    // If the proof verification has been memoized with the se arguments,
+    // return the result
+    if let Some(v) = get_cache(hash) {
+        return v;
+    }
+
     let verifier = Verifier::try_from_bytes(verifier_data)
         .expect("Verifier data coming from the contract should be valid");
     let proof = Proof::from_slice(&proof).expect("Proof should be valid");
@@ -218,7 +218,9 @@ pub fn verify_proof(
         }
     });
 
-    verifier.verify(&proof, &pis).is_ok()
+    let verified = verifier.verify(&proof, &pis).is_ok();
+    put_cache(hash, verified);
+    verified
 }
 
 /// Verify a schnorr signature is valid for the given public key and message

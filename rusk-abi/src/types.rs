@@ -54,6 +54,33 @@ pub enum PublicInput {
     JubJubScalar(JubJubScalar),
 }
 
+impl PublicInput {
+    /// Update the [`blake2b_simd::State`] with the public input.
+    pub(crate) fn update_hasher(&self, hasher: &mut blake2b_simd::State) {
+        match self {
+            Self::Point(p) => {
+                let u = p.get_u();
+                let v = p.get_v();
+
+                hasher.update(cast_to_bytes(&u.0));
+                hasher.update(cast_to_bytes(&v.0));
+            }
+            Self::BlsScalar(s) => {
+                hasher.update(cast_to_bytes(&s.0));
+            }
+            Self::JubJubScalar(s) => {
+                let bytes = s.to_bytes();
+                hasher.update(&bytes);
+            }
+        }
+    }
+}
+
+fn cast_to_bytes(bytes: &[u64; 4]) -> &[u8; 32] {
+    // SAFETY: The size of the array is the same, so this is safe.
+    unsafe { &*(bytes as *const [u64; 4] as *const [u8; 32]) }
+}
+
 impl From<BlsScalar> for PublicInput {
     fn from(s: BlsScalar) -> PublicInput {
         Self::BlsScalar(s)
