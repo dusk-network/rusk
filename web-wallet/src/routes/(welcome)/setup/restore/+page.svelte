@@ -3,6 +3,7 @@
 <script>
   import { fade } from "svelte/transition";
   import TermsOfService from "../TermsOfService.svelte";
+  import NetworkSyncing from "./NetworkSyncing.svelte";
   import PasswordSetup from "../PasswordSetup.svelte";
   import AllSet from "../AllSet.svelte";
   import MnemonicAuthenticate from "./MnemonicAuthenticate.svelte";
@@ -57,7 +58,7 @@
     <TermsOfService bind:tosAccepted />
   </div>
 {:else}
-  <Wizard fullHeight={true} steps={3} let:key>
+  <Wizard fullHeight={true} steps={4} let:key>
     <WizardStep
       step={0}
       {key}
@@ -101,8 +102,15 @@
         bind:isToggled={showPasswordSetup}
       />
     </WizardStep>
+    <WizardStep step={2} {key} showStepper={true}>
+      <h2 class="h1" slot="heading">
+        Network<br />
+        <mark>Syncing</mark>
+      </h2>
+      <NetworkSyncing />
+    </WizardStep>
     <WizardStep
-      step={2}
+      step={3}
       {key}
       showStepper={true}
       hideBackButton={true}
