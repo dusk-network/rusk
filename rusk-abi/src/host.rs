@@ -6,6 +6,7 @@
 
 use alloc::vec::Vec;
 use blake2b_simd::Params;
+use std::env;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, OnceLock};
@@ -139,7 +140,7 @@ unsafe fn with_verification_cache<T, F>(f: F) -> T
 where
     F: FnOnce(MutexGuard<LruCache<[u8; blake2b_simd::OUTBYTES], bool>>) -> T,
 {
-    const VERIFICATION_CACHE_SIZE: usize = 256;
+    const VERIFICATION_CACHE_SIZE: usize = 512;
 
     static CACHE: OnceLock<
         Mutex<LruCache<[u8; blake2b_simd::OUTBYTES], bool>>,
@@ -147,9 +148,18 @@ where
 
     CACHE
         .get_or_init(|| {
-            Mutex::new(LruCache::new(
-                NonZeroUsize::new(VERIFICATION_CACHE_SIZE).unwrap(),
-            ))
+            let mut cache_size = None;
+
+            if let Ok(s) = env::var("RUSK_ABI_PREFERIFY_CACHE_SIZE") {
+                cache_size = s.parse().ok();
+            }
+
+            let mut cache_size = cache_size.unwrap_or(VERIFICATION_CACHE_SIZE);
+            if cache_size == 0 {
+                cache_size = VERIFICATION_CACHE_SIZE;
+            }
+
+            Mutex::new(LruCache::new(NonZeroUsize::new(cache_size).unwrap()))
         })
         .lock()
         .map(f)
