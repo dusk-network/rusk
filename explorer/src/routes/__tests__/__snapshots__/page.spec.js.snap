@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Chain Info > should render the Chain Info page 1`] = `
+<div>
+  <div>
+    Chain Info
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;
