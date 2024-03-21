@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { logo } from "$lib/dusk/icons";
-  import { Badge, Icon, Suspense } from "$lib/dusk/components";
+  import { Badge, Icon, Suspense, Throbber } from "$lib/dusk/components";
   import {
     createFeeFormatter,
     createTransferFormatter,
@@ -26,6 +26,12 @@
 
   /** @type {Promise<Transaction[]>} */
   export let items;
+
+  /** @type {Boolean}*/
+  export let isSyncing;
+
+  /** @type {Error|null}*/
+  export let syncError;
 
   /** @type {Number} */
   let screenWidth = window.innerWidth;
@@ -74,6 +80,13 @@
     errorVariant="details"
     waitFor={items}
   >
+    <svelte:fragment slot="pending-content">
+      {#if !isSyncing && !syncError}
+        <Throbber />
+      {:else}
+        <p>Data will load after a successful sync.</p>
+      {/if}
+    </svelte:fragment>
     <svelte:fragment slot="success-content" let:result={transactions}>
       {#if transactions.length}
         {#each getOrderedTransactions(transactions) as transaction (transaction.id)}

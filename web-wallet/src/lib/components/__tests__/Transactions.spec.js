@@ -33,18 +33,30 @@ describe("Transactions", () => {
   const feeFormatter = createFeeFormatter(language);
 
   const baseProps = {
+    isSyncing: false,
     items: transactionsPromise,
     language,
+    syncError: null,
   };
 
   afterEach(() => {
     cleanup();
   });
 
-  it("renders loading indicator before the promise has resolved", async () => {
-    const { getByRole } = render(Transactions, { props: baseProps });
-    const spinner = getByRole("progressbar");
+  it("renders loading indicator after the promise has resolved", async () => {
+    const props = {
+      ...baseProps,
+      isSyncing: true,
+    };
 
+    const { getByRole, getByText, rerender } = render(Transactions, {
+      props: props,
+    });
+    const notice = getByText("Data will load after a successful sync.");
+    expect(notice).toBeInTheDocument();
+
+    rerender({ ...baseProps });
+    const spinner = getByRole("progressbar");
     expect(spinner).toBeInTheDocument();
   });
 
@@ -93,7 +105,10 @@ describe("Transactions", () => {
   });
 
   it("renders the Transactions in descending order", async () => {
-    const { container } = render(Transactions, baseProps);
+    const props = {
+      ...baseProps,
+    };
+    const { container } = render(Transactions, props);
 
     await vi.advanceTimersToNextTimerAsync();
 
