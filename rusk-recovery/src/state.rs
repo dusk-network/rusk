@@ -134,11 +134,11 @@ fn generate_stake_state(
     let theme = Theme::default();
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
+        let amount = (staker.amount > 0)
+            .then(|| (staker.amount, staker.eligibility.unwrap_or_default()));
+
         let stake = StakeData {
-            amount: Some((
-                staker.amount,
-                staker.eligibility.unwrap_or_default(),
-            )),
+            amount,
             reward: staker.reward.unwrap_or_default(),
             counter: 0,
         };
