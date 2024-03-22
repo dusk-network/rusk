@@ -1,7 +1,17 @@
 # log_level = 'info'
 # log_type = 'coloured'
+# log_filter = 'dusk_consensus=debug'
+
+[http]
+#listen = true
+#listen_address = '127.0.0.1:8080'
+#cert = <path_of_pem>
+#key = <path_of_key>
 
 [chain]
+#db_path = '/home/user/.dusk/rusk'
+#consensus_keys_path = '/home/user/.dusk/rusk/consensus.keys'
+#generation_timeout = '3s'
 
 [databroker]
 max_inv_entries = 100
