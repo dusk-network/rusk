@@ -65,10 +65,6 @@
   let resetError = null;
 
   $: ({ isSyncing } = $walletStore);
-
-  // eslint-disable-next-line max-len
-  const betaNotice =
-    "These functionalities are currently disabled in the beta version of the web wallet and will be enabled in a future update.";
 </script>
 
 <section class="settings">
@@ -146,7 +142,6 @@
         >
           <span>Dark mode</span>
           <Switch
-            disabled={true}
             bind:value={isDarkMode}
             on:change={() => {
               settingsStore.update((store) => {
@@ -157,7 +152,6 @@
             }}
           />
         </label>
-        <p>{betaNotice}</p>
         <label
           class="settings-group__control settings-group__control--with-label"
           for={undefined}
@@ -285,7 +279,7 @@
       }
 
       &--switch {
-        background-color: var(--on-primary-color);
+        background-color: var(--background-color);
         padding: 0.625em 0.75em 0.625em 0.75em;
         border-radius: 1.5em;
       }
@@ -320,5 +314,6 @@
 
   :global(.dusk-button.settings-group__button--state--danger) {
     background-color: var(--danger-color);
+    color: var(--on-danger-color);
   }
 </style>

@@ -5,24 +5,25 @@
   --background-color: var(--light-grey);
   --background-color-alt: #fff;
   --primary-color: var(--smokey-black);
-  --primary-color-variant-dark: #000;
-  --primary-color-variant-light: var(--jet);
   --secondary-color: var(--cornflower);
   --secondary-color-variant-dark: var(--cornflower-dark);
   --secondary-color-variant-light: var(--cornflower-light);
   --surface-color: var(--magnolia);
-  --success-color: var(--success);
-  --warning-color: var(--warning);
+  --danger-color: var(--error);
   --error-color: var(--error);
   --info-color: var(--info);
-  --danger-color: var(--error);
+  --success-color: var(--success);
+  --warning-color: var(--warning);
 
   --on-background-color: var(--smokey-black);
   --on-primary-color: var(--light-grey);
   --on-secondary-color: var(--smokey-black);
   --on-surface-color: var(--smokey-black);
-
-  --on-error-color: white;
+  --on-danger-color: #fff;
+  --on-error-color: #fff;
+  --on-info-color: var(--smokey-black);
+  --on-success-color: var(--smokey-black);
+  --on-warning-color: var(--smokey-black);
 
   /* Typography */
 
@@ -67,11 +68,18 @@
   --control-secondary-text-color-hover: var(--smokey-black);
 
   --control-tertiary-bg-color: transparent;
-  --control-tertiary-bg-color-hover: transparent;
+  --control-tertiary-bg-color-hover: var(--cornflower);
   --control-tertiary-border-color: var(--smokey-black);
-  --control-tertiary-border-color-hover: var(--granite-grey);
+  --control-tertiary-border-color-hover: var(--cornflower);
   --control-tertiary-text-color: var(--smokey-black);
-  --control-tertiary-text-color-hover: var(--granite-grey);
+  --control-tertiary-text-color-hover: var(--smokey-black);
+
+  /* Anchors */
+
+  --anchor-color: var(--secondary-color);
+  --anchor-color-visited: var(--secondary-color);
+  --anchor-color-hover: var(--secondary-color-variant-light);
+  --anchor-color-active: var(--secondary-color-variant-light);
 
   /* Progress-related components (Stepper, Progress Bar, etc */
 
@@ -91,18 +99,47 @@
 
   --divider-color-primary: var(--taupe-grey);
 
-  /* Footer icon */
-
-  --footer-icon-color: var(--smokey-black);
-  --footer-icon-error-color: white;
-
   /* Home animation */
 
   --home-box-color: var(--silver-metallic);
-  --home-grid-color: var(--light-gray);
+  --home-grid-color: var(--light-grey);
 
   /* Ribbon */
 
   --ribbon-color: var(--magnolia);
   --ribbon-bg-color: var(--cornflower);
+}
+
+:root.dark {
+  /* Theme colours */
+
+  --page-background-color: var(--jet);
+  --background-color: var(--smokey-black);
+  --background-color-alt: var(--granite-grey);
+  --primary-color: var(--light-grey);
+  --surface-color: var(--jet);
+
+  --on-background-color: var(--light-grey);
+  --on-primary-color: var(--smokey-black);
+  --on-surface-color: var(--light-grey);
+
+  /* Controls */
+
+  --control-bg-color: var(--smokey-black);
+  --control-bg-color-hover: var(--jet);
+  --control-text-color: var(--light-grey);
+  --control-text-color-hover: var(--light-grey);
+  --control-secondary-bg-color: var(--light-grey);
+  --control-secondary-text-color: var(--smokey-black);
+  --control-tertiary-border-color: var(--light-grey);
+  --control-tertiary-text-color: var(--light-grey);
+
+  /* Checkbox control */
+
+  --checkbox-control-border-color: var(--light-grey);
+  --checkbox-control-checked-bg-color: var(--light-grey);
+
+  /* Home animation */
+
+  --home-grid-color: var(--smokey-black);
 }

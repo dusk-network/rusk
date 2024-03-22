@@ -8,7 +8,11 @@ type ButtonSize = "normal" | "small";
 
 type BadgeVariant = "neutral" | "success" | "warning" | "error";
 
-type ButtonVariant = "primary" | "secondary" | "tertiary" | "quaternary";
+/**
+ * Removed the "primary" variant for now.
+ * Will be reinstated later when we formalize our language.
+ */
+type ButtonVariant = "secondary" | "tertiary" | "quaternary";
 
 type WizardButtonProps = {
   isAnchor?: boolean;

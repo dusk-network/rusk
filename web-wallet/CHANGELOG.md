@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add dark theme [#1466]
 - Add autocomplete attribute on the login field [#1533]
 
 ### Changed
@@ -181,6 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1445]: https://github.com/dusk-network/rusk/issues/1445
 [#1458]: https://github.com/dusk-network/rusk/issues/1458
 [#1460]: https://github.com/dusk-network/rusk/issues/1460
+[#1466]: https://github.com/dusk-network/rusk/issues/1466
 [#1469]: https://github.com/dusk-network/rusk/issues/1469
 [#1470]: https://github.com/dusk-network/rusk/issues/1470
 [#1471]: https://github.com/dusk-network/rusk/issues/1471

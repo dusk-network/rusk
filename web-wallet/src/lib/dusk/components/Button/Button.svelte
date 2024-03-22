@@ -18,7 +18,7 @@
   export let size = "normal";
 
   /** @type {ButtonVariant} */
-  export let variant = "primary";
+  export let variant = "secondary";
 
   /** @type {String | Undefined} */
   export let text = undefined;

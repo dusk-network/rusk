@@ -4,7 +4,6 @@
 }
 
 .dusk-balance__header > h2 {
-  color: var(--primary-color);
   font-size: 1.125em;
   line-height: 150%;
   letter-spacing: -0.01125em;
@@ -17,7 +16,6 @@
 }
 
 .dusk-balance__dusk > strong {
-  color: var(--primary-color-variant-dark);
   font-size: 1.75em;
   font-weight: 500;
   line-height: 120%;
@@ -25,7 +23,6 @@
 }
 
 .dusk-balance__fiat > strong {
-  color: var(--primary-color);
   font-size: 1em;
   font-weight: 400;
   line-height: 150%;
