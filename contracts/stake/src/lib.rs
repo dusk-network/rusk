@@ -16,7 +16,7 @@ mod state;
 use state::StakeState;
 
 /// The minimum amount of Dusk one can stake.
-pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
+pub const MINIMUM_STAKE: Dusk = dusk(5_000.0);
 
 use dusk_bls12_381_sign::PublicKey;
 use rusk_abi::{ContractId, PaymentInfo};
