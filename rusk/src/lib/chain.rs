@@ -18,8 +18,6 @@ use node::network::Kadcast;
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::VM;
 
-pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
-
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
     pub current: [u8; 32],

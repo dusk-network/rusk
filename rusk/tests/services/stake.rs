@@ -8,11 +8,11 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
 use dusk_bls12_381_sign::PublicKey;
+use dusk_consensus::user::provisioners::MINIMUM_STAKE;
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet, Store};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::chain::MINIMUM_STAKE;
 use rusk::{Result, Rusk};
 use rusk_abi::dusk::dusk;
 use rusk_abi::STAKE_CONTRACT;
