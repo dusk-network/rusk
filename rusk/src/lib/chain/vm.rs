@@ -15,7 +15,7 @@ use dusk_consensus::user::stake::Stake;
 use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
-use super::{Rusk, MINIMUM_STAKE};
+use super::Rusk;
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
@@ -29,15 +29,8 @@ impl VMExecution for Rusk {
     )> {
         info!("Received execute_state_transition request");
 
-        let (txs, discarded_txs, verification_output) = self
-            .execute_transactions(
-                params.round,
-                params.block_gas_limit,
-                params.generator_pubkey.inner(),
-                txs,
-                &params.missed_generators[..],
-            )
-            .map_err(|inner| {
+        let (txs, discarded_txs, verification_output) =
+            self.execute_transactions(params, txs).map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
             })?;
 
@@ -155,10 +148,9 @@ impl VMExecution for Rusk {
         let stake = self
             .provisioner(pk)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioner {e}"))?
-            .and_then(|stake| {
-                stake.amount.map(|(value, eligibility)| {
-                    Stake::new(value, stake.reward, eligibility)
-                })
+            .map(|stake| {
+                let (value, eligibility) = stake.amount.unwrap_or_default();
+                Stake::new(value, stake.reward, eligibility, stake.counter)
             });
         Ok(stake)
     }
@@ -197,18 +189,12 @@ impl Rusk {
         let provisioners = self
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .filter(|(_, stake)| {
-                stake
-                    .amount
-                    .map(|(amount, _)| amount >= MINIMUM_STAKE)
-                    .unwrap_or_default()
-            })
-            .filter_map(|(key, stake)| {
-                stake.amount.map(|(value, eligibility)| {
-                    let stake = Stake::new(value, stake.reward, eligibility);
-                    let pubkey_bls = node_data::bls::PublicKey::new(key);
-                    (pubkey_bls, stake)
-                })
+            .map(|(key, stake)| {
+                let (value, eligibility) = stake.amount.unwrap_or_default();
+                let stake =
+                    Stake::new(value, stake.reward, eligibility, stake.counter);
+                let pubkey_bls = node_data::bls::PublicKey::new(key);
+                (pubkey_bls, stake)
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {

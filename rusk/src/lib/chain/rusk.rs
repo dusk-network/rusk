@@ -6,17 +6,18 @@
 
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
+use std::time::{Duration, Instant};
 use std::{fs, io};
 
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::debug;
+use tracing::{debug, info, warn};
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::VerificationOutput;
+use dusk_consensus::operations::{CallParams, VerificationOutput};
 use node_data::ledger::{SpentTransaction, Transaction};
 use phoenix_core::transaction::StakeData;
 use phoenix_core::Transaction as PhoenixTransaction;
@@ -37,7 +38,10 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
 });
 
 impl Rusk {
-    pub fn new<P: AsRef<Path>>(dir: P) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(
+        dir: P,
+        generation_timeout: Option<Duration>,
+    ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
 
@@ -66,18 +70,23 @@ impl Rusk {
             tip,
             vm,
             dir: dir.into(),
+            generation_timeout,
         })
     }
 
     pub fn execute_transactions<I: Iterator<Item = Transaction>>(
         &self,
-        block_height: u64,
-        block_gas_limit: u64,
-        generator: &BlsPublicKey,
+        params: &CallParams,
         txs: I,
-        missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
+        let started = Instant::now();
+
+        let block_height = params.round;
+        let block_gas_limit = params.block_gas_limit;
+        let generator = params.generator_pubkey.inner();
+        let missed_generators = &params.missed_generators[..];
+
         let mut session = self.session(block_height, None)?;
 
         let mut block_gas_left = block_gas_limit;
@@ -90,8 +99,19 @@ impl Rusk {
         let mut event_hasher = Sha3_256::new();
 
         for unspent_tx in txs {
-            let tx = unspent_tx.inner.clone();
-            match execute(&mut session, &tx) {
+            if let Some(timeout) = self.generation_timeout {
+                if started.elapsed() > timeout {
+                    info!("execute_transactions timeout triggered {timeout:?}");
+                    break;
+                }
+            }
+            let tx_id = hex::encode(unspent_tx.hash());
+            if unspent_tx.inner.fee().gas_limit > block_gas_left {
+                info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
+                continue;
+            }
+
+            match execute(&mut session, &unspent_tx.inner) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -99,6 +119,7 @@ impl Rusk {
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
+                        warn!("This is not supposed to happen with conservative tx inclusion");
                         session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
@@ -111,21 +132,24 @@ impl Rusk {
                         continue;
                     }
 
+                    // We're currently ignoring the result of successful calls
+                    let err = receipt.data.err().map(|e| format!("{e}"));
+                    info!("Tx {tx_id} executed with {gas_spent} gas and err {err:?}");
+
                     update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
-                    dusk_spent += gas_spent * tx.fee.gas_price;
-
+                    let gas_price = unspent_tx.inner.fee.gas_price;
+                    dusk_spent += gas_spent * gas_price;
                     spent_txs.push(SpentTransaction {
-                        inner: unspent_tx.clone(),
+                        inner: unspent_tx,
                         gas_spent,
                         block_height,
-                        // We're currently ignoring the result of successful
-                        // calls
-                        err: receipt.data.err().map(|e| format!("{e}")),
+                        err,
                     });
                 }
-                Err(_) => {
+                Err(e) => {
+                    info!("discard tx {tx_id} due to {e:?}");
                     // An unspendable transaction should be discarded
                     discarded_txs.push(unspent_tx);
                     continue;
@@ -164,16 +188,17 @@ impl Rusk {
         txs: &[Transaction],
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
 
         accept(
-            &mut session,
+            session,
             block_height,
             block_gas_limit,
             generator,
             txs,
             missed_generators,
         )
+        .map(|(a, b, _)| (a, b))
     }
 
     /// Accept the given transactions.
@@ -181,6 +206,7 @@ impl Rusk {
     ///   * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
+    #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
         block_height: u64,
@@ -190,10 +216,10 @@ impl Rusk {
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
 
-        let (spent_txs, verification_output) = accept(
-            &mut session,
+        let (spent_txs, verification_output, session) = accept(
+            session,
             block_height,
             block_gas_limit,
             &generator,
@@ -219,6 +245,7 @@ impl Rusk {
     /// * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing None value
     ///   disables the check.
+    #[allow(clippy::too_many_arguments)]
     pub fn finalize_transactions(
         &self,
         block_height: u64,
@@ -228,10 +255,10 @@ impl Rusk {
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let mut session = self.session(block_height, None)?;
+        let session = self.session(block_height, None)?;
 
-        let (spent_txs, verification_output) = accept(
-            &mut session,
+        let (spent_txs, verification_output, session) = accept(
+            session,
             block_height,
             block_gas_limit,
             &generator,
@@ -398,14 +425,17 @@ async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn accept(
-    session: &mut Session,
+    session: Session,
     block_height: u64,
     block_gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
     missed_generators: &[BlsPublicKey],
-) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
+    let mut session = session;
+
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
@@ -415,7 +445,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let receipt = execute(session, tx)?;
+        let receipt = execute(&mut session, tx)?;
 
         update_hasher(&mut event_hasher, &receipt.events);
         let gas_spent = receipt.gas_spent;
@@ -435,7 +465,7 @@ fn accept(
     }
 
     reward_slash_and_update_root(
-        session,
+        &mut session,
         block_height,
         dusk_spent,
         generator,
@@ -452,6 +482,7 @@ fn accept(
             state_root,
             event_hash,
         },
+        session,
     ))
 }
 

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +14,8 @@ use crate::args::Args;
 pub(crate) struct ChainConfig {
     db_path: Option<PathBuf>,
     consensus_keys_path: Option<PathBuf>,
+    #[serde(with = "humantime_serde")]
+    generation_timeout: Option<Duration>,
 }
 
 impl ChainConfig {
@@ -51,5 +53,9 @@ impl ChainConfig {
             .as_path()
             .display()
             .to_string()
+    }
+
+    pub(crate) fn generation_timeout(&self) -> Option<Duration> {
+        self.generation_timeout
     }
 }

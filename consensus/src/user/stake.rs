@@ -14,12 +14,17 @@ pub struct Stake {
 }
 
 impl Stake {
-    pub fn new(value: u64, reward: u64, eligible_since: u64) -> Self {
+    pub fn new(
+        value: u64,
+        reward: u64,
+        eligible_since: u64,
+        counter: u64,
+    ) -> Self {
         Self {
             value,
             reward,
             eligible_since,
-            counter: 0,
+            counter,
         }
     }
 

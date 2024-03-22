@@ -9,6 +9,7 @@ mod vm;
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use parking_lot::RwLock;
 
@@ -30,6 +31,7 @@ pub struct Rusk {
     pub(crate) tip: Arc<RwLock<RuskTip>>,
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
+    pub(crate) generation_timeout: Option<Duration>,
 }
 
 #[derive(Clone)]

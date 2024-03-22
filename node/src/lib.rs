@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(lazy_cell)]
+
 pub mod chain;
 pub mod database;
 pub mod databroker;
