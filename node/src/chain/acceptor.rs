@@ -19,6 +19,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
 use stake_contract_types::Unstake;
 use std::sync::{Arc, LazyLock};
@@ -213,8 +214,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Payload::Quorum(payload) => {
                 // Prevent the rebroadcast of any quorum messages if the
                 // blockchain tip has already been updated for the same round.
-                if payload.header.round != self.get_curr_height().await {
-                    broadcast(&self.network, &msg).await;
+                if let Vote::Valid(hash) = payload.vote() {
+                    if *hash != self.get_curr_hash().await {
+                        broadcast(&self.network, &msg).await;
+                    }
                 }
 
                 if enable_enqueue {
