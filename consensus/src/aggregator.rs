@@ -41,6 +41,19 @@ impl From<dusk_bls12_381_sign::Error> for AggregatorError {
 }
 
 impl Aggregator {
+    pub fn is_vote_collected(
+        &self,
+        sign_info: &SignInfo,
+        vote: &Vote,
+        msg_step: u16,
+    ) -> bool {
+        let signer = &sign_info.signer;
+
+        self.0
+            .get(&(msg_step, *vote))
+            .map_or(false, |(_, cluster)| cluster.contains_key(signer))
+    }
+
     pub fn collect_vote(
         &mut self,
         committee: &Committee,
