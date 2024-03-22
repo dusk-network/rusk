@@ -31,7 +31,6 @@ pub struct Rusk {
     pub(crate) tip: Arc<RwLock<RuskTip>>,
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
-    pub(crate) migration_height: Option<u64>,
     pub(crate) generation_timeout: Option<Duration>,
 }
 

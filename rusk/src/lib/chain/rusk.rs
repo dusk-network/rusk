@@ -12,14 +12,12 @@ use std::{fs, io};
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
-use crate::chain::vm::migration::Migration;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
-use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{SpentTransaction, Transaction};
 use phoenix_core::transaction::StakeData;
 use phoenix_core::Transaction as PhoenixTransaction;
@@ -42,7 +40,6 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
-        migration_height: Option<u64>,
         generation_timeout: Option<Duration>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
@@ -73,7 +70,6 @@ impl Rusk {
             tip,
             vm,
             dir: dir.into(),
-            migration_height,
             generation_timeout,
         })
     }
@@ -82,7 +78,6 @@ impl Rusk {
         &self,
         params: &CallParams,
         txs: I,
-        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
         let started = Instant::now();
@@ -93,13 +88,6 @@ impl Rusk {
         let missed_generators = &params.missed_generators[..];
 
         let mut session = self.session(block_height, None)?;
-        if self.migration_height == Some(block_height) {
-            session =
-                Migration::migrate(session, provisioners).map_err(|e| {
-                    error!("Error while migrating: {e}");
-                    e
-                })?
-        };
 
         let mut block_gas_left = block_gas_limit;
 
@@ -118,12 +106,6 @@ impl Rusk {
                 }
             }
             let tx_id = hex::encode(unspent_tx.hash());
-            // Don't include transactions if migration is triggered otherwise
-            // the session rollback will not re-execute migration
-            if Some(block_height) == self.migration_height {
-                info!("Skipping transactions due to migration_height");
-                break;
-            }
             if unspent_tx.inner.fee().gas_limit > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
@@ -205,7 +187,6 @@ impl Rusk {
         generator: &BlsPublicKey,
         txs: &[Transaction],
         missed_generators: &[BlsPublicKey],
-        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -216,8 +197,6 @@ impl Rusk {
             generator,
             txs,
             missed_generators,
-            provisioners,
-            self.migration_height,
         )
         .map(|(a, b, _)| (a, b))
     }
@@ -236,7 +215,6 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
-        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -247,8 +225,6 @@ impl Rusk {
             &generator,
             &txs[..],
             missed_generators,
-            provisioners,
-            self.migration_height,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -278,7 +254,6 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[BlsPublicKey],
-        provisioners: &Provisioners,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -289,8 +264,6 @@ impl Rusk {
             &generator,
             &txs[..],
             missed_generators,
-            provisioners,
-            self.migration_height,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -460,16 +433,8 @@ fn accept(
     generator: &BlsPublicKey,
     txs: &[Transaction],
     missed_generators: &[BlsPublicKey],
-    provisioners: &Provisioners,
-    migration_height: Option<u64>,
 ) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
     let mut session = session;
-    if migration_height == Some(block_height) {
-        session = Migration::migrate(session, provisioners).map_err(|e| {
-            error!("Error while migrating: {e}");
-            e
-        })?
-    };
 
     let mut block_gas_left = block_gas_limit;
 
