@@ -470,9 +470,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
                 let (txs, verification_output) = if blk.is_final() {
-                    vm.finalize(blk.inner(), provisioners_list.current())?
+                    vm.finalize(blk.inner())?
                 } else {
-                    vm.accept(blk.inner(), provisioners_list.current())?
+                    vm.accept(blk.inner())?
                 };
 
                 assert_eq!(header.state_hash, verification_output.state_root);

@@ -19,7 +19,6 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         params: &CallParams,
         txs: I,
-        provisioners: &Provisioners,
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
         Vec<Transaction>,
@@ -29,19 +28,16 @@ pub trait VMExecution: Send + Sync + 'static {
     fn verify_state_transition(
         &self,
         blk: &Block,
-        provisioners: &Provisioners,
     ) -> anyhow::Result<VerificationOutput>;
 
     fn accept(
         &self,
         blk: &Block,
-        provisioners: &Provisioners,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
     fn finalize(
         &self,
         blk: &Block,
-        provisioners: &Provisioners,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
