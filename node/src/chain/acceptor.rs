@@ -210,13 +210,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     task.main_inbound.try_send(msg)?;
                 }
             }
-            Payload::Quorum(_) => {
-                let task = self.task.read().await;
-                if !task.is_running() {
+            Payload::Quorum(payload) => {
+                // Prevent the rebroadcast of any quorum messages if the
+                // blockchain tip has already been updated for the same round.
+                if payload.header.round != self.get_curr_height().await {
                     broadcast(&self.network, &msg).await;
                 }
 
                 if enable_enqueue {
+                    let task = self.task.read().await;
                     task.quorum_inbound.try_send(msg)?;
                 }
             }
