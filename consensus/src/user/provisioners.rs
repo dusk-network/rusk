@@ -17,7 +17,7 @@ use std::mem;
 use super::committee::Committee;
 
 pub const DUSK: u64 = 1_000_000_000;
-const MINIMUM_STAKE: u64 = 1_000 * DUSK;
+pub const MINIMUM_STAKE: u64 = 5_000 * DUSK;
 
 #[derive(Clone, Debug)]
 pub struct Provisioners {
