@@ -8,6 +8,55 @@ address = '4LULsDGr3CkeZcVDSfM9UtNr1Xa9DF7HqCEnfnbsDH2HXkkoCfdQWKpEwKwPF6enrSVoT
 seed = 0xdead_beef
 notes = [500_000_000_000_000_000]
 
+[[balance]]
+address = '9Qary8ZQHYRZos3jmk4FBqo35mjJVqzsLwFthRB2vDY3wNnFTNaKcVrw66aeF8X2nYf5YqSq6BDs4TfsbBEnGjd'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = 'qDfYNMkC3m2GdBLsPy4PFCiVfniuSTzWPwgZ9TvpcgRE8ztEJvsCcfTJGtokrxGF8cFyCc9k1gZQpjrdjSooeDE'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '5KtKooBDhJFU3caSPC4AjeHcigRFrZ5YswMFXu74mavmu7sWPExDn9DLsYqTiLdstz8r7JJsDvAnCBhRPyEHQWMF'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '2N9o1ghLKx1e93weUJtymqfRoemjHu43xXLZWKEmbn6WtMrd3WzXDvtEw4LkBd4DskempKKq9UthdKGVoeXvhZVs'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '2neU6jSkQ2QnPxYfc4DaGQvkRtGeaBtU3vdfZHYh3iEWbZ3fosstgx2cKY3JVZTBiQHX3t5NetCK5v7fvoMPZaGe'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '3VHxhiWkA11vT8c5sTC4oDAk7QZ7hRqpMbrPP4z2A94mwWox1WhBWJjBMjVjQuvtJ7Mxqkm53JmH6oWBnXZqPSmi'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '3DXXr1k8NEerGwKCKsCbAaS6Da4TjkX1fYjoJeh61fPjJkyVnfiRG4A7eETTDoqWNUnmMVmvBniSMgcdWXHc7Q5J'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '2YiHv7ageZBUQif2ZRo4NUFGcZBNyWWAm3tyhchczBmPk336MX6ATkaPSLayHrhz1J6A5yfbU1zfoB8aRZBLHUK'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '3Bzh3YrwU1eiNoabHtSrwrU9AtTbAFDUt4w1rcEtCe9jztCrLzEZjJ14HBSECACf1g1jJjn5Ud1jM7oKWWjYSUTJ'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
+
+[[balance]]
+address = '33GGzrthCdzCT98ZvHSoXGbQVKkYPXkRfTuxxcTVDW44fJpzTdgoaZYj8tDADmfQX44Cdz9je9dvLrfa6a76Qkq9'
+seed = 0xdead_beef
+notes = [10_000_000_000_000_000]
 
 [[stake]]
 address = 'pFPEcfxidLvwmFKRQoifrSyWmmVY9UDEThoRFvGXddXRLZ8hB7xfWDYQYwHhTvZvXeL1p5Ygcnsuuxm1X8nHFJH6tEgK3cS76squcFVFSejaKJGMorYZdTup5uscNq6eDU2'
