@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add dark theme [#1466]
+- Add dark mode support [#1466]
 - Add autocomplete attribute on the login field [#1533]
 
 ### Changed
@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix keydown behavior (AddressPicker component) [#1576]
 - Data load and sync UI appearing at the same time [#1545]
 - Fix error message overflowing in `ErrorDetails` component [#1547]
 - Fix missing focus border on switch component [#1537]
@@ -201,6 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1545]: https://github.com/dusk-network/rusk/issues/1545
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
+[#1576]: https://github.com/dusk-network/rusk/issues/1576
 
 <!-- VERSIONS -->
 

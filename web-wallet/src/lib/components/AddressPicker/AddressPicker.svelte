@@ -44,10 +44,6 @@
 
   let expanded = false;
 
-  function toggle() {
-    expanded = !expanded;
-  }
-
   function closeDropDown() {
     expanded = false;
   }
@@ -60,12 +56,17 @@
   /** @type {import("svelte/elements").KeyboardEventHandler<HTMLDivElement>} */
   function handleDropDownKeyDown(event) {
     if (event.key === "Enter" || event.key === " ") {
-      toggle();
+      copyCurrentAddress();
     }
 
     if (event.key === "Escape") {
       closeDropDown();
     }
+  }
+
+  function copyCurrentAddress() {
+    navigator.clipboard.writeText(currentAddress);
+    toast("success", "Address copied", mdiContentCopy);
   }
 
   /** @type {number} */
@@ -118,10 +119,7 @@
         aria-label="Copy Address"
         className="address-picker__copy-address-button"
         icon={{ path: mdiContentCopy }}
-        on:click={() => {
-          navigator.clipboard.writeText(currentAddress);
-          toast("success", "Address copied", mdiContentCopy);
-        }}
+        on:click={copyCurrentAddress}
         variant="quaternary"
       />
     </span>
