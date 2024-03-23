@@ -1,9 +1,13 @@
 <script>
+  import { settingsStore } from "$lib/stores";
   import { AppImage } from "$lib/components";
   import { Card } from "$lib/dusk/components";
 
-  /** @type {string} */
+  const { darkMode } = $settingsStore;
+
   const allSetIllustration = "/images/onboarding/all_set_illustration.svg";
+  const allSetIllustrationLight =
+    "/images/onboarding/all_set_illustration_light.svg";
 </script>
 
 <Card heading="You are all set!">
@@ -11,7 +15,7 @@
     alt="All Set"
     className="all-set__illustration"
     height="182"
-    src={allSetIllustration}
+    src={darkMode ? allSetIllustrationLight : allSetIllustration}
     width="205"
   />
 </Card>
