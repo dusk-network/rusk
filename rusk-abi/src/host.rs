@@ -199,7 +199,7 @@ pub fn verify_proof(
 
     let hash = *hasher.finalize().as_array();
 
-    // If the proof verification has been memoized with the se arguments,
+    // If the proof verification has been memoized with the same arguments,
     // return the result
     if let Some(v) = get_cache(hash) {
         return v;
@@ -229,7 +229,9 @@ pub fn verify_proof(
     });
 
     let verified = verifier.verify(&proof, &pis).is_ok();
-    put_cache(hash, verified);
+    if verified {
+        put_cache(hash, verified);
+    }
     verified
 }
 
