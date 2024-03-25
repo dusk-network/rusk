@@ -35,3 +35,8 @@ criterion = "0.4"
 [[bench]]
 name = "get_provisioners"
 harness = false
+
+
+[[bench]]
+name = "insert_provisioners"
+harness = false
