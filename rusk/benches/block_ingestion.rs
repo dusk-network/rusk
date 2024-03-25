@@ -44,6 +44,15 @@ fn load_txs() -> Vec<Transaction> {
         });
     }
 
+    for tx in txs.iter() {
+        match rusk::verifier::verify_proof(&tx.inner) {
+            Ok(true) => Ok(()),
+            Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
+            Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),
+        }
+        .unwrap()
+    }
+
     txs
 }
 
