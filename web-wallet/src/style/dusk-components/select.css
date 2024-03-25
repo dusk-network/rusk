@@ -1,7 +1,9 @@
 .dusk-select {
   display: inline-block;
   appearance: none;
+  font-family: inherit;
   font-size: var(--control-font-size);
+  letter-spacing: inherit;
   padding: var(--control-padding);
   padding-right: 2.25em;
   background-color: var(--control-bg-color);

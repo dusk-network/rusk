@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update font family and letter spacing in buttons, textboxes and selects [#1565]
 - Update copy on Reset Wallet while syncing [#1552]
 - Trigger the Restore flow if a user tries to access a new wallet [#1535]
 - Clear the login info storage on "Reset Wallet" (Settings) [#1551]
@@ -202,6 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1545]: https://github.com/dusk-network/rusk/issues/1545
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
+[#1565]: https://github.com/dusk-network/rusk/issues/1565
 [#1576]: https://github.com/dusk-network/rusk/issues/1576
 
 <!-- VERSIONS -->

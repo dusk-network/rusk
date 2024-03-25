@@ -1,5 +1,7 @@
 .dusk-textbox {
+  font-family: inherit;
   font-size: var(--control-font-size);
+  letter-spacing: inherit;
   padding: var(--control-padding);
   background-color: var(--control-bg-color);
   border-color: var(--control-border-color);
