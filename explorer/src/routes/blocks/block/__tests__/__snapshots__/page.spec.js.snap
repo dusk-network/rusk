@@ -2,9 +2,21 @@
 
 exports[`Block > should render the Block page 1`] = `
 <div>
-  <div>
-    Individual Block
-  </div>
+  <section
+    class="block s-vKBwXbsZSIaK"
+  >
+    <div
+      class="block__details s-vKBwXbsZSIaK"
+    >
+      Block details
+    </div>
+     
+    <div
+      class="block__transactions s-vKBwXbsZSIaK"
+    >
+      Block transactions
+    </div>
+  </section>
   <!--&lt;+page&gt;-->
 </div>
 `;

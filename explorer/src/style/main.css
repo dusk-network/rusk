@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+}
+
+.explorer {
+  padding: 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .explorer {
+    padding: 0 1.25rem;
+  }
+}

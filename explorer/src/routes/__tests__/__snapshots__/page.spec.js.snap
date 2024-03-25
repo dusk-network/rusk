@@ -2,9 +2,27 @@
 
 exports[`Chain Info > should render the Chain Info page 1`] = `
 <div>
-  <div>
-    Chain Info
-  </div>
+  <section
+    class="chain-info s-y_bCXRrkrYfP"
+  >
+    <div
+      class="chain-info__statistics s-y_bCXRrkrYfP"
+    >
+      Statistics
+    </div>
+     
+    <div
+      class="chain-info__blocks s-y_bCXRrkrYfP"
+    >
+      Blocks
+    </div>
+     
+    <div
+      class="chain-info__transactions s-y_bCXRrkrYfP"
+    >
+      Transactions
+    </div>
+  </section>
   <!--&lt;+page&gt;-->
 </div>
 `;

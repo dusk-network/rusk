@@ -2,9 +2,13 @@
 
 exports[`Transactions > should render the Transactions page 1`] = `
 <div>
-  <div>
-    All Transactions
-  </div>
+  <section
+    class="transactions"
+  >
+    <div>
+      All Transactions
+    </div>
+  </section>
   <!--&lt;+page&gt;-->
 </div>
 `;

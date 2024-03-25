@@ -1,4 +1,7 @@
-<main class="app">
-  <h1 class="visible-hidden">Dusk Explorer</h1>
+<script>
+  import "../style/main.css";
+</script>
+
+<main class="explorer">
   <slot />
 </main>
