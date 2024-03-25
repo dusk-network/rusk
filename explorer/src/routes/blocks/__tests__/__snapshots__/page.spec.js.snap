@@ -2,9 +2,13 @@
 
 exports[`Blocks > should render the Blocks page 1`] = `
 <div>
-  <div>
-    All Blocks
-  </div>
+  <section
+    class="blocks"
+  >
+    <div>
+      All Blocks
+    </div>
+  </section>
   <!--&lt;+page&gt;-->
 </div>
 `;
