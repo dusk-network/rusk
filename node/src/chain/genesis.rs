@@ -10,8 +10,8 @@ use node_data::ledger::{Block, Header};
 pub(crate) fn generate_state(state_hash: [u8; 32]) -> Block {
     Block::new(
         Header {
-            // Thu Feb 15 2024 14:40:00 GMT+0000
-            timestamp: 1708008000,
+            // Mon Mar 25 2024 11:00:00 GMT+0000
+            timestamp: 1711364400,
             state_hash,
             ..Default::default()
         },
