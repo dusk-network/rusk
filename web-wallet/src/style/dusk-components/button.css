@@ -4,6 +4,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-family: inherit;
+  letter-spacing: inherit;
   line-height: 1;
   border-radius: var(--control-border-radius-size);
   border-style: solid;
