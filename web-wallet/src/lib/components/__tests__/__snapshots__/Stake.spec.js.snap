@@ -134,7 +134,7 @@ exports[`Stake > should render the Stake component 1`] = `
       <input
         class="dusk-textbox dusk-textbox-number operation__input-field"
         max="9999.98"
-        min="1000"
+        min="1234"
         required=""
         step="0.000000001"
         type="number"
@@ -580,7 +580,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           <span
             class="s-9iuFfX3q-D8R"
           >
-            1,000.000000000
+            1,234.000000000
           </span>
            
           <svg

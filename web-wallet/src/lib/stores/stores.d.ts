@@ -71,6 +71,7 @@ type SettingsStore = {
   gasPrice: number;
   hideStakingNotice: boolean;
   language: string;
+  minAllowedStake: number;
   network: string;
   userId: string;
 };
