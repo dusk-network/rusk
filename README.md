@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.com/dusk-network/rusk.svg?branch=master)](https://travis-ci.com/dusk-network/rusk)
+[![Rusk CI](https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml/badge.svg)](https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml)
+[![explorer CI](https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml/badge.svg)](https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml)
+[![web-wallet CI](https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml/badge.svg)](https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml)
 [![codecov](https://codecov.io/gh/dusk-network/rusk/branch/master/graph/badge.svg)](https://codecov.io/gh/dusk-network/rusk)
 
 # Rusk
