@@ -33,7 +33,7 @@
   /** @type {(to: string, amount: number, gasPrice:number, gasLimit:number) => Promise<string>} */
   const executeSend = (to, amount, gasPrice, gasLimit) =>
     walletStore
-      .transfer(to, amount, gasPrice, gasLimit)
+      .transfer(to, amount, { limit: gasLimit, price: gasPrice })
       .then(getLastTransactionHash);
 
   const collectSettings = collect([

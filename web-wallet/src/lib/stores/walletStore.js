@@ -1,13 +1,6 @@
 import { get, writable } from "svelte/store";
 import { getKey, uniquesBy } from "lamb";
-
-/**
- * @typedef {import("@dusk-network/dusk-wallet-js").Wallet} Wallet
- */
-
-/**
- * @typedef {WalletStoreServices["getTransactionsHistory"]} GetTransactionsHistory
- */
+import { Gas, Wallet } from "@dusk-network/dusk-wallet-js";
 
 /** @type {AbortController} */
 let syncController;
@@ -55,35 +48,6 @@ const getCurrentAddress = () => get(walletStore).currentAddress;
 /** @type {(action: (...args: any[]) => Promise<any>) => Promise<void>} */
 const syncedAction = (action) => sync().then(action).finally(sync);
 
-const abortSync = () => syncPromise && syncController?.abort();
-
-/** @type {() => Promise<void>} */
-const clearLocalData = async () => walletInstance?.reset();
-
-/** @type {(wallet: Wallet) => Promise<void>} */
-const clearLocalDataAndInit = (wallet) =>
-  wallet.reset().then(() => init(wallet));
-
-/** @type {WalletStoreServices["getStakeInfo"]} */
-const getStakeInfo = async () =>
-  sync()
-    // @ts-expect-error
-    .then(() => walletInstance.stakeInfo(getCurrentAddress()))
-    .then(fixStakeInfo);
-
-/** @type {GetTransactionsHistory} */
-
-const getTransactionsHistory = async () =>
-  sync()
-    // @ts-expect-error
-    .then(() => walletInstance.history(getCurrentAddress()))
-    .then(uniquesById);
-
-function reset() {
-  walletInstance = null;
-  set(initialState);
-}
-
 async function updateAfterSync() {
   const store = get(walletStore);
 
@@ -97,8 +61,43 @@ async function updateAfterSync() {
   });
 }
 
-/** @param {Wallet} wallet */
-async function init(wallet) {
+/** @type {WalletStoreServices["abortSync"]} */
+const abortSync = () => {
+  syncPromise && syncController?.abort();
+};
+
+/** @type {WalletStoreServices["clearLocalData"]} */
+const clearLocalData = async () => walletInstance?.reset();
+
+/** @type {WalletStoreServices["clearLocalDataAndInit"]} */
+const clearLocalDataAndInit = (wallet, syncFromBlock) =>
+  wallet.reset().then(() => init(wallet, syncFromBlock));
+
+/** @type {WalletStoreServices["getCurrentBlockHeight"]} */
+const getCurrentBlockHeight = async () => Wallet.networkBlockHeight;
+
+/** @type {WalletStoreServices["getStakeInfo"]} */
+const getStakeInfo = async () =>
+  sync()
+    // @ts-expect-error
+    .then(() => walletInstance.stakeInfo(getCurrentAddress()))
+    .then(fixStakeInfo);
+
+/** @type {WalletStoreServices["getTransactionsHistory"]} */
+const getTransactionsHistory = async () =>
+  sync()
+    // @ts-expect-error
+    .then(() => walletInstance.history(getCurrentAddress()))
+    .then(uniquesById);
+
+/** @type {WalletStoreServices["reset"]} */
+function reset() {
+  walletInstance = null;
+  set(initialState);
+}
+
+/** @type {WalletStoreServices["init"]} */
+async function init(wallet, syncFromBlock) {
   walletInstance = wallet;
 
   const addresses = await walletInstance.getPsks();
@@ -110,7 +109,7 @@ async function init(wallet) {
     currentAddress,
     initialized: true,
   });
-  sync();
+  sync(syncFromBlock);
 }
 
 /** @type {WalletStoreServices["setCurrentAddress"]} */
@@ -118,26 +117,25 @@ async function setCurrentAddress(address) {
   const store = get(walletStore);
 
   return store.addresses.includes(address)
-    ? Promise.resolve(set({ ...store, currentAddress: address })).then(sync)
+    ? Promise.resolve(set({ ...store, currentAddress: address })).then(() =>
+        sync()
+      )
     : Promise.reject(new Error("The received address is not in the list"));
 }
 
 /** @type {WalletStoreServices["stake"]} */
-
-const stake = async (amount, gasPrice, gasLimit) =>
+const stake = async (amount, gasSettings) =>
   syncedAction(() => {
     // @ts-expect-error
-    walletInstance.gasLimit = gasLimit;
-
-    // @ts-expect-error
-    walletInstance.gasPrice = gasPrice;
-
-    // @ts-expect-error
-    return walletInstance.stake(getCurrentAddress(), amount);
+    return walletInstance.stake(
+      getCurrentAddress(),
+      amount,
+      new Gas(gasSettings)
+    );
   });
 
 /** @type {WalletStoreServices["sync"]} */
-function sync() {
+function sync(from) {
   if (!walletInstance) {
     throw new Error("No wallet instance to sync");
   }
@@ -149,7 +147,7 @@ function sync() {
 
     syncController = new AbortController();
     syncPromise = walletInstance
-      .sync({ signal: syncController.signal })
+      .sync({ from, signal: syncController.signal })
       .then(updateAfterSync, (error) => {
         set({ ...store, error, isSyncing: false });
       })
@@ -162,42 +160,32 @@ function sync() {
 }
 
 /** @type {WalletStoreServices["transfer"]} */
-const transfer = async (to, amount, gasPrice, gasLimit) =>
+const transfer = async (to, amount, gasSettings) =>
   syncedAction(() => {
     // @ts-expect-error
-    walletInstance.gasLimit = gasLimit;
-
-    // @ts-expect-error
-    walletInstance.gasPrice = gasPrice;
-
-    // @ts-expect-error
-    return walletInstance.transfer(getCurrentAddress(), to, amount);
+    return walletInstance.transfer(
+      getCurrentAddress(),
+      to,
+      amount,
+      new Gas(gasSettings)
+    );
   });
 
 /** @type {WalletStoreServices["unstake"]} */
-const unstake = async (gasPrice, gasLimit) =>
+const unstake = async (gasSettings) =>
   syncedAction(() => {
     // @ts-expect-error
-    walletInstance.gasLimit = gasLimit;
-
-    // @ts-expect-error
-    walletInstance.gasPrice = gasPrice;
-
-    // @ts-expect-error
-    return walletInstance.unstake(getCurrentAddress());
+    return walletInstance.unstake(getCurrentAddress(), new Gas(gasSettings));
   });
 
 /** @type {WalletStoreServices["withdrawReward"]} */
-const withdrawReward = async (gasPrice, gasLimit) =>
+const withdrawReward = async (gasSettings) =>
   syncedAction(() => {
     // @ts-expect-error
-    walletInstance.gasLimit = gasLimit;
-
-    // @ts-expect-error
-    walletInstance.gasPrice = gasPrice;
-
-    // @ts-expect-error
-    return walletInstance.withdrawReward(getCurrentAddress());
+    return walletInstance.withdrawReward(
+      getCurrentAddress(),
+      new Gas(gasSettings)
+    );
   });
 
 /** @type {WalletStore} */
@@ -205,6 +193,7 @@ export default {
   abortSync,
   clearLocalData,
   clearLocalDataAndInit,
+  getCurrentBlockHeight,
   getStakeInfo,
   getTransactionsHistory,
   init,

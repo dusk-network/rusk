@@ -27,6 +27,11 @@ type SettingsStoreContent = {
 
 type SettingsStore = Writable<SettingsStoreContent> & { reset: () => void };
 
+type GasSettings = {
+  limit: number;
+  price: number;
+};
+
 type TransactionsStoreContent = { transactions: Transaction[] };
 
 type TransactionsStore = Readable<TransactionsStoreContent>;
@@ -48,14 +53,19 @@ type WalletStoreServices = {
 
   clearLocalData: () => Promise<void>;
 
-  clearLocalDataAndInit: (wallet: Wallet) => Promise<void>;
+  clearLocalDataAndInit: (
+    wallet: Wallet,
+    syncFromBlock?: number
+  ) => Promise<void>;
+
+  getCurrentBlockHeight: () => Promise<number>;
 
   getStakeInfo: () => Promise<any> & ReturnType<Wallet["stakeInfo"]>;
 
   // The return type apparently is not in a promise here
   getTransactionsHistory: () => Promise<ReturnType<Wallet["history"]>>;
 
-  init: (wallet: Wallet) => Promise<void>;
+  init: (wallet: Wallet, syncFromBlock?: number) => Promise<void>;
 
   reset: () => void;
 
@@ -63,27 +73,23 @@ type WalletStoreServices = {
 
   stake: (
     amount: number,
-    gasPrice: number,
-    gasLimit: number
+    gasSettings: GasSettings
   ) => Promise<any> & ReturnType<Wallet["stake"]>;
 
-  sync: () => Promise<void>;
+  sync: (from?: number) => Promise<void>;
 
   transfer: (
     to: string,
     amount: number,
-    gasPrice: number,
-    gasLimit: number
+    gasSettings: GasSettings
   ) => Promise<any> & ReturnType<Wallet["transfer"]>;
 
   unstake: (
-    gasPrice: number,
-    gasLimit: number
+    gasSettings: GasSettings
   ) => Promise<any> & ReturnType<Wallet["unstake"]>;
 
   withdrawReward: (
-    gasPrice: number,
-    gasLimit: number
+    gasSettings: GasSettings
   ) => Promise<any> & ReturnType<Wallet["withdrawReward"]>;
 };
 

@@ -13,7 +13,10 @@ import { IntersectionObserver, ResizeObserver } from "./src/lib/dusk/mocks";
 import Wallet from "./__mocks__/Wallet.js";
 
 // Mocking the Wallet
-vi.doMock("@dusk-network/dusk-wallet-js", () => ({ Wallet }));
+vi.doMock("@dusk-network/dusk-wallet-js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  Wallet,
+}));
 
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.
