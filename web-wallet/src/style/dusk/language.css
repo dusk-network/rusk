@@ -103,11 +103,6 @@
 
   --home-box-color: var(--silver-metallic);
   --home-grid-color: var(--light-grey);
-
-  /* Ribbon */
-
-  --ribbon-color: var(--magnolia);
-  --ribbon-bg-color: var(--cornflower);
 }
 
 :root.dark {

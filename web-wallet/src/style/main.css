@@ -91,14 +91,14 @@ svg {
   position: absolute;
   width: 90px;
   height: 36px;
-  background: var(--ribbon-bg-color);
+  background: var(--secondary-color);
   top: 1px;
   right: -26px;
   text-align: center;
   font-size: 12px;
   font-family: var(--mono-font-family);
   text-transform: uppercase;
-  color: var(--ribbon-color);
+  color: var(--on-secondary-color);
   line-height: 45px;
   transform: rotate(45deg);
   z-index: 4;
