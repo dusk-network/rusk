@@ -65,11 +65,12 @@
   /** @type {import("$lib/stores/stores").GasStoreContent} */
   export let gasLimits;
 
-  const defaultMinStake = 1000;
+  /** @type {number} */
+  export let minAllowedStake;
 
   /** @type {number} */
   let stakeAmount = {
-    stake: defaultMinStake,
+    stake: minAllowedStake,
     unstake: staked,
     "withdraw-rewards": rewards,
   }[flow];
@@ -126,8 +127,8 @@
   $: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
   $: minStake =
     maxSpendable > 0
-      ? Math.min(defaultMinStake, maxSpendable)
-      : defaultMinStake;
+      ? Math.min(minAllowedStake, maxSpendable)
+      : minAllowedStake;
   $: isStakeAmountValid =
     stakeAmount >= minStake && stakeAmount <= maxSpendable;
   $: totalLuxFee = luxFee + duskToLux(stakeAmount);

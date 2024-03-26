@@ -41,6 +41,7 @@
       "gasPriceLower",
     ]),
     getKey("language"),
+    getKey("minAllowedStake"),
   ]);
 
   /** @type {Record<string, (info: WalletStakeInfo) => boolean>} */
@@ -119,7 +120,7 @@
   });
 
   $: ({ currentOperation } = $operationsStore);
-  $: [gasSettings, language] = collectSettings($settingsStore);
+  $: [gasSettings, language, minAllowedStake] = collectSettings($settingsStore);
   const { hideStakingNotice } = $settingsStore;
   $: ({ balance, error, isSyncing } = $walletStore);
   $: isSyncOK = !(isSyncing || !!error);
@@ -151,6 +152,7 @@
           formatter={duskFormatter}
           {gasLimits}
           {gasSettings}
+          {minAllowedStake}
           on:operationChange
           on:suppressStakingNotice
           rewards={stakeInfo.reward}

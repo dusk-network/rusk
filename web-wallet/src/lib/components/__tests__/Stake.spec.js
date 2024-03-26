@@ -33,6 +33,7 @@ describe("Stake", () => {
       gasPrice: 1,
     },
     hideStakingNotice: true,
+    minAllowedStake: 1234,
     rewards: 345,
     spendable: 10000,
     staked: 278,
@@ -88,7 +89,9 @@ describe("Stake", () => {
     const amountInput = getByRole("spinbutton");
 
     expect(nextButton).toBeEnabled();
-    expect(amountInput.getAttribute("min")).toBe("1000");
+    expect(amountInput.getAttribute("min")).toBe(
+      baseProps.minAllowedStake.toString()
+    );
     expect(amountInput.getAttribute("max")).toBe(maxSpendable.toString());
     expect(container.firstChild).toMatchSnapshot();
   });
@@ -112,7 +115,9 @@ describe("Stake", () => {
 
     await fireInput(amountInput, 1000);
     expect(nextButton).toBeDisabled();
-    expect(amountInput.getAttribute("min")).toBe("1000");
+    expect(amountInput.getAttribute("min")).toBe(
+      baseProps.minAllowedStake.toString()
+    );
     expect(amountInput.getAttribute("max")).toBe(
       currentMaxSpendable.toString()
     );
@@ -164,7 +169,7 @@ describe("Stake", () => {
       const { getByRole, getByText } = render(Stake, baseProps);
       const amountInput = getByRole("spinbutton");
 
-      expect(amountInput).toHaveValue(1000);
+      expect(amountInput).toHaveValue(baseProps.minAllowedStake);
 
       await fireEvent.click(getByRole("button", { name: "Next" }));
       await fireEvent.click(getByRole("button", { name: "Stake" }));
@@ -173,7 +178,7 @@ describe("Stake", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        1000,
+        baseProps.minAllowedStake,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
