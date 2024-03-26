@@ -1,5 +1,6 @@
 <script>
   import { Card, Icon, Switch } from "$lib/dusk/components";
+  import { createEventDispatcher } from "svelte";
 
   import "./Card.css";
 
@@ -17,6 +18,12 @@
 
   /** @type {boolean} */
   export let isToggled = false;
+
+  const dispatch = createEventDispatcher();
+
+  function dispatchToggleEvent() {
+    dispatch("toggle", { isToggled });
+  }
 </script>
 
 <Card {...$$restProps} {gap} {onSurface}>
@@ -27,7 +34,7 @@
       {/if}
       <h3 class="h4">{heading}</h3>
     </div>
-    <Switch onSurface bind:value={isToggled} />
+    <Switch onSurface bind:value={isToggled} on:change={dispatchToggleEvent} />
   </header>
   {#if isToggled}
     <slot />

@@ -57,13 +57,15 @@
   const executeOperations = {
     stake: (amount, gasPrice, gasLimit) =>
       walletStore
-        .stake(amount, gasPrice, gasLimit)
+        .stake(amount, { limit: gasLimit, price: gasPrice })
         .then(getLastTransactionHash),
     unstake: (gasPrice, gasLimit) =>
-      walletStore.unstake(gasPrice, gasLimit).then(getLastTransactionHash),
+      walletStore
+        .unstake({ limit: gasLimit, price: gasPrice })
+        .then(getLastTransactionHash),
     "withdraw-rewards": (gasPrice, gasLimit) =>
       walletStore
-        .withdrawReward(gasPrice, gasLimit)
+        .withdrawReward({ limit: gasLimit, price: gasPrice })
         .then(getLastTransactionHash),
   };
 
@@ -124,8 +126,8 @@
   $: ({ currentOperation } = $operationsStore);
   $: [gasSettings, language, minAllowedStake] = collectSettings($settingsStore);
   const { hideStakingNotice } = $settingsStore;
-  $: ({ balance, error, isSyncing } = $walletStore);
-  $: isSyncOK = !(isSyncing || !!error);
+  $: ({ balance, syncStatus } = $walletStore);
+  $: isSyncOK = !(syncStatus.isInProgress || !!syncStatus.error);
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
 </script>
 
@@ -137,7 +139,7 @@
     waitFor={walletStore.getStakeInfo()}
   >
     <svelte:fragment slot="pending-content">
-      {#if !isSyncing && !error}
+      {#if !syncStatus.isInProgress && !syncStatus.error}
         <Throbber />
       {:else}
         <p>Data will load after a successful sync.</p>

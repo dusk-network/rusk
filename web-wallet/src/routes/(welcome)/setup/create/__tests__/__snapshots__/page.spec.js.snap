@@ -20,7 +20,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 16.666666666666668%;"
+    style="--columns: 7; --progress-width: 14.285714285714286%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -52,6 +52,11 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -227,6 +232,8 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
   
    
   
+   
+  
 </div>
 `;
 
@@ -252,7 +259,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 33.333333333333336%;"
+    style="--columns: 7; --progress-width: 28.571428571428573%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -284,6 +291,11 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -633,6 +645,8 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
   
    
   
+   
+  
 </div>
 `;
 
@@ -658,7 +672,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 33.333333333333336%;"
+    style="--columns: 7; --progress-width: 28.571428571428573%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -690,6 +704,11 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -1068,6 +1087,8 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
   
    
   
+   
+  
 </div>
 `;
 
@@ -1093,7 +1114,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 33.333333333333336%;"
+    style="--columns: 7; --progress-width: 28.571428571428573%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -1125,6 +1146,11 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -1484,6 +1510,8 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
   
    
   
+   
+  
 </div>
 `;
 
@@ -1491,6 +1519,8 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+  
+   
   
    
   
@@ -1515,7 +1545,7 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 83.33333333333333%;"
+    style="--columns: 7; --progress-width: 85.71428571428571%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -1543,10 +1573,15 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
       5
     </span>
     <span
-      aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       6
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      7
     </span>
     
   </div>
@@ -1621,6 +1656,221 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
 </div>
 `;
 
+exports[`Create > ensures the Network Syncing step renders as expected 1`] = `
+<div
+  class="dusk-wizard dusk-wizard--full-height"
+>
+  
+   
+  
+   
+  
+   
+  
+   
+  
+   
+  <h2
+    class="h1"
+    slot="heading"
+  >
+    Network
+    <br />
+     
+    <mark>
+      Syncing
+    </mark>
+  </h2>
+   
+  <div
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 7; --progress-width: 71.42857142857143%;"
+  >
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      2
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      5
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
+    </span>
+    
+  </div>
+  
+   
+  <div
+    class="dusk-card dusk-card--gap-default"
+  >
+    <div
+      class="dusk-card__header-container"
+    >
+      <header
+        class="dusk-card__header"
+        slot="header"
+      >
+        <div
+          class="dusk-card__heading-container"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z"
+            />
+          </svg>
+          
+           
+          <h3
+            class="h4"
+          >
+            Block Height
+          </h3>
+        </div>
+      </header>
+    </div>
+     
+    <div
+      class="dusk-card__body-container"
+    >
+      <p>
+        Store the current block height in case you want to resync from it next time
+    you reset your wallet. This can significantly reduce the initial sync time.
+      </p>
+       
+      <div
+        class="copy-field"
+      >
+        <input
+          class="dusk-textbox dusk-textbox-text copy-field__content"
+          readonly=""
+          type="text"
+        />
+        
+         
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button copy-field__button"
+          disabled=""
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+           
+          
+        </button>
+      </div>
+       
+      <small>
+        This can later be retrieved from Settings. Find out more in our 
+        <a
+          class="dusk-anchor dusk-anchor--on-surface"
+          href="#"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          documentation
+        </a>
+        .
+      </small>
+    </div>
+     
+  </div>
+  
+   
+  <div
+    class="dusk-wizard__step-navigation"
+  >
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+      type="button"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+       
+      <span
+        class="dusk-button__text"
+      >
+        Back
+      </span>
+      
+    </button>
+    
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Next
+      </span>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"
+        />
+      </svg>
+      
+    </button>
+  </div>
+  
+  
+   
+  
+</div>
+`;
+
 exports[`Create > ensures the Password step renders as expected 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
@@ -1645,7 +1895,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 50%;"
+    style="--columns: 7; --progress-width: 42.857142857142854%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -1677,6 +1927,11 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -1809,6 +2064,8 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
   
    
   
+   
+  
 </div>
 `;
 
@@ -1836,7 +2093,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 50%;"
+    style="--columns: 7; --progress-width: 42.857142857142854%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -1868,6 +2125,11 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -2030,6 +2292,8 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
   
    
   
+   
+  
 </div>
 `;
 
@@ -2060,7 +2324,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 66.66666666666667%;"
+    style="--columns: 7; --progress-width: 57.142857142857146%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -2092,6 +2356,11 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -2179,6 +2448,8 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
   
    
   
+   
+  
 </div>
 `;
 
@@ -2204,7 +2475,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 33.333333333333336%;"
+    style="--columns: 7; --progress-width: 28.571428571428573%;"
   >
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
@@ -2236,6 +2507,11 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -2595,6 +2871,8 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
   
    
   
+   
+  
 </div>
 `;
 
@@ -2616,7 +2894,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 6; --progress-width: 0%;"
+    style="--columns: 7; --progress-width: 0%;"
   >
     <span
       aria-current="step"
@@ -2648,6 +2926,11 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       class="dusk-stepper__step"
     >
       6
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      7
     </span>
     
   </div>
@@ -2795,6 +3078,8 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
     </button>
   </div>
   
+  
+   
   
    
   

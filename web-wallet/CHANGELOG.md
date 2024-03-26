@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add option to sync from a custom block height on Wallet Restoration [#1568]
+- Show current block height on Wallet Creation [#1561]
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Added allocation (shield/unshield) page and UI [#2196]
 - Added token migration contract bindings [#2014]
 
 ### Changed
 
+- Newly created Wallet does not sync from genesis [#1567]
 - Update font-display to swap for custom fonts to improve performance [#2026]
 - Update anchor colors to ensure better accessibility [#1765]
 - Update Transactions list design [#1922]
@@ -229,7 +232,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1545]: https://github.com/dusk-network/rusk/issues/1545
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
+[#1561]: https://github.com/dusk-network/rusk/issues/1561
 [#1565]: https://github.com/dusk-network/rusk/issues/1565
+[#1568]: https://github.com/dusk-network/rusk/issues/1568
+[#1567]: https://github.com/dusk-network/rusk/issues/1567
 [#1576]: https://github.com/dusk-network/rusk/issues/1576
 [#1591]: https://github.com/dusk-network/rusk/issues/1591
 [#1598]: https://github.com/dusk-network/rusk/issues/1598

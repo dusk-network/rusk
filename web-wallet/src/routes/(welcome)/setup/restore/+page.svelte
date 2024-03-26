@@ -4,6 +4,7 @@
   import { fade } from "svelte/transition";
   import TermsOfService from "../TermsOfService.svelte";
   import PasswordSetup from "../PasswordSetup.svelte";
+  import NetworkSyncing from "./NetworkSyncSettings.svelte";
   import AllSet from "../AllSet.svelte";
   import MnemonicAuthenticate from "./MnemonicAuthenticate.svelte";
   import { Wizard, WizardStep } from "$lib/dusk/components";
@@ -15,6 +16,7 @@
   } from "$lib/wallet";
   import { goto } from "$lib/navigation";
   import { onDestroy } from "svelte";
+  import NetworkSyncProgress from "./NetworkSyncProgress.svelte";
 
   /** @type {boolean} */
   let notice = false;
@@ -29,6 +31,12 @@
   let isValidPassword = false;
 
   /** @type {boolean} */
+  let isValidBlockHeight = false;
+
+  /** @type {boolean} */
+  let isSyncCompleted = false;
+
+  /** @type {boolean} */
   let showPasswordSetup = false;
 
   /** @type {boolean} */
@@ -36,6 +44,8 @@
 
   /** @type {string[]} */
   let mnemonicPhrase = $mnemonicPhraseResetStore;
+
+  let blockHeight = 0;
 
   const { userId } = $settingsStore;
 
@@ -57,7 +67,7 @@
     <TermsOfService bind:tosAccepted />
   </div>
 {:else}
-  <Wizard fullHeight={true} steps={3} let:key>
+  <Wizard fullHeight={true} steps={5} let:key>
     <WizardStep
       step={0}
       {key}
@@ -105,11 +115,40 @@
       step={2}
       {key}
       showStepper={true}
+      nextButton={{
+        action: async () => {
+          await initializeWallet(mnemonicPhrase, blockHeight);
+          mnemonicPhrase = [];
+        },
+        disabled: !isValidBlockHeight,
+      }}
+    >
+      <h2 class="h1" slot="heading">
+        Network<br />
+        <mark>Syncing</mark>
+      </h2>
+      <NetworkSyncing bind:isValid={isValidBlockHeight} bind:blockHeight />
+    </WizardStep>
+    <WizardStep
+      step={3}
+      {key}
+      showStepper={true}
+      hideBackButton={true}
+      nextButton={{ disabled: !isSyncCompleted }}
+    >
+      <h2 class="h1" slot="heading">
+        Network<br />
+        <mark>Syncing</mark>
+      </h2>
+      <NetworkSyncProgress bind:isValid={isSyncCompleted} />
+    </WizardStep>
+    <WizardStep
+      step={4}
+      {key}
+      showStepper={true}
       hideBackButton={true}
       nextButton={{
         action: async () => {
-          await initializeWallet(mnemonicPhrase);
-          mnemonicPhrase = [];
           await goto("/dashboard");
         },
         disabled: false,

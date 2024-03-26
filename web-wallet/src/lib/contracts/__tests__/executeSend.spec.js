@@ -43,7 +43,10 @@ describe("executeSend", () => {
     await executeSend(...args);
 
     expect(walletStore.transfer).toHaveBeenCalledTimes(1);
-    expect(walletStore.transfer).toHaveBeenCalledWith(...args);
+    expect(walletStore.transfer).toHaveBeenCalledWith("abc", 1000, {
+      limit: 2,
+      price: 1,
+    });
     expect(getLastTransactionHash).toHaveBeenCalledTimes(1);
   });
 

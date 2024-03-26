@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { keys } from "lamb";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
+import { Gas, Wallet } from "@dusk-network/dusk-wallet-js";
 
 import { addresses, transactions } from "$lib/mock-data";
 import { rejectAfter, resolveAfter } from "$lib/dusk/test-helpers";
@@ -17,7 +17,16 @@ describe("walletStore", async () => {
   const balance = { maximum: 100, value: 1 };
   const wallet = new Wallet([]);
 
+  const defaultSyncOptions = {
+    from: undefined,
+    onblock: expect.any(Function),
+    signal: expect.any(AbortSignal),
+  };
+
   const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
+  const blockHeightSpy = vi
+    .spyOn(Wallet, "networkBlockHeight", "get")
+    .mockResolvedValue(1536);
   const getBalanceSpy = vi
     .spyOn(Wallet.prototype, "getBalance")
     .mockResolvedValue(balance);
@@ -54,9 +63,8 @@ describe("walletStore", async () => {
       value: 0,
     },
     currentAddress: "",
-    error: null,
     initialized: false,
-    isSyncing: false,
+    syncStatus: { current: 0, error: null, isInProgress: false, last: 0 },
   };
   const initializedStore = {
     ...initialState,
@@ -65,13 +73,14 @@ describe("walletStore", async () => {
     currentAddress: addresses[0],
     initialized: true,
   };
-  const gas = {
+  const gasSettings = {
     limit: 30000000,
     price: 1,
   };
 
   beforeEach(() => {
     abortControllerSpy.mockClear();
+    blockHeightSpy.mockClear();
     getBalanceSpy.mockClear();
     getPsksSpy.mockClear();
     historySpy.mockClear();
@@ -89,6 +98,7 @@ describe("walletStore", async () => {
 
   afterAll(() => {
     abortControllerSpy.mockRestore();
+    blockHeightSpy.mockRestore();
     getBalanceSpy.mockRestore();
     getPsksSpy.mockRestore();
     historySpy.mockRestore();
@@ -131,7 +141,12 @@ describe("walletStore", async () => {
       expect(get(walletStore)).toStrictEqual({
         ...initializedStore,
         balance: initialState.balance,
-        error: new Error("Synchronization aborted"),
+        syncStatus: {
+          current: 0,
+          error: new Error("Synchronization aborted"),
+          isInProgress: false,
+          last: 0,
+        },
       });
     });
 
@@ -142,14 +157,13 @@ describe("walletStore", async () => {
         ...initialState,
         addresses: addresses,
         currentAddress: addresses[0],
-        error: null,
         initialized: true,
-        isSyncing: true,
+        syncStatus: { current: 0, error: null, isInProgress: true, last: 0 },
       });
 
       expect(getPsksSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       await vi.advanceTimersToNextTimerAsync();
 
@@ -161,14 +175,38 @@ describe("walletStore", async () => {
       expect(get(walletStore)).toStrictEqual(initializedStore);
     });
 
+    it("should allow to start the sync from a specific block height after initializing the wallet", async () => {
+      const from = 9999;
+
+      await walletStore.init(wallet, from);
+
+      expect(get(walletStore)).toStrictEqual({
+        ...initialState,
+        addresses: addresses,
+        currentAddress: addresses[0],
+        initialized: true,
+        syncStatus: { current: 0, error: null, isInProgress: true, last: 0 },
+      });
+
+      expect(getPsksSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).not.toHaveBeenCalled();
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ ...defaultSyncOptions, from });
+      expect(getBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
+      expect(get(walletStore)).toStrictEqual(initializedStore);
+    });
+
     it("should set the sync error in the store if the sync fails", async () => {
       const storeWhileLoading = {
         ...initialState,
         addresses: addresses,
         currentAddress: addresses[0],
-        error: null,
         initialized: true,
-        isSyncing: true,
+        syncStatus: { current: 0, error: null, isInProgress: true, last: 0 },
       };
       const error = new Error("sync failed");
 
@@ -183,12 +221,11 @@ describe("walletStore", async () => {
       await vi.advanceTimersByTimeAsync(settleTime);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
       expect(getBalanceSpy).not.toHaveBeenCalled();
       expect(get(walletStore)).toStrictEqual({
         ...storeWhileLoading,
-        error,
-        isSyncing: false,
+        syncStatus: { current: 0, error, isInProgress: false, last: 0 },
       });
     });
 
@@ -201,7 +238,7 @@ describe("walletStore", async () => {
       await vi.advanceTimersToNextTimerAsync();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       syncSpy.mockClear();
 
@@ -215,7 +252,7 @@ describe("walletStore", async () => {
       await syncPromise1;
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       const syncPromise4 = walletStore.sync();
 
@@ -231,7 +268,7 @@ describe("walletStore", async () => {
       await walletStore.init(wallet);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       walletStore.abortSync();
 
@@ -242,7 +279,7 @@ describe("walletStore", async () => {
       await walletStore.init(wallet);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       walletStore.abortSync();
 
@@ -251,14 +288,14 @@ describe("walletStore", async () => {
       walletStore.sync();
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
     });
 
     it("should do nothing if there is no sync in progress", async () => {
       await walletStore.init(wallet);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
-      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       await vi.advanceTimersToNextTimerAsync();
 
@@ -299,14 +336,14 @@ describe("walletStore", async () => {
         ...initialState,
         addresses: addresses,
         currentAddress: addresses[0],
-        error: null,
         initialized: true,
-        isSyncing: true,
+        syncStatus: { current: 0, error: null, isInProgress: true, last: 0 },
       });
 
       expect(getPsksSpy).toHaveBeenCalledTimes(1);
       expect(getBalanceSpy).not.toHaveBeenCalled();
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
 
       await vi.advanceTimersByTimeAsync(settleTime);
 
@@ -315,10 +352,58 @@ describe("walletStore", async () => {
       expect(get(walletStore)).toStrictEqual(initializedStore);
     });
 
+    it("should allow to start the sync from a specific block height after clearing and initializing the wallet", async () => {
+      getPsksSpy.mockClear();
+      getBalanceSpy.mockClear();
+      syncSpy.mockClear();
+      walletStore.reset();
+
+      const from = 4276;
+
+      await walletStore.clearLocalDataAndInit(wallet, from);
+
+      expect(get(walletStore)).toStrictEqual({
+        ...initialState,
+        addresses: addresses,
+        currentAddress: addresses[0],
+        initialized: true,
+        syncStatus: {
+          ...initialState.syncStatus,
+          error: null,
+          isInProgress: true,
+        },
+      });
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(getPsksSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({
+        ...defaultSyncOptions,
+        from,
+      });
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(get(walletStore)).toStrictEqual(initializedStore);
+    });
+
+    it("should expose a method to retrieve the current block height", async () => {
+      // This method needs to work even without a wallet instance
+      walletStore.reset();
+
+      await walletStore.getCurrentBlockHeight();
+
+      expect(blockHeightSpy).toHaveBeenCalledTimes(1);
+    });
+
     it("should expose a method to retrieve the stake info", async () => {
       await walletStore.getStakeInfo();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
       expect(stakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(stakeInfoSpy).toHaveBeenCalledWith(currentAddress);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -331,7 +416,7 @@ describe("walletStore", async () => {
         /* eslint-disable camelcase */
         has_key: false,
         has_staked: false,
-        /* eslint-enable camelcase */
+        /* eslint-disable camelcase */
       });
 
       const expected = {
@@ -345,6 +430,7 @@ describe("walletStore", async () => {
       const result = await walletStore.getStakeInfo();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
       expect(stakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(stakeInfoSpy).toHaveBeenCalledWith(currentAddress);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -357,6 +443,7 @@ describe("walletStore", async () => {
       await walletStore.getTransactionsHistory();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
       expect(historySpy).toHaveBeenCalledTimes(1);
       expect(historySpy).toHaveBeenCalledWith(currentAddress);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -378,6 +465,7 @@ describe("walletStore", async () => {
       await walletStore.setCurrentAddress(addresses[1]);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
       expect(get(walletStore).currentAddress).toBe(addresses[1]);
       expect(setCurrentAddressSpy.mock.invocationCallOrder[0]).toBeLessThan(
         syncSpy.mock.invocationCallOrder[0]
@@ -394,14 +482,14 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to allow to stake an amount of Dusk", async () => {
-      await walletStore.stake(10, gas.price, gas.limit);
-
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      await walletStore.stake(10, gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, defaultSyncOptions);
+      expect(syncSpy).toHaveBeenNthCalledWith(2, defaultSyncOptions);
       expect(stakeSpy).toHaveBeenCalledTimes(1);
-      expect(stakeSpy).toHaveBeenCalledWith(currentAddress, 10);
+      expect(stakeSpy).toHaveBeenCalledWith(currentAddress, 10, gasSettings);
+      expect(stakeSpy.mock.calls[0][2]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         stakeSpy.mock.invocationCallOrder[0]
       );
@@ -410,19 +498,39 @@ describe("walletStore", async () => {
       );
     });
 
-    it("should expose a method to allow to transfer an amount of Dusk", async () => {
-      await walletStore.transfer(addresses[1], 10, gas.price, gas.limit);
+    it("should expose a method to manually start a synchronization", async () => {
+      await walletStore.sync();
 
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith(defaultSyncOptions);
+    });
+
+    it("should allow to start a synchronization from a specific block height", async () => {
+      const from = 7654;
+
+      await walletStore.sync(from);
+
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({
+        ...defaultSyncOptions,
+        from,
+      });
+    });
+
+    it("should expose a method to allow to transfer an amount of Dusk", async () => {
+      await walletStore.transfer(addresses[1], 10, gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, defaultSyncOptions);
+      expect(syncSpy).toHaveBeenNthCalledWith(2, defaultSyncOptions);
       expect(transferSpy).toHaveBeenCalledTimes(1);
       expect(transferSpy).toHaveBeenCalledWith(
         currentAddress,
         addresses[1],
-        10
+        10,
+        gasSettings
       );
+      expect(transferSpy.mock.calls[0][3]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         transferSpy.mock.invocationCallOrder[0]
       );
@@ -432,14 +540,14 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to allow to unstake the current address", async () => {
-      await walletStore.unstake(gas.price, gas.limit);
-
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      await walletStore.unstake(gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, defaultSyncOptions);
+      expect(syncSpy).toHaveBeenNthCalledWith(2, defaultSyncOptions);
       expect(unstakeSpy).toHaveBeenCalledTimes(1);
-      expect(unstakeSpy).toHaveBeenCalledWith(currentAddress);
+      expect(unstakeSpy).toHaveBeenCalledWith(currentAddress, gasSettings);
+      expect(unstakeSpy.mock.calls[0][1]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         unstakeSpy.mock.invocationCallOrder[0]
       );
@@ -449,14 +557,19 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to allow to withdraw a reward", async () => {
-      await walletStore.withdrawReward(gas.price, gas.limit);
-
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      await walletStore.withdrawReward(gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, defaultSyncOptions);
+      expect(syncSpy).toHaveBeenNthCalledWith(2, {
+        ...defaultSyncOptions,
+      });
       expect(withdrawRewardSpy).toHaveBeenCalledTimes(1);
-      expect(withdrawRewardSpy).toHaveBeenCalledWith(currentAddress);
+      expect(withdrawRewardSpy).toHaveBeenCalledWith(
+        currentAddress,
+        gasSettings
+      );
+      expect(withdrawRewardSpy.mock.calls[0][1]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         withdrawRewardSpy.mock.invocationCallOrder[0]
       );
@@ -482,7 +595,7 @@ describe("walletStore", async () => {
     keys(operationsMap).forEach((operation) => {
       const spy = operationsMap[operation];
 
-      it("should return a resolved promise with the operation result if an operation succeeds", async () => {
+      it("should return a resolved promise with the operation result if an operation succeeds even if the last sync fails", async () => {
         await walletStore.init(wallet);
         await vi.advanceTimersToNextTimerAsync();
 
@@ -491,11 +604,15 @@ describe("walletStore", async () => {
           .mockRejectedValueOnce(fakeSyncError);
         spy.mockResolvedValueOnce(fakeSuccess);
 
-        expect(get(walletStore).error).toBe(null);
+        expect(get(walletStore).syncStatus.error).toBe(null);
 
         // @ts-ignore it's a mock and we don't care to pass the correct arguments
         expect(await walletStore[operation]()).toBe(fakeSuccess);
-        expect(get(walletStore).error).toBe(fakeSyncError);
+        expect(get(walletStore).syncStatus.error).toBe(fakeSyncError);
+        expect(syncSpy).toHaveBeenCalledTimes(3);
+        expect(syncSpy).toHaveBeenNthCalledWith(1, defaultSyncOptions);
+        expect(syncSpy).toHaveBeenNthCalledWith(2, defaultSyncOptions);
+        expect(syncSpy).toHaveBeenNthCalledWith(3, defaultSyncOptions);
 
         walletStore.reset();
       });
@@ -509,14 +626,18 @@ describe("walletStore", async () => {
           .mockRejectedValueOnce(fakeSyncError);
         spy.mockRejectedValueOnce(fakeFailure);
 
-        expect(get(walletStore).error).toBe(null);
+        expect(get(walletStore).syncStatus.error).toBe(null);
 
         // @ts-ignore it's a mock and we don't care to pass the correct arguments
         expect(walletStore[operation]()).rejects.toThrowError(fakeFailure);
 
         await vi.advanceTimersToNextTimerAsync();
 
-        expect(get(walletStore).error).toBe(fakeSyncError);
+        expect(get(walletStore).syncStatus.error).toBe(fakeSyncError);
+        expect(syncSpy).toHaveBeenCalledTimes(3);
+        expect(syncSpy).toHaveBeenNthCalledWith(1, defaultSyncOptions);
+        expect(syncSpy).toHaveBeenNthCalledWith(2, defaultSyncOptions);
+        expect(syncSpy).toHaveBeenNthCalledWith(3, defaultSyncOptions);
       });
     });
   });
