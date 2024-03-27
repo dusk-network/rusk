@@ -114,15 +114,13 @@
     <p class="address-picker__current-address">
       {middleEllipsis(currentAddress, calculateAdaptiveCharCount(screenWidth))}
     </p>
-    <span class="address-picker__copy-address-button-wrapper">
-      <Button
-        aria-label="Copy Address"
-        className="address-picker__copy-address-button"
-        icon={{ path: mdiContentCopy }}
-        on:click={copyCurrentAddress}
-        variant="quaternary"
-      />
-    </span>
+    <Button
+      aria-label="Copy Address"
+      className="address-picker__copy-address-button"
+      icon={{ path: mdiContentCopy }}
+      on:click={copyCurrentAddress}
+      variant="quaternary"
+    />
   </div>
 
   {#if expanded}

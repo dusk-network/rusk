@@ -46,30 +46,26 @@ exports[`Dashboard > should render a card when there is an error getting transac
           2087290d3dc213d43e493f03f5435f99
         </p>
          
-        <span
-          class="address-picker__copy-address-button-wrapper"
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          type="button"
         >
-          <button
-            aria-label="Copy Address"
-            class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
-            type="button"
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-              />
-            </svg>
-            
-            <!--&lt;Icon&gt;-->
-             
-            
-          </button>
-          <!--&lt;Button&gt;-->
-        </span>
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
       </div>
        
     </div>
@@ -467,30 +463,26 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
           2087290d3dc213d43e493f03f5435f99
         </p>
          
-        <span
-          class="address-picker__copy-address-button-wrapper"
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          type="button"
         >
-          <button
-            aria-label="Copy Address"
-            class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
-            type="button"
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-              />
-            </svg>
-            
-            <!--&lt;Icon&gt;-->
-             
-            
-          </button>
-          <!--&lt;Button&gt;-->
-        </span>
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
       </div>
        
     </div>
@@ -890,30 +882,26 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           2087290d3dc213d43e493f03f5435f99
         </p>
          
-        <span
-          class="address-picker__copy-address-button-wrapper"
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          type="button"
         >
-          <button
-            aria-label="Copy Address"
-            class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
-            type="button"
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-              />
-            </svg>
-            
-            <!--&lt;Icon&gt;-->
-             
-            
-          </button>
-          <!--&lt;Button&gt;-->
-        </span>
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
       </div>
        
     </div>

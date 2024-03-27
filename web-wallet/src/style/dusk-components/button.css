@@ -54,6 +54,13 @@
   transform: scale(1.2, 1.2);
 }
 
+.dusk-icon-button:not(.dusk-icon-button-labeled) {
+  background-color: var(--secondary-color);
+  color: var(--on-secondary-color);
+  border-radius: 50%;
+  padding: 0.2em;
+}
+
 /* added the :hover:active case otherwise the rule above takes precedence */
 .dusk-icon-button:not(.dusk-icon-button-labeled):enabled:hover:active,
 .dusk-icon-button:not(.dusk-icon-button-labeled):enabled:active,
