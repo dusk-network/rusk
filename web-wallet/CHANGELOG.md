@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix copy button appearance (AddressPicker component) [#1591]
 - Fix keydown behavior (AddressPicker component) [#1576]
 - Data load and sync UI appearing at the same time [#1545]
 - Fix error message overflowing in `ErrorDetails` component [#1547]
@@ -206,6 +207,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
 [#1565]: https://github.com/dusk-network/rusk/issues/1565
 [#1576]: https://github.com/dusk-network/rusk/issues/1576
+[#1591]: https://github.com/dusk-network/rusk/issues/1591
 [#1598]: https://github.com/dusk-network/rusk/issues/1598
 
 <!-- VERSIONS -->
