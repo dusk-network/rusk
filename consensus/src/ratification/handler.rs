@@ -40,6 +40,14 @@ impl MsgHandler for RatificationHandler {
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
+            if self.aggregator.is_vote_collected(
+                p.sign_info(),
+                &p.vote,
+                p.get_step(),
+            ) {
+                return Err(ConsensusError::VoteAlreadyCollected);
+            }
+
             p.verify_signature()?;
             Self::verify_validation_result(
                 &msg.header,

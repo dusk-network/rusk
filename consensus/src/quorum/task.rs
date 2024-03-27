@@ -167,8 +167,13 @@ impl<'p, D: Database> Executor<'p, D> {
                 round = quorum.header.round,
             );
 
-            // Publish the quorum
-            self.publish(msg.clone()).await;
+            // Broadcast the quorum to the network if it originates from local
+            // consensus.
+            // The actual re-broadcast of quorum messages is handled in Chain
+            // component.
+            if msg.metadata.is_none() {
+                self.publish(msg.clone()).await;
+            }
 
             if let RatificationResult::Success(Vote::Valid(hash)) =
                 &quorum.cert.result

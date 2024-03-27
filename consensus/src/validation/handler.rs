@@ -70,7 +70,17 @@ impl MsgHandler for ValidationHandler {
         _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         match &msg.payload {
-            Payload::Validation(p) => p.verify_signature()?,
+            Payload::Validation(p) => {
+                if self.aggr.is_vote_collected(
+                    p.sign_info(),
+                    &p.vote,
+                    p.get_step(),
+                ) {
+                    return Err(ConsensusError::VoteAlreadyCollected);
+                }
+
+                p.verify_signature()?
+            }
             Payload::Empty => (),
             _ => Err(ConsensusError::InvalidMsgType)?,
         };
