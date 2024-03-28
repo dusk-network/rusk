@@ -207,7 +207,8 @@ fn generate_empty_state<P: AsRef<Path>>(
     );
     session.deploy(
         transfer_data_code,
-        ContractData::builder(snapshot.owner())
+        ContractData::builder()
+            .owner(snapshot.owner())
             .contract_id(TRANSFER_DATA_CONTRACT),
         u64::MAX,
     )?;
@@ -215,7 +216,8 @@ fn generate_empty_state<P: AsRef<Path>>(
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
     session.deploy(
         transfer_logic_code,
-        ContractData::builder(snapshot.owner())
+        ContractData::builder()
+            .owner(snapshot.owner())
             .contract_id(TRANSFER_LOGIC_CONTRACT),
         u64::MAX,
     )?;
@@ -226,7 +228,8 @@ fn generate_empty_state<P: AsRef<Path>>(
     );
     session.deploy(
         transfer_proxy_code,
-        ContractData::builder(snapshot.owner())
+        ContractData::builder()
+            .owner(snapshot.owner())
             .constructor_arg(&TRANSFER_LOGIC_CONTRACT)
             .contract_id(TRANSFER_CONTRACT),
         u64::MAX,
