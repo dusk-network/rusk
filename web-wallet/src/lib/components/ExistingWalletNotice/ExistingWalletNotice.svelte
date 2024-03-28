@@ -29,7 +29,6 @@
           on:click={() => {
             notice = true;
           }}
-          variant="secondary"
         />
       </div>
     </div>

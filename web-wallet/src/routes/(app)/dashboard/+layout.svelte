@@ -82,11 +82,11 @@
             on:click={() => {
               walletStore.sync();
             }}
-            variant="quaternary"
+            variant="secondary"
           />
         {/if}
         <AppAnchorButton
-          variant="quaternary"
+          variant="secondary"
           icon={{ path: mdiCogOutline, size: "large" }}
           href="/settings"
           aria-label="Settings"

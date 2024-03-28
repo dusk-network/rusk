@@ -41,7 +41,7 @@
           dispatch("operationChange", operation.id);
         }}
         text={operation.label}
-        variant={operation.primary ? "secondary" : "tertiary"}
+        variant={operation.primary ? "primary" : "tertiary"}
       />
     </li>
   {/each}

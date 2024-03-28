@@ -86,12 +86,7 @@
     </div>
   {/if}
 
-  <Button
-    size="small"
-    variant="secondary"
-    on:click={() => stopScan()}
-    text="CLOSE"
-  />
+  <Button size="small" on:click={() => stopScan()} text="CLOSE" />
 </div>
 
 <style lang="postcss">

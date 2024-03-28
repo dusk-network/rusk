@@ -105,7 +105,8 @@
     aria-expanded={expanded}
     on:keydown={handleDropDownKeyDown}
   >
-    <Button disabled variant="quaternary" icon={{path: mdiSwapHorizontal}} ></Button>
+    <Button disabled variant="secondary" icon={{ path: mdiSwapHorizontal }}
+    ></Button>
 
     <p class="address-picker__current-address">
       {middleEllipsis(currentAddress, calculateAdaptiveCharCount(screenWidth))}
@@ -115,7 +116,7 @@
       className="address-picker__copy-address-button"
       icon={{ path: mdiContentCopy }}
       on:click={copyCurrentAddress}
-      variant="quaternary"
+      variant="secondary"
     />
   </div>
 
@@ -155,7 +156,6 @@
         <Button
           tabindex="0"
           className="address-picker__generate-address-button"
-          variant="secondary"
           icon={{ path: mdiPlusBoxOutline }}
           text="Generate Address"
           on:click={(event) => {

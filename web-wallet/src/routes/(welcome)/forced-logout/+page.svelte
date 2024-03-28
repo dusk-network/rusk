@@ -30,12 +30,7 @@
       need to wait for a full sync.
     </p>
   </Card>
-  <AppAnchorButton
-    data-sveltekit-replacestate
-    href="/"
-    variant="secondary"
-    text="HOME"
-  />
+  <AppAnchorButton data-sveltekit-replacestate href="/" text="HOME" />
 </section>
 
 <style>

@@ -30,7 +30,6 @@
           on:click={() => {
             tosAccepted = true;
           }}
-          variant="secondary"
         />
       </div>
     </div>

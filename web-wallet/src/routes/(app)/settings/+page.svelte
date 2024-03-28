@@ -194,7 +194,6 @@
         data-tooltip-type="warning"
         on:click={handleResetWalletClick}
         text="Reset Wallet"
-        variant="secondary"
       />
     </article>
   </div>

@@ -13,7 +13,11 @@
   border-width: var(--control-border-size);
   text-transform: uppercase;
   transform-origin: center center;
-  transition: 0.2s ease-in-out background-color, border-color, color, transform;
+  transition:
+    0.2s ease-in-out background-color,
+    border-color,
+    color,
+    transform;
 }
 
 .dusk-button:not(.dusk-anchor-button) {
@@ -21,15 +25,15 @@
 }
 
 /* Variants */
-.dusk-button, 
-.dusk-anchor-button,  
+.dusk-button,
+.dusk-anchor-button,
 .dusk-anchor-button:visited {
   background-color: var(--control-bg-color);
   border-color: var(--control-border-color);
   color: var(--control-text-color);
 }
 
-.dusk-button--variant--secondary, 
+.dusk-button--variant--secondary,
 .dusk-anchor-button--variant--secondary,
 .dusk-anchor-button--variant--secondary:visited {
   background-color: var(--control-secondary-bg-color);
@@ -37,7 +41,7 @@
   color: var(--control-secondary-text-color);
 }
 
-.dusk-button--variant--tertiary, 
+.dusk-button--variant--tertiary,
 .dusk-anchor-button--variant--tertiary,
 .dusk-anchor-button--variant--tertiary:visited {
   background-color: var(--control-tertiary-bg-color);
@@ -54,7 +58,6 @@
   padding: var(--control-small-padding);
 }
 
-
 .dusk-button--size--normal,
 .dusk-anchor-button--size--normal,
 .dusk-anchor-button--size--normal:visited {
@@ -65,14 +68,14 @@
 
 /* States */
 .dusk-button:disabled,
-.dusk-anchor-button.dusk-anchor-button--disabled, 
-.dusk-anchor-button.dusk-anchor-button--disabled:hover, 
+.dusk-anchor-button.dusk-anchor-button--disabled,
+.dusk-anchor-button.dusk-anchor-button--disabled:hover,
 .dusk-anchor-button.dusk-anchor-button--disabled:visited {
   opacity: 0.5;
 }
 
 .dusk-button > span,
-.dusk-anchor-button > span { 
+.dusk-anchor-button > span {
   flex: 1;
   display: inline-block;
   white-space: nowrap;
@@ -82,13 +85,14 @@
 
 /* Icon Buttons */
 .dusk-icon-button:not(.dusk-icon-button-labeled) {
-  background-color: var(--control-bg-color);
-  color: var(--control-text-color);
+  /* background-color: var(--control-bg-color);
+  color: var(--control-text-color); */
   border-radius: 50%;
   padding: 0.2em;
 }
 
-.dusk-button:enabled:hover, .dusk-anchor-button:hover {
+.dusk-button:enabled:hover,
+.dusk-anchor-button:hover {
   background-color: var(--secondary-color);
   color: var(--on-secondary-color);
   border-color: var(--control-secondary-border-color-hover);
