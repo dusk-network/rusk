@@ -53,18 +53,18 @@
   --control-small-font-size: 0.875em;
   --control-small-padding: 0.625em 0.875em;
 
-  --control-bg-color: #fff;
-  --control-bg-color-hover: var(--silver-metallic);
+  --control-bg-color: var(--smokey-black);
+  --control-bg-color-hover: var(--cornflower);
   --control-border-color: transparent;
   --control-border-color-hover: transparent;
-  --control-text-color: var(--smokey-black);
+  --control-text-color: #fff;
   --control-text-color-hover: var(--smokey-black);
 
-  --control-secondary-bg-color: var(--smokey-black);
-  --control-secondary-bg-color-hover: var(--cornflower);
+  --control-secondary-bg-color: #fff;
+  --control-secondary-bg-color-hover: var(--silver-metallic);
   --control-secondary-border-color: transparent;
   --control-secondary-border-color-hover: transparent;
-  --control-secondary-text-color: #fff;
+  --control-secondary-text-color: var(--smokey-black);
   --control-secondary-text-color-hover: var(--smokey-black);
 
   --control-tertiary-bg-color: transparent;

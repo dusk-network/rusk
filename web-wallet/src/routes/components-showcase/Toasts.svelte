@@ -7,14 +7,12 @@
 <section style="flex-direction:column">
   <Button
     text="toggle toast"
-    variant="secondary"
     size="small"
     on:click={() => toast("success", "Toast message", mdiCopyleft)}
   />
 
   <Button
     text="toggle another toast"
-    variant="secondary"
     size="small"
     on:click={() =>
       toast(

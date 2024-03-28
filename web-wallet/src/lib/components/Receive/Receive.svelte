@@ -63,7 +63,6 @@
         toast("success", "Address copied", mdiContentCopy);
       }}
       text="Copy"
-      variant="secondary"
     />
   </div>
 </div>

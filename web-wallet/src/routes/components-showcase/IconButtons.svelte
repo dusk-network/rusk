@@ -30,22 +30,3 @@
     variant="tertiary"
   />
 </section>
-<section>
-  <Button icon={{ path: mdiHome }} variant="quaternary" />
-  <Button disabled={true} icon={{ path: mdiHome }} variant="quaternary" />
-  <Button icon={{ path: mdiHome }} size="small" variant="quaternary" />
-  <Button
-    disabled={true}
-    icon={{ path: mdiHome }}
-    size="small"
-    variant="quaternary"
-  />
-</section>
-<section>
-  <Button icon={{ path: mdiHome, size: "large" }} variant="quaternary" />
-  <Button
-    disabled={true}
-    icon={{ path: mdiHome, size: "large" }}
-    variant="quaternary"
-  />
-</section>

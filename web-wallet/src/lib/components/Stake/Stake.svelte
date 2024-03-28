@@ -167,7 +167,7 @@
             },
             icon: null,
             label: "Agree",
-            variant: "secondary",
+            variant: "primary",
           }}
         >
           <Badge text="WARNING" variant="warning" />
@@ -317,7 +317,6 @@
               href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
               on:click={resetOperation}
               text="VIEW ON BLOCK EXPLORER"
-              variant="secondary"
               rel="noopener noreferrer"
               target="_blank"
             />
