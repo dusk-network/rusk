@@ -24,7 +24,7 @@
   export let size = "normal";
 
   /** @type {ButtonVariant} */
-  export let variant = "secondary";
+  export let variant = "primary";
 
   /** @type {String | Undefined} */
   export let text = undefined;
@@ -34,7 +34,7 @@
     `dusk-anchor-button--variant--${variant}`,
     `dusk-anchor-button--size--${size}`,
     disabled ? "dusk-anchor-button--disabled" : "",
-    icon && text ? "dusk-icon-button-labeled" : icon ? "dusk-icon-button" : "",
+    icon && text ? "dusk-icon-button--labeled" : icon ? "dusk-icon-button" : "",
     className,
   ]);
 </script>

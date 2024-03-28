@@ -10,6 +10,5 @@
 <Button
   disabled
   icon={{ path: logo, position: "before" }}
-  variant="secondary"
   text="Swap ERC20 to NDUSK"
 />

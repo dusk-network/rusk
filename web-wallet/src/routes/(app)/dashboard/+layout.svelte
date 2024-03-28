@@ -75,19 +75,19 @@
         {#if error}
           <Button
             aria-label="Retry synchronization"
-            className="footer__actions-button"
+            className="footer__actions-button footer__actions-button--retry"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="Retry synchronization"
             icon={{ path: mdiRestore, size: "large" }}
             on:click={() => {
               walletStore.sync();
             }}
-            variant="quaternary"
+            variant="secondary"
           />
         {/if}
         <AppAnchorButton
-          variant="quaternary"
-          className="footer__anchor-button"
+          variant="secondary"
+          className="footer__actions-button footer__actions-button--settings"
           icon={{ path: mdiCogOutline, size: "large" }}
           href="/settings"
           aria-label="Settings"
@@ -145,5 +145,10 @@
     :global(.footer__network-status-icon--error) {
       cursor: help;
     }
+  }
+
+  :global(.dark .footer__actions-button) {
+    background-color: #000;
+    border-color: #000;
   }
 </style>

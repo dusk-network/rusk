@@ -18,7 +18,7 @@
   export let size = "normal";
 
   /** @type {ButtonVariant} */
-  export let variant = "secondary";
+  export let variant = "primary";
 
   /** @type {String | Undefined} */
   export let text = undefined;
@@ -31,8 +31,8 @@
     `dusk-button--type--${type}`,
     `dusk-button--variant--${variant}`,
     `dusk-button--size--${size}`,
-    icon && text ? "dusk-icon-button-labeled" : icon ? "dusk-icon-button" : "",
-    type === "toggle" && active ? "dusk-button--type--toggle--active" : "",
+    icon && text ? "dusk-icon-button--labeled" : icon ? "dusk-icon-button" : "",
+    type === "toggle" && active ? "dusk-button--active" : "",
     className,
   ]);
 </script>
@@ -50,9 +50,17 @@
     {#if text}
       <span class="dusk-button__text">{text}</span>
     {/if}
-    <Icon className="dusk-button__icon" path={icon.path} size={icon.size} />
+    <Icon
+      className="dusk-button__icon"
+      path={icon.path}
+      size={icon.size ?? "normal"}
+    />
   {:else if icon}
-    <Icon className="dusk-button__icon" path={icon.path} size={icon.size} />
+    <Icon
+      className="dusk-button__icon"
+      path={icon.path}
+      size={icon.size ?? "normal"}
+    />
     {#if text}
       <span class="dusk-button__text">{text}</span>
     {/if}

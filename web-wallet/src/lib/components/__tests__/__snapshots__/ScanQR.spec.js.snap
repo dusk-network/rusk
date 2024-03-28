@@ -18,7 +18,7 @@ exports[`ScanQR > renders the ScanQR component 1`] = `
   />
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--small"
+    class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
     type="button"
   >
     <span

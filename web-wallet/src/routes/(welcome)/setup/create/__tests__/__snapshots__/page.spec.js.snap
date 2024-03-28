@@ -183,7 +183,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -209,7 +209,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -361,7 +361,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
           >
              
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
               disabled=""
               type="button"
             >
@@ -627,7 +627,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -653,7 +653,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >
@@ -803,7 +803,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
           >
              
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
               type="button"
             >
               <svg
@@ -1099,7 +1099,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -1125,7 +1125,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >
@@ -1275,7 +1275,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
           >
              
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
               type="button"
             >
               <svg
@@ -1551,7 +1551,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -1577,7 +1577,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >
@@ -1739,7 +1739,7 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
     >
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -1920,7 +1920,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -1946,7 +1946,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -2170,7 +2170,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -2196,7 +2196,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >
@@ -2326,7 +2326,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
     </p>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -2356,7 +2356,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -2382,7 +2382,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -2525,7 +2525,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
           >
              
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
               type="button"
             >
               <svg
@@ -2802,7 +2802,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -2828,7 +2828,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -3033,7 +3033,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
     >
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
         href="/some-base-path/setup"
       >
         <svg
@@ -3062,7 +3062,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >
@@ -3175,7 +3175,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
             <!--&lt;AppAnchorButton&gt;-->
              
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal flex-1"
               type="button"
             >
               <span
@@ -3260,7 +3260,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
             <!--&lt;AppAnchorButton&gt;-->
              
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal flex-1"
               type="button"
             >
               <span

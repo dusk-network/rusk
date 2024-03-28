@@ -17,16 +17,10 @@
 </script>
 
 <section style="flex-direction:column">
-  <Button
-    text="toggle toast"
-    variant="secondary"
-    size="small"
-    on:click={triggerToast}
-  />
+  <Button text="toggle toast" size="small" on:click={triggerToast} />
 
   <Button
     text="toggle another toast"
-    variant="secondary"
     size="small"
     on:click={triggerToastFailure}
   />

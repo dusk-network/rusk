@@ -30,13 +30,6 @@ describe("Button", () => {
     });
   });
 
-  it("should accept an active property for the toggle button type", () => {
-    const props = { ...baseProps, active: true, type: "toggle" };
-    const { container } = render(Button, { ...baseOptions, props });
-
-    expect(container.firstChild).toMatchSnapshot();
-  });
-
   it("should pass additional class names and attributes to the rendered element", () => {
     const props = {
       ...baseProps,

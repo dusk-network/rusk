@@ -83,7 +83,7 @@ exports[`Dashboard > should render the transactions page 1`] = `
          
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled transactions__footer-button"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled transactions__footer-button"
           href="/some-base-path/dashboard"
         >
           <svg

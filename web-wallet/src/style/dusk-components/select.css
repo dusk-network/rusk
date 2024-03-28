@@ -6,7 +6,7 @@
   letter-spacing: inherit;
   padding: var(--control-padding);
   padding-right: 2.25em;
-  background-color: var(--control-bg-color);
+  background-color: var(--non-button-control-bg-color);
   border-color: var(--control-border-color);
   border-radius: var(--control-border-radius-size);
   border-style: solid;
@@ -21,14 +21,18 @@
   background-image: linear-gradient(
       45deg,
       transparent 50%,
-      var(--control-text-color) 50%
+      var(--non-button-control-text-color) 50%
     ),
-    linear-gradient(135deg, var(--control-text-color) 50%, transparent 50%);
+    linear-gradient(
+      135deg,
+      var(--non-button-control-text-color) 50%,
+      transparent 50%
+    );
 }
 
 .dusk-select,
 .dusk-select option {
-  color: var(--control-text-color);
+  color: var(--non-button-control-text-color);
 }
 
 .dusk-select:disabled {
