@@ -87,7 +87,6 @@
         {/if}
         <AppAnchorButton
           variant="quaternary"
-          className="footer__anchor-button"
           icon={{ path: mdiCogOutline, size: "large" }}
           href="/settings"
           aria-label="Settings"

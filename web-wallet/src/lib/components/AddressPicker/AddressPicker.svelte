@@ -105,12 +105,8 @@
     aria-expanded={expanded}
     on:keydown={handleDropDownKeyDown}
   >
-    <CircularIcon
-      color="var(--background-color)"
-      bgColor="var(--primary-color)"
-    >
-      <Icon path={mdiSwapHorizontal} size="large" />
-    </CircularIcon>
+    <Button disabled variant="quaternary" icon={{path: mdiSwapHorizontal}} ></Button>
+
     <p class="address-picker__current-address">
       {middleEllipsis(currentAddress, calculateAdaptiveCharCount(screenWidth))}
     </p>
