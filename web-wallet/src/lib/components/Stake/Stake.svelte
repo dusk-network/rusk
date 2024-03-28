@@ -167,7 +167,7 @@
             },
             icon: null,
             label: "Agree",
-            variant: "secondary",
+            variant: "primary",
           }}
         >
           <Badge text="WARNING" variant="warning" />
