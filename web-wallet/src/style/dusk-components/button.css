@@ -85,8 +85,6 @@
 
 /* Icon Buttons */
 .dusk-icon-button:not(.dusk-icon-button-labeled) {
-  /* background-color: var(--control-bg-color);
-  color: var(--control-text-color); */
   border-radius: 50%;
   padding: 0.2em;
 }
