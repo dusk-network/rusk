@@ -6,16 +6,15 @@ edition = "2021"
 [dependencies]
 rand_core = "0.6"
 
-dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-dusk-jubjub = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-poseidon = { version = "0.31", default-features = false, features = ["alloc"] }
-dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }
-dusk-schnorr = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
-poseidon-merkle = { version = "0.3", features = ["rkyv-impl"] }
-zk-citadel = "0.5"
+dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
+dusk-poseidon = { version = "0.33", default-features = false, features = ["alloc"] }
+dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
+jubjub-schnorr = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
+phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl", "alloc"] }
+poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
+zk-citadel = "0.11"
 hex = "0.4"
 
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
