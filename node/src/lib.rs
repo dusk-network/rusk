@@ -11,6 +11,7 @@ pub mod database;
 pub mod databroker;
 pub mod mempool;
 pub mod network;
+pub mod telemetry;
 pub mod vm;
 
 use async_trait::async_trait;
