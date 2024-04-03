@@ -9,15 +9,15 @@ use dusk_merkle::Aggregate;
 use dusk_plonk::prelude::*;
 use poseidon_merkle::{zk::opening_gadget, Opening};
 
-pub use dusk_schnorr::gadgets::double_key_verify as schnorr_double_key_verify;
-pub use dusk_schnorr::gadgets::single_key_verify as schnorr_single_key_verify;
+pub use jubjub_schnorr::gadgets::verify_signature as schnorr_verify_signature;
+pub use jubjub_schnorr::gadgets::verify_signature_double as schnorr_verify_signature_double;
 
 /// Prove the opening of a Pedersen commitment and prove that `v` is in the
 /// range of `2^bits`.
 ///
 /// `commitment(p, v, b, s) → p == v · G + b · G′ ∧ v < 2^s`
-pub fn commitment<C: Composer>(
-    composer: &mut C,
+pub fn commitment(
+    composer: &mut Composer,
     p: WitnessPoint,
     v: Witness,
     b: Witness,
@@ -39,14 +39,13 @@ pub fn commitment<C: Composer>(
 /// matches.
 ///
 /// `opening(b, r, l) → O(b) ∧ (b0, b|b|) == (l, r)`
-pub fn merkle_opening<T, C, const H: usize, const A: usize>(
-    composer: &mut C,
+pub fn merkle_opening<T, const H: usize, const A: usize>(
+    composer: &mut Composer,
     branch: &Opening<T, H, A>,
     anchor: Witness,
     leaf: Witness,
 ) where
     T: Clone + Aggregate<A>,
-    C: Composer,
 {
     // The gadget asserts the leaf is the expected
     let root = opening_gadget(composer, branch, leaf);

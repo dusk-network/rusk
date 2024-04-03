@@ -8,13 +8,12 @@ use crate::{error::Error, gadgets};
 
 use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_merkle::Aggregate;
-use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
 use dusk_poseidon::sponge;
-use phoenix_core::{Crossover, Fee, Note};
+use phoenix_core::{Crossover, Fee, Note, Ownable, SecretKey, ViewKey};
 use poseidon_merkle::{Opening, Tree};
 use rand_core::{CryptoRng, RngCore};
 
-use dusk_plonk::error::Error as PlonkError;
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 
 mod crossover;
@@ -58,11 +57,11 @@ impl<const I: usize, T, const H: usize, const A: usize>
 
     pub fn input_signature<R: RngCore + CryptoRng>(
         rng: &mut R,
-        ssk: &SecretSpendKey,
+        sk: &SecretKey,
         note: &Note,
         tx_hash: BlsScalar,
     ) -> CircuitInputSignature {
-        CircuitInputSignature::sign(rng, ssk, note, tx_hash)
+        CircuitInputSignature::sign(rng, sk, note, tx_hash)
     }
 
     pub fn input_commitment(
@@ -87,7 +86,7 @@ impl<const I: usize, T, const H: usize, const A: usize>
 
     pub fn input<R>(
         rng: &mut R,
-        ssk: &SecretSpendKey,
+        sk: &SecretKey,
         tx_hash: BlsScalar,
         tree: &Tree<T, H, A>,
         note: Note,
@@ -96,15 +95,15 @@ impl<const I: usize, T, const H: usize, const A: usize>
         T: Clone + Aggregate<A>,
         R: RngCore + CryptoRng,
     {
-        let signature = Self::input_signature(rng, ssk, &note, tx_hash);
-        let nullifier = note.gen_nullifier(ssk);
+        let signature = Self::input_signature(rng, sk, &note, tx_hash);
+        let nullifier = note.gen_nullifier(sk);
 
         let stealth_address = note.stealth_address();
-        let sk_r = ssk.sk_r(stealth_address);
-        let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
-        let pk_r_p = pk_r_p.into();
+        let note_sk = sk.sk_r(stealth_address);
+        let note_pk_p = GENERATOR_NUMS_EXTENDED * note_sk.as_ref();
+        let note_pk_p = note_pk_p.into();
 
-        let vk = ssk.view_key();
+        let vk = ViewKey::from(sk);
         let (value, blinding_factor) = Self::input_commitment(&vk, &note)?;
 
         let pos = *note.pos();
@@ -113,7 +112,7 @@ impl<const I: usize, T, const H: usize, const A: usize>
         let input = CircuitInput::new(
             branch,
             note,
-            pk_r_p,
+            note_pk_p,
             value,
             blinding_factor,
             nullifier,
@@ -296,10 +295,7 @@ impl<const I: usize, T, const H: usize, const A: usize>
 where
     T: Default + Clone + Aggregate<A>,
 {
-    pub fn circuit<C: Composer>(
-        &self,
-        composer: &mut C,
-    ) -> Result<(), PlonkError> {
+    pub fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         if self.inputs.len() != I {
             // TODO: change into InvalidCircuitSize error once plonk v0.15 is
             // merged across the stack
@@ -317,55 +313,65 @@ where
         let inputs = self
             .inputs()
             .iter()
-            .try_fold::<_, _, Result<Witness, Error>>(C::ZERO, |sum, input| {
-                let witness = input.to_witness(composer)?;
+            .try_fold::<_, _, Result<Witness, Error>>(
+                Composer::ZERO,
+                |sum, input| {
+                    let witness = input.to_witness(composer)?;
 
-                // 1.a opening(io,A,ih)
-                gadgets::merkle_opening(
-                    composer,
-                    input.branch(),
-                    anchor,
-                    witness.note_hash,
-                );
+                    // 1.a opening(io,A,ih)
+                    gadgets::merkle_opening(
+                        composer,
+                        input.branch(),
+                        anchor,
+                        witness.note_hash,
+                    );
 
-                // 1.b ih == H(it,ic,in,ik,ir,ip,iψ)
-                let hash = witness.to_hash_inputs();
-                let hash = sponge::gadget(composer, &hash);
-                composer.assert_equal(witness.note_hash, hash);
+                    // 1.b ih == H(it,ic,in,ik,ir,ip,iψ)
+                    let hash = witness.to_hash_inputs();
+                    let hash = sponge::gadget(composer, &hash);
+                    composer.assert_equal(witness.note_hash, hash);
 
-                // 1.c doubleSchnorrVerify(iσ,ik,T)
-                gadgets::schnorr_double_key_verify(
-                    composer,
-                    witness.schnorr_u,
-                    witness.schnorr_r,
-                    witness.schnorr_r_p,
-                    witness.pk_r,
-                    witness.pk_r_p,
-                    tx_hash,
-                )?;
+                    // 1.c doubleSchnorrVerify(iσ,ik,T)
+                    gadgets::schnorr_verify_signature_double(
+                        composer,
+                        witness.schnorr_u,
+                        witness.schnorr_r,
+                        witness.schnorr_r_p,
+                        witness.note_pk,
+                        witness.note_pk_p,
+                        tx_hash,
+                    )?;
 
-                // 1.d n == H(ik',ip)
-                let n = [*witness.pk_r_p.x(), *witness.pk_r_p.y(), witness.pos];
-                let n = sponge::gadget(composer, &n);
-                composer.assert_equal_constant(
-                    n,
-                    BlsScalar::zero(),
-                    Some(witness.nullifier),
-                );
+                    // 1.d n == H(ik',ip)
+                    let n = [
+                        *witness.note_pk_p.x(),
+                        *witness.note_pk_p.y(),
+                        witness.pos,
+                    ];
+                    let n = sponge::gadget(composer, &n);
+                    composer.assert_equal_constant(
+                        n,
+                        BlsScalar::zero(),
+                        Some(witness.nullifier),
+                    );
 
-                // 1.e commitment(ic,iv,ib,64)
-                gadgets::commitment(
-                    composer,
-                    witness.value_commitment,
-                    witness.value,
-                    witness.blinding_factor,
-                )?;
+                    // 1.e commitment(ic,iv,ib,64)
+                    gadgets::commitment(
+                        composer,
+                        witness.value_commitment,
+                        witness.value,
+                        witness.blinding_factor,
+                    )?;
 
-                let constraint =
-                    Constraint::new().left(1).a(sum).right(1).b(witness.value);
+                    let constraint = Constraint::new()
+                        .left(1)
+                        .a(sum)
+                        .right(1)
+                        .b(witness.value);
 
-                Ok(composer.gate_add(constraint))
-            })
+                    Ok(composer.gate_add(constraint))
+                },
+            )
             .or(Err(PlonkError::CircuitInputsNotFound))?;
 
         // 2. commitment(Cc,cv,cb,64)
@@ -387,7 +393,7 @@ where
         );
 
         // 3. ∀(o,v) ∈ O × V | O → V
-        let mut outputs = C::ZERO;
+        let mut outputs = Composer::ZERO;
         for o in self.outputs.as_ref() {
             let padded_output = CircuitOutput::pad();
             let output: &CircuitOutput = o.as_ref().unwrap_or(&padded_output);
@@ -429,22 +435,22 @@ where
 }
 
 impl Circuit for ExecuteCircuitOneTwo {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
 impl Circuit for ExecuteCircuitTwoTwo {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
 impl Circuit for ExecuteCircuitThreeTwo {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
 impl Circuit for ExecuteCircuitFourTwo {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }

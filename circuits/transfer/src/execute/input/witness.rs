@@ -24,8 +24,8 @@ pub struct WitnessInput {
     pub value: Witness,
     pub blinding_factor: Witness,
     pub value_commitment: WitnessPoint,
-    pub pk_r: WitnessPoint,
-    pub pk_r_p: WitnessPoint,
+    pub note_pk: WitnessPoint,
+    pub note_pk_p: WitnessPoint,
     pub schnorr_u: Witness,
     pub schnorr_r: WitnessPoint,
     pub schnorr_r_p: WitnessPoint,
@@ -41,8 +41,8 @@ impl WitnessInput {
             self.note_type,
             *self.value_commitment.x(),
             *self.value_commitment.y(),
-            *self.pk_r.x(),
-            *self.pk_r.y(),
+            *self.note_pk.x(),
+            *self.note_pk.y(),
             self.pos,
         ]
     }

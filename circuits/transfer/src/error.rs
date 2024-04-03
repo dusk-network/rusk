@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Error as BytesError;
-use dusk_plonk::error::Error as PlonkError;
+use dusk_plonk::prelude::Error as PlonkError;
 use phoenix_core::Error as PhoenixError;
 
 use std::str::ParseBoolError;
@@ -13,7 +12,6 @@ use std::{error, fmt, io};
 
 #[derive(Debug)]
 pub enum Error {
-    BytesError(BytesError),
     PhoenixError(PhoenixError),
     PlonkError(PlonkError),
     NoSuchBranch,
@@ -39,12 +37,6 @@ impl error::Error for Error {
             Self::Io(e) => Some(e),
             _ => None,
         }
-    }
-}
-
-impl From<BytesError> for Error {
-    fn from(e: BytesError) -> Self {
-        Self::BytesError(e)
     }
 }
 

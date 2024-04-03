@@ -6,8 +6,8 @@
 
 use transfer_circuits::WithdrawFromTransparentCircuit;
 
-use dusk_pki::SecretSpendKey;
-use phoenix_core::Note;
+use ff::Field;
+use phoenix_core::{Note, PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
@@ -19,13 +19,13 @@ use keys::load_keys;
 fn create_random_circuit<R: RngCore + CryptoRng>(
     rng: &mut R,
 ) -> WithdrawFromTransparentCircuit {
-    let ssk = SecretSpendKey::random(rng);
-    let psk = ssk.public_spend_key();
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
 
     let value = rng.gen();
-    let blinder = JubJubScalar::random(rng);
+    let blinder = JubJubScalar::random(&mut *rng);
 
-    let note = Note::obfuscated(rng, &psk, value, blinder);
+    let note = Note::obfuscated(rng, &pk, value, blinder);
     let commitment = *note.value_commitment();
 
     WithdrawFromTransparentCircuit::new(commitment, value, blinder)
