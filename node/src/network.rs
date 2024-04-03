@@ -12,6 +12,7 @@ use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
+use metrics::counter;
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -78,9 +79,14 @@ impl<const N: usize> Listener<N> {
 
 impl<const N: usize> kadcast::NetworkListen for Listener<N> {
     fn on_message(&self, blob: Vec<u8>, md: MessageInfo) {
+        let msg_size = blob.len();
         match frame::Pdu::decode(&mut &blob.to_vec()[..]) {
             Ok(d) => {
                 let mut msg = d.payload;
+
+                counter!("dusk_bytes_recv").increment(msg_size as u64);
+                counter!(format!("dusk_inbound_{:?}_size", msg.topic()))
+                    .increment(msg_size as u64);
 
                 // Update Transport Data
                 msg.metadata = Some(Metadata {
@@ -174,6 +180,11 @@ impl<const N: usize> Kadcast<N> {
     pub fn conf(&self) -> &Config {
         &self.conf
     }
+
+    async fn send_with_metrics(&self, bytes: &Vec<u8>, recv_addr: SocketAddr) {
+        counter!("dusk_bytes_sent").increment(bytes.len() as u64);
+        self.peer.send(bytes, recv_addr).await;
+    }
 }
 
 #[async_trait]
@@ -189,6 +200,10 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             error!("could not encode message {msg:?}: {err}");
             anyhow::anyhow!("failed to broadcast: {err}")
         })?;
+
+        counter!("dusk_bytes_cast").increment(encoded.len() as u64);
+        counter!(format!("dusk_outbound_{:?}_size", msg.topic()))
+            .increment(encoded.len() as u64);
 
         trace!("broadcasting msg ({:?})", msg.topic());
         self.peer.broadcast(&encoded, height).await;
@@ -209,8 +224,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         let topic = msg.topic();
 
         info!("sending msg ({topic:?}) to peer {recv_addr}");
-
-        self.peer.send(&encoded, recv_addr).await;
+        self.send_with_metrics(&encoded, recv_addr).await;
 
         Ok(())
     }
@@ -227,8 +241,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         for recv_addr in self.peer.alive_nodes(amount).await {
             trace!("sending msg ({topic:?}) to peer {recv_addr}");
-
-            self.peer.send(&encoded, recv_addr).await;
+            self.send_with_metrics(&encoded, recv_addr).await;
         }
 
         Ok(())

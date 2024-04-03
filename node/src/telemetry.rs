@@ -40,13 +40,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             "The Cumulative size of inbound messages by type."
         );
 
-        // TODO: add it
-        // TODO: consider other metrics
-        // Slashed_all/Shashed_this/ Generator/ Provisioners / Bytes_sent/
-        // Bytes_recv / Latency block
         describe_counter!(
-            "dusk_fallbacks",
-            "The Cumulative number of fallback execution."
+            "dusk_fallback_count",
+            "The Cumulative number of fallback executions."
+        );
+
+        describe_counter!(
+            "dusk_txn_count",
+            "The Cumulative number of all executed transactions."
         );
 
         Ok(())

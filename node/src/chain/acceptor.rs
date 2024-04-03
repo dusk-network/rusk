@@ -19,6 +19,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use metrics::{counter, gauge, histogram};
 use node_data::{Serializable, StepName};
 use stake_contract_types::Unstake;
 use std::sync::{Arc, LazyLock};
@@ -465,6 +466,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         let start = std::time::Instant::now();
+        let mut est_elapsed_time = Duration::default();
         // Persist block in consistency with the VM state update
         {
             let vm = self.vm.write().await;
@@ -474,6 +476,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 } else {
                     vm.accept(blk.inner())?
                 };
+
+                est_elapsed_time = start.elapsed();
 
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_hash, verification_output.event_hash);
@@ -516,6 +520,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             anyhow::Ok(())
         }?;
 
+        counter!("dusk_txn_count").increment(mrb.inner().txs().len() as u64);
+        counter!(format!("dusk_block_{:?}", label)).increment(1);
+        histogram!("dusk_block_est_elapsed").record(est_elapsed_time);
+        histogram!("dusk_slashed_count").record(
+            mrb.inner()
+                .header()
+                .failed_iterations
+                .to_missed_generators_bytes()
+                .count() as f64,
+        );
+
         // Clean up the database
         let count = self
             .db
@@ -548,11 +563,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             })
             .map_err(|e| warn!("Error while cleaning up the database: {e}"));
 
-        debug!(
-            event = "stats",
-            height = mrb.inner().header().height,
-            candidates_count = count.unwrap_or_default(),
-        );
+        gauge!("dusk_stored_candidates_count")
+            .set(count.unwrap_or_default() as f64);
 
         let fsv_bitset = mrb.inner().header().cert.validation.bitset;
         let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
