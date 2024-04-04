@@ -11,15 +11,13 @@ use std::sync::OnceLock;
 
 use rand_core::OsRng;
 
+use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-};
 use dusk_bytes::{ParseHexStr, Serializable};
-use dusk_pki::{PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
-use dusk_schnorr::Signature;
 use ff::Field;
+use jubjub_schnorr::{PublicKey as NotePublicKey, SecretKey as NoteSecretKey};
+use phoenix_core::{PublicKey, SecretKey};
 use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
@@ -140,19 +138,19 @@ fn schnorr_signature() {
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
-    let sk = SecretKey::random(&mut OsRng);
+    let note_sk = NoteSecretKey::random(&mut OsRng);
     let message = BlsScalar::random(&mut OsRng);
-    let pk = PublicKey::from(&sk);
+    let note_pk = NotePublicKey::from(&note_sk);
 
-    let sign = Signature::new(&sk, &mut OsRng, message);
+    let note_sig = note_sk.sign(&mut OsRng, message);
 
-    assert!(sign.verify(&pk, message));
+    assert!(note_pk.verify(&note_sig, message));
 
     let valid: bool = session
         .call(
             contract_id,
             "verify_schnorr",
-            &(message, pk, sign),
+            &(message, note_pk, note_sig),
             POINT_LIMIT,
         )
         .expect("Querying should succeed")
@@ -160,14 +158,14 @@ fn schnorr_signature() {
 
     assert!(valid, "Signature verification expected to succeed");
 
-    let wrong_sk = SecretKey::random(&mut OsRng);
-    let pk = PublicKey::from(&wrong_sk);
+    let wrong_sk = NoteSecretKey::random(&mut OsRng);
+    let note_pk = NotePublicKey::from(&wrong_sk);
 
     let valid: bool = session
         .call(
             contract_id,
             "verify_schnorr",
-            &(message, pk, sign),
+            &(message, note_pk, note_sig),
             POINT_LIMIT,
         )
         .expect("Querying should succeed")
@@ -177,28 +175,28 @@ fn schnorr_signature() {
 }
 
 #[test]
-fn bls_signature() {
+fn stake_signature() {
     let vm =
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let message = b"some-message".to_vec();
 
-    let sk = BlsSecretKey::random(&mut OsRng);
-    let pk = BlsPublicKey::from(&sk);
+    let stake_sk = StakeSecretKey::random(&mut OsRng);
+    let stake_pk = StakePublicKey::from(&stake_sk);
 
-    let sign = sk.sign(&pk, &message);
+    let stake_sig = stake_sk.sign(&stake_pk, &message);
 
-    let arg = (message, pk, sign);
+    let arg = (message, stake_pk, stake_sig);
     let valid: bool = session
         .call(contract_id, "verify_bls", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 
-    assert!(valid, "BLS Signature verification expected to succeed");
+    assert!(valid, "Stake Signature verification expected to succeed");
 
-    let wrong_sk = BlsSecretKey::random(&mut OsRng);
-    let wrong_pk = BlsPublicKey::from(&wrong_sk);
+    let wrong_sk = StakeSecretKey::random(&mut OsRng);
+    let wrong_pk = StakePublicKey::from(&wrong_sk);
 
     let arg = (arg.0, wrong_pk, arg.2);
     let valid: bool = session
@@ -206,7 +204,7 @@ fn bls_signature() {
         .expect("Query should succeed")
         .data;
 
-    assert!(!valid, "BLS Signature verification expected to fail");
+    assert!(!valid, "Stake Signature verification expected to fail");
 }
 
 #[derive(Debug, Default)]
@@ -227,9 +225,15 @@ impl TestCircuit {
 }
 
 impl Circuit for TestCircuit {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), Error> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), Error> {
+        // append 3 gates that always evaluate to true
+
         let a = composer.append_witness(self.a);
         let b = composer.append_witness(self.b);
+        let six = composer.append_witness(BlsScalar::from(6));
+        let one = composer.append_witness(BlsScalar::from(1));
+        let seven = composer.append_witness(BlsScalar::from(7));
+        let min_twenty = composer.append_witness(-BlsScalar::from(20));
 
         let constraint = Constraint::new()
             .left(-BlsScalar::one())
@@ -237,9 +241,31 @@ impl Circuit for TestCircuit {
             .right(-BlsScalar::one())
             .b(b)
             .public(self.c);
-
         composer.append_gate(constraint);
-        composer.append_dummy_gates();
+
+        let constraint = Constraint::new()
+            .mult(1)
+            .left(2)
+            .right(3)
+            .fourth(1)
+            .constant(4)
+            .output(4)
+            .a(six)
+            .b(seven)
+            .d(one)
+            .o(min_twenty);
+        composer.append_gate(constraint);
+
+        let constraint = Constraint::new()
+            .mult(1)
+            .left(1)
+            .right(1)
+            .constant(127)
+            .output(1)
+            .a(min_twenty)
+            .b(six)
+            .o(seven);
+        composer.append_gate(constraint);
 
         Ok(())
     }
@@ -322,11 +348,11 @@ fn block_height() {
     assert_eq!(height, HEIGHT);
 }
 
-fn get_owner() -> &'static PublicSpendKey {
-    static OWNER: OnceLock<PublicSpendKey> = OnceLock::new();
+fn get_owner() -> &'static PublicKey {
+    static OWNER: OnceLock<PublicKey> = OnceLock::new();
     OWNER.get_or_init(|| {
-        let secret = SecretSpendKey::random(&mut OsRng);
-        secret.public_spend_key()
+        let sk = SecretKey::random(&mut OsRng);
+        PublicKey::from(&sk)
     })
 }
 
