@@ -1,5 +1,9 @@
 type BadgeVariant = "neutral" | "success" | "warning" | "error";
 
+type ButtonSize = "normal" | "small";
+
+type ButtonVariant = "primary" | "secondary" | "tertiary";
+
 type GroupedSelectOptions = Record<string, SelectOption[] | string[]>;
 
 type IconProp = {
@@ -22,5 +26,16 @@ type SelectOption = {
   label?: string;
   value: string;
 };
+
+type TextboxTypes =
+  | "email"
+  | "hidden"
+  | "multiline"
+  | "number"
+  | "password"
+  | "search"
+  | "tel"
+  | "text"
+  | "url";
 
 type TooltipType = "error" | "info" | "success" | "warning";
