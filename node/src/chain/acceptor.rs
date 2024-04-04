@@ -520,16 +520,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             anyhow::Ok(())
         }?;
 
-        counter!("dusk_txn_count").increment(mrb.inner().txs().len() as u64);
-        counter!(format!("dusk_block_{:?}", label)).increment(1);
-        histogram!("dusk_block_est_elapsed").record(est_elapsed_time);
-        histogram!("dusk_slashed_count").record(
-            mrb.inner()
-                .header()
-                .failed_iterations
-                .to_missed_generators_bytes()
-                .count() as f64,
-        );
+        Self::emit_metrics(mrb.inner(), &label, est_elapsed_time, block_time);
 
         // Clean up the database
         let count = self
@@ -821,6 +812,35 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .unwrap_or(MIN_STEP_TIMEOUT)
             .max(MIN_STEP_TIMEOUT)
             .min(MAX_STEP_TIMEOUT)
+    }
+
+    fn emit_metrics(
+        blk: &Block,
+        block_label: &Label,
+        est_elapsed_time: Duration,
+        block_time: u64,
+    ) {
+        let dusk_slashed_count = blk
+            .header()
+            .failed_iterations
+            .to_missed_generators_bytes()
+            .count() as f64;
+
+        // The Cumulative number of all executed transactions
+        counter!("dusk_txn_count").increment(blk.txs().len() as u64);
+
+        // The Cumulative number of all blocks by label
+        counter!(format!("dusk_block_{:?}", *block_label)).increment(1);
+
+        // A histogram of block time
+        histogram!("dusk_block_time").record(block_time as f64);
+        histogram!("dusk_block_iter").record(blk.header().iteration as f64);
+
+        // Elapsed time of Accept/Finalize call
+        histogram!("dusk_block_est_elapsed").record(est_elapsed_time);
+
+        // A histogram of slashed count
+        histogram!("dusk_slashed_count").record(dusk_slashed_count);
     }
 }
 
