@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.APP_VERSION": JSON.stringify(APP_VERSION),
       "process.env": {
         API_ENDPOINT: env.VITE_API_ENDPOINT,
+        VITE_DUSK_DEVNET_NODE: env.VITE_DUSK_DEVNET_NODE,
+        VITE_DUSK_TESTNET_NODE: env.VITE_DUSK_TESTNET_NODE,
       },
     },
     plugins: commonPlugins,
@@ -46,6 +48,8 @@ export default defineConfig(({ mode }) => {
       env: {
         APP_BUILD_INFO: "hash1234 2024-01-12",
         APP_VERSION: "0.0.0",
+        VITE_DUSK_DEVNET_NODE: "devnet.nodes.dusk.network",
+        VITE_DUSK_TESTNET_NODE: "nodes.dusk.network",
       },
       environment: "jsdom",
       include: ["src/**/*.{test,spec}.{js,ts}"],

@@ -25,6 +25,8 @@ The application defines these variables by reading a local `.env`
 # can be empty string, must start with a slash otherwise, must not end with a slash
 VITE_BASE_PATH=""
 VITE_API_ENDPOINT="https://api.dusk.network/v1"
+VITE_DUSK_TESTNET_NODE="nodes.dusk.network"
+VITE_DUSK_DEVNET_NODE="devnet.nodes.dusk.network"
 ```
 
 ## NPM scripts

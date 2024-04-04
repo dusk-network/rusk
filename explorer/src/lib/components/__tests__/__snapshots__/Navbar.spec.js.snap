@@ -1,0 +1,122 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Navbar > renders the Navbar component 1`] = `
+<div>
+  <nav
+    class="dusk-navbar dusk-navbar--menu-hidden"
+  >
+    <a
+      class="dusk-anchor dusk-navbar__logo"
+      href="/some-base-path/"
+    >
+      <img
+        alt="Dusk Logo"
+        sizes="(max-width: 1024px) 86px, 129px"
+        src="/some-base-path/dusk_logo.svg"
+      />
+      <!--&lt;AppImage&gt;-->
+    </a>
+    <!--&lt;Anchor&gt;-->
+    <!--&lt;AppAnchor&gt;-->
+     
+    <button
+      aria-controls="dusk-navbar-menu"
+      aria-expanded="false"
+      class="dusk-navbar__toggle"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        class="dusk-navbar__toggle-svg"
+        viewBox="0 0 41 14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <line
+          stroke-width="2"
+          x2="40.8"
+          y1="1"
+          y2="1"
+        />
+        <line
+          stroke-width="2"
+          x2="40.8"
+          y1="12.9854"
+          y2="12.9854"
+        />
+      </svg>
+    </button>
+     
+    <div
+      class="dusk-navbar__menu dusk-navbar__menu--hidden"
+      id="dusk-navbar-menu"
+    >
+      <div
+        class="dusk-navbar__menu--network"
+      >
+        <select
+          class="dusk-select"
+        >
+          <option
+            value="nodes.dusk.network"
+          >
+            testnet
+             
+          </option>
+          <option
+            value="devnet.nodes.dusk.network"
+          >
+            devnet
+             
+          </option>
+          
+          <!--&lt;Options&gt;-->
+        </select>
+        <!--&lt;Select&gt;-->
+      </div>
+       
+      <div
+        class="dusk-navbar__menu--links"
+      >
+        <nav
+          class="dusk-nav-list"
+        >
+          
+          <a
+            class="dusk-anchor dusk-nav-list__link"
+            href="/some-base-path/"
+          >
+            Chain Info
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+          
+          <a
+            class="dusk-anchor dusk-nav-list__link"
+            href="/some-base-path/blocks"
+          >
+            Blocks
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+          
+          <a
+            class="dusk-anchor dusk-nav-list__link"
+            href="/some-base-path/transactions"
+          >
+            Transactions
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+        </nav>
+        
+        <!--&lt;NavList&gt;-->
+      </div>
+       
+      <div
+        class="dusk-navbar__menu--search"
+      />
+    </div>
+  </nav>
+  <!--&lt;Navbar&gt;-->
+</div>
+`;

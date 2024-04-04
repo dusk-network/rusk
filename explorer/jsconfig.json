@@ -10,6 +10,9 @@
     "skipLibCheck": false,
     "sourceMap": true,
     "strict": true,
-    "types": ["./node_modules/@testing-library/jest-dom/types/vitest.d.ts"]
+    "types": [
+      "./node_modules/@testing-library/jest-dom/types/vitest.d.ts",
+      "lamb-types"
+    ]
   }
 }

@@ -1,13 +1,50 @@
-body {
-  margin: 0;
+@import url("./dusk/colors.css");
+@import url("./dusk/language.css");
+
+@font-face {
+  font-family: "Soehne";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/soehne-buch.woff2") format("woff2");
 }
 
-.explorer {
+@font-face {
+  font-family: "Soehne";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/fonts/soehne-kraftig.woff2") format("woff2");
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
   padding: 0 3rem;
 }
 
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
+html {
+  background-color: var(--page-background-color);
+  color: var(--on-background-color);
+  font-family: var(--main-font-family);
+  font-size: var(--main-font-size);
+  letter-spacing: 0.06125rem;
+}
+
+svg {
+  fill: currentColor;
+}
+
 @media (max-width: 768px) {
-  .explorer {
+  body {
     padding: 0 1.25rem;
   }
 }
