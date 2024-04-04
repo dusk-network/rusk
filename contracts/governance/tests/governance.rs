@@ -11,12 +11,10 @@ extern crate alloc;
 mod msg;
 use msg::*;
 
+use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-};
-use dusk_pki::{PublicKey, SecretKey};
 use ff::Field;
+use jubjub_schnorr::{PublicKey as NotePublicKey, SecretKey as NoteSecretKey};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::{ContractData, ContractId, Session, VM};
@@ -35,8 +33,8 @@ const OWNER: [u8; 32] = [0; 32];
 /// single note owned by the given public spend key.
 fn instantiate(
     vm: &VM,
-    authority: &BlsPublicKey,
-    broker: &PublicKey,
+    authority: &StakePublicKey,
+    broker: &NotePublicKey,
 ) -> Session {
     let governance_bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
@@ -78,7 +76,7 @@ fn total_supply(session: &mut Session) -> u64 {
         .expect("Querying the total supply should succeed")
 }
 
-fn balance(session: &mut Session, pk: &PublicKey) -> u64 {
+fn balance(session: &mut Session, pk: &NotePublicKey) -> u64 {
     session
         .call(GOVERNANCE_ID, "balance", pk, POINT_LIMIT)
         .map(|r| r.data)
@@ -91,13 +89,13 @@ fn balance_overflow() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let authority_sk = BlsSecretKey::random(rng);
-    let authority = BlsPublicKey::from(&authority_sk);
+    let authority_sk = StakeSecretKey::random(rng);
+    let authority = StakePublicKey::from(&authority_sk);
 
-    let broker = PublicKey::from(&SecretKey::random(rng));
+    let broker = NotePublicKey::from(&NoteSecretKey::random(rng));
 
-    let alice = PublicKey::from(&SecretKey::random(rng));
-    let bob = PublicKey::from(&SecretKey::random(rng));
+    let alice = NotePublicKey::from(&NoteSecretKey::random(rng));
+    let bob = NotePublicKey::from(&NoteSecretKey::random(rng));
 
     let session = &mut instantiate(vm, &authority, &broker);
 
@@ -151,10 +149,10 @@ fn same_seed() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let authority_sk = BlsSecretKey::random(rng);
-    let authority = BlsPublicKey::from(&authority_sk);
+    let authority_sk = StakeSecretKey::random(rng);
+    let authority = StakePublicKey::from(&authority_sk);
 
-    let broker = PublicKey::from(&SecretKey::random(rng));
+    let broker = NotePublicKey::from(&NoteSecretKey::random(rng));
 
     let session = &mut instantiate(vm, &authority, &broker);
 
@@ -185,10 +183,10 @@ fn wrong_signature() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let authority_sk = BlsSecretKey::random(rng);
-    let authority = BlsPublicKey::from(&authority_sk);
+    let authority_sk = StakeSecretKey::random(rng);
+    let authority = StakePublicKey::from(&authority_sk);
 
-    let broker = PublicKey::from(&SecretKey::random(rng));
+    let broker = NotePublicKey::from(&NoteSecretKey::random(rng));
 
     let session = &mut instantiate(vm, &authority, &broker);
 
@@ -207,13 +205,13 @@ fn mint_burn_transfer() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let authority_sk = BlsSecretKey::random(rng);
-    let authority = BlsPublicKey::from(&authority_sk);
+    let authority_sk = StakeSecretKey::random(rng);
+    let authority = StakePublicKey::from(&authority_sk);
 
-    let broker = PublicKey::from(&SecretKey::random(rng));
+    let broker = NotePublicKey::from(&NoteSecretKey::random(rng));
 
-    let alice = PublicKey::from(&SecretKey::random(rng));
-    let bob = PublicKey::from(&SecretKey::random(rng));
+    let alice = NotePublicKey::from(&NoteSecretKey::random(rng));
+    let bob = NotePublicKey::from(&NoteSecretKey::random(rng));
 
     let session = &mut instantiate(vm, &authority, &broker);
 
@@ -288,13 +286,13 @@ fn fee() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let authority_sk = BlsSecretKey::random(rng);
-    let authority = BlsPublicKey::from(&authority_sk);
+    let authority_sk = StakeSecretKey::random(rng);
+    let authority = StakePublicKey::from(&authority_sk);
 
-    let broker = PublicKey::from(&SecretKey::random(rng));
+    let broker = NotePublicKey::from(&NoteSecretKey::random(rng));
 
-    let alice = PublicKey::from(&SecretKey::random(rng));
-    let bob = PublicKey::from(&SecretKey::random(rng));
+    let alice = NotePublicKey::from(&NoteSecretKey::random(rng));
+    let bob = NotePublicKey::from(&NoteSecretKey::random(rng));
 
     let session = &mut instantiate(vm, &authority, &broker);
 
