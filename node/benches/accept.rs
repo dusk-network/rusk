@@ -16,21 +16,18 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
 
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-    Signature as BlsSignature,
+use bls12_381_bls::{
+    PublicKey as StakePublicKey, SecretKey as StakeSecretKey,
+    Signature as StakeSignature,
 };
 use dusk_bytes::Serializable;
 use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
+use node_data::ledger::{Certificate, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
-};
-use node_data::{
-    bls::PublicKey,
-    ledger::{Certificate, StepVotes},
 };
 use node_data::{ledger, StepName};
 use rand::rngs::StdRng;
@@ -42,7 +39,7 @@ fn create_step_votes(
     step: StepName,
     iteration: u8,
     provisioners: &Provisioners,
-    keys: &[(PublicKey, BlsSecretKey)],
+    keys: &[(node_data::bls::PublicKey, StakeSecretKey)],
 ) -> StepVotes {
     let round = mrb_header.height + 1;
     let seed = mrb_header.seed;
@@ -55,7 +52,7 @@ fn create_step_votes(
     let committee = Committee::new(provisioners, &sortition_config);
 
     let mut signatures = vec![];
-    let mut cluster = Cluster::<PublicKey>::default();
+    let mut cluster = Cluster::<node_data::bls::PublicKey>::default();
     for (pk, sk) in keys.iter() {
         if let Some(weight) = committee.votes_for(pk) {
             let vote = vote.clone();
@@ -88,7 +85,7 @@ fn create_step_votes(
                 }
                 _ => unreachable!(),
             };
-            signatures.push(BlsSignature::from_bytes(sig.inner()).unwrap());
+            signatures.push(StakeSignature::from_bytes(sig.inner()).unwrap());
             cluster.set_weight(pk, weight);
         }
     }
@@ -118,9 +115,9 @@ pub fn verify_block_cert(c: &mut Criterion) {
             let mut provisioners = Provisioners::empty();
             let rng = &mut StdRng::seed_from_u64(0xbeef);
             for _ in 0..input.provisioners {
-                let sk = BlsSecretKey::random(rng);
-                let pk = BlsPublicKey::from(&sk);
-                let pk = PublicKey::new(pk);
+                let sk = StakeSecretKey::random(rng);
+                let pk = StakePublicKey::from(&sk);
+                let pk = node_data::bls::PublicKey::new(pk);
                 keys.push((pk.clone(), sk));
                 provisioners.add_member_with_value(pk, 1000000000000)
             }
