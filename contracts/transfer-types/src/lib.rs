@@ -14,10 +14,9 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::StealthAddress;
 
 use bytecheck::CheckBytes;
-use phoenix_core::Note;
+use phoenix_core::{Note, StealthAddress};
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// Module Id
