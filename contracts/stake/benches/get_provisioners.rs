@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use bls12_381_bls::{PublicKey, SecretKey};
 use criterion::{criterion_group, criterion_main, Criterion};
-use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::{

@@ -9,13 +9,14 @@ pub mod common;
 use crate::common::assert::assert_event;
 use crate::common::init::instantiate;
 use crate::common::utils::*;
+use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use ff::Field;
-use phoenix_core::{Fee, Note, Transaction};
+use phoenix_core::{
+    Fee, Note, Ownable, PublicKey, SecretKey, Transaction, ViewKey,
+};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, LUX};
@@ -44,14 +45,14 @@ fn stake_withdraw_unstake() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let ssk = SecretSpendKey::random(rng);
-    let vk = ssk.view_key();
-    let psk = PublicSpendKey::from(&ssk);
-
     let sk = SecretKey::random(rng);
+    let vk = ViewKey::from(&sk);
     let pk = PublicKey::from(&sk);
 
-    let mut session = instantiate(rng, vm, &psk, GENESIS_VALUE);
+    let stake_sk = StakeSecretKey::random(rng);
+    let stake_pk = StakePublicKey::from(&stake_sk);
+
+    let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
     let leaves = leaves_from_height(&mut session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -65,7 +66,7 @@ fn stake_withdraw_unstake() {
     let input_blinder = input_note
         .blinding_factor(None)
         .expect("The blinder should be transparent");
-    let input_nullifier = input_note.gen_nullifier(&ssk);
+    let input_nullifier = input_note.gen_nullifier(&sk);
 
     let gas_limit = STCT_FEE;
     let gas_price = LUX;
@@ -74,10 +75,10 @@ fn stake_withdraw_unstake() {
     // we transfer half of the input note to the stake contract, so the
     // crossover value is `input_value/2`.
     let crossover_value = input_value / 2;
-    let crossover_blinder = JubJubScalar::random(rng);
+    let crossover_blinder = JubJubScalar::random(&mut *rng);
 
     let (mut fee, crossover) =
-        Note::obfuscated(rng, &psk, crossover_value, crossover_blinder)
+        Note::obfuscated(rng, &pk, crossover_value, crossover_blinder)
             .try_into()
             .expect("Getting a fee and a crossover should succeed");
 
@@ -87,14 +88,14 @@ fn stake_withdraw_unstake() {
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - crossover_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     // Prove the STCT circuit.
     let stct_address = rusk_abi::contract_to_scalar(&STAKE_CONTRACT);
     let stct_signature = SendToContractTransparentCircuit::sign(
         rng,
-        &ssk,
+        &sk,
         &fee,
         &crossover,
         crossover_value,
@@ -116,12 +117,12 @@ fn stake_withdraw_unstake() {
         .expect("Proving STCT circuit should succeed");
 
     let stake_digest = stake_signature_message(0, crossover_value);
-    let sig = sk.sign(&pk, &stake_digest);
+    let stake_sig = stake_sk.sign(&stake_pk, &stake_digest);
 
     // Fashion a Stake struct
     let stake = Stake {
-        public_key: pk,
-        signature: sig,
+        public_key: stake_pk,
+        signature: stake_sig,
         value: crossover_value,
         proof: stct_proof.to_bytes().to_vec(),
     };
@@ -153,9 +154,9 @@ fn stake_withdraw_unstake() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r = ssk.sk_r(input_note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+    // Generate note_pk_p
+    let note_sk = sk.sk_r(input_note.stealth_address());
+    let note_pk_p = GENERATOR_NUMS_EXTENDED * note_sk.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -174,11 +175,11 @@ fn stake_withdraw_unstake() {
     execute_circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_note, tx_hash);
     let circuit_input = CircuitInput::new(
         input_opening,
         input_note,
-        pk_r_p.into(),
+        note_pk_p.into(),
         input_value,
         input_blinder,
         input_nullifier,
@@ -207,7 +208,7 @@ fn stake_withdraw_unstake() {
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
 
-    assert_event(&receipt.events, "stake", &pk, GENESIS_VALUE / 2);
+    assert_event(&receipt.events, "stake", &stake_pk, GENESIS_VALUE / 2);
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -216,7 +217,7 @@ fn stake_withdraw_unstake() {
     println!("STAKE   : {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
-        .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
+        .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
         .expect("Getting the stake should succeed")
         .data;
     let stake_data = stake_data.expect("The stake should exist");
@@ -239,15 +240,15 @@ fn stake_withdraw_unstake() {
         .call::<_, ()>(
             STAKE_CONTRACT,
             "reward",
-            &(pk, REWARD_AMOUNT),
+            &(stake_pk, REWARD_AMOUNT),
             POINT_LIMIT,
         )
         .expect("Rewarding a key should succeed");
 
-    assert_event(&receipt.events, "reward", &pk, REWARD_AMOUNT);
+    assert_event(&receipt.events, "reward", &stake_pk, REWARD_AMOUNT);
 
     let stake_data: Option<StakeData> = session
-        .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
+        .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
         .expect("Getting the stake should succeed")
         .data;
     let stake_data = stake_data.expect("The stake should exist");
@@ -290,7 +291,7 @@ fn stake_withdraw_unstake() {
         input_blinders[i] = input_notes[i]
             .blinding_factor(Some(&vk))
             .expect("The given view key should own the note");
-        input_nullifiers[i] = input_notes[i].gen_nullifier(&ssk);
+        input_nullifiers[i] = input_notes[i].gen_nullifier(&sk);
     }
 
     let input_value: u64 = input_values.iter().sum();
@@ -298,18 +299,18 @@ fn stake_withdraw_unstake() {
     let gas_limit = WITHDRAW_FEE;
     let gas_price = LUX;
 
-    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+    let fee = Fee::new(rng, gas_limit, gas_price, &pk);
 
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     // Fashion a `Withdraw` struct instance
 
-    let withdraw_address_r = JubJubScalar::random(rng);
-    let withdraw_address = psk.gen_stealth_address(&withdraw_address_r);
+    let withdraw_address_r = JubJubScalar::random(&mut *rng);
+    let withdraw_address = pk.gen_stealth_address(&withdraw_address_r);
 
     let withdraw_nonce = BlsScalar::random(&mut *rng);
 
@@ -318,10 +319,10 @@ fn stake_withdraw_unstake() {
         withdraw_address,
         withdraw_nonce,
     );
-    let withdraw_signature = sk.sign(&pk, &withdraw_digest);
+    let withdraw_signature = stake_sk.sign(&stake_pk, &withdraw_digest);
 
     let withdraw = Withdraw {
-        public_key: pk,
+        public_key: stake_pk,
         signature: withdraw_signature,
         address: withdraw_address,
         nonce: withdraw_nonce,
@@ -352,11 +353,11 @@ fn stake_withdraw_unstake() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r_0 = ssk.sk_r(input_notes[0].stealth_address());
-    let pk_r_p_0 = GENERATOR_NUMS_EXTENDED * sk_r_0.as_ref();
-    let sk_r_1 = ssk.sk_r(input_notes[1].stealth_address());
-    let pk_r_p_1 = GENERATOR_NUMS_EXTENDED * sk_r_1.as_ref();
+    // Generate note_pk_p
+    let note_sk_0 = sk.sk_r(input_notes[0].stealth_address());
+    let note_pk_p_0 = GENERATOR_NUMS_EXTENDED * note_sk_0.as_ref();
+    let note_sk_1 = sk.sk_r(input_notes[1].stealth_address());
+    let note_pk_p_1 = GENERATOR_NUMS_EXTENDED * note_sk_1.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -375,14 +376,14 @@ fn stake_withdraw_unstake() {
     execute_circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature_0 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[0], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[0], tx_hash);
     let circuit_input_signature_1 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[1], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[1], tx_hash);
 
     let circuit_input_0 = CircuitInput::new(
         input_opening_0,
         input_notes[0],
-        pk_r_p_0.into(),
+        note_pk_p_0.into(),
         input_values[0],
         input_blinders[0],
         input_nullifiers[0],
@@ -391,7 +392,7 @@ fn stake_withdraw_unstake() {
     let circuit_input_1 = CircuitInput::new(
         input_opening_1,
         input_notes[1],
-        pk_r_p_1.into(),
+        note_pk_p_1.into(),
         input_values[1],
         input_blinders[1],
         input_nullifiers[1],
@@ -429,7 +430,7 @@ fn stake_withdraw_unstake() {
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
 
-    assert_event(&receipt.events, "withdraw", &pk, REWARD_AMOUNT);
+    assert_event(&receipt.events, "withdraw", &stake_pk, REWARD_AMOUNT);
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -438,7 +439,7 @@ fn stake_withdraw_unstake() {
     println!("WITHDRAW: {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
-        .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
+        .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
         .expect("Getting the stake should succeed")
         .data;
     let stake_data = stake_data.expect("The stake should exist");
@@ -484,7 +485,7 @@ fn stake_withdraw_unstake() {
         input_blinders[i] = input_notes[i]
             .blinding_factor(Some(&vk))
             .expect("The given view key should own the note");
-        input_nullifiers[i] = input_notes[i].gen_nullifier(&ssk);
+        input_nullifiers[i] = input_notes[i].gen_nullifier(&sk);
     }
 
     let input_value: u64 = input_values.iter().sum();
@@ -492,18 +493,18 @@ fn stake_withdraw_unstake() {
     let gas_limit = WFCT_FEE;
     let gas_price = LUX;
 
-    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+    let fee = Fee::new(rng, gas_limit, gas_price, &pk);
 
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     let withdraw_value = crossover_value;
-    let withdraw_blinder = JubJubScalar::random(rng);
+    let withdraw_blinder = JubJubScalar::random(&mut *rng);
     let withdraw_note =
-        Note::obfuscated(rng, &psk, withdraw_value, withdraw_blinder);
+        Note::obfuscated(rng, &pk, withdraw_value, withdraw_blinder);
 
     // Fashion a WFCT proof and an `Unstake` struct instance
 
@@ -520,10 +521,10 @@ fn stake_withdraw_unstake() {
 
     let unstake_digest =
         unstake_signature_message(stake_data.counter, withdraw_note.to_bytes());
-    let unstake_sig = sk.sign(&pk, unstake_digest.as_slice());
+    let unstake_sig = stake_sk.sign(&stake_pk, unstake_digest.as_slice());
 
     let unstake = Unstake {
-        public_key: pk,
+        public_key: stake_pk,
         signature: unstake_sig,
         note: withdraw_note.to_bytes().to_vec(),
         proof: wfct_proof.to_bytes().to_vec(),
@@ -558,13 +559,13 @@ fn stake_withdraw_unstake() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r_0 = ssk.sk_r(input_notes[0].stealth_address());
-    let pk_r_p_0 = GENERATOR_NUMS_EXTENDED * sk_r_0.as_ref();
-    let sk_r_1 = ssk.sk_r(input_notes[1].stealth_address());
-    let pk_r_p_1 = GENERATOR_NUMS_EXTENDED * sk_r_1.as_ref();
-    let sk_r_2 = ssk.sk_r(input_notes[2].stealth_address());
-    let pk_r_p_2 = GENERATOR_NUMS_EXTENDED * sk_r_2.as_ref();
+    // Generate note_pk_p
+    let note_sk_0 = sk.sk_r(input_notes[0].stealth_address());
+    let note_pk_p_0 = GENERATOR_NUMS_EXTENDED * note_sk_0.as_ref();
+    let note_sk_1 = sk.sk_r(input_notes[1].stealth_address());
+    let note_pk_p_1 = GENERATOR_NUMS_EXTENDED * note_sk_1.as_ref();
+    let note_sk_2 = sk.sk_r(input_notes[2].stealth_address());
+    let note_pk_p_2 = GENERATOR_NUMS_EXTENDED * note_sk_2.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -587,16 +588,16 @@ fn stake_withdraw_unstake() {
     execute_circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature_0 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[0], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[0], tx_hash);
     let circuit_input_signature_1 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[1], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[1], tx_hash);
     let circuit_input_signature_2 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[2], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[2], tx_hash);
 
     let circuit_input_0 = CircuitInput::new(
         input_opening_0,
         input_notes[0],
-        pk_r_p_0.into(),
+        note_pk_p_0.into(),
         input_values[0],
         input_blinders[0],
         input_nullifiers[0],
@@ -605,7 +606,7 @@ fn stake_withdraw_unstake() {
     let circuit_input_1 = CircuitInput::new(
         input_opening_1,
         input_notes[1],
-        pk_r_p_1.into(),
+        note_pk_p_1.into(),
         input_values[1],
         input_blinders[1],
         input_nullifiers[1],
@@ -614,7 +615,7 @@ fn stake_withdraw_unstake() {
     let circuit_input_2 = CircuitInput::new(
         input_opening_2,
         input_notes[2],
-        pk_r_p_2.into(),
+        note_pk_p_2.into(),
         input_values[2],
         input_blinders[2],
         input_nullifiers[2],
@@ -660,7 +661,7 @@ fn stake_withdraw_unstake() {
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
 
-    assert_event(&receipt.events, "unstake", &pk, GENESIS_VALUE / 2);
+    assert_event(&receipt.events, "unstake", &stake_pk, GENESIS_VALUE / 2);
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");

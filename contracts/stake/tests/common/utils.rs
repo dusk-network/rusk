@@ -6,14 +6,11 @@
 
 use std::sync::mpsc;
 
-use dusk_pki::ViewKey;
 use dusk_plonk::prelude::*;
 use phoenix_core::transaction::{TreeLeaf, TRANSFER_TREE_DEPTH};
-use phoenix_core::{Note, Transaction};
+use phoenix_core::{Note, Transaction, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
-use rusk_abi::Error;
-use rusk_abi::TRANSFER_CONTRACT;
-use rusk_abi::{CallReceipt, ContractError, Session};
+use rusk_abi::{CallReceipt, ContractError, Error, Session, TRANSFER_CONTRACT};
 
 const POINT_LIMIT: u64 = 0x100000000;
 
