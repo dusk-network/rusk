@@ -7,29 +7,30 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-dusk-jubjub = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-poseidon = { version = "0.31", default-features = false, features = ["alloc"] }
-poseidon-merkle = { version = "0.3", features = ["rkyv-impl"] }
-phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
-dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
+jubjub-schnorr = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
+dusk-poseidon = { version = "0.33", default-features = false, features = ["alloc"] }
+poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
+phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 transfer-contract-types = { version = "0.1.0", path = "../transfer-types", default-features = false }
 ringbuffer = "0.15"
 
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-rusk-abi = { version = "0.12.0-rc", path = "../../rusk-abi" }
+rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi" }
 
 [dev-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
-rusk-abi = { version = "0.12.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
 transfer-circuits = { version = "0.5", path = "../../circuits/transfer" }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 hex = "0.4"
 rand = "0.8"
+ff = { version = "0.13", default-features = false }
 
 [build-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile"}
