@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
+phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl", "alloc"] }
 dusk-bytes = "^0.1"
 bytes = "0.6"
 sha3 = "0.10"
@@ -12,8 +12,8 @@ sha2 = "0.10"
 fake = { version = "2.5", features = ['derive'], optional = true }
 rand = { version = "0.8", optional = true }
 hex = { version = "0.4", optional = true }
-dusk-bls12_381-sign = { version = "0.5", default-features = false }
-rusk-abi = { version = "0.12.0-rc", path = "../rusk-abi", default-features = false }
+bls12_381-bls = { version = "0.2", default-features = false }
+rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false }
 
 rand_core = { version = "0.6", default-features = false }
 blake3 = "1.3"

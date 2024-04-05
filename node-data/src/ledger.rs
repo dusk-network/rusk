@@ -351,9 +351,9 @@ impl IterationsInfo {
 
     pub fn to_missed_generators(
         &self,
-    ) -> Result<Vec<dusk_bls12_381_sign::PublicKey>, io::Error> {
+    ) -> Result<Vec<bls12_381_bls::PublicKey>, io::Error> {
         self.to_missed_generators_bytes()
-        .map(|pk| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
+        .map(|pk| bls12_381_bls::PublicKey::from_slice(pk.inner()).map_err(|e|{
             tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
             io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
         }))

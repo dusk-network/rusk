@@ -1010,19 +1010,18 @@ pub trait StepMessage {
         Self::STEP_NAME.to_step(self.header().iteration)
     }
 
-    fn verify_signature(&self) -> Result<(), dusk_bls12_381_sign::Error> {
+    fn verify_signature(&self) -> Result<(), bls12_381_bls::Error> {
         let signature = self.sign_info().signature.inner();
-        let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
-        let pk =
-            dusk_bls12_381_sign::APK::from(self.sign_info().signer.inner());
+        let sig = bls12_381_bls::Signature::from_bytes(signature)?;
+        let pk = bls12_381_bls::APK::from(self.sign_info().signer.inner());
         let msg = self.signable();
         pk.verify(&sig, &msg)
     }
 
     fn sign(
         &mut self,
-        sk: &dusk_bls12_381_sign::SecretKey,
-        pk: &dusk_bls12_381_sign::PublicKey,
+        sk: &bls12_381_bls::SecretKey,
+        pk: &bls12_381_bls::PublicKey,
     ) {
         let msg = self.signable();
         let sign_info = self.sign_info_mut();
