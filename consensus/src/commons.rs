@@ -108,6 +108,7 @@ pub enum ConsensusError {
     MaxIterationReached,
     ChildTaskTerminated,
     Canceled,
+    VoteAlreadyCollected,
 }
 
 impl From<StepSigError> for ConsensusError {
