@@ -1,0 +1,18 @@
+.dusk-anchor {
+  color: var(--anchor-color);
+}
+.dusk-anchor:visited {
+  color: var(--anchor-color-visited);
+}
+
+.dusk-anchor:hover {
+  color: var(--anchor-color-hover);
+}
+
+.dusk-anchor:active {
+  color: var(--anchor-color-active);
+}
+
+.dusk-anchor.dusk-anchor__disabled {
+  pointer-events: none;
+}

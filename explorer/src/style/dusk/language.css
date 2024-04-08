@@ -1,0 +1,131 @@
+:root {
+  /* Theme colours */
+
+  --page-background-color: var(--light-grey);
+  --background-color: var(--light-grey);
+  --background-color-alt: #fff;
+  --primary-color: var(--smokey-black);
+  --secondary-color: var(--cornflower);
+  --secondary-color-variant-dark: var(--cornflower-dark);
+  --secondary-color-variant-light: var(--cornflower-light);
+  --surface-color: var(--magnolia);
+  --danger-color: var(--error);
+  --error-color: var(--error);
+  --info-color: var(--info);
+  --success-color: var(--success);
+  --warning-color: var(--warning);
+
+  --on-background-color: var(--smokey-black);
+  --on-primary-color: var(--light-grey);
+  --on-secondary-color: var(--smokey-black);
+  --on-surface-color: var(--smokey-black);
+  --on-danger-color: #fff;
+  --on-error-color: #fff;
+  --on-info-color: var(--smokey-black);
+  --on-success-color: var(--smokey-black);
+  --on-warning-color: var(--smokey-black);
+
+  /* Typography */
+
+  --main-font-family: "Soehne", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --main-font-size: 16px;
+  --mono-font-family: "Soehne Mono", monospace;
+
+  /* Layout */
+
+  --small-gap: 0.5em;
+  --default-gap: 1em;
+  --large-gap: 2em;
+
+  /* Grid */
+
+  --mobile-grid-template-columns: 1fr;
+  --tablet-grid-template-columns: 1fr 1fr;
+  --desktop-grid-template-columns: 1fr 1fr 1fr;
+
+  /* Controls */
+
+  --control-border-radius-size: 1.5em;
+  --control-border-size: 0.0625em;
+  --control-font-size: 1em;
+  --control-icon-size: 2em;
+  --control-padding: 0.625em 0.875em;
+  --control-small-font-size: 0.875em;
+  --control-small-padding: 0.625em 0.875em;
+
+  --control-bg-color: #fff;
+  --control-bg-color-hover: var(--silver-metallic);
+  --control-border-color: transparent;
+  --control-border-color-hover: transparent;
+  --control-text-color: var(--smokey-black);
+  --control-text-color-hover: var(--smokey-black);
+
+  --control-secondary-bg-color: var(--smokey-black);
+  --control-secondary-bg-color-hover: var(--cornflower);
+  --control-secondary-border-color: transparent;
+  --control-secondary-border-color-hover: transparent;
+  --control-secondary-text-color: #fff;
+  --control-secondary-text-color-hover: var(--smokey-black);
+
+  --control-tertiary-bg-color: transparent;
+  --control-tertiary-bg-color-hover: var(--cornflower);
+  --control-tertiary-border-color: var(--smokey-black);
+  --control-tertiary-border-color-hover: var(--cornflower);
+  --control-tertiary-text-color: var(--smokey-black);
+  --control-tertiary-text-color-hover: var(--smokey-black);
+
+  /* Anchors */
+
+  --anchor-color: var(--secondary-color);
+  --anchor-color-visited: var(--secondary-color);
+  --anchor-color-hover: var(--secondary-color-variant-light);
+  --anchor-color-active: var(--secondary-color-variant-light);
+
+  /* Progress-related components (Stepper, Progress Bar, etc */
+
+  --progress-bar-height: 0.3125em;
+  --progress-bg-color: var(--primary-color);
+  --progress-filler-color: var(--success-color);
+
+  /* Checkbox control */
+
+  --checkbox-control-size: 1.2em;
+  --checkbox-control-border-radius: 20%;
+  --checkbox-control-border-width: 0.2em;
+  --checkbox-control-border-color: var(--smokey-black);
+  --checkbox-control-checked-bg-color: var(--smokey-black);
+
+  /* Dividers */
+
+  --divider-color-primary: var(--taupe-grey);
+}
+
+:root.dark {
+  /* Theme colours */
+
+  --page-background-color: var(--jet);
+  --background-color: var(--smokey-black);
+  --background-color-alt: var(--granite-grey);
+  --primary-color: var(--light-grey);
+  --surface-color: var(--jet);
+
+  --on-background-color: var(--light-grey);
+  --on-primary-color: var(--smokey-black);
+  --on-surface-color: var(--light-grey);
+
+  /* Controls */
+
+  --control-bg-color: var(--smokey-black);
+  --control-bg-color-hover: var(--jet);
+  --control-text-color: var(--light-grey);
+  --control-text-color-hover: var(--light-grey);
+  --control-secondary-bg-color: var(--light-grey);
+  --control-secondary-text-color: var(--smokey-black);
+  --control-tertiary-border-color: var(--light-grey);
+  --control-tertiary-text-color: var(--light-grey);
+
+  /* Checkbox control */
+
+  --checkbox-control-border-color: var(--light-grey);
+  --checkbox-control-checked-bg-color: var(--light-grey);
+}

@@ -1,0 +1,137 @@
+.dusk-navbar {
+  overscroll-behavior: contain;
+  height: 100%;
+  z-index: 999;
+  margin: 0 auto;
+  padding: 1.5625rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dusk-navbar--menu-hidden {
+  background-color: var(--background-color);
+  position: sticky;
+  height: auto;
+  min-height: 0;
+}
+
+.dusk-navbar__logo {
+  display: flex;
+  align-items: center;
+}
+
+.dusk-navbar__logo img {
+  width: 5.375rem;
+  height: 1.25rem;
+}
+
+.dusk-navbar__toggle {
+  background-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  font-size: 1rem;
+  border: none;
+}
+
+.dusk-navbar__toggle:focus {
+  outline: none;
+}
+
+.dusk-navbar__toggle-svg {
+  width: 1.875rem;
+  height: 1.875rem;
+  stroke: currentColor;
+}
+
+.dusk-navbar__menu {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  /*
+    80px is the total height of the navbar on a small viewport.
+    It is needed so we know the exact height that needs to be set to the opened menu.
+  */
+  height: calc(100vh - 80px);
+  gap: 1.875rem;
+}
+
+.dusk-navbar__menu--hidden {
+  display: none;
+}
+
+.dusk-navbar__menu--network {
+  order: 3;
+}
+
+.dusk-navbar__menu--network select {
+  text-transform: uppercase;
+  padding: 0.625rem 0.875rem;
+  padding-right: 2.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.dusk-navbar__menu--links {
+  width: 100%;
+  order: 2;
+}
+
+.dusk-navbar__menu--search {
+  order: 1;
+  margin-top: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .dusk-navbar {
+    padding: 0;
+    margin-bottom: 1.25rem;
+    min-height: 5rem;
+    position: relative;
+    background-color: transparent;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    column-gap: 4.375rem;
+  }
+
+  .dusk-navbar__logo img {
+    width: 8.0625rem;
+    height: 1.9375rem;
+  }
+
+  .dusk-navbar--menu-hidden {
+    position: relative;
+  }
+
+  .dusk-navbar__toggle {
+    display: none;
+  }
+
+  .dusk-navbar__menu {
+    position: relative;
+    height: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    row-gap: 2rem;
+  }
+
+  .dusk-navbar__menu--hidden {
+    display: flex;
+  }
+
+  .dusk-navbar__menu--network {
+    order: 1;
+  }
+
+  .dusk-navbar__menu--links {
+    order: 2;
+  }
+
+  .dusk-navbar__menu--search {
+    order: 3;
+    margin-top: 0;
+  }
+}
