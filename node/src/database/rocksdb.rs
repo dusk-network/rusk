@@ -6,6 +6,7 @@
 
 use super::{Candidate, Ledger, Metadata, Persist, DB};
 use anyhow::Result;
+use std::cell::RefCell;
 
 use node_data::ledger::{self, Label, SpentTransaction};
 use node_data::Serializable;
@@ -13,7 +14,7 @@ use node_data::Serializable;
 use crate::database::Mempool;
 
 use rocksdb_lib::{
-    ColumnFamily, ColumnFamilyDescriptor, DBAccess,
+    AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBAccess,
     DBRawIteratorWithThreadMode, IteratorMode, OptimisticTransactionDB,
     OptimisticTransactionOptions, Options, SnapshotWithThreadMode, Transaction,
     WriteOptions,
@@ -122,6 +123,7 @@ impl Backend {
             ledger_height_cf,
             metadata_cf,
             snapshot,
+            cumulative_inner_size: RefCell::new(0),
         }
     }
 }
@@ -210,6 +212,8 @@ impl DB for Backend {
 
 pub struct DBTransaction<'db, DB: DBAccess> {
     inner: rocksdb_lib::Transaction<'db, DB>,
+    /// cumulative size of transaction footprint
+    cumulative_inner_size: RefCell<usize>,
 
     // TODO: pack all column families into a single array
     // Candidates column family
@@ -237,7 +241,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         header: &ledger::Header,
         txs: &[SpentTransaction],
         label: Label,
-    ) -> Result<()> {
+    ) -> Result<usize> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
         // It also includes single record to store metadata - Register record
@@ -254,7 +258,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             }
             .write(&mut buf)?;
 
-            self.inner.put_cf(cf, header.hash, buf)?;
+            self.put_cf(cf, header.hash, buf)?;
         }
 
         // Update metadata values
@@ -269,7 +273,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             for tx in txs {
                 let mut d = vec![];
                 tx.write(&mut d)?;
-                self.inner.put_cf(cf, tx.inner.hash(), d)?;
+                self.put_cf(cf, tx.inner.hash(), d)?;
             }
         }
 
@@ -278,13 +282,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         buf.write_all(&header.hash[..])?;
         label.write(&mut buf)?;
 
-        self.inner.put_cf(
-            self.ledger_height_cf,
-            header.height.to_le_bytes(),
-            buf,
-        )?;
+        self.put_cf(self.ledger_height_cf, header.height.to_le_bytes(), buf)?;
 
-        Ok(())
+        Ok(self.get_size())
     }
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()> {
@@ -540,17 +540,17 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         tx.write(&mut tx_data)?;
 
         let hash = tx.hash();
-        self.inner.put_cf(self.mempool_cf, hash, tx_data)?;
+        self.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //
         // Nullifiers
         for n in tx.inner.nullifiers().iter() {
             let key = n.to_bytes();
-            self.inner.put_cf(self.nullifiers_cf, key, hash)?;
+            self.put_cf(self.nullifiers_cf, key, hash)?;
         }
 
         // Map Fee_Hash to Null to facilitate sort-by-fee
-        self.inner.put_cf(
+        self.put_cf(
             self.fees_cf,
             serialize_key(tx.gas_price(), hash)?,
             vec![0],
@@ -748,12 +748,32 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
 
 impl<'db, DB: DBAccess> Metadata for DBTransaction<'db, DB> {
     fn op_write<T: AsRef<[u8]>>(&self, key: &[u8], value: T) -> Result<()> {
-        self.inner.put_cf(self.metadata_cf, key, value)?;
+        self.put_cf(self.metadata_cf, key, value)?;
         Ok(())
     }
 
     fn op_read(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         self.inner.get_cf(self.metadata_cf, key).map_err(Into::into)
+    }
+}
+
+impl<'db, DB: DBAccess> DBTransaction<'db, DB> {
+    /// A thin wrapper around inner.put_cf that calculates a db transaction
+    /// disk footprint
+    fn put_cf<K: AsRef<[u8]>, V: AsRef<[u8]>>(
+        &self,
+        cf: &impl AsColumnFamilyRef,
+        key: K,
+        value: V,
+    ) -> Result<()> {
+        let kv_size = key.as_ref().len() + value.as_ref().len();
+        self.inner.put_cf(cf, key, value)?;
+        *self.cumulative_inner_size.borrow_mut() += kv_size;
+        Ok(())
+    }
+
+    pub fn get_size(&self) -> usize {
+        *self.cumulative_inner_size.borrow()
     }
 }
 

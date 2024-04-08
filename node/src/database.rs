@@ -45,13 +45,14 @@ pub trait DB: Send + Sync + 'static {
 /// Implements both read-write and read-only transactions to DB.
 
 pub trait Ledger {
-    // Read-write transactions
+    /// Read-write transactions
+    /// Returns disk footprint of the committed transaction
     fn store_block(
         &self,
         header: &ledger::Header,
         txs: &[SpentTransaction],
         label: Label,
-    ) -> Result<()>;
+    ) -> Result<usize>;
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
     fn fetch_block_header(
