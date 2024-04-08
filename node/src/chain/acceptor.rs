@@ -20,6 +20,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
 use metrics::{counter, gauge, histogram};
+use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
 use stake_contract_types::Unstake;
 use std::sync::{Arc, LazyLock};
@@ -211,13 +212,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     task.main_inbound.try_send(msg)?;
                 }
             }
-            Payload::Quorum(_) => {
-                let task = self.task.read().await;
-                if !task.is_running() {
-                    broadcast(&self.network, &msg).await;
+            Payload::Quorum(payload) => {
+                // Prevent the rebroadcast of any quorum messages if the
+                // blockchain tip has already been updated for the same round.
+                if let Vote::Valid(hash) = payload.vote() {
+                    if *hash != self.get_curr_hash().await {
+                        broadcast(&self.network, &msg).await;
+                    }
                 }
 
                 if enable_enqueue {
+                    let task = self.task.read().await;
                     task.quorum_inbound.try_send(msg)?;
                 }
             }
