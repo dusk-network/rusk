@@ -1,0 +1,62 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Switch > should pass additional class names and attributes to the root element 1`] = `
+<div
+  aria-checked="false"
+  aria-disabled="false"
+  class="dusk-switch foo bar"
+  id="some-id"
+  role="switch"
+  tabindex="0"
+/>
+`;
+
+exports[`Switch > should render the "Switch" component with a default tab index of \`0\` 1`] = `
+<div
+  aria-checked="false"
+  aria-disabled="false"
+  class="dusk-switch"
+  role="switch"
+  tabindex="0"
+/>
+`;
+
+exports[`Switch > should render the "Switch" component with a default tab index of \`0\` 2`] = `
+<div
+  aria-checked="true"
+  aria-disabled="false"
+  class="dusk-switch"
+  role="switch"
+  tabindex="0"
+/>
+`;
+
+exports[`Switch > should render the component in a disabled status with a tabindex of \`-1\` 1`] = `
+<div
+  aria-checked="false"
+  aria-disabled="true"
+  class="dusk-switch"
+  role="switch"
+  tabindex="-1"
+/>
+`;
+
+exports[`Switch > should render the component in a disabled status with a tabindex of \`-1\` 2`] = `
+<div
+  aria-checked="true"
+  aria-disabled="true"
+  class="dusk-switch"
+  role="switch"
+  tabindex="-1"
+/>
+`;
+
+exports[`Switch > should use the received tab index 1`] = `
+<div
+  aria-checked="false"
+  aria-disabled="false"
+  class="dusk-switch"
+  role="switch"
+  tabindex="5"
+/>
+`;
