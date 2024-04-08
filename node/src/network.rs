@@ -239,6 +239,8 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             .map_err(|err| anyhow::anyhow!("failed to encode: {err}"))?;
         let topic = msg.topic();
 
+        counter!(format!("dusk_requests_{:?}", topic)).increment(1);
+
         for recv_addr in self.peer.alive_nodes(amount).await {
             trace!("sending msg ({topic:?}) to peer {recv_addr}");
             self.send_with_metrics(&encoded, recv_addr).await;
