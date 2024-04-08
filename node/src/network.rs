@@ -87,6 +87,8 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 counter!("dusk_bytes_recv").increment(msg_size as u64);
                 counter!(format!("dusk_inbound_{:?}_size", msg.topic()))
                     .increment(msg_size as u64);
+                counter!(format!("dusk_inbound_{:?}_count", msg.topic()))
+                    .increment(1);
 
                 // Update Transport Data
                 msg.metadata = Some(Metadata {

@@ -418,6 +418,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let block_time =
             blk.header().timestamp - mrb.inner().header().timestamp;
 
+        let header_verification_start = std::time::Instant::now();
         // Verify Block Header
         let attested = verify_block_header(
             self.db.clone(),
@@ -426,6 +427,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             blk.header(),
         )
         .await?;
+
+        // Elapsed time header verification
+        histogram!("dusk_block_header_elapsed")
+            .record(header_verification_start.elapsed());
 
         // Final from rolling
         let mut ffr = false;
