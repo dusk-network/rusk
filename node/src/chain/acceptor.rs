@@ -467,6 +467,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
+        let mut block_size_on_disk = 0;
         // Persist block in consistency with the VM state update
         {
             let vm = self.vm.write().await;
@@ -483,7 +484,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 assert_eq!(header.event_hash, verification_output.event_hash);
 
                 // Store block with updated transactions with Error and GasSpent
-                t.store_block(header, &txs, blk.label())?;
+                block_size_on_disk =
+                    t.store_block(header, &txs, blk.label())?;
 
                 Ok(txs)
             })?;
@@ -520,7 +522,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             anyhow::Ok(())
         }?;
 
-        Self::emit_metrics(mrb.inner(), &label, est_elapsed_time, block_time);
+        Self::emit_metrics(
+            mrb.inner(),
+            &label,
+            est_elapsed_time,
+            block_time,
+            block_size_on_disk,
+        );
 
         // Clean up the database
         let count = self
@@ -819,6 +827,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         block_label: &Label,
         est_elapsed_time: Duration,
         block_time: u64,
+        block_size_on_disk: usize,
     ) {
         let dusk_slashed_count = blk
             .header()
@@ -841,6 +850,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // A histogram of slashed count
         histogram!("dusk_slashed_count").record(dusk_slashed_count);
+
+        histogram!("dusk_block_disk_size").record(block_size_on_disk as f64);
     }
 }
 

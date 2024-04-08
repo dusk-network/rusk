@@ -65,5 +65,5 @@ done
 
 # Monitor nodes
 sleep 10
-tail -F "${TEMPD}node_*.log" | grep -e "accepted\|ERROR\|gen_candidate"
+tail -F "${TEMPD}/node_*.log" | grep -e "accepted\|ERROR\|gen_candidate"
 
