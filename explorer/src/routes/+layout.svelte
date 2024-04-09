@@ -1,5 +1,5 @@
 <script>
-  import { Navbar } from "$lib/components";
+  import { Footer, Navbar } from "$lib/components";
   import "../style/main.css";
 
   /**
@@ -24,3 +24,6 @@
 <main class="explorer">
   <slot />
 </main>
+<footer>
+  <Footer />
+</footer>
