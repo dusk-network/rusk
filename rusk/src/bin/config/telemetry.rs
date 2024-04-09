@@ -19,7 +19,6 @@ impl TelemetryConfig {
     }
 
     pub(crate) fn merge(&mut self, args: &Args) {
-        // Overwrite config ws-listen-addr
         if let Some(listen_addr) = &args.telemetry_listen_addr {
             self.listen_address = Some(listen_addr.into());
         }
