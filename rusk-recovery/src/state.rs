@@ -243,10 +243,14 @@ fn generate_empty_state<P: AsRef<Path>>(
 }
 
 // note: deploy consumes session as it produces commit id
-pub fn deploy<P: AsRef<Path>>(
+pub fn deploy<P: AsRef<Path>, F>(
     state_dir: P,
     snapshot: &Snapshot,
-) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+    f: F,
+) -> Result<(VM, [u8; 32]), Box<dyn Error>>
+where
+    F: FnOnce(&mut Session) -> (),
+{
     let theme = Theme::default();
 
     let state_dir = state_dir.as_ref();
@@ -266,6 +270,8 @@ pub fn deploy<P: AsRef<Path>>(
     for governance in snapshot.governance_contracts() {
         deploy_governance_contract(&mut session, governance)?;
     }
+
+    f(&mut session);
 
     info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
