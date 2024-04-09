@@ -27,7 +27,7 @@ use crate::common::keys::BLS_SK;
 pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     let dir = dir.as_ref();
 
-    let (_, commit_id) = state::deploy(dir, snapshot)
+    let (_, commit_id) = state::deploy(dir, snapshot, |_| {})
         .expect("Deploying initial state should succeed");
 
     let rusk = Rusk::new(dir, None).expect("Instantiating rusk should succeed");
