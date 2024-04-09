@@ -10,6 +10,8 @@ pub mod chain;
 pub mod databroker;
 #[cfg(feature = "node")]
 pub mod kadcast;
+#[cfg(feature = "node")]
+pub mod telemetry;
 
 pub mod http;
 
@@ -26,6 +28,8 @@ use self::chain::ChainConfig;
 use self::databroker::DataBrokerConfig;
 #[cfg(feature = "node")]
 use self::kadcast::KadcastConfig;
+#[cfg(feature = "node")]
+use self::telemetry::TelemetryConfig;
 
 use self::http::HttpConfig;
 
@@ -49,6 +53,10 @@ pub(crate) struct Config {
 
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,
+
+    #[cfg(feature = "node")]
+    #[serde(default = "TelemetryConfig::default")]
+    pub(crate) telemetry: TelemetryConfig,
 }
 
 /// Default log_level.
@@ -94,6 +102,7 @@ impl From<&Args> for Config {
             rusk_config.kadcast.merge(args);
             rusk_config.chain.merge(args);
             rusk_config.databroker.merge(args);
+            rusk_config.telemetry.merge(args);
         }
 
         rusk_config

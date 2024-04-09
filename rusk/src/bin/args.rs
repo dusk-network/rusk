@@ -67,6 +67,10 @@ pub struct Args {
     /// Address http server should listen on
     pub http_listen_addr: Option<String>,
 
+    #[clap(long)]
+    /// Address telemetry server should listen on
+    pub telemetry_listen_addr: Option<String>,
+
     #[clap(long, env = "KADCAST_BOOTSTRAP", verbatim_doc_comment)]
     /// Kadcast list of bootstrapping server addresses
     pub kadcast_bootstrap: Option<Vec<String>>,

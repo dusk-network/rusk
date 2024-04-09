@@ -20,6 +20,7 @@ use node::{
     databroker::DataBrokerSrv,
     mempool::MempoolSrv,
     network::Kadcast,
+    telemetry::TelemetrySrv,
     LongLivedService, Node,
 };
 #[cfg(feature = "node")]
@@ -113,6 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::<MempoolSrv>::default(),
             Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
             Box::new(DataBrokerSrv::new(config.clone().databroker.into())),
+            Box::new(TelemetrySrv::new(config.telemetry.listen_addr())),
         ];
 
         #[cfg(feature = "ephemeral")]

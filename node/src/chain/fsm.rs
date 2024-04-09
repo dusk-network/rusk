@@ -10,6 +10,7 @@ use crate::database;
 use crate::{vm, Network};
 
 use crate::database::{Candidate, Ledger};
+use metrics::counter;
 use node_data::ledger::{to_str, Block, Label};
 use node_data::message::payload::{
     GetBlocks, GetData, RatificationResult, Vote,
@@ -431,6 +432,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     .await
                 {
                     Ok(_) => {
+                        counter!("dusk_fallback_count").increment(1);
                         if remote_height == acc.get_curr_height().await + 1 {
                             acc.try_accept_block(remote_blk, true).await?;
                             return Ok(None);

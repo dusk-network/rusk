@@ -53,7 +53,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// * `disable_winner_cert_check` - disables the check of the winning
     /// certificate
     ///
-    /// Returns true if there is a cerificate for each failed iteration, and if
+    /// Returns true if there is a certificate for each failed iteration, and if
     /// that certificate has a quorum in the ratification phase.
     ///
     /// If there are no failed iterations, it returns true
@@ -162,7 +162,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(())
     }
 
-    /// Return true if there is a cerificate for each failed iteration, and if
+    /// Return true if there is a certificate for each failed iteration, and if
     /// that certificate has a quorum in the ratification phase.
     ///
     /// If there are no failed iterations, it returns true

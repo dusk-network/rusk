@@ -26,6 +26,7 @@ use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
     MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION,
 };
+use metrics::gauge;
 use node_data::{ledger, Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
@@ -119,6 +120,9 @@ impl Task {
             all = all_num,           // all provisioners count
             eligible = eligible_num  // eligible provisioners count
         );
+
+        gauge!("dusk_provisioners_eligible").set(eligible_num as f64);
+        gauge!("dusk_provisioners_all").set(all_num as f64);
 
         let id = self.task_id;
         let result_queue = self.result.clone();

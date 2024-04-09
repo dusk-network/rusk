@@ -19,6 +19,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
 use stake_contract_types::Unstake;
@@ -422,6 +423,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let block_time =
             blk.header().timestamp - mrb.inner().header().timestamp;
 
+        let header_verification_start = std::time::Instant::now();
         // Verify Block Header
         let attested = verify_block_header(
             self.db.clone(),
@@ -430,6 +432,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             blk.header(),
         )
         .await?;
+
+        // Elapsed time header verification
+        histogram!("dusk_block_header_elapsed")
+            .record(header_verification_start.elapsed());
 
         // Final from rolling
         let mut ffr = false;
@@ -470,6 +476,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         let start = std::time::Instant::now();
+        let mut est_elapsed_time = Duration::default();
+        let mut block_size_on_disk = 0;
+        let mut slashed_count: usize = 0;
         // Persist block in consistency with the VM state update
         {
             let vm = self.vm.write().await;
@@ -480,11 +489,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     vm.accept(blk.inner())?
                 };
 
+                est_elapsed_time = start.elapsed();
+
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_hash, verification_output.event_hash);
 
                 // Store block with updated transactions with Error and GasSpent
-                t.store_block(header, &txs, blk.label())?;
+                block_size_on_disk =
+                    t.store_block(header, &txs, blk.label())?;
 
                 Ok(txs)
             })?;
@@ -498,7 +510,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             for slashed in header.failed_iterations.to_missed_generators_bytes()
             {
-                info!("Slashed {}", slashed.to_base58())
+                info!("Slashed {}", slashed.to_base58());
+                slashed_count += 1;
             }
 
             let selective_update = Self::selective_update(
@@ -520,6 +533,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             anyhow::Ok(())
         }?;
+
+        Self::emit_metrics(
+            mrb.inner(),
+            &label,
+            est_elapsed_time,
+            block_time,
+            block_size_on_disk,
+            slashed_count,
+        );
 
         // Clean up the database
         let count = self
@@ -553,11 +575,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             })
             .map_err(|e| warn!("Error while cleaning up the database: {e}"));
 
-        debug!(
-            event = "stats",
-            height = mrb.inner().header().height,
-            candidates_count = count.unwrap_or_default(),
-        );
+        gauge!("dusk_stored_candidates_count")
+            .set(count.unwrap_or_default() as f64);
 
         let fsv_bitset = mrb.inner().header().cert.validation.bitset;
         let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
@@ -814,6 +833,33 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .unwrap_or(MIN_STEP_TIMEOUT)
             .max(MIN_STEP_TIMEOUT)
             .min(MAX_STEP_TIMEOUT)
+    }
+
+    fn emit_metrics(
+        blk: &Block,
+        block_label: &Label,
+        est_elapsed_time: Duration,
+        block_time: u64,
+        block_size_on_disk: usize,
+        slashed_count: usize,
+    ) {
+        // The Cumulative number of all executed transactions
+        counter!("dusk_txn_count").increment(blk.txs().len() as u64);
+
+        // The Cumulative number of all blocks by label
+        counter!(format!("dusk_block_{:?}", *block_label)).increment(1);
+
+        // A histogram of block time
+        histogram!("dusk_block_time").record(block_time as f64);
+        histogram!("dusk_block_iter").record(blk.header().iteration as f64);
+
+        // Elapsed time of Accept/Finalize call
+        histogram!("dusk_block_est_elapsed").record(est_elapsed_time);
+
+        // A histogram of slashed count
+        histogram!("dusk_slashed_count").record(slashed_count as f64);
+
+        histogram!("dusk_block_disk_size").record(block_size_on_disk as f64);
     }
 }
 
