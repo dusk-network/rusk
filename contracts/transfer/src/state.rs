@@ -357,17 +357,77 @@ impl TransferState {
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
-        let mut result = Ok(Vec::new());
+        let mut result = Ok((Vec::new(), 0u64));
 
+        let mut call_contract_id: Option<ContractId> = None;
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
-            result = rusk_abi::call_raw(
-                ContractId::from_bytes(contract_id),
+            call_contract_id = Some(ContractId::from_bytes(contract_id));
+            result = rusk_abi::call_raw_b(
+                call_contract_id.unwrap(),
                 &fn_name,
                 &fn_args,
             );
         }
 
-        result
+        // currently, cost of returning from here is 2191 but this may vary
+        // we approximate it to 10000
+        const SURCHARGE: u64 = 10000;
+
+        if let Some(contract_id) = call_contract_id {
+            if let Ok(allowance) = result.clone().map(|(_, b)| b) {
+                if allowance != 0 {
+                    // here: before we set this tx to be a free tx
+                    // we need to charge the contract appropriately
+                    // i.e. deduct the right amount from its balance
+                    // if contract's balance is not sufficient, we do not set
+                    // the tx to be free
+                    let spent = rusk_abi::spent();
+                    let charge = spent + SURCHARGE;
+                    if allowance < charge {
+                        rusk_abi::debug!(
+                            "S&E: not enough allowance={} from contract '{:X?}' for charge={}",
+                            allowance,
+                            contract_id.as_bytes()[0],
+                            charge
+                        );
+                    } else {
+                        let contract_balance = self.balance(&contract_id);
+                        if charge > contract_balance {
+                            rusk_abi::debug!(
+                                "S&E: not enough contract's ({:X?}) balance={} for charge={}",
+                                contract_id.as_bytes()[0],
+                                contract_balance,
+                                charge,
+                            );
+                        } else {
+                            rusk_abi::debug!(
+                                "S&E: charging contract '{:X?}' with amount={}",
+                                contract_id.as_bytes()[0],
+                                charge
+                            );
+                            self.sub_balance(&contract_id, charge).expect(
+                                "Subtracting callee contract balance should succeed",
+                            );
+                            let new_contract_balance =
+                                self.balance(&contract_id);
+                            rusk_abi::debug!(
+                                "S&E: decreased contract's '{:X?}' balance from {} to {}", contract_id.as_bytes()[0], contract_balance, new_contract_balance);
+                            let tc_old_balance =
+                                self.balance(&rusk_abi::self_id());
+                            self.add_balance(rusk_abi::self_id(), charge);
+                            let tc_new_balance =
+                                self.balance(&rusk_abi::self_id());
+                            rusk_abi::debug!(
+                                "S&E: increased transfer contract balance from {} to {}", tc_old_balance, tc_new_balance);
+                            rusk_abi::debug!("S&E: setting this transaction to be paid for by contract '{:X?}'", contract_id.as_bytes()[0]);
+                            rusk_abi::set_free();
+                        }
+                    }
+                }
+            }
+        }
+
+        result.map(|(a, _)| a)
     }
 
     /// Refund the previously performed transaction, taking into account the

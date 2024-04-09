@@ -4,23 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::mpsc;
+pub mod common;
+
+use crate::common::utils::*;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::prelude::*;
+use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
-use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{
-    ContractData, ContractError, ContractId, Error, Session, TRANSFER_CONTRACT,
-    VM,
-};
+use rusk_abi::{ContractData, ContractId, Session, TRANSFER_CONTRACT, VM};
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuitOneTwo,
     ExecuteCircuitTwoTwo, SendToContractObfuscatedCircuit,
@@ -43,8 +40,6 @@ const BOB_ID: ContractId = {
     ContractId::from_bytes(bytes)
 };
 
-type Result<T, E = Error> = core::result::Result<T, E>;
-
 const OWNER: [u8; 32] = [0; 32];
 
 const H: usize = TRANSFER_TREE_DEPTH;
@@ -64,7 +59,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
     let bob_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/wasm32-unknown-unknown/release/bob.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
@@ -114,130 +109,6 @@ fn instantiate<Rng: RngCore + CryptoRng>(
 
     rusk_abi::new_session(vm, base, 1)
         .expect("Instantiating new session should succeed")
-}
-
-fn leaves_from_height(
-    session: &mut Session,
-    height: u64,
-) -> Result<Vec<TreeLeaf>> {
-    let (feeder, receiver) = mpsc::channel();
-
-    session.feeder_call::<_, ()>(
-        TRANSFER_CONTRACT,
-        "leaves_from_height",
-        &height,
-        feeder,
-    )?;
-
-    Ok(receiver
-        .iter()
-        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
-        .collect())
-}
-
-fn leaves_from_pos(session: &mut Session, pos: u64) -> Result<Vec<TreeLeaf>> {
-    let (feeder, receiver) = mpsc::channel();
-
-    session.feeder_call::<_, ()>(
-        TRANSFER_CONTRACT,
-        "leaves_from_pos",
-        &pos,
-        feeder,
-    )?;
-
-    Ok(receiver
-        .iter()
-        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
-        .collect())
-}
-
-fn num_notes(session: &mut Session) -> Result<u64> {
-    session
-        .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
-        .map(|r| r.data)
-}
-
-fn update_root(session: &mut Session) -> Result<()> {
-    session
-        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn root(session: &mut Session) -> Result<BlsScalar> {
-    session
-        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn module_balance(session: &mut Session, contract: ContractId) -> Result<u64> {
-    session
-        .call(TRANSFER_CONTRACT, "module_balance", &contract, POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn message(
-    session: &mut Session,
-    contract: ContractId,
-    pk: PublicKey,
-) -> Result<Option<Message>> {
-    session
-        .call(TRANSFER_CONTRACT, "message", &(contract, pk), POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn opening(
-    session: &mut Session,
-    pos: u64,
-) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, 4>>> {
-    session
-        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
-        .map(|r| r.data)
-}
-
-fn prover_verifier(circuit_name: &str) -> (Prover, Verifier) {
-    let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
-        .expect(&format!(
-            "There should be circuit data stored for {}",
-            circuit_name
-        ));
-    let (pk, vd) = circuit_profile
-        .get_keys()
-        .expect(&format!("there should be keys stored for {}", circuit_name));
-
-    let prover = Prover::try_from_bytes(pk).unwrap();
-    let verifier = Verifier::try_from_bytes(vd).unwrap();
-
-    (prover, verifier)
-}
-
-fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
-    vk: ViewKey,
-    iter: I,
-) -> Vec<Note> {
-    iter.into_iter().filter(|note| vk.owns(note)).collect()
-}
-
-/// Executes a transaction, returning the gas spent.
-fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
-    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        &tx,
-        u64::MAX,
-    )?;
-
-    let gas_spent = receipt.gas_spent;
-
-    session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &(tx.fee, gas_spent),
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
-
-    Ok(gas_spent)
 }
 
 #[test]
