@@ -20,15 +20,21 @@ use phoenix_core::{Crossover, Fee, Note, Ownable, StealthAddress};
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{
-    ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
+    ContractError, ContractId, EconomicMode, PaymentInfo, PublicInput,
+    RawResult, STAKE_CONTRACT,
 };
-use transfer_contract_types::{Mint, Stct, Wfct, Wfctc};
+use transfer_contract_types::{
+    EconomicEvent, EconomicResult, Mint, Stct, Wfct, Wfctc,
+};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
 
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 5000;
+
+// estimated cost of returning from the execute method
+const SURCHARGE_POINTS: u64 = 10000;
 
 pub struct TransferState {
     tree: Tree,
@@ -37,6 +43,7 @@ pub struct TransferState {
     balances: BTreeMap<ContractId, u64>,
     var_crossover: Option<Crossover>,
     var_crossover_addr: Option<StealthAddress>,
+    gas_price: Option<u64>,
 }
 
 impl TransferState {
@@ -48,6 +55,7 @@ impl TransferState {
             balances: BTreeMap::new(),
             var_crossover: None,
             var_crossover_addr: None,
+            gas_price: None,
         }
     }
 
@@ -223,17 +231,131 @@ impl TransferState {
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
-        let mut result = Ok(Vec::new());
+        self.execute(tx)
+    }
+
+    /// Executes the contract call if present.
+    ///
+    /// # Panics
+    /// Any failure in the checks performed in processing will result in a
+    /// panic. The contract expects the environment to roll back any change
+    /// in state.
+    pub fn execute(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<Vec<u8>, ContractError> {
+        let mut result = Ok(rusk_abi::RawResult::empty());
 
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
-            result = rusk_abi::call_raw(
-                ContractId::from_bytes(contract_id),
-                &fn_name,
-                &fn_args,
-            );
+            let contract_id = ContractId::from_bytes(contract_id);
+            self.gas_price = Some(tx.fee.gas_price);
+            result = rusk_abi::call_raw(contract_id, &fn_name, &fn_args);
+            self.gas_price = None;
+            if let Ok(RawResult {
+                data: _,
+                economic_mode,
+            }) = result.clone()
+            {
+                match economic_mode {
+                    EconomicMode::Charge(charge) if charge != 0 => self
+                        .apply_charge(&contract_id, charge, tx.fee.gas_price),
+                    EconomicMode::Allowance(allowance) if allowance != 0 => {
+                        self.apply_allowance(
+                            &contract_id,
+                            allowance,
+                            tx.fee.gas_price,
+                        )
+                    }
+                    _ => (),
+                }
+            }
         }
 
-        result
+        result.map(|r| r.data)
+    }
+
+    /// Applies contract's charge.
+    /// Caller of the contract will pay a larger fee
+    /// so that contract can earn the difference between charge
+    /// and the actual cost of the call.
+    fn apply_charge(
+        &mut self,
+        contract_id: &ContractId,
+        charge: u64,
+        gas_price: u64,
+    ) {
+        let cost = (rusk_abi::spent() + SURCHARGE_POINTS) * gas_price;
+        if charge > cost {
+            let earning = charge - cost;
+            self.add_balance(*contract_id, earning);
+            rusk_abi::set_charge(earning);
+            rusk_abi::emit(
+                "earning",
+                EconomicEvent {
+                    module: contract_id.to_bytes(),
+                    value: earning,
+                    result: EconomicResult::ChargeApplied,
+                },
+            );
+        } else {
+            rusk_abi::emit(
+                "earning",
+                EconomicEvent {
+                    module: contract_id.to_bytes(),
+                    value: charge,
+                    result: EconomicResult::ChargeNotSufficient,
+                },
+            );
+        }
+    }
+
+    /// Applies contract's allowance.
+    /// Caller of the contract's method won't pay a fee
+    /// and all the cost will be covered by the contract.
+    /// Allowance has no effect if contract does not have enough funds.
+    fn apply_allowance(
+        &mut self,
+        contract_id: &ContractId,
+        allowance: u64,
+        gas_price: u64,
+    ) {
+        let spent = (rusk_abi::spent() + SURCHARGE_POINTS) * gas_price;
+        if allowance < spent {
+            rusk_abi::emit(
+                "sponsoring",
+                EconomicEvent {
+                    module: contract_id.to_bytes(),
+                    value: allowance,
+                    result: EconomicResult::AllowanceNotSufficient,
+                },
+            );
+        } else {
+            let contract_balance = self.balance(contract_id);
+            if spent > contract_balance {
+                rusk_abi::emit(
+                    "sponsoring",
+                    EconomicEvent {
+                        module: contract_id.to_bytes(),
+                        value: allowance,
+                        result: EconomicResult::BalanceNotSufficient,
+                    },
+                );
+            } else {
+                self.sub_balance(contract_id, spent).expect(
+                    "Subtracting callee contract balance should succeed",
+                );
+                self.add_balance(rusk_abi::self_id(), spent);
+                rusk_abi::set_allowance(allowance);
+                rusk_abi::emit(
+                    "sponsoring",
+                    EconomicEvent {
+                        module: contract_id.to_bytes(),
+                        value: spent,
+                        result: EconomicResult::AllowanceApplied,
+                    },
+                );
+            }
+        }
     }
 
     /// Refund the previously performed transaction, taking into account the
@@ -341,6 +463,12 @@ impl TransferState {
                 *v += value
             }
         }
+    }
+
+    /// Return the current gas price as set by the execute method.
+    /// Returns none outside of the lifetime of the execute method.
+    pub fn gas_price(&self) -> Option<u64> {
+        self.gas_price
     }
 
     fn get_note(&self, pos: u64) -> Option<Note> {
