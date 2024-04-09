@@ -30,7 +30,7 @@ use crate::common::keys::STAKE_SK;
 pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     let dir = dir.as_ref();
 
-    let (_, commit_id) = state::deploy(dir, snapshot)
+    let (_, commit_id) = state::deploy(dir, snapshot, |_| {})
         .expect("Deploying initial state should succeed");
 
     let (sender, _) = broadcast::channel(10);
