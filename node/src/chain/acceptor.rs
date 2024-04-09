@@ -478,6 +478,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
         let mut block_size_on_disk = 0;
+        let mut slashed_count: usize = 0;
         // Persist block in consistency with the VM state update
         {
             let vm = self.vm.write().await;
@@ -509,7 +510,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             for slashed in header.failed_iterations.to_missed_generators_bytes()
             {
-                info!("Slashed {}", slashed.to_base58())
+                info!("Slashed {}", slashed.to_base58());
+                slashed_count += 1;
             }
 
             let selective_update = Self::selective_update(
@@ -538,6 +540,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             est_elapsed_time,
             block_time,
             block_size_on_disk,
+            slashed_count,
         );
 
         // Clean up the database
@@ -838,13 +841,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         est_elapsed_time: Duration,
         block_time: u64,
         block_size_on_disk: usize,
+        slashed_count: usize,
     ) {
-        let dusk_slashed_count = blk
-            .header()
-            .failed_iterations
-            .to_missed_generators_bytes()
-            .count() as f64;
-
         // The Cumulative number of all executed transactions
         counter!("dusk_txn_count").increment(blk.txs().len() as u64);
 
@@ -859,7 +857,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         histogram!("dusk_block_est_elapsed").record(est_elapsed_time);
 
         // A histogram of slashed count
-        histogram!("dusk_slashed_count").record(dusk_slashed_count);
+        histogram!("dusk_slashed_count").record(slashed_count as f64);
 
         histogram!("dusk_block_disk_size").record(block_size_on_disk as f64);
     }
