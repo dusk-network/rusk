@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod contract_pays;
 pub mod gas_behavior;
 pub mod multi_transfer;
 pub mod stake;
 pub mod transfer;
-
 pub mod unspendable;
