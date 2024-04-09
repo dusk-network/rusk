@@ -19,6 +19,7 @@ use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
+use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
 };
@@ -27,10 +28,13 @@ use transfer_contract_types::{Mint, Stct, Wfco, WfcoRaw, Wfct, Wfctc};
 /// Arity of the transfer tree.
 pub const A: usize = 4;
 
+/// Number of roots stored
+pub const MAX_ROOTS: usize = 5000;
+
 pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
-    roots: BTreeSet<BlsScalar>,
+    roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
     balances: BTreeMap<ContractId, u64>,
     message_mapping:
         BTreeMap<ContractId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
@@ -44,7 +48,7 @@ impl TransferState {
         TransferState {
             tree: Tree::new(),
             nullifiers: BTreeSet::new(),
-            roots: BTreeSet::new(),
+            roots: ConstGenericRingBuffer::new(),
             balances: BTreeMap::new(),
             message_mapping: BTreeMap::new(),
             message_mapping_set: BTreeMap::new(),
@@ -426,7 +430,7 @@ impl TransferState {
     /// Update the root for of the tree.
     pub fn update_root(&mut self) {
         let root = self.tree.root();
-        self.roots.insert(root);
+        self.roots.push(root);
     }
 
     /// Get the root of the tree.
@@ -515,7 +519,7 @@ impl TransferState {
     }
 
     fn root_exists(&self, root: &BlsScalar) -> bool {
-        self.roots.get(root).is_some()
+        self.roots.contains(root)
     }
 
     fn push_note_current_height(&mut self, note: Note) -> Note {
