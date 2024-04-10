@@ -10,11 +10,11 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use tracing::info;
 
-use dusk_bls12_381_sign::SecretKey as BlsSecretKey;
+use bls12_381_bls::SecretKey as StakeSecretKey;
 
-pub static BLS_SK: LazyLock<BlsSecretKey> = LazyLock::new(|| {
-    info!("Generating BlsSecretKey");
+pub static STAKE_SK: LazyLock<StakeSecretKey> = LazyLock::new(|| {
+    info!("Generating StakeSecretKey");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    BlsSecretKey::random(&mut rng)
+    StakeSecretKey::random(&mut rng)
 });

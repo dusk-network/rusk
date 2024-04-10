@@ -16,12 +16,11 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
+use bls12_381_bls::PublicKey as BlsPublicKey;
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
-use dusk_pki::{PublicKey, ViewKey};
 use parking_lot::RwLockWriteGuard;
 use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
-use phoenix_core::{Message, Note};
+use phoenix_core::{Message, Note, PublicKey, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
 

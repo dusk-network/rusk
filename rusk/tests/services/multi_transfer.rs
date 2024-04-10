@@ -9,9 +9,9 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet, Store};
 use ff::Field;
+use phoenix_core::{PublicKey, SecretKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
@@ -38,19 +38,19 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-static SSK_0: LazyLock<SecretSpendKey> = LazyLock::new(|| {
-    info!("Generating SecretSpendKey #0");
-    TestStore.retrieve_ssk(0).expect("Should not fail in test")
+static SK_0: LazyLock<SecretKey> = LazyLock::new(|| {
+    info!("Generating SecretKey #0");
+    TestStore.retrieve_sk(0).expect("Should not fail in test")
 });
 
-static SSK_1: LazyLock<SecretSpendKey> = LazyLock::new(|| {
-    info!("Generating SecretSpendKey #1");
-    TestStore.retrieve_ssk(1).expect("Should not fail in test")
+static SK_1: LazyLock<SecretKey> = LazyLock::new(|| {
+    info!("Generating SecretKey #1");
+    TestStore.retrieve_sk(1).expect("Should not fail in test")
 });
 
-static SSK_2: LazyLock<SecretSpendKey> = LazyLock::new(|| {
-    info!("Generating SecretSpendKey #2");
-    TestStore.retrieve_ssk(2).expect("Should not fail in test")
+static SK_2: LazyLock<SecretKey> = LazyLock::new(|| {
+    info!("Generating SecretKey #2");
+    TestStore.retrieve_sk(2).expect("Should not fail in test")
 });
 
 /// Executes three different transactions in the same block, expecting only two
@@ -60,17 +60,15 @@ fn wallet_transfer(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     amount: u64,
 ) {
-    // Sender psk
-    let psk_0 = SSK_0.public_spend_key();
-    let psk_1 = SSK_1.public_spend_key();
-    let psk_2 = SSK_2.public_spend_key();
+    // Sender pk
+    let pk_0 = PublicKey::from(LazyLock::force(&SK_0));
+    let pk_1 = PublicKey::from(LazyLock::force(&SK_1));
+    let pk_2 = PublicKey::from(LazyLock::force(&SK_2));
 
-    let refunds = vec![psk_0, psk_1, psk_2];
+    let refunds = vec![pk_0, pk_1, pk_2];
 
-    // Generate a receiver psk
-    let receiver = wallet
-        .public_spend_key(3)
-        .expect("Failed to get public spend key");
+    // Generate a receiver pk
+    let receiver = wallet.public_key(3).expect("Failed to get public key");
 
     let mut rng = StdRng::seed_from_u64(0xdead);
     let nonce = BlsScalar::random(&mut rng);

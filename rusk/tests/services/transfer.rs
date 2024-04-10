@@ -9,10 +9,10 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet, Store};
 use ff::Field;
 use node_data::ledger::SpentTransaction;
+use phoenix_core::{PublicKey, SecretKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
@@ -35,9 +35,9 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-static SSK: LazyLock<SecretSpendKey> = LazyLock::new(|| {
-    info!("Generating SecretSpendKey");
-    TestStore.retrieve_ssk(0).expect("Should not fail in test")
+static SK: LazyLock<SecretKey> = LazyLock::new(|| {
+    info!("Generating SecretKey");
+    TestStore.retrieve_sk(0).expect("Should not fail in test")
 });
 
 /// Transacts between two accounts on the in the same wallet and produces a
@@ -49,13 +49,11 @@ fn wallet_transfer(
     amount: u64,
     block_height: u64,
 ) {
-    // Sender psk
-    let psk = SSK.public_spend_key();
+    // Sender pk
+    let pk = PublicKey::from(LazyLock::force(&SK));
 
-    // Generate a receiver psk
-    let receiver = wallet
-        .public_spend_key(1)
-        .expect("Failed to get public spend key");
+    // Generate a receiver pk
+    let receiver = wallet.public_key(1).expect("Failed to get public key");
 
     let mut rng = StdRng::seed_from_u64(0xdead);
     let nonce = BlsScalar::random(&mut rng);
@@ -85,16 +83,7 @@ fn wallet_transfer(
 
     // Execute a transfer
     let tx = wallet
-        .transfer(
-            &mut rng,
-            0,
-            &psk,
-            &receiver,
-            amount,
-            1_000_000_000,
-            2,
-            nonce,
-        )
+        .transfer(&mut rng, 0, &pk, &receiver, amount, 1_000_000_000, 2, nonce)
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
