@@ -850,7 +850,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         counter!(format!("dusk_block_{:?}", *block_label)).increment(1);
 
         // A histogram of block time
-        histogram!("dusk_block_time").record(block_time as f64);
+        if blk.header().height > 1 {
+            histogram!("dusk_block_time").record(block_time as f64);
+        }
+
         histogram!("dusk_block_iter").record(blk.header().iteration as f64);
 
         // Elapsed time of Accept/Finalize call
