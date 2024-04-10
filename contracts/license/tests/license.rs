@@ -163,6 +163,7 @@ fn license_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
+            u64::MAX,
             feeder,
         )
         .expect("Querying of the licenses should succeed")
@@ -241,6 +242,7 @@ fn multiple_licenses_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
+            u64::MAX,
             feeder,
         )
         .expect("Querying of the licenses should succeed")
@@ -344,6 +346,7 @@ fn use_license_get_session() {
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
+            u64::MAX,
             feeder,
         )
         .expect("Querying the license should succeed")

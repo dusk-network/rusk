@@ -32,6 +32,7 @@ pub struct Rusk {
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
     pub(crate) generation_timeout: Option<Duration>,
+    pub(crate) feeder_gas_limit: u64,
 }
 
 #[derive(Clone)]
