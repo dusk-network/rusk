@@ -69,7 +69,13 @@ fn do_get_provisioners(
     session: &mut Session,
 ) -> Result<impl Iterator<Item = (PublicKey, StakeData)>, Error> {
     let (sender, receiver) = mpsc::channel();
-    session.feeder_call::<_, ()>(STAKE_CONTRACT, "stakes", &(), sender)?;
+    session.feeder_call::<_, ()>(
+        STAKE_CONTRACT,
+        "stakes",
+        &(),
+        u64::MAX,
+        sender,
+    )?;
     Ok(receiver.into_iter().map(|bytes| {
         rkyv::from_bytes::<(PublicKey, StakeData)>(&bytes)
             .expect("The contract should only return (pk, stake_data) tuples")
