@@ -325,4 +325,9 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     fn get_info(&self) -> anyhow::Result<String> {
         Ok(self.conf.public_address.to_string())
     }
+
+    async fn alive_nodes_count(&self) -> usize {
+        // TODO: This call should be replaced with no-copy Kadcast API
+        self.peer.alive_nodes(u16::MAX as usize).await.len()
+    }
 }
