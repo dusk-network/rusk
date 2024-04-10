@@ -99,7 +99,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (rusk, node, mut service_list) = {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
-        let rusk = Rusk::new(state_dir, config.chain.generation_timeout())?;
+
+        let rusk = Rusk::new(
+            state_dir,
+            config.chain.generation_timeout(),
+            config.http.feeder_call_gas,
+        )?;
 
         info!("Rusk VM loaded");
 

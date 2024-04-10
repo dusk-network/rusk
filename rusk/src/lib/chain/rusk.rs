@@ -41,6 +41,7 @@ impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
         generation_timeout: Option<Duration>,
+        feeder_gas_limit: u64,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -71,6 +72,7 @@ impl Rusk {
             vm,
             dir: dir.into(),
             generation_timeout,
+            feeder_gas_limit,
         })
     }
 

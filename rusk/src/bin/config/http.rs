@@ -16,18 +16,25 @@ pub struct HttpConfig {
     pub key: Option<PathBuf>,
     #[serde(default = "default_listen")]
     pub listen: bool,
+    #[serde(default = "default_feeder_call_gas")]
+    pub feeder_call_gas: u64,
     listen_address: Option<String>,
 }
 
 impl Default for HttpConfig {
     fn default() -> Self {
         Self {
-            listen: default_listen(),
-            listen_address: None,
             cert: None,
             key: None,
+            listen: default_listen(),
+            feeder_call_gas: default_feeder_call_gas(),
+            listen_address: None,
         }
     }
+}
+
+const fn default_feeder_call_gas() -> u64 {
+    u64::MAX
 }
 
 const fn default_listen() -> bool {
