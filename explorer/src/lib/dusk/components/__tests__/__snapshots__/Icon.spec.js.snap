@@ -1,0 +1,61 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Icon > should accept a custom role for the SVG component 1`] = `
+<svg
+  class="dusk-icon dusk-icon--size--normal"
+  role="presentation"
+  viewBox="0 0 24 24"
+>
+  <path
+    d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+  />
+</svg>
+`;
+
+exports[`Icon > should pass additional class names and attributes to the rendered element 1`] = `
+<svg
+  class="dusk-icon dusk-icon--size--normal foo bar"
+  data-baz="baz"
+  role="graphics-symbol"
+  viewBox="0 0 24 24"
+>
+  <path
+    d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+  />
+</svg>
+`;
+
+exports[`Icon > should pass additional class names and attributes to the rendered element 2`] = `
+<g
+  class="dusk-icon dusk-icon--size--normal foo bar"
+  data-baz="baz"
+>
+  <rect />
+  <path
+    d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+  />
+</g>
+`;
+
+exports[`Icon > should render the Icon component 1`] = `
+<svg
+  class="dusk-icon dusk-icon--size--normal"
+  role="graphics-symbol"
+  viewBox="0 0 24 24"
+>
+  <path
+    d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+  />
+</svg>
+`;
+
+exports[`Icon > should render the icon inside a \`g\` element if it's part of a stack 1`] = `
+<g
+  class="dusk-icon dusk-icon--size--normal"
+>
+  <rect />
+  <path
+    d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+  />
+</g>
+`;
