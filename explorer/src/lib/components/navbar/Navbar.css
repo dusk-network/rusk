@@ -87,7 +87,6 @@
 @media (min-width: 1024px) {
   .dusk-navbar {
     padding: 0;
-    margin-bottom: 1.25rem;
     min-height: 5rem;
     position: relative;
     background-color: transparent;

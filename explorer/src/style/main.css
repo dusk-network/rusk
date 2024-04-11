@@ -39,6 +39,10 @@ html {
   letter-spacing: 0.06125rem;
 }
 
+main {
+  padding: 1.25rem 0;
+}
+
 svg {
   fill: currentColor;
 }
