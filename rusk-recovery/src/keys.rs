@@ -65,7 +65,7 @@ fn check_circuits_cache(
                 warn!("{} due to cache miss", theme.warn("Compiling"),);
 
                 let compressed = circuit.get_compressed();
-                let (pk, vd) = Compiler::decompress(
+                let (pk, vd) = Compiler::compile_with_compressed(
                     &PUB_PARAMS,
                     TRANSCRIPT_LABEL,
                     compressed,
