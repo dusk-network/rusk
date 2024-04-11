@@ -159,10 +159,10 @@ exports[`Block > should render the Block Details page 1`] = `
           >
             <time
               class="block-details__list-timestamp"
-              datetime="2024-04-16T09:26:17.000Z"
+              datetime="1970-01-01T00:00:01.000Z"
               slot="definition"
             >
-              4 weeks ago
+              54 years ago
                
             </time>
           </dd>

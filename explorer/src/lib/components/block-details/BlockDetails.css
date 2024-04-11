@@ -29,7 +29,7 @@
   text-transform: uppercase;
 }
 
-.block-details__gas-used {
+.block-details__gas-used.dusk-progress-bar {
   width: 12.5rem;
 }
 

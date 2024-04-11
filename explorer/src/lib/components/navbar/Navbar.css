@@ -54,7 +54,7 @@
     80px is the total height of the navbar on a small viewport.
     It is needed so we know the exact height that needs to be set to the opened menu.
   */
-  height: calc(100vh - 80px);
+  height: calc(100dvh - 80px);
   gap: 1.875rem;
 }
 

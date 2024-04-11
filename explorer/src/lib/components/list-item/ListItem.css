@@ -26,6 +26,7 @@
 
 .detail-list__help {
   cursor: help;
+  flex-shrink: 0;
 }
 
 .details-list__definition {

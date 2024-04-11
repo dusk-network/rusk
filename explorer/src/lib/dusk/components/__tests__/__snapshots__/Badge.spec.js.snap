@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Badge > should render the Badge component using the type "error" variant 1`] = `
+<div>
+  <span
+    class="dusk-badge dusk-badge--variant-error"
+  >
+    Badge
+  </span>
+  <!--&lt;Badge&gt;-->
+</div>
+`;
+
+exports[`Badge > should render the Badge component using the type "neutral" as a default 1`] = `
+<div>
+  <span
+    class="dusk-badge dusk-badge--variant-neutral"
+  >
+    Badge
+  </span>
+  <!--&lt;Badge&gt;-->
+</div>
+`;
+
+exports[`Badge > should render the Badge component using the type "success" variant 1`] = `
+<div>
+  <span
+    class="dusk-badge dusk-badge--variant-success"
+  >
+    Badge
+  </span>
+  <!--&lt;Badge&gt;-->
+</div>
+`;
+
+exports[`Badge > should render the Badge component using the type "warning" variant 1`] = `
+<div>
+  <span
+    class="dusk-badge dusk-badge--variant-warning"
+  >
+    Badge
+  </span>
+  <!--&lt;Badge&gt;-->
+</div>
+`;

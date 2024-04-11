@@ -15,7 +15,7 @@
       statehash:
         "fb4c93bcc64914203b4312cf09e02c230ed3bc013408b124d5679c6cf583efd8",
       timestamp: "2024-04-16 09:26:17 +0000 UTC",
-      ts: 1713259577,
+      ts: 1,
       version: "0",
     },
     transactions: {

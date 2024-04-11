@@ -12,6 +12,8 @@ const createFormatter = (locale, currency, digits) => {
       ? new Intl.NumberFormat(locale, { minimumFractionDigits: digits })
       : new Intl.NumberFormat(locale, {
           currency: currency,
+          maximumFractionDigits: 9,
+          minimumFractionDigits: 2,
           style: "currency",
         });
 
