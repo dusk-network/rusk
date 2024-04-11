@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Tooltip > should pass additional class names and attributes to the rendered element 1`] = `
+<div
+  aria-hidden="true"
+  class="dusk-tooltip dusk-tooltip-bottom dusk-tooltip-success foo bar"
+  data-baz="baz"
+  id="tooltip-id"
+  role="tooltip"
+  style="left: 0px; top: 0px;"
+>
+  
+</div>
+`;
+
+exports[`Tooltip > should render the Tooltip component 1`] = `
+<div
+  aria-hidden="true"
+  class="dusk-tooltip dusk-tooltip-bottom dusk-tooltip-success"
+  id="tooltip-id"
+  role="tooltip"
+  style="left: 0px; top: 0px;"
+>
+  
+</div>
+`;

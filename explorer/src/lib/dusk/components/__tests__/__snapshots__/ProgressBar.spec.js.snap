@@ -1,0 +1,60 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ProgressBar > re-renders the Stepper component when the current percentage property changes 1`] = `
+<div>
+  <div
+    class="dusk-progress-bar"
+    role="progressbar"
+  >
+    <div
+      class="dusk-progress-bar__filler"
+      style="width: 0%"
+    />
+  </div>
+  <!--&lt;ProgressBar&gt;-->
+</div>
+`;
+
+exports[`ProgressBar > re-renders the Stepper component when the current percentage property changes 2`] = `
+<div>
+  <div
+    class="dusk-progress-bar"
+    role="progressbar"
+  >
+    <div
+      class="dusk-progress-bar__filler"
+      style="width: 50%"
+    />
+  </div>
+  <!--&lt;ProgressBar&gt;-->
+</div>
+`;
+
+exports[`ProgressBar > renders the ProgressBar component with no current percentage set 1`] = `
+<div>
+  <div
+    class="dusk-progress-bar"
+    role="progressbar"
+  >
+    <div
+      class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
+    />
+  </div>
+  <!--&lt;ProgressBar&gt;-->
+</div>
+`;
+
+exports[`ProgressBar > renders the Stepper component with current percentage set as zero 1`] = `
+<div>
+  <div
+    class="dusk-progress-bar"
+    role="progressbar"
+  >
+    <div
+      class="dusk-progress-bar__filler"
+      style="width: 0%"
+    />
+  </div>
+  <!--&lt;ProgressBar&gt;-->
+</div>
+`;

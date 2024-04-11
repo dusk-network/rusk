@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`List Item > renders the List Item component 1`] = `
+<div>
+  <dt
+    class="details-list__term"
+  >
+     
+  </dt>
+   
+  <dd
+    class="details-list__definition"
+  />
+   
+   
+  <div
+    aria-hidden="true"
+    class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+    role="tooltip"
+    style="left: 0px; top: 0px;"
+  >
+    
+  </div>
+  <!--&lt;Tooltip&gt;-->
+  <!--&lt;ListItem&gt;-->
+</div>
+`;

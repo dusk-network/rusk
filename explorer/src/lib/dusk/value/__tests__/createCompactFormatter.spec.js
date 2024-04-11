@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCompactFormatter } from "..";
+import { createCompactFormatter } from "../";
 
 describe("createCompactFormatter", () => {
   it("should format a number correctly", () => {

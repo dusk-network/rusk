@@ -129,7 +129,7 @@ exports[`Statistics Panel > renders the StatisticsPanel component 1`] = `
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Next Epoch Stacked Amount
+            Next Epoch Staked Amount
           </span>
         </div>
          
