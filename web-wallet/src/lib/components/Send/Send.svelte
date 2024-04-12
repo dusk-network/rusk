@@ -166,7 +166,6 @@
           <Button
             disabled={!scanner}
             size="small"
-            variant="secondary"
             on:click={() => {
               scanQrComponent.startScan();
             }}
@@ -249,7 +248,6 @@
               href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
               on:click={resetOperation}
               text="VIEW ON BLOCK EXPLORER"
-              variant="secondary"
               rel="noopener noreferrer"
               target="_blank"
             />

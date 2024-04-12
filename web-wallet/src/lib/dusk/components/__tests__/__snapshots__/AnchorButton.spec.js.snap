@@ -3,7 +3,7 @@
 exports[`AnchorButton > should add a disabled class if the related property is \`true\` 1`] = `
 <a
   aria-disabled="true"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-anchor-button--disabled"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-anchor-button--disabled"
   href="/some-url"
   tabindex="-1"
 >
@@ -19,7 +19,7 @@ exports[`AnchorButton > should add a disabled class if the related property is \
 exports[`AnchorButton > should be able to render a AnchorButton with an icon and text 1`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
   href="/some-url"
 >
   <span
@@ -46,7 +46,7 @@ exports[`AnchorButton > should be able to render a AnchorButton with an icon and
 exports[`AnchorButton > should be able to render a AnchorButton with an icon and text 2`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
   href="/some-url"
 >
   <span
@@ -73,7 +73,7 @@ exports[`AnchorButton > should be able to render a AnchorButton with an icon and
 exports[`AnchorButton > should be able to render a AnchorButton with an icon only 1`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button"
   href="/some-url"
 >
    
@@ -95,7 +95,7 @@ exports[`AnchorButton > should be able to render a AnchorButton with an icon onl
 exports[`AnchorButton > should be able to render a AnchorButton with an icon only 2`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button"
   href="/some-url"
 >
    
@@ -117,7 +117,7 @@ exports[`AnchorButton > should be able to render a AnchorButton with an icon onl
 exports[`AnchorButton > should pass additional class names and attributes to the rendered element 1`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal foo bar"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal foo bar"
   href="/some-url"
   id="some-id"
 >
@@ -133,7 +133,7 @@ exports[`AnchorButton > should pass additional class names and attributes to the
 exports[`AnchorButton > should render a AnchorButton without a text 1`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
   href="/some-url"
 >
   
@@ -143,7 +143,7 @@ exports[`AnchorButton > should render a AnchorButton without a text 1`] = `
 exports[`AnchorButton > should render the AnchorButton component 1`] = `
 <a
   aria-disabled="false"
-  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
   href="/some-url"
 >
   <span

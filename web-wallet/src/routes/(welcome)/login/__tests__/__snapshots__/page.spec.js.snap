@@ -71,7 +71,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
            
            
           <button
-            class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
+            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--normal"
             type="submit"
           >
             <span
@@ -93,7 +93,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
     >
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
         href="/some-base-path/setup"
       >
         <svg
@@ -196,7 +196,7 @@ exports[`Login > Password workflow > should show the password field and the link
            
            
           <button
-            class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
+            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--normal"
             type="submit"
           >
             <span
@@ -209,7 +209,7 @@ exports[`Login > Password workflow > should show the password field and the link
            
           <a
             aria-disabled="false"
-            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal"
             href="/some-base-path/setup/restore"
           >
             <span
@@ -233,7 +233,7 @@ exports[`Login > Password workflow > should show the password field and the link
     >
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
         href="/some-base-path/setup"
       >
         <svg

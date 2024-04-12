@@ -178,7 +178,7 @@ describe("Dashboard Layout", () => {
   it("should render the dashboard layout in the error state", async () => {
     const { container } = renderWithSimpleContent(Layout, {});
     const getRetryButton = () =>
-      container.querySelector(".footer__actions-button");
+      container.querySelector(".footer__actions-button--retry");
 
     expect(getStatusWrapper(container, "error")).toBeNull();
     expect(getRetryButton()).toBeNull();

@@ -33,7 +33,7 @@ exports[`Setup > should render the Setup page 1`] = `
         >
           <a
             aria-disabled="false"
-            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
             href="/some-base-path/setup/create"
           >
             <svg
@@ -62,7 +62,7 @@ exports[`Setup > should render the Setup page 1`] = `
            
           <a
             aria-disabled="false"
-            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
             href="/some-base-path/setup/restore/"
           >
             <svg
@@ -133,7 +133,7 @@ exports[`Setup > should render the Setup page 1`] = `
          
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
           href="/some-base-path/login"
         >
           <svg

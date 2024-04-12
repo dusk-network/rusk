@@ -10,7 +10,7 @@ exports[`Mnemonic > should render the "Mnemonic" component in the authenticate s
     >
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >
@@ -131,7 +131,7 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
     >
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         disabled=""
         type="button"
       >

@@ -221,7 +221,7 @@ exports[`Stake > should render the Stake component 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -247,7 +247,7 @@ exports[`Stake > should render the Stake component 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -372,7 +372,7 @@ exports[`Stake > should render the Stake notice 1`] = `
         class="dusk-wizard__step-navigation"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <svg
@@ -398,7 +398,7 @@ exports[`Stake > should render the Stake notice 1`] = `
         
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal"
           type="button"
         >
           <span
@@ -640,7 +640,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg
@@ -666,7 +666,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg

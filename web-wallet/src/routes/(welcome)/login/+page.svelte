@@ -108,10 +108,10 @@
         {#if errorMessage}
           <span class="login__error">{errorMessage}</span>
         {/if}
-        <Button variant="secondary" text="Unlock Wallet" type="submit" />
+        <Button text="Unlock Wallet" type="submit" />
         {#if modeLabel === "Password"}
           <AppAnchorButton
-            variant="quaternary"
+            variant="tertiary"
             href="/setup/restore"
             text="Forgot Password?"
           />

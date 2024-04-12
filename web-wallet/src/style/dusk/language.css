@@ -53,26 +53,27 @@
   --control-small-font-size: 0.875em;
   --control-small-padding: 0.625em 0.875em;
 
-  --control-bg-color: #fff;
-  --control-bg-color-hover: var(--silver-metallic);
+  --non-button-control-bg-color: #fff;
+  --non-button-control-text-color: var(--smokey-black);
+
+  --control-bg-color: var(--smokey-black);
+  --control-bg-color-hover: var(--cornflower);
   --control-border-color: transparent;
   --control-border-color-hover: transparent;
-  --control-text-color: var(--smokey-black);
+  --control-text-color: #fff;
   --control-text-color-hover: var(--smokey-black);
 
-  --control-secondary-bg-color: var(--smokey-black);
-  --control-secondary-bg-color-hover: var(--cornflower);
+  --control-secondary-bg-color: #fff;
+  --control-secondary-bg-color-hover: var(--silver-metallic);
   --control-secondary-border-color: transparent;
   --control-secondary-border-color-hover: transparent;
-  --control-secondary-text-color: #fff;
-  --control-secondary-text-color-hover: var(--smokey-black);
+  --control-secondary-text-color: var(--smokey-black);
 
   --control-tertiary-bg-color: transparent;
   --control-tertiary-bg-color-hover: var(--cornflower);
   --control-tertiary-border-color: var(--smokey-black);
   --control-tertiary-border-color-hover: var(--cornflower);
   --control-tertiary-text-color: var(--smokey-black);
-  --control-tertiary-text-color-hover: var(--smokey-black);
 
   /* Anchors */
 
@@ -120,12 +121,13 @@
 
   /* Controls */
 
-  --control-bg-color: var(--smokey-black);
-  --control-bg-color-hover: var(--jet);
-  --control-text-color: var(--light-grey);
-  --control-text-color-hover: var(--light-grey);
-  --control-secondary-bg-color: var(--light-grey);
-  --control-secondary-text-color: var(--smokey-black);
+  --non-button-control-bg-color: var(--smokey-black);
+  --non-button-control-text-color: var(--light-grey);
+
+  --control-bg-color: var(--light-grey);
+  --control-text-color: var(--smokey-black);
+  --control-secondary-bg-color: var(--smokey-black);
+  --control-secondary-text-color: var(--light-grey);
   --control-tertiary-border-color: var(--light-grey);
   --control-tertiary-text-color: var(--light-grey);
 

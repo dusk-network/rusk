@@ -50,7 +50,7 @@ exports[`Forced logout page > should render the page alert the user about the fo
      
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
       data-sveltekit-replacestate="true"
       href="/some-base-path/"
     >

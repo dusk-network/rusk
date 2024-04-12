@@ -13,12 +13,13 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
       role="button"
       tabindex="0"
     >
-      <div
-        class="dusk-icon--circular"
-        style=""
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+        disabled=""
+        type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--large"
+          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -28,8 +29,10 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
         </svg>
         
         <!--&lt;Icon&gt;-->
-      </div>
-      <!--&lt;CircularIcon&gt;-->
+         
+        
+      </button>
+      <!--&lt;Button&gt;-->
        
       <p
         class="address-picker__current-address"
@@ -39,7 +42,7 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
        
       <button
         aria-label="Copy Address"
-        class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
         type="button"
       >
         <svg
