@@ -78,7 +78,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
 const SENDER_INDEX: u64 = 0;
 
-fn make_and_execute_transaction(
+fn make_transactions(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
 ) {
@@ -99,12 +99,12 @@ fn make_and_execute_transaction(
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    // This transaction should be free for the caller
+    // This transaction should be free to the caller
     let tx = wallet
         .execute(
             &mut rng,
             CHARLIE_CONTRACT_ID.to_bytes().into(),
-            String::from("ping"),
+            String::from("pay"),
             (),
             SENDER_INDEX,
             &refund,
@@ -159,7 +159,7 @@ pub async fn contract_pays() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    make_and_execute_transaction(&rusk, &wallet);
+    make_transactions(&rusk, &wallet);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
