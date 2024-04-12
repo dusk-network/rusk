@@ -354,7 +354,7 @@ impl Rusk {
     pub fn last_provisioners_change(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<impl Iterator<Item = (BlsPublicKey, Option<StakeData>)>> {
+    ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
             STAKE_CONTRACT,
@@ -367,7 +367,7 @@ impl Rusk {
             rkyv::from_bytes::<(BlsPublicKey, Option<StakeData>)>(&bytes).expect(
                 "The contract should only return (pk, Option<stake_data>) tuples",
             )
-        }))
+        }).collect())
     }
 
     pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
