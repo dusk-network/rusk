@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add first version of RUES, allowing websocket clients to subscribe for events
+  emitted by block transitions [#931]
+- Add `ws_sub_channel_cap` and `ws_sub_channel_cap` configuration items, allowing
+  for roughly regulating the throughput websockets connections [#931]
+- Add `base64` dependency [#931]
 - Add type constrains for bytecheck [#1371]
 - Add TLS support for HTTP server
 - Add iteration generator to FailedIterations [#1257]
@@ -22,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Adapt accept/finalize state transitions to broadcast emitted events through RUES [#931]
 - Change rusk::provisioners to filter out slashed stakes [#1257]
 - Change block processing to slash failed-iteration provisioners [#1257]
 - Change FailedIterations to include only nil quorum certificates [#1257]
@@ -206,6 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
 [#970]: https://github.com/dusk-network/rusk/issues/970
+[#931]: https://github.com/dusk-network/rusk/issues/931
 [#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369
 [#327]: https://github.com/dusk-network/rusk/issues/327

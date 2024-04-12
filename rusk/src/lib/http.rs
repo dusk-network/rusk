@@ -20,9 +20,11 @@ pub(crate) use event::{
     RequestData, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
-use tracing::info;
+use rusk_abi::Event;
+use tracing::{info, warn};
 
 use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::future::Future;
 use std::net::SocketAddr;
@@ -36,12 +38,12 @@ use async_trait::async_trait;
 
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::ToSocketAddrs;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 use tokio::{io, task};
 
 use hyper::server::conn::Http;
 use hyper::service::Service;
-use hyper::{body, Body, Request, Response, StatusCode};
+use hyper::{body, Body, Method, Request, Response, StatusCode};
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
 
 use tungstenite::protocol::frame::coding::CloseCode;
@@ -49,12 +51,16 @@ use tungstenite::protocol::{CloseFrame, Message};
 
 use futures_util::stream::iter as stream_iter;
 use futures_util::{SinkExt, StreamExt};
+use rand::rngs::OsRng;
 
 #[cfg(feature = "node")]
 use crate::chain::{Rusk, RuskNode};
 use crate::VERSION;
 
-use self::event::{MessageRequest, ResponseData};
+pub use self::event::ContractEvent;
+use self::event::{
+    ContractSubscription, MessageRequest, ResponseData, SessionId,
+};
 use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
@@ -68,6 +74,8 @@ pub struct HttpServer {
 impl HttpServer {
     pub async fn bind<A, H, P1, P2>(
         handler: H,
+        event_receiver: broadcast::Receiver<ContractEvent>,
+        ws_event_channel_cap: usize,
         addr: A,
         cert_and_key: Option<(P1, P2)>,
     ) -> io::Result<Self>
@@ -88,8 +96,13 @@ impl HttpServer {
 
         info!("Starting HTTP Listener to {local_addr}");
 
-        let handle =
-            task::spawn(listening_loop(handler, listener, shutdown_receiver));
+        let handle = task::spawn(listening_loop(
+            handler,
+            listener,
+            event_receiver,
+            shutdown_receiver,
+            ws_event_channel_cap,
+        ));
 
         Ok(Self {
             handle,
@@ -141,12 +154,15 @@ impl HandleRequest for DataSources {
 async fn listening_loop<H>(
     handler: H,
     listener: Listener,
+    events: broadcast::Receiver<ContractEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
+    ws_event_channel_cap: usize,
 ) where
     H: HandleRequest,
 {
-    let handler = Arc::new(handler);
+    let sources = Arc::new(handler);
     let http = Http::new();
+    let sockets_map = Arc::new(RwLock::new(HashMap::new()));
 
     loop {
         tokio::select! {
@@ -160,8 +176,11 @@ async fn listening_loop<H>(
                 };
 
                 let service = ExecutionService {
-                    sources: handler.clone(),
-                    shutdown: shutdown.resubscribe()
+                    sources: sources.clone(),
+                    sockets_map: sockets_map.clone(),
+                    events: events.resubscribe(),
+                    shutdown: shutdown.resubscribe(),
+                    ws_event_channel_cap,
                 };
                 let conn = http.serve_connection(stream, service).with_upgrades();
 
@@ -322,7 +341,11 @@ async fn handle_stream<H: HandleRequest>(
 
 struct ExecutionService<H> {
     sources: Arc<H>,
+    sockets_map:
+        Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
+    events: broadcast::Receiver<ContractEvent>,
     shutdown: broadcast::Receiver<Infallible>,
+    ws_event_channel_cap: usize,
 }
 
 impl<H> Service<Request<Body>> for ExecutionService<H>
@@ -353,10 +376,21 @@ where
     /// latter task running the stream handler loop is spawned.
     fn call(&mut self, mut req: Request<Body>) -> Self::Future {
         let sources = self.sources.clone();
+        let sockets_map = self.sockets_map.clone();
+        let events = self.events.resubscribe();
         let shutdown = self.shutdown.resubscribe();
+        let ws_event_channel_cap = self.ws_event_channel_cap;
 
         Box::pin(async move {
-            let response = handle_request(req, shutdown, sources).await;
+            let response = handle_request(
+                req,
+                sources,
+                sockets_map,
+                events,
+                shutdown,
+                ws_event_channel_cap,
+            )
+            .await;
             response.or_else(|error| {
                 Ok(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -367,16 +401,270 @@ where
     }
 }
 
+enum SubscriptionAction {
+    Subscribe(ContractSubscription),
+    Unsubscribe(ContractSubscription),
+}
+
+async fn handle_stream_rues(
+    sid: SessionId,
+    websocket: HyperWebsocket,
+    mut subscriptions: mpsc::Receiver<SubscriptionAction>,
+    mut events: broadcast::Receiver<ContractEvent>,
+    mut shutdown: broadcast::Receiver<Infallible>,
+) {
+    let mut stream = match websocket.await {
+        Ok(stream) => stream,
+        Err(_) => return,
+    };
+
+    if stream.send(Message::Text(sid.to_string())).await.is_err() {
+        let _ = stream
+            .close(Some(CloseFrame {
+                code: CloseCode::Error,
+                reason: Cow::from("Failed sending session ID"),
+            }))
+            .await;
+        return;
+    }
+
+    let mut subscription_set = HashSet::new();
+
+    loop {
+        tokio::select! {
+            _ = shutdown.recv() => {
+                let _ = stream.close(Some(CloseFrame {
+                    code: CloseCode::Away,
+                    reason: Cow::from("Shutting down"),
+                })).await;
+                break;
+            }
+
+            subscription = subscriptions.recv() => {
+                let subscription = match subscription {
+                    Some(subscription) => subscription,
+                    None => {
+                        // If the subscription channel is closed, it means the server has stopped
+                        // communicating with this loop, so we should inform the client and stop.
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Away,
+                            reason: Cow::from("Shutting down"),
+                        })).await;
+                        break;
+                    },
+                };
+
+                match subscription {
+                   SubscriptionAction::Subscribe(subscription) => {
+                        subscription_set.insert(subscription);
+                    },
+                    SubscriptionAction::Unsubscribe(subscription) => {
+                        subscription_set.remove(&subscription);
+                    },
+                }
+            }
+
+            event = events.recv() => {
+                let event = match event {
+                    Ok(event) => event,
+                    Err(err) => {
+                        // If the event channel is closed, it means the server has stopped
+                        // producing events, so we should inform the client and stop.
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Away,
+                            reason: Cow::from("Shutting down"),
+                        })).await;
+                        break;
+                    },
+                };
+
+                // The event is subscribed to if it matches any of the subscriptions.
+                let mut is_subscribed = false;
+                for sub in &subscription_set {
+                    println!("sub: {:?}", sub);
+                    if sub.matches(&event) {
+                        is_subscribed = true;
+                        break;
+                    }
+                }
+
+                // If the event is subscribed, we send it to the client.
+                if is_subscribed {
+                    let event = match serde_json::to_string(&event) {
+                        Ok(event) => event,
+                        // If we fail to serialize the event, we log the error
+                        // and continue processing further.
+                        Err(err) => {
+                            warn!("Failed serializing event: {err}");
+                            continue;
+                        }
+                    };
+
+                    // If the event fails sending we close the socket on the client
+                    // and stop processing further.
+                    if stream.send(Message::Text(event)).await.is_err() {
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Error,
+                            reason: Cow::from("Failed sending event"),
+                        })).await;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn response(
+    status: StatusCode,
+    body: impl Into<Body>,
+) -> Result<Response<Body>, ExecutionError> {
+    Ok(Response::builder()
+        .status(status)
+        .body(body.into())
+        .expect("Failed to build response"))
+}
+
+async fn handle_request_rues(
+    mut req: Request<Body>,
+    sockets_map: Arc<
+        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
+    >,
+    events: broadcast::Receiver<ContractEvent>,
+    shutdown: broadcast::Receiver<Infallible>,
+    ws_event_channel_cap: usize,
+) -> Result<Response<Body>, ExecutionError> {
+    if hyper_tungstenite::is_upgrade_request(&req) {
+        let (subscription_sender, subscriptions) =
+            mpsc::channel(ws_event_channel_cap);
+
+        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
+
+        // This is a new WebSocket connection, so we generate a new random ID
+        // and create a new channel for it.
+        let sid = SessionId::new_from_ws_rsp(OsRng, &response);
+
+        let mut sockets_map = sockets_map.write().await;
+        sockets_map.insert(sid, subscription_sender);
+
+        task::spawn(handle_stream_rues(
+            sid,
+            websocket,
+            subscriptions,
+            events,
+            shutdown,
+        ));
+
+        Ok(response)
+    } else {
+        let headers = req.headers();
+        let mut path_split = req.uri().path().split('/');
+
+        // Skip '/events' since we already know its present
+        path_split.next();
+        path_split.next();
+
+        let base_path = match path_split.next() {
+            Some(base_path) => base_path,
+            None => {
+                return response(
+                    StatusCode::NOT_FOUND,
+                    "{\"error\":\"Not found\"}",
+                );
+            }
+        };
+
+        // Routing code. Right now only the 'contracts' path is supported.
+        if base_path != "contracts" {
+            return response(
+                StatusCode::NOT_FOUND,
+                "{\"error\":\"Not found\"}",
+            );
+        }
+
+        let sid = match SessionId::parse_from_req(&req) {
+            None => {
+                return response(
+                    StatusCode::FAILED_DEPENDENCY,
+                    "{\"error\":\"Session ID not provided or invalid\"}",
+                );
+            }
+            Some(sid) => sid,
+        };
+
+        let subscription =
+            match ContractSubscription::parse_from_path_split(path_split) {
+                None => {
+                    return response(
+                        StatusCode::NOT_FOUND,
+                        "{{\"error\":\"Invalid URL path\n\"}}",
+                    );
+                }
+                Some(s) => s,
+            };
+
+        let action_sender = match sockets_map.read().await.get(&sid) {
+            Some(sender) => sender.clone(),
+            None => {
+                return response(
+                    StatusCode::FAILED_DEPENDENCY,
+                    "{\"error\":\"Session ID not provided or invalid\"}",
+                );
+            }
+        };
+
+        let action = match *req.method() {
+            Method::GET => SubscriptionAction::Subscribe(subscription),
+            Method::DELETE => SubscriptionAction::Unsubscribe(subscription),
+            _ => {
+                return response(
+                    StatusCode::METHOD_NOT_ALLOWED,
+                    "{\"error\":\"Method not allowed\"}",
+                );
+            }
+        };
+
+        if action_sender.send(action).await.is_err() {
+            return response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "{\"error\":\"Failed consuming request\"}",
+            );
+        }
+
+        response(StatusCode::OK, "")
+    }
+}
+
 async fn handle_request<H>(
     mut req: Request<Body>,
-    mut shutdown: broadcast::Receiver<Infallible>,
     sources: Arc<H>,
+    sockets_map: Arc<
+        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
+    >,
+    events: broadcast::Receiver<ContractEvent>,
+    shutdown: broadcast::Receiver<Infallible>,
+    ws_event_channel_cap: usize,
 ) -> Result<Response<Body>, ExecutionError>
 where
     H: HandleRequest,
 {
+    let path = req.uri().path();
+
+    // If the request is a RUES request, we handle it differently.
+    if path.starts_with("/events") {
+        return handle_request_rues(
+            req,
+            sockets_map,
+            events,
+            shutdown,
+            ws_event_channel_cap,
+        )
+        .await;
+    }
+
     if hyper_tungstenite::is_upgrade_request(&req) {
         let target = req.uri().path().try_into()?;
+
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
         task::spawn(handle_stream(sources, websocket, target, shutdown));
 
@@ -451,6 +739,8 @@ mod tests {
     use super::*;
     use event::Event as EventRequest;
 
+    use crate::http::event::WrappedContractId;
+    use rusk_abi::ContractId;
     use std::net::TcpStream;
     use tungstenite::client;
 
@@ -490,9 +780,18 @@ mod tests {
     async fn http_query() {
         let cert_and_key: Option<(String, String)> = None;
 
-        let server = HttpServer::bind(TestHandle, "localhost:0", cert_and_key)
-            .await
-            .expect("Binding the server to the address should succeed");
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let server = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
 
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });
@@ -535,8 +834,13 @@ mod tests {
         let certificate = reqwest::tls::Certificate::from_pem(&cert_bytes)
             .expect("cert should be valid");
 
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
         let server = HttpServer::bind(
             TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
             "localhost:0",
             Some((cert_path, key_path)),
         )
@@ -587,9 +891,18 @@ mod tests {
     async fn websocket_queries() {
         let cert_and_key: Option<(String, String)> = None;
 
-        let server = HttpServer::bind(TestHandle, "localhost:0", cert_and_key)
-            .await
-            .expect("Binding the server to the address should succeed");
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let server = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
 
         let stream = TcpStream::connect(server.local_addr)
             .expect("Connecting to the server should succeed");
@@ -638,7 +951,7 @@ mod tests {
                 response_x_header, request_x_header,
                 "x-headers to be propagated back"
             );
-            assert!(matches!(response.error, None), "There should be noerror");
+            assert!(response.error.is_none(), "There should be no error");
             match response.data {
                 DataType::Binary(BinaryWrapper { inner }) => {
                     responses.push(inner);
@@ -655,5 +968,159 @@ mod tests {
                 "Response data should be the same as the request `fn_args`"
             );
         }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues() {
+        let cert_and_key: Option<(String, String)> = None;
+
+        let (event_sender, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let server = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let stream = TcpStream::connect(server.local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{}/events", server.local_addr);
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid = SessionId::parse(
+            &first_message
+                .into_text()
+                .expect("Session ID should come in a text message"),
+        )
+        .expect("Session ID should be parsed");
+
+        const SUB_CONTRACT_ID: WrappedContractId =
+            WrappedContractId(ContractId::from_bytes([1; 32]));
+        const MAYBE_SUB_CONTRACT_ID: WrappedContractId =
+            WrappedContractId(ContractId::from_bytes([2; 32]));
+        const NON_SUB_CONTRACT_ID: WrappedContractId =
+            WrappedContractId(ContractId::from_bytes([3; 32]));
+
+        const TOPIC: &str = "topic";
+
+        let sub_contract_id_hex = hex::encode(SUB_CONTRACT_ID.0);
+        let maybe_sub_contract_id_hex = hex::encode(MAYBE_SUB_CONTRACT_ID.0);
+
+        let client = reqwest::Client::new();
+
+        let response = client
+            .get(format!(
+                "http://{}/events/contracts/{sub_contract_id_hex}/{TOPIC}",
+                server.local_addr
+            ))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = client
+            .get(format!(
+                "http://{}/events/contracts/{maybe_sub_contract_id_hex}/{TOPIC}",
+                server.local_addr
+            ))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // This event is subscribed to, so it should be received
+        let received_event = ContractEvent {
+            target: SUB_CONTRACT_ID,
+            topic: TOPIC.into(),
+            data: b"hello, events".to_vec(),
+        };
+
+        // This event is at first subscribed to, so it should be received the
+        // first time
+        let at_first_received_event = ContractEvent {
+            target: MAYBE_SUB_CONTRACT_ID,
+            topic: TOPIC.into(),
+            data: b"hello, events".to_vec(),
+        };
+
+        // This event is not subscribed to, so it should not be received
+        let non_received_event = ContractEvent {
+            target: NON_SUB_CONTRACT_ID,
+            topic: TOPIC.into(),
+            data: b"hello, events".to_vec(),
+        };
+
+        event_sender
+            .send(non_received_event.clone())
+            .expect("Sending event should succeed");
+
+        event_sender
+            .send(at_first_received_event.clone())
+            .expect("Sending event should succeed");
+
+        event_sender
+            .send(received_event.clone())
+            .expect("Sending event should succeed");
+
+        let message = stream.read().expect("Event should be received");
+        let event_text = message.into_text().expect("Event should be text");
+
+        let event: ContractEvent = serde_json::from_str(&event_text)
+            .expect("Event should deserialize");
+
+        assert_eq!(at_first_received_event, event, "Event should be the same");
+
+        let message = stream.read().expect("Event should be received");
+        let event_text = message.into_text().expect("Event should be text");
+
+        let event: ContractEvent = serde_json::from_str(&event_text)
+            .expect("Event should deserialize");
+
+        assert_eq!(received_event, event, "Event should be the same");
+
+        let response = client
+            .delete(format!(
+                "http://{}/events/contracts/{maybe_sub_contract_id_hex}/{TOPIC}",
+                server.local_addr
+            ))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        event_sender
+            .send(non_received_event.clone())
+            .expect("Sending event should succeed");
+
+        event_sender
+            .send(at_first_received_event.clone())
+            .expect("Sending event should succeed");
+
+        event_sender
+            .send(received_event.clone())
+            .expect("Sending event should succeed");
+
+        let message = stream.read().expect("Event should be received");
+        let event_text = message.into_text().expect("Event should be text");
+
+        let event: ContractEvent = serde_json::from_str(&event_text)
+            .expect("Event should deserialize");
+
+        assert_eq!(received_event, event, "Event should be the same");
     }
 }

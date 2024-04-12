@@ -27,8 +27,10 @@ use rusk_abi::{
     STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
+use tokio::sync::broadcast;
 
 use super::{coinbase_value, emission_amount, Rusk, RuskTip};
+use crate::http::ContractEvent;
 use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
@@ -42,6 +44,7 @@ impl Rusk {
         dir: P,
         generation_timeout: Option<Duration>,
         feeder_gas_limit: u64,
+        event_sender: broadcast::Sender<ContractEvent>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -73,6 +76,7 @@ impl Rusk {
             dir: dir.into(),
             generation_timeout,
             feeder_gas_limit,
+            event_sender,
         })
     }
 
@@ -200,7 +204,7 @@ impl Rusk {
             txs,
             missed_generators,
         )
-        .map(|(a, b, _)| (a, b))
+        .map(|(a, b, _, _)| (a, b))
     }
 
     /// Accept the given transactions.
@@ -220,7 +224,7 @@ impl Rusk {
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
-        let (spent_txs, verification_output, session) = accept(
+        let (spent_txs, verification_output, session, events) = accept(
             session,
             block_height,
             block_gas_limit,
@@ -238,6 +242,10 @@ impl Rusk {
         }
 
         self.set_current_commit(session.commit()?);
+
+        for event in events {
+            let _ = self.event_sender.send(event.into());
+        }
 
         Ok((spent_txs, verification_output))
     }
@@ -394,7 +402,12 @@ fn accept(
     generator: &BlsPublicKey,
     txs: &[Transaction],
     missed_generators: &[BlsPublicKey],
-) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
+) -> Result<(
+    Vec<SpentTransaction>,
+    VerificationOutput,
+    Session,
+    Vec<Event>,
+)> {
     let mut session = session;
 
     let mut block_gas_left = block_gas_limit;
@@ -402,6 +415,7 @@ fn accept(
     let mut spent_txs = Vec::with_capacity(txs.len());
     let mut dusk_spent = 0;
 
+    let mut events = Vec::new();
     let mut event_hasher = Sha3_256::new();
 
     for unspent_tx in txs {
@@ -409,6 +423,8 @@ fn accept(
         let receipt = execute(&mut session, tx)?;
 
         update_hasher(&mut event_hasher, &receipt.events);
+        events.extend(receipt.events);
+
         let gas_spent = receipt.gas_spent;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
@@ -444,6 +460,7 @@ fn accept(
             event_hash,
         },
         session,
+        events,
     ))
 }
 

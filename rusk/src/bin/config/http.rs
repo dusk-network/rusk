@@ -19,6 +19,10 @@ pub struct HttpConfig {
     #[serde(default = "default_feeder_call_gas")]
     pub feeder_call_gas: u64,
     listen_address: Option<String>,
+    #[serde(default = "default_ws_sub_channel_cap")]
+    pub ws_sub_channel_cap: usize,
+    #[serde(default = "default_ws_event_channel_cap")]
+    pub ws_event_channel_cap: usize,
 }
 
 impl Default for HttpConfig {
@@ -29,6 +33,8 @@ impl Default for HttpConfig {
             listen: default_listen(),
             feeder_call_gas: default_feeder_call_gas(),
             listen_address: None,
+            ws_sub_channel_cap: default_ws_sub_channel_cap(),
+            ws_event_channel_cap: default_ws_event_channel_cap(),
         }
     }
 }
@@ -39,6 +45,14 @@ const fn default_feeder_call_gas() -> u64 {
 
 const fn default_listen() -> bool {
     true
+}
+
+const fn default_ws_sub_channel_cap() -> usize {
+    16
+}
+
+const fn default_ws_event_channel_cap() -> usize {
+    1024
 }
 
 impl HttpConfig {
