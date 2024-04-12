@@ -28,34 +28,34 @@
 </section>
 <br />
 <section>
-  <AnchorButton href="/" icon={{ path: mdiHome }} text="Anchor - Primary" />
+  <AnchorButton href="#" icon={{ path: mdiHome }} text="Anchor - Primary" />
   <AnchorButton
-    href="/"
+    href="#"
     disabled={true}
     icon={{ path: mdiHome }}
     text="Anchor - Primary - Disabled"
   />
   <AnchorButton
-    href="/"
+    href="#"
     icon={{ path: mdiHome }}
     text="Anchor - Secondary"
     variant="secondary"
   />
   <AnchorButton
-    href="/"
+    href="#"
     disabled={true}
     icon={{ path: mdiHome }}
     text="Anchor - Secondary - Disabled"
     variant="secondary"
   />
   <AnchorButton
-    href="/"
+    href="#"
     icon={{ path: mdiHome }}
     text="Anchor - Tertiary"
     variant="tertiary"
   />
   <AnchorButton
-    href="/"
+    href="#"
     disabled={true}
     icon={{ path: mdiHome }}
     text="Tertiary - Disabled"
@@ -120,6 +120,60 @@
   />
   <Button icon={{ path: mdiHome }} size="small" variant="tertiary" />
   <Button
+    disabled={true}
+    icon={{ path: mdiHome }}
+    size="small"
+    variant="tertiary"
+  />
+</section>
+<hr />
+<section>
+  <AnchorButton href="#" icon={{ path: mdiHome }} />
+  <AnchorButton href="#" disabled={true} icon={{ path: mdiHome }} />
+  <AnchorButton href="#" icon={{ path: mdiHome }} variant="secondary" />
+  <AnchorButton
+    href="#"
+    disabled={true}
+    icon={{ path: mdiHome }}
+    variant="secondary"
+  />
+  <AnchorButton href="#" icon={{ path: mdiHome }} variant="tertiary" />
+  <AnchorButton
+    href="#"
+    disabled={true}
+    icon={{ path: mdiHome }}
+    variant="tertiary"
+  />
+</section>
+<section>
+  <AnchorButton href="#" icon={{ path: mdiHome }} size="small" />
+  <AnchorButton
+    href="#"
+    disabled={true}
+    icon={{ path: mdiHome }}
+    size="small"
+  />
+  <AnchorButton
+    href="#"
+    icon={{ path: mdiHome }}
+    size="small"
+    variant="secondary"
+  />
+  <AnchorButton
+    href="#"
+    disabled={true}
+    icon={{ path: mdiHome }}
+    size="small"
+    variant="secondary"
+  />
+  <AnchorButton
+    href="#"
+    icon={{ path: mdiHome }}
+    size="small"
+    variant="tertiary"
+  />
+  <AnchorButton
+    href="#"
     disabled={true}
     icon={{ path: mdiHome }}
     size="small"
