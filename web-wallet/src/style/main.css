@@ -104,16 +104,6 @@ svg {
   z-index: 4;
 }
 
-.dusk-anchor-button:not(.dusk-anchor-button__disabled),
-.dusk-button:enabled,
-.dusk-checkbox:enabled,
-.dusk-select:enabled,
-.dusk-switch[aria-disabled="false"],
-.dusk-textbox:enabled,
-*[role="menuitem"] {
-  transition: all 0.2s linear 0s;
-}
-
 :is(
     .dusk-anchor-button:not(.dusk-anchor-button__disabled),
     .dusk-button:enabled,

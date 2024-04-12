@@ -15,7 +15,7 @@
   transform-origin: center center;
   transition-delay: 0s;
   transition-duration: 0.2s;
-  transition-property: background-color, border-color, color, transform;
+  transition-property: background-color, border-color, color, scale;
   transition-timing-function: ease-in-out;
 }
 
@@ -102,5 +102,11 @@
 
 .dusk-anchor.dusk-icon-button:hover,
 .dusk-icon-button:not(:disabled):hover {
-  scale: 1.2;
+  scale: 1.1;
+}
+
+.dusk-icon-button:enabled:active,
+.dusk-anchor-button.dusk-icon-button:active,
+.dusk-button--active {
+  scale: 0.9;
 }

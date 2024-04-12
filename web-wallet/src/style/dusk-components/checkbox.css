@@ -9,6 +9,7 @@
   width: var(--checkbox-control-size);
   height: var(--checkbox-control-size);
   flex-shrink: 0;
+  transition: background-color 0.2s ease-in-out 0s;
 }
 
 .dusk-checkbox:checked {
