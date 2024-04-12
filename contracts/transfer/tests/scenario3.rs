@@ -315,12 +315,12 @@ fn instantiate_and_subsidize_contract(
     (session, test_sponsor_ssk)
 }
 
-fn call_at_contracts_expense(
+fn call_contract_method(
     mut session: &mut Session,
-    sponsor_contract_id: ContractId,
+    contract_id: ContractId,
     method: impl AsRef<str>,
     sponsor_ssk: SecretSpendKey,
-) {
+) -> (u64, u64, u64) {
     const PING_FEE: u64 = dusk(1.0);
     const SPONSORING_NOTE_VALUE: u64 = 100_000_000_000;
 
@@ -328,13 +328,12 @@ fn call_at_contracts_expense(
     let test_sponsor_psk = PublicSpendKey::from(&sponsor_ssk); // sponsor is Charlie's owner
 
     // make sure the sponsoring contract is properly subsidized (has funds)
-    let contract_balance_before_free_call =
-        module_balance(&mut session, sponsor_contract_id)
-            .expect("Module balance should succeed");
+    let balance_before = module_balance(&mut session, contract_id)
+        .expect("Module balance should succeed");
     println!(
         "current balance of contract '{:X?}' is {}",
-        sponsor_contract_id.to_bytes()[0],
-        contract_balance_before_free_call
+        contract_id.to_bytes()[0],
+        balance_before
     );
 
     let note = Note::transparent(rng, &test_sponsor_psk, SPONSORING_NOTE_VALUE);
@@ -377,7 +376,7 @@ fn call_at_contracts_expense(
         Note::obfuscated(rng, &test_sponsor_psk, change_value, change_blinder);
 
     let call = Some((
-        sponsor_contract_id.to_bytes(),
+        contract_id.to_bytes(),
         String::from(method.as_ref()),
         vec![],
     ));
@@ -448,7 +447,7 @@ fn call_at_contracts_expense(
     println!(
         "executing method '{}' - contract '{:X?}' is paying",
         method.as_ref(),
-        sponsor_contract_id.to_bytes()[0]
+        contract_id.to_bytes()[0]
     );
     let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
@@ -459,28 +458,36 @@ fn call_at_contracts_expense(
         gas_spent
     );
 
-    let contract_balance_after_free_call =
-        module_balance(&mut session, sponsor_contract_id)
-            .expect("Module balance should succeed");
+    let balance_after = module_balance(&mut session, contract_id)
+        .expect("Module balance should succeed");
 
     println!(
-        "contract's '{:X?}' balance before the sponsored call: {}",
-        sponsor_contract_id.as_bytes()[0],
-        contract_balance_before_free_call
+        "contract's '{:X?}' balance before the call: {}",
+        contract_id.as_bytes()[0],
+        balance_before
     );
     println!(
-        "contract's '{:X?}' balance after the sponsored call: {}",
-        sponsor_contract_id.as_bytes()[0],
-        contract_balance_after_free_call
+        "contract's '{:X?}' balance after the call: {}",
+        contract_id.as_bytes()[0],
+        balance_after
     );
-    println!(
-        "contract '{:X?}' has paid for this call: {}",
-        sponsor_contract_id.as_bytes()[0],
-        contract_balance_before_free_call - contract_balance_after_free_call
-    );
-    println!("this call was sponsored by contract '{:X?}', gas spent by the caller is: {}", sponsor_contract_id.as_bytes()[0], gas_spent);
+    if balance_before > balance_after {
+        println!(
+            "contract '{:X?}' has paid for this call: {}",
+            contract_id.as_bytes()[0],
+            balance_before - balance_after
+        );
+        println!("this call was sponsored by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], gas_spent);
+    } else {
+        println!(
+            "contract '{:X?}' has earned: {}",
+            contract_id.as_bytes()[0],
+            balance_after - balance_before
+        );
+        println!("this call was charged by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], gas_spent);
+    }
 
-    assert_eq!(gas_spent, 0);
+    (gas_spent, balance_before, balance_after)
 }
 
 #[test]
@@ -490,10 +497,63 @@ fn contract_sponsors_a_call() {
 
     let (mut session, sponsor_ssk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    call_at_contracts_expense(
+    let (gas_spent, balance_before, balance_after) = call_contract_method(
         &mut session,
         CHARLIE_CONTRACT_ID,
-        "ping",
+        "pay",
         sponsor_ssk,
     );
+    assert!(balance_after < balance_before);
+    assert_eq!(gas_spent, 0);
+}
+
+#[test]
+fn contract_sponsors_not_enough_allowance() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, sponsor_ssk) =
+        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (gas_spent, balance_before, balance_after) = call_contract_method(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "pay_and_fail",
+        sponsor_ssk,
+    );
+    assert_eq!(balance_after, balance_before);
+    assert!(gas_spent > 0);
+}
+
+#[test]
+fn contract_earns_a_fee() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, sponsor_ssk) =
+        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (gas_spent, balance_before, balance_after) = call_contract_method(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "earn",
+        sponsor_ssk,
+    );
+    assert!(balance_after > balance_before);
+    assert!(balance_after - balance_before <= gas_spent);
+}
+
+#[test]
+fn contract_earns_not_enough_charge() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, sponsor_ssk) =
+        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (gas_spent, balance_before, balance_after) = call_contract_method(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "earn_and_fail",
+        sponsor_ssk,
+    );
+    assert_eq!(balance_before, balance_after);
+    assert!(gas_spent > 0);
 }

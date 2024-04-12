@@ -357,7 +357,7 @@ impl TransferState {
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
-        let mut result = Ok((Vec::new(), 0u64));
+        let mut result = Ok((Vec::new(), 0u64, 0u64));
 
         let mut call_contract_id: Option<ContractId> = None;
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
@@ -374,8 +374,23 @@ impl TransferState {
         const SURCHARGE: u64 = 10000;
 
         if let Some(contract_id) = call_contract_id {
-            if let Ok(allowance) = result.clone().map(|(_, b)| b) {
-                if allowance != 0 {
+            if let Ok((_, allowance, charge)) = result.clone() {
+                if charge != 0 {
+                    let spent = rusk_abi::spent();
+                    let cost = spent + SURCHARGE;
+                    if charge > cost {
+                        let earning = charge - cost;
+                        rusk_abi::debug!(
+                                "S&E: contract ({:X?}) earns {}, charge is {}, estimated cost is {}",
+                                contract_id.as_bytes()[0],
+                                earning,
+                                charge,
+                                cost,
+                        );
+                        self.add_balance(contract_id, earning);
+                        rusk_abi::set_free(0, earning)
+                    }
+                } else if allowance != 0 {
                     // here: before we set this tx to be a free tx
                     // we need to charge the contract appropriately
                     // i.e. deduct the right amount from its balance
@@ -420,14 +435,14 @@ impl TransferState {
                             rusk_abi::debug!(
                                 "S&E: increased transfer contract balance from {} to {}", tc_old_balance, tc_new_balance);
                             rusk_abi::debug!("S&E: setting this transaction to be paid for by contract '{:X?}'", contract_id.as_bytes()[0]);
-                            rusk_abi::set_free();
+                            rusk_abi::set_free(1, 0);
                         }
                     }
                 }
             }
         }
 
-        result.map(|(a, _)| a)
+        result.map(|(a, _, _)| a)
     }
 
     /// Refund the previously performed transaction, taking into account the
