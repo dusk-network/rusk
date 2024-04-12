@@ -12,13 +12,40 @@ use transfer_contract_types::Stct;
 pub struct Charlie;
 
 impl Charlie {
-    pub fn ping(&mut self) {
+    pub fn pay(&mut self) {
         const ALLOWANCE: u64 = 10_000_000;
         rusk_abi::debug!(
-            "CHARLIE ping - making this call free up to {} of allowance",
+            "CHARLIE pay - this call is free up to {} of allowance",
             ALLOWANCE
         );
         rusk_abi::set_allowance(ALLOWANCE);
+    }
+
+    /// we set charge to a value which is too small to cover
+    /// execution cost, the transaction should fail
+    /// and contract balance should not be affected
+    pub fn pay_and_fail(&mut self) {
+        const ALLOWANCE: u64 = 4_000_000;
+        rusk_abi::debug!(
+            "CHARLIE pay - this call is free up to {} of allowance",
+            ALLOWANCE
+        );
+        rusk_abi::set_allowance(ALLOWANCE);
+    }
+
+    pub fn earn(&mut self) {
+        const CHARGE: u64 = 20_000_000;
+        rusk_abi::debug!("CHARLIE earn - charging {} for the call", CHARGE);
+        rusk_abi::set_charge(CHARGE);
+    }
+
+    /// we set charge to a value which is too small to cover
+    /// execution cost, the transaction should fail
+    /// and contract balance should not be affected
+    pub fn earn_and_fail(&mut self) {
+        const CHARGE: u64 = 4_000_000;
+        rusk_abi::debug!("CHARLIE earn - charging {} for the call", CHARGE);
+        rusk_abi::set_charge(CHARGE);
     }
 
     /// loads the contract with funds which can be used

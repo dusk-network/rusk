@@ -25,8 +25,23 @@ mod wasm {
     static mut STATE: Charlie = Charlie;
 
     #[no_mangle]
-    unsafe fn ping(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
+    unsafe fn pay(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.pay())
+    }
+
+    #[no_mangle]
+    unsafe fn pay_and_fail(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.pay_and_fail())
+    }
+
+    #[no_mangle]
+    unsafe fn earn(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.earn())
+    }
+
+    #[no_mangle]
+    unsafe fn earn_and_fail(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.earn_and_fail())
     }
 
     #[no_mangle]
