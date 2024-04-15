@@ -163,14 +163,14 @@ impl Rusk {
             }
         }
 
-        reward_slash_and_update_root(
+        let coinbase_events = reward_slash_and_update_root(
             &mut session,
             block_height,
             dusk_spent,
             generator,
             missed_generators,
-            &mut event_hasher,
         )?;
+        update_hasher(&mut event_hasher, &coinbase_events);
 
         let state_root = session.root();
         let event_hash = event_hasher.finalize().into();
@@ -441,14 +441,16 @@ fn accept(
         });
     }
 
-    reward_slash_and_update_root(
+    let coinbase_events = reward_slash_and_update_root(
         &mut session,
         block_height,
         dusk_spent,
         generator,
         missed_generators,
-        &mut event_hasher,
     )?;
+
+    update_hasher(&mut event_hasher, &coinbase_events);
+    events.extend(coinbase_events);
 
     let state_root = session.root();
     let event_hash = event_hasher.finalize().into();
@@ -524,8 +526,7 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
     slashing: &[BlsPublicKey],
-    event_hasher: &mut Sha3_256,
-) -> Result<()> {
+) -> Result<Vec<Event>> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
@@ -535,7 +536,8 @@ fn reward_slash_and_update_root(
         &(*DUSK_KEY, dusk_value),
         u64::MAX,
     )?;
-    update_hasher(event_hasher, &r.events);
+
+    let mut events = r.events;
 
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -543,7 +545,7 @@ fn reward_slash_and_update_root(
         &(*generator, generator_value),
         u64::MAX,
     )?;
-    update_hasher(event_hasher, &r.events);
+    events.extend(r.events);
 
     let slash_amount = emission_amount(block_height);
 
@@ -554,7 +556,7 @@ fn reward_slash_and_update_root(
             &(*to_slash, slash_amount),
             u64::MAX,
         )?;
-        update_hasher(event_hasher, &r.events);
+        events.extend(r.events);
     }
 
     let r = session.call::<_, ()>(
@@ -563,7 +565,7 @@ fn reward_slash_and_update_root(
         &(),
         u64::MAX,
     )?;
-    update_hasher(event_hasher, &r.events);
+    events.extend(r.events);
 
-    Ok(())
+    Ok(events)
 }

@@ -707,8 +707,8 @@ impl ContractSubscription {
 }
 
 /// A contract event that is sent to a websocket client.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ContractEvent {
     pub target: WrappedContractId,
     pub topic: String,
