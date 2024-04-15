@@ -479,9 +479,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
                 let (txs, verification_output) = vm.accept(blk.inner())?;
-                if blk.is_final() {
-                    vm.finalize_state(blk.inner().header().state_hash)?;
-                }
 
                 est_elapsed_time = start.elapsed();
 
@@ -524,6 +521,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             // Update most_recent_block
             *mrb = blk;
+
+            if mrb.is_final() {
+                vm.finalize_state(mrb.inner().header().state_hash)?;
+            }
 
             anyhow::Ok(())
         }?;
