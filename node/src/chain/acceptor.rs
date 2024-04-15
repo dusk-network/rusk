@@ -478,11 +478,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = if blk.is_final() {
-                    vm.finalize(blk.inner())?
-                } else {
-                    vm.accept(blk.inner())?
-                };
+                let (txs, verification_output) = vm.accept(blk.inner())?;
+                if blk.is_final() {
+                    vm.finalize_state(blk.inner().header().state_hash)?;
+                }
 
                 est_elapsed_time = start.elapsed();
 
