@@ -17,6 +17,7 @@ phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-i
 dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 transfer-contract-types = { version = "0.1.0", path = "../transfer-types", default-features = false }
+ringbuffer = "0.15"
 
 
 [target.'cfg(target_family = "wasm")'.dependencies]
