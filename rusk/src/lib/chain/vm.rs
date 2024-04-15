@@ -6,6 +6,8 @@
 
 mod query;
 
+use node_data::bls::PublicKey;
+use phoenix_core::transaction::StakeData;
 use tracing::info;
 
 use dusk_bytes::DeserializableSlice;
@@ -141,6 +143,13 @@ impl VMExecution for Rusk {
         self.query_provisioners(Some(base_commit))
     }
 
+    fn get_changed_provisioners(
+        &self,
+        base_commit: [u8; 32],
+    ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
+        self.query_provisioners_change(Some(base_commit))
+    }
+
     fn get_provisioner(
         &self,
         pk: &dusk_bls12_381_sign::PublicKey,
@@ -189,12 +198,8 @@ impl Rusk {
         let provisioners = self
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .map(|(key, stake)| {
-                let (value, eligibility) = stake.amount.unwrap_or_default();
-                let stake =
-                    Stake::new(value, stake.reward, eligibility, stake.counter);
-                let pubkey_bls = node_data::bls::PublicKey::new(key);
-                (pubkey_bls, stake)
+            .map(|(pk, stake)| {
+                (node_data::bls::PublicKey::new(pk), Self::to_stake(stake))
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
@@ -202,5 +207,30 @@ impl Rusk {
         }
 
         Ok(ret)
+    }
+
+    fn query_provisioners_change(
+        &self,
+        base_commit: Option<[u8; 32]>,
+    ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>> {
+        info!("Received get_provisioners_change request");
+        Ok(self
+            .last_provisioners_change(base_commit)
+            .map_err(|e| {
+                anyhow::anyhow!("Cannot get provisioners change: {e}")
+            })?
+            .into_iter()
+            .map(|(pk, stake)| {
+                (
+                    node_data::bls::PublicKey::new(pk),
+                    stake.map(Self::to_stake),
+                )
+            })
+            .collect())
+    }
+
+    fn to_stake(stake: StakeData) -> Stake {
+        let (value, eligibility) = stake.amount.unwrap_or_default();
+        Stake::new(value, stake.reward, eligibility, stake.counter)
     }
 }

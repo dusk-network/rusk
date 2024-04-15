@@ -73,6 +73,33 @@ impl ContextProvisioners {
         self.current = new;
         self.prev = None;
     }
+
+    /// Derive the previous state of provisioners.
+    ///
+    /// This method takes a vector of tuples representing the previous state of
+    /// each provisioner. Each tuple consists of a `PublicKey` and an
+    /// optional `Stake`.
+    ///
+    /// If the `changes` vector is not empty, it iterates
+    /// over each change, deriving the previous state of provisioners from
+    /// the current state, and updates the current state accordingly.
+    ///
+    /// If the `changes` vector is empty, the previous state of the provisioners
+    /// is considered equal to the current
+    pub fn apply_changes(&mut self, changes: Vec<(PublicKey, Option<Stake>)>) {
+        if !changes.is_empty() {
+            let mut prev = self.to_current();
+            for change in changes {
+                match change {
+                    (pk, None) => prev.remove_stake(&pk),
+                    (pk, Some(stake)) => prev.replace_stake(pk, stake),
+                };
+            }
+            self.set_previous(prev)
+        } else {
+            self.remove_previous()
+        }
+    }
 }
 
 impl Provisioners {

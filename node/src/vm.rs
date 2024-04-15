@@ -47,6 +47,11 @@ pub trait VMExecution: Send + Sync + 'static {
         base_commit: [u8; 32],
     ) -> anyhow::Result<Provisioners>;
 
+    fn get_changed_provisioners(
+        &self,
+        base_commit: [u8; 32],
+    ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>>;
+
     fn get_provisioner(&self, pk: &PublicKey) -> anyhow::Result<Option<Stake>>;
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;

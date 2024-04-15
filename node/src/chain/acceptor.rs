@@ -376,18 +376,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             t.op_write(MD_STATE_ROOT_KEY, blk.header().state_hash)
         })?;
 
-        let (prev_header, _) = self
-            .db
-            .read()
-            .await
-            .view(|t| t.fetch_block_header(&blk.header().prev_block_hash))?
-            .expect("Reverting to a block without previous");
-
         let vm = self.vm.read().await;
         let current_prov = vm.get_provisioners(blk.header().state_hash)?;
         provisioners_list.update(current_prov);
-        let previous_prov = vm.get_provisioners(prev_header.state_hash)?;
-        provisioners_list.set_previous(previous_prov);
+
+        let changed_provisioners =
+            vm.get_changed_provisioners(blk.header().state_hash)?;
+        provisioners_list.apply_changes(changed_provisioners);
 
         *mrb = BlockWithLabel::new_with_label(blk.clone(), label);
 
