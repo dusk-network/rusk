@@ -397,22 +397,16 @@ impl Rusk {
     pub(crate) fn set_base_and_delete(&self, commit: [u8; 32]) {
         let mut tip = self.tip.write();
 
-        let current_commit = tip.current;
-        let base_commit = tip.base;
-
         tip.current = commit;
         tip.base = commit;
 
-        // We will delete all commits except the previous base commit, the
-        // previous current commit and the new commit.
+        // We will delete all commits except the new commit.
         let mut commits_to_delete = self.vm.commits();
-        commits_to_delete.retain(|c| {
-            *c != current_commit && *c != base_commit && *c != commit
-        });
+        commits_to_delete.retain(|c| c != &commit);
 
-        // Delete all commits except the previous base commit, and the current
-        // commit. Deleting commits is blocking, meaning it will wait until any
-        // process using the commit is done. This includes any queries that are
+        // Delete all commits except the new commit.
+        // Deleting commits is blocking, meaning it will wait until any process
+        // using the commit is done. This includes any queries that are
         // currently executing.
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
