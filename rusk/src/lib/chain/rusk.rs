@@ -277,10 +277,11 @@ impl Rusk {
         }
 
         let commit = session.commit()?;
-        self.set_base_and_delete(commit);
 
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
+
+        self.set_base_and_delete(commit);
 
         Ok((spent_txs, verification_output))
     }
