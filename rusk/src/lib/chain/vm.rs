@@ -89,33 +89,10 @@ impl VMExecution for Rusk {
         Ok((txs, verification_output))
     }
 
-    fn finalize(
-        &self,
-        blk: &Block,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
+    fn finalize_state(&self, commit: [u8; 32]) -> anyhow::Result<()> {
         info!("Received finalize request");
-        let generator = blk.header().generator_bls_pubkey;
-        let generator =
-            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
-                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
-
-        let (txs, state_root) = self
-            .finalize_transactions(
-                blk.header().height,
-                blk.header().gas_limit,
-                generator,
-                blk.txs().clone(),
-                Some(VerificationOutput {
-                    state_root: blk.header().state_hash,
-                    event_hash: blk.header().event_hash,
-                }),
-                &blk.header().failed_iterations.to_missed_generators()?,
-            )
-            .map_err(|inner| {
-                anyhow::anyhow!("Cannot finalize txs: {inner}!!")
-            })?;
-
-        Ok((txs, state_root))
+        self.finalize_state(commit)
+            .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {

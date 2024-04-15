@@ -242,48 +242,12 @@ impl Rusk {
         Ok((spent_txs, verification_output))
     }
 
-    /// Finalize the given transactions.
-    ///
-    /// * `consistency_check` - represents a state_root, the caller expects to
-    ///   be returned on successful transactions execution. Passing None value
-    ///   disables the check.
-    #[allow(clippy::too_many_arguments)]
-    pub fn finalize_transactions(
-        &self,
-        block_height: u64,
-        block_gas_limit: u64,
-        generator: BlsPublicKey,
-        txs: Vec<Transaction>,
-        consistency_check: Option<VerificationOutput>,
-        missed_generators: &[BlsPublicKey],
-    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let session = self.session(block_height, None)?;
-
-        let (spent_txs, verification_output, session) = accept(
-            session,
-            block_height,
-            block_gas_limit,
-            &generator,
-            &txs[..],
-            missed_generators,
-        )?;
-
-        if let Some(expected_verification) = consistency_check {
-            if expected_verification != verification_output {
-                // Drop the session if the result state root is inconsistent
-                // with the callers one.
-                return Err(Error::InconsistentState(verification_output));
-            }
-        }
-
-        let commit = session.commit()?;
-
+    pub fn finalize_state(&self, commit: [u8; 32]) -> Result<()> {
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
 
         self.set_base_and_delete(commit);
-
-        Ok((spent_txs, verification_output))
+        Ok(())
     }
 
     pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
