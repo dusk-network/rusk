@@ -412,6 +412,9 @@ async fn handle_stream_rues(
     mut subscriptions: mpsc::Receiver<SubscriptionAction>,
     mut events: broadcast::Receiver<ContractEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
+    sockets_map: Arc<
+        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
+    >,
 ) {
     let mut stream = match websocket.await {
         Ok(stream) => stream,
@@ -481,7 +484,6 @@ async fn handle_stream_rues(
                 // The event is subscribed to if it matches any of the subscriptions.
                 let mut is_subscribed = false;
                 for sub in &subscription_set {
-                    println!("sub: {:?}", sub);
                     if sub.matches(&event) {
                         is_subscribed = true;
                         break;
@@ -513,6 +515,9 @@ async fn handle_stream_rues(
             }
         }
     }
+
+    let mut sockets = sockets_map.write().await;
+    sockets.remove(&sid);
 }
 
 fn response(
@@ -540,12 +545,15 @@ async fn handle_request_rues(
 
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
 
+        let mut sockets = sockets_map.write().await;
+
         // This is a new WebSocket connection, so we generate a new random ID
         // and create a new channel for it.
-        let sid = SessionId::new_from_ws_rsp(OsRng, &response);
-
-        let mut sockets_map = sockets_map.write().await;
-        sockets_map.insert(sid, subscription_sender);
+        let mut sid = rand::random();
+        while sockets.contains_key(&sid) {
+            sid = rand::random();
+        }
+        sockets.insert(sid, subscription_sender);
 
         task::spawn(handle_stream_rues(
             sid,
@@ -553,6 +561,7 @@ async fn handle_request_rues(
             subscriptions,
             events,
             shutdown,
+            sockets_map.clone(),
         ));
 
         Ok(response)

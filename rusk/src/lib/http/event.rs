@@ -11,6 +11,8 @@ use bytecheck::CheckBytes;
 use futures_util::{stream, StreamExt};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use hyper::{Body, Request, Response};
+use rand::distributions::{Distribution, Standard};
+use rand::Rng;
 use rkyv::Archive;
 use rusk_abi::ContractId;
 use semver::{Version, VersionReq};
@@ -570,56 +572,23 @@ impl<'de> Deserialize<'de> for WrappedContractId {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct SessionId {
-    pub sec_websocket_accept: [u8; 20],
-    pub nonce: [u8; 12],
-}
+pub struct SessionId(u128);
 
 impl Display for SessionId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let sec_websocket_accept = hex::encode(self.sec_websocket_accept);
-        let nonce = hex::encode(self.nonce);
-        write!(f, "{sec_websocket_accept}-{nonce}")
+        let bytes = self.0.to_le_bytes();
+        let hex = hex::encode(bytes);
+        write!(f, "{hex}")
+    }
+}
+
+impl Distribution<SessionId> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SessionId {
+        SessionId(rng.gen())
     }
 }
 
 impl SessionId {
-    /// Creates a new session ID from the response to a websocket upgrade
-    /// request.
-    ///
-    /// # Panic
-    /// Panics if the `Sec-WebSocket-Accept` header is missing or invalid from
-    /// the response.
-    pub fn new_from_ws_rsp<Rng, B>(mut rng: Rng, rsp: &Response<B>) -> Self
-    where
-        Rng: rand::RngCore,
-    {
-        let headers = rsp.headers();
-
-        let swa = headers
-            .get("Sec-WebSocket-Accept")
-            .expect("The header 'Sec-WebSocket-Accept' is missing");
-
-        const INVALID_HEADER_TXT: &str =
-            "The 'Sec-WebSocket-Accept' header is not valid";
-
-        let swa = BASE64.decode(swa.as_bytes()).expect(INVALID_HEADER_TXT);
-        if swa.len() != 20 {
-            panic!("{INVALID_HEADER_TXT}");
-        }
-
-        let mut sec_websocket_accept = [0u8; 20];
-        sec_websocket_accept.copy_from_slice(&swa);
-
-        let mut nonce = [0u8; 12];
-        rng.fill_bytes(&mut nonce);
-
-        Self {
-            sec_websocket_accept,
-            nonce,
-        }
-    }
-
     /// Parses a session ID from a request. The session ID is expected to be
     /// stored in the `Rusk-Session-Id` header.
     pub fn parse_from_req<B>(req: &Request<B>) -> Option<Self> {
@@ -632,30 +601,15 @@ impl SessionId {
     }
 
     pub fn parse(text: &str) -> Option<Self> {
-        let mut parts = text.split('-');
+        let bytes = hex::decode(text).ok()?;
 
-        let left_part = parts.next()?;
-        let right_part = parts.next()?;
-
-        let lbytes = hex::decode(left_part).ok()?;
-        if lbytes.len() != 20 {
-            return None;
-        }
-        let rbytes = hex::decode(right_part).ok()?;
-        if rbytes.len() != 12 {
+        let mut session_id_bytes = [0u8; 16];
+        if bytes.len() != 16 {
             return None;
         }
 
-        let mut sec_websocket_accept = [0u8; 20];
-        sec_websocket_accept.copy_from_slice(&lbytes);
-
-        let mut nonce = [0u8; 12];
-        nonce.copy_from_slice(&rbytes);
-
-        Some(Self {
-            sec_websocket_accept,
-            nonce,
-        })
+        session_id_bytes.copy_from_slice(&bytes);
+        Some(SessionId(u128::from_le_bytes(session_id_bytes)))
     }
 }
 
