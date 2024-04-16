@@ -140,6 +140,21 @@ pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
     Ok(gas_spent)
 }
 
+/// Executes a call only transaction, returning the gas spent.
+pub fn execute_call(
+    session: &mut Session,
+    tx: Transaction,
+) -> Result<u64, Error> {
+    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+        TRANSFER_CONTRACT,
+        "execute",
+        &tx,
+        u64::MAX,
+    )?;
+
+    Ok(receipt.gas_spent)
+}
+
 pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     vk: ViewKey,
     iter: I,

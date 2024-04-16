@@ -315,7 +315,7 @@ fn instantiate_and_subsidize_contract(
     (session, test_sponsor_ssk)
 }
 
-fn call_contract_method(
+fn call_contract_method_with_deposit(
     mut session: &mut Session,
     contract_id: ContractId,
     method: impl AsRef<str>,
@@ -490,19 +490,124 @@ fn call_contract_method(
     (gas_spent, balance_before, balance_after)
 }
 
+fn call_contract_method_no_deposit(
+    mut session: &mut Session,
+    contract_id: ContractId,
+    method: impl AsRef<str>,
+    sponsor_ssk: SecretSpendKey,
+) -> (u64, u64, u64) {
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+    let test_sponsor_psk = PublicSpendKey::from(&sponsor_ssk); // sponsor is Charlie's owner
+
+    // make sure the sponsoring contract is properly subsidized (has funds)
+    let balance_before = module_balance(&mut session, contract_id)
+        .expect("Module balance should succeed");
+    println!(
+        "current balance of contract '{:X?}' is {}",
+        contract_id.to_bytes()[0],
+        balance_before
+    );
+
+    let anchor =
+        root(session).expect("Getting the anchor should be successful");
+
+    let fee = Fee::new(rng, 0, 0, &test_sponsor_psk);
+
+    let call = Some((
+        contract_id.to_bytes(),
+        String::from(method.as_ref()),
+        vec![],
+    ));
+
+    let tx = Transaction {
+        anchor,
+        nullifiers: vec![],
+        outputs: vec![],
+        fee,
+        crossover: None,
+        proof: vec![],
+        call,
+    };
+
+    println!(
+        "executing method '{}' - contract '{:X?}' is paying",
+        method.as_ref(),
+        contract_id.to_bytes()[0]
+    );
+    let gas_spent =
+        execute_call(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
+
+    println!(
+        "gas spent for the execution of method '{}' is {}",
+        method.as_ref(),
+        gas_spent
+    );
+
+    let balance_after = module_balance(&mut session, contract_id)
+        .expect("Module balance should succeed");
+
+    println!(
+        "contract's '{:X?}' balance before the call: {}",
+        contract_id.as_bytes()[0],
+        balance_before
+    );
+    println!(
+        "contract's '{:X?}' balance after the call: {}",
+        contract_id.as_bytes()[0],
+        balance_after
+    );
+    if balance_before > balance_after {
+        println!(
+            "contract '{:X?}' has paid for this call: {}",
+            contract_id.as_bytes()[0],
+            balance_before - balance_after
+        );
+        println!("this call was sponsored by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], gas_spent);
+    } else {
+        println!(
+            "contract '{:X?}' has earned: {}",
+            contract_id.as_bytes()[0],
+            balance_after - balance_before
+        );
+        println!("this call was charged by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], gas_spent);
+    }
+
+    (gas_spent, balance_before, balance_after)
+}
+
 #[test]
-fn contract_sponsors_a_call() {
+fn contract_sponsors_call_with_deposit() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
     let (mut session, sponsor_ssk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (gas_spent, balance_before, balance_after) = call_contract_method(
-        &mut session,
-        CHARLIE_CONTRACT_ID,
-        "pay",
-        sponsor_ssk,
-    );
+    let (gas_spent, balance_before, balance_after) =
+        call_contract_method_with_deposit(
+            &mut session,
+            CHARLIE_CONTRACT_ID,
+            "pay",
+            sponsor_ssk,
+        );
+    assert!(balance_after < balance_before);
+    assert_eq!(gas_spent, 0);
+}
+
+#[test]
+fn contract_sponsors_call_no_deposit() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, sponsor_ssk) =
+        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (gas_spent, balance_before, balance_after) =
+        call_contract_method_no_deposit(
+            &mut session,
+            CHARLIE_CONTRACT_ID,
+            "pay",
+            sponsor_ssk,
+        );
     assert!(balance_after < balance_before);
     assert_eq!(gas_spent, 0);
 }
@@ -514,12 +619,13 @@ fn contract_sponsors_not_enough_allowance() {
 
     let (mut session, sponsor_ssk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (gas_spent, balance_before, balance_after) = call_contract_method(
-        &mut session,
-        CHARLIE_CONTRACT_ID,
-        "pay_and_fail",
-        sponsor_ssk,
-    );
+    let (gas_spent, balance_before, balance_after) =
+        call_contract_method_with_deposit(
+            &mut session,
+            CHARLIE_CONTRACT_ID,
+            "pay_and_fail",
+            sponsor_ssk,
+        );
     assert_eq!(balance_after, balance_before);
     assert!(gas_spent > 0);
 }
@@ -531,12 +637,13 @@ fn contract_earns_a_fee() {
 
     let (mut session, sponsor_ssk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (gas_spent, balance_before, balance_after) = call_contract_method(
-        &mut session,
-        CHARLIE_CONTRACT_ID,
-        "earn",
-        sponsor_ssk,
-    );
+    let (gas_spent, balance_before, balance_after) =
+        call_contract_method_with_deposit(
+            &mut session,
+            CHARLIE_CONTRACT_ID,
+            "earn",
+            sponsor_ssk,
+        );
     assert!(balance_after > balance_before);
     assert!(balance_after - balance_before <= gas_spent);
 }
@@ -548,12 +655,13 @@ fn contract_earns_not_enough_charge() {
 
     let (mut session, sponsor_ssk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (gas_spent, balance_before, balance_after) = call_contract_method(
-        &mut session,
-        CHARLIE_CONTRACT_ID,
-        "earn_and_fail",
-        sponsor_ssk,
-    );
+    let (gas_spent, balance_before, balance_after) =
+        call_contract_method_with_deposit(
+            &mut session,
+            CHARLIE_CONTRACT_ID,
+            "earn_and_fail",
+            sponsor_ssk,
+        );
     assert_eq!(balance_before, balance_after);
     assert!(gas_spent > 0);
 }

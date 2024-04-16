@@ -357,6 +357,19 @@ impl TransferState {
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
+        self.execute(tx)
+    }
+
+    /// Executes the contract call if present.
+    ///
+    /// # Panics
+    /// Any failure in the checks performed in processing will result in a
+    /// panic. The contract expects the environment to roll back any change
+    /// in state.
+    pub fn execute(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<Vec<u8>, ContractError> {
         let mut result = Ok((Vec::new(), 0u64, 0u64));
 
         let mut call_contract_id: Option<ContractId> = None;
@@ -375,6 +388,8 @@ impl TransferState {
 
         if let Some(contract_id) = call_contract_id {
             if let Ok((_, allowance, charge)) = result.clone() {
+                rusk_abi::set_allowance(0);
+                rusk_abi::set_charge(0);
                 if charge != 0 {
                     let spent = rusk_abi::spent();
                     let cost = spent + SURCHARGE;
@@ -388,7 +403,7 @@ impl TransferState {
                                 cost,
                         );
                         self.add_balance(contract_id, earning);
-                        rusk_abi::set_free(0, earning)
+                        rusk_abi::set_charge(earning);
                     }
                 } else if allowance != 0 {
                     // here: before we set this tx to be a free tx
@@ -435,7 +450,7 @@ impl TransferState {
                             rusk_abi::debug!(
                                 "S&E: increased transfer contract balance from {} to {}", tc_old_balance, tc_new_balance);
                             rusk_abi::debug!("S&E: setting this transaction to be paid for by contract '{:X?}'", contract_id.as_bytes()[0]);
-                            rusk_abi::set_free(1, 0);
+                            rusk_abi::set_allowance(allowance);
                         }
                     }
                 }
