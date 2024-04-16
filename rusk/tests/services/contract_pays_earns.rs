@@ -78,10 +78,11 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
 const SENDER_INDEX: u64 = 0;
 
-fn make_transactions(
+fn make_and_execute_transaction(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
-) {
+    method: impl AsRef<str>,
+) -> u64 {
     // We will refund the transaction to ourselves.
     let refund = wallet
         .public_spend_key(SENDER_INDEX)
@@ -104,7 +105,7 @@ fn make_transactions(
         .execute(
             &mut rng,
             CHARLIE_CONTRACT_ID.to_bytes().into(),
-            String::from("pay"),
+            String::from(method.as_ref()),
             (),
             SENDER_INDEX,
             &refund,
@@ -134,7 +135,7 @@ fn make_transactions(
         .expect("There should be one spent transactions");
 
     assert!(tx.err.is_none(), "Transaction should succeed");
-    assert_eq!(tx.gas_spent, 0, "Transaction should be free");
+    tx.gas_spent
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -159,7 +160,51 @@ pub async fn contract_pays() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    make_transactions(&rusk, &wallet);
+    let gas_spent = make_and_execute_transaction(&rusk, &wallet, "pay");
+    assert_eq!(gas_spent, 0, "Transaction should be free");
+
+    // Check the state's root is changed from the original one
+    let new_root = rusk.state_root();
+    info!(
+        "New root after the 1st transfer: {:?}",
+        hex::encode(new_root)
+    );
+    assert_ne!(original_root, new_root, "Root should have changed");
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_earns() -> Result<()> {
+    const CHARLIE_CHARGE: u64 = 20_000_000; // that much Charlie contract's method 'earn' is charging
+    const CHARGE_DISCOUNT: u64 = 10_000; // possible discount due to gas usage approximation
+
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp)?;
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let gas_spent = make_and_execute_transaction(&rusk, &wallet, "earn");
+    assert!(
+        gas_spent >= (CHARLIE_CHARGE - CHARGE_DISCOUNT)
+            && gas_spent <= CHARLIE_CHARGE,
+        "Transaction should cost as much as contract is charging minus discount"
+    );
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
