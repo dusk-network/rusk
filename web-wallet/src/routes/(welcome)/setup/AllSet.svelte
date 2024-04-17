@@ -1,7 +1,7 @@
 <script>
   import { settingsStore } from "$lib/stores";
   import { AppImage } from "$lib/components";
-  import { Card } from "$lib/dusk/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
 
   const { darkMode } = $settingsStore;
 
@@ -10,7 +10,7 @@
     "/images/onboarding/all_set_illustration_light.svg";
 </script>
 
-<Card heading="You are all set!">
+<IconHeadingCard gap="medium" heading="You are all set!">
   <AppImage
     alt="All Set"
     className="all-set__illustration"
@@ -18,12 +18,12 @@
     src={darkMode ? allSetIllustrationLight : allSetIllustration}
     width="205"
   />
-</Card>
+</IconHeadingCard>
 
 <style lang="postcss">
   :global(.all-set__illustration) {
     display: block;
     width: 50%;
-    margin: 1em auto;
+    margin: 0 auto 1em auto;
   }
 </style>

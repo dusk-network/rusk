@@ -1,0 +1,120 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`IconHeadingCard > renders the ToggleableCard component with a heading 1`] = `
+<div
+  class="dusk-card dusk-card--gap-default"
+>
+  <header
+    class="dusk-card__header"
+    slot="header"
+  >
+    <div
+      class="dusk-card__header-title"
+    >
+       
+      <h3
+        class="h4"
+      >
+        My Card
+      </h3>
+    </div>
+     
+    <div
+      aria-checked="false"
+      aria-disabled="false"
+      class="dusk-switch dusk-switch--on-surface"
+      role="switch"
+      tabindex="0"
+    />
+  </header>
+   
+  
+   
+</div>
+`;
+
+exports[`IconHeadingCard > renders the ToggleableCard component with a heading and an icon 1`] = `
+<div
+  class="dusk-card dusk-card--gap-default"
+>
+  <header
+    class="dusk-card__header"
+    slot="header"
+  >
+    <div
+      class="dusk-card__header-title"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+        />
+      </svg>
+      
+       
+      <h3
+        class="h4"
+      >
+        My Card
+      </h3>
+    </div>
+     
+    <div
+      aria-checked="false"
+      aria-disabled="false"
+      class="dusk-switch dusk-switch--on-surface"
+      role="switch"
+      tabindex="0"
+    />
+  </header>
+   
+  
+   
+</div>
+`;
+
+exports[`IconHeadingCard > renders the ToggleableCard component with a toggle 1`] = `
+<div
+  class="dusk-card dusk-card--gap-default"
+>
+  <header
+    class="dusk-card__header"
+    slot="header"
+  >
+    <div
+      class="dusk-card__header-title"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+        />
+      </svg>
+      
+       
+      <h3
+        class="h4"
+      >
+        My Card
+      </h3>
+    </div>
+     
+    <div
+      aria-checked="true"
+      aria-disabled="false"
+      class="dusk-switch dusk-switch--on-surface"
+      role="switch"
+      tabindex="0"
+    />
+  </header>
+   
+  
+   
+</div>
+`;

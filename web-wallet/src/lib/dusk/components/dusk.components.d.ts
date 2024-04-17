@@ -10,6 +10,8 @@ type BadgeVariant = "neutral" | "success" | "warning" | "error";
 
 type ButtonVariant = "primary" | "secondary" | "tertiary";
 
+type CardGap = "small" | "default" | "medium" | "large";
+
 type WizardButtonProps = {
   isAnchor?: boolean;
   href?: string;

@@ -1,9 +1,8 @@
 <script>
   import { onMount } from "svelte";
   import { mdiAlertOutline } from "@mdi/js";
-
-  import { Card } from "$lib/dusk/components";
   import { AppAnchorButton } from "$lib/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
 
   onMount(() => {
     // eslint-disable-next-line no-alert
@@ -17,19 +16,21 @@
 </script>
 
 <section class="forced-logout">
-  <Card
+  <IconHeadingCard
     heading="You have been automatically logged out"
     iconPath={mdiAlertOutline}
   >
-    <p>
-      Another tab or window unlocked a different wallet and replaced the local
-      cache.
-    </p>
-    <p>
-      When you log in again with the mnemonic you used in this session, you will
-      need to wait for a full sync.
-    </p>
-  </Card>
+    <div>
+      <p>
+        Another tab or window unlocked a different wallet and replaced the local
+        cache.
+      </p>
+      <p>
+        When you log in again with the mnemonic you used in this session, you
+        will need to wait for a full sync.
+      </p>
+    </div>
+  </IconHeadingCard>
   <AppAnchorButton data-sveltekit-replacestate href="/" text="HOME" />
 </section>
 

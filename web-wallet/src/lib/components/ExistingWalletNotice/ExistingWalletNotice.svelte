@@ -1,6 +1,7 @@
 <script>
-  import { Button, Card } from "$lib/dusk/components";
+  import { Button } from "$lib/dusk/components";
   import { AppAnchorButton } from "$lib/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
   import { mdiAlertOutline } from "@mdi/js";
 
   /** @type {boolean} */
@@ -8,7 +9,10 @@
 </script>
 
 <section>
-  <Card iconPath={mdiAlertOutline} heading="Existing Wallet Detected">
+  <IconHeadingCard
+    heading="Existing Wallet Detected"
+    iconPath={mdiAlertOutline}
+  >
     <p>
       Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
@@ -30,7 +34,7 @@
         }}
       />
     </div>
-  </Card>
+  </IconHeadingCard>
 </section>
 
 <style lang="postcss">

@@ -1,0 +1,11 @@
+.dusk-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dusk-card__header-title {
+  display: flex;
+  gap: var(--small-gap);
+  align-items: center;
+}

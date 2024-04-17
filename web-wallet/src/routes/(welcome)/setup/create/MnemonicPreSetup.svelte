@@ -1,5 +1,6 @@
 <script>
-  import { Agreement, Card, Icon } from "$lib/dusk/components";
+  import { Agreement, Icon } from "$lib/dusk/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
   import { mdiAlertOutline } from "@mdi/js";
 
   /** @type {boolean} */
@@ -14,7 +15,7 @@
   $: isValid = agreementOneChecked && agreementTwoChecked;
 </script>
 
-<Card heading="Securely store your seed phrase!" className="mnemonic-presetup">
+<IconHeadingCard gap="medium" heading="Securely store your seed phrase!">
   <Agreement
     name="mnemonic_agreement_one"
     bind:checked={agreementOneChecked}
@@ -24,9 +25,9 @@
     name="mnemonic_agreement_two"
     bind:checked={agreementTwoChecked}
     label="I understand that securing my recovery phrase is my own responsibility.
-      Only I have access to my recovery phrase"
+        Only I have access to my recovery phrase"
   />
-</Card>
+</IconHeadingCard>
 
 <div class="notice">
   <Icon path={mdiAlertOutline} size="large" />
@@ -37,7 +38,7 @@
 </div>
 
 <style lang="postcss">
-  :global(.mnemonic-presetup .dusk-agreement:first-of-type) {
+  :global(.dusk-agreement:first-of-type) {
     margin-bottom: var(--default-gap);
   }
 </style>
