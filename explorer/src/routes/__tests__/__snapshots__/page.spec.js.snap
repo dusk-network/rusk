@@ -135,7 +135,7 @@ exports[`Chain Info > should render the Chain Info page 1`] = `
               <span
                 class="statistics-panel__statistics-item-title"
               >
-                Next Epoch Stacked Amount
+                Next Epoch Staked Amount
               </span>
             </div>
              

@@ -20,3 +20,5 @@ type SelectOption = {
   label?: string;
   value: string;
 };
+
+type TooltipType = "error" | "info" | "success" | "warning";

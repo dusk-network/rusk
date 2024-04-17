@@ -5,30 +5,5 @@
 }
 
 .dusk-card--on-surface {
-  background-color: var(--background-color);
-}
-
-.dusk-card__icon {
-  margin-right: 0.4rem;
-  font-size: 1.1rem;
-}
-
-.dusk-card__header {
-  display: flex;
-  margin-bottom: 1.25rem;
-  align-items: center;
-}
-
-.dusk-card__header--toggle-off {
-  margin-bottom: 0;
-}
-
-.dusk-card .dusk-switch {
-  margin-left: auto;
-}
-
-.dusk-card pre {
-  overflow-x: auto;
-  tab-size: 4;
-  padding: 1rem 0;
+  background-color: var(--on-primary-color);
 }

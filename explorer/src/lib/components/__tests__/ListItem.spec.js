@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { Card } from "..";
+import { ListItem } from "../";
 
-describe("Card", () => {
+describe("List Item", () => {
   afterEach(cleanup);
 
-  it("renders the Card component", () => {
-    const { container } = render(Card);
+  it("renders the List Item component", () => {
+    const { container } = render(ListItem);
 
     expect(container.firstChild).toMatchSnapshot();
   });

@@ -20,7 +20,7 @@
       className="footer__links-link">Terms of use</Anchor
     >
   </div>
-  <AppAnchor href="/" className="footer__logo">
+  <AppAnchor href="https://dusk.network" className="footer__logo">
     <picture>
       <source media="(max-width:768px)" srcset="/dusk_logo_icon.svg" />
       <source media="(min-width:769px)" srcset="/dusk_logo.svg" />

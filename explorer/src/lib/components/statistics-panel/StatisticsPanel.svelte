@@ -7,10 +7,8 @@
     mdiCurrencyUsd,
     mdiSwapVertical,
   } from "@mdi/js";
-  import {
-    createCompactFormatter,
-    createCurrencyFormatter,
-  } from "$lib/dusk/currency";
+  import { createCurrencyFormatter } from "$lib/dusk/currency";
+  import { createCompactFormatter } from "$lib/dusk/value";
   import { duskIcon } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
   import "./StatisticsPanel.css";
@@ -48,7 +46,7 @@
       {
         data: undefined,
         icon: duskIcon,
-        title: "Next Epoch Stacked Amount",
+        title: "Next Epoch Staked Amount",
       },
     ],
 

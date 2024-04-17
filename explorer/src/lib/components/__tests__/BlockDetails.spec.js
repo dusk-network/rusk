@@ -1,7 +1,15 @@
-<script>
-  import { BlockDetails } from "$lib/components";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render } from "@testing-library/svelte";
+import { BlockDetails } from "../";
 
-  const data = {
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  disconnect: vi.fn(),
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+}));
+
+const baseProps = {
+  data: {
     header: {
       feespaid: 0,
       hash: "2f37fec165e3891e6f6beb329f0262cd0538edcb478a3db2154381ecf45150aa",
@@ -15,7 +23,7 @@
       statehash:
         "fb4c93bcc64914203b4312cf09e02c230ed3bc013408b124d5679c6cf583efd8",
       timestamp: "2024-04-16 09:26:17 +0000 UTC",
-      ts: 1713259577,
+      ts: 1,
       version: "0",
     },
     transactions: {
@@ -26,26 +34,15 @@
         gasUsed: 0,
       },
     },
-  };
-</script>
+  },
+};
 
-<section class="block">
-  <div class="block__details">
-    <BlockDetails {data} />
-  </div>
-  <div class="block__transactions">Block transactions</div>
-</section>
+describe("Block Details", () => {
+  afterEach(cleanup);
 
-<style lang="postcss">
-  .block {
-    display: flex;
-    flex-direction: column;
-    row-gap: 1.875em;
-  }
+  it("renders the Block Details component", () => {
+    const { container } = render(BlockDetails, baseProps);
 
-  @media (max-width: 768px) {
-    .block {
-      row-gap: 1.25em;
-    }
-  }
-</style>
+    expect(container.firstChild).toMatchSnapshot();
+  });
+});
