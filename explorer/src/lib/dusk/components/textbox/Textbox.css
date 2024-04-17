@@ -1,0 +1,46 @@
+.dusk-textbox {
+  display: flex;
+  gap: 0.625rem;
+  font-family: inherit;
+  font-size: var(--control-font-size);
+  letter-spacing: inherit;
+  padding: var(--control-padding);
+  background-color: var(--non-button-control-bg-color);
+  border-color: var(--control-border-color);
+  border-radius: var(--control-border-radius-size);
+  border-style: solid;
+  border-width: var(--control-border-size);
+  color: var(--non-button-control-text-color);
+}
+
+.dusk-textbox--disabled,
+.dusk-textbox__input::placeholder {
+  opacity: 0.5;
+}
+
+.dusk-textbox:read-only {
+  outline: 0 none;
+}
+
+.dusk-textbox.dusk-textbox-multiline {
+  line-height: 1.3;
+}
+
+.dusk-textbox__input {
+  border: none;
+}
+
+.dusk-textbox__input:focus {
+  outline-color: transparent;
+}
+
+.dusk-textbox:focus-within {
+  border-color: var(--secondary-color-variant-dark);
+  box-shadow: inset 0 0 0 var(--control-border-size)
+    var(--secondary-color-variant-dark);
+  outline: 0 none;
+}
+
+.dusk-textbox__input:disabled {
+  background-color: initial;
+}
