@@ -27,32 +27,32 @@
 </script>
 
 <Card hasToggle bind:isToggled iconPath={mdiKeyOutline} heading="Password">
-  <div class="flex flex-col gap-1">
-    <p>Please store your password safely.</p>
+  <p>Please store your password safely.</p>
+  <Textbox
+    className="password-input"
+    type="password"
+    autocomplete="new-password"
+    bind:value={password}
+    placeholder="Set Password"
+  />
+  <div class="confirm-password">
     <Textbox
+      className="password-input"
       type="password"
       autocomplete="new-password"
-      bind:value={password}
-      placeholder="Set Password"
+      bind:value={confirmPassword}
+      placeholder="Confirm Password"
     />
-    <div class="confirm-password">
-      <Textbox
-        type="password"
-        autocomplete="new-password"
-        bind:value={confirmPassword}
-        placeholder="Confirm Password"
-      />
-      {#if password.length < 8}
-        <span class="confirm-password--meta"
-          >Password must be at least 8 characters</span
-        >
-      {:else if confirmPassword && password !== confirmPassword}
-        <span
-          class="confirm-password--meta
+    {#if password.length < 8}
+      <span class="confirm-password--meta"
+        >Password must be at least 8 characters</span
+      >
+    {:else if confirmPassword && password !== confirmPassword}
+      <span
+        class="confirm-password--meta
 						confirm-password--meta--error">Passwords do not match</span
-        >
-      {/if}
-    </div>
+      >
+    {/if}
   </div>
 </Card>
 
@@ -68,10 +68,8 @@
 
 <style lang="postcss">
   .confirm-password {
-    display: flex;
-    flex-direction: column;
-
     &--meta {
+      display: inline-block;
       font-size: 0.75em;
       margin-top: 0.8em;
       margin-left: 1em;
@@ -82,5 +80,11 @@
         opacity: 1;
       }
     }
+  }
+
+  :global(.password-input) {
+    display: flex;
+    margin-top: 1em;
+    width: 100%;
   }
 </style>

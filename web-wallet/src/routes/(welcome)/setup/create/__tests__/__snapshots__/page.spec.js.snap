@@ -100,80 +100,77 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
          
       </header>
        
-      <div
-        class="flex flex-col gap-1"
+      <p
+        class="mnemonic-notice s-2OyiC0P-rJBT"
       >
-        <p>
-          Please make sure to write your phrase down and save it in a secure
-      location.
-        </p>
-         
-        <ol
-          class="dusk-words"
+        Please make sure to write your phrase down and save it in a secure location.
+      </p>
+       
+      <ol
+        class="dusk-words"
+      >
+        <li
+          class="dusk-words__word"
         >
-          <li
-            class="dusk-words__word"
-          >
-            cart
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            dad
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            sail
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            wreck
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            robot
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            grit
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            combine
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            noble
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            rap
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            farm
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            slide
-          </li>
-          <li
-            class="dusk-words__word"
-          >
-            sad
-          </li>
-        </ol>
-        <!--&lt;Words&gt;-->
-      </div>
+          cart
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          dad
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          sail
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          wreck
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          robot
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          grit
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          combine
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          noble
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          rap
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          farm
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          slide
+        </li>
+        <li
+          class="dusk-words__word"
+        >
+          sad
+        </li>
+      </ol>
+      <!--&lt;Words&gt;-->
     </div>
     
     <!--&lt;Card&gt;-->
@@ -346,278 +343,277 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
          
       </header>
        
-      <div
-        class="flex flex-col gap-1"
+      <p
+        class="mnemonic-notice s-8Fq6NWTLQZs0"
       >
-        <p>
-          Ensure you have backed up the Mnemonic phrase.
-        </p>
+        Ensure you have backed up the Mnemonic phrase.
+      </p>
+       
+      <div
+        class="dusk-mnemonic"
+      >
+        <div
+          class="dusk-mnemonic__actions-wrapper"
+        >
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+            disabled=""
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-button__text"
+            >
+              Undo
+            </span>
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </div>
+         
+        <ol
+          class="dusk-words"
+        >
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+        </ol>
+        <!--&lt;Words&gt;-->
          
         <div
-          class="dusk-mnemonic"
+          class="dusk-mnemonic__validate-actions-wrapper"
         >
-          <div
-            class="dusk-mnemonic__actions-wrapper"
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="grit"
+            type="button"
           >
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
-              disabled=""
-              type="button"
+            <span
+              class="dusk-button__text"
             >
-              <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
-                />
-              </svg>
-              
-              <!--&lt;Icon&gt;-->
-               
-              <span
-                class="dusk-button__text"
-              >
-                Undo
-              </span>
-              
-            </button>
-            <!--&lt;Button&gt;-->
-          </div>
-           
-          <ol
-            class="dusk-words"
+              grit
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="wreck"
+            type="button"
           >
-            <li
-              class="dusk-words__word"
+            <span
+              class="dusk-button__text"
             >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-          </ol>
-          <!--&lt;Words&gt;-->
-           
-          <div
-            class="dusk-mnemonic__validate-actions-wrapper"
+              wreck
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="cart"
+            type="button"
           >
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="grit"
-              type="button"
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                grit
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="wreck"
-              type="button"
+              cart
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="dad"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                wreck
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="cart"
-              type="button"
+              dad
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="rap"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                cart
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="dad"
-              type="button"
+              rap
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sail"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                dad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="rap"
-              type="button"
+              sail
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="robot"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                rap
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sail"
-              type="button"
+              robot
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="combine"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                sail
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="robot"
-              type="button"
+              combine
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="noble"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                robot
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="combine"
-              type="button"
+              noble
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="slide"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                combine
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="noble"
-              type="button"
+              slide
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sad"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                noble
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="slide"
-              type="button"
+              sad
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="farm"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                slide
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sad"
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="farm"
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                farm
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-          </div>
+              farm
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
         </div>
-        <!--&lt;Mnemonic&gt;-->
-         
       </div>
+      <!--&lt;Mnemonic&gt;-->
+       
+      
     </div>
     
     <!--&lt;Card&gt;-->
@@ -788,308 +784,309 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
          
       </header>
        
-      <div
-        class="flex flex-col gap-1"
+      <p
+        class="mnemonic-notice s-8Fq6NWTLQZs0"
       >
-        <p>
-          Ensure you have backed up the Mnemonic phrase.
-        </p>
+        Ensure you have backed up the Mnemonic phrase.
+      </p>
+       
+      <div
+        class="dusk-mnemonic"
+      >
+        <div
+          class="dusk-mnemonic__actions-wrapper"
+        >
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-button__text"
+            >
+              Undo
+            </span>
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </div>
+         
+        <ol
+          class="dusk-words"
+        >
+          <li
+            class="dusk-words__word"
+          >
+            grit
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            wreck
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            cart
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            dad
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            rap
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            sail
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            robot
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            combine
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            noble
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            slide
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            sad
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            farm
+          </li>
+        </ol>
+        <!--&lt;Words&gt;-->
          
         <div
-          class="dusk-mnemonic"
+          class="dusk-mnemonic__validate-actions-wrapper"
         >
-          <div
-            class="dusk-mnemonic__actions-wrapper"
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="grit"
+            disabled=""
+            type="button"
           >
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
-              type="button"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
-                />
-              </svg>
-              
-              <!--&lt;Icon&gt;-->
-               
-              <span
-                class="dusk-button__text"
-              >
-                Undo
-              </span>
-              
-            </button>
-            <!--&lt;Button&gt;-->
-          </div>
-           
-          <ol
-            class="dusk-words"
-          >
-            <li
-              class="dusk-words__word"
+            <span
+              class="dusk-button__text"
             >
               grit
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="wreck"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               wreck
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="cart"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               cart
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="dad"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               dad
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="rap"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               rap
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sail"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               sail
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="robot"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               robot
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="combine"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               combine
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="noble"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               noble
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="slide"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               slide
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sad"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               sad
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="farm"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               farm
-            </li>
-          </ol>
-          <!--&lt;Words&gt;-->
-           
-          <div
-            class="dusk-mnemonic__validate-actions-wrapper"
-          >
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="grit"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                grit
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="wreck"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                wreck
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="cart"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                cart
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="dad"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                dad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="rap"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                rap
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sail"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sail
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="robot"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                robot
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="combine"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                combine
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="noble"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                noble
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="slide"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                slide
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sad"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="farm"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                farm
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-          </div>
-        </div>
-        <!--&lt;Mnemonic&gt;-->
-         
-        <div
-          class="notice notice--error"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--large"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-            />
-          </svg>
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
           
-          <!--&lt;Icon&gt;-->
-           
-          <p>
-            Mnemonic does not match.
-          </p>
         </div>
       </div>
+      <!--&lt;Mnemonic&gt;-->
+       
+      <div
+        class="notice notice--error s-8Fq6NWTLQZs0"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--large"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <p
+          class="s-8Fq6NWTLQZs0"
+        >
+          Mnemonic does not match.
+        </p>
+      </div>
+      
     </div>
     
     <!--&lt;Card&gt;-->
@@ -1260,288 +1257,287 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
          
       </header>
        
-      <div
-        class="flex flex-col gap-1"
+      <p
+        class="mnemonic-notice s-8Fq6NWTLQZs0"
       >
-        <p>
-          Ensure you have backed up the Mnemonic phrase.
-        </p>
+        Ensure you have backed up the Mnemonic phrase.
+      </p>
+       
+      <div
+        class="dusk-mnemonic"
+      >
+        <div
+          class="dusk-mnemonic__actions-wrapper"
+        >
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-button__text"
+            >
+              Undo
+            </span>
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </div>
+         
+        <ol
+          class="dusk-words"
+        >
+          <li
+            class="dusk-words__word"
+          >
+            cart
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            dad
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            sail
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            wreck
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            robot
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            grit
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            combine
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            noble
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            rap
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            farm
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            slide
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+        </ol>
+        <!--&lt;Words&gt;-->
          
         <div
-          class="dusk-mnemonic"
+          class="dusk-mnemonic__validate-actions-wrapper"
         >
-          <div
-            class="dusk-mnemonic__actions-wrapper"
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="grit"
+            disabled=""
+            type="button"
           >
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
-              type="button"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
-                />
-              </svg>
-              
-              <!--&lt;Icon&gt;-->
-               
-              <span
-                class="dusk-button__text"
-              >
-                Undo
-              </span>
-              
-            </button>
-            <!--&lt;Button&gt;-->
-          </div>
-           
-          <ol
-            class="dusk-words"
-          >
-            <li
-              class="dusk-words__word"
-            >
-              cart
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              dad
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              sail
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              wreck
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              robot
-            </li>
-            <li
-              class="dusk-words__word"
+            <span
+              class="dusk-button__text"
             >
               grit
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="wreck"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              combine
-            </li>
-            <li
-              class="dusk-words__word"
+              wreck
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="cart"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              noble
-            </li>
-            <li
-              class="dusk-words__word"
+              cart
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="dad"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              dad
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="rap"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               rap
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sail"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              farm
-            </li>
-            <li
-              class="dusk-words__word"
+              sail
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="robot"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              robot
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="combine"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              combine
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="noble"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              noble
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="slide"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               slide
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              _____
-            </li>
-          </ol>
-          <!--&lt;Words&gt;-->
-           
-          <div
-            class="dusk-mnemonic__validate-actions-wrapper"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sad"
+            type="button"
           >
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="grit"
-              disabled=""
-              type="button"
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                grit
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="wreck"
-              disabled=""
-              type="button"
+              sad
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="farm"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                wreck
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="cart"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                cart
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="dad"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                dad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="rap"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                rap
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sail"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sail
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="robot"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                robot
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="combine"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                combine
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="noble"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                noble
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="slide"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                slide
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sad"
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="farm"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                farm
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-          </div>
+              farm
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
         </div>
-        <!--&lt;Mnemonic&gt;-->
-         
       </div>
+      <!--&lt;Mnemonic&gt;-->
+       
+      
     </div>
     
     <!--&lt;Card&gt;-->
@@ -2099,42 +2095,38 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         <!--&lt;Switch&gt;-->
       </header>
        
-      <div
-        class="flex flex-col gap-1 s-3JrRpWchV-SQ"
+      <p
+        class="s-3JrRpWchV-SQ"
       >
-        <p
-          class="s-3JrRpWchV-SQ"
-        >
-          Please store your password safely.
-        </p>
-         
+        Please store your password safely.
+      </p>
+       
+      <input
+        autocomplete="new-password"
+        class="dusk-textbox dusk-textbox-password password-input"
+        placeholder="Set Password"
+        type="password"
+      />
+      
+      <!--&lt;Textbox&gt;-->
+       
+      <div
+        class="confirm-password s-3JrRpWchV-SQ"
+      >
         <input
           autocomplete="new-password"
-          class="dusk-textbox dusk-textbox-password"
-          placeholder="Set Password"
+          class="dusk-textbox dusk-textbox-password password-input"
+          placeholder="Confirm Password"
           type="password"
         />
         
         <!--&lt;Textbox&gt;-->
          
-        <div
-          class="confirm-password s-3JrRpWchV-SQ"
+        <span
+          class="confirm-password--meta s-3JrRpWchV-SQ"
         >
-          <input
-            autocomplete="new-password"
-            class="dusk-textbox dusk-textbox-password"
-            placeholder="Confirm Password"
-            type="password"
-          />
-          
-          <!--&lt;Textbox&gt;-->
-           
-          <span
-            class="confirm-password--meta s-3JrRpWchV-SQ"
-          >
-            Password must be at least 8 characters
-          </span>
-        </div>
+          Password must be at least 8 characters
+        </span>
       </div>
     </div>
     
@@ -2510,289 +2502,288 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
          
       </header>
        
-      <div
-        class="flex flex-col gap-1"
+      <p
+        class="mnemonic-notice s-8Fq6NWTLQZs0"
       >
-        <p>
-          Ensure you have backed up the Mnemonic phrase.
-        </p>
+        Ensure you have backed up the Mnemonic phrase.
+      </p>
+       
+      <div
+        class="dusk-mnemonic"
+      >
+        <div
+          class="dusk-mnemonic__actions-wrapper"
+        >
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-button__text"
+            >
+              Undo
+            </span>
+            
+          </button>
+          <!--&lt;Button&gt;-->
+        </div>
+         
+        <ol
+          class="dusk-words"
+        >
+          <li
+            class="dusk-words__word"
+          >
+            cart
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            dad
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            sail
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            wreck
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            robot
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            grit
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            combine
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            noble
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            rap
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            farm
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            slide
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            sad
+          </li>
+        </ol>
+        <!--&lt;Words&gt;-->
          
         <div
-          class="dusk-mnemonic"
+          class="dusk-mnemonic__validate-actions-wrapper"
         >
-          <div
-            class="dusk-mnemonic__actions-wrapper"
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="grit"
+            disabled=""
+            type="button"
           >
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
-              type="button"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
-                />
-              </svg>
-              
-              <!--&lt;Icon&gt;-->
-               
-              <span
-                class="dusk-button__text"
-              >
-                Undo
-              </span>
-              
-            </button>
-            <!--&lt;Button&gt;-->
-          </div>
-           
-          <ol
-            class="dusk-words"
-          >
-            <li
-              class="dusk-words__word"
-            >
-              cart
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              dad
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              sail
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              wreck
-            </li>
-            <li
-              class="dusk-words__word"
-            >
-              robot
-            </li>
-            <li
-              class="dusk-words__word"
+            <span
+              class="dusk-button__text"
             >
               grit
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="wreck"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              combine
-            </li>
-            <li
-              class="dusk-words__word"
+              wreck
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="cart"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              noble
-            </li>
-            <li
-              class="dusk-words__word"
+              cart
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="dad"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              dad
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="rap"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               rap
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sail"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              farm
-            </li>
-            <li
-              class="dusk-words__word"
+              sail
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="robot"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              robot
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="combine"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              combine
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="noble"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              noble
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="slide"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               slide
-            </li>
-            <li
-              class="dusk-words__word"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="sad"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
               sad
-            </li>
-          </ol>
-          <!--&lt;Words&gt;-->
-           
-          <div
-            class="dusk-mnemonic__validate-actions-wrapper"
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+            data-value="farm"
+            disabled=""
+            type="button"
           >
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="grit"
-              disabled=""
-              type="button"
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                grit
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="wreck"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                wreck
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="cart"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                cart
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="dad"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                dad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="rap"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                rap
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sail"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sail
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="robot"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                robot
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="combine"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                combine
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="noble"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                noble
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="slide"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                slide
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="sad"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                sad
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-              data-value="farm"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                farm
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-            
-          </div>
+              farm
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+          
         </div>
-        <!--&lt;Mnemonic&gt;-->
-         
       </div>
+      <!--&lt;Mnemonic&gt;-->
+       
+      
     </div>
     
     <!--&lt;Card&gt;-->
@@ -2942,7 +2933,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
     <!--&lt;Stepper&gt;-->
      
     <div
-      class="dusk-card"
+      class="dusk-card mnemonic-presetup"
     >
       <header
         class="dusk-card__header"
@@ -2957,57 +2948,53 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       </header>
        
       <div
-        class="flex flex-col gap-1"
+        class="dusk-agreement"
       >
-        <div
-          class="dusk-agreement"
-        >
-          <input
-            class="dusk-checkbox"
-            id="dusk-checkbox-16"
-            name="mnemonic_agreement_one"
-            tabindex="0"
-            type="checkbox"
-          />
-          <!--&lt;Checkbox&gt;-->
-           
-          <label
-            class="dusk-agreement__label"
-            for="dusk-checkbox-16"
-          >
-            I understand that without my seed phrase I cannot access my wallet and its assets.
-          </label>
-        </div>
-        <!--&lt;Agreement&gt;-->
+        <input
+          class="dusk-checkbox"
+          id="dusk-checkbox-16"
+          name="mnemonic_agreement_one"
+          tabindex="0"
+          type="checkbox"
+        />
+        <!--&lt;Checkbox&gt;-->
          
-        <div
-          class="dusk-agreement"
+        <label
+          class="dusk-agreement__label"
+          for="dusk-checkbox-16"
         >
-          <input
-            class="dusk-checkbox"
-            id="dusk-checkbox-16"
-            name="mnemonic_agreement_two"
-            tabindex="0"
-            type="checkbox"
-          />
-          <!--&lt;Checkbox&gt;-->
-           
-          <label
-            class="dusk-agreement__label"
-            for="dusk-checkbox-16"
-          >
-            I understand that securing my recovery phrase is my own responsibility.
-				Only I have access to my recovery phrase
-          </label>
-        </div>
-        <!--&lt;Agreement&gt;-->
+          I understand that without my seed phrase I cannot access my wallet and its assets.
+        </label>
       </div>
+      <!--&lt;Agreement&gt;-->
+       
+      <div
+        class="dusk-agreement"
+      >
+        <input
+          class="dusk-checkbox"
+          id="dusk-checkbox-16"
+          name="mnemonic_agreement_two"
+          tabindex="0"
+          type="checkbox"
+        />
+        <!--&lt;Checkbox&gt;-->
+         
+        <label
+          class="dusk-agreement__label"
+          for="dusk-checkbox-16"
+        >
+          I understand that securing my recovery phrase is my own responsibility.
+      Only I have access to my recovery phrase
+        </label>
+      </div>
+      <!--&lt;Agreement&gt;-->
     </div>
     
     <!--&lt;Card&gt;-->
      
     <div
-      class="notice"
+      class="notice s-mChuFgOMzAKC"
     >
       <svg
         class="dusk-icon dusk-icon--size--large"
@@ -3021,7 +3008,9 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       
       <!--&lt;Icon&gt;-->
        
-      <p>
+      <p
+        class="s-mChuFgOMzAKC"
+      >
         To proceed, please check all the relevant boxes. Dusk will not save and
     cannot retrieve your passphrase.
       </p>
@@ -3117,7 +3106,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
     class="onboarding-wrapper s-p4ikGGAJA5YG"
   >
     <section
-      class="flex flex-col flex-1"
+      class="s-0jNtmKPqmF7T"
     >
       <div
         class="dusk-card"
@@ -3145,47 +3134,45 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
            
         </header>
          
-        <div
-          class="flex flex-col gap-1"
+        <p
+          class="s-0jNtmKPqmF7T"
         >
-          <p>
-            Initializing a new wallet will replace your existing local wallet cache,
-        erasing any stored data. Ensure you have securely backed up your current
-        wallet's seed phrase to prevent loss. Proceeding without a backup can
-        lead to irreversible loss of access to your assets.
-          </p>
-           
-          <div
-            class="flex gap-1 w-100"
+          Initializing a new wallet will replace your existing local wallet cache,
+      erasing any stored data. Ensure you have securely backed up your current
+      wallet's seed phrase to prevent loss. Proceeding without a backup can lead
+      to irreversible loss of access to your assets.
+        </p>
+         
+        <div
+          class="actions s-0jNtmKPqmF7T"
+        >
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal actions__action"
+            href="/some-base-path/setup"
           >
-            <a
-              aria-disabled="false"
-              class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/some-base-path/setup"
+            <span
+              class="dusk-anchor-button__text"
             >
-              <span
-                class="dusk-anchor-button__text"
-              >
-                Back
-              </span>
-              
-            </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AnchorButton&gt;-->
-            <!--&lt;AppAnchorButton&gt;-->
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal flex-1"
-              type="button"
+              Back
+            </span>
+            
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                Proceed
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-          </div>
+              Proceed
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
         </div>
       </div>
       
@@ -3204,7 +3191,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
     class="onboarding-wrapper s-p4ikGGAJA5YG"
   >
     <section
-      class="flex flex-col flex-1"
+      class="s-c41QPMu_i3CH"
     >
       <div
         class="dusk-card"
@@ -3221,56 +3208,54 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
            
         </header>
          
-        <div
-          class="flex flex-col gap-1"
+        <p
+          class="s-c41QPMu_i3CH"
         >
-          <p>
-            Our 
-            <a
-              class="dusk-anchor"
-              href="https://dusk.network/privacy-policy/"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Terms & Privacy Policy
-            </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
-             govern your use of our services, including data handling and user responsibilities.
-        Your privacy and security are our top priorities.
-          </p>
-           
-          <div
-            class="flex gap-1 w-100"
+          Our 
+          <a
+            class="dusk-anchor"
+            href="https://dusk.network/privacy-policy/"
+            rel="noopener noreferrer"
+            target="_blank"
           >
-            <a
-              aria-disabled="false"
-              class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
-              href="/some-base-path/setup"
+            Terms & Privacy Policy
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           govern your use of our services, including data handling and user responsibilities.
+      Your privacy and security are our top priorities.
+        </p>
+         
+        <div
+          class="actions s-c41QPMu_i3CH"
+        >
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal actions__action"
+            href="/some-base-path/setup"
+          >
+            <span
+              class="dusk-anchor-button__text"
             >
-              <span
-                class="dusk-anchor-button__text"
-              >
-                Cancel
-              </span>
-              
-            </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AnchorButton&gt;-->
-            <!--&lt;AppAnchorButton&gt;-->
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal flex-1"
-              type="button"
+              Cancel
+            </span>
+            
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AnchorButton&gt;-->
+          <!--&lt;AppAnchorButton&gt;-->
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
             >
-              <span
-                class="dusk-button__text"
-              >
-                Accept
-              </span>
-            </button>
-            <!--&lt;Button&gt;-->
-          </div>
+              Accept
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
         </div>
       </div>
       

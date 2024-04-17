@@ -20,7 +20,7 @@
 </script>
 
 <div class="transactions">
-  <h2 class="visible-hidden">Transactions</h2>
+  <h2 class="sr-only">Transactions</h2>
 
   <Balance
     fiatCurrency={currency}

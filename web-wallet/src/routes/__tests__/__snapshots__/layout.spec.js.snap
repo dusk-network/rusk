@@ -6,7 +6,7 @@ exports[`Main layout > should render the main layout 1`] = `
     class="app s-7IPF32Wcq3s8"
   >
     <h1
-      class="visible-hidden s-7IPF32Wcq3s8"
+      class="sr-only s-7IPF32Wcq3s8"
     >
       Dusk Web Wallet
     </h1>
