@@ -14,20 +14,18 @@
   $: isValid = agreementOneChecked && agreementTwoChecked;
 </script>
 
-<Card heading="Securely store your seed phrase!">
-  <div class="flex flex-col gap-1">
-    <Agreement
-      name="mnemonic_agreement_one"
-      bind:checked={agreementOneChecked}
-      label="I understand that without my seed phrase I cannot access my wallet and its assets."
-    />
-    <Agreement
-      name="mnemonic_agreement_two"
-      bind:checked={agreementTwoChecked}
-      label="I understand that securing my recovery phrase is my own responsibility.
-				Only I have access to my recovery phrase"
-    />
-  </div>
+<Card heading="Securely store your seed phrase!" className="mnemonic-presetup">
+  <Agreement
+    name="mnemonic_agreement_one"
+    bind:checked={agreementOneChecked}
+    label="I understand that without my seed phrase I cannot access my wallet and its assets."
+  />
+  <Agreement
+    name="mnemonic_agreement_two"
+    bind:checked={agreementTwoChecked}
+    label="I understand that securing my recovery phrase is my own responsibility.
+      Only I have access to my recovery phrase"
+  />
 </Card>
 
 <div class="notice">
@@ -37,3 +35,9 @@
     cannot retrieve your passphrase.
   </p>
 </div>
+
+<style lang="postcss">
+  :global(.mnemonic-presetup .dusk-agreement:first-of-type) {
+    margin-bottom: var(--default-gap);
+  }
+</style>

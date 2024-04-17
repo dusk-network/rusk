@@ -6,7 +6,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
     class="dashboard-content s-qpUp5WgwgSGx"
   >
     <h2
-      class="visible-hidden s-qpUp5WgwgSGx"
+      class="sr-only s-qpUp5WgwgSGx"
     >
       Dashboard
     </h2>
@@ -426,7 +426,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
     class="dashboard-content s-qpUp5WgwgSGx"
   >
     <h2
-      class="visible-hidden s-qpUp5WgwgSGx"
+      class="sr-only s-qpUp5WgwgSGx"
     >
       Dashboard
     </h2>
@@ -848,7 +848,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
     class="dashboard-content s-qpUp5WgwgSGx"
   >
     <h2
-      class="visible-hidden s-qpUp5WgwgSGx"
+      class="sr-only s-qpUp5WgwgSGx"
     >
       Dashboard
     </h2>

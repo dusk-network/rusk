@@ -12,11 +12,14 @@
 </script>
 
 <Card heading="Keep this SAFE" iconPath={mdiAlertOutline}>
-  <div class="flex flex-col gap-1">
-    <p>
-      Please make sure to write your phrase down and save it in a secure
-      location.
-    </p>
-    <Words words={mnemonicPhrase} />
-  </div>
+  <p class="mnemonic-notice">
+    Please make sure to write your phrase down and save it in a secure location.
+  </p>
+  <Words words={mnemonicPhrase} />
 </Card>
+
+<style>
+  .mnemonic-notice {
+    margin-bottom: var(--default-gap);
+  }
+</style>

@@ -10,7 +10,7 @@
 </script>
 
 <main class="app">
-  <h1 class="visible-hidden">Dusk Web Wallet</h1>
+  <h1 class="sr-only">Dusk Web Wallet</h1>
   <slot />
 </main>
 

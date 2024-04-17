@@ -66,7 +66,7 @@
 </script>
 
 <div class="dashboard-content">
-  <h2 class="visible-hidden">Dashboard</h2>
+  <h2 class="sr-only">Dashboard</h2>
 
   <AddressPicker {addresses} {currentAddress} />
 

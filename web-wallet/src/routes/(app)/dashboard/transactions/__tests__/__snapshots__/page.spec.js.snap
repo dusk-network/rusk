@@ -6,7 +6,7 @@ exports[`Dashboard > should render the transactions page 1`] = `
     class="transactions s-w5uHSYkypcPX"
   >
     <h2
-      class="visible-hidden s-w5uHSYkypcPX"
+      class="sr-only s-w5uHSYkypcPX"
     >
       Transactions
     </h2>
