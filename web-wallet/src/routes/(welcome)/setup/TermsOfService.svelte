@@ -1,13 +1,14 @@
 <script>
-  import { Button, Card } from "$lib/dusk/components";
+  import { Button } from "$lib/dusk/components";
   import { AppAnchor, AppAnchorButton } from "$lib/components";
+  import { IconHeaderToggleCard } from "$lib/containers";
 
   /** @type {boolean} */
   export let tosAccepted = false;
 </script>
 
 <section>
-  <Card heading="Terms &amp; Privacy Policy">
+  <IconHeaderToggleCard heading="Terms &amp; Privacy Policy">
     <p>
       Our <AppAnchor
         href="https://dusk.network/privacy-policy/"
@@ -31,7 +32,7 @@
         }}
       />
     </div>
-  </Card>
+  </IconHeaderToggleCard>
 </section>
 
 <style lang="postcss">
