@@ -613,42 +613,52 @@ impl SessionId {
     }
 }
 
-/// A subscription to a contract event.
+/// A subscription to an event.
 ///
-/// The `topic` field is optional and can be used to filter events by topic. If
-/// the `topic` field is `None`, all events from the contract are sent.
+/// Subscriptions have data related to the component the subscriber wishes to
+/// subscribe to, the component targeted by the event (`contracts`,
+/// `transactions`, etc...) and an optional entity within the component that
+/// the event targets.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub struct ContractSubscription {
-    pub target: WrappedContractId,
+pub struct RuesSubscription {
+    pub component: String,
+    pub entity: Option<String>,
     pub topic: String,
 }
 
-impl ContractSubscription {
-    /// Parses a subscription from an url path split.
-    ///
-    /// Returns `None` if the path is invalid.
+impl RuesSubscription {
     pub fn parse_from_path_split(mut path_split: Split<char>) -> Option<Self> {
-        // Parse out the contract ID
-        let target_hex = path_split.next()?;
-        let target_bytes = hex::decode(target_hex).ok()?;
-        let mut target_array = [0u8; 32];
+        // If the segment contains a `:`, we split the string in two after the
+        // first one - meaning entities with `:` are still possible.
+        // If the segment doesn't contain a `:` then the segment is just a
+        // component.
+        let (component, entity) =
+            path_split
+                .next()
+                .map(|segment| match segment.split_once(':') {
+                    Some((component, entity)) => (component, Some(entity)),
+                    None => (segment, None),
+                })?;
 
-        if target_bytes.len() != 32 {
-            return None;
-        }
-
-        target_array.copy_from_slice(&target_bytes);
-        let target = WrappedContractId(ContractId::from_bytes(target_array));
-
-        // Parse out the topic, if it exists
+        let component = component.to_string();
+        let entity = entity.map(ToString::to_string);
         let topic = path_split.next()?.to_string();
 
-        Some(Self { target, topic })
+        Some(Self {
+            component,
+            entity,
+            topic,
+        })
     }
 
-    /// Returns true if the event matches the subscription.
     pub fn matches(&self, event: &ContractEvent) -> bool {
-        if self.target != event.target {
+        if self.component != "contracts" {
+            return false;
+        }
+
+        let target = hex::encode(event.target.0.as_bytes());
+
+        if self.entity != Some(target) {
             return false;
         }
 
