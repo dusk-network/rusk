@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import Block from "../+page.svelte";
 
@@ -9,8 +9,15 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 describe("Block", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2024, 4, 15));
+
   afterEach(() => {
     cleanup();
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
   });
 
   it("should render the Block Details page", () => {
