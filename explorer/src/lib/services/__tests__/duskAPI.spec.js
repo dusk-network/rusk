@@ -1,10 +1,13 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
+import * as mockData from "$lib/mock-data";
+
+import { transformBlock, transformTransaction } from "$lib/chain-info";
+
 import { duskAPI } from "..";
 
 describe("duskAPI", () => {
   const fetchSpy = vi.spyOn(global, "fetch");
-  const response = new Response("{}", { status: 200 });
   const node = "nodes.dusk.network";
   const fakeID = "some-id";
   const apiGetOptions = {
@@ -21,7 +24,9 @@ describe("duskAPI", () => {
   const getExpectedURL = (endpoint) =>
     new URL(`${import.meta.env[endpointEnvName]}/${endpoint}?node=${node}`);
 
-  fetchSpy.mockResolvedValue(response);
+  /** @type {(data: Record<string | number, any>) => Response} */
+  const makeOKResponse = (data) =>
+    new Response(JSON.stringify(data), { status: 200 });
 
   afterEach(() => {
     fetchSpy.mockClear();
@@ -32,8 +37,11 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve a single block", () => {
-    duskAPI.getBlock(node, fakeID);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiBlock));
 
+    expect(duskAPI.getBlock(node, fakeID)).resolves.toStrictEqual(
+      transformBlock(mockData.apiBlock.data.blocks[0])
+    );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL(`blocks/${fakeID}`),
@@ -42,7 +50,11 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the list of blocks", () => {
-    duskAPI.getBlocks(node);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks));
+
+    expect(duskAPI.getBlocks(node)).resolves.toStrictEqual(
+      mockData.apiBlocks.data.blocks.map(transformBlock)
+    );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
@@ -52,8 +64,13 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the latest chain info", () => {
-    duskAPI.getLatestChainInfo(node);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiLatestChainInfo));
 
+    expect(duskAPI.getLatestChainInfo(node)).resolves.toStrictEqual({
+      blocks: mockData.apiLatestChainInfo.data.blocks.map(transformBlock),
+      transactions:
+        mockData.apiLatestChainInfo.data.transactions.map(transformTransaction),
+    });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL("latest"),
@@ -62,8 +79,12 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the market data", () => {
-    duskAPI.getMarketData();
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData));
 
+    expect(duskAPI.getMarketData()).resolves.toStrictEqual({
+      currentPrice: mockData.apiMarketData.market_data.current_price,
+      marketCap: mockData.apiMarketData.market_data.market_cap,
+    });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       new URL(
@@ -76,8 +97,11 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the node locations", () => {
-    duskAPI.getNodeLocations(node);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations));
 
+    expect(duskAPI.getNodeLocations(node)).resolves.toStrictEqual(
+      mockData.apiNodeLocations.data
+    );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL("locations"),
@@ -86,8 +110,9 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the statistics", () => {
-    duskAPI.getStats(node);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiStats));
 
+    expect(duskAPI.getStats(node)).resolves.toStrictEqual(mockData.apiStats);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL("stats"),
@@ -96,8 +121,11 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve a single transaction", () => {
-    duskAPI.getTransaction(node, fakeID);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiTransaction));
 
+    expect(duskAPI.getTransaction(node, fakeID)).resolves.toStrictEqual(
+      transformTransaction(mockData.apiTransaction.data[0])
+    );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL(`transactions/${fakeID}`),
@@ -106,8 +134,13 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the details of a single transaction", () => {
-    duskAPI.getTransactionDetails(node, fakeID);
+    fetchSpy.mockResolvedValueOnce(
+      makeOKResponse(mockData.apiTransactionDetails)
+    );
 
+    expect(duskAPI.getTransactionDetails(node, fakeID)).resolves.toBe(
+      mockData.apiTransactionDetails.data.json
+    );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL(`transactions/${fakeID}/details`),
@@ -116,8 +149,11 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the list of transactions", () => {
-    duskAPI.getTransactions(node);
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiTransactions));
 
+    expect(duskAPI.getTransactions(node)).resolves.toStrictEqual(
+      mockData.apiTransactions.data.map(transformTransaction)
+    );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       getExpectedURL("transactions"),
@@ -150,6 +186,10 @@ describe("duskAPI", () => {
 
   it("should be able to make the correct request whether the endpoint in env vars ends with a trailing slash or not", () => {
     const expectedURL = new URL(`http://example.com/blocks?node=${node}`);
+
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks))
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks));
 
     vi.stubEnv(endpointEnvName, "http://example.com");
 
