@@ -17,11 +17,15 @@
 
 .details-list__term:last-of-type {
   margin-bottom: 0;
-  /* 
-      3.8125rem is the sum of the switch width plus the gap 
+  /*
+      3.8125rem is the sum of the switch width plus the gap
       between the switch and the dt element
       */
   width: calc(100% - 3.8125rem);
+}
+
+.detail-list__help {
+  cursor: help;
 }
 
 .details-list__definition {

@@ -1,4 +1,5 @@
 <script>
+  import { Tooltip } from "$lib/dusk/components";
   import { Footer, Navbar } from "$lib/components";
   import "../style/main.css";
 
@@ -27,3 +28,5 @@
 <footer>
   <Footer />
 </footer>
+
+<Tooltip id="main-tooltip" />

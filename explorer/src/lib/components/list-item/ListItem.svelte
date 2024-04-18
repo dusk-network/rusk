@@ -1,16 +1,13 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { Icon, Tooltip } from "$lib/dusk/components";
+  import { Icon } from "$lib/dusk/components";
   import { mdiInformationOutline } from "@mdi/js";
 
   import "./ListItem.css";
 
   /** @type {string} */
   export let tooltipText = "";
-
-  /**@type {string}*/
-  export let tooltipId;
 </script>
 
 <dt class="details-list__term">
@@ -19,7 +16,7 @@
       className="detail-list__help"
       path={mdiInformationOutline}
       size="normal"
-      data-tooltip-id={tooltipId}
+      data-tooltip-id="main-tooltip"
       data-tooltip-text={tooltipText}
       data-tooltip-place="top"
       data-tooltip-type="info"
@@ -30,4 +27,3 @@
 <dd class="details-list__definition">
   <slot name="definition" />
 </dd>
-<Tooltip id={tooltipId} />

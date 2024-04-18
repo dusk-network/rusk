@@ -36,7 +36,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="blockHash"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The hash for the header of the block"
           data-tooltip-type="info"
@@ -58,25 +58,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         2f37fec165e3891e6f6beb329f0262cd0538edcb478a3db2154381ecf45150aa
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="blockHash"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="height"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
           data-tooltip-type="info"
@@ -137,25 +125,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
         <!--&lt;AppAnchor&gt;-->
          
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="height"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="timestamp"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The date and time the block was created"
           data-tooltip-type="info"
@@ -184,25 +160,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
            
         </time>
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="timestamp"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="transactions"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The number of transactions included in the block"
           data-tooltip-type="info"
@@ -224,25 +188,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         0
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="transactions"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="blockFees"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The total fees paid for the transactions in the block"
           data-tooltip-type="info"
@@ -265,25 +217,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
         0
          DUSK
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="blockFees"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="blockReward"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The reward allocated to the block generator"
           data-tooltip-type="info"
@@ -306,25 +246,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
         16
          DUSK
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="blockReward"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="blockGasLimit"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The block gas limit"
           data-tooltip-type="info"
@@ -347,25 +275,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
         5
          DUSK
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="blockGasLimit"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="gasUsed"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The amount of gas used generating the block"
           data-tooltip-type="info"
@@ -401,25 +317,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
         <!--&lt;ProgressBar&gt;-->
          
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="gasUsed"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="averageFeePaid"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The average fee paid for the transactions within the block"
           data-tooltip-type="info"
@@ -442,25 +346,13 @@ exports[`Block Details > renders the Block Details component 1`] = `
         0
          DUSK
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="averageFeePaid"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
         <svg
           class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="stateRootHash"
+          data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
           data-tooltip-text="The state root hash"
           data-tooltip-type="info"
@@ -487,18 +379,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           fb4c93bcc64914203b4312cf09e02c230ed3bc013408b124d5679c6cf583efd8
         </span>
       </dd>
-       
-       
-      <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="stateRootHash"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
-      >
-        
-      </div>
-      <!--&lt;Tooltip&gt;-->
       <!--&lt;ListItem&gt;-->
     </dl>
      
