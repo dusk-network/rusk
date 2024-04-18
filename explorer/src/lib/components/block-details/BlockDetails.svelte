@@ -22,6 +22,9 @@
   /** @type {number} */
   let screenWidth = window.innerWidth;
 
+  /** @type {HTMLElement}*/
+  let blockList;
+
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -29,9 +32,7 @@
       screenWidth = entry.contentRect.width;
     });
 
-    resizeObserver.observe(
-      document.body.getElementsByClassName("details-list__definition")[0]
-    );
+    resizeObserver.observe(blockList.children[1]);
 
     return () => resizeObserver.disconnect();
   });
@@ -46,7 +47,7 @@
     </h3>
     <button type="button" on:click={() => history.back()}>Back</button>
   </header>
-  <dl class="block-details__list">
+  <dl class="block-details__list" bind:this={blockList}>
     <!-- BLOCK HASH -->
     <ListItem tooltipText="The hash for the header of the block">
       <svelte:fragment slot="term">block hash</svelte:fragment>
