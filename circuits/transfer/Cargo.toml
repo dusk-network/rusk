@@ -43,16 +43,6 @@ path = "tests/send_to_contract_transparent.rs"
 required-features = ["rusk-profile"]
 
 [[test]]
-name = "test-stco"
-path = "tests/send_to_contract_obfuscated.rs"
-required-features = ["rusk-profile"]
-
-[[test]]
 name = "test-wft"
 path = "tests/withdraw_from_transparent.rs"
-required-features = ["rusk-profile"]
-
-[[test]]
-name = "test-wfo"
-path = "tests/withdraw_from_obfuscated.rs"
 required-features = ["rusk-profile"]
