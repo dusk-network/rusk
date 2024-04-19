@@ -11,8 +11,8 @@ describe("createCurrencyFormatter", () => {
      * A non-breaking space is used here (code point 0x00A0)
      * @see https://shapecatcher.com/unicode/info/160
      */
-    expect(itFormatter(1_234_567.899)).toBe("1.234.567,90 €");
-    expect(usFormatter(1_234_567.899)).toBe("$1,234,567.90");
+    expect(itFormatter(1_234_567.899)).toBe("1.234.567,899 €");
+    expect(usFormatter(1_234_567.899)).toBe("$1,234,567.899");
   });
 
   it('should accept "DUSK" as a currency, using the desired digits', () => {

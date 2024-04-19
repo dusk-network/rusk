@@ -1,0 +1,74 @@
+.transaction-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.transaction-details__header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.transaction-details__header-heading {
+  text-transform: uppercase;
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.transaction-details__status,
+.transaction-details__type {
+  width: 100%;
+}
+
+.transaction-details__list-timestamp {
+  text-transform: uppercase;
+}
+
+.transaction-details__gas-used {
+  width: 12.5rem;
+}
+
+.transaction-details__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  font-size: 0.875rem;
+  column-gap: 1.875rem;
+}
+
+.transaction-details__payload {
+  margin-top: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  line-height: 1.3125rem;
+  width: 100%;
+}
+
+.transaction-details__payload-switch {
+  position: absolute;
+  right: -3.8125rem;
+}
+
+@media (min-width: 640px) {
+  .transaction-details__header-heading {
+    text-transform: none;
+  }
+
+  .transaction-details__list {
+    display: inline-grid;
+    grid-template-columns: 1fr 3fr;
+  }
+
+  .transaction-details__payload {
+    margin-top: 0rem;
+  }
+
+  .transaction-details__payload-switch {
+    position: relative;
+    right: 0rem;
+  }
+
+  .transaction-details__status,
+  .transaction-details__type {
+    width: auto;
+  }
+}

@@ -1,3 +1,5 @@
+type BadgeVariant = "neutral" | "success" | "warning" | "error";
+
 type GroupedSelectOptions = Record<string, SelectOption[] | string[]>;
 
 type IconProp = {
