@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove allowlist [#1257]
+- Remove STCO and WFCO [#1675]
 
 ### Fixed
 
@@ -206,6 +207,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#1675]: https://github.com/dusk-network/rusk/issues/1675
 [#1640]: https://github.com/dusk-network/rusk/issues/1640
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
