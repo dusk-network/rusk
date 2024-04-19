@@ -1,0 +1,38 @@
+.table-container {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border-style: hidden;
+  text-transform: uppercase;
+  font-family: "Soehne Mono", sans-serif;
+}
+
+.table__header-cell {
+  text-align: left;
+  padding: 1rem 1.375rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  background-color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table__data-cell {
+  padding: 0.5rem 1.375rem;
+  font-weight: 400;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+.table__row:hover {
+  background-color: var(--on-primary-color);
+}
+
+.table__data-cell .dusk-badge {
+  font-size: 0.75rem;
+}

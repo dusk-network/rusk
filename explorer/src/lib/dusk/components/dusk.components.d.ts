@@ -1,4 +1,4 @@
-type BadgeVariant = "neutral" | "success" | "warning" | "error";
+type BadgeVariant = "neutral" | "success" | "warning" | "error" | "alt";
 
 type ButtonSize = "normal" | "small";
 
