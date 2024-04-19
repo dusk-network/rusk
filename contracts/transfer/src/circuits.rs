@@ -11,22 +11,10 @@ const VD_STCT: &[u8] = include_bytes!(concat!(
     env!("ID_SENDTOCONTRACTTRANSPARENTCIRCUIT"),
     ".vd"
 ));
-const VD_STCO: &[u8] = include_bytes!(concat!(
-    env!("RUSK_BUILT_KEYS_PATH"),
-    "/",
-    env!("ID_SENDTOCONTRACTOBFUSCATEDCIRCUIT"),
-    ".vd"
-));
 const VD_WFCT: &[u8] = include_bytes!(concat!(
     env!("RUSK_BUILT_KEYS_PATH"),
     "/",
     env!("ID_WITHDRAWFROMTRANSPARENTCIRCUIT"),
-    ".vd"
-));
-const VD_WFCO: &[u8] = include_bytes!(concat!(
-    env!("RUSK_BUILT_KEYS_PATH"),
-    "/",
-    env!("ID_WITHDRAWFROMOBFUSCATEDCIRCUIT"),
     ".vd"
 ));
 
@@ -68,11 +56,6 @@ pub const fn verifier_data_execute(inputs: usize) -> Option<&'static [u8]> {
     Some(vd)
 }
 
-/// Verifier data for the `STCO` circuit.
-pub const fn verifier_data_stco() -> &'static [u8] {
-    VD_STCO
-}
-
 /// Verifier data for the `STCT` circuit.
 pub const fn verifier_data_stct() -> &'static [u8] {
     VD_STCT
@@ -81,9 +64,4 @@ pub const fn verifier_data_stct() -> &'static [u8] {
 /// Verifier data for the `WFCT` circuit.
 pub const fn verifier_data_wfct() -> &'static [u8] {
     VD_WFCT
-}
-
-/// Verifier data for the `WFCO` circuit.
-pub const fn verifier_data_wfco() -> &'static [u8] {
-    VD_WFCO
 }

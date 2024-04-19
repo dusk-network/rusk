@@ -13,17 +13,17 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_jubjub::{JubJubAffine, JubJubExtended};
-use dusk_pki::{Ownable, PublicKey, StealthAddress};
+use dusk_bytes::DeserializableSlice;
+use dusk_jubjub::JubJubAffine;
+use dusk_pki::{Ownable, StealthAddress};
 use phoenix_core::transaction::*;
-use phoenix_core::{Crossover, Fee, Message, Note};
+use phoenix_core::{Crossover, Fee, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
 };
-use transfer_contract_types::{Mint, Stct, Wfco, WfcoRaw, Wfct, Wfctc};
+use transfer_contract_types::{Mint, Stct, Wfct, Wfctc};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
@@ -36,9 +36,6 @@ pub struct TransferState {
     nullifiers: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
     balances: BTreeMap<ContractId, u64>,
-    message_mapping:
-        BTreeMap<ContractId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
-    message_mapping_set: BTreeMap<ContractId, StealthAddress>,
     var_crossover: Option<Crossover>,
     var_crossover_addr: Option<StealthAddress>,
 }
@@ -50,8 +47,6 @@ impl TransferState {
             nullifiers: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
             balances: BTreeMap::new(),
-            message_mapping: BTreeMap::new(),
-            message_mapping_set: BTreeMap::new(),
             var_crossover: None,
             var_crossover_addr: None,
         }
@@ -153,138 +148,6 @@ impl TransferState {
             value: wfct_raw.value,
             note,
             proof: wfct_raw.proof,
-        })
-    }
-
-    pub fn send_to_contract_obfuscated(&mut self, stco: Stco) -> bool {
-        let (crossover, stealth_addr) = self
-            .take_crossover()
-            .expect("The crossover is mandatory for STCO!");
-
-        let contract_id = ContractId::from_bytes(stco.module);
-        let module = rusk_abi::contract_to_scalar(&contract_id);
-
-        let sign_message =
-            stco_signature_message(&crossover, &stco.message, module).to_vec();
-        let sign_message = rusk_abi::poseidon_hash(sign_message);
-
-        let (message_psk_a, message_psk_b) =
-            match rusk_abi::payment_info(contract_id)
-                .expect("Querying the payment info should succeed")
-            {
-                PaymentInfo::Obfuscated(Some(k))
-                | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
-
-                PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
-                    (JubJubExtended::identity(), JubJubExtended::identity())
-                }
-
-                _ => panic!("The caller doesn't accept obfuscated notes"),
-            };
-
-        let mut pi = Vec::with_capacity(12 + stco.message.cipher().len());
-
-        pi.push(crossover.value_commitment().into());
-        pi.push(crossover.nonce().into());
-        pi.extend(crossover.encrypted_data().cipher().iter().map(|c| c.into()));
-        pi.push(stco.message.value_commitment().into());
-        pi.push(message_psk_a.into());
-        pi.push(message_psk_b.into());
-        pi.push(stco.message_address.pk_r().as_ref().into());
-        pi.push(stco.message.nonce().into());
-        pi.extend(stco.message.cipher().iter().map(|c| c.into()));
-        pi.push(module.into());
-        pi.push(sign_message.into());
-        pi.push(stealth_addr.pk_r().as_ref().into());
-
-        //  1. S_a↦.append((pk, R))
-        //  2. M_a↦.M_pk↦.append(M)
-        self.push_message(contract_id, stco.message_address, stco.message);
-
-        //  3. if a.isPayable() → true, obf, psk_a? then continue
-        //  4. verify(C.c, M, pk, π)
-        let vd = verifier_data_stco();
-        Self::assert_proof(vd, stco.proof, pi)
-            .expect("Failed to verify the provided proof!");
-
-        //  5. C←(0,0,0)
-        //  Crossover is already taken
-
-        true
-    }
-
-    pub fn withdraw_from_contract_obfuscated(&mut self, wfco: Wfco) -> bool {
-        let address = rusk_abi::caller();
-
-        let (change_psk_a, change_psk_b) = match rusk_abi::payment_info(address)
-            .expect("Querying the payment info should succeed")
-        {
-            PaymentInfo::Obfuscated(Some(k)) | PaymentInfo::Any(Some(k)) => {
-                (*k.A(), *k.B())
-            }
-
-            PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
-                (JubJubExtended::identity(), JubJubExtended::identity())
-            }
-
-            _ => panic!("The caller doesn't accept obfuscated notes"),
-        };
-
-        let mut pi = alloc::vec![
-            wfco.message.value_commitment().into(),
-            wfco.change.value_commitment().into(),
-            change_psk_a.into(),
-            change_psk_b.into(),
-            wfco.change_address.pk_r().as_ref().into(),
-            wfco.change.nonce().into(),
-        ];
-        pi.extend(wfco.change.cipher().iter().map(|c| c.into()));
-        pi.push(wfco.output.value_commitment().into());
-
-        //  1. a ∈ M↦
-        //  2. pk ∈ M_a↦
-        //  3. M_a↦.delete(pk)
-        self.take_message_from_address_key(
-            &address,
-            wfco.message_address.pk_r(),
-        )
-        .expect(
-            "Failed to take a message from the provided address/key mapping!",
-        );
-
-        self.push_message(address, wfco.change_address, wfco.change);
-
-        //  6. if a.isPayable() → true, obf, psk_a? then continue
-        match rusk_abi::payment_info(address)
-            .expect("Querying the payment info should succeed")
-        {
-            PaymentInfo::Obfuscated(_) | PaymentInfo::Any(_) => (),
-            _ => panic!("This contract accepts only obfuscated notes!"),
-        }
-
-        self.push_note_current_height(wfco.output);
-
-        //  7. verify(c, M_c, No.c, π)
-        let vd = verifier_data_wfco();
-        Self::assert_proof(vd, wfco.proof, pi)
-            .expect("Failed to verify the provided proof!");
-
-        true
-    }
-
-    pub fn withdraw_from_contract_obfuscated_raw(
-        &mut self,
-        wfco_raw: WfcoRaw,
-    ) -> bool {
-        let output = Note::from_slice(wfco_raw.output.as_slice())
-            .expect("Failed to deserialize note");
-        self.withdraw_from_contract_obfuscated(Wfco {
-            message: wfco_raw.message,
-            message_address: wfco_raw.message_address,
-            change: wfco_raw.change,
-            change_address: wfco_raw.change_address,
-            output,
-            proof: wfco_raw.proof,
         })
     }
 
@@ -481,17 +344,6 @@ impl TransferState {
         }
     }
 
-    pub fn message(
-        &self,
-        contract: &ContractId,
-        pk: &PublicKey,
-    ) -> Option<Message> {
-        let map = self.message_mapping.get(contract)?;
-        let message = map.get(&pk.to_bytes())?;
-
-        Some(*message)
-    }
-
     fn get_note(&self, pos: u64) -> Option<Note> {
         self.tree.get(pos).map(|l| l.note)
     }
@@ -504,18 +356,6 @@ impl TransferState {
         }
 
         false
-    }
-
-    fn take_message_from_address_key(
-        &mut self,
-        contract: &ContractId,
-        pk: &PublicKey,
-    ) -> Result<Message, Error> {
-        self.message_mapping
-            .get_mut(contract)
-            .ok_or(Error::MessageNotFound)?
-            .remove(&pk.to_bytes())
-            .ok_or(Error::MessageNotFound)
     }
 
     fn root_exists(&self, root: &BlsScalar) -> bool {
@@ -547,35 +387,6 @@ impl TransferState {
 
             _ => Err(Error::NotEnoughBalance),
         }
-    }
-
-    fn push_message(
-        &mut self,
-        address: ContractId,
-        message_address: StealthAddress,
-        message: Message,
-    ) {
-        let mut to_insert: Option<BTreeMap<[u8; PublicKey::SIZE], Message>> =
-            None;
-
-        match self.message_mapping.get_mut(&address) {
-            Some(map) => {
-                map.insert(message_address.pk_r().to_bytes(), message);
-            }
-
-            None => {
-                let mut map: BTreeMap<[u8; PublicKey::SIZE], Message> =
-                    BTreeMap::default();
-                map.insert(message_address.pk_r().to_bytes(), message);
-                to_insert.replace(map);
-            }
-        }
-
-        if let Some(map) = to_insert {
-            self.message_mapping.insert(address, map);
-        }
-
-        self.message_mapping_set.insert(address, message_address);
     }
 
     fn take_crossover(&mut self) -> Result<(Crossover, StealthAddress), Error> {

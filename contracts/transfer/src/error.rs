@@ -10,7 +10,6 @@ use phoenix_core::Error as PhoenixError;
 #[derive(Debug, Clone)]
 pub enum Error {
     Phoenix(PhoenixError),
-    MessageNotFound,
     CrossoverNotFound,
     NotEnoughBalance,
     ProofVerification,
