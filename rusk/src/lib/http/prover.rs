@@ -18,9 +18,7 @@ impl HandleRequest for LocalProver {
         let response = match topic {
             "prove_execute" => self.prove_execute(request.event_data())?,
             "prove_stct" => self.prove_stct(request.event_data())?,
-            "prove_stco" => self.prove_stco(request.event_data())?,
             "prove_wfct" => self.prove_wfct(request.event_data())?,
-            "prove_wfco" => self.prove_wfco(request.event_data())?,
             _ => anyhow::bail!("Unsupported"),
         };
         Ok(ResponseData::new(response))

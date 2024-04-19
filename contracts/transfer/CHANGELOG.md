@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change dependencies declarations enforce bytecheck [#1371]
 
+### Removed
+
+- Remove STCO and WFCO [#1675]
+
 ## [0.7.0] - 2023-12-15
 
+[#1675]: https://github.com/dusk-network/rusk/issues/1675
 [#1371]: https://github.com/dusk-network/rusk/issues/1371

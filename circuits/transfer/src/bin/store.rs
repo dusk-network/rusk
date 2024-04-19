@@ -10,14 +10,8 @@ use transfer_circuits::*;
 
 pub fn main() -> Result<(), io::Error> {
     // store the transfer circuits
-    store_circuit::<WithdrawFromObfuscatedCircuit>(Some(String::from(
-        "WithdrawFromObfuscatedCircuit",
-    )))?;
     store_circuit::<WithdrawFromTransparentCircuit>(Some(String::from(
         "WithdrawFromTransparentCircuit",
-    )))?;
-    store_circuit::<SendToContractObfuscatedCircuit>(Some(String::from(
-        "SendToContractObfuscatedCircuit",
     )))?;
     store_circuit::<SendToContractTransparentCircuit>(Some(String::from(
         "SendToContractTransparentCircuit",

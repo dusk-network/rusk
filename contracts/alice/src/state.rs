@@ -21,11 +21,6 @@ impl Alice {
             .expect("Transparent withdrawal transaction should succeed");
     }
 
-    pub fn withdraw_obfuscated(&mut self, wfco: Wfco) {
-        let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfco", &wfco)
-            .expect("Obfuscated withdrawal transaction should succeed");
-    }
-
     pub fn withdraw_to_contract(&mut self, wfctc: Wfctc) {
         let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfctc", &wfctc)
             .expect("Withdrawal tco contract transaction should succeed");

@@ -32,9 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Set the ID_[circuit_name] variables
     let circuits = [
         rusk_profile::Circuit::from_name("SendToContractTransparentCircuit")?,
-        rusk_profile::Circuit::from_name("SendToContractObfuscatedCircuit")?,
         rusk_profile::Circuit::from_name("WithdrawFromTransparentCircuit")?,
-        rusk_profile::Circuit::from_name("WithdrawFromObfuscatedCircuit")?,
         rusk_profile::Circuit::from_name("ExecuteCircuitOneTwo")?,
         rusk_profile::Circuit::from_name("ExecuteCircuitTwoTwo")?,
         rusk_profile::Circuit::from_name("ExecuteCircuitThreeTwo")?,
