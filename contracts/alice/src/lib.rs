@@ -35,11 +35,6 @@ mod wasm {
     }
 
     #[no_mangle]
-    unsafe fn withdraw_obfuscated(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw_obfuscated(arg))
-    }
-
-    #[no_mangle]
     unsafe fn withdraw_to_contract(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw_to_contract(arg))
     }
