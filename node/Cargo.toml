@@ -27,7 +27,7 @@ async-channel = "1.7"
 stake-contract-types = { version = "0.0.1-rc.2", path = "../contracts/stake-types" }
 rkyv = "0.7"
 
-rocksdb_lib = { package = "rocksdb", version = "0.21", default-features = false }
+rocksdb_lib = { package = "rocksdb", version = "0.22", default-features = false }
 dusk-bytes = "^0.1"
 node-data = { version = "0.1", path = "../node-data" }
 rustc_tools_util = "=0.2.0"
