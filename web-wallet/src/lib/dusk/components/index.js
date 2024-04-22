@@ -5,7 +5,6 @@ export { default as Badge } from "./Badge/Badge.svelte";
 export { default as Button } from "./Button/Button.svelte";
 export { default as Card } from "./Card/Card.svelte";
 export { default as Checkbox } from "./Checkbox/Checkbox.svelte";
-export { default as CircularIcon } from "./Icon/CircularIcon.svelte";
 export { default as ErrorAlert } from "./ErrorAlert/ErrorAlert.svelte";
 export { default as ErrorDetails } from "./ErrorDetails/ErrorDetails.svelte";
 export { default as Icon } from "./Icon/Icon.svelte";

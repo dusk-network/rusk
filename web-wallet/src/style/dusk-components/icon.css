@@ -17,16 +17,3 @@
   height: calc(var(--icon-size) / var(--scaler));
   width: calc(var(--icon-size) / var(--scaler));
 }
-
-.dusk-icon--circular {
-  display: flex;
-  border-radius: 50%;
-  justify-content: center;
-  align-items: center;
-  aspect-ratio: 1/1;
-}
-
-.dusk-icon--circular svg {
-  max-width: 70%;
-  height: 70%;
-}

@@ -6,12 +6,7 @@
     mdiRestore,
     mdiTimerSand,
   } from "@mdi/js";
-  import {
-    Button,
-    CircularIcon,
-    Icon,
-    ProgressBar,
-  } from "$lib/dusk/components";
+  import { Button, Icon, ProgressBar } from "$lib/dusk/components";
   import { settingsStore, walletStore } from "$lib/stores";
   import { AppAnchorButton } from "$lib/components";
 
@@ -22,22 +17,22 @@
   let syncStatus = "";
 
   /** @type {string} */
-  let iconPath = "";
+  let networkStatusIconPath = "";
 
   /** @type {string} */
   let iconVariant = "";
 
   $: if (isSyncing) {
     iconVariant = "warning";
-    iconPath = mdiTimerSand;
+    networkStatusIconPath = mdiTimerSand;
     syncStatus = `Syncing with Dusk ${network}`;
   } else if (error) {
     iconVariant = "error";
-    iconPath = mdiAlertOutline;
+    networkStatusIconPath = mdiAlertOutline;
     syncStatus = `Dusk ${network} - Sync Failed`;
   } else {
     iconVariant = "success";
-    iconPath = mdiLink;
+    networkStatusIconPath = mdiLink;
     syncStatus = `Dusk ${network}`;
   }
 </script>
@@ -53,17 +48,15 @@
   <footer class="footer">
     <nav class="footer__navigation">
       <div class="footer__network-status">
-        <CircularIcon
+        <Icon
           className="footer__network-status-icon footer__network-status-icon--{iconVariant}"
-          color="var(--on-{iconVariant}-color)"
-          bgColor="var(--{iconVariant}-color)"
           data-tooltip-disabled={!error}
           data-tooltip-id="main-tooltip"
           data-tooltip-text={error?.message}
           data-tooltip-type="error"
-        >
-          <Icon path={iconPath} size="large" />
-        </CircularIcon>
+          path={networkStatusIconPath}
+          size="large"
+        />
         <div class="footer__network-message">
           <span>{syncStatus}</span>
           {#if isSyncing}
@@ -142,8 +135,25 @@
       align-items: center;
     }
 
+    :global(.footer__network-status-icon) {
+      border-radius: 50%;
+      padding: 0.2em;
+    }
+
     :global(.footer__network-status-icon--error) {
       cursor: help;
+      color: var(--on-error-color);
+      background: var(--error-color);
+    }
+
+    :global(.footer__network-status-icon--success) {
+      color: var(--on-success-color);
+      background: var(--success-color);
+    }
+
+    :global(.footer__network-status-icon--warning) {
+      color: var(--on-warning-color);
+      background: var(--warning-color);
     }
   }
 
