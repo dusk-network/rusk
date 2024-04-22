@@ -147,6 +147,11 @@ pub fn to_rusk_state_id_path<P: AsRef<Path>>(dir: P) -> PathBuf {
     dir.join("state.id")
 }
 
+pub fn to_rusk_epoch_id_path<P: AsRef<Path>>(dir: P) -> PathBuf {
+    let dir = dir.as_ref();
+    dir.join("epoch.id")
+}
+
 pub fn get_common_reference_string() -> io::Result<Vec<u8>> {
     let crs = get_rusk_profile_dir()?.join(CRS_FNAME);
     read(crs)
