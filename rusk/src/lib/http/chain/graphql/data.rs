@@ -239,6 +239,85 @@ impl Transaction<'_> {
         hex::encode(self.0.inner.to_var_bytes())
     }
 
+    pub async fn json(&self) -> String {
+        use dusk_bytes::Serializable;
+        use dusk_pki::Ownable;
+        use serde::Serialize;
+        use serde_json::{json, Map, Value};
+
+        let tx = &self.0.inner;
+
+        let mut map = Map::new();
+        map.insert("anchor".into(), json!(hex::encode(tx.anchor.to_bytes())));
+        let nullifiers: Vec<_> = tx
+            .nullifiers()
+            .iter()
+            .map(|n| hex::encode(n.to_bytes()))
+            .collect();
+        map.insert("nullifier".into(), json!(nullifiers));
+        map.insert(
+            "crossover".into(),
+            json!(tx.crossover.map(|m| hex::encode(m.to_bytes()))),
+        );
+        let notes: Vec<_> = tx
+            .outputs()
+            .iter()
+            .map(|n| {
+                let mut map = Map::new();
+                map.insert("note_type".into(), json!(n.note() as u8));
+                map.insert(
+                    "value_commitment".into(),
+                    json!(n
+                        .value_commitment()
+                        .to_hash_inputs()
+                        .iter()
+                        .map(|c| hex::encode(c.to_bytes()))
+                        .collect::<Vec<_>>()),
+                );
+                map.insert(
+                    "nonce".into(),
+                    json!(hex::encode(n.nonce().to_bytes())),
+                );
+                map.insert(
+                    "stealth_address".into(),
+                    json!(bs58::encode(n.stealth_address().to_bytes())
+                        .into_string()),
+                );
+                map.insert(
+                    "encrypted_data".into(),
+                    json!(n
+                        .cipher()
+                        .iter()
+                        .map(|c| hex::encode(c.to_bytes()))
+                        .collect::<Vec<_>>()),
+                );
+                map
+            })
+            .collect();
+        map.insert("notes".into(), json!(notes));
+
+        let mut fee = Map::new();
+        fee.insert("gas_limit".into(), json!(tx.fee().gas_limit));
+        fee.insert("gas_price".into(), json!(tx.fee().gas_price));
+        fee.insert(
+            "stealth_address".into(),
+            json!(bs58::encode(tx.fee().stealth_address().to_bytes())
+                .into_string()),
+        );
+        map.insert("fee".into(), json!(fee));
+
+        let mut call_data = tx.call().map(|(contract_id, fn_name, data)| {
+            let call = Map::new();
+            fee.insert("contract_id".into(), json!(hex::encode(contract_id)));
+            fee.insert("fn_name".into(), json!(fn_name));
+            fee.insert("data".into(), json!(hex::encode(data)));
+            call
+        });
+        map.insert("call".into(), json!(call_data));
+
+        json!(map).to_string()
+    }
+
     pub async fn id(&self) -> String {
         hex::encode(self.0.hash())
     }

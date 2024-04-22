@@ -7,20 +7,12 @@
 mod error;
 mod execute;
 mod gadgets;
-mod send_to_contract_obfuscated;
 mod send_to_contract_transparent;
 mod types;
-mod withdraw_from_obfuscated;
 mod withdraw_from_transparent;
 
 pub use error::Error;
 pub use execute::*;
-pub use send_to_contract_obfuscated::{
-    SendToContractObfuscatedCircuit, StcoCrossover, StcoMessage,
-};
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 pub use types::DeriveKey;
-pub use withdraw_from_obfuscated::{
-    WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
-};
 pub use withdraw_from_transparent::WithdrawFromTransparentCircuit;

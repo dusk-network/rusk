@@ -26,7 +26,5 @@
 </script>
 
 <Card heading="Enter your Mnemonic Phrase">
-  <div class="flex flex-col gap-1">
-    <Mnemonic bind:enteredMnemonicPhrase {wordLimit} type="authenticate" />
-  </div>
+  <Mnemonic bind:enteredMnemonicPhrase {wordLimit} type="authenticate" />
 </Card>

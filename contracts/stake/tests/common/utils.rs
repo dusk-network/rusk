@@ -30,6 +30,7 @@ pub fn leaves_from_height(
         TRANSFER_CONTRACT,
         "leaves_from_height",
         &height,
+        u64::MAX,
         feeder,
     )?;
 

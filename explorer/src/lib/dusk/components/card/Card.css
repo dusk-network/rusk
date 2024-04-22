@@ -1,0 +1,9 @@
+.dusk-card {
+  background-color: var(--surface-color);
+  border-radius: var(--control-border-radius-size);
+  padding: 1.3rem 2rem;
+}
+
+.dusk-card--on-surface {
+  background-color: var(--on-primary-color);
+}

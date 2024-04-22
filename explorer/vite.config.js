@@ -48,6 +48,7 @@ export default defineConfig(({ mode }) => {
       env: {
         APP_BUILD_INFO: "hash1234 2024-01-12",
         APP_VERSION: "0.0.0",
+        VITE_API_ENDPOINT: "https://api.dusk.network/v1",
         VITE_DUSK_DEVNET_NODE: "devnet.nodes.dusk.network",
         VITE_DUSK_TESTNET_NODE: "nodes.dusk.network",
       },

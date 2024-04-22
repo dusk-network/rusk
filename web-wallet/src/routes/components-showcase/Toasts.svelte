@@ -1,27 +1,28 @@
 <script>
   import { Button, Toast } from "$lib/dusk/components";
   import { toast } from "$lib/dusk/components/Toast/store";
-  import { mdiCopyleft } from "@mdi/js";
+  import { mdiAlertCircleOutline, mdiCopyleft } from "@mdi/js";
+
+  function triggerToast() {
+    toast("success", "Toast message", mdiCopyleft);
+  }
+
+  function triggerToastFailure() {
+    toast(
+      "error",
+      "This is a long message to test the wrapping of text",
+      mdiAlertCircleOutline
+    );
+  }
 </script>
 
 <section style="flex-direction:column">
-  <Button
-    text="toggle toast"
-    variant="secondary"
-    size="small"
-    on:click={() => toast("success", "Toast message", mdiCopyleft)}
-  />
+  <Button text="toggle toast" size="small" on:click={triggerToast} />
 
   <Button
     text="toggle another toast"
-    variant="secondary"
     size="small"
-    on:click={() =>
-      toast(
-        "error",
-        "This is a long message to test the wrapping of text",
-        mdiCopyleft
-      )}
+    on:click={triggerToastFailure}
   />
 
   <Toast />

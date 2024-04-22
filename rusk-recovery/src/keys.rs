@@ -122,9 +122,7 @@ pub fn exec(keep_circuits: bool) -> Result<(), Box<dyn std::error::Error>> {
 
     let circuits = circuits_from_names(&[
         "SendToContractTransparentCircuit",
-        "SendToContractObfuscatedCircuit",
         "WithdrawFromTransparentCircuit",
-        "WithdrawFromObfuscatedCircuit",
         "ExecuteCircuitOneTwo",
         "ExecuteCircuitTwoTwo",
         "ExecuteCircuitThreeTwo",

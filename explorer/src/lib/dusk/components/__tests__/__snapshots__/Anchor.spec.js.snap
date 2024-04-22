@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Anchor > should pass additional class names and attributes to the rendered element 1`] = `
+<div>
+  <a
+    class="dusk-anchor foo bar"
+    href="https://dusk.network"
+    title="Some title"
+  >
+    <span>
+      some text
+    </span>
+  </a>
+  <!--&lt;Anchor&gt;-->
+  
+  <!--&lt;SlotContent&gt;-->
+</div>
+`;
+
+exports[`Anchor > should render the Anchor component 1`] = `
+<div>
+  <a
+    class="dusk-anchor"
+    href="https://example.com"
+  >
+    <span>
+      some text
+    </span>
+  </a>
+  <!--&lt;Anchor&gt;-->
+  
+  <!--&lt;SlotContent&gt;-->
+</div>
+`;

@@ -6,33 +6,43 @@
   export let tosAccepted = false;
 </script>
 
-<section class="flex flex-col flex-1">
+<section>
   <Card heading="Terms &amp; Privacy Policy">
-    <div class="flex flex-col gap-1">
-      <p>
-        Our <AppAnchor
-          href="https://dusk.network/privacy-policy/"
-          rel="noopener noreferrer"
-          target="_blank">Terms &amp; Privacy Policy</AppAnchor
-        > govern your use of our services, including data handling and user responsibilities.
-        Your privacy and security are our top priorities.
-      </p>
-      <div class="flex gap-1 w-100">
-        <AppAnchorButton
-          className="flex-1"
-          href="/setup"
-          text="Cancel"
-          variant="tertiary"
-        />
-        <Button
-          className="flex-1"
-          text="Accept"
-          on:click={() => {
-            tosAccepted = true;
-          }}
-          variant="secondary"
-        />
-      </div>
+    <p>
+      Our <AppAnchor
+        href="https://dusk.network/privacy-policy/"
+        rel="noopener noreferrer"
+        target="_blank">Terms &amp; Privacy Policy</AppAnchor
+      > govern your use of our services, including data handling and user responsibilities.
+      Your privacy and security are our top priorities.
+    </p>
+    <div class="actions">
+      <AppAnchorButton
+        className="actions__action"
+        href="/setup"
+        text="Cancel"
+        variant="tertiary"
+      />
+      <Button
+        className="actions__action"
+        text="Accept"
+        on:click={() => {
+          tosAccepted = true;
+        }}
+      />
     </div>
   </Card>
 </section>
+
+<style lang="postcss">
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--default-gap);
+    gap: var(--default-gap);
+  }
+
+  :global(.actions__action) {
+    flex: 1;
+  }
+</style>

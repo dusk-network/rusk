@@ -25,7 +25,7 @@
           position: "after",
         },
         label: "Go Next",
-        variant: "secondary",
+        variant: "primary",
       }}
     >
       <h2 slot="heading">Step 1</h2>
@@ -38,12 +38,7 @@
     <WizardStep showStepper step={2} {key}>
       <h2 slot="heading">All Done</h2>
       <p>Proin aliquet dolor pulvinar, blandit ante non, cursus leo.</p>
-      <AnchorButton
-        href="/"
-        slot="navigation"
-        text="Go Home"
-        variant="secondary"
-      />
+      <AnchorButton href="/" slot="navigation" text="Go Home" />
     </WizardStep>
   </Wizard>
 </section>
@@ -59,12 +54,7 @@
     </WizardStep>
     <WizardStep step={2} {key}>
       <p>Proin aliquet dolor pulvinar, blandit ante non, cursus leo.</p>
-      <AnchorButton
-        href="/"
-        slot="navigation"
-        text="Go Home"
-        variant="secondary"
-      />
+      <AnchorButton href="/" slot="navigation" text="Go Home" />
     </WizardStep>
   </Wizard>
 </section>

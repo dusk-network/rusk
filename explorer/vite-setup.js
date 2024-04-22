@@ -7,6 +7,8 @@ import { expect, vi } from "vitest";
 import { readable } from "svelte/store";
 import "jsdom-worker";
 
+import { IntersectionObserver, ResizeObserver } from "./src/lib/dusk/mocks";
+
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.
  * Vitest get stuck otherwise.
@@ -19,6 +21,11 @@ vi.spyOn(global, "btoa").mockImplementation((data) =>
 );
 
 // Adding missing bits in JSDOM
+
+vi.mock("./src/lib/dusk/mocks/IntersectionObserver");
+
+global.IntersectionObserver = IntersectionObserver;
+global.ResizeObserver = ResizeObserver;
 
 const elementMethods = ["scrollBy", "scrollTo", "scrollIntoView"];
 

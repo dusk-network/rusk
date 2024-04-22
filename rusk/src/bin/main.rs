@@ -25,14 +25,14 @@ use node::{
 };
 #[cfg(feature = "node")]
 use rusk::chain::Rusk;
-use rusk::http::DataSources;
+use rusk::http::{DataSources, HttpServer};
 use rusk::Result;
 
-use tracing_subscriber::filter::EnvFilter;
-
 use node::database::DatabaseOptions;
-use rusk::http::HttpServer;
+use tokio::sync::broadcast;
+
 use tracing::info;
+use tracing_subscriber::filter::EnvFilter;
 
 use crate::config::Config;
 
@@ -96,11 +96,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
 
+    let channel_cap = config.http.ws_event_channel_cap;
+    let (_event_sender, event_receiver) = broadcast::channel(channel_cap);
+
     #[cfg(feature = "node")]
     let (rusk, node, mut service_list) = {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
-        let rusk = Rusk::new(state_dir, config.chain.generation_timeout())?;
+
+        let rusk = Rusk::new(
+            state_dir,
+            config.chain.generation_timeout(),
+            config.http.feeder_call_gas,
+            _event_sender,
+        )?;
 
         info!("Rusk VM loaded");
 
@@ -156,8 +165,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => None,
         };
 
-        _ws_server =
-            Some(HttpServer::bind(handler, listen_addr, cert_and_key).await?);
+        let ws_event_channel_cap = config.http.ws_event_channel_cap;
+
+        _ws_server = Some(
+            HttpServer::bind(
+                handler,
+                event_receiver,
+                ws_event_channel_cap,
+                listen_addr,
+                cert_and_key,
+            )
+            .await?,
+        );
     }
 
     #[cfg(feature = "node")]

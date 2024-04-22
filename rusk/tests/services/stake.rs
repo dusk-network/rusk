@@ -321,10 +321,7 @@ pub async fn slash() -> Result<()> {
     )
     .expect("to work");
 
-    let last_changes = rusk
-        .last_provisioners_change(None)
-        .unwrap()
-        .collect::<Vec<_>>();
+    let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(3.0));
@@ -347,10 +344,7 @@ pub async fn slash() -> Result<()> {
     )
     .expect("to work");
 
-    let last_changes = rusk
-        .last_provisioners_change(None)
-        .unwrap()
-        .collect::<Vec<_>>();
+    let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, 0);
@@ -373,10 +367,7 @@ pub async fn slash() -> Result<()> {
     )
     .expect("to work");
 
-    let last_changes = rusk
-        .last_provisioners_change(None)
-        .unwrap()
-        .collect::<Vec<_>>();
+    let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, 0);
@@ -399,10 +390,7 @@ pub async fn slash() -> Result<()> {
     .expect_err("Slashing a public key that never staked must fail");
 
     //Ensure we still have previous changes, because generator procedure failed
-    let last_changes = rusk
-        .last_provisioners_change(None)
-        .unwrap()
-        .collect::<Vec<_>>();
+    let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, 0);
@@ -410,10 +398,7 @@ pub async fn slash() -> Result<()> {
 
     generator_procedure(&rusk, &[], 9001, BLOCK_GAS_LIMIT, vec![], None)
         .expect("To work properly");
-    let last_changes = rusk
-        .last_provisioners_change(None)
-        .unwrap()
-        .collect::<Vec<_>>();
+    let last_changes = rusk.last_provisioners_change(None).unwrap();
     assert_eq!(0, last_changes.len(), "No changes expected");
 
     // Check the state's root is changed from the original one

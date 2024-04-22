@@ -6,7 +6,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
     class="dashboard-content s-qpUp5WgwgSGx"
   >
     <h2
-      class="visible-hidden s-qpUp5WgwgSGx"
+      class="sr-only s-qpUp5WgwgSGx"
     >
       Dashboard
     </h2>
@@ -22,12 +22,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
         role="button"
         tabindex="0"
       >
-        <div
-          class="dusk-icon--circular"
-          style=""
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+          disabled=""
+          type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--large"
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -37,8 +38,10 @@ exports[`Dashboard > should render a card when there is an error getting transac
           </svg>
           
           <!--&lt;Icon&gt;-->
-        </div>
-        <!--&lt;CircularIcon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
          
         <p
           class="address-picker__current-address"
@@ -48,7 +51,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
          
         <button
           aria-label="Copy Address"
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
           type="button"
         >
           <svg
@@ -137,7 +140,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
         class="dusk-tabs"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
           disabled=""
           hidden="true"
           tabindex="-1"
@@ -220,7 +223,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
         </ul>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
           disabled=""
           hidden="true"
           tabindex="-1"
@@ -293,7 +296,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
               class="contract-operations__operation s-MYVJhCZxEBFW"
             >
               <button
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
                 type="button"
               >
                 <svg
@@ -322,7 +325,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
               class="contract-operations__operation s-MYVJhCZxEBFW"
             >
               <button
-                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
                 type="button"
               >
                 <svg
@@ -423,7 +426,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
     class="dashboard-content s-qpUp5WgwgSGx"
   >
     <h2
-      class="visible-hidden s-qpUp5WgwgSGx"
+      class="sr-only s-qpUp5WgwgSGx"
     >
       Dashboard
     </h2>
@@ -439,12 +442,13 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         role="button"
         tabindex="0"
       >
-        <div
-          class="dusk-icon--circular"
-          style=""
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+          disabled=""
+          type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--large"
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -454,8 +458,10 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
           </svg>
           
           <!--&lt;Icon&gt;-->
-        </div>
-        <!--&lt;CircularIcon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
          
         <p
           class="address-picker__current-address"
@@ -465,7 +471,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
          
         <button
           aria-label="Copy Address"
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
           type="button"
         >
           <svg
@@ -554,7 +560,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         class="dusk-tabs"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
           disabled=""
           hidden="true"
           tabindex="-1"
@@ -637,7 +643,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
         </ul>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
           disabled=""
           hidden="true"
           tabindex="-1"
@@ -710,7 +716,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
               class="contract-operations__operation s-MYVJhCZxEBFW"
             >
               <button
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
                 type="button"
               >
                 <svg
@@ -739,7 +745,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
               class="contract-operations__operation s-MYVJhCZxEBFW"
             >
               <button
-                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
                 type="button"
               >
                 <svg
@@ -842,7 +848,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
     class="dashboard-content s-qpUp5WgwgSGx"
   >
     <h2
-      class="visible-hidden s-qpUp5WgwgSGx"
+      class="sr-only s-qpUp5WgwgSGx"
     >
       Dashboard
     </h2>
@@ -858,12 +864,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         role="button"
         tabindex="0"
       >
-        <div
-          class="dusk-icon--circular"
-          style=""
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+          disabled=""
+          type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--large"
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -873,8 +880,10 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           </svg>
           
           <!--&lt;Icon&gt;-->
-        </div>
-        <!--&lt;CircularIcon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
          
         <p
           class="address-picker__current-address"
@@ -884,7 +893,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
          
         <button
           aria-label="Copy Address"
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
           type="button"
         >
           <svg
@@ -973,7 +982,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         class="dusk-tabs"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
           disabled=""
           hidden="true"
           tabindex="-1"
@@ -1056,7 +1065,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         </ul>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
           disabled=""
           hidden="true"
           tabindex="-1"
@@ -1129,7 +1138,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
               class="contract-operations__operation s-MYVJhCZxEBFW"
             >
               <button
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
                 type="button"
               >
                 <svg
@@ -1158,7 +1167,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
               class="contract-operations__operation s-MYVJhCZxEBFW"
             >
               <button
-                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled contract-operations__operation-button"
+                class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
                 type="button"
               >
                 <svg

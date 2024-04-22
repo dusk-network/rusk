@@ -1,4 +1,3 @@
-@import url("utilities.css");
 @import url("./dusk/colors.css");
 @import url("./dusk/language.css");
 @import url("./dusk-components/agreement.css");
@@ -104,16 +103,6 @@ svg {
   z-index: 4;
 }
 
-.dusk-anchor-button:not(.dusk-anchor-button__disabled),
-.dusk-button:enabled,
-.dusk-checkbox:enabled,
-.dusk-select:enabled,
-.dusk-switch[aria-disabled="false"],
-.dusk-textbox:enabled,
-*[role="menuitem"] {
-  transition: all 0.2s linear 0s;
-}
-
 :is(
     .dusk-anchor-button:not(.dusk-anchor-button__disabled),
     .dusk-button:enabled,
@@ -131,6 +120,17 @@ svg {
 .dusk-checkbox:enabled:focus {
   border-color: var(--secondary-color-variant-dark);
   outline: 0 none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 @media (max-width: 500px), (max-height: 500px) {

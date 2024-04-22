@@ -5,15 +5,25 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::RUSK_VERSION_HEADER;
+
+use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
+use bytecheck::CheckBytes;
 use futures_util::{stream, StreamExt};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::Body;
+use hyper::{Body, Request, Response};
+use rand::distributions::{Distribution, Standard};
+use rand::Rng;
+use rkyv::Archive;
+use rusk_abi::ContractId;
 use semver::{Version, VersionReq};
-use serde::{Deserialize, Serialize};
-use serde_with::{self, serde_as};
+use serde::de::{Error, MapAccess, Unexpected, Visitor};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_with::serde_as;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use std::str::Split;
 use std::sync::mpsc;
 use tungstenite::http::HeaderValue;
 
@@ -123,7 +133,7 @@ impl MessageRequest {
     }
 
     pub async fn from_request(
-        req: hyper::Request<hyper::Body>,
+        req: hyper::Request<Body>,
     ) -> anyhow::Result<(Self, bool)> {
         let headers = req
             .headers()
@@ -188,11 +198,11 @@ impl MessageResponse {
     pub fn into_http(
         self,
         is_binary: bool,
-    ) -> anyhow::Result<hyper::Response<hyper::Body>> {
+    ) -> anyhow::Result<hyper::Response<Body>> {
         if let Some(error) = &self.error {
             return Ok(hyper::Response::builder()
                 .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(hyper::Body::from(error.to_string()))?);
+                .body(Body::from(error.to_string()))?);
         }
 
         let mut headers = HashMap::new();
@@ -368,7 +378,7 @@ impl Event {
         })
     }
     pub async fn from_request(
-        req: hyper::Request<hyper::Body>,
+        req: hyper::Request<Body>,
     ) -> anyhow::Result<(Self, bool)> {
         let (parts, req_body) = req.into_parts();
         // HTTP REQUEST
@@ -526,6 +536,157 @@ impl From<tungstenite::error::ProtocolError> for ExecutionError {
 impl From<tungstenite::Error> for ExecutionError {
     fn from(err: tungstenite::Error) -> Self {
         Self::Tungstenite(err)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[repr(C)]
+pub struct WrappedContractId(pub ContractId);
+
+impl Serialize for WrappedContractId {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let source_hex = hex::encode(self.0.as_bytes());
+        s.serialize_str(&source_hex)
+    }
+}
+
+impl<'de> Deserialize<'de> for WrappedContractId {
+    fn deserialize<D>(deserializer: D) -> Result<WrappedContractId, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let source_hex: String = Deserialize::deserialize(deserializer)?;
+        let source_bytes = hex::decode(&source_hex).map_err(Error::custom)?;
+        let mut source_array = [0u8; 32];
+
+        if source_bytes.len() != 32 {
+            return Err(Error::invalid_length(source_hex.len(), &"32"));
+        }
+
+        source_array.copy_from_slice(&source_bytes);
+        Ok(WrappedContractId(ContractId::from_bytes(source_array)))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SessionId(u128);
+
+impl Display for SessionId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let bytes = self.0.to_le_bytes();
+        let hex = hex::encode(bytes);
+        write!(f, "{hex}")
+    }
+}
+
+impl Distribution<SessionId> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SessionId {
+        SessionId(rng.gen())
+    }
+}
+
+impl SessionId {
+    /// Parses a session ID from a request. The session ID is expected to be
+    /// stored in the `Rusk-Session-Id` header.
+    pub fn parse_from_req<B>(req: &Request<B>) -> Option<Self> {
+        let headers = req.headers();
+
+        let header_value = headers.get("Rusk-Session-Id")?;
+        let text = header_value.to_str().ok()?;
+
+        Self::parse(text)
+    }
+
+    pub fn parse(text: &str) -> Option<Self> {
+        let bytes = hex::decode(text).ok()?;
+
+        let mut session_id_bytes = [0u8; 16];
+        if bytes.len() != 16 {
+            return None;
+        }
+
+        session_id_bytes.copy_from_slice(&bytes);
+        Some(SessionId(u128::from_le_bytes(session_id_bytes)))
+    }
+}
+
+/// A subscription to a contract event.
+///
+/// The `topic` field is optional and can be used to filter events by topic. If
+/// the `topic` field is `None`, all events from the contract are sent.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub struct ContractSubscription {
+    pub target: WrappedContractId,
+    pub topic: String,
+}
+
+impl ContractSubscription {
+    /// Parses a subscription from an url path split.
+    ///
+    /// Returns `None` if the path is invalid.
+    pub fn parse_from_path_split(mut path_split: Split<char>) -> Option<Self> {
+        // Parse out the contract ID
+        let target_hex = path_split.next()?;
+        let target_bytes = hex::decode(target_hex).ok()?;
+        let mut target_array = [0u8; 32];
+
+        if target_bytes.len() != 32 {
+            return None;
+        }
+
+        target_array.copy_from_slice(&target_bytes);
+        let target = WrappedContractId(ContractId::from_bytes(target_array));
+
+        // Parse out the topic, if it exists
+        let topic = path_split.next()?.to_string();
+
+        Some(Self { target, topic })
+    }
+
+    /// Returns true if the event matches the subscription.
+    pub fn matches(&self, event: &ContractEvent) -> bool {
+        if self.target != event.target {
+            return false;
+        }
+
+        if self.topic != event.topic {
+            return false;
+        }
+
+        true
+    }
+}
+
+/// A contract event that is sent to a websocket client.
+#[serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ContractEvent {
+    pub target: WrappedContractId,
+    pub topic: String,
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub data: Vec<u8>,
+}
+
+impl From<rusk_abi::Event> for ContractEvent {
+    fn from(event: rusk_abi::Event) -> Self {
+        Self {
+            target: WrappedContractId(event.source),
+            topic: event.topic,
+            data: event.data,
+        }
+    }
+}
+
+impl From<ContractEvent> for rusk_abi::Event {
+    fn from(event: ContractEvent) -> Self {
+        Self {
+            source: event.target.0,
+            topic: event.topic,
+            data: event.data,
+        }
     }
 }
 

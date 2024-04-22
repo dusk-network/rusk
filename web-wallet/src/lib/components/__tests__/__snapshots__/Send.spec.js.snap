@@ -63,7 +63,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
           </p>
            
           <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--small"
+            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
             disabled=""
             type="button"
           >
@@ -100,7 +100,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
           />
            
           <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--small"
+            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
             type="button"
           >
             <span
@@ -118,7 +118,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         class="dusk-wizard__step-navigation"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <svg
@@ -144,7 +144,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
           disabled=""
           type="button"
         >
@@ -349,7 +349,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         class="dusk-wizard__step-navigation"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <svg
@@ -375,7 +375,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <span
@@ -606,7 +606,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
         class="dusk-wizard__step-navigation"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <svg
@@ -632,7 +632,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
         
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button-labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <svg

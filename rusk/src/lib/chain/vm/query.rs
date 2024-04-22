@@ -110,6 +110,7 @@ impl Rusk {
             contract_id,
             call_name,
             call_arg,
+            self.feeder_gas_limit,
             feeder,
         )?;
 
@@ -135,6 +136,7 @@ impl Rusk {
             contract_id,
             call_name.as_ref(),
             call_arg,
+            self.feeder_gas_limit,
             feeder,
         )?;
 

@@ -1,5 +1,11 @@
+<script>
+  import { StatisticsPanel } from "$lib/components";
+</script>
+
 <section class="chain-info">
-  <div class="chain-info__statistics">Statistics</div>
+  <div class="chain-info__statistics">
+    <StatisticsPanel />
+  </div>
   <div class="chain-info__blocks">Blocks</div>
   <div class="chain-info__transactions">Transactions</div>
 </section>

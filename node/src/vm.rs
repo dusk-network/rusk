@@ -35,10 +35,7 @@ pub trait VMExecution: Send + Sync + 'static {
         blk: &Block,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
-    fn finalize(
-        &self,
-        blk: &Block,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
+    fn finalize_state(&self, commit: [u8; 32]) -> anyhow::Result<()>;
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
 
@@ -46,6 +43,11 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         base_commit: [u8; 32],
     ) -> anyhow::Result<Provisioners>;
+
+    fn get_changed_provisioners(
+        &self,
+        base_commit: [u8; 32],
+    ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>>;
 
     fn get_provisioner(&self, pk: &PublicKey) -> anyhow::Result<Option<Stake>>;
 

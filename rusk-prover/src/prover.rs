@@ -5,15 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod execute;
-mod stco;
 mod stct;
-mod wfco;
 mod wfct;
 
 use crate::{ProverError, ProverResult};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::PublicSpendKey;
 use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
 
@@ -25,18 +22,14 @@ use rand::{rngs::StdRng, SeedableRng};
 
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use phoenix_core::{Crossover, Fee, Message};
+use phoenix_core::{Crossover, Fee};
 
 use transfer_circuits::{
-    CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
-    SendToContractObfuscatedCircuit, SendToContractTransparentCircuit,
-    StcoCrossover, StcoMessage, WfoChange, WfoCommitment,
-    WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
+    CircuitInput, CircuitInputSignature, ExecuteCircuit,
+    SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
 };
 
-pub use stco::STCO_INPUT_LEN;
 pub use stct::STCT_INPUT_LEN;
-pub use wfco::WFCO_INPUT_LEN;
 pub use wfct::WFCT_INPUT_LEN;
 
 /// Arity of the transfer tree.
@@ -50,16 +43,8 @@ impl crate::Prover for LocalProver {
         self.local_prove_execute(circuit_inputs)
     }
 
-    fn prove_stco(&self, circuit_inputs: &[u8]) -> ProverResult {
-        self.local_prove_stco(circuit_inputs)
-    }
-
     fn prove_stct(&self, circuit_inputs: &[u8]) -> ProverResult {
         self.local_prove_stct(circuit_inputs)
-    }
-
-    fn prove_wfco(&self, circuit_inputs: &[u8]) -> ProverResult {
-        self.local_prove_wfco(circuit_inputs)
     }
 
     fn prove_wfct(&self, circuit_inputs: &[u8]) -> ProverResult {

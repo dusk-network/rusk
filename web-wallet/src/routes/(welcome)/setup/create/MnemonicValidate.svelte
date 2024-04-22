@@ -19,18 +19,26 @@
 </script>
 
 <Card heading="Verification">
-  <div class="flex flex-col gap-1">
-    <p>Ensure you have backed up the Mnemonic phrase.</p>
-    <Mnemonic
-      bind:enteredMnemonicPhrase
-      mnemonicPhrase={shuffleArray(mnemonicPhrase)}
-      type="validate"
-    />
-    {#if filteredMnemonic.size === 12 && !isValid}
-      <div class="notice notice--error">
-        <Icon path={mdiAlertOutline} size="large" />
-        <p>Mnemonic does not match.</p>
-      </div>
-    {/if}
-  </div>
+  <p class="mnemonic-notice">Ensure you have backed up the Mnemonic phrase.</p>
+  <Mnemonic
+    bind:enteredMnemonicPhrase
+    mnemonicPhrase={shuffleArray(mnemonicPhrase)}
+    type="validate"
+  />
+  {#if filteredMnemonic.size === 12 && !isValid}
+    <div class="notice notice--error">
+      <Icon path={mdiAlertOutline} size="large" />
+      <p>Mnemonic does not match.</p>
+    </div>
+  {/if}
 </Card>
+
+<style>
+  .mnemonic-notice {
+    margin-bottom: var(--default-gap);
+  }
+
+  .notice {
+    margin-top: var(--default-gap);
+  }
+</style>

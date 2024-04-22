@@ -1,0 +1,114 @@
+.statistics-panel {
+  display: flex;
+  padding: 1rem 1.375rem;
+  flex-direction: column;
+  row-gap: 0.75rem;
+  border-radius: 1.5rem;
+  background-color: var(--surface-color);
+
+  --desktop-gap: 1.25rem;
+  --mobile-gap: 1.5rem;
+}
+
+.statistics-panel__statistics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--mobile-gap);
+  overflow: hidden;
+}
+
+.statistics-panel__statistics-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-gap);
+}
+
+.statistics-panel__statistics-item {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.3125rem;
+  position: relative;
+  justify-content: center;
+}
+
+.statistics-panel__statistics-item::after,
+.statistics-panel__statistics-item::before {
+  content: "";
+  position: absolute;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.statistics-panel__statistics-item::after {
+  inline-size: 100vw;
+  block-size: 1px;
+  inset-inline-start: 0;
+  inset-block-start: calc(calc(var(--mobile-gap) / 2) * -1);
+}
+
+.statistics-panel__statistics-item::before {
+  inline-size: 1px;
+  block-size: 100%;
+  inset-block-start: 0;
+  inset-inline-start: calc(calc(var(--desktop-gap) / 2) * -1);
+}
+
+.statistics-panel__statistics-item-value {
+  display: flex;
+  flex-direction: row;
+  column-gap: 0.3125rem;
+}
+
+.statistics-panel__statistics-item-value {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.statistics-panel__statistics-item-title {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.statistics-panel__world-map {
+  padding-top: var(--desktop-gap);
+  border-top: 1px solid var(--primary-color);
+}
+
+@media (min-width: 768px) {
+  .statistics-panel {
+    flex-direction: row;
+  }
+
+  .statistics-panel__statistics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--desktop-gap);
+  }
+
+  .statistics-panel__statistics-column {
+    gap: var(--desktop-gap);
+  }
+
+  .statistics-panel__statistics-item::after {
+    inset-block-start: calc(calc(var(--desktop-gap) / 2) * -1);
+  }
+
+  .statistics-panel__statistics-item-value {
+    font-size: 1.125rem;
+  }
+
+  .statistics-panel__statistics-item-title {
+    font-size: 0.875rem;
+  }
+
+  .statistics-panel__world-map {
+    padding-top: 0;
+    border-top: none;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .statistics-panel__statistics {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

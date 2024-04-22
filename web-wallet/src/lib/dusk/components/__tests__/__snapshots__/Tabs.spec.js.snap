@@ -5,7 +5,7 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
   class="dusk-tabs"
 >
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     disabled=""
     hidden="false"
     tabindex="-1"
@@ -299,7 +299,7 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
   </ul>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     hidden="false"
     tabindex="-1"
     type="button"
@@ -327,7 +327,7 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
   class="dusk-tabs"
 >
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     disabled=""
     hidden="false"
     tabindex="-1"
@@ -571,7 +571,7 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
   </ul>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     hidden="false"
     tabindex="-1"
     type="button"
@@ -600,7 +600,7 @@ exports[`Tabs > should pass additional class names and attributes to the root el
   id="some-id"
 >
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     disabled=""
     hidden="false"
     tabindex="-1"
@@ -769,7 +769,7 @@ exports[`Tabs > should pass additional class names and attributes to the root el
   </ul>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     hidden="false"
     tabindex="-1"
     type="button"
@@ -797,7 +797,7 @@ exports[`Tabs > should render a "Tabs" component and reset its scroll status if 
   class="dusk-tabs"
 >
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     disabled=""
     hidden="false"
     tabindex="-1"
@@ -966,7 +966,7 @@ exports[`Tabs > should render a "Tabs" component and reset its scroll status if 
   </ul>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     hidden="false"
     tabindex="-1"
     type="button"
@@ -994,7 +994,7 @@ exports[`Tabs > should use the id as label if the tab hasn't one and is without 
   class="dusk-tabs"
 >
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     disabled=""
     hidden="false"
     tabindex="-1"
@@ -1163,7 +1163,7 @@ exports[`Tabs > should use the id as label if the tab hasn't one and is without 
   </ul>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+    class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
     hidden="false"
     tabindex="-1"
     type="button"

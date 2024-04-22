@@ -35,13 +35,12 @@
         disabled={operation.disabled}
         icon={{
           path: operationIcons[operation.id] ?? mdiHelpCircleOutline,
-          size: "normal",
         }}
         on:click={() => {
           dispatch("operationChange", operation.id);
         }}
         text={operation.label}
-        variant={operation.primary ? "secondary" : "tertiary"}
+        variant={operation.primary ? "primary" : "tertiary"}
       />
     </li>
   {/each}

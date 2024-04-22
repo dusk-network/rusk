@@ -19,6 +19,8 @@ use node_data::{
     ledger::{Block, Certificate, Header, IterationsInfo, SpentTransaction},
     message::payload::Vote,
 };
+
+use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::keys::BLS_SK;
@@ -30,7 +32,10 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     let (_, commit_id) = state::deploy(dir, snapshot)
         .expect("Deploying initial state should succeed");
 
-    let rusk = Rusk::new(dir, None).expect("Instantiating rusk should succeed");
+    let (sender, _) = broadcast::channel(10);
+
+    let rusk = Rusk::new(dir, None, u64::MAX, sender)
+        .expect("Instantiating rusk should succeed");
 
     assert_eq!(
         commit_id,

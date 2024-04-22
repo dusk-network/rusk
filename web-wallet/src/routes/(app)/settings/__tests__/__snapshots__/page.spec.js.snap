@@ -547,7 +547,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         <!--&lt;ErrorDetails&gt;-->
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal settings-group__button--state--danger"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal settings-group__button--state--danger"
           data-tooltip-disabled="true"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="Not allowed to reset while syncing"
@@ -570,7 +570,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
       href="/some-base-path/dashboard"
     >
       <svg
@@ -1142,7 +1142,7 @@ exports[`Settings > should render the settings page 1`] = `
         <!--&lt;ErrorDetails&gt;-->
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal settings-group__button--state--danger"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal settings-group__button--state--danger"
           data-tooltip-disabled="true"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="Not allowed to reset while syncing"
@@ -1165,7 +1165,7 @@ exports[`Settings > should render the settings page 1`] = `
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
       href="/some-base-path/dashboard"
     >
       <svg

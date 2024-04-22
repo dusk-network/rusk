@@ -6,8 +6,7 @@
 
 use anyhow::{anyhow, Result};
 use dusk_consensus::user::provisioners::ContextProvisioners;
-use node_data::ledger;
-use node_data::ledger::Header;
+use node_data::ledger::{to_str, Header};
 use std::cmp::Ordering;
 use tracing::info;
 
@@ -69,21 +68,15 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             _ => Ok(()),
         }?;
 
-        let (prev_header, prev_prev_header) =
-            self.acc.db.read().await.view(|t| {
-                let (prev_block_header, _) = t
-                    .fetch_block_header(&local.prev_block_hash)?
-                    .expect("block must exist");
-
-                let (prev_prev_block_header, _) = t
-                    .fetch_block_header(&prev_block_header.prev_block_hash)?
-                    .expect("block must exist");
-
-                Ok::<(ledger::Header, ledger::Header), anyhow::Error>((
-                    prev_block_header,
-                    prev_prev_block_header,
+        let prev_header = self.acc.db.read().await.view(|t| {
+            let prev_hash = &local.prev_block_hash;
+            t.fetch_block_header(prev_hash)?
+                .map(|(header, _)| header)
+                .ok_or(anyhow::anyhow!(
+                    "Unable to find block with hash {}",
+                    to_str(prev_hash)
                 ))
-            })?;
+        })?;
 
         info!(
             event = "execute fallback checks",
@@ -99,15 +92,15 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             .await
             .get_provisioners(prev_header.state_hash)?;
 
-        let prev_provisioners_list = self
+        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
+
+        let changed_provisioners = self
             .acc
             .vm
             .read()
             .await
-            .get_provisioners(prev_prev_header.state_hash)?;
-
-        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
-        provisioners_list.set_previous(prev_provisioners_list);
+            .get_changed_provisioners(prev_header.state_hash)?;
+        provisioners_list.apply_changes(changed_provisioners);
 
         // Ensure header of the new block is valid according to prev_block
         // header

@@ -3,13 +3,11 @@
 <script>
   import { fade } from "svelte/transition";
   import { Select } from "$lib/dusk/components";
-  import AnchorButtons from "./AnchorButtons.svelte";
   import Badges from "./Badges.svelte";
   import Balances from "./Balances.svelte";
+  import Buttons from "./Buttons.svelte";
   import Cards from "./Cards.svelte";
   import Checkboxes from "./Checkboxes.svelte";
-  import IconButtons from "./IconButtons.svelte";
-  import LabeledButtons from "./LabeledButtons.svelte";
   import ProgressBars from "./ProgressBars.svelte";
   import Selects from "./Selects.svelte";
   import Steppers from "./Steppers.svelte";
@@ -23,13 +21,11 @@
 
   /** @type {Record<string, import("svelte").ComponentType>} */
   const componentsMap = {
-    "Anchor buttons": AnchorButtons,
     Badges: Badges,
     Balances: Balances,
+    Buttons: Buttons,
     Cards: Cards,
     Checkboxes: Checkboxes,
-    "Icon buttons": IconButtons,
-    "Labeled buttons": LabeledButtons,
     "Progress bars": ProgressBars,
     Selects: Selects,
     Steppers: Steppers,

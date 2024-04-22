@@ -27,8 +27,10 @@ use rusk_abi::{
     STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
+use tokio::sync::broadcast;
 
 use super::{coinbase_value, emission_amount, Rusk, RuskTip};
+use crate::http::ContractEvent;
 use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
@@ -41,6 +43,8 @@ impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
         generation_timeout: Option<Duration>,
+        feeder_gas_limit: u64,
+        event_sender: broadcast::Sender<ContractEvent>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -71,6 +75,8 @@ impl Rusk {
             vm,
             dir: dir.into(),
             generation_timeout,
+            feeder_gas_limit,
+            event_sender,
         })
     }
 
@@ -157,14 +163,14 @@ impl Rusk {
             }
         }
 
-        reward_slash_and_update_root(
+        let coinbase_events = reward_slash_and_update_root(
             &mut session,
             block_height,
             dusk_spent,
             generator,
             missed_generators,
-            &mut event_hasher,
         )?;
+        update_hasher(&mut event_hasher, &coinbase_events);
 
         let state_root = session.root();
         let event_hash = event_hasher.finalize().into();
@@ -198,7 +204,7 @@ impl Rusk {
             txs,
             missed_generators,
         )
-        .map(|(a, b, _)| (a, b))
+        .map(|(a, b, _, _)| (a, b))
     }
 
     /// Accept the given transactions.
@@ -218,7 +224,7 @@ impl Rusk {
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
-        let (spent_txs, verification_output, session) = accept(
+        let (spent_txs, verification_output, session, events) = accept(
             session,
             block_height,
             block_gas_limit,
@@ -237,50 +243,19 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
+        for event in events {
+            let _ = self.event_sender.send(event.into());
+        }
+
         Ok((spent_txs, verification_output))
     }
 
-    /// Finalize the given transactions.
-    ///
-    /// * `consistency_check` - represents a state_root, the caller expects to
-    ///   be returned on successful transactions execution. Passing None value
-    ///   disables the check.
-    #[allow(clippy::too_many_arguments)]
-    pub fn finalize_transactions(
-        &self,
-        block_height: u64,
-        block_gas_limit: u64,
-        generator: BlsPublicKey,
-        txs: Vec<Transaction>,
-        consistency_check: Option<VerificationOutput>,
-        missed_generators: &[BlsPublicKey],
-    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let session = self.session(block_height, None)?;
-
-        let (spent_txs, verification_output, session) = accept(
-            session,
-            block_height,
-            block_gas_limit,
-            &generator,
-            &txs[..],
-            missed_generators,
-        )?;
-
-        if let Some(expected_verification) = consistency_check {
-            if expected_verification != verification_output {
-                // Drop the session if the result state root is inconsistent
-                // with the callers one.
-                return Err(Error::InconsistentState(verification_output));
-            }
-        }
-
-        let commit = session.commit()?;
-        self.set_base_and_delete(commit);
-
+    pub fn finalize_state(&self, commit: [u8; 32]) -> Result<()> {
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
 
-        Ok((spent_txs, verification_output))
+        self.set_base_and_delete(commit);
+        Ok(())
     }
 
     pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
@@ -351,7 +326,7 @@ impl Rusk {
     pub fn last_provisioners_change(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<impl Iterator<Item = (BlsPublicKey, Option<StakeData>)>> {
+    ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
             STAKE_CONTRACT,
@@ -364,7 +339,7 @@ impl Rusk {
             rkyv::from_bytes::<(BlsPublicKey, Option<StakeData>)>(&bytes).expect(
                 "The contract should only return (pk, Option<stake_data>) tuples",
             )
-        }))
+        }).collect())
     }
 
     pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
@@ -394,22 +369,16 @@ impl Rusk {
     pub(crate) fn set_base_and_delete(&self, commit: [u8; 32]) {
         let mut tip = self.tip.write();
 
-        let current_commit = tip.current;
-        let base_commit = tip.base;
-
         tip.current = commit;
         tip.base = commit;
 
-        // We will delete all commits except the previous base commit, the
-        // previous current commit and the new commit.
+        // We will delete all commits except the new commit.
         let mut commits_to_delete = self.vm.commits();
-        commits_to_delete.retain(|c| {
-            *c != current_commit && *c != base_commit && *c != commit
-        });
+        commits_to_delete.retain(|c| c != &commit);
 
-        // Delete all commits except the previous base commit, and the current
-        // commit. Deleting commits is blocking, meaning it will wait until any
-        // process using the commit is done. This includes any queries that are
+        // Delete all commits except the new commit.
+        // Deleting commits is blocking, meaning it will wait until any process
+        // using the commit is done. This includes any queries that are
         // currently executing.
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
@@ -433,7 +402,12 @@ fn accept(
     generator: &BlsPublicKey,
     txs: &[Transaction],
     missed_generators: &[BlsPublicKey],
-) -> Result<(Vec<SpentTransaction>, VerificationOutput, Session)> {
+) -> Result<(
+    Vec<SpentTransaction>,
+    VerificationOutput,
+    Session,
+    Vec<Event>,
+)> {
     let mut session = session;
 
     let mut block_gas_left = block_gas_limit;
@@ -441,6 +415,7 @@ fn accept(
     let mut spent_txs = Vec::with_capacity(txs.len());
     let mut dusk_spent = 0;
 
+    let mut events = Vec::new();
     let mut event_hasher = Sha3_256::new();
 
     for unspent_tx in txs {
@@ -448,6 +423,8 @@ fn accept(
         let receipt = execute(&mut session, tx)?;
 
         update_hasher(&mut event_hasher, &receipt.events);
+        events.extend(receipt.events);
+
         let gas_spent = receipt.gas_spent;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
@@ -464,14 +441,16 @@ fn accept(
         });
     }
 
-    reward_slash_and_update_root(
+    let coinbase_events = reward_slash_and_update_root(
         &mut session,
         block_height,
         dusk_spent,
         generator,
         missed_generators,
-        &mut event_hasher,
     )?;
+
+    update_hasher(&mut event_hasher, &coinbase_events);
+    events.extend(coinbase_events);
 
     let state_root = session.root();
     let event_hash = event_hasher.finalize().into();
@@ -483,6 +462,7 @@ fn accept(
             event_hash,
         },
         session,
+        events,
     ))
 }
 
@@ -546,8 +526,7 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
     slashing: &[BlsPublicKey],
-    event_hasher: &mut Sha3_256,
-) -> Result<()> {
+) -> Result<Vec<Event>> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
@@ -557,7 +536,8 @@ fn reward_slash_and_update_root(
         &(*DUSK_KEY, dusk_value),
         u64::MAX,
     )?;
-    update_hasher(event_hasher, &r.events);
+
+    let mut events = r.events;
 
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -565,7 +545,7 @@ fn reward_slash_and_update_root(
         &(*generator, generator_value),
         u64::MAX,
     )?;
-    update_hasher(event_hasher, &r.events);
+    events.extend(r.events);
 
     let slash_amount = emission_amount(block_height);
 
@@ -576,7 +556,7 @@ fn reward_slash_and_update_root(
             &(*to_slash, slash_amount),
             u64::MAX,
         )?;
-        update_hasher(event_hasher, &r.events);
+        events.extend(r.events);
     }
 
     let r = session.call::<_, ()>(
@@ -585,7 +565,7 @@ fn reward_slash_and_update_root(
         &(),
         u64::MAX,
     )?;
-    update_hasher(event_hasher, &r.events);
+    events.extend(r.events);
 
-    Ok(())
+    Ok(events)
 }
