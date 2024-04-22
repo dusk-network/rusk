@@ -30,6 +30,7 @@ use rusk::Result;
 
 use tracing_subscriber::filter::EnvFilter;
 
+use node::database::DatabaseOptions;
 use rusk::http::HttpServer;
 use tracing::info;
 
@@ -126,7 +127,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(feature = "ephemeral"))]
         let db_path = config.chain.db_path();
 
-        let db = rocksdb::Backend::create_or_open(db_path);
+        let db = rocksdb::Backend::create_or_open(
+            db_path,
+            DatabaseOptions::default(),
+        );
         let net = Kadcast::new(config.clone().kadcast.into())?;
 
         let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
