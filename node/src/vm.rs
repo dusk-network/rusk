@@ -35,7 +35,11 @@ pub trait VMExecution: Send + Sync + 'static {
         blk: &Block,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
-    fn finalize_state(&self, commit: [u8; 32]) -> anyhow::Result<()>;
+    fn finalize_state(
+        &self,
+        commit: [u8; 32],
+        block_height: u64,
+    ) -> anyhow::Result<()>;
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
 
@@ -58,4 +62,5 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]>;
     fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]>;
+    fn revert_to_epoch(&self) -> anyhow::Result<[u8; 32]>;
 }
