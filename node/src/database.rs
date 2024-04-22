@@ -175,7 +175,7 @@ pub struct DatabaseOptions {
 impl Default for DatabaseOptions {
     fn default() -> Self {
         Self {
-            blocks_cf_max_write_buffer_size: 1 * 1024 * 1024, // 1 MiB
+            blocks_cf_max_write_buffer_size: 1024 * 1024, // 1 MiB
             mempool_cf_max_write_buffer_size: 10 * 1024 * 1024, // 10 MiB
             blocks_cf_disable_block_cache: true,
             enable_debug: false,

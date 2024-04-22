@@ -16,7 +16,7 @@ use clap::Parser;
 #[cfg(feature = "node")]
 use node::{
     chain::ChainSrv,
-    database::{rocksdb, DB},
+    database::{rocksdb, DatabaseOptions, DB},
     databroker::DataBrokerSrv,
     mempool::MempoolSrv,
     network::Kadcast,
@@ -28,7 +28,6 @@ use rusk::chain::Rusk;
 use rusk::http::{DataSources, HttpServer};
 use rusk::Result;
 
-use node::database::DatabaseOptions;
 use tokio::sync::broadcast;
 
 use tracing::info;
