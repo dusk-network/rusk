@@ -17,11 +17,18 @@ run_node() {
     RUSK_STATE_PATH="${RUSK_STATE_PATH}" cargo r --release -p rusk -- recovery-state --init "$GENESIS_PATH"
     
     echo "Starting node $ID ..."
-    RUSK_STATE_PATH="${RUSK_STATE_PATH}" ./target/release/rusk --kadcast-bootstrap "$BOOTSTRAP_ADDR" \
-        --kadcast-public-address "$PUBLIC_ADDR" --log-type="json" --log-level="info" \
-        --log-filter="dusk_consensus=debug" --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" \
-        --db-path="$NODE_FOLDER" --http-listen-addr "$WS_LISTEN_ADDR" --telemetry-listen-addr "$TELEMETRY_LISTEN_ADDR" --delay-on-resp-msg=10 \
-        >"${TEMPD}/node_${ID}.log" &
+    RUSK_STATE_PATH="${RUSK_STATE_PATH}" $TOOL_BIN \
+    ./target/release/rusk \
+            --kadcast-bootstrap "$BOOTSTRAP_ADDR" \
+            --kadcast-public-address "$PUBLIC_ADDR" \
+            --log-type "json" --log-level "$LOG_LEVEL" \
+            --log-filter "dusk_consensus=debug" \
+            --consensus-keys-path "${KEYS_PATH}/node_$ID.keys" \
+            --db-path "$NODE_FOLDER" \
+            --http-listen-addr "$WS_LISTEN_ADDR" \
+            --telemetry-listen-addr "$TELEMETRY_LISTEN_ADDR" \
+            --delay-on-resp-msg 10 \
+            > "${TEMPD}/node_${ID}.log" &
 }
 
 # Cleanup function to stop all running rusk-node processes
@@ -60,7 +67,15 @@ for ((i = 0; i < PROV_NUM; i++)); do
     PORT=$((7000 + $i))
     WS_PORT=$((8000 + $i))
     TELEMETRY_PORT=$((9000 + $i))
-    run_node "$BOOTSTRAP_ADDR" "127.0.0.1:$PORT" "info" "$DUSK_WALLET_DIR" "$i" "$TEMPD" "127.0.0.1:$WS_PORT" "127.0.0.1:$TELEMETRY_PORT" &
+    TOOL_BIN=""
+    if [ $i -eq 0 ]; then
+      # Run heap profiling on node-0 if heaptrack is installed
+      if which heaptrack >/dev/null 2>&1; then
+         TOOL_BIN="heaptrack -o /tmp/heaptrack/node-0-heap-profile"
+      fi
+    fi
+
+    run_node "$BOOTSTRAP_ADDR" "127.0.0.1:$PORT" "info" "$DUSK_WALLET_DIR" "$i" "$TEMPD" "127.0.0.1:$WS_PORT" "127.0.0.1:$TELEMETRY_PORT" "$TOOL_BIN" &
 done
 
 # Monitor nodes
