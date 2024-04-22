@@ -89,9 +89,13 @@ impl VMExecution for Rusk {
         Ok((txs, verification_output))
     }
 
-    fn finalize_state(&self, commit: [u8; 32]) -> anyhow::Result<()> {
+    fn finalize_state(
+        &self,
+        commit: [u8; 32],
+        block_height: u64,
+    ) -> anyhow::Result<()> {
         info!("Received finalize request");
-        self.finalize_state(commit)
+        self.finalize_state(commit, block_height)
             .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }
 
@@ -159,6 +163,14 @@ impl VMExecution for Rusk {
 
     fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]> {
         let state_hash = self.revert_to_base_root().map_err(|inner| {
+            anyhow::anyhow!("Cannot revert to finalized: {inner}")
+        })?;
+
+        Ok(state_hash)
+    }
+
+    fn revert_to_epoch(&self) -> anyhow::Result<[u8; 32]> {
+        let state_hash = self.revert_to_epoch_root().map_err(|inner| {
             anyhow::anyhow!("Cannot revert to finalized: {inner}")
         })?;
 

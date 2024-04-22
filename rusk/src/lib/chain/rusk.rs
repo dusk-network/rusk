@@ -26,7 +26,8 @@ use rusk_abi::{
     CallReceipt, ContractError, Error as PiecrustError, Event, Session,
     STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
-use rusk_profile::to_rusk_state_id_path;
+use rusk_profile::{to_rusk_epoch_id_path, to_rusk_state_id_path};
+use stake_contract_types::EPOCH;
 use tokio::sync::broadcast;
 
 use super::{coinbase_value, emission_amount, Rusk, RuskTip};
@@ -47,27 +48,23 @@ impl Rusk {
         event_sender: broadcast::Sender<ContractEvent>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
-        let commit_id_path = to_rusk_state_id_path(dir);
 
-        let base_commit_bytes = fs::read(commit_id_path)?;
-        if base_commit_bytes.len() != 32 {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!(
-                    "Expected commit id to have 32 bytes, got {}",
-                    base_commit_bytes.len()
-                ),
-            )
-            .into());
-        }
-        let mut base_commit = [0u8; 32];
-        base_commit.copy_from_slice(&base_commit_bytes);
+        let base_commit_path = to_rusk_state_id_path(dir);
+        let base_commit = read_commit_id(base_commit_path)?;
+
+        let epoch_commit_path = to_rusk_epoch_id_path(dir);
+        let epoch = if epoch_commit_path.exists() {
+            Some(read_commit_id(epoch_commit_path)?)
+        } else {
+            None
+        };
 
         let vm = Arc::new(rusk_abi::new_vm(dir)?);
 
         let tip = Arc::new(RwLock::new(RuskTip {
             current: base_commit,
             base: base_commit,
+            epoch,
         }));
 
         Ok(Self {
@@ -241,7 +238,8 @@ impl Rusk {
             }
         }
 
-        self.set_current_commit(session.commit()?);
+        let commit = session.commit()?;
+        self.set_current_commit(commit, block_height)?;
 
         for event in events {
             let _ = self.event_sender.send(event.into());
@@ -250,11 +248,15 @@ impl Rusk {
         Ok((spent_txs, verification_output))
     }
 
-    pub fn finalize_state(&self, commit: [u8; 32]) -> Result<()> {
+    pub fn finalize_state(
+        &self,
+        commit: [u8; 32],
+        block_height: u64,
+    ) -> Result<()> {
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
 
-        self.set_base_and_delete(commit);
+        self.set_base_and_delete(commit, block_height)?;
         Ok(())
     }
 
@@ -274,6 +276,32 @@ impl Rusk {
         self.revert(self.base_root())
     }
 
+    pub fn revert_to_epoch_root(&self) -> Result<[u8; 32]> {
+        let mut tip = self.tip.write();
+
+        match tip.epoch {
+            Some(epoch_commit) => {
+                let commits = self.vm.commits();
+                if !commits.contains(&epoch_commit) {
+                    return Err(Error::CommitNotFound(epoch_commit));
+                }
+
+                // When reverting to the epoch root we need to make sure that
+                // the epoch root is set as a base on disk as
+                // well, otherwise we risk restarting
+                // from a different base than what we might expect on restart.
+                let base_commit_path = to_rusk_state_id_path(&self.dir);
+                write_commit_id(epoch_commit, base_commit_path)?;
+
+                tip.current = epoch_commit;
+                tip.base = epoch_commit;
+
+                Ok(epoch_commit)
+            }
+            None => Err(Error::LastEpochNotFound),
+        }
+    }
+
     /// Get the base root.
     pub fn base_root(&self) -> [u8; 32] {
         self.tip.read().base
@@ -282,6 +310,11 @@ impl Rusk {
     /// Get the current state root.
     pub fn state_root(&self) -> [u8; 32] {
         self.tip.read().current
+    }
+
+    /// Get the latest known epoch root.
+    pub fn epoch_root(&self) -> Option<[u8; 32]> {
+        self.tip.read().epoch
     }
 
     /// Returns the nullifiers that already exist from a list of given
@@ -361,20 +394,55 @@ impl Rusk {
         Ok(session)
     }
 
-    pub(crate) fn set_current_commit(&self, commit: [u8; 32]) {
+    pub(crate) fn set_current_commit(
+        &self,
+        commit: [u8; 32],
+        block_height: u64,
+    ) -> Result<()> {
         let mut tip = self.tip.write();
+
+        // If the current block height is a multiple of the epoch, we need to
+        // write the commit to the epoch commit file, and set the commit in the
+        // tip.
+        if block_height % EPOCH == 0 {
+            let epoch_commit_path = to_rusk_epoch_id_path(&self.dir);
+            write_commit_id(commit, epoch_commit_path)?;
+            tip.epoch = Some(commit);
+        }
+
         tip.current = commit;
+
+        Ok(())
     }
 
-    pub(crate) fn set_base_and_delete(&self, commit: [u8; 32]) {
+    pub(crate) fn set_base_and_delete(
+        &self,
+        commit: [u8; 32],
+        block_height: u64,
+    ) -> Result<()> {
         let mut tip = self.tip.write();
 
-        tip.current = commit;
-        tip.base = commit;
+        // If the current block height is a multiple of the epoch, we need to
+        // write the commit to the epoch commit file, and set the commit in the
+        // tip.
+        if block_height % EPOCH == 0 {
+            let epoch_commit_path = to_rusk_epoch_id_path(&self.dir);
+            write_commit_id(commit, epoch_commit_path)?;
+            tip.epoch = Some(commit);
+        }
 
-        // We will delete all commits except the new commit.
+        let current_commit = tip.current;
+        let base_commit = tip.base;
+
+        let f = commit_retain_closure(
+            [current_commit, base_commit, commit],
+            tip.epoch,
+        );
+
+        // We will delete all commits except the new commit, and the previous
+        // epoch.
         let mut commits_to_delete = self.vm.commits();
-        commits_to_delete.retain(|c| c != &commit);
+        commits_to_delete.retain(f);
 
         // Delete all commits except the new commit.
         // Deleting commits is blocking, meaning it will wait until any process
@@ -383,6 +451,20 @@ impl Rusk {
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
         task::spawn(delete_commits(self.vm.clone(), commits_to_delete));
+
+        Ok(())
+    }
+}
+
+#[allow(clippy::type_complexity)]
+fn commit_retain_closure<const N: usize>(
+    commits: [[u8; 32]; N],
+    epoch: Option<[u8; 32]>,
+) -> Box<dyn Fn(&[u8; 32]) -> bool> {
+    if let Some(epoch) = epoch {
+        Box::new(move |c| !commits.contains(c) && *c != epoch)
+    } else {
+        Box::new(move |c| !commits.contains(c))
     }
 }
 
@@ -394,7 +476,30 @@ async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+fn read_commit_id<P: AsRef<Path>>(path: P) -> Result<[u8; 32]> {
+    let commit_bytes = fs::read(path)?;
+
+    if commit_bytes.len() != 32 {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "Expected commit to have 32 bytes, got {}",
+                commit_bytes.len()
+            ),
+        )
+        .into());
+    }
+
+    let mut commit = [0u8; 32];
+    commit.copy_from_slice(&commit_bytes);
+
+    Ok(commit)
+}
+
+fn write_commit_id<P: AsRef<Path>>(commit: [u8; 32], path: P) -> Result<()> {
+    Ok(fs::write(path, commit)?)
+}
+
 fn accept(
     session: Session,
     block_height: u64,
