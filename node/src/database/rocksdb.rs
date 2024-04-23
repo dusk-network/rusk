@@ -135,7 +135,7 @@ impl DB for Backend {
         T: AsRef<Path>,
     {
         let path = path.as_ref().join(DB_FOLDER_NAME);
-        info!("Opening database in {path:?}");
+        info!("Opening database in {path:?}, {:?} ", db_opts);
 
         // A set of options for initializing any blocks-related CF (including
         // METADATA CF)

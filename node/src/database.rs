@@ -12,6 +12,7 @@ pub mod rocksdb;
 use anyhow::Result;
 use node_data::ledger;
 use node_data::ledger::{Label, SpentTransaction};
+use serde::{Deserialize, Serialize};
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
@@ -152,7 +153,7 @@ pub fn into_array<const N: usize>(value: &[u8]) -> [u8; N] {
     res
 }
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DatabaseOptions {
     /// Max write buffer size per Blocks-related CF. By default, there are two
     /// write buffers (MemTables) per CF.

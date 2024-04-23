@@ -1,8 +1,16 @@
 log_level = 'debug'
 log_type = 'json'
 
-db_path = '/tmp/fff'
+[chain]
+db_path = '/tmp/rusk-harness/'
 consensus_keys_path = '/tmp/consensus_bls.keys'
+generation_timeout = '3s'
+
+[chain.db_options]
+enable_debug = true
+blocks_cf_max_write_buffer_size = 1048576 # 1 MB
+blocks_cf_disable_block_cache = true
+mempool_cf_max_write_buffer_size = 10485760 # 10 MB 
 
 [network]
 public_address = '127.0.0.1:9000'
