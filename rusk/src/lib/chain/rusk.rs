@@ -431,13 +431,7 @@ impl Rusk {
             tip.epoch = Some(commit);
         }
 
-        let current_commit = tip.current;
-        let base_commit = tip.base;
-
-        let f = commit_retain_closure(
-            [current_commit, base_commit, commit],
-            tip.epoch,
-        );
+        let f = commit_retain_closure([tip.current, commit], tip.epoch);
 
         // We will delete all commits except the new commit, and the previous
         // epoch.
