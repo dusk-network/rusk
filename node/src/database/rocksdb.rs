@@ -881,7 +881,8 @@ mod tests {
     #[test]
     fn test_store_block() {
         TestWrapper::new("test_store_block").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
 
             let b: ledger::Block = Faker.fake();
             assert!(!b.txs().is_empty());
@@ -933,7 +934,8 @@ mod tests {
     #[test]
     fn test_read_only() {
         TestWrapper::new("test_read_only").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
             db.view(|txn| {
                 txn.store_block(
@@ -955,7 +957,8 @@ mod tests {
     #[test]
     fn test_transaction_isolation() {
         TestWrapper::new("test_transaction_isolation").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header().hash;
 
@@ -1005,7 +1008,8 @@ mod tests {
     #[test]
     fn test_add_mempool_tx() {
         TestWrapper::new("test_add_tx").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let t: ledger::Transaction = Faker.fake();
 
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
@@ -1035,7 +1039,8 @@ mod tests {
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
         TestWrapper::new("test_mempool_txs_sorted_by_fee").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             // Populate mempool with N contract calls
             let _rng = rand::thread_rng();
             db.update(|txn| {
@@ -1068,7 +1073,8 @@ mod tests {
     #[test]
     fn test_max_gas_limit() {
         TestWrapper::new("test_block_size_limit").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
 
             db.update(|txn| {
                 for i in 0..10u32 {
@@ -1106,7 +1112,8 @@ mod tests {
     #[test]
     fn test_get_ledger_tx_by_hash() {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
             assert!(!b.txs().is_empty());
 
@@ -1140,7 +1147,8 @@ mod tests {
     #[test]
     fn test_fetch_block_hash_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             // Store a block
@@ -1169,7 +1177,8 @@ mod tests {
     #[test]
     fn test_fetch_block_label_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             // Store a block
@@ -1200,7 +1209,8 @@ mod tests {
     fn test_delete_block() {
         let t = TestWrapper::new("test_fetch_block_hash_by_height");
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             assert!(db
