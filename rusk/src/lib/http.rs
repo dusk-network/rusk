@@ -58,9 +58,7 @@ use crate::chain::{Rusk, RuskNode};
 use crate::VERSION;
 
 pub use self::event::ContractEvent;
-use self::event::{
-    ContractSubscription, MessageRequest, ResponseData, SessionId,
-};
+use self::event::{MessageRequest, ResponseData, RuesSubscription, SessionId};
 use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
@@ -402,8 +400,8 @@ where
 }
 
 enum SubscriptionAction {
-    Subscribe(ContractSubscription),
-    Unsubscribe(ContractSubscription),
+    Subscribe(RuesSubscription),
+    Unsubscribe(RuesSubscription),
 }
 
 async fn handle_stream_rues(
@@ -569,27 +567,9 @@ async fn handle_request_rues(
         let headers = req.headers();
         let mut path_split = req.uri().path().split('/');
 
-        // Skip '/events' since we already know its present
+        // Skip '/on' since we already know its present
         path_split.next();
         path_split.next();
-
-        let base_path = match path_split.next() {
-            Some(base_path) => base_path,
-            None => {
-                return response(
-                    StatusCode::NOT_FOUND,
-                    "{\"error\":\"Not found\"}",
-                );
-            }
-        };
-
-        // Routing code. Right now only the 'contracts' path is supported.
-        if base_path != "contracts" {
-            return response(
-                StatusCode::NOT_FOUND,
-                "{\"error\":\"Not found\"}",
-            );
-        }
 
         let sid = match SessionId::parse_from_req(&req) {
             None => {
@@ -602,7 +582,7 @@ async fn handle_request_rues(
         };
 
         let subscription =
-            match ContractSubscription::parse_from_path_split(path_split) {
+            match RuesSubscription::parse_from_path_split(path_split) {
                 None => {
                     return response(
                         StatusCode::NOT_FOUND,
@@ -660,7 +640,7 @@ where
     let path = req.uri().path();
 
     // If the request is a RUES request, we handle it differently.
-    if path.starts_with("/events") {
+    if path.starts_with("/on") {
         return handle_request_rues(
             req,
             sockets_map,
@@ -999,7 +979,7 @@ mod tests {
         let stream = TcpStream::connect(server.local_addr)
             .expect("Connecting to the server should succeed");
 
-        let ws_uri = format!("ws://{}/events", server.local_addr);
+        let ws_uri = format!("ws://{}/on", server.local_addr);
         let (mut stream, _) = client(ws_uri, stream)
             .expect("Handshake with the server should succeed");
 
@@ -1028,7 +1008,7 @@ mod tests {
 
         let response = client
             .get(format!(
-                "http://{}/events/contracts/{sub_contract_id_hex}/{TOPIC}",
+                "http://{}/on/contracts:{sub_contract_id_hex}/{TOPIC}",
                 server.local_addr
             ))
             .header("Rusk-Session-Id", sid.to_string())
@@ -1040,7 +1020,7 @@ mod tests {
 
         let response = client
             .get(format!(
-                "http://{}/events/contracts/{maybe_sub_contract_id_hex}/{TOPIC}",
+                "http://{}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
                 server.local_addr
             ))
             .header("Rusk-Session-Id", sid.to_string())
@@ -1102,7 +1082,7 @@ mod tests {
 
         let response = client
             .delete(format!(
-                "http://{}/events/contracts/{maybe_sub_contract_id_hex}/{TOPIC}",
+                "http://{}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
                 server.local_addr
             ))
             .header("Rusk-Session-Id", sid.to_string())
