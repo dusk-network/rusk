@@ -16,7 +16,7 @@ use clap::Parser;
 #[cfg(feature = "node")]
 use node::{
     chain::ChainSrv,
-    database::{rocksdb, DatabaseOptions, DB},
+    database::{rocksdb, DB},
     databroker::DataBrokerSrv,
     mempool::MempoolSrv,
     network::Kadcast,
@@ -137,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let db = rocksdb::Backend::create_or_open(
             db_path,
-            DatabaseOptions::default(),
+            config.chain.db_options(),
         );
         let net = Kadcast::new(config.clone().kadcast.into())?;
 

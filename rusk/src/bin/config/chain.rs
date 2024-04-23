@@ -6,6 +6,7 @@
 
 use std::{path::PathBuf, time::Duration};
 
+use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};
 
 use crate::args::Args;
@@ -13,6 +14,8 @@ use crate::args::Args;
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct ChainConfig {
     db_path: Option<PathBuf>,
+    db_options: Option<DatabaseOptions>,
+
     consensus_keys_path: Option<PathBuf>,
     #[serde(with = "humantime_serde")]
     generation_timeout: Option<Duration>,
@@ -53,6 +56,10 @@ impl ChainConfig {
             .as_path()
             .display()
             .to_string()
+    }
+
+    pub(crate) fn db_options(&self) -> DatabaseOptions {
+        self.db_options.clone().unwrap_or_default()
     }
 
     pub(crate) fn generation_timeout(&self) -> Option<Duration> {
