@@ -1,0 +1,15 @@
+{
+  "data": {
+    "data": {
+      "transactions": [
+        {
+          "__typename": "SpentTransaction",
+          "tx": {
+            "id": "38a21c90324dd1ea8a3eb749a520d4f33b2304fe150eb121086fb4cf13777908"
+          },
+          "txid": "38a21c90324dd1ea8a3eb749a520d4f33b2304fe150eb121086fb4cf13777908"
+        }
+      ]
+    }
+  }
+}

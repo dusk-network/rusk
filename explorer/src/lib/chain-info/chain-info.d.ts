@@ -29,6 +29,11 @@ type ChainInfo = {
   transactions: Transaction[];
 };
 
+type SearchResult = {
+  id: string;
+  type: "block" | "transaction";
+};
+
 type Transaction = {
   blockhash: string;
   blockheight: number;

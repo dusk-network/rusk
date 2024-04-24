@@ -2,7 +2,11 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
 import * as mockData from "$lib/mock-data";
 
-import { transformBlock, transformTransaction } from "$lib/chain-info";
+import {
+  transformBlock,
+  transformSearchResult,
+  transformTransaction,
+} from "$lib/chain-info";
 
 import { duskAPI } from "..";
 
@@ -204,5 +208,24 @@ describe("duskAPI", () => {
     expect(fetchSpy).toHaveBeenNthCalledWith(2, expectedURL, apiGetOptions);
 
     vi.unstubAllEnvs();
+  });
+
+  it("should expose a method to search for blocks and transactions", () => {
+    fetchSpy.mockResolvedValueOnce(
+      makeOKResponse(mockData.apiSearchBlockResult)
+    );
+
+    const query = "some search string";
+
+    expect(duskAPI.search(node, query)).resolves.toStrictEqual(
+      transformSearchResult(mockData.apiSearchBlockResult)
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL(
+        `${import.meta.env[endpointEnvName]}/search/${encodeURIComponent(query)}?node=${node}`
+      ),
+      apiGetOptions
+    );
   });
 });
