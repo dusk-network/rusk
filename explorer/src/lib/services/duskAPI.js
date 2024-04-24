@@ -2,7 +2,11 @@ import { getKey, getPath, mapWith } from "lamb";
 
 import { failureToRejection } from "$lib/dusk/http";
 
-import { transformBlock, transformTransaction } from "$lib/chain-info";
+import {
+  transformBlock,
+  transformSearchResult,
+  transformTransaction,
+} from "$lib/chain-info";
 
 /** @type {(blocks: APIBlock[]) => Block[]} */
 const transformBlocks = mapWith(transformBlock);
@@ -131,5 +135,16 @@ export default {
     return apiGet("transactions", { node })
       .then(getKey("data"))
       .then(transformTransactions);
+  },
+
+  /**
+   * @param {string} node
+   * @param {string} query
+   * @returns {Promise<SearchResult[]>}
+   */
+  search(node, query) {
+    return apiGet(`search/${encodeURIComponent(query)}`, { node }).then(
+      transformSearchResult
+    );
   },
 };
