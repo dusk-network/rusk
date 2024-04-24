@@ -132,17 +132,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
         if mrb.inner().header().height > 0 {
-            let (prev_header, _) = db
-                .read()
-                .await
-                .view(|t| {
-                    t.fetch_block_header(&mrb.inner().header().prev_block_hash)
-                })?
-                .expect("Previous block to be found");
-
-            let prev_provisioners =
-                vm.read().await.get_provisioners(prev_header.state_hash)?;
-            provisioners_list.set_previous(prev_provisioners);
+            let changed_provisioners =
+                vm.read().await.get_changed_provisioners(mrb_state_hash)?;
+            provisioners_list.apply_changes(changed_provisioners);
         }
 
         let acc = Self {
