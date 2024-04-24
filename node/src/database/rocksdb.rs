@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Candidate, Ledger, Metadata, Persist, DB};
+use super::{Candidate, DatabaseOptions, Ledger, Metadata, Persist, DB};
 use anyhow::Result;
 use std::cell::RefCell;
 
@@ -14,10 +14,10 @@ use node_data::Serializable;
 use crate::database::Mempool;
 
 use rocksdb_lib::{
-    AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBAccess,
-    DBRawIteratorWithThreadMode, IteratorMode, OptimisticTransactionDB,
-    OptimisticTransactionOptions, Options, SnapshotWithThreadMode, Transaction,
-    WriteOptions,
+    AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
+    DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
+    OptimisticTransactionDB, OptimisticTransactionOptions, Options,
+    SnapshotWithThreadMode, Transaction, WriteOptions,
 };
 
 use std::collections::HashSet;
@@ -39,7 +39,6 @@ const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 const CF_METADATA: &str = "cf_metadata";
-const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
 
 const DB_FOLDER_NAME: &str = "chain.db";
 
@@ -131,48 +130,76 @@ impl Backend {
 impl DB for Backend {
     type P<'a> = DBTransaction<'a, OptimisticTransactionDB>;
 
-    fn create_or_open<T>(path: T) -> Self
+    fn create_or_open<T>(path: T, db_opts: DatabaseOptions) -> Self
     where
         T: AsRef<Path>,
     {
         let path = path.as_ref().join(DB_FOLDER_NAME);
-        info!("Opening database in {path:?}");
+        info!("Opening database in {path:?}, {:?} ", db_opts);
 
-        let mut opts = Options::default();
-        opts.create_if_missing(true);
-        opts.create_missing_column_families(true);
-        opts.set_level_compaction_dynamic_level_bytes(true);
+        // A set of options for initializing any blocks-related CF (including
+        // METADATA CF)
+        let mut blocks_cf_opts = Options::default();
+        blocks_cf_opts.create_if_missing(true);
+        blocks_cf_opts.create_missing_column_families(true);
+        blocks_cf_opts.set_level_compaction_dynamic_level_bytes(true);
+        blocks_cf_opts
+            .set_write_buffer_size(db_opts.blocks_cf_max_write_buffer_size);
 
-        // Configure CF_MEMPOOL column family so it benefits from low
+        if db_opts.enable_debug {
+            blocks_cf_opts.set_log_level(LogLevel::Info);
+            blocks_cf_opts.set_dump_malloc_stats(true);
+            blocks_cf_opts.enable_statistics();
+        }
+
+        if db_opts.blocks_cf_disable_block_cache {
+            let mut block_opts = BlockBasedOptions::default();
+            block_opts.disable_cache();
+            blocks_cf_opts.set_block_based_table_factory(&block_opts);
+        }
+
+        // Configure CF_MEMPOOL column family, so it benefits from low
         // write-latency of L0
-        let mut mp_opts = Options::default();
-        mp_opts.set_write_buffer_size(MAX_MEMPOOL_SIZE);
-
+        let mut mp_opts = blocks_cf_opts.clone();
         // Disable WAL by default
         mp_opts.set_manual_wal_flush(true);
+        mp_opts.create_if_missing(true);
+        mp_opts.create_missing_column_families(true);
+        mp_opts.set_write_buffer_size(db_opts.mempool_cf_max_write_buffer_size);
 
-        // Disable flush-to-disk by default
-        mp_opts.set_disable_auto_compactions(true);
+        if db_opts.enable_debug {
+            mp_opts.set_log_level(LogLevel::Info);
+            mp_opts.set_dump_malloc_stats(true);
+            mp_opts.enable_statistics();
+        }
 
         let cfs = vec![
-            ColumnFamilyDescriptor::new(CF_LEDGER_HEADER, Options::default()),
-            ColumnFamilyDescriptor::new(CF_LEDGER_TXS, Options::default()),
-            ColumnFamilyDescriptor::new(CF_LEDGER_HEIGHT, Options::default()),
-            ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
+            ColumnFamilyDescriptor::new(
+                CF_LEDGER_HEADER,
+                blocks_cf_opts.clone(),
+            ),
+            ColumnFamilyDescriptor::new(CF_LEDGER_TXS, blocks_cf_opts.clone()),
+            ColumnFamilyDescriptor::new(
+                CF_LEDGER_HEIGHT,
+                blocks_cf_opts.clone(),
+            ),
+            ColumnFamilyDescriptor::new(CF_CANDIDATES, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(
                 CF_CANDIDATES_HEIGHT,
-                Options::default(),
+                blocks_cf_opts.clone(),
             ),
+            ColumnFamilyDescriptor::new(CF_METADATA, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts.clone()),
-            ColumnFamilyDescriptor::new(CF_METADATA, mp_opts),
         ];
 
         Self {
             rocksdb: Arc::new(
                 rocksdb_lib::OptimisticTransactionDB::open_cf_descriptors(
-                    &opts, path, cfs,
+                    &blocks_cf_opts,
+                    path,
+                    cfs,
                 )
                 .expect("should be a valid database in {path}"),
             ),
@@ -854,7 +881,8 @@ mod tests {
     #[test]
     fn test_store_block() {
         TestWrapper::new("test_store_block").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
 
             let b: ledger::Block = Faker.fake();
             assert!(!b.txs().is_empty());
@@ -906,7 +934,8 @@ mod tests {
     #[test]
     fn test_read_only() {
         TestWrapper::new("test_read_only").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
             db.view(|txn| {
                 txn.store_block(
@@ -928,7 +957,8 @@ mod tests {
     #[test]
     fn test_transaction_isolation() {
         TestWrapper::new("test_transaction_isolation").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header().hash;
 
@@ -978,7 +1008,8 @@ mod tests {
     #[test]
     fn test_add_mempool_tx() {
         TestWrapper::new("test_add_tx").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let t: ledger::Transaction = Faker.fake();
 
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
@@ -1008,7 +1039,8 @@ mod tests {
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
         TestWrapper::new("test_mempool_txs_sorted_by_fee").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             // Populate mempool with N contract calls
             let _rng = rand::thread_rng();
             db.update(|txn| {
@@ -1041,7 +1073,8 @@ mod tests {
     #[test]
     fn test_max_gas_limit() {
         TestWrapper::new("test_block_size_limit").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
 
             db.update(|txn| {
                 for i in 0..10u32 {
@@ -1079,7 +1112,8 @@ mod tests {
     #[test]
     fn test_get_ledger_tx_by_hash() {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
             assert!(!b.txs().is_empty());
 
@@ -1113,7 +1147,8 @@ mod tests {
     #[test]
     fn test_fetch_block_hash_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             // Store a block
@@ -1142,7 +1177,8 @@ mod tests {
     #[test]
     fn test_fetch_block_label_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             // Store a block
@@ -1173,7 +1209,8 @@ mod tests {
     fn test_delete_block() {
         let t = TestWrapper::new("test_fetch_block_hash_by_height");
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path);
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             assert!(db

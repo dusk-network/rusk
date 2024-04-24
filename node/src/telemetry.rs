@@ -6,10 +6,14 @@
 
 use crate::{database, vm, LongLivedService, Network};
 use async_trait::async_trait;
+use memory_stats::memory_stats;
+use metrics::histogram;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 
 #[derive(Default)]
 pub struct TelemetrySrv {
@@ -37,7 +41,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
     /// Initialize and spawn Prometheus Exporter and Recorder
     async fn execute(
         &mut self,
-        _: Arc<RwLock<N>>,
+        network: Arc<RwLock<N>>,
         _: Arc<RwLock<DB>>,
         _: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
@@ -48,7 +52,22 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             let (recorder, exporter) =
                 PrometheusBuilder::new().with_http_listener(addr).build()?;
             metrics::set_global_recorder(recorder)?;
-            exporter.await?;
+            tokio::spawn(exporter);
+
+            loop {
+                sleep(Duration::from_secs(5)).await;
+                // Record memory stats
+                if let Some(usage) = memory_stats() {
+                    histogram!("dusk_physical_mem")
+                        .record(usage.physical_mem as f64);
+                    histogram!("dusk_virtual_mem")
+                        .record(usage.virtual_mem as f64);
+                }
+
+                // Record number of alive kadcast peers
+                let count = network.read().await.alive_nodes_count().await;
+                histogram!("dusk_kadcast_peers").record(count as f64);
+            }
         }
         Ok(0)
     }

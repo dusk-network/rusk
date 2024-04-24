@@ -80,6 +80,9 @@ pub trait Network: Send + Sync + 'static {
 
     /// Retrieves information about the network.
     fn get_info(&self) -> anyhow::Result<String>;
+
+    /// Retrieves number of alive nodes
+    async fn alive_nodes_count(&self) -> usize;
 }
 
 /// Service processes specified set of messages and eventually produces a

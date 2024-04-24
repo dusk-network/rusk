@@ -12,6 +12,7 @@ pub mod rocksdb;
 use anyhow::Result;
 use node_data::ledger;
 use node_data::ledger::{Label, SpentTransaction};
+use serde::{Deserialize, Serialize};
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
@@ -19,7 +20,7 @@ pub trait DB: Send + Sync + 'static {
     /// Creates or open a database located at this path.
     ///
     /// Panics if opening db or creating one fails.
-    fn create_or_open<T>(path: T) -> Self
+    fn create_or_open<T>(path: T, opts: DatabaseOptions) -> Self
     where
         T: AsRef<Path>;
 
@@ -150,4 +151,35 @@ pub fn into_array<const N: usize>(value: &[u8]) -> [u8; N] {
     let mut res = [0u8; N];
     res.copy_from_slice(&value[0..N]);
     res
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DatabaseOptions {
+    /// Max write buffer size per Blocks-related CF. By default, there are two
+    /// write buffers (MemTables) per CF.
+    pub blocks_cf_max_write_buffer_size: usize,
+
+    /// Disables Block Cache for non-Mempool CFs
+    ///
+    /// Block Cache is useful in optimizing DB reads. For
+    /// non-block-explorer nodes, DB reads for block retrieval should
+    /// not be buffered in memory.
+    pub blocks_cf_disable_block_cache: bool,
+
+    /// Max write buffer size per Mempool CF.
+    pub mempool_cf_max_write_buffer_size: usize,
+
+    /// Enables a set of flags for collecting DB stats as log data.
+    pub enable_debug: bool,
+}
+
+impl Default for DatabaseOptions {
+    fn default() -> Self {
+        Self {
+            blocks_cf_max_write_buffer_size: 1024 * 1024, // 1 MiB
+            mempool_cf_max_write_buffer_size: 10 * 1024 * 1024, // 10 MiB
+            blocks_cf_disable_block_cache: true,
+            enable_debug: false,
+        }
+    }
 }
