@@ -40,6 +40,33 @@
   margin-bottom: 0;
 }
 
+.details-list__term.details-list__term--table {
+  padding: 0.625rem 1.125rem;
+  margin-bottom: 0rem;
+  border-radius: 0;
+}
+
+.details-list__term:first-child.details-list__term--table {
+  border-top-left-radius: 0;
+  border-top-right-radius: var(--control-border-radius-size);
+  padding: 1rem 1.125rem 0.625rem;
+}
+
+.details-list__term:last-of-type.details-list__term--table {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: var(--control-border-radius-size);
+  padding: 0.625rem 1.125rem 1rem;
+}
+
+.details-list__term:last-of-type.details-list__term--table {
+  width: 100%;
+}
+
+.details-list__term.details-list__term--table,
+.details-list__definition.details-list__definition--table {
+  margin-bottom: 0rem;
+}
+
 @media (min-width: 640px) {
   .details-list__term {
     padding: 0.9375rem 1.125rem;

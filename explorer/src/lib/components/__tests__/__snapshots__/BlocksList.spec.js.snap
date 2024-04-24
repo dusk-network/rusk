@@ -1,0 +1,202 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Blocks List > renders the Blocks List component 1`] = `
+<div>
+  <dl
+    class="detail-list"
+  >
+    <dt
+      class="details-list__term details-list__term--table"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal detail-list__help"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+        data-tooltip-type="info"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      # block
+    </dt>
+     
+    <dd
+      class="details-list__definition details-list__definition--table"
+    >
+      495,868
+    </dd>
+    <!--&lt;ListItem&gt;-->
+     
+    <dt
+      class="details-list__term details-list__term--table"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal detail-list__help"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="The date and time the block was created"
+        data-tooltip-type="info"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      timestamp
+    </dt>
+     
+    <dd
+      class="details-list__definition details-list__definition--table"
+    >
+      <time
+        class="block-details__list-timestamp"
+        datetime="2024-04-16T20:07:02.000Z"
+        slot="definition"
+      >
+        last month
+      </time>
+    </dd>
+    <!--&lt;ListItem&gt;-->
+     
+    <dt
+      class="details-list__term details-list__term--table"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal detail-list__help"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="The average fee paid for the transactions within the block"
+        data-tooltip-type="info"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      average fee paid
+    </dt>
+     
+    <dd
+      class="details-list__definition details-list__definition--table"
+    >
+      0.000000001
+       DUSK
+    </dd>
+    <!--&lt;ListItem&gt;-->
+     
+    <dt
+      class="details-list__term details-list__term--table"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal detail-list__help"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="The amount of gas used generating the block"
+        data-tooltip-type="info"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      gas used
+    </dt>
+     
+    <dd
+      class="details-list__definition details-list__definition--table"
+    >
+      <div
+        class="dusk-progress-bar blocks-list__gas-used"
+        role="progressbar"
+      >
+        <div
+          class="dusk-progress-bar__filler"
+          style="width: 0.01161436%"
+        />
+      </div>
+      <!--&lt;ProgressBar&gt;-->
+    </dd>
+    <!--&lt;ListItem&gt;-->
+     
+    <dt
+      class="details-list__term details-list__term--table"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal detail-list__help"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="The number of transactions included in the block"
+        data-tooltip-type="info"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      txn(s)
+    </dt>
+     
+    <dd
+      class="details-list__definition details-list__definition--table"
+    >
+      2
+    </dd>
+    <!--&lt;ListItem&gt;-->
+     
+    <dt
+      class="details-list__term details-list__term--table"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal detail-list__help"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="The reward allocated to the block generator"
+        data-tooltip-type="info"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      rewards
+    </dt>
+     
+    <dd
+      class="details-list__definition details-list__definition--table"
+    >
+      16
+       DUSK
+    </dd>
+    <!--&lt;ListItem&gt;-->
+  </dl>
+  <!--&lt;DetailList&gt;-->
+  <!--&lt;BlocksList&gt;-->
+</div>
+`;

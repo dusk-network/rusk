@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Detail List > renders the Detail List component 1`] = `
+<dl
+  class="detail-list foo bar"
+>
+  <span>
+    some text
+  </span>
+</dl>
+`;

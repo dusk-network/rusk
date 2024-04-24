@@ -1,0 +1,6 @@
+.detail-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-size: 0.75rem;
+  column-gap: 1.125rem;
+}
