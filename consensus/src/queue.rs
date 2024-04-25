@@ -48,6 +48,11 @@ impl<T: Debug + Clone> MsgRegistry<T> {
         self.0.remove(&round);
     }
 
+    /// Removes all messages that belong to a round greater than the specified.
+    pub fn remove_msgs_greater_than(&mut self, round: u64) {
+        self.0.split_off(&round);
+    }
+
     /// Returns the total number of messages in the registry.
     pub fn msg_count(&self) -> usize {
         self.0
@@ -68,28 +73,52 @@ mod tests {
 
         let round = 55555;
 
-        let mut queue = MsgRegistry::<Item>::default();
-        queue.put_msg(round, 2, Item(5));
-        queue.put_msg(round, 2, Item(4));
-        queue.put_msg(round, 2, Item(3));
+        let mut reg = MsgRegistry::<Item>::default();
+        reg.put_msg(round, 2, Item(5));
+        reg.put_msg(round, 2, Item(4));
+        reg.put_msg(round, 2, Item(3));
 
-        assert_eq!(queue.msg_count(), 3);
-        assert!(queue.drain_msg_by_round_step(round, 3).is_none());
-        assert!(queue.drain_msg_by_round_step(4444, 2).is_none());
+        assert_eq!(reg.msg_count(), 3);
+        assert!(reg.drain_msg_by_round_step(round, 3).is_none());
+        assert!(reg.drain_msg_by_round_step(4444, 2).is_none());
 
         for i in 1..100 {
-            queue.put_msg(4444, i as u16, Item(i));
+            reg.put_msg(4444, i as u16, Item(i));
         }
 
-        assert_eq!(queue.msg_count(), 100 + 2);
+        assert_eq!(reg.msg_count(), 100 + 2);
         assert_eq!(
-            queue.drain_msg_by_round_step(round, 2).unwrap(),
+            reg.drain_msg_by_round_step(round, 2).unwrap(),
             vec![Item(5), Item(4), Item(3)],
         );
-        assert_eq!(queue.msg_count(), 99);
+        assert_eq!(reg.msg_count(), 99);
 
-        queue.remove_msgs_by_round(4444);
-        assert_eq!(queue.msg_count(), 0);
-        assert!(queue.drain_msg_by_round_step(round, 2).is_none());
+        reg.remove_msgs_by_round(4444);
+        assert_eq!(reg.msg_count(), 0);
+        assert!(reg.drain_msg_by_round_step(round, 2).is_none());
+    }
+
+    #[test]
+    pub fn test_remove() {
+        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+        struct Item(i32);
+
+        let round = 100;
+
+        let mut reg = MsgRegistry::<Item>::default();
+        reg.put_msg(round + 1, 1, Item(1));
+        reg.put_msg(round + 2, 1, Item(1));
+        reg.put_msg(round + 3, 1, Item(1));
+        reg.put_msg(round, 1, Item(1));
+
+        reg.remove_msgs_greater_than(round + 2);
+
+        assert!(reg.drain_msg_by_round_step(round, 1).is_some());
+        assert!(reg.drain_msg_by_round_step(round + 1, 1).is_some());
+
+        assert!(reg.drain_msg_by_round_step(round + 2, 1).is_none());
+        assert!(reg.drain_msg_by_round_step(round + 3, 1).is_none());
+
+        assert_eq!(reg.msg_count(), 0);
     }
 }
