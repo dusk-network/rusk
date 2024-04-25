@@ -9,7 +9,7 @@ use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
-use crate::queue::Queue;
+use crate::queue::MsgRegistry;
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -39,7 +39,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     /// Messaging-related fields
     pub inbound: AsyncQueue<Message>,
     pub outbound: AsyncQueue<Message>,
-    pub future_msgs: Arc<Mutex<Queue<Message>>>,
+    pub future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
 
     /// State-related fields
     pub provisioners: &'a Provisioners,
@@ -63,7 +63,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         iter_ctx: &'a mut IterationCtx<DB>,
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
-        future_msgs: Arc<Mutex<Queue<Message>>>,
+        future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
         provisioners: &'a Provisioners,
         round_update: RoundUpdate,
         iteration: u8,
@@ -303,7 +303,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     error!("unable to re-publish a handled msg {:?}", err)
                 });
 
-                self.future_msgs.lock().await.put_event(
+                self.future_msgs.lock().await.put_msg(
                     msg.header.round,
                     msg.get_step(),
                     msg,
@@ -384,7 +384,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .future_msgs
             .lock()
             .await
-            .drain_events(self.round_update.round, self.step())
+            .drain_msg_by_round_step(self.round_update.round, self.step())
         {
             if !messages.is_empty() {
                 debug!(event = "drain future msgs", count = messages.len(),)
