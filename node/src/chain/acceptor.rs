@@ -565,6 +565,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         gauge!("dusk_stored_candidates_count")
             .set(count.unwrap_or_default() as f64);
 
+        {
+            // Avoid accumulation of messages while the node is sychronizing
+            let mut f = task.future_msg.lock().await;
+            f.remove_msgs_by_round(mrb.inner().header().height);
+            histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
+        }
+
         let fsv_bitset = mrb.inner().header().cert.validation.bitset;
         let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
 

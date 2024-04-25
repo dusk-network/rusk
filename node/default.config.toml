@@ -7,10 +7,10 @@ consensus_keys_path = '/tmp/consensus_bls.keys'
 generation_timeout = '3s'
 
 [chain.db_options]
-enable_debug = true
-blocks_cf_max_write_buffer_size = 1048576 # 1 MB
+enable_debug = false
+blocks_cf_max_write_buffer_size = 1048576 # 1 MiB
 blocks_cf_disable_block_cache = true
-mempool_cf_max_write_buffer_size = 10485760 # 10 MB 
+mempool_cf_max_write_buffer_size = 10485760 # 10 MiB
 
 [network]
 public_address = '127.0.0.1:9000'
