@@ -573,8 +573,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             // Avoid accumulation of future msgs while the node is syncing up
             let round = mrb.inner().header().height;
             let mut f = task.future_msg.lock().await;
-            f.remove_msgs_by_round(round);
-            f.remove_msgs_greater_than(round + OFFSET_FUTURE_MSGS);
+            f.remove_msgs_out_of_range(round + 1, OFFSET_FUTURE_MSGS);
             histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
         }
 
