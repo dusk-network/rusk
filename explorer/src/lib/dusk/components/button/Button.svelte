@@ -2,8 +2,10 @@
 
 <script>
   import { makeClassName } from "$lib/dusk/string";
-  import "./Button.css";
+
   import { Icon } from "$lib/dusk/components";
+
+  import "./Button.css";
 
   /** @type {Boolean} */
   export let active = false;

@@ -79,6 +79,10 @@
   order: 2;
 }
 
+.dusk-nav-list.dusk-navbar__menu--links {
+  height: auto;
+}
+
 .dusk-navbar__menu--search {
   order: 1;
   margin-top: 2.5rem;
@@ -109,7 +113,6 @@
   }
 
   .dusk-navbar__menu {
-    position: relative;
     height: 100%;
     flex-direction: row;
     align-items: center;
@@ -132,5 +135,11 @@
   .dusk-navbar__menu--search {
     order: 3;
     margin-top: 0;
+  }
+
+  .dusk-navbar__menu--search-notification {
+    position: absolute;
+    left: 0;
+    top: 5rem;
   }
 }

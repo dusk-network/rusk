@@ -18,23 +18,26 @@
   /**
    * Function accepts 64 character long alphanumeric strings
    */
-  async function submitHandler() {
+  function submitHandler() {
     if (/^([0-9a-fA-F]{64}|\d+)$/g.test(value)) {
-      await duskAPI
+      duskAPI
         .search($appStore.network, value)
         .then((data) => {
-          const type = data.length !== 0 ? data[0].type : undefined;
+          const type = data.length ? data[0].type : undefined;
           switch (type) {
             case "block":
-              goto(`/blocks/block?id=${data[0].id}`);
               resetField();
+              goto(`/blocks/block?id=${data[0].id}`);
               break;
             case "transaction":
-              goto(`/transactions/transaction?id=${data[0].id}`);
               resetField();
+              goto(`/transactions/transaction?id=${data[0].id}`);
               break;
             default:
-              dispatch("invalid", { query: value, res: data });
+              dispatch("invalid", {
+                query: value,
+                res: data,
+              });
               resetField();
           }
         })
@@ -42,6 +45,12 @@
           dispatch("invalid", { query: value, res: e });
           resetField();
         });
+    } else {
+      dispatch("invalid", {
+        query: value,
+        res: new Error("Invalid query value"),
+      });
+      resetField();
     }
   }
 </script>

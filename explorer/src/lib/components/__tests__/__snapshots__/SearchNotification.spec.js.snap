@@ -1,0 +1,128 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Search Notification > renders the Search Notification component with a Error message 1`] = `
+<div
+  class="dusk-card search-notification"
+>
+  <header
+    class="search-notification__header"
+    slot="header"
+  >
+    <span
+      class="search-notification__header-text"
+    >
+      Error
+    </span>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button search-notification__header-action"
+      type="button"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <div
+    class="search-notification__content"
+  >
+    <code>
+      HTTP Request failed - failed
+    </code>
+     
+    <span
+      class="search-notification__content-text"
+    >
+      The search string you entered is: 
+      <span
+        class="search-notification__content-query"
+      >
+        some query text
+      </span>
+    </span>
+  </div>
+   
+  <div
+    slot="footer"
+  >
+    <span
+      class="search-notification__footer-text"
+    >
+      If you think there is a problem with this result, please contact us.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Search Notification > renders the Search Notification component with the query string 1`] = `
+<div
+  class="dusk-card search-notification"
+>
+  <header
+    class="search-notification__header"
+    slot="header"
+  >
+    <span
+      class="search-notification__header-text"
+    >
+      No results found
+    </span>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button search-notification__header-action"
+      type="button"
+    >
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <div
+    class="search-notification__content"
+  >
+     
+    <span
+      class="search-notification__content-text"
+    >
+      The search string you entered is: 
+      <span
+        class="search-notification__content-query"
+      >
+        some query text
+      </span>
+    </span>
+  </div>
+   
+  <div
+    slot="footer"
+  >
+    <span
+      class="search-notification__footer-text"
+    >
+      If you think there is a problem with this result, please contact us.
+    </span>
+  </div>
+</div>
+`;
