@@ -53,6 +53,19 @@ impl<T: Debug + Clone> MsgRegistry<T> {
         self.0.split_off(&round);
     }
 
+    /// Removes all messages that do not belong to the range (closed interval)
+    /// of keys
+    pub fn remove_msgs_out_of_range(&mut self, start_round: u64, offset: u64) {
+        let end_round = start_round + offset;
+
+        self.0 = self
+            .0
+            .split_off(&start_round)
+            .into_iter()
+            .filter(|(k, _)| *k <= end_round)
+            .collect();
+    }
+
     /// Returns the total number of messages in the registry.
     pub fn msg_count(&self) -> usize {
         self.0
@@ -67,7 +80,7 @@ mod tests {
     use crate::queue::MsgRegistry;
 
     #[test]
-    pub fn test_push_event() {
+    fn test_push_event() {
         #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
         struct Item(i32);
 
@@ -99,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_remove() {
+    fn test_remove() {
         #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
         struct Item(i32);
 
@@ -120,5 +133,29 @@ mod tests {
         assert!(reg.drain_msg_by_round_step(round + 3, 1).is_none());
 
         assert_eq!(reg.msg_count(), 0);
+    }
+
+    #[test]
+    fn test_remove_msgs_out_of_range() {
+        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+        struct Item(i32);
+
+        let round = 100;
+
+        let mut reg = MsgRegistry::<Item>::default();
+        reg.put_msg(round + 1, 1, Item(1));
+        reg.put_msg(round + 2, 1, Item(1));
+        reg.put_msg(round * 3, 1, Item(1));
+        reg.put_msg(round, 1, Item(1));
+        assert_eq!(reg.msg_count(), 4);
+
+        reg.remove_msgs_out_of_range(round + 1, 1);
+        assert_eq!(reg.msg_count(), 2);
+
+        assert!(reg.drain_msg_by_round_step(round, 1).is_none());
+        assert!(reg.drain_msg_by_round_step(round * 3, 1).is_none());
+
+        assert!(reg.drain_msg_by_round_step(round + 1, 1).is_some());
+        assert!(reg.drain_msg_by_round_step(round + 2, 1).is_some());
     }
 }
