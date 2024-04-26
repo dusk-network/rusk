@@ -15,7 +15,7 @@ use node_data::message::{AsyncQueue, Message, Topics};
 
 use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
-use crate::queue::Queue;
+use crate::queue::MsgRegistry;
 use crate::quorum::task;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
@@ -38,7 +38,7 @@ pub struct Consensus<T: Operations, D: Database> {
 
     /// future_msgs is a queue of messages read from inbound_msgs queue. These
     /// msgs are pending to be handled in a future round/step.
-    future_msgs: Arc<Mutex<Queue<Message>>>,
+    future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
 
     /// quorum_process implements Quorum message handler within the context
     /// of a separate task execution.
@@ -69,13 +69,14 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         outbound: AsyncQueue<Message>,
         quorum_inbound_queue: AsyncQueue<Message>,
         quorum_outbound_queue: AsyncQueue<Message>,
+        future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
         executor: Arc<Mutex<T>>,
         db: Arc<Mutex<D>>,
     ) -> Self {
         Self {
             inbound,
             outbound,
-            future_msgs: Arc::new(Mutex::new(Queue::default())),
+            future_msgs,
             quorum_process: task::Quorum::new(
                 quorum_inbound_queue,
                 quorum_outbound_queue,
@@ -157,7 +158,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
         tokio::spawn(async move {
             if ru.round > 0 {
-                future_msgs.lock().await.clear_round(ru.round - 1);
+                future_msgs.lock().await.remove_msgs_by_round(ru.round - 1);
             }
 
             let sv_registry =

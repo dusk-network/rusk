@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 
-use crate::queue::Queue;
+use crate::queue::MsgRegistry;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use node_data::ledger::{to_str, Block, Certificate};
@@ -23,7 +23,7 @@ pub struct Quorum {
     pub inbound_queue: AsyncQueue<Message>,
     outbound_queue: AsyncQueue<Message>,
 
-    future_msgs: Arc<Mutex<Queue<Message>>>,
+    future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
 }
 
 impl Quorum {
@@ -34,7 +34,7 @@ impl Quorum {
         Self {
             inbound_queue,
             outbound_queue,
-            future_msgs: Arc::new(Mutex::new(Queue::default())),
+            future_msgs: Arc::new(Mutex::new(MsgRegistry::default())),
         }
     }
 
@@ -93,15 +93,20 @@ impl<'p, D: Database> Executor<'p, D> {
 
     async fn run(
         &self,
-        future_msgs: Arc<Mutex<Queue<Message>>>,
+        future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
     ) -> Result<Block, ConsensusError> {
         // drain future messages for current round and step.
         if self.ru.round > 0 {
-            future_msgs.lock().await.clear_round(self.ru.round - 1);
+            future_msgs
+                .lock()
+                .await
+                .remove_msgs_by_round(self.ru.round - 1);
         }
 
-        if let Some(messages) =
-            future_msgs.lock().await.drain_events(self.ru.round, 0)
+        if let Some(messages) = future_msgs
+            .lock()
+            .await
+            .drain_msg_by_round_step(self.ru.round, 0)
         {
             for msg in messages {
                 self.collect_inbound_msg(msg).await;
@@ -116,7 +121,7 @@ impl<'p, D: Database> Executor<'p, D> {
                     Status::Future => {
                         // Future quorum message.
                         // Keep it for processing when we reach this round.
-                        future_msgs.lock().await.put_event(
+                        future_msgs.lock().await.put_msg(
                             msg.header.round,
                             0,
                             msg.clone(),

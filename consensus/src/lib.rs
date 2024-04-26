@@ -17,7 +17,7 @@ mod msg_handler;
 pub mod operations;
 mod phase;
 mod proposal;
-mod queue;
+pub mod queue;
 pub mod quorum;
 mod ratification;
 mod step_votes_reg;

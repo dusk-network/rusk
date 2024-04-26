@@ -12,6 +12,7 @@ use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
     CallParams, Error, Operations, Output, VerificationOutput,
 };
+use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use node_data::ledger::{Block, Hash, Header};
 use node_data::message::payload::GetCandidate;
@@ -38,6 +39,9 @@ pub(crate) struct Task {
     pub(crate) quorum_inbound: AsyncQueue<Message>,
     pub(crate) main_inbound: AsyncQueue<Message>,
     pub(crate) outbound: AsyncQueue<Message>,
+
+    pub(crate) future_msg: Arc<Mutex<MsgRegistry<Message>>>,
+
     pub(crate) result: AsyncQueue<Result<Block, ConsensusError>>,
 
     /// a pair of join_handle and cancel_chan of the running consensus task.
@@ -70,6 +74,7 @@ impl Task {
             quorum_inbound: AsyncQueue::unbounded(),
             main_inbound: AsyncQueue::unbounded(),
             outbound: AsyncQueue::unbounded(),
+            future_msg: Arc::new(Mutex::new(MsgRegistry::default())),
             result: AsyncQueue::unbounded(),
             running_task: None,
             task_id: 0,
@@ -87,11 +92,12 @@ impl Task {
         base_timeout: TimeoutSet,
     ) {
         let current = provisioners_list.to_current();
-        let c = Consensus::new(
+        let consensus_task = Consensus::new(
             self.main_inbound.clone(),
             self.outbound.clone(),
             self.quorum_inbound.clone(),
             self.outbound.clone(),
+            self.future_msg.clone(),
             Arc::new(Mutex::new(Executor::new(
                 db,
                 vm,
@@ -125,15 +131,20 @@ impl Task {
         gauge!("dusk_provisioners_all").set(all_num as f64);
 
         let id = self.task_id;
-        let result_queue = self.result.clone();
+        let resp = self.result.clone();
         let (cancel_tx, cancel_rx) = oneshot::channel::<i32>();
 
         self.running_task = Some((
             tokio::spawn(async move {
-                let cons_result = c.spin(ru, current.into(), cancel_rx).await;
-                if let Err(e) = result_queue.send(cons_result).await {
-                    error!("Unable to send consensus result to queue {e}")
-                }
+                // Run the consensus task
+                let res =
+                    consensus_task.spin(ru, current.into(), cancel_rx).await;
+
+                // Notify chain component about the consensus result
+                let _ = resp
+                    .send(res)
+                    .await
+                    .map_err(|e| error!("Unable to send consensus result {e}"));
 
                 trace!("terminate consensus task: {}", id);
                 id

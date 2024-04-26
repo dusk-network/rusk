@@ -38,6 +38,10 @@ use crate::database::rocksdb::{
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
 
+/// The offset to the current blockchain tip to consider a message as valid
+/// future message.
+const OFFSET_FUTURE_MSGS: u64 = 5;
+
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
     Commit([u8; 32]),
@@ -564,6 +568,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         gauge!("dusk_stored_candidates_count")
             .set(count.unwrap_or_default() as f64);
+
+        {
+            // Avoid accumulation of future msgs while the node is syncing up
+            let round = mrb.inner().header().height;
+            let mut f = task.future_msg.lock().await;
+            f.remove_msgs_out_of_range(round + 1, OFFSET_FUTURE_MSGS);
+            histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
+        }
 
         let fsv_bitset = mrb.inner().header().cert.validation.bitset;
         let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
