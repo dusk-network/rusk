@@ -7,5 +7,6 @@ export { default as Footer } from "./footer/Footer.svelte";
 export { default as ListItem } from "./list-item/ListItem.svelte";
 export { default as Navbar } from "./navbar/Navbar.svelte";
 export { default as StatisticsPanel } from "./statistics-panel/StatisticsPanel.svelte";
+export { default as TextboxAndButton } from "./textbox-and-button/TextboxAndButton.svelte";
 export { default as TransactionDetails } from "./transaction-details/TransactionDetails.svelte";
 export { default as TransactionsList } from "./transactions-list/TransactionsList.svelte";

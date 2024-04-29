@@ -1,0 +1,112 @@
+/* General Styles */
+.dusk-button,
+.dusk-anchor-button,
+.dusk-anchor-button:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  letter-spacing: inherit;
+  line-height: 1;
+  border-radius: var(--control-border-radius-size);
+  border-style: solid;
+  border-width: var(--control-border-size);
+  text-transform: uppercase;
+  transform-origin: center center;
+  transition-delay: 0s;
+  transition-duration: 0.2s;
+  transition-property: background-color, border-color, color, scale;
+  transition-timing-function: ease-in-out;
+}
+
+/* Variants */
+.dusk-button,
+.dusk-anchor-button,
+.dusk-anchor-button:visited {
+  background-color: var(--control-bg-color);
+  border-color: var(--control-border-color);
+  color: var(--control-text-color);
+}
+
+.dusk-button--variant--secondary,
+.dusk-anchor-button--variant--secondary,
+.dusk-anchor-button--variant--secondary:visited {
+  background-color: var(--control-secondary-bg-color);
+  border-color: var(--control-secondary-border-color);
+  color: var(--control-secondary-text-color);
+}
+
+.dusk-button--variant--tertiary,
+.dusk-anchor-button--variant--tertiary,
+.dusk-anchor-button--variant--tertiary:visited {
+  background-color: var(--control-tertiary-bg-color);
+  border-color: var(--control-tertiary-border-color);
+  color: var(--control-tertiary-text-color);
+}
+
+/* Sizes */
+.dusk-button--size--small,
+.dusk-anchor-button--size--small,
+.dusk-anchor-button--size--small:visited {
+  font-size: var(--control-small-font-size);
+  gap: calc(var(--control-small-font-size) / 2);
+  padding: var(--control-small-padding);
+}
+
+.dusk-button--size--normal,
+.dusk-anchor-button--size--normal,
+.dusk-anchor-button--size--normal:visited {
+  font-size: var(--control-font-size);
+  gap: calc(var(--control-font-size) / 2);
+  padding: var(--control-padding);
+}
+
+/* States */
+.dusk-button:disabled,
+.dusk-anchor-button.dusk-anchor-button--disabled,
+.dusk-anchor-button.dusk-anchor-button--disabled:hover,
+.dusk-anchor-button.dusk-anchor-button--disabled:visited {
+  opacity: 0.5;
+}
+
+.dusk-button > span,
+.dusk-anchor-button > span {
+  flex: 1;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Icon Buttons */
+.dusk-icon-button:not(.dusk-icon-button--labeled) {
+  border-radius: 50%;
+  padding: 0.2em;
+}
+
+.dusk-button:enabled:hover,
+.dusk-button:enabled:active,
+.dusk-anchor-button:hover,
+.dusk-anchor-button:active,
+.dusk-button--active {
+  background-color: var(--control-bg-color-hover);
+  color: var(--control-text-color-hover);
+  border-color: var(--control-secondary-border-color-hover);
+}
+
+.dusk-button:enabled:active,
+.dusk-anchor-button:active,
+.dusk-button--active {
+  scale: 0.98;
+}
+
+.dusk-anchor.dusk-icon-button:hover,
+.dusk-icon-button:not(:disabled):hover {
+  scale: 1.1;
+}
+
+.dusk-icon-button:enabled:active,
+.dusk-anchor-button.dusk-icon-button:active,
+.dusk-button--active {
+  scale: 0.9;
+}

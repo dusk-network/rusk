@@ -53,6 +53,9 @@
   --control-small-font-size: 0.875em;
   --control-small-padding: 0.625em 0.875em;
 
+  --non-button-control-bg-color: #fff;
+  --non-button-control-text-color: var(--smokey-black);
+
   --control-bg-color: #fff;
   --control-bg-color-hover: var(--silver-metallic);
   --control-border-color: transparent;

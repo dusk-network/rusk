@@ -1,5 +1,6 @@
 <script>
   import { AppAnchor, AppImage } from "$lib/components";
+  import { SearchField } from "$lib/containers";
   import { NavList, Select } from "$lib/dusk/components";
   import { createEventDispatcher } from "svelte";
   import "./Navbar.css";
@@ -107,6 +108,8 @@
       <NavList {navigation} />
     </div>
 
-    <div class="dusk-navbar__menu--search"></div>
+    <div class="dusk-navbar__menu--search">
+      <SearchField />
+    </div>
   </div>
 </nav>
