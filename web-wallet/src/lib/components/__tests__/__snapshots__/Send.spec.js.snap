@@ -632,7 +632,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
         
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled"
           type="button"
         >
           <svg

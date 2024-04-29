@@ -269,7 +269,7 @@
           position: "before",
         },
         label: confirmLabels[flow],
-        variant: "secondary",
+        variant: "primary",
       }}
     >
       <div in:fade|global class="operation__stake">
