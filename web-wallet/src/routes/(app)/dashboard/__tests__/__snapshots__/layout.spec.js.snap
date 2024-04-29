@@ -18,26 +18,20 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         <div
           class="footer__network-status s-Ck0voT_hIlXn"
         >
-          <div
-            class="dusk-icon--circular footer__network-status-icon footer__network-status-icon--success"
+          <svg
+            class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
             data-tooltip-disabled="true"
             data-tooltip-id="main-tooltip"
             data-tooltip-type="error"
-            style=""
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--large"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z"
-              />
-            </svg>
-            
-            <!--&lt;Icon&gt;-->
-          </div>
-          <!--&lt;CircularIcon&gt;-->
+            <path
+              d="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
            
           <div
             class="footer__network-message s-Ck0voT_hIlXn"
@@ -109,27 +103,21 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         <div
           class="footer__network-status s-Ck0voT_hIlXn"
         >
-          <div
-            class="dusk-icon--circular footer__network-status-icon footer__network-status-icon--error"
+          <svg
+            class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--error"
             data-tooltip-disabled="false"
             data-tooltip-id="main-tooltip"
             data-tooltip-text=""
             data-tooltip-type="error"
-            style=""
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--large"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-              />
-            </svg>
-            
-            <!--&lt;Icon&gt;-->
-          </div>
-          <!--&lt;CircularIcon&gt;-->
+            <path
+              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
            
           <div
             class="footer__network-message s-Ck0voT_hIlXn"
@@ -223,26 +211,20 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <div
           class="footer__network-status s-Ck0voT_hIlXn"
         >
-          <div
-            class="dusk-icon--circular footer__network-status-icon footer__network-status-icon--warning"
+          <svg
+            class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
             data-tooltip-disabled="true"
             data-tooltip-id="main-tooltip"
             data-tooltip-type="error"
-            style=""
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--large"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M6,2H18V8H18V8L14,12L18,16V16H18V22H6V16H6V16L10,12L6,8V8H6V2M16,16.5L12,12.5L8,16.5V20H16V16.5M12,11.5L16,7.5V4H8V7.5L12,11.5M10,6H14V6.75L12,8.75L10,6.75V6Z"
-              />
-            </svg>
-            
-            <!--&lt;Icon&gt;-->
-          </div>
-          <!--&lt;CircularIcon&gt;-->
+            <path
+              d="M6,2H18V8H18V8L14,12L18,16V16H18V22H6V16H6V16L10,12L6,8V8H6V2M16,16.5L12,12.5L8,16.5V20H16V16.5M12,11.5L16,7.5V4H8V7.5L12,11.5M10,6H14V6.75L12,8.75L10,6.75V6Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
            
           <div
             class="footer__network-message s-Ck0voT_hIlXn"
