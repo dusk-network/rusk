@@ -46,7 +46,7 @@
   <div class="receive__buttons" bind:offsetHeight={buttonHeight}>
     {#if !hideBackButton}
       <Button
-        className="flex-1"
+        className="receive__button"
         icon={{ path: mdiArrowLeft }}
         on:click={() => {
           dispatch("operationChange", "");
@@ -56,7 +56,7 @@
       />
     {/if}
     <Button
-      className="flex-1"
+      className="receive__button"
       icon={{ path: mdiContentCopy }}
       on:click={() => {
         navigator.clipboard.writeText(address);
@@ -105,6 +105,10 @@
     :global(&__qr) {
       padding: 0.625em;
       background-color: var(--background-color-alt);
+    }
+
+    :global(&__button) {
+      flex: 1;
     }
 
     &__buttons {
