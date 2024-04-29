@@ -193,7 +193,7 @@
       nextButton={{
         icon: { path: mdiArrowUpBoldBoxOutline, position: "before" },
         label: "SEND",
-        variant: "secondary",
+        variant: "primary",
       }}
     >
       <div in:fade|global class="operation__send">
