@@ -15,6 +15,20 @@
   src: url("/fonts/soehne-kraftig.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "Soehne Mono";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/soehne-mono-buch.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Soehne Mono";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/fonts/soehne-mono-kraftig.woff2") format("woff2");
+}
+
 * {
   padding: 0;
   margin: 0;
@@ -41,6 +55,7 @@ html {
 
 main {
   padding: 1.25rem 0;
+  overflow-x: hidden;
 }
 
 svg {
