@@ -19,7 +19,6 @@ pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
     RequestData, Target,
 };
-use hyper::http::{HeaderName, HeaderValue};
 use rusk_abi::Event;
 use tracing::{info, warn};
 
@@ -31,6 +30,7 @@ use std::net::SocketAddr;
 use std::path::Path;
 use std::pin::Pin;
 use std::str::FromStr;
+use std::sync::mpsc as std_mpsc;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -40,7 +40,11 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::ToSocketAddrs;
 use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 use tokio::{io, task};
+use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
+use tokio_stream::StreamExt;
+use tokio_util::either::Either;
 
+use hyper::http::{HeaderName, HeaderValue};
 use hyper::server::conn::Http;
 use hyper::service::Service;
 use hyper::{body, Body, Method, Request, Response, StatusCode};
@@ -50,7 +54,9 @@ use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
 
 use futures_util::stream::iter as stream_iter;
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{SinkExt, TryStreamExt};
+
+use anyhow::Error as AnyhowError;
 use rand::rngs::OsRng;
 
 #[cfg(feature = "node")]
@@ -402,13 +408,14 @@ where
 enum SubscriptionAction {
     Subscribe(RuesSubscription),
     Unsubscribe(RuesSubscription),
+    Dispatch { sub: RuesSubscription, body: Body },
 }
 
 async fn handle_stream_rues(
     sid: SessionId,
     websocket: HyperWebsocket,
     mut subscriptions: mpsc::Receiver<SubscriptionAction>,
-    mut events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<ContractEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
@@ -429,7 +436,21 @@ async fn handle_stream_rues(
         return;
     }
 
+    // FIXME make this a configuration parameter
+    const DISPATCH_BUFFER_SIZE: usize = 16;
+
     let mut subscription_set = HashSet::new();
+    let (dispatch_sender, dispatch_events) =
+        mpsc::channel(DISPATCH_BUFFER_SIZE);
+
+    // Join the two event receivers together, allowing for reusing the exact
+    // same code when handling them either of them.
+    let mut events = BroadcastStream::new(events);
+    let mut dispatch_events = ReceiverStream::new(dispatch_events);
+
+    let mut events = events
+        .map_err(Either::Left)
+        .merge(dispatch_events.map_err(Either::Right));
 
     loop {
         tokio::select! {
@@ -456,26 +477,41 @@ async fn handle_stream_rues(
                 };
 
                 match subscription {
-                   SubscriptionAction::Subscribe(subscription) => {
+                    SubscriptionAction::Subscribe(subscription) => {
                         subscription_set.insert(subscription);
                     },
                     SubscriptionAction::Unsubscribe(subscription) => {
                         subscription_set.remove(&subscription);
                     },
+                    SubscriptionAction::Dispatch {
+                        sub,
+                        body
+                    } => {
+                        // TODO figure out if we should subscribe to the event we dispatch
+                        task::spawn(handle_dispatch(sub, body, dispatch_sender.clone()));
+                    }
                 }
             }
 
-            event = events.recv() => {
+            Some(event) = events.next() => {
                 let event = match event {
                     Ok(event) => event,
-                    Err(err) => {
-                        // If the event channel is closed, it means the server has stopped
-                        // producing events, so we should inform the client and stop.
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Away,
-                            reason: Cow::from("Shutting down"),
-                        })).await;
-                        break;
+                    Err(err) => match err {
+                        Either::Left(_berr) => {
+                            // If the event channel is closed, it means the
+                            // server has stopped producing events, so we
+                            // should inform the client and stop.
+                            let _ = stream.close(Some(CloseFrame {
+                                code: CloseCode::Away,
+                                reason: Cow::from("Shutting down"),
+                            })).await;
+                            break;
+
+                        }
+                        Either::Right(_eerr) => {
+                            // TODO handle execution error
+                            continue;
+                        },
                     },
                 };
 
@@ -516,6 +552,21 @@ async fn handle_stream_rues(
 
     let mut sockets = sockets_map.write().await;
     sockets.remove(&sid);
+}
+
+async fn handle_dispatch(
+    sub: RuesSubscription,
+    body: Body,
+    sender: mpsc::Sender<Result<ContractEvent, AnyhowError>>,
+) {
+    todo!(
+        "\
+    Figure out if the subscription is a contract subscription (meaning a \
+    contract call) and, if so, parse the body for the arguments and execute, \
+    giving somehow passing the resulting events through to the websocket stream
+    that dispatched the event.
+    "
+    )
 }
 
 fn response(
@@ -605,6 +656,10 @@ async fn handle_request_rues(
         let action = match *req.method() {
             Method::GET => SubscriptionAction::Subscribe(subscription),
             Method::DELETE => SubscriptionAction::Unsubscribe(subscription),
+            Method::POST => SubscriptionAction::Dispatch {
+                sub: subscription,
+                body: req.into_body(),
+            },
             _ => {
                 return response(
                     StatusCode::METHOD_NOT_ALLOWED,
