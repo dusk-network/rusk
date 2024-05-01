@@ -11,6 +11,9 @@
   import { createCompactFormatter } from "$lib/dusk/value";
   import { duskIcon } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
+  import { WorldMap } from "$lib/components";
+  import { duskAPI } from "$lib/services";
+  import { appStore } from "$lib/stores";
   import "./StatisticsPanel.css";
 
   const valueFormatter = createCurrencyFormatter("en", "DUSK", 0);
@@ -76,6 +79,8 @@
       },
     ],
   ];
+
+  const nodeLocations = duskAPI.getNodeLocations($appStore.network);
 </script>
 
 <div class="statistics-panel">
@@ -100,5 +105,9 @@
       </div>
     {/each}
   </div>
-  <div class="statistics-panel__world-map"></div>
+  <div class="statistics-panel__world-map">
+    {#await nodeLocations then nodes}
+      <WorldMap {nodes} />
+    {/await}
+  </div>
 </div>

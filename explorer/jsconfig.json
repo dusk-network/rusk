@@ -12,7 +12,8 @@
     "strict": true,
     "types": [
       "./node_modules/@testing-library/jest-dom/types/vitest.d.ts",
-      "lamb-types"
+      "lamb-types",
+      "@types/d3-geo"
     ]
   }
 }

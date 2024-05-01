@@ -1,6 +1,6 @@
 <script>
   import { Badge, Card } from "$lib/dusk/components";
-  import { StatisticsPanel } from "$lib/components";
+  import { StatisticsPanel } from "$lib/containers";
   import {
     Table,
     TableBody,
