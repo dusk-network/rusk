@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use phoenix_core::Note;
+use phoenix_core::{Note, PublicKey, SecretKey, ViewKey};
 use poseidon_merkle::{Item, Tree};
 use transfer_circuits::Error;
 use transfer_circuits::{
@@ -42,16 +41,16 @@ where
 
 pub fn create_test_note<R: RngCore + CryptoRng>(
     rng: &mut R,
-    psk: &PublicSpendKey,
+    pk: &PublicKey,
     transparent: bool,
     value: u64,
 ) -> Note {
     if transparent {
-        Note::transparent(rng, psk, value)
+        Note::transparent(rng, pk, value)
     } else {
-        let blinding_factor = JubJubScalar::random(rng);
+        let blinding_factor = JubJubScalar::random(&mut *rng);
 
-        Note::obfuscated(rng, psk, value, blinding_factor)
+        Note::obfuscated(rng, pk, value, blinding_factor)
     }
 }
 
@@ -79,26 +78,26 @@ pub fn create_test_circuit<const I: usize>(
 
     // Generate the notes and mutate the global tree state
     for pos in 0..inputs {
-        let ssk = SecretSpendKey::random(rng);
-        let psk = ssk.public_spend_key();
+        let sk = SecretKey::random(rng);
+        let pk = PublicKey::from(&sk);
 
-        let mut note = create_test_note(rng, &psk, transparent, input_value);
+        let mut note = create_test_note(rng, &pk, transparent, input_value);
 
         note.set_pos(pos);
         data_blocks.push(note);
         tree.insert(pos, WrappedNote(note));
 
-        input_data.push((ssk, pos));
+        input_data.push((sk, pos));
 
         transparent = !transparent;
         inputs_sum += input_value;
     }
 
-    for (ssk, pos) in input_data.into_iter() {
+    for (sk, pos) in input_data.into_iter() {
         let note = data_blocks[pos as usize];
         let input = ExecuteCircuit::<I, (), HEIGHT, ARITY>::input(
             rng,
-            &ssk,
+            &sk,
             tx_hash,
             &tree,
             note.into(),
@@ -115,11 +114,11 @@ pub fn create_test_circuit<const I: usize>(
 
     let mut outputs_sum = 0;
     for _ in 0..outputs {
-        let ssk = SecretSpendKey::random(rng);
-        let vk = ssk.view_key();
-        let psk = ssk.public_spend_key();
+        let sk = SecretKey::random(rng);
+        let vk = ViewKey::from(&sk);
+        let pk = PublicKey::from(&sk);
 
-        let note = create_test_note(rng, &psk, transparent, output_value);
+        let note = create_test_note(rng, &pk, transparent, output_value);
 
         circuit.add_output(note, Some(&vk))?;
 
@@ -127,11 +126,11 @@ pub fn create_test_circuit<const I: usize>(
         outputs_sum += output_value;
     }
 
-    let ssk = SecretSpendKey::random(rng);
-    let psk = ssk.public_spend_key();
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
     let value = inputs_sum - outputs_sum - 5;
-    let blinding_factor = JubJubScalar::random(rng);
-    let note = Note::obfuscated(rng, &psk, value, blinding_factor);
+    let blinding_factor = JubJubScalar::random(&mut *rng);
+    let note = Note::obfuscated(rng, &pk, value, blinding_factor);
 
     let (mut fee, crossover) = note.try_into()?;
     fee.gas_price = 1;

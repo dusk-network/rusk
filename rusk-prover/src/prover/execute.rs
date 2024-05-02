@@ -35,7 +35,7 @@ fn fill_circuit<const I: usize>(
         let cinput = CircuitInput::new(
             *input.opening(),
             *input.note(),
-            input.pk_r_prime().into(),
+            input.note_pk_prime().into(),
             input.value(),
             input.blinding_factor(),
             input.nullifier(),

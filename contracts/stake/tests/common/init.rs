@@ -5,11 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::common::utils::update_root;
-use dusk_pki::PublicSpendKey;
-use phoenix_core::Note;
+use phoenix_core::{Note, PublicKey};
 use rand::{CryptoRng, RngCore};
-use rusk_abi::{ContractData, Session, VM};
-use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{ContractData, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
 
 const OWNER: [u8; 32] = [0; 32];
 const POINT_LIMIT: u64 = 0x100_000_000;
@@ -19,7 +17,7 @@ const POINT_LIMIT: u64 = 0x100_000_000;
 pub fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
-    psk: &PublicSpendKey,
+    psk: &PublicKey,
     genesis_value: u64,
 ) -> Session {
     let transfer_bytecode = include_bytes!(

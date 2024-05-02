@@ -8,9 +8,9 @@ extern crate alloc;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
-use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
+use phoenix_core::{PublicKey, SecretKey, StealthAddress, ViewKey};
 use std::ops::Range;
 use std::sync::mpsc;
 
@@ -25,6 +25,7 @@ use license_types::*;
 
 use license_circuits::LicenseCircuit;
 
+use ff::Field;
 use rusk_abi::{ContractData, ContractId, Session};
 use rusk_profile::get_common_reference_string;
 use zk_citadel::license::{License, Request};
@@ -46,14 +47,14 @@ const ARITY: usize = 4; // arity of the Merkle tree
 
 fn create_test_license<R: RngCore + CryptoRng>(
     attr: &JubJubScalar,
-    ssk_lp: &SecretSpendKey,
-    psk_lp: &PublicSpendKey,
+    sk_lp: &SecretKey,
+    pk_lp: &PublicKey,
     sa_user: &StealthAddress,
     k_lic: &JubJubAffine,
     rng: &mut R,
 ) -> License {
-    let request = Request::new(psk_lp, sa_user, k_lic, rng);
-    License::new(attr, ssk_lp, &request, rng)
+    let request = Request::new(pk_lp, sa_user, k_lic, rng);
+    License::new(attr, sk_lp, &request, rng)
 }
 
 fn initialize() -> Session {
@@ -92,12 +93,12 @@ fn deserialise_license(v: &Vec<u8>) -> License {
 /// Finds owned license in a collection of licenses.
 /// It searches in a reverse order to return a newest license.
 fn find_owned_license(
-    ssk_user: SecretSpendKey,
+    sk_user: SecretKey,
     licenses: &Vec<(u64, Vec<u8>)>,
 ) -> Option<(u64, License)> {
     for (pos, license) in licenses.iter().rev() {
         let license = deserialise_license(&license);
-        if ssk_user.view_key().owns(&license.lsa) {
+        if ViewKey::from(&sk_user).owns(&license.lsa) {
             return Some((pos.clone(), license));
         }
     }
@@ -107,17 +108,17 @@ fn find_owned_license(
 /// Creates the Citadel request object
 /// This function should be moved to CitadelUtils
 fn create_request<R: RngCore + CryptoRng>(
-    ssk_user: &SecretSpendKey,
-    psk_lp: &PublicSpendKey,
+    sk_user: &SecretKey,
+    pk_lp: &PublicKey,
     rng: &mut R,
 ) -> Request {
-    let psk = ssk_user.public_spend_key();
-    let lsa = psk.gen_stealth_address(&JubJubScalar::random(rng));
-    let lsk = ssk_user.sk_r(&lsa);
+    let pk = PublicKey::from(sk_user);
+    let lsa = pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let lsk = sk_user.sk_r(&lsa);
     let k_lic = JubJubAffine::from(
         GENERATOR_EXTENDED * sponge::truncated::hash(&[(*lsk.as_ref()).into()]),
     );
-    Request::new(psk_lp, &lsa, &k_lic, rng)
+    Request::new(pk_lp, &lsa, &k_lic, rng)
 }
 
 #[test]
@@ -126,20 +127,21 @@ fn license_issue_get_merkle() {
     let mut session = initialize();
 
     // user
-    let ssk_user = SecretSpendKey::random(rng);
-    let psk_user = ssk_user.public_spend_key();
-    let sa_user = psk_user.gen_stealth_address(&JubJubScalar::random(rng));
+    let sk_user = SecretKey::random(rng);
+    let pk_user = PublicKey::from(&sk_user);
+    let sa_user = pk_user.gen_stealth_address(&JubJubScalar::random(&mut *rng));
 
     // license provider
-    let ssk_lp = SecretSpendKey::random(rng);
-    let psk_lp = ssk_lp.public_spend_key();
-    let k_lic =
-        JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::random(rng));
+    let sk_lp = SecretKey::random(rng);
+    let pk_lp = PublicKey::from(&sk_lp);
+    let k_lic = JubJubAffine::from(
+        GENERATOR_EXTENDED * JubJubScalar::random(&mut *rng),
+    );
 
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
 
     let license =
-        create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
+        create_test_license(&attr, &sk_lp, &pk_lp, &sa_user, &k_lic, rng);
     let license_blob = rkyv::to_bytes::<_, 4096>(&license)
         .expect("Request should serialize correctly")
         .to_vec();
@@ -179,7 +181,7 @@ fn license_issue_get_merkle() {
         "Call to getting a license request should return some licenses"
     );
 
-    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
+    let owned_license = find_owned_license(sk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -203,22 +205,23 @@ fn multiple_licenses_issue_get_merkle() {
     let mut session = initialize();
 
     // user
-    let ssk_user = SecretSpendKey::random(rng);
-    let psk_user = ssk_user.public_spend_key();
-    let sa_user = psk_user.gen_stealth_address(&JubJubScalar::random(rng));
+    let sk_user = SecretKey::random(rng);
+    let pk_user = PublicKey::from(&sk_user);
+    let sa_user = pk_user.gen_stealth_address(&JubJubScalar::random(&mut *rng));
 
     // license provider
-    let ssk_lp = SecretSpendKey::random(rng);
-    let psk_lp = ssk_lp.public_spend_key();
+    let sk_lp = SecretKey::random(rng);
+    let pk_lp = PublicKey::from(&sk_lp);
 
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
 
     const NUM_LICENSES: usize = ARITY + 1;
     for _ in 0..NUM_LICENSES {
-        let k_lic =
-            JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::random(rng));
+        let k_lic = JubJubAffine::from(
+            GENERATOR_EXTENDED * JubJubScalar::random(&mut *rng),
+        );
         let license =
-            create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
+            create_test_license(&attr, &sk_lp, &pk_lp, &sa_user, &k_lic, rng);
         let license_blob = rkyv::to_bytes::<_, 4096>(&license)
             .expect("Request should serialize correctly")
             .to_vec();
@@ -259,7 +262,7 @@ fn multiple_licenses_issue_get_merkle() {
         "Call to getting license requests should return licenses"
     );
 
-    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
+    let owned_license = find_owned_license(sk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -313,15 +316,15 @@ fn use_license_get_session() {
         .expect("Compiling circuit should succeed");
 
     // user
-    let ssk_user = SecretSpendKey::random(rng);
+    let sk_user = SecretKey::random(rng);
 
     // license provider
-    let ssk_lp = SecretSpendKey::random(rng);
-    let psk_lp = ssk_lp.public_spend_key();
+    let sk_lp = SecretKey::random(rng);
+    let pk_lp = PublicKey::from(&sk_lp);
 
-    let request = create_request(&ssk_user, &psk_lp, rng);
+    let request = create_request(&sk_user, &pk_lp, rng);
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
-    let license = License::new(&attr, &ssk_lp, &request, rng);
+    let license = License::new(&attr, &sk_lp, &request, rng);
 
     let license_blob = rkyv::to_bytes::<_, 4096>(&license)
         .expect("Request should serialize correctly")
@@ -362,7 +365,7 @@ fn use_license_get_session() {
         "Call to getting license requests should return licenses"
     );
 
-    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
+    let owned_license = find_owned_license(sk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -381,8 +384,8 @@ fn use_license_get_session() {
 
     let (cpp, sc) = CitadelUtils::compute_citadel_parameters(
         rng,
-        ssk_user,
-        psk_lp,
+        sk_user,
+        pk_lp,
         &owned_license,
         merkle_opening,
     );

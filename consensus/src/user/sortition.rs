@@ -99,10 +99,10 @@ mod tests {
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
-    use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, SecretKey};
+    use bls12_381_bls::{
+        PublicKey as StakePublicKey, SecretKey as StakeSecretKey,
+    };
     use dusk_bytes::DeserializableSlice;
-
-    use node_data::bls::PublicKey;
 
     use node_data::ledger::Seed;
 
@@ -295,15 +295,16 @@ mod tests {
             .take(n)
             .map(|hex| hex::decode(hex).expect("valid hex"))
             .map(|data| {
-                SecretKey::from_slice(&data[..]).expect("valid secret key")
+                StakeSecretKey::from_slice(&data[..]).expect("valid secret key")
             })
             .collect();
 
         let mut p = Provisioners::empty();
         for (i, sk) in sks.iter().enumerate().skip(1) {
             let stake_value = 1000 * (i) as u64 * DUSK;
-            let pubkey_bls = PublicKey::new(BlsPublicKey::from(sk));
-            p.add_member_with_value(pubkey_bls, stake_value);
+            let stake_pk =
+                node_data::bls::PublicKey::new(StakePublicKey::from(sk));
+            p.add_member_with_value(stake_pk, stake_value);
         }
         p
     }

@@ -39,19 +39,18 @@ rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 dirs = "4"
 
-dusk-schnorr = "0.14"
-dusk-poseidon = "0.31"
-poseidon-merkle = { version = "0.3", features = ["rkyv-impl", "size_32"] }
+jubjub-schnorr = "0.2"
+dusk-poseidon = "0.33"
+poseidon-merkle = { version = "0.5", features = ["rkyv-impl", "size_32"] }
 sha3 = "0.10"
-dusk-plonk = "0.16"
-dusk-bls12_381 = "0.12"
-dusk-bls12_381-sign = "0.5"
-dusk-jubjub = "0.13"
-dusk-pki = "0.13"
+dusk-plonk = "0.19"
+dusk-bls12_381 = "0.13"
+bls12_381-bls = "0.2"
+dusk-jubjub = "0.14"
 dusk-bytes = "0.1"
 kadcast = "0.6.0-rc"
-dusk-wallet-core = "0.24.0-plonk.0.16-rc.2"
-phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-wallet-core = "0.25.0-phoenix.0.26"
+phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl", "alloc"] }
 tungstenite = "0.20"
 hyper-tungstenite = "0.11"
 hyper = { version = "0.14", features = ["server", "stream", "http1", "http2"] }
@@ -65,7 +64,7 @@ async-trait = "0.1"
 
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.12.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
 rusk-prover = { version = "0.3", path = "../rusk-prover", optional = true }
 
 ## node dependencies

@@ -46,8 +46,8 @@ fn make_transactions(
 ) {
     // We will refund the transaction to ourselves.
     let refund_0 = wallet
-        .public_spend_key(SENDER_INDEX_0)
-        .expect("Getting a public spend key should succeed");
+        .public_key(SENDER_INDEX_0)
+        .expect("Getting a public key should succeed");
 
     let initial_balance_0 = wallet
         .get_balance(SENDER_INDEX_0)
@@ -56,8 +56,8 @@ fn make_transactions(
 
     // We will refund the transaction to ourselves.
     let refund_1 = wallet
-        .public_spend_key(SENDER_INDEX_1)
-        .expect("Getting a public spend key should succeed");
+        .public_key(SENDER_INDEX_1)
+        .expect("Getting a public key should succeed");
 
     let initial_balance_1 = wallet
         .get_balance(SENDER_INDEX_1)
@@ -66,8 +66,8 @@ fn make_transactions(
 
     // We will refund the transaction to ourselves.
     let refund_2 = wallet
-        .public_spend_key(SENDER_INDEX_2)
-        .expect("Getting a public spend key should succeed");
+        .public_key(SENDER_INDEX_2)
+        .expect("Getting a public key should succeed");
 
     let initial_balance_2 = wallet
         .get_balance(SENDER_INDEX_2)

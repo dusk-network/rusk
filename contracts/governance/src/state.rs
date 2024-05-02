@@ -10,22 +10,22 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, Signature};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
-use dusk_pki::PublicKey;
+use jubjub_schnorr::PublicKey as SchnorrPublicKey;
 
 use crate::Transfer;
 use contract_helpers::{Map, Set};
 
 #[derive(Debug)]
 pub struct GovernanceState {
-    balances: Map<PublicKey, u64>,
+    balances: Map<SchnorrPublicKey, u64>,
     seeds: Set<BlsScalar>,
 
     total_supply: u64,
     paused: bool,
 
-    broker: AtomicPtr<PublicKey>,
+    broker: AtomicPtr<SchnorrPublicKey>,
     authority: AtomicPtr<BlsPublicKey>,
 }
 
@@ -96,7 +96,7 @@ impl GovernanceState {
     }
 
     /// Mints a given `amount` of tokens to the given `address`.
-    pub fn mint(&mut self, address: PublicKey, amount: u64) {
+    pub fn mint(&mut self, address: SchnorrPublicKey, amount: u64) {
         if self.paused {
             panic!("The contract is paused");
         }
@@ -111,7 +111,7 @@ impl GovernanceState {
     }
 
     /// Burns a given `amount` of tokens from the given `address`.
-    pub fn burn(&mut self, address: PublicKey, amount: u64) {
+    pub fn burn(&mut self, address: SchnorrPublicKey, amount: u64) {
         if self.paused {
             panic!("The contract is paused");
         }
@@ -136,11 +136,12 @@ impl GovernanceState {
     ///
     /// This function should only be called once, but it does support being
     /// called multiple times.
-    pub fn set_broker(&self, broker: PublicKey) {
+    pub fn set_broker(&self, broker: SchnorrPublicKey) {
         let broker = Box::leak(Box::new(broker));
 
-        let last_broker =
-            self.broker.swap(broker as *mut PublicKey, Ordering::SeqCst);
+        let last_broker = self
+            .broker
+            .swap(broker as *mut SchnorrPublicKey, Ordering::SeqCst);
 
         // If the broker was already set we need to recoup the memory, otherwise
         // we will leak memory.
@@ -206,7 +207,7 @@ impl GovernanceState {
     ///
     /// # Panics
     /// If the broker hasn't been set.
-    pub fn get_broker(&self) -> PublicKey {
+    pub fn get_broker(&self) -> SchnorrPublicKey {
         let broker = self.broker.load(Ordering::SeqCst);
         if broker.is_null() {
             panic!("Broker not set");
@@ -220,7 +221,7 @@ impl GovernanceState {
     ///
     /// # Panics
     /// If the balance overflows.
-    fn add_balance(&mut self, address: PublicKey, amount: u64) {
+    fn add_balance(&mut self, address: SchnorrPublicKey, amount: u64) {
         // Return early if the amount is zero
         if amount == 0 {
             return;
@@ -240,7 +241,7 @@ impl GovernanceState {
     /// Subtract the value given from the specified address' balance, returning
     /// the remainder of the subtraction. If the address is not present nothing
     /// happens.
-    fn sub_balance(&mut self, address: PublicKey, value: u64) -> u64 {
+    fn sub_balance(&mut self, address: SchnorrPublicKey, value: u64) -> u64 {
         match self.balances.get_mut(&address) {
             Some(balance) if *balance < value => {
                 let remaining = value - *balance;
@@ -256,7 +257,7 @@ impl GovernanceState {
         }
     }
 
-    pub fn balance(&self, address: &PublicKey) -> u64 {
+    pub fn balance(&self, address: &SchnorrPublicKey) -> u64 {
         self.balances.get(address).unwrap_or(&0).clone()
     }
 
@@ -266,8 +267,8 @@ impl GovernanceState {
 
     fn checked_transfer(
         &mut self,
-        from: PublicKey,
-        to: PublicKey,
+        from: SchnorrPublicKey,
+        to: SchnorrPublicKey,
         amount: u64,
     ) {
         let remaining = self.sub_balance(from, amount);

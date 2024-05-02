@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
+use bls12_381_bls::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
-use dusk_pki::{PublicKey, PublicSpendKey};
+use jubjub_schnorr::PublicKey as SchnorrPublicKey;
+use phoenix_core::PublicKey;
 use rusk_abi::ContractId;
 use serde_derive::{Deserialize, Serialize};
 
@@ -15,16 +16,15 @@ use crate::state;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct Governance {
-    pub(crate) contract_owner:
-        Option<Wrapper<PublicSpendKey, { PublicSpendKey::SIZE }>>,
+    pub(crate) contract_owner: Option<Wrapper<PublicKey, { PublicKey::SIZE }>>,
     pub contract_address: u64,
     pub name: String,
     pub(crate) authority: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
-    pub(crate) broker: Wrapper<PublicKey, { PublicKey::SIZE }>,
+    pub(crate) broker: Wrapper<SchnorrPublicKey, { SchnorrPublicKey::SIZE }>,
 }
 
 impl Governance {
-    pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
+    pub fn owner(&self) -> [u8; PublicKey::SIZE] {
         let dusk = Wrapper::from(*state::DUSK_KEY);
         self.contract_owner.as_ref().unwrap_or(&dusk).to_bytes()
     }
@@ -32,7 +32,7 @@ impl Governance {
     pub fn authority(&self) -> &BlsPublicKey {
         &self.authority
     }
-    pub fn broker(&self) -> &PublicKey {
+    pub fn broker(&self) -> &SchnorrPublicKey {
         &self.broker
     }
 

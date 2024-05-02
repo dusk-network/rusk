@@ -9,10 +9,10 @@ use std::sync::mpsc;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
+use ff::Field;
 use phoenix_core::transaction::*;
-use phoenix_core::{Fee, Note};
+use phoenix_core::{Fee, Note, Ownable, PublicKey, SecretKey, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -53,7 +53,7 @@ const A: usize = 4;
 fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
-    psk: &PublicSpendKey,
+    pk: &PublicKey,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
         "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -93,7 +93,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         )
         .expect("Deploying the bob contract should succeed");
 
-    let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
+    let genesis_note = Note::transparent(rng, pk, GENESIS_VALUE);
 
     // push genesis note to the contract
     session
@@ -239,13 +239,13 @@ fn transfer() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let ssk = SecretSpendKey::random(rng);
-    let psk = PublicSpendKey::from(&ssk);
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
 
-    let receiver_ssk = SecretSpendKey::random(rng);
-    let receiver_psk = PublicSpendKey::from(&receiver_ssk);
+    let receiver_sk = SecretKey::random(rng);
+    let receiver_pk = PublicKey::from(&receiver_sk);
 
-    let session = &mut instantiate(rng, vm, &psk);
+    let session = &mut instantiate(rng, vm, &pk);
 
     let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -271,24 +271,24 @@ fn transfer() {
     let input_blinder = input_note
         .blinding_factor(None)
         .expect("The blinder should be transparent");
-    let input_nullifier = input_note.gen_nullifier(&ssk);
+    let input_nullifier = input_note.gen_nullifier(&sk);
 
     // Give half of the value of the note to the receiver.
     let output_value = input_value / 2;
-    let output_blinder = JubJubScalar::random(rng);
+    let output_blinder = JubJubScalar::random(&mut *rng);
     let output_note =
-        Note::obfuscated(rng, &receiver_psk, output_value, output_blinder);
+        Note::obfuscated(rng, &receiver_pk, output_value, output_blinder);
 
     let gas_limit = TRANSFER_FEE;
     let gas_price = LUX;
 
-    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+    let fee = Fee::new(rng, gas_limit, gas_price, &pk);
 
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - output_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     // Compose the circuit. In this case we're using one input and two outputs.
     let mut circuit = ExecuteCircuitOneTwo::new();
@@ -305,9 +305,9 @@ fn transfer() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r = ssk.sk_r(input_note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+    // Generate npk_p
+    let nsk = sk.sk_r(input_note.stealth_address());
+    let npk_p = GENERATOR_NUMS_EXTENDED * nsk.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -326,11 +326,11 @@ fn transfer() {
     circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_note, tx_hash);
     let circuit_input = CircuitInput::<(), H, A>::new(
         opening,
         input_note,
-        pk_r_p.into(),
+        npk_p.into(),
         input_value,
         input_blinder,
         input_nullifier,
@@ -394,10 +394,10 @@ fn alice_ping() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let ssk = SecretSpendKey::random(rng);
-    let psk = PublicSpendKey::from(&ssk);
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
 
-    let session = &mut instantiate(rng, vm, &psk);
+    let session = &mut instantiate(rng, vm, &pk);
 
     let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -411,18 +411,18 @@ fn alice_ping() {
     let input_blinder = input_note
         .blinding_factor(None)
         .expect("The blinder should be transparent");
-    let input_nullifier = input_note.gen_nullifier(&ssk);
+    let input_nullifier = input_note.gen_nullifier(&sk);
 
     let gas_limit = PING_FEE;
     let gas_price = LUX;
 
-    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+    let fee = Fee::new(rng, gas_limit, gas_price, &pk);
 
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     let call = Some((ALICE_ID.to_bytes(), String::from("ping"), vec![]));
 
@@ -438,9 +438,9 @@ fn alice_ping() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r = ssk.sk_r(input_note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+    // Generate npk_p
+    let nsk = sk.sk_r(input_note.stealth_address());
+    let npk_p = GENERATOR_NUMS_EXTENDED * nsk.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -459,11 +459,11 @@ fn alice_ping() {
     circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_note, tx_hash);
     let circuit_input = CircuitInput::new(
         opening,
         input_note,
-        pk_r_p.into(),
+        npk_p.into(),
         input_value,
         input_blinder,
         input_nullifier,
@@ -513,11 +513,11 @@ fn send_and_withdraw_transparent() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let ssk = SecretSpendKey::random(rng);
-    let vk = ssk.view_key();
-    let psk = PublicSpendKey::from(&ssk);
+    let sk = SecretKey::random(rng);
+    let vk = ViewKey::from(&sk);
+    let pk = PublicKey::from(&sk);
 
-    let session = &mut instantiate(rng, vm, &psk);
+    let session = &mut instantiate(rng, vm, &pk);
 
     let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -531,7 +531,7 @@ fn send_and_withdraw_transparent() {
     let input_blinder = input_note
         .blinding_factor(None)
         .expect("The blinder should be transparent");
-    let input_nullifier = input_note.gen_nullifier(&ssk);
+    let input_nullifier = input_note.gen_nullifier(&sk);
 
     let gas_limit = STCT_FEE;
     let gas_price = LUX;
@@ -540,10 +540,10 @@ fn send_and_withdraw_transparent() {
     // we transfer half of the input note to the alice contract, so the
     // crossover value is `input_value/2`.
     let crossover_value = input_value / 2;
-    let crossover_blinder = JubJubScalar::random(rng);
+    let crossover_blinder = JubJubScalar::random(&mut *rng);
 
     let (mut fee, crossover) =
-        Note::obfuscated(rng, &psk, crossover_value, crossover_blinder)
+        Note::obfuscated(rng, &pk, crossover_value, crossover_blinder)
             .try_into()
             .expect("Getting a fee and a crossover should succeed");
 
@@ -553,14 +553,14 @@ fn send_and_withdraw_transparent() {
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - crossover_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     // Prove the STCT circuit.
     let stct_address = rusk_abi::contract_to_scalar(&ALICE_ID);
     let stct_signature = SendToContractTransparentCircuit::sign(
         rng,
-        &ssk,
+        &sk,
         &fee,
         &crossover,
         crossover_value,
@@ -615,9 +615,9 @@ fn send_and_withdraw_transparent() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r = ssk.sk_r(input_note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+    // Generate npk_p
+    let nsk = sk.sk_r(input_note.stealth_address());
+    let npk_p = GENERATOR_NUMS_EXTENDED * nsk.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -636,11 +636,11 @@ fn send_and_withdraw_transparent() {
     execute_circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_note, tx_hash);
     let circuit_input = CircuitInput::new(
         input_opening,
         input_note,
-        pk_r_p.into(),
+        npk_p.into(),
         input_value,
         input_blinder,
         input_nullifier,
@@ -712,7 +712,7 @@ fn send_and_withdraw_transparent() {
         input_blinders[i] = input_notes[i]
             .blinding_factor(Some(&vk))
             .expect("The given view key should own the note");
-        input_nullifiers[i] = input_notes[i].gen_nullifier(&ssk);
+        input_nullifiers[i] = input_notes[i].gen_nullifier(&sk);
     }
 
     let input_value: u64 = input_values.iter().sum();
@@ -720,18 +720,18 @@ fn send_and_withdraw_transparent() {
     let gas_limit = WFCT_FEE;
     let gas_price = LUX;
 
-    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+    let fee = Fee::new(rng, gas_limit, gas_price, &pk);
 
     // The change note should have the value of the input note, minus what is
     // maximally spent.
     let change_value = input_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+    let change_blinder = JubJubScalar::random(&mut *rng);
+    let change_note = Note::obfuscated(rng, &pk, change_value, change_blinder);
 
     let withdraw_value = crossover_value;
-    let withdraw_blinder = JubJubScalar::random(rng);
+    let withdraw_blinder = JubJubScalar::random(&mut *rng);
     let withdraw_note =
-        Note::obfuscated(rng, &psk, withdraw_value, withdraw_blinder);
+        Note::obfuscated(rng, &pk, withdraw_value, withdraw_blinder);
 
     // Fashion a WFCT proof and a `Wfct` structure instance
 
@@ -774,11 +774,11 @@ fn send_and_withdraw_transparent() {
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
-    // Generate pk_r_p
-    let sk_r_0 = ssk.sk_r(input_notes[0].stealth_address());
-    let pk_r_p_0 = GENERATOR_NUMS_EXTENDED * sk_r_0.as_ref();
-    let sk_r_1 = ssk.sk_r(input_notes[1].stealth_address());
-    let pk_r_p_1 = GENERATOR_NUMS_EXTENDED * sk_r_1.as_ref();
+    // Generate npk_p
+    let nsk_0 = sk.sk_r(input_notes[0].stealth_address());
+    let npk_p_0 = GENERATOR_NUMS_EXTENDED * nsk_0.as_ref();
+    let nsk_1 = sk.sk_r(input_notes[1].stealth_address());
+    let npk_p_1 = GENERATOR_NUMS_EXTENDED * nsk_1.as_ref();
 
     // The transaction hash must be computed before signing
     let anchor =
@@ -797,14 +797,14 @@ fn send_and_withdraw_transparent() {
     execute_circuit.set_tx_hash(tx_hash);
 
     let circuit_input_signature_0 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[0], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[0], tx_hash);
     let circuit_input_signature_1 =
-        CircuitInputSignature::sign(rng, &ssk, &input_notes[1], tx_hash);
+        CircuitInputSignature::sign(rng, &sk, &input_notes[1], tx_hash);
 
     let circuit_input_0 = CircuitInput::new(
         input_opening_0,
         input_notes[0],
-        pk_r_p_0.into(),
+        npk_p_0.into(),
         input_values[0],
         input_blinders[0],
         input_nullifiers[0],
@@ -813,7 +813,7 @@ fn send_and_withdraw_transparent() {
     let circuit_input_1 = CircuitInput::new(
         input_opening_1,
         input_notes[1],
-        pk_r_p_1.into(),
+        npk_p_1.into(),
         input_values[1],
         input_blinders[1],
         input_nullifiers[1],

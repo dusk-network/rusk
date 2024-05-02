@@ -6,8 +6,8 @@
 
 pub mod common;
 
-use dusk_bls12_381_sign::{PublicKey, SecretKey};
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
+use phoenix_core::{PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::dusk;
@@ -27,13 +27,13 @@ fn reward_slash() -> Result<(), Error> {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let ssk = SecretSpendKey::random(rng);
-    let psk = PublicSpendKey::from(&ssk);
-
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let mut session = instantiate(rng, vm, &psk, GENESIS_VALUE);
+    let stake_sk = StakeSecretKey::random(rng);
+    let stake_pk = StakePublicKey::from(&stake_sk);
+
+    let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
     let reward_amount = dusk(10.0);
     let slash_amount = dusk(5.0);
@@ -41,18 +41,18 @@ fn reward_slash() -> Result<(), Error> {
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
-        &(pk, reward_amount),
+        &(stake_pk, reward_amount),
         u64::MAX,
     )?;
-    assert_event(&receipt.events, "reward", &pk, reward_amount);
+    assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
         "slash",
-        &(pk, slash_amount),
+        &(stake_pk, slash_amount),
         u64::MAX,
     )?;
-    assert_event(&receipt.events, "slash", &pk, slash_amount);
+    assert_event(&receipt.events, "slash", &stake_pk, slash_amount);
     Ok(())
 }
 
@@ -63,13 +63,13 @@ fn stake_hard_slash() -> Result<(), Error> {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let ssk = SecretSpendKey::random(rng);
-    let psk = PublicSpendKey::from(&ssk);
-
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let mut session = instantiate(rng, vm, &psk, GENESIS_VALUE);
+    let stake_sk = StakeSecretKey::random(rng);
+    let stake_pk = StakePublicKey::from(&stake_sk);
+
+    let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
     let balance = dusk(14.0);
     let hard_slash_amount = dusk(5.0);
@@ -91,17 +91,17 @@ fn stake_hard_slash() -> Result<(), Error> {
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
-        &(pk, stake_data),
+        &(stake_pk, stake_data),
         u64::MAX,
     )?;
 
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
         "hard_slash",
-        &(pk, hard_slash_amount),
+        &(stake_pk, hard_slash_amount),
         u64::MAX,
     )?;
-    assert_event(&receipt.events, "hard_slash", &pk, hard_slash_amount);
+    assert_event(&receipt.events, "hard_slash", &stake_pk, hard_slash_amount);
 
     Ok(())
 }

@@ -11,14 +11,13 @@ use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
-use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
+use bls12_381_bls::{
     PublicKey as BlsPublicKey, Signature as BlsSignature, APK,
 };
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-use dusk_pki::PublicKey;
 use dusk_plonk::prelude::{Proof, Verifier};
-use dusk_schnorr::Signature;
+use jubjub_schnorr::{PublicKey as NotePublicKey, Signature};
 use lru::LruCache;
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -228,7 +227,7 @@ pub fn verify_proof(
         }
     });
 
-    let verified = verifier.verify(&proof, &pis).is_ok();
+    let verified = verifier.verify(&proof, &pis[..]).is_ok();
     if verified {
         put_cache(hash, verified);
     }
@@ -236,8 +235,12 @@ pub fn verify_proof(
 }
 
 /// Verify a schnorr signature is valid for the given public key and message
-pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
-    sig.verify(&pk, msg)
+pub fn verify_schnorr(
+    msg: BlsScalar,
+    pk: NotePublicKey,
+    sig: Signature,
+) -> bool {
+    pk.verify(&sig, msg)
 }
 
 /// Verify a BLS signature is valid for the given public key and message

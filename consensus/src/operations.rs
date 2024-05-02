@@ -7,7 +7,7 @@
 use std::fmt;
 use std::time::Duration;
 
-use dusk_bls12_381_sign::PublicKey;
+use bls12_381_bls::PublicKey;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 use node_data::StepName;
 

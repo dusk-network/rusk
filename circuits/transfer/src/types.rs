@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::PublicSpendKey;
+use phoenix_core::PublicKey;
 
 use dusk_plonk::prelude::*;
 
@@ -18,11 +18,11 @@ pub struct DeriveKey {
 }
 
 impl DeriveKey {
-    pub fn new(is_public: bool, psk: &PublicSpendKey) -> Self {
+    pub fn new(is_public: bool, pk: &PublicKey) -> Self {
         let i = JubJubExtended::identity();
 
-        let a = *psk.A();
-        let b = *psk.B();
+        let a = *pk.A();
+        let b = *pk.B();
 
         let (secret_a, secret_b) = if is_public { (i, i) } else { (a, b) };
         let (public_a, public_b) = if is_public { (a, b) } else { (i, i) };

@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::SecretSpendKey;
 use dusk_plonk::prelude::*;
 use license_circuits::{Error, LicenseCircuit, ARITY, DEPTH};
+use phoenix_core::{PublicKey, SecretKey};
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -38,23 +38,23 @@ fn prove_verify_license_circuit() {
         load_keys("LicenseCircuit").expect("Circuit generation should succeed");
 
     // user
-    let ssk = SecretSpendKey::random(rng);
-    let psk = ssk.public_spend_key();
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
 
     // license provider
-    let ssk_lp = SecretSpendKey::random(rng);
-    let psk_lp = ssk_lp.public_spend_key();
+    let sk_lp = SecretKey::random(rng);
+    let pk_lp = PublicKey::from(&sk_lp);
 
     let (lic, merkle_proof) =
         CitadelUtils::compute_random_license::<StdRng, DEPTH, ARITY>(
-            rng, ssk, psk, ssk_lp, psk_lp,
+            rng, sk, pk, sk_lp, pk_lp,
         );
 
     let (cpp, sc) = CitadelUtils::compute_citadel_parameters::<
         StdRng,
         DEPTH,
         ARITY,
-    >(rng, ssk, psk_lp, &lic, merkle_proof);
+    >(rng, sk, pk_lp, &lic, merkle_proof);
 
     let circuit = LicenseCircuit::new(cpp, sc);
 

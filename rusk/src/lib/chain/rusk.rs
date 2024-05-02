@@ -14,8 +14,8 @@ use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
+use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use node_data::ledger::{SpentTransaction, Transaction};
@@ -33,9 +33,9 @@ use super::{coinbase_value, emission_amount, Rusk, RuskTip};
 use crate::http::ContractEvent;
 use crate::{Error, Result};
 
-pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
+pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");
-    BlsPublicKey::from_slice(dusk_cpk_bytes)
+    StakePublicKey::from_slice(dusk_cpk_bytes)
         .expect("Dusk consensus public key to be valid")
 });
 
@@ -190,9 +190,9 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: &BlsPublicKey,
+        generator: &StakePublicKey,
         txs: &[Transaction],
-        missed_generators: &[BlsPublicKey],
+        missed_generators: &[StakePublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -217,10 +217,10 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: BlsPublicKey,
+        generator: StakePublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
-        missed_generators: &[BlsPublicKey],
+        missed_generators: &[StakePublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -297,11 +297,11 @@ impl Rusk {
     pub fn provisioners(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>> {
+    ) -> Result<impl Iterator<Item = (StakePublicKey, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
+            rkyv::from_bytes::<(StakePublicKey, StakeData)>(&bytes).expect(
                 "The contract should only return (pk, stake_data) tuples",
             )
         }))
@@ -321,12 +321,12 @@ impl Rusk {
     /// # Returns
     ///
     /// Returns a Result containing an iterator over tuples. Each tuple consists
-    /// of a `BlsPublicKey` and an optional `StakeData`, representing the
+    /// of a `StakePublicKey` and an optional `StakeData`, representing the
     /// state data before the last changes in the stake contract.
     pub fn last_provisioners_change(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
+    ) -> Result<Vec<(StakePublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
             STAKE_CONTRACT,
@@ -336,13 +336,16 @@ impl Rusk {
             base_commit,
         )?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(BlsPublicKey, Option<StakeData>)>(&bytes).expect(
+            rkyv::from_bytes::<(StakePublicKey, Option<StakeData>)>(&bytes).expect(
                 "The contract should only return (pk, Option<stake_data>) tuples",
             )
         }).collect())
     }
 
-    pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
+    pub fn provisioner(
+        &self,
+        pk: &StakePublicKey,
+    ) -> Result<Option<StakeData>> {
         self.query(STAKE_CONTRACT, "get_stake", pk)
     }
 
@@ -399,9 +402,9 @@ fn accept(
     session: Session,
     block_height: u64,
     block_gas_limit: u64,
-    generator: &BlsPublicKey,
+    generator: &StakePublicKey,
     txs: &[Transaction],
-    missed_generators: &[BlsPublicKey],
+    missed_generators: &[StakePublicKey],
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -524,8 +527,8 @@ fn reward_slash_and_update_root(
     session: &mut Session,
     block_height: u64,
     dusk_spent: Dusk,
-    generator: &BlsPublicKey,
-    slashing: &[BlsPublicKey],
+    generator: &StakePublicKey,
+    slashing: &[StakePublicKey],
 ) -> Result<Vec<Event>> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);

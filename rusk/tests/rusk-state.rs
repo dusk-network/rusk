@@ -14,12 +14,11 @@ use dusk_bls12_381::BlsScalar;
 use std::path::Path;
 use std::sync::{mpsc, Arc, RwLock};
 
-use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet};
 use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use phoenix_core::transaction::TreeLeaf;
-use phoenix_core::Note;
+use phoenix_core::{Note, PublicKey, SecretKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::chain::{Rusk, RuskTip};
@@ -60,10 +59,10 @@ where
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let ssk = SecretSpendKey::random(&mut rng);
-    let psk = ssk.public_spend_key();
+    let sk = SecretKey::random(&mut rng);
+    let pk = PublicKey::from(&sk);
 
-    let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
+    let note = Note::transparent(&mut rng, &pk, INITIAL_BALANCE);
 
     rusk.with_tip(|mut tip, vm| {
         let current_commit = tip.current;
@@ -172,12 +171,12 @@ async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
         TestProverClient::default(),
     );
 
-    // Generates some public spend keys for the wallet
+    // Generates some public keys for the wallet
     // for i in 0..100 {
-    //     let psk = wallet.public_spend_key(i).unwrap();
-    //     let psk_bytes = psk.to_bytes();
-    //     let psk_string = bs58::encode(psk_bytes).into_string();
-    //     println!("{psk_string}");
+    //     let pk = wallet.stake_public_key(i).unwrap();
+    //     let pk_bytes = pk.to_bytes();
+    //     let pk_string = bs58::encode(pk_bytes).into_string();
+    //     println!("{pk_string}");
     // }
 
     const N_ADDRESSES: usize = 100;
@@ -195,8 +194,8 @@ async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
         let mut rng = StdRng::seed_from_u64(0xdead);
 
         let receiver_index = (sender_index + 1) % N_ADDRESSES as u64;
-        let receiver = wallet.public_spend_key(receiver_index).unwrap();
-        let refund = wallet.public_spend_key(sender_index).unwrap();
+        let receiver = wallet.public_key(receiver_index).unwrap();
+        let refund = wallet.public_key(sender_index).unwrap();
 
         let ref_id = BlsScalar::random(&mut rng);
 

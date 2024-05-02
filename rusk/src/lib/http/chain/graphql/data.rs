@@ -241,7 +241,7 @@ impl Transaction<'_> {
 
     pub async fn json(&self) -> String {
         use dusk_bytes::Serializable;
-        use dusk_pki::Ownable;
+        use phoenix_core::Ownable;
         use serde::Serialize;
         use serde_json::{json, Map, Value};
 

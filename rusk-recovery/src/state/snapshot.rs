@@ -7,7 +7,7 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use dusk_pki::PublicSpendKey;
+use phoenix_core::PublicKey;
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
@@ -23,14 +23,14 @@ pub use self::governance::Governance;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct Balance {
-    address: Wrapper<PublicSpendKey, { PublicSpendKey::SIZE }>,
+    address: Wrapper<PublicKey, { PublicKey::SIZE }>,
     pub seed: Option<u64>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub notes: Vec<Dusk>,
 }
 
 impl Balance {
-    pub fn address(&self) -> &PublicSpendKey {
+    pub fn address(&self) -> &PublicKey {
         &self.address
     }
 }
@@ -38,7 +38,7 @@ impl Balance {
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Snapshot {
     base_state: Option<String>,
-    owner: Option<Wrapper<PublicSpendKey, { PublicSpendKey::SIZE }>>,
+    owner: Option<Wrapper<PublicKey, { PublicKey::SIZE }>>,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
@@ -71,7 +71,7 @@ impl Snapshot {
     }
 
     /// Return the owner of the smart contract.
-    pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
+    pub fn owner(&self) -> [u8; PublicKey::SIZE] {
         let dusk = Wrapper::from(*state::DUSK_KEY);
         self.owner.as_ref().unwrap_or(&dusk).to_bytes()
     }

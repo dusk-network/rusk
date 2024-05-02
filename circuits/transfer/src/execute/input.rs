@@ -5,8 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_merkle::Aggregate;
-use dusk_pki::{Ownable, PublicSpendKey};
-use phoenix_core::{Note, NoteType};
+use phoenix_core::{Note, NoteType, Ownable, PublicKey};
 use poseidon_merkle::{Item, Opening, Tree};
 
 use dusk_plonk::prelude::*;
@@ -21,8 +20,8 @@ pub use witness::WitnessInput;
 pub struct CircuitInput<T, const H: usize, const A: usize> {
     branch: Opening<T, H, A>,
     note: Note,
-    pk_r: JubJubAffine,
-    pk_r_p: JubJubAffine,
+    note_pk: JubJubAffine,
+    note_pk_p: JubJubAffine,
     value: u64,
     blinding_factor: JubJubScalar,
     nullifier: BlsScalar,
@@ -33,19 +32,19 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
     pub fn new(
         branch: Opening<T, H, A>,
         note: Note,
-        pk_r_p: JubJubAffine,
+        note_pk_p: JubJubAffine,
         value: u64,
         blinding_factor: JubJubScalar,
         nullifier: BlsScalar,
         signature: CircuitInputSignature,
     ) -> Self {
-        let pk_r = note.stealth_address().pk_r().as_ref().into();
+        let note_pk = note.stealth_address().pk_r().as_ref().into();
 
         Self {
             branch,
             note,
-            pk_r,
-            pk_r_p,
+            note_pk,
+            note_pk_p,
             value,
             blinding_factor,
             nullifier,
@@ -69,16 +68,16 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
         &self.nullifier
     }
 
-    pub fn to_witness<C: Composer>(
+    pub fn to_witness(
         &self,
-        composer: &mut C,
+        composer: &mut Composer,
     ) -> Result<WitnessInput, Error> {
         let nullifier = self.nullifier;
 
         let note = self.note;
 
-        let pk_r = composer.append_point(self.pk_r);
-        let pk_r_p = composer.append_point(self.pk_r_p);
+        let note_pk = composer.append_point(self.note_pk);
+        let note_pk_p = composer.append_point(self.note_pk_p);
 
         let note_hash = note.hash();
         let note_hash = composer.append_witness(note_hash);
@@ -105,8 +104,8 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
         let schnorr_r_p = composer.append_point(*signature.r_p());
 
         Ok(WitnessInput {
-            pk_r,
-            pk_r_p,
+            note_pk,
+            note_pk_p,
             note_hash,
 
             note_type,
@@ -139,7 +138,7 @@ where
             NoteType::Transparent,
             &JubJubScalar::default(),
             BlsScalar::default(),
-            &PublicSpendKey::new(
+            &PublicKey::new(
                 JubJubExtended::default(),
                 JubJubExtended::default(),
             ),

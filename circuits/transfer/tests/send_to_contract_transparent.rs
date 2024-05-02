@@ -6,9 +6,8 @@
 
 use transfer_circuits::SendToContractTransparentCircuit;
 
-use dusk_pki::SecretSpendKey;
 use ff::Field;
-use phoenix_core::Note;
+use phoenix_core::{Note, PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
@@ -23,11 +22,11 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
     let address = BlsScalar::random(&mut *rng);
     let value = rng.next_u64();
 
-    let ssk = SecretSpendKey::random(rng);
-    let psk = ssk.public_spend_key();
-    let blinder = JubJubScalar::random(rng);
+    let sk = SecretKey::random(rng);
+    let pk = PublicKey::from(&sk);
+    let blinder = JubJubScalar::random(&mut *rng);
 
-    let note = Note::obfuscated(rng, &psk, value, blinder);
+    let note = Note::obfuscated(rng, &pk, value, blinder);
     let (mut fee, crossover) = note
         .try_into()
         .expect("Failed to convert note into fee/crossover pair!");
@@ -36,7 +35,7 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
     fee.gas_price = rng.next_u64();
 
     let signature = SendToContractTransparentCircuit::sign(
-        rng, &ssk, &fee, &crossover, value, &address,
+        rng, &sk, &fee, &crossover, value, &address,
     );
 
     SendToContractTransparentCircuit::new(

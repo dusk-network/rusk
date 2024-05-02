@@ -8,7 +8,7 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
-use dusk_pki::PublicSpendKey;
+use phoenix_core::PublicKey;
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -35,11 +35,11 @@ impl Metadata {
 #[repr(C)]
 pub enum PaymentInfo {
     /// Only transparent notes are accepted.
-    Transparent(Option<PublicSpendKey>),
+    Transparent(Option<PublicKey>),
     /// Only obfuscated notes are accepted.
-    Obfuscated(Option<PublicSpendKey>),
+    Obfuscated(Option<PublicKey>),
     /// Any type of note is accepted.
-    Any(Option<PublicSpendKey>),
+    Any(Option<PublicKey>),
 }
 
 /// Enum that represents all possible types of public inputs
