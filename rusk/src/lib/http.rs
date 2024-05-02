@@ -44,11 +44,15 @@ use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
 use tokio_stream::StreamExt;
 use tokio_util::either::Either;
 
+use http_body_util::Full;
 use hyper::http::{HeaderName, HeaderValue};
-use hyper::server::conn::Http;
 use hyper::service::Service;
-use hyper::{body, Body, Method, Request, Response, StatusCode};
+use hyper::{
+    body::{self, Body, Bytes, Incoming},
+    Method, Request, Response, StatusCode,
+};
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
+use hyper_util::server::conn::auto::Builder as HttpBuilder;
 
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
@@ -57,10 +61,12 @@ use futures_util::stream::iter as stream_iter;
 use futures_util::{SinkExt, TryStreamExt};
 
 use anyhow::Error as AnyhowError;
+use hyper_util::rt::TokioIo;
 use rand::rngs::OsRng;
 
 #[cfg(feature = "node")]
 use crate::chain::{Rusk, RuskNode};
+use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
 pub use self::event::ContractEvent;
@@ -155,6 +161,19 @@ impl HandleRequest for DataSources {
     }
 }
 
+#[derive(Clone)]
+struct TokioExecutor;
+
+impl<F> hyper::rt::Executor<F> for TokioExecutor
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    fn execute(&self, fut: F) {
+        task::spawn(fut);
+    }
+}
+
 async fn listening_loop<H>(
     handler: H,
     listener: Listener,
@@ -165,8 +184,15 @@ async fn listening_loop<H>(
     H: HandleRequest,
 {
     let sources = Arc::new(handler);
-    let http = Http::new();
     let sockets_map = Arc::new(RwLock::new(HashMap::new()));
+
+    let service = ExecutionService {
+        sources: sources.clone(),
+        sockets_map: sockets_map.clone(),
+        events: events.resubscribe(),
+        shutdown: shutdown.resubscribe(),
+        ws_event_channel_cap,
+    };
 
     loop {
         tokio::select! {
@@ -179,16 +205,15 @@ async fn listening_loop<H>(
                     Err(_) => break,
                 };
 
-                let service = ExecutionService {
-                    sources: sources.clone(),
-                    sockets_map: sockets_map.clone(),
-                    events: events.resubscribe(),
-                    shutdown: shutdown.resubscribe(),
-                    ws_event_channel_cap,
-                };
-                let conn = http.serve_connection(stream, service).with_upgrades();
+                let http = HttpBuilder::new(TokioExecutor);
 
-                task::spawn(conn);
+                let stream = TokioIo::new(stream);
+                let service = service.clone();
+
+                task::spawn(async move {
+                    let conn = http.serve_connection_with_upgrades(stream, service);
+                    conn.await
+                });
             }
         }
     }
@@ -352,11 +377,23 @@ struct ExecutionService<H> {
     ws_event_channel_cap: usize,
 }
 
-impl<H> Service<Request<Body>> for ExecutionService<H>
+impl<H> Clone for ExecutionService<H> {
+    fn clone(&self) -> Self {
+        Self {
+            sources: self.sources.clone(),
+            sockets_map: self.sockets_map.clone(),
+            events: self.events.resubscribe(),
+            shutdown: self.shutdown.resubscribe(),
+            ws_event_channel_cap: self.ws_event_channel_cap,
+        }
+    }
+}
+
+impl<H> Service<Request<Incoming>> for ExecutionService<H>
 where
     H: HandleRequest,
 {
-    type Response = Response<Body>;
+    type Response = Response<FullOrStreamBody>;
     type Error = Infallible;
     type Future = Pin<
         Box<
@@ -366,19 +403,12 @@ where
         >,
     >;
 
-    fn poll_ready(
-        &mut self,
-        _: &mut Context<'_>,
-    ) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
     /// Handle the HTTP request.
     ///
     /// A request may be a "normal" request, or a WebSocket upgrade request. In
     /// the former case, the request is handled on the spot, while in the
     /// latter task running the stream handler loop is spawned.
-    fn call(&mut self, mut req: Request<Body>) -> Self::Future {
+    fn call(&self, mut req: Request<Incoming>) -> Self::Future {
         let sources = self.sources.clone();
         let sockets_map = self.sockets_map.clone();
         let events = self.events.resubscribe();
@@ -395,10 +425,10 @@ where
                 ws_event_channel_cap,
             )
             .await;
-            response.or_else(|error| {
+            response.map(Into::into).or_else(|error| {
                 Ok(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(error.to_string()))
+                    .body(Full::new(error.to_string().into()).into())
                     .expect("Failed to build response"))
             })
         })
@@ -408,7 +438,10 @@ where
 enum SubscriptionAction {
     Subscribe(RuesSubscription),
     Unsubscribe(RuesSubscription),
-    Dispatch { sub: RuesSubscription, body: Body },
+    Dispatch {
+        sub: RuesSubscription,
+        body: Incoming,
+    },
 }
 
 async fn handle_stream_rues(
@@ -556,7 +589,7 @@ async fn handle_stream_rues(
 
 async fn handle_dispatch(
     sub: RuesSubscription,
-    body: Body,
+    body: Incoming,
     sender: mpsc::Sender<Result<ContractEvent, AnyhowError>>,
 ) {
     todo!(
@@ -571,23 +604,23 @@ async fn handle_dispatch(
 
 fn response(
     status: StatusCode,
-    body: impl Into<Body>,
-) -> Result<Response<Body>, ExecutionError> {
+    body: impl Into<Bytes>,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
     Ok(Response::builder()
         .status(status)
-        .body(body.into())
+        .body(Full::new(body.into()).into())
         .expect("Failed to build response"))
 }
 
 async fn handle_request_rues(
-    mut req: Request<Body>,
+    mut req: Request<Incoming>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
     events: broadcast::Receiver<ContractEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
-) -> Result<Response<Body>, ExecutionError> {
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
     if hyper_tungstenite::is_upgrade_request(&req) {
         let (subscription_sender, subscriptions) =
             mpsc::channel(ws_event_channel_cap);
@@ -613,7 +646,7 @@ async fn handle_request_rues(
             sockets_map.clone(),
         ));
 
-        Ok(response)
+        Ok(response.map(Into::into))
     } else {
         let headers = req.headers();
         let mut path_split = req.uri().path().split('/');
@@ -680,7 +713,7 @@ async fn handle_request_rues(
 }
 
 async fn handle_request<H>(
-    mut req: Request<Body>,
+    mut req: Request<Incoming>,
     sources: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
@@ -688,7 +721,7 @@ async fn handle_request<H>(
     events: broadcast::Receiver<ContractEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
-) -> Result<Response<Body>, ExecutionError>
+) -> Result<Response<FullOrStreamBody>, ExecutionError>
 where
     H: HandleRequest,
 {
@@ -712,7 +745,7 @@ where
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
         task::spawn(handle_stream(sources, websocket, target, shutdown));
 
-        Ok(response)
+        Ok(response.map(Into::into))
     } else {
         let (execution_request, binary_resp) =
             MessageRequest::from_request(req).await?;
@@ -852,7 +885,7 @@ mod tests {
         let client = reqwest::Client::new();
         let response = client
             .post(format!("http://{}/01/target", server.local_addr))
-            .body(Body::from(request))
+            .body(request)
             .send()
             .await
             .expect("Requesting should succeed");
@@ -914,7 +947,7 @@ mod tests {
                 "https://localhost:{}/01/target",
                 server.local_addr.port()
             ))
-            .body(Body::from(request))
+            .body(request)
             .send()
             .await
             .expect("Requesting should succeed");
