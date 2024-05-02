@@ -803,7 +803,7 @@ impl RuesEvent {
         let (headers_len_bytes, bytes) = bytes.split_at(4);
 
         let mut headers_len_array = [0u8; 4];
-        headers_len_array.copy_from_slice(&headers_len_bytes);
+        headers_len_array.copy_from_slice(headers_len_bytes);
 
         let headers_len = u32::from_le_bytes(headers_len_array) as usize;
         if bytes.len() < headers_len {
@@ -839,10 +839,13 @@ impl From<rusk_abi::Event> for RuesEvent {
 pub enum RuesEventData {
     /// A contract event.
     Contract(ContractEvent),
+    /// An event whose provenance is unknown.
+    Other(Vec<u8>),
 }
 
 impl RuesEventData {
     const CONTRACT_TAG: u8 = 1;
+    const OTHER_TAG: u8 = 255;
 
     fn to_bytes(&self) -> Vec<u8> {
         match self {
@@ -851,6 +854,12 @@ impl RuesEventData {
                     "Serializing contract event to JSON should succeed",
                 );
                 bytes.insert(0, Self::CONTRACT_TAG);
+                bytes
+            }
+            Self::Other(data) => {
+                let mut bytes = vec![0; data.len() + 1];
+                bytes[0] = Self::OTHER_TAG;
+                bytes[1..].copy_from_slice(data);
                 bytes
             }
         }
@@ -863,6 +872,10 @@ impl RuesEventData {
             Self::CONTRACT_TAG => {
                 let event = serde_json::from_slice(bytes).ok()?;
                 Some(Self::Contract(event))
+            }
+            Self::OTHER_TAG => {
+                let data = bytes.to_vec();
+                Some(Self::Other(data))
             }
             _ => None,
         }

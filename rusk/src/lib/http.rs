@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 #![allow(unused)]
 
 #[cfg(feature = "node")]
@@ -18,6 +19,7 @@ pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
     RequestData, Target,
 };
+
 use rusk_abi::Event;
 use tracing::{info, warn};
 
@@ -43,7 +45,7 @@ use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
 use tokio_stream::StreamExt;
 use tokio_util::either::Either;
 
-use http_body_util::Full;
+use http_body_util::{BodyExt, Full};
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{
@@ -65,7 +67,7 @@ use rand::rngs::OsRng;
 
 #[cfg(feature = "node")]
 use crate::chain::{Rusk, RuskNode};
-use crate::http::event::FullOrStreamBody;
+use crate::http::event::{FullOrStreamBody, RuesEventData};
 use crate::VERSION;
 
 pub use self::event::{ContractEvent, RuesEvent};
@@ -597,7 +599,7 @@ async fn handle_dispatch<H: HandleRequest>(
     let bytes = match body.collect().await {
         Ok(bytes) => bytes.to_bytes(),
         Err(err) => {
-            let _ = sender.send(Err(err.into()));
+            let _ = sender.send(Err(err.into())).await;
             return;
         }
     };
@@ -605,7 +607,7 @@ async fn handle_dispatch<H: HandleRequest>(
     let req = match MessageRequest::parse(&bytes) {
         Ok(req) => req,
         Err(err) => {
-            let _ = sender.send(Err(err.into()));
+            let _ = sender.send(Err(err)).await;
             return;
         }
     };
@@ -613,28 +615,53 @@ async fn handle_dispatch<H: HandleRequest>(
     let rsp = match handler.handle(&req).await {
         Ok(rsp) => rsp,
         Err(err) => {
-            let _ = sender.send(Err(err.into()));
+            let _ = sender.send(Err(err)).await;
             return;
         }
     };
 
     let (data, header) = rsp.into_inner();
     match data {
-        DataType::Binary(_) => {}
-        DataType::Text(_) => {}
-        DataType::Json(_) => {}
-        DataType::Channel(_) => {}
+        DataType::Binary(bytes) => {
+            let _ = sender
+                .send(Ok(RuesEvent {
+                    headers: req.headers.clone(),
+                    data: RuesEventData::Other(bytes.inner),
+                }))
+                .await;
+        }
+        DataType::Text(text) => {
+            let _ = sender
+                .send(Ok(RuesEvent {
+                    headers: req.headers.clone(),
+                    data: RuesEventData::Other(text.into_bytes()),
+                }))
+                .await;
+        }
+        DataType::Json(json) => {
+            let _ = sender
+                .send(
+                    serde_json::to_vec(&json)
+                        .map(|bytes| RuesEvent {
+                            headers: req.headers.clone(),
+                            data: RuesEventData::Other(bytes),
+                        })
+                        .map_err(Into::into),
+                )
+                .await;
+        }
+        DataType::Channel(channel) => {
+            for bytes in channel {
+                let _ = sender
+                    .send(Ok(RuesEvent {
+                        headers: req.headers.clone(),
+                        data: RuesEventData::Other(bytes),
+                    }))
+                    .await;
+            }
+        }
         DataType::None => {}
     }
-
-    todo!(
-        "\
-    Figure out if the subscription is a contract subscription (meaning a \
-    contract call) and, if so, parse the body for the arguments and execute, \
-    giving somehow passing the resulting events through to the websocket stream
-    that dispatched the event.
-    "
-    )
 }
 
 fn response(
