@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-
 #![allow(unused)]
 
 #[cfg(feature = "node")]
@@ -69,7 +68,7 @@ use crate::chain::{Rusk, RuskNode};
 use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
-pub use self::event::ContractEvent;
+pub use self::event::{ContractEvent, RuesEvent};
 use self::event::{MessageRequest, ResponseData, RuesSubscription, SessionId};
 use self::stream::{Listener, Stream};
 
@@ -84,7 +83,7 @@ pub struct HttpServer {
 impl HttpServer {
     pub async fn bind<A, H, P1, P2>(
         handler: H,
-        event_receiver: broadcast::Receiver<ContractEvent>,
+        event_receiver: broadcast::Receiver<RuesEvent>,
         ws_event_channel_cap: usize,
         addr: A,
         cert_and_key: Option<(P1, P2)>,
@@ -177,7 +176,7 @@ where
 async fn listening_loop<H>(
     handler: H,
     listener: Listener,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
 ) where
@@ -372,7 +371,7 @@ struct ExecutionService<H> {
     sources: Arc<H>,
     sockets_map:
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
 }
@@ -444,12 +443,13 @@ enum SubscriptionAction {
     },
 }
 
-async fn handle_stream_rues(
+async fn handle_stream_rues<H: HandleRequest>(
     sid: SessionId,
     websocket: HyperWebsocket,
+    events: broadcast::Receiver<RuesEvent>,
     mut subscriptions: mpsc::Receiver<SubscriptionAction>,
-    events: broadcast::Receiver<ContractEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
+    handler: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
@@ -521,7 +521,7 @@ async fn handle_stream_rues(
                         body
                     } => {
                         // TODO figure out if we should subscribe to the event we dispatch
-                        task::spawn(handle_dispatch(sub, body, dispatch_sender.clone()));
+                        task::spawn(handle_dispatch(sub, body, handler.clone(), dispatch_sender.clone()));
                     }
                 }
             }
@@ -559,19 +559,20 @@ async fn handle_stream_rues(
 
                 // If the event is subscribed, we send it to the client.
                 if is_subscribed {
-                    let event = match serde_json::to_string(&event) {
-                        Ok(event) => event,
-                        // If we fail to serialize the event, we log the error
-                        // and continue processing further.
-                        Err(err) => {
-                            warn!("Failed serializing event: {err}");
-                            continue;
-                        }
-                    };
+                    let event = event.to_bytes();
+                    //let event = match serde_json::to_string(&event) {
+                    //    Ok(event) => event,
+                    //    // If we fail to serialize the event, we log the error
+                    //    // and continue processing further.
+                    //    Err(err) => {
+                    //        warn!("Failed serializing event: {err}");
+                    //        continue;
+                    //    }
+                    //};
 
                     // If the event fails sending we close the socket on the client
                     // and stop processing further.
-                    if stream.send(Message::Text(event)).await.is_err() {
+                    if stream.send(Message::Binary(event)).await.is_err() {
                         let _ = stream.close(Some(CloseFrame {
                             code: CloseCode::Error,
                             reason: Cow::from("Failed sending event"),
@@ -587,11 +588,45 @@ async fn handle_stream_rues(
     sockets.remove(&sid);
 }
 
-async fn handle_dispatch(
+async fn handle_dispatch<H: HandleRequest>(
     sub: RuesSubscription,
     body: Incoming,
-    sender: mpsc::Sender<Result<ContractEvent, AnyhowError>>,
+    handler: Arc<H>,
+    sender: mpsc::Sender<Result<RuesEvent, AnyhowError>>,
 ) {
+    let bytes = match body.collect().await {
+        Ok(bytes) => bytes.to_bytes(),
+        Err(err) => {
+            let _ = sender.send(Err(err.into()));
+            return;
+        }
+    };
+
+    let req = match MessageRequest::parse(&bytes) {
+        Ok(req) => req,
+        Err(err) => {
+            let _ = sender.send(Err(err.into()));
+            return;
+        }
+    };
+
+    let rsp = match handler.handle(&req).await {
+        Ok(rsp) => rsp,
+        Err(err) => {
+            let _ = sender.send(Err(err.into()));
+            return;
+        }
+    };
+
+    let (data, header) = rsp.into_inner();
+    match data {
+        DataType::Binary(_) => {}
+        DataType::Text(_) => {}
+        DataType::Json(_) => {}
+        DataType::Channel(_) => {}
+        DataType::None => {}
+    }
+
     todo!(
         "\
     Figure out if the subscription is a contract subscription (meaning a \
@@ -612,12 +647,13 @@ fn response(
         .expect("Failed to build response"))
 }
 
-async fn handle_request_rues(
+async fn handle_request_rues<H: HandleRequest>(
     mut req: Request<Incoming>,
+    handler: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
 ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
@@ -640,9 +676,10 @@ async fn handle_request_rues(
         task::spawn(handle_stream_rues(
             sid,
             websocket,
-            subscriptions,
             events,
+            subscriptions,
             shutdown,
+            handler.clone(),
             sockets_map.clone(),
         ));
 
@@ -718,7 +755,7 @@ async fn handle_request<H>(
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
 ) -> Result<Response<FullOrStreamBody>, ExecutionError>
@@ -731,6 +768,7 @@ where
     if path.starts_with("/on") {
         return handle_request_rues(
             req,
+            sources.clone(),
             sockets_map,
             events,
             shutdown,
@@ -1119,26 +1157,26 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // This event is subscribed to, so it should be received
-        let received_event = ContractEvent {
+        let received_event = RuesEvent::from(ContractEvent {
             target: SUB_CONTRACT_ID,
             topic: TOPIC.into(),
             data: b"hello, events".to_vec(),
-        };
+        });
 
         // This event is at first subscribed to, so it should be received the
         // first time
-        let at_first_received_event = ContractEvent {
+        let at_first_received_event = RuesEvent::from(ContractEvent {
             target: MAYBE_SUB_CONTRACT_ID,
             topic: TOPIC.into(),
             data: b"hello, events".to_vec(),
-        };
+        });
 
         // This event is not subscribed to, so it should not be received
-        let non_received_event = ContractEvent {
+        let non_received_event = RuesEvent::from(ContractEvent {
             target: NON_SUB_CONTRACT_ID,
             topic: TOPIC.into(),
             data: b"hello, events".to_vec(),
-        };
+        });
 
         event_sender
             .send(non_received_event.clone())
@@ -1153,17 +1191,17 @@ mod tests {
             .expect("Sending event should succeed");
 
         let message = stream.read().expect("Event should be received");
-        let event_text = message.into_text().expect("Event should be text");
+        let event_bytes = message.into_data();
 
-        let event: ContractEvent = serde_json::from_str(&event_text)
+        let event = RuesEvent::from_bytes(&event_bytes)
             .expect("Event should deserialize");
 
         assert_eq!(at_first_received_event, event, "Event should be the same");
 
         let message = stream.read().expect("Event should be received");
-        let event_text = message.into_text().expect("Event should be text");
+        let event_bytes = message.into_data();
 
-        let event: ContractEvent = serde_json::from_str(&event_text)
+        let event = RuesEvent::from_bytes(&event_bytes)
             .expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");
@@ -1193,9 +1231,9 @@ mod tests {
             .expect("Sending event should succeed");
 
         let message = stream.read().expect("Event should be received");
-        let event_text = message.into_text().expect("Event should be text");
+        let event_bytes = message.into_data();
 
-        let event: ContractEvent = serde_json::from_str(&event_text)
+        let event = RuesEvent::from_bytes(&event_bytes)
             .expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");

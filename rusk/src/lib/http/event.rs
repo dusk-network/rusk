@@ -713,7 +713,12 @@ impl RuesSubscription {
         })
     }
 
-    pub fn matches(&self, event: &ContractEvent) -> bool {
+    pub fn matches(&self, event: &RuesEvent) -> bool {
+        let event = match &event.data {
+            RuesEventData::Contract(event) => event,
+            _ => return false,
+        };
+
         if self.component != "contracts" {
             return false;
         }
@@ -758,6 +763,108 @@ impl From<ContractEvent> for rusk_abi::Event {
             source: event.target.0,
             topic: event.topic,
             data: event.data,
+        }
+    }
+}
+
+/// A RUES event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuesEvent {
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: RuesEventData,
+}
+
+impl RuesEvent {
+    /// Serialize the event into a vector of bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let headers_bytes = serde_json::to_vec(&self.headers)
+            .expect("Serializing JSON should succeed");
+
+        let headers_len = headers_bytes.len() as u32;
+        let headers_len_bytes = headers_len.to_le_bytes();
+
+        let data_bytes = self.data.to_bytes();
+
+        let len =
+            headers_len_bytes.len() + headers_bytes.len() + data_bytes.len();
+        let mut bytes = Vec::with_capacity(len);
+
+        bytes.extend(headers_len_bytes);
+        bytes.extend(headers_bytes);
+        bytes.extend(data_bytes);
+
+        bytes
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < 4 {
+            return None;
+        }
+        let (headers_len_bytes, bytes) = bytes.split_at(4);
+
+        let mut headers_len_array = [0u8; 4];
+        headers_len_array.copy_from_slice(&headers_len_bytes);
+
+        let headers_len = u32::from_le_bytes(headers_len_array) as usize;
+        if bytes.len() < headers_len {
+            return None;
+        }
+
+        let (headers_bytes, data_bytes) = bytes.split_at(headers_len);
+        let headers = serde_json::from_slice(headers_bytes).ok()?;
+
+        let data = RuesEventData::from_bytes(data_bytes)?;
+
+        Some(Self { headers, data })
+    }
+}
+
+impl From<ContractEvent> for RuesEvent {
+    fn from(event: ContractEvent) -> Self {
+        Self {
+            headers: serde_json::Map::new(),
+            data: RuesEventData::Contract(event),
+        }
+    }
+}
+
+impl From<rusk_abi::Event> for RuesEvent {
+    fn from(event: rusk_abi::Event) -> Self {
+        Self::from(ContractEvent::from(event))
+    }
+}
+
+/// Types of event data that RUES supports.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuesEventData {
+    /// A contract event.
+    Contract(ContractEvent),
+}
+
+impl RuesEventData {
+    const CONTRACT_TAG: u8 = 1;
+
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Contract(event) => {
+                let mut bytes = serde_json::to_vec(event).expect(
+                    "Serializing contract event to JSON should succeed",
+                );
+                bytes.insert(0, Self::CONTRACT_TAG);
+                bytes
+            }
+        }
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        let (tag, bytes) = bytes.split_first()?;
+
+        match *tag {
+            Self::CONTRACT_TAG => {
+                let event = serde_json::from_slice(bytes).ok()?;
+                Some(Self::Contract(event))
+            }
+            _ => None,
         }
     }
 }
