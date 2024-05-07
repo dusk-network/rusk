@@ -152,10 +152,10 @@ impl MempoolSrv {
                 .collect();
 
             // ensure nullifiers do not exist in the mempool
-            for m_tx_hash in view.get_txs_by_nullifiers(&nullifiers) {
-                if let Some(m_tx) = view.get_tx(m_tx_hash)? {
+            for m_tx_id in view.get_txs_by_nullifiers(&nullifiers) {
+                if let Some(m_tx) = view.get_tx(m_tx_id)? {
                     if m_tx.inner.fee().gas_price < tx.inner.fee().gas_price {
-                        view.delete_tx(m_tx_hash)?;
+                        view.delete_tx(m_tx_id)?;
                     } else {
                         return Err(
                             TxAcceptanceError::NullifierExistsInMempool,

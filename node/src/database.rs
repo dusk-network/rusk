@@ -75,10 +75,10 @@ pub trait Ledger {
 
     fn get_ledger_tx_by_hash(
         &self,
-        tx_hash: &[u8],
+        tx_id: &[u8],
     ) -> Result<Option<ledger::SpentTransaction>>;
 
-    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
+    fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
 
     fn fetch_block_label_by_height(&self, height: u64)
         -> Result<Option<Label>>;
@@ -105,13 +105,13 @@ pub trait Mempool {
     fn add_tx(&self, tx: &ledger::Transaction) -> Result<()>;
 
     /// Gets a transaction from the mempool.
-    fn get_tx(&self, tx_hash: [u8; 32]) -> Result<Option<ledger::Transaction>>;
+    fn get_tx(&self, tx_id: [u8; 32]) -> Result<Option<ledger::Transaction>>;
 
     /// Checks if a transaction exists in the mempool.
-    fn get_tx_exists(&self, tx_hash: [u8; 32]) -> Result<bool>;
+    fn get_tx_exists(&self, tx_id: [u8; 32]) -> Result<bool>;
 
     /// Deletes a transaction from the mempool.
-    fn delete_tx(&self, tx_hash: [u8; 32]) -> Result<bool>;
+    fn delete_tx(&self, tx_id: [u8; 32]) -> Result<bool>;
 
     /// Get transactions hash from the mempool, searching by nullifiers
     fn get_txs_by_nullifiers(&self, n: &[[u8; 32]]) -> HashSet<[u8; 32]>;
@@ -122,12 +122,12 @@ pub trait Mempool {
     ) -> Result<Box<dyn Iterator<Item = ledger::Transaction> + '_>>;
 
     /// Get an iterator over the mempool transactions hash by gas price
-    fn get_txs_hashes_sorted_by_fee(
+    fn get_txs_ids_sorted_by_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
 
     /// Get all transactions hashes.
-    fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>>;
+    fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>>;
 }
 
 pub trait Metadata {
