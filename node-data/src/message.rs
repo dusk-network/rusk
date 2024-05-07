@@ -388,6 +388,10 @@ pub mod payload {
     use crate::Serializable;
     use std::fmt;
     use std::io::{self, Read, Write};
+    use std::net::{
+        Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
+    };
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{ConsensusHeader, SignInfo};
 
@@ -872,23 +876,139 @@ pub mod payload {
         }
     }
 
-    #[derive(Default, Debug, Clone)]
+    #[derive(Debug, Clone)]
     pub struct GetData {
-        pub inner: Inv,
+        /// Inventory/Resource to search for
+        inventory: Inv,
+
+        /// (requester) Address to which the resource is sent back, if found
+        requester_addr: SocketAddr,
+
+        /// Request Time to live
+        ttl_as_sec: u64,
+        // TODO: Integrity test with hashing???
+    }
+
+    impl GetData {
+        pub fn new(
+            inventory: Inv,
+            requester_addr: SocketAddr,
+            ttl_as_sec: u64,
+        ) -> Self {
+            let ttl_as_sec = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+                + ttl_as_sec;
+
+            Self {
+                inventory,
+                requester_addr,
+                ttl_as_sec,
+            }
+        }
+
+        pub fn get_addr(&self) -> SocketAddr {
+            self.requester_addr
+        }
+
+        pub fn get_inv(&self) -> &Inv {
+            &self.inventory
+        }
+
+        pub fn is_expired(&self) -> bool {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+                > self.ttl_as_sec
+        }
     }
 
     impl Serializable for GetData {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            self.inner.write(w)
+            self.inventory.write(w)?;
+            self.requester_addr.write(w)?;
+            w.write_all(&self.ttl_as_sec.to_le_bytes()[..])
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
         {
+            let inner = Inv::read(r)?;
+            let requester_addr = SocketAddr::read(r)?;
+
+            let mut buf = [0u8; 8];
+            r.read_exact(&mut buf)?;
+
             Ok(GetData {
-                inner: Inv::read(r)?,
+                inventory: inner,
+                requester_addr,
+                ttl_as_sec: u64::from_le_bytes(buf),
             })
+        }
+    }
+
+    impl Serializable for SocketAddr {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            match self {
+                SocketAddr::V4(addr_v4) => {
+                    w.write_all(&[4])?;
+                    w.write_all(&addr_v4.ip().octets())?;
+                    w.write_all(&addr_v4.port().to_le_bytes())?;
+                }
+                SocketAddr::V6(addr_v6) => {
+                    w.write_all(&[6])?;
+                    w.write_all(&addr_v6.ip().octets())?;
+                    w.write_all(&addr_v6.port().to_le_bytes())?;
+                }
+            }
+            Ok(())
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut ip_type = [0u8; 1];
+            r.read_exact(&mut ip_type)?;
+
+            let ip = match ip_type[0] {
+                4 => {
+                    let mut octets = [0u8; 4];
+                    r.read_exact(&mut octets)?;
+
+                    let mut port_bytes = [0u8; 2];
+                    r.read_exact(&mut port_bytes)?;
+
+                    SocketAddr::V4(SocketAddrV4::new(
+                        Ipv4Addr::from(octets),
+                        u16::from_le_bytes(port_bytes),
+                    ))
+                }
+                6 => {
+                    let mut octets = [0u8; 16];
+                    r.read_exact(&mut octets)?;
+
+                    let mut port_bytes = [0u8; 2];
+                    r.read_exact(&mut port_bytes)?;
+
+                    SocketAddr::V6(SocketAddrV6::new(
+                        Ipv6Addr::from(octets),
+                        u16::from_le_bytes(port_bytes),
+                        0,
+                        0,
+                    ))
+                }
+                _ => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid IP type",
+                    ))
+                }
+            };
+            Ok(ip)
         }
     }
 }
