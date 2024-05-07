@@ -98,7 +98,7 @@ pub struct SpentTransaction {
 }
 
 impl Transaction {
-    pub fn hash(&self) -> [u8; 32] {
+    pub fn id(&self) -> [u8; 32] {
         Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
     }
     pub fn gas_price(&self) -> u64 {
@@ -316,7 +316,7 @@ impl PartialEq<Self> for Transaction {
     fn eq(&self, other: &Self) -> bool {
         self.r#type == other.r#type
             && self.version == other.version
-            && self.hash() == other.hash()
+            && self.id() == other.id()
     }
 }
 
