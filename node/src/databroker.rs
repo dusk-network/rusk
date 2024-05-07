@@ -138,7 +138,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
             // Spawn a task to handle the request asynchronously.
             tokio::spawn(async move {
-                match Self::handle_request(&db, &msg, &conf).await {
+                match Self::handle_request::<N, DB>(&db, &network, &msg, &conf)
+                    .await
+                {
                     Ok(resp) => {
                         // Send response
                         let net = network.read().await;
@@ -177,8 +179,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
 impl DataBrokerSrv {
     /// Handles inbound messages.
-    async fn handle_request<DB: database::DB>(
+    async fn handle_request<N: Network, DB: database::DB>(
         db: &Arc<RwLock<DB>>,
+        network: &Arc<RwLock<N>>,
         msg: &Message,
         conf: &conf::Params,
     ) -> anyhow::Result<Response> {
@@ -211,14 +214,23 @@ impl DataBrokerSrv {
             }
             // Handle GetInv requests
             Payload::GetInv(m) => {
-                let msg = Self::handle_inv(db, m, conf.max_inv_entries).await?;
+                let msg =
+                    Self::handle_inv(db, m, conf.max_inv_entries, recv_peer)
+                        .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetData requests
             Payload::GetData(m) => {
-                let msgs =
-                    Self::handle_get_data(db, m, conf.max_inv_entries).await?;
-                Ok(Response::new(msgs, recv_peer))
+                match Self::handle_get_data(db, m, conf.max_inv_entries).await {
+                    Ok(msg_list) => Ok(Response::new(msg_list, m.get_addr())),
+                    Err(err) => {
+                        if !m.is_expired() {
+                            // Not found resource, rebroadcast its request
+                            let _ = network.read().await.broadcast(msg).await;
+                        }
+                        Err(err)
+                    }
+                }
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
         }
@@ -331,6 +343,7 @@ impl DataBrokerSrv {
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
         max_entries: usize,
+        recv_addr: SocketAddr,
     ) -> Result<Message> {
         let inv = db.read().await.view(|t| {
             let mut inv = payload::Inv::default();
@@ -374,7 +387,10 @@ impl DataBrokerSrv {
             return Err(anyhow::anyhow!("no items to fetch"));
         }
 
-        Ok(Message::new_get_data(GetData { inner: inv }))
+        // Send GetData request with disabled rebroadcast (ttl = 0), Inv message
+        // is part of one-to-one messaging flows (GetBlocks/Mempool) so it
+        // should not be a flooding request.
+        Ok(Message::new_get_data(GetData::new(inv, recv_addr, 0)))
     }
 
     /// Handles GetData message request.
@@ -387,7 +403,8 @@ impl DataBrokerSrv {
         max_entries: usize,
     ) -> Result<Vec<Message>> {
         db.read().await.view(|t| {
-            Ok(m.inner
+            let res: Vec<Message> = m
+                .get_inv()
                 .inv_list
                 .iter()
                 .filter_map(|i| match i.inv_type {
@@ -423,7 +440,9 @@ impl DataBrokerSrv {
                     }
                 })
                 .take(max_entries)
-                .collect())
+                .collect();
+
+            Ok(res)
         })
     }
 }

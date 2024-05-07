@@ -6,7 +6,6 @@
 
 use std::net::{AddrParseError, SocketAddr};
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
@@ -17,6 +16,7 @@ use node_data::message::payload::{GetData, Inv};
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
 use tracing::{error, info, trace, warn};
@@ -232,10 +232,16 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     /// A receiver of this message is supposed to either look up and return the
     /// resource or rebroadcast it to the next bucket.
     async fn flood_request(&self, msg_inv: &Inv) -> anyhow::Result<()> {
+        let ttl_as_sec = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+            + FLOOD_REQUEST_TTL;
+
         self.broadcast(&Message::new_get_data(GetData::new(
             msg_inv.clone(),
             self.public_addr,
-            FLOOD_REQUEST_TTL,
+            ttl_as_sec,
         )))
         .await
     }

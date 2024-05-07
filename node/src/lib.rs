@@ -15,9 +15,11 @@ pub mod telemetry;
 pub mod vm;
 
 use async_trait::async_trait;
+use node_data::message::payload::Inv;
 use node_data::message::AsyncQueue;
 use node_data::message::Message;
 use node_data::message::Topics;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
@@ -38,8 +40,11 @@ pub type BoxedFilter = Box<dyn Filter + Sync + Send>;
 
 #[async_trait]
 pub trait Network: Send + Sync + 'static {
-    /// Broadcasts a message.
+    /// Broadcasts a fire-and-forget message.
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()>;
+
+    /// Broadcasts a request message
+    async fn flood_request(&self, msg_inv: &Inv) -> anyhow::Result<()>;
 
     /// Sends a message to a specified peer.
     async fn send_to_peer(
@@ -80,6 +85,9 @@ pub trait Network: Send + Sync + 'static {
 
     /// Retrieves information about the network.
     fn get_info(&self) -> anyhow::Result<String>;
+
+    /// Returns public address in Kadcast
+    fn public_addr(&self) -> &SocketAddr;
 
     /// Retrieves number of alive nodes
     async fn alive_nodes_count(&self) -> usize;
