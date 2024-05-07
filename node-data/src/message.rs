@@ -895,12 +895,6 @@ pub mod payload {
             requester_addr: SocketAddr,
             ttl_as_sec: u64,
         ) -> Self {
-            let ttl_as_sec = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs()
-                + ttl_as_sec;
-
             Self {
                 inventory,
                 requester_addr,
