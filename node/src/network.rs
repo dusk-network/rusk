@@ -13,6 +13,7 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
+use node_data::message::payload::{GetData, Inv};
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -23,6 +24,7 @@ use tracing::{error, info, trace, warn};
 mod frame;
 
 const MAX_PENDING_SENDERS: u64 = 1000;
+const FLOOD_REQUEST_TTL: u64 = 10; // seconds
 
 type RoutesList<const N: usize> = [Option<AsyncQueue<Message>>; N];
 type FilterList<const N: usize> = [Option<BoxedFilter>; N];
@@ -123,6 +125,9 @@ pub struct Kadcast<const N: usize> {
     conf: Config,
 
     counter: AtomicU64,
+
+    /// Represents a parsed conf.public_addr
+    public_addr: SocketAddr,
 }
 
 impl<const N: usize> Kadcast<N> {
@@ -143,6 +148,10 @@ impl<const N: usize> Kadcast<N> {
             pending_senders: Arc::new(AtomicU64::new(0)),
         };
         let peer = Peer::new(conf.clone(), listener)?;
+        let public_addr = conf
+            .public_address
+            .parse::<SocketAddr>()
+            .expect("valid kadcast public address");
 
         Ok(Kadcast {
             routes,
@@ -150,6 +159,7 @@ impl<const N: usize> Kadcast<N> {
             peer,
             conf,
             counter: AtomicU64::new(0),
+            public_addr,
         })
     }
 
@@ -211,6 +221,23 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         self.peer.broadcast(&encoded, height).await;
 
         Ok(())
+    }
+
+    /// Broadcast a GetData request.
+    ///
+    /// By utilizing the randomly selected peers per bucket in Kadcast, this
+    /// broadcast does follow the so-called "Flood with Random Walk" blind
+    /// search (resource discovery).
+    ///
+    /// A receiver of this message is supposed to either look up and return the
+    /// resource or rebroadcast it to the next bucket.
+    async fn flood_request(&self, msg_inv: &Inv) -> anyhow::Result<()> {
+        self.broadcast(&Message::new_get_data(GetData::new(
+            msg_inv.clone(),
+            self.public_addr,
+            FLOOD_REQUEST_TTL,
+        )))
+        .await
     }
 
     /// Sends an encoded message to a given peer.
@@ -322,8 +349,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         Ok(())
     }
 
+    // TODO: Duplicated func
     fn get_info(&self) -> anyhow::Result<String> {
         Ok(self.conf.public_address.to_string())
+    }
+
+    fn public_addr(&self) -> &SocketAddr {
+        &self.public_addr
     }
 
     async fn alive_nodes_count(&self) -> usize {
