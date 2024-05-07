@@ -101,7 +101,7 @@ impl<T: Operations> Generator<T> {
             .await?;
 
         let tx_hashes: Vec<_> =
-            result.txs.iter().map(|t| t.inner.hash()).collect();
+            result.txs.iter().map(|t| t.inner.id()).collect();
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
         let txroot = merkle_root(&tx_hashes[..]);
 
