@@ -62,7 +62,7 @@
   /** @type {boolean} */
   export let hideStakingNotice;
 
-  /** @type {import("$lib/stores/stores").GasStoreContent} */
+  /** @type {GasStoreContent} */
   export let gasLimits;
 
   /** @type {number} */
