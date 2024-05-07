@@ -68,8 +68,12 @@ impl HostFnTest {
         rusk_abi::block_height()
     }
 
-    pub fn owner(&self) -> [u8; PublicKey::SIZE] {
+    pub fn owner(&self) -> PublicKey {
         rusk_abi::self_owner()
+    }
+
+    pub fn owner_raw(&self) -> [u8; PublicKey::SIZE] {
+        rusk_abi::self_owner_raw()
     }
 }
 
@@ -112,6 +116,11 @@ unsafe fn block_height(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn contract_owner(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner())
+}
+
+#[no_mangle]
+unsafe fn contract_owner_raw(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner_raw())
 }
 
 const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);

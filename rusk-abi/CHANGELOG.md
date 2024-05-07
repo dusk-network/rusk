@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Memoize the `verify_proof` function [#1228]
+- New ABIs: `owner_raw`, `self_owner_raw` [#1710]
 
 ### Changed
 
@@ -198,6 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add LICENSE
 - Add README.md
 
+[#1710]: https://github.com/dusk-network/rusk/issues/1710
 [#1609]: https://github.com/dusk-network/rusk/issues/1609
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1228]: https://github.com/dusk-network/rusk/issues/1228
