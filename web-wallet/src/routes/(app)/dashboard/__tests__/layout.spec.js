@@ -15,7 +15,7 @@ import Layout from "../+layout.svelte";
 import { load } from "../+layout.js";
 
 vi.mock("$lib/stores", async (importOriginal) => {
-  /** @type {import("$lib/stores/stores").WalletStore} */
+  /** @type {WalletStore} */
   const original = await importOriginal();
 
   return {

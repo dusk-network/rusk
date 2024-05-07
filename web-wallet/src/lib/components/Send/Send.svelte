@@ -41,7 +41,7 @@
   /** @type {ContractStatus[]} */
   export let statuses;
 
-  /** @type {import("$lib/stores/stores").GasStoreContent} */
+  /** @type {GasStoreContent} */
   export let gasLimits;
 
   /** @type {number} */
