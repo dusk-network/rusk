@@ -12,9 +12,7 @@ use crate::{vm, Network};
 use crate::database::{Candidate, Ledger};
 use metrics::counter;
 use node_data::ledger::{to_str, Block, Label};
-use node_data::message::payload::{
-    GetBlocks, GetData, RatificationResult, Vote,
-};
+use node_data::message::payload::{GetBlocks, Inv, RatificationResult, Vote};
 use node_data::message::{payload, Message, Metadata};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
@@ -224,10 +222,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     );
 
                     // Request by hash
-                    request_block(
+                    flood_request_block(
                         &self.network,
                         BlockRequest::ByHash(hash),
-                        msg.metadata.as_ref().unwrap().src_addr,
                     )
                     .await;
 
@@ -257,11 +254,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                     err = ?err,
                                 );
 
+                                // Candidate block is not found from local
+                                // storage.
+                                //
                                 // Request by hash
-                                request_block(
+                                flood_request_block(
                                     &self.network,
                                     BlockRequest::ByHash(hash),
-                                    msg.metadata.as_ref().unwrap().src_addr,
                                 )
                                 .await;
 
@@ -572,10 +571,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 ));
             }
 
-            request_block(
+            flood_request_block(
                 &self.network,
                 BlockRequest::ByHeight(local_header.height + 1),
-                metadata.src_addr,
             )
             .await;
         }
@@ -585,6 +583,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
         // TODO: Consider reporting metrics here
+
         // TODO: Consider handling ACCEPT_BLOCK_TIMEOUT event here
 
         if let Some(pre_sync) = &mut self.presync {
@@ -779,30 +778,24 @@ impl Debug for BlockRequest {
     }
 }
 
-/// Requests a block by height from a specified peer
-async fn request_block<N: Network>(
+/// Requests a block by height/hash from the network with so-called
+/// Flood-request approach.
+async fn flood_request_block<N: Network>(
     network: &Arc<RwLock<N>>,
     req: BlockRequest,
-    peer_addr: SocketAddr,
 ) {
-    let mut get_data = GetData::default();
+    let mut inv = Inv::default();
     match req {
         BlockRequest::ByHeight(height) => {
-            get_data.inner.add_block_from_height(height);
+            inv.add_block_from_height(height);
         }
         BlockRequest::ByHash(hash) => {
-            get_data.inner.add_block_from_hash(hash);
+            inv.add_block_from_hash(hash);
         }
     };
 
-    debug!(event = "request block", ?req, ?peer_addr);
-
-    if let Err(err) = network
-        .read()
-        .await
-        .send_to_peer(&Message::new_get_data(get_data), peer_addr)
-        .await
-    {
+    debug!(event = "flood_request block", ?req);
+    if let Err(err) = network.read().await.flood_request(&inv).await {
         warn!("could not request block {err}")
     };
 }
