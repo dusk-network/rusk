@@ -5,6 +5,7 @@
   row-gap: 0.75rem;
   border-radius: 1.5rem;
   background-color: var(--surface-color);
+  width: 100%;
 
   --desktop-gap: 1.25rem;
   --mobile-gap: 1.5rem;
@@ -103,7 +104,9 @@
   .statistics-panel__world-map {
     padding-top: 0;
     border-top: none;
-    margin: 0 auto;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
   }
 }
 
