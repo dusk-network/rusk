@@ -89,7 +89,7 @@ impl<D: Database> ProposalHandler<D> {
         }
 
         let tx_hashes: Vec<[u8; 32]> =
-            p.candidate.txs().iter().map(|t| t.id()).collect();
+            p.candidate.txs().iter().map(|t| t.hash()).collect();
         let tx_root = merkle_root(&tx_hashes[..]);
         if tx_root != p.candidate.header().txroot {
             return Err(ConsensusError::InvalidBlock);
