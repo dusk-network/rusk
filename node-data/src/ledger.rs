@@ -98,6 +98,9 @@ pub struct SpentTransaction {
 }
 
 impl Transaction {
+    pub fn hash(&self) -> [u8; 32] {
+        Hasher::digest(self.inner.to_var_bytes()).to_bytes()
+    }
     pub fn id(&self) -> [u8; 32] {
         Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
     }
