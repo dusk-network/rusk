@@ -552,7 +552,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Delete from mempool any transaction already included in the
                 // block
                 for tx in mrb.inner().txs().iter() {
-                    let _ = Mempool::delete_tx(t, tx.hash())
+                    let _ = Mempool::delete_tx(t, tx.id())
                         .map_err(|e| warn!("Error while deleting tx: {e}"));
 
                     let nullifiers = tx.to_nullifiers();

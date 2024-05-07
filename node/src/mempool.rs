@@ -134,13 +134,13 @@ impl MempoolSrv {
             Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
         }
 
-        let hash = tx.hash();
+        let tx_id = tx.id();
 
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
             // ensure transaction does not exist in the mempool
 
-            if view.get_tx_exists(hash)? {
+            if view.get_tx_exists(tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInMempool);
             }
 
@@ -165,7 +165,7 @@ impl MempoolSrv {
             }
 
             // ensure transaction does not exist in the blockchain
-            if view.get_ledger_tx_exists(&hash)? {
+            if view.get_ledger_tx_exists(&tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInLedger);
             }
 
@@ -174,7 +174,7 @@ impl MempoolSrv {
 
         tracing::info!(
             event = "transaction accepted",
-            hash = hex::encode(hash)
+            hash = hex::encode(tx_id)
         );
 
         // Add transaction to the mempool

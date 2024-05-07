@@ -280,7 +280,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 header: header.clone(),
                 transactions_ids: txs
                     .iter()
-                    .map(|t| t.inner.hash())
+                    .map(|t| t.inner.id())
                     .collect::<Vec<[u8; 32]>>(),
             }
             .write(&mut buf)?;
@@ -300,7 +300,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             for tx in txs {
                 let mut d = vec![];
                 tx.write(&mut d)?;
-                self.put_cf(cf, tx.inner.hash(), d)?;
+                self.put_cf(cf, tx.inner.id(), d)?;
             }
         }
 
@@ -321,7 +321,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         )?;
 
         for tx in b.txs() {
-            self.inner.delete_cf(self.ledger_txs_cf, tx.hash())?;
+            self.inner.delete_cf(self.ledger_txs_cf, tx.id())?;
         }
 
         self.inner.delete_cf(self.ledger_cf, b.header().hash)?;
@@ -394,11 +394,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
     fn get_ledger_tx_by_hash(
         &self,
-        tx_hash: &[u8],
+        tx_id: &[u8],
     ) -> Result<Option<ledger::SpentTransaction>> {
         let tx = self
             .snapshot
-            .get_cf(self.ledger_txs_cf, tx_hash)?
+            .get_cf(self.ledger_txs_cf, tx_id)?
             .map(|blob| ledger::SpentTransaction::read(&mut &blob[..]))
             .transpose()?;
 
@@ -410,8 +410,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     ///
     /// This is a convenience method that checks if a transaction exists in the
     /// ledger without unmarshalling the transaction
-    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool> {
-        Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)?.is_some())
+    fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool> {
+        Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_id)?.is_some())
     }
 
     fn fetch_block_by_height(
@@ -566,7 +566,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         let mut tx_data = vec![];
         tx.write(&mut tx_data)?;
 
-        let hash = tx.hash();
+        let hash = tx.id();
         self.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //
@@ -605,7 +605,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
         let tx = self.get_tx(h)?;
         if let Some(tx) = tx {
-            let hash = tx.hash();
+            let hash = tx.id();
 
             self.inner.delete_cf(self.mempool_cf, hash)?;
 
@@ -631,7 +631,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     fn get_txs_by_nullifiers(&self, n: &[[u8; 32]]) -> HashSet<[u8; 32]> {
         n.iter()
             .filter_map(|n| match self.snapshot.get_cf(self.nullifiers_cf, n) {
-                Ok(Some(tx_hash)) => tx_hash.try_into().ok(),
+                Ok(Some(tx_id)) => tx_id.try_into().ok(),
                 _ => None,
             })
             .collect()
@@ -645,7 +645,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(Box::new(iter))
     }
 
-    fn get_txs_hashes_sorted_by_fee(
+    fn get_txs_ids_sorted_by_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
         let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf);
@@ -653,7 +653,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(Box::new(iter))
     }
 
-    fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>> {
+    fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>> {
         let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
         iter.seek_to_last();
 
@@ -662,9 +662,9 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         // Iterate all keys from the end in reverse lexicographic order
         while iter.valid() {
             if let Some(key) = iter.key() {
-                let (_, tx_hash) = deserialize_key(&mut &key.to_vec()[..])?;
+                let (_, tx_id) = deserialize_key(&mut &key.to_vec()[..])?;
 
-                txs_list.push(tx_hash);
+                txs_list.push(tx_id);
             }
 
             iter.prev();
@@ -693,9 +693,9 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
 impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
     type Item = ledger::Transaction;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().and_then(|(_, tx_hash)| {
-            self.mempool.get_tx(tx_hash).ok().flatten()
-        })
+        self.iter
+            .next()
+            .and_then(|(_, tx_id)| self.mempool.get_tx(tx_id).ok().flatten())
     }
 }
 
@@ -911,7 +911,7 @@ mod tests {
                 // Assert all transactions are fully fetched from ledger as
                 // well.
                 for pos in 0..b.txs().len() {
-                    assert_eq!(db_blk.txs()[pos].hash(), b.txs()[pos].hash());
+                    assert_eq!(db_blk.txs()[pos].id(), b.txs()[pos].id());
                 }
             });
 
@@ -1015,21 +1015,21 @@ mod tests {
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
 
             db.view(|vq| {
-                assert!(Mempool::get_tx_exists(&vq, t.hash()).unwrap());
+                assert!(Mempool::get_tx_exists(&vq, t.id()).unwrap());
 
                 let fetched_tx =
-                    vq.get_tx(t.hash()).expect("valid contract call").unwrap();
+                    vq.get_tx(t.id()).expect("valid contract call").unwrap();
 
                 assert_eq!(
-                    fetched_tx.hash(),
-                    t.hash(),
+                    fetched_tx.id(),
+                    t.id(),
                     "fetched transaction should be the same"
                 );
             });
 
             // Delete a contract call
             db.update(|txn| {
-                assert!(txn.delete_tx(t.hash()).expect("valid tx"));
+                assert!(txn.delete_tx(t.id()).expect("valid tx"));
                 Ok(())
             })
             .unwrap();
@@ -1134,7 +1134,7 @@ mod tests {
             db.view(|v| {
                 for t in b.txs().iter() {
                     assert!(v
-                        .get_ledger_tx_by_hash(&t.hash())
+                        .get_ledger_tx_by_hash(&t.id())
                         .expect("should not return error")
                         .expect("should find a transaction")
                         .inner
