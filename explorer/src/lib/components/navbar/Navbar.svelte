@@ -1,7 +1,8 @@
 <script>
+  import { mdiClose, mdiMenu } from "@mdi/js";
   import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
-  import { NavList, Select } from "$lib/dusk/components";
+  import { Button, NavList, Select } from "$lib/dusk/components";
   import { createEventDispatcher, tick } from "svelte";
   import "./Navbar.css";
 
@@ -72,52 +73,16 @@
       sizes="(max-width: 1024px) 86px, 129px"
     />
   </AppAnchor>
-
-  <button
+  <Button
+    aria-controls="dusk-navbar-menu"
+    aria-expanded={!hidden}
+    className="dusk-navbar__toggle"
+    icon={{ path: hidden ? mdiMenu : mdiClose, size: "large" }}
     on:click={() => {
       hidden = !hidden;
       dispatch("toggleMenu", hidden);
     }}
-    type="button"
-    class="dusk-navbar__toggle"
-    aria-controls="dusk-navbar-menu"
-    aria-expanded={!hidden}
-  >
-    {#if hidden}
-      <svg
-        class="dusk-navbar__toggle-svg"
-        aria-hidden="true"
-        viewBox="0 0 41 14"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <line y1="1" x2="40.8" y2="1" stroke-width="2"></line>
-        <line y1="12.9854" x2="40.8" y2="12.9854" stroke-width="2"></line>
-      </svg>
-    {:else}
-      <svg
-        class="dusk-navbar__toggle-svg"
-        aria-hidden="true"
-        viewBox="0 0 32 31"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <line
-          x1="1.29289"
-          y1="30.2929"
-          x2="30.1428"
-          y2="1.44294"
-          stroke-width="2"
-        ></line>
-        <line
-          x1="1.70711"
-          y1="1.29289"
-          x2="30.5571"
-          y2="30.1428"
-          stroke-width="2"
-        ></line>
-      </svg>
-    {/if}
-  </button>
-
+  />
   <div
     class="dusk-navbar__menu"
     class:dusk-navbar__menu--hidden={hidden}

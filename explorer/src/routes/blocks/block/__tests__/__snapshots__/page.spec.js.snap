@@ -28,10 +28,16 @@ exports[`Block > should render the Block Details page 1`] = `
           </h3>
            
           <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
             type="button"
           >
-            Back
+            <span
+              class="dusk-button__text"
+            >
+              Back
+            </span>
           </button>
+          <!--&lt;Button&gt;-->
         </header>
          
         <dl

@@ -23,29 +23,24 @@ exports[`Navbar > renders the Navbar component 1`] = `
     <button
       aria-controls="dusk-navbar-menu"
       aria-expanded="false"
-      class="dusk-navbar__toggle"
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button dusk-navbar__toggle"
       type="button"
     >
       <svg
-        aria-hidden="true"
-        class="dusk-navbar__toggle-svg"
-        viewBox="0 0 41 14"
-        xmlns="http://www.w3.org/2000/svg"
+        class="dusk-icon dusk-icon--size--large dusk-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
       >
-        <line
-          stroke-width="2"
-          x2="40.8"
-          y1="1"
-          y2="1"
-        />
-        <line
-          stroke-width="2"
-          x2="40.8"
-          y1="12.9854"
-          y2="12.9854"
+        <path
+          d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
         />
       </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
     </button>
+    <!--&lt;Button&gt;-->
      
     <div
       class="dusk-navbar__menu dusk-navbar__menu--hidden"

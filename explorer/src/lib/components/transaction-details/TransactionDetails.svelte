@@ -2,7 +2,7 @@
 
 <script>
   import { ListItem } from "$lib/components";
-  import { Badge, Card, Switch } from "$lib/dusk/components";
+  import { Badge, Button, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
     createCurrencyFormatter,
@@ -49,7 +49,7 @@
 <Card className="transaction-details">
   <header slot="header" class="transaction-details__header">
     <h3 class="transaction-details__header-heading">Transaction Details</h3>
-    <button type="button" on:click={() => history.back()}>Back</button>
+    <Button on:click={() => history.back()} text="Back" variant="secondary" />
   </header>
   <dl class="transaction-details__list" bind:this={transactionList}>
     <!-- TRANSACTION ID -->
