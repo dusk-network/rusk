@@ -105,7 +105,7 @@ impl Serializable for Message {
             Payload::GetMempool(p) => p.write(w),
             Payload::GetInv(p) => p.write(w),
             Payload::GetBlocks(p) => p.write(w),
-            Payload::GetData(p) => p.write(w),
+            Payload::GetResource(p) => p.write(w),
             Payload::Ratification(p) => p.write(w),
             Payload::Empty | Payload::ValidationResult(_) => Ok(()), /* internal message, not sent on the wire */
         }
@@ -138,8 +138,8 @@ impl Serializable for Message {
             Topics::GetCandidate => {
                 Message::new_get_candidate(payload::GetCandidate::read(r)?)
             }
-            Topics::GetData => {
-                Message::new_get_data(payload::GetData::read(r)?)
+            Topics::GetResource => {
+                Message::new_get_resource(payload::GetResource::read(r)?)
             }
             Topics::GetBlocks => {
                 Message::new_get_blocks(payload::GetBlocks::read(r)?)
@@ -237,11 +237,11 @@ impl Message {
         }
     }
 
-    /// Creates topics.GetData  message
-    pub fn new_get_data(p: payload::GetData) -> Message {
+    /// Creates topics.GetResource  message
+    pub fn new_get_resource(p: payload::GetResource) -> Message {
         Self {
-            topic: Topics::GetData,
-            payload: Payload::GetData(p),
+            topic: Topics::GetResource,
+            payload: Payload::GetResource(p),
             ..Default::default()
         }
     }
@@ -372,7 +372,7 @@ pub enum Payload {
     GetMempool(payload::GetMempool),
     GetInv(payload::Inv),
     GetBlocks(payload::GetBlocks),
-    GetData(payload::GetData),
+    GetResource(payload::GetResource),
     CandidateResp(Box<payload::GetCandidateResp>),
 
     // Internal messages payload
@@ -877,7 +877,7 @@ pub mod payload {
     }
 
     #[derive(Debug, Clone)]
-    pub struct GetData {
+    pub struct GetResource {
         /// Inventory/Resource to search for
         inventory: Inv,
 
@@ -889,7 +889,7 @@ pub mod payload {
         // TODO: Integrity test with hashing???
     }
 
-    impl GetData {
+    impl GetResource {
         pub fn new(
             inventory: Inv,
             requester_addr: SocketAddr,
@@ -919,7 +919,7 @@ pub mod payload {
         }
     }
 
-    impl Serializable for GetData {
+    impl Serializable for GetResource {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.inventory.write(w)?;
             self.requester_addr.write(w)?;
@@ -936,7 +936,7 @@ pub mod payload {
             let mut buf = [0u8; 8];
             r.read_exact(&mut buf)?;
 
-            Ok(GetData {
+            Ok(GetResource {
                 inventory: inner,
                 requester_addr,
                 ttl_as_sec: u64::from_le_bytes(buf),
@@ -1019,7 +1019,7 @@ macro_rules! map_topic {
 #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
 pub enum Topics {
     // Data exchange topics.
-    GetData = 8,
+    GetResource = 8,
     GetBlocks = 9,
     GetMempool = 13, // NB: This is aliased as Mempool in the golang impl
     GetInv = 14,     // NB: This is aliased as Inv in the golang impl
@@ -1056,7 +1056,7 @@ impl Topics {
 
 impl From<u8> for Topics {
     fn from(v: u8) -> Self {
-        map_topic!(v, Topics::GetData);
+        map_topic!(v, Topics::GetResource);
         map_topic!(v, Topics::GetBlocks);
         map_topic!(v, Topics::Tx);
         map_topic!(v, Topics::Block);
