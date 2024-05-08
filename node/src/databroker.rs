@@ -257,8 +257,8 @@ impl DataBrokerSrv {
         db.read()
             .await
             .view(|t| {
-                for hash in t.get_txs_hashes()? {
-                    inv.add_tx_hash(hash);
+                for hash in t.get_txs_ids()? {
+                    inv.add_tx_id(hash);
                 }
 
                 if inv.inv_list.is_empty() {
@@ -354,9 +354,9 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::MempoolTx => {
-                        if let InvParam::Hash(hash) = &i.param {
-                            if Mempool::get_tx(&t, *hash)?.is_none() {
-                                inv.add_tx_hash(*hash);
+                        if let InvParam::Hash(tx_id) = &i.param {
+                            if Mempool::get_tx(&t, *tx_id)?.is_none() {
+                                inv.add_tx_id(*tx_id);
                             }
                         }
                     }
@@ -412,8 +412,8 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::MempoolTx => {
-                        if let InvParam::Hash(hash) = &i.param {
-                            Mempool::get_tx(&t, *hash)
+                        if let InvParam::Hash(tx_id) = &i.param {
+                            Mempool::get_tx(&t, *tx_id)
                                 .ok()
                                 .flatten()
                                 .map(Message::new_transaction)

@@ -774,10 +774,10 @@ pub mod payload {
     }
 
     impl Inv {
-        pub fn add_tx_hash(&mut self, hash: [u8; 32]) {
+        pub fn add_tx_id(&mut self, id: [u8; 32]) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::MempoolTx,
-                param: InvParam::Hash(hash),
+                param: InvParam::Hash(id),
             });
         }
 
@@ -837,7 +837,7 @@ pub mod payload {
                 match inv_type {
                     InvType::MempoolTx => {
                         let hash = Self::read_bytes(r)?;
-                        inv.add_tx_hash(hash);
+                        inv.add_tx_id(hash);
                     }
                     InvType::BlockFromHash => {
                         let hash = Self::read_bytes(r)?;

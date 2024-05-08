@@ -319,7 +319,7 @@ impl Transaction<'_> {
     }
 
     pub async fn id(&self) -> String {
-        hex::encode(self.0.hash())
+        hex::encode(self.0.id())
     }
 
     pub async fn gas_limit(&self) -> u64 {

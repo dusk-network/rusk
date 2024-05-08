@@ -366,7 +366,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             })?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
-                let _ = m.delete_tx(t.hash());
+                let _ = m.delete_tx(t.id());
             }
             Ok(())
         });
