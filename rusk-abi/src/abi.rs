@@ -94,13 +94,13 @@ pub fn self_owner() -> PublicKey {
     PublicKey::from_bytes(&buf).expect("Owner should deserialize correctly")
 }
 
-/// Query raw owner of a given contract.
+/// Query raw "to_bytes" serialization of the owner of a given contract.
 #[cfg(feature = "abi")]
 pub fn owner_raw(contract: ContractId) -> Option<[u8; PublicKey::SIZE]> {
     piecrust_uplink::owner(contract)
 }
 
-/// Query raw self owner.
+/// Query raw "to_bytes" serialization of the self owner.
 #[cfg(feature = "abi")]
 pub fn self_owner_raw() -> [u8; PublicKey::SIZE] {
     piecrust_uplink::self_owner()
