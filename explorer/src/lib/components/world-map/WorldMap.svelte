@@ -9,6 +9,7 @@
 
   /** @type {Array<{lat: number, lon:number}> | Error}*/
   export let nodes;
+  console.log(nodes)
 
   /** @type {import("d3-geo").GeoProjection}*/
   const projection = geoNaturalEarth1();
@@ -19,7 +20,10 @@
   /** Function will return an empty array if an error is passed to it */
   /** Function will always receive an empty array, an array of objects or an error */
   const getUniqueMarkers = uniquesBy(({ lat, lon }) => `${lat}x${lon}`);
-  const nodeLocations = getUniqueMarkers(nodes);
+  let nodeLocations;
+  $: {
+      if(nodes) nodeLocations = getUniqueMarkers(nodes);
+    };
 </script>
 
 <svg id="nodes-world-map" viewBox="0 0 954 477">
@@ -36,7 +40,7 @@
   {#each dataset.features as data, index (index)}
     <path d={path(data)} style="fill:url(#vertical-lines)" />
   {/each}
-  {#if nodeLocations.length}
+  {#if nodeLocations && nodeLocations.length}
     {#each nodeLocations as marker, index (index)}
       <circle
         cx={projection([marker.lon, marker.lat])[0]}

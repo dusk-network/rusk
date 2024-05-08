@@ -1,0 +1,15 @@
+.transaction__link {
+  text-decoration: none;
+}
+
+.transaction__fee-price-label,
+.transaction__fee-limit-label {
+  font-weight: 500;
+}
+
+.transaction__time {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.2rem;
+}

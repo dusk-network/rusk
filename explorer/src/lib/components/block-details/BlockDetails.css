@@ -1,23 +1,9 @@
-.block-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.block-details__header {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.block-details__header-heading {
-  text-transform: uppercase;
-  font-size: 1.5rem;
-  font-weight: 400;
-}
-
-.block-details__block-height {
-  display: none;
+.block-details__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  font-size: 0.875rem;
+  column-gap: 1.875rem;
+  padding: 0 1.125rem;
 }
 
 .block-details__list-anchor {
@@ -31,13 +17,6 @@
 
 .block-details__gas-used.dusk-progress-bar {
   width: 12.5rem;
-}
-
-.block-details__list {
-  display: grid;
-  grid-template-columns: 1fr;
-  font-size: 0.875rem;
-  column-gap: 1.875rem;
 }
 
 .block-details__state-hash {

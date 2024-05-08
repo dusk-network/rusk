@@ -1,0 +1,18 @@
+.data-card {
+  padding: 1rem 0;
+}
+
+.data-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.125rem 1rem;
+}
+
+.data-card__header-title {
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 1.125rem;
+  line-height: 32.2px;
+  letter-spacing: -1%;
+}
