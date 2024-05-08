@@ -1,14 +1,24 @@
 <script>
-  import { AppAnchor, AppImage } from "$lib/components";
+  import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
   import { NavList, Select } from "$lib/dusk/components";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, tick } from "svelte";
   import "./Navbar.css";
 
   /** @type {Number}*/
   let clientWidth;
 
+  /** @type {number} */
+  let offset;
+
+  /** @type {boolean} */
   let hidden = true;
+
+  /** @type {boolean} */
+  let showSearchNotification = false;
+
+  /** @type {*} */
+  let notificationData;
 
   const navigation = [
     {
@@ -37,11 +47,24 @@
   ];
 
   const dispatch = createEventDispatcher();
+
+  async function createEmptySpace() {
+    await tick();
+    offset = document.getElementsByClassName(
+      "dusk-navbar__menu--search-notification"
+    )[0]?.clientHeight;
+  }
 </script>
 
 <svelte:window bind:innerWidth={clientWidth} />
 
-<nav class="dusk-navbar" class:dusk-navbar--menu-hidden={hidden}>
+<nav
+  style={showSearchNotification
+    ? `margin-bottom: ${offset}px`
+    : "margin-bottom: 0"}
+  class="dusk-navbar"
+  class:dusk-navbar--menu-hidden={hidden}
+>
   <AppAnchor href="/" className="dusk-navbar__logo">
     <AppImage
       src="/dusk_logo.svg"
@@ -100,16 +123,26 @@
     class:dusk-navbar__menu--hidden={hidden}
     id="dusk-navbar-menu"
   >
-    <div class="dusk-navbar__menu--network">
-      <Select options={networks} />
-    </div>
-
-    <div class="dusk-navbar__menu--links">
-      <NavList {navigation} />
-    </div>
-
+    <Select className="dusk-navbar__menu--network" options={networks} />
+    <NavList className="dusk-navbar__menu--links" {navigation} />
     <div class="dusk-navbar__menu--search">
-      <SearchField />
+      <SearchField
+        on:invalid={(e) => {
+          notificationData = e.detail;
+          showSearchNotification = true;
+          createEmptySpace();
+        }}
+      />
+
+      {#if showSearchNotification}
+        <SearchNotification
+          data={notificationData}
+          on:close={() => {
+            showSearchNotification = false;
+          }}
+          className="dusk-navbar__menu--search-notification"
+        />
+      {/if}
     </div>
   </div>
 </nav>
