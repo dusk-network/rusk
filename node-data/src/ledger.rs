@@ -98,12 +98,31 @@ pub struct SpentTransaction {
 }
 
 impl Transaction {
+    /// Computes the hash of the transaction.
+    ///
+    /// This method returns the [hash](rusk_abi::hash()) of the entire
+    /// transaction in its serialized form
+    ///
+    /// ### Returns
+    /// An array of 32 bytes representing the hash of the transaction.
     pub fn hash(&self) -> [u8; 32] {
         Hasher::digest(self.inner.to_var_bytes()).to_bytes()
     }
+
+    /// Computes the transaction ID.
+    ///
+    /// The transaction ID is a unique identifier for the transaction.
+    /// Unlike the [`hash()`](#method.hash) method, which is computed over the
+    /// entire transaction, the transaction ID is derived from specific
+    /// fields of the transaction and serves as a unique identifier of the
+    /// transaction itself.
+    ///
+    /// ### Returns
+    /// An array of 32 bytes representing the transaction ID.
     pub fn id(&self) -> [u8; 32] {
         Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
     }
+
     pub fn gas_price(&self) -> u64 {
         self.inner.fee().gas_price
     }
