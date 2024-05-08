@@ -11,7 +11,7 @@ use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
 
-use node_data::message::payload::{GetData, InvParam, InvType};
+use node_data::message::payload::{GetResource, InvParam, InvType};
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -26,7 +26,7 @@ const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
     Topics::GetMempool as u8,
     Topics::GetInv as u8,
-    Topics::GetData as u8,
+    Topics::GetResource as u8,
     Topics::GetCandidate as u8,
 ];
 
@@ -219,9 +219,11 @@ impl DataBrokerSrv {
                         .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
-            // Handle GetData requests
-            Payload::GetData(m) => {
-                match Self::handle_get_data(db, m, conf.max_inv_entries).await {
+            // Handle GetResource requests
+            Payload::GetResource(m) => {
+                match Self::handle_get_resource(db, m, conf.max_inv_entries)
+                    .await
+                {
                     Ok(msg_list) => Ok(Response::new(msg_list, m.get_addr())),
                     Err(err) => {
                         if !m.is_expired() {
@@ -260,7 +262,7 @@ impl DataBrokerSrv {
     }
 
     /// Handles GetMempool requests.
-    /// Message flow: GetMempool -> Inv -> GetData -> Tx
+    /// Message flow: GetMempool -> Inv -> GetResource -> Tx
     async fn handle_get_mempool<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
     ) -> Result<Message> {
@@ -286,7 +288,7 @@ impl DataBrokerSrv {
 
     /// Handles GetBlocks message request.
     ///
-    ///  Message flow: GetBlocks -> Inv -> GetData -> Block
+    ///  Message flow: GetBlocks -> Inv -> GetResource -> Block
     async fn handle_get_blocks<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &payload::GetBlocks,
@@ -335,7 +337,7 @@ impl DataBrokerSrv {
     /// Handles inventory message request.
     ///
     /// This takes an inventory message (topics.Inv), checks it for any
-    /// items that the node state is missing, puts these items in a GetData
+    /// items that the node state is missing, puts these items in a GetResource
     /// wire message, and sends it back to request the items in full.
     ///
     /// An item is a block or a transaction.
@@ -387,19 +389,21 @@ impl DataBrokerSrv {
             return Err(anyhow::anyhow!("no items to fetch"));
         }
 
-        // Send GetData request with disabled rebroadcast (ttl = 0), Inv message
-        // is part of one-to-one messaging flows (GetBlocks/Mempool) so it
-        // should not be a flooding request.
-        Ok(Message::new_get_data(GetData::new(inv, recv_addr, 0)))
+        // Send GetResource request with disabled rebroadcast (ttl = 0), Inv
+        // message is part of one-to-one messaging flows
+        // (GetBlocks/Mempool) so it should not be a flooding request.
+        Ok(Message::new_get_resource(GetResource::new(
+            inv, recv_addr, 0,
+        )))
     }
 
-    /// Handles GetData message request.
+    /// Handles GetResource message request.
     ///
-    /// The response to a GetData message is a vector of messages, each of which
-    /// could be either topics.Block or topics.Tx.
-    async fn handle_get_data<DB: database::DB>(
+    /// The response to a GetResource message is a vector of messages, each of
+    /// which could be either topics.Block or topics.Tx.
+    async fn handle_get_resource<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
-        m: &node_data::message::payload::GetData,
+        m: &node_data::message::payload::GetResource,
         max_entries: usize,
     ) -> Result<Vec<Message>> {
         db.read().await.view(|t| {

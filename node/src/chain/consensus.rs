@@ -229,7 +229,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 
         // For redundancy reasons, we send the GetCandidate request to multiple
         // network peers
-        let request = Message::new_get_candidate(GetCandidate { hash: *h }); // TODO: Use GetData
+        let request = Message::new_get_candidate(GetCandidate { hash: *h }); // TODO: Use GetResource
         let res = self
             .network
             .write()

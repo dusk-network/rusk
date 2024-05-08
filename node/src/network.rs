@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
-use node_data::message::payload::{GetData, Inv};
+use node_data::message::payload::{GetResource, Inv};
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -223,7 +223,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         Ok(())
     }
 
-    /// Broadcast a GetData request.
+    /// Broadcast a GetResource request.
     ///
     /// By utilizing the randomly selected peers per bucket in Kadcast, this
     /// broadcast does follow the so-called "Flood with Random Walk" blind
@@ -238,7 +238,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             .as_secs()
             + FLOOD_REQUEST_TTL;
 
-        self.broadcast(&Message::new_get_data(GetData::new(
+        self.broadcast(&Message::new_get_resource(GetResource::new(
             msg_inv.clone(),
             self.public_addr,
             ttl_as_sec,
