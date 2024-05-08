@@ -3,7 +3,6 @@ import { cleanup, render } from "@testing-library/svelte";
 import { ListItem } from "../";
 
 const baseProps = {
-  tooltipId: "tooltipId",
   tooltipText: "Tooltip text",
 };
 

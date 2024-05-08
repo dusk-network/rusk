@@ -39,12 +39,6 @@
   outline: none;
 }
 
-.dusk-navbar__toggle-svg {
-  width: 1.875rem;
-  height: 1.875rem;
-  stroke: currentColor;
-}
-
 .dusk-navbar__menu {
   display: flex;
   flex-direction: column;

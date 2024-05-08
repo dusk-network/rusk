@@ -3,7 +3,7 @@
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
   import { AppAnchor, ListItem } from "$lib/components";
-  import { Card, Icon, ProgressBar } from "$lib/dusk/components";
+  import { Button, Card, Icon, ProgressBar } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import { luxToDusk } from "$lib/dusk/currency";
   import {
@@ -45,7 +45,7 @@
         - #{formatter(34526)}</span
       >
     </h3>
-    <button type="button" on:click={() => history.back()}>Back</button>
+    <Button on:click={() => history.back()} text="Back" variant="secondary" />
   </header>
   <dl class="block-details__list" bind:this={blockList}>
     <!-- BLOCK HASH -->
