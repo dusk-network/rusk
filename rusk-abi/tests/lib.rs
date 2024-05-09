@@ -357,15 +357,29 @@ fn get_owner() -> &'static PublicKey {
 }
 
 #[test]
-fn owner() {
+fn owner_raw() {
     let vm =
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let owner: [u8; 64] = session
-        .call(contract_id, "contract_owner", get_owner(), POINT_LIMIT)
+        .call(contract_id, "contract_owner_raw", get_owner(), POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 
     assert_eq!(owner, get_owner().to_bytes());
+}
+
+#[test]
+fn owner() {
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let owner: PublicKey = session
+        .call(contract_id, "contract_owner", get_owner(), POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
+
+    assert_eq!(owner, get_owner().to_owned());
 }
