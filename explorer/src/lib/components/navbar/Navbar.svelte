@@ -58,6 +58,7 @@
 
   afterNavigate(() => {
     hidden = true;
+    showSearchNotification = false;
   });
 </script>
 
