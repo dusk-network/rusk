@@ -1,13 +1,13 @@
 <script>
+  import { createEventDispatcher, tick } from "svelte";
   import { mdiClose, mdiMenu } from "@mdi/js";
+  import { afterNavigate } from "$app/navigation";
+
+  import { Button, NavList, Select } from "$lib/dusk/components";
   import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
-  import { Button, NavList, Select } from "$lib/dusk/components";
-  import { createEventDispatcher, tick } from "svelte";
-  import "./Navbar.css";
 
-  /** @type {Number}*/
-  let clientWidth;
+  import "./Navbar.css";
 
   /** @type {number} */
   let offset;
@@ -55,9 +55,11 @@
       "dusk-navbar__menu--search-notification"
     )[0]?.clientHeight;
   }
-</script>
 
-<svelte:window bind:innerWidth={clientWidth} />
+  afterNavigate(() => {
+    hidden = true;
+  });
+</script>
 
 <nav
   style={showSearchNotification
