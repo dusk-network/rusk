@@ -4,68 +4,105 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use alloc::vec::Vec;
+use bls12_381_bls::{PublicKey, Signature};
+use dusk_bytes::Serializable;
+use rkyv::{Archive, Deserialize, Serialize};
 use rusk_abi::TRANSFER_CONTRACT;
-use subsidy_types::*;
 use transfer_contract_types::Stct;
 
 #[derive(Debug, Clone)]
 pub struct Charlie;
 
+/// Subsidy a contract with a value.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(bytecheck::CheckBytes))]
+pub struct Subsidy {
+    /// Public key to which the subsidy will belong.
+    pub public_key: PublicKey,
+    /// Signature belonging to the given public key.
+    pub signature: Signature,
+    /// Value of the subsidy.
+    pub value: u64,
+    /// Proof of the `STCT` circuit.
+    pub proof: Vec<u8>,
+}
+
+const SUBSIDY_MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
+
+/// Return the digest to be signed in the `subsidize` function of a contract.
+#[must_use]
+pub fn subsidy_signature_message(
+    counter: u64,
+    value: u64,
+) -> [u8; SUBSIDY_MESSAGE_SIZE] {
+    let mut bytes = [0u8; SUBSIDY_MESSAGE_SIZE];
+
+    bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
+    bytes[u64::SIZE..].copy_from_slice(&value.to_bytes());
+
+    bytes
+}
+
 impl Charlie {
+    fn gas_price() -> u64 {
+        rusk_abi::call::<(), u64>(TRANSFER_CONTRACT, "gas_price", &())
+            .expect("Obtaining gas price should succeed")
+    }
+
+    /// calling this method will be paid by the contract
     pub fn pay(&mut self) {
-        const ALLOWANCE: u64 = 10_000_000;
-        rusk_abi::debug!(
-            "CHARLIE pay - this call is free up to {} of allowance",
-            ALLOWANCE
-        );
-        rusk_abi::set_allowance(ALLOWANCE);
+        const ALLOWANCE: u64 = 40_000_000;
+        let allowance = ALLOWANCE / Self::gas_price();
+        // this call is paid for by the contract, up to 'allowance'
+        rusk_abi::set_allowance(allowance);
     }
 
-    /// we set charge to a value which is too small to cover
-    /// execution cost, the transaction should fail
-    /// and contract balance should not be affected
+    /// calling this method should be paid by the contract, yet it
+    /// sets the allowance to a value too small to cover
+    /// the execution cost, transaction will fail
+    /// and contract balance won't be affected
     pub fn pay_and_fail(&mut self) {
-        const ALLOWANCE: u64 = 4_000_000;
-        rusk_abi::debug!(
-            "CHARLIE pay - this call is free up to {} of allowance",
-            ALLOWANCE
-        );
-        rusk_abi::set_allowance(ALLOWANCE);
+        const ALLOWANCE: u64 = 8_000_000;
+        let allowance = ALLOWANCE / Self::gas_price();
+        // this call is paid for by the contract, up to 'allowance'
+        rusk_abi::set_allowance(allowance);
     }
 
+    /// calling this method will cause the transaction fee to be
+    /// increased so that contract can earn the difference between
+    /// the contract's charge and the cost of gas actually spent
     pub fn earn(&mut self) {
-        const CHARGE: u64 = 20_000_000;
-        rusk_abi::debug!("CHARLIE earn - charging {} for the call", CHARGE);
-        rusk_abi::set_charge(CHARGE);
+        const CHARGE: u64 = 80_000_000;
+        let charge = CHARGE / Self::gas_price();
+        // charging 'charge' for the call
+        rusk_abi::set_charge(charge);
     }
 
-    /// we set charge to a value which is too small to cover
-    /// execution cost, the transaction should fail
-    /// and contract balance should not be affected
+    /// calling this method will cause the transaction fee to be
+    /// increased, yet its sets the charge to a value  too small to cover
+    /// the actual execution cost, as a result the transaction will fail
+    /// and contract balance won't be affected
     pub fn earn_and_fail(&mut self) {
-        const CHARGE: u64 = 4_000_000;
-        rusk_abi::debug!(
-            "CHARLIE earn_and_fail - charging {} for the call",
-            CHARGE
-        );
-        rusk_abi::set_charge(CHARGE);
+        const CHARGE: u64 = 8_000_000;
+        let charge = CHARGE / Self::gas_price();
+        // charging 'charge' for the call
+        rusk_abi::set_charge(charge);
     }
 
-    /// when the `earn` method is called indirectly, setting the charge by it
-    /// should have no effect, contract balance should not be affected
+    /// this method calls the `earn` method indirectly, and in such case, since
+    /// charge is set by an indirectly called method, it won't have effect and
+    /// contract balance won't be affected
     pub fn earn_indirectly_and_fail(&mut self) {
-        rusk_abi::debug!("CHARLIE earn_indirectly_and_fail - calling 'earn'");
         rusk_abi::call::<_, ()>(rusk_abi::self_id(), "earn", &())
             .expect("earn call should succeed");
     }
 
-    /// loads the contract with funds which can be used
-    /// to sponsor free uses of some methods of this contract
-    /// technically, the funds passed in this call will be used
-    /// when granting allowances
-    /// this operation is similar to staking, but the funds
-    /// are staked into this contract's "wallet" rather than
-    /// into the stake contract's wallet
+    /// Subsidizes the contract with funds which can then be used
+    /// for sponsoring free uses of other methods of this contract.
+    /// Funds passed in this call will be used when granting allowances.
+    /// The subsidy operation is similar to staking, yet the funds
+    /// are deposited in this contract's "wallet".
     pub fn subsidize(&mut self, subsidy: Subsidy) {
         // verify the signature is over the correct digest
         // note: counter is always zero - make sure that this is safe
@@ -86,12 +123,7 @@ impl Charlie {
             proof: subsidy.proof,
         };
 
-        rusk_abi::debug!(
-            "CHARLIE subsidize - subsidized self ('{:X?}') with value {}",
-            stct.module[0],
-            stct.value
-        );
-
+        // subsidizing self with 'subsidy.value'
         rusk_abi::call::<_, bool>(transfer_module, "stct", &stct)
             .expect("Sending note to contract should succeed");
     }
