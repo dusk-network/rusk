@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{
+    get_current_timestamp, ConsensusError, Database, RoundUpdate,
+};
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -42,11 +44,16 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
     async fn collect(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
+        ru: &RoundUpdate,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
         let p = Self::unwrap_msg(&msg)?;
+
+        if p.candidate.header().timestamp < ru.timestamp() {
+            return Err(ConsensusError::InvalidTimestamp);
+        }
+
         self.db
             .lock()
             .await
@@ -84,8 +91,15 @@ impl<D: Database> ProposalHandler<D> {
         //  Verify new_block msg signature
         p.verify_signature()?;
 
+        // We only check the consistency of the declared hash.
+        // The actual bound with the tip.block_hash is done by
+        // MsgHandler.is_valid()
         if msg.header.prev_block_hash != p.candidate.header().prev_block_hash {
             return Err(ConsensusError::InvalidBlockHash);
+        }
+
+        if p.candidate.header().timestamp > get_current_timestamp() {
+            return Err(ConsensusError::InvalidTimestamp);
         }
 
         let tx_hashes: Vec<[u8; 32]> =
