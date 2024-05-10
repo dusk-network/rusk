@@ -8,6 +8,7 @@ use crate::database;
 use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
+use dusk_consensus::commons::get_current_timestamp;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -95,6 +96,14 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
             return Err(anyhow!("invalid previous block hash"));
+        }
+
+        if candidate_block.timestamp > get_current_timestamp() {
+            return Err(anyhow!("invalid future timestamp"));
+        }
+
+        if candidate_block.timestamp < self.prev_header.timestamp {
+            return Err(anyhow!("invalid timestamp"));
         }
 
         // Ensure block is not already in the ledger
