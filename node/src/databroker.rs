@@ -446,6 +446,13 @@ impl DataBrokerSrv {
                 .take(max_entries)
                 .collect();
 
+            if res.is_empty() {
+                // If nothing was found, return an error so that the caller is
+                // instructed to rebroadcast the request, if needed
+                debug!("handle_get_resource not found {:?}", m);
+                return Err(anyhow!("not found"));
+            }
+
             Ok(res)
         })
     }
