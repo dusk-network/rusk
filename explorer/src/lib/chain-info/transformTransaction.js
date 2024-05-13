@@ -1,12 +1,22 @@
-import { skipIn } from "lamb";
-
 import { unixTsToDate } from "$lib/dusk/date";
 
-/** @type {(v: APITransaction) => Transaction} */
-const transformTransaction = (v) => ({
-  ...skipIn(v, ["__typename", "blocktimestamp", "blockts", "txtype"]),
-  date: unixTsToDate(v.blockts),
-  method: v.method ?? "",
+/** @param {string} [s] */
+const capitalize = (s) => (s ? `${s[0].toUpperCase()}${s.slice(1)}` : "");
+
+/** @type {(v: GQLTransaction) => Transaction} */
+const transformTransaction = (tx) => ({
+  blockhash: tx.blockHash,
+  blockheight: tx.blockHeight,
+  contract: tx.tx.callData ? capitalize(tx.tx.callData.fnName) : "Transfer",
+  date: unixTsToDate(tx.blockTimestamp),
+  feepaid: tx.gasSpent,
+  gaslimit: tx.tx.gasLimit,
+  gasprice: tx.tx.gasPrice,
+  gasspent: tx.gasSpent,
+  method: tx.tx.callData?.fnName ?? "transfer",
+  success: tx.err === null,
+  txerror: tx.err ?? "",
+  txid: tx.id,
 });
 
 export default transformTransaction;

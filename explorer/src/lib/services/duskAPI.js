@@ -1,32 +1,76 @@
-import { getKey, getPath, mapWith } from "lamb";
+import {
+  fromPairs,
+  getKey,
+  getPath,
+  isUndefined,
+  mapWith,
+  ownPairs,
+  pipe,
+  unless,
+  updateAt,
+} from "lamb";
 
 import { failureToRejection } from "$lib/dusk/http";
 
 import {
+  transformAPITransaction,
   transformBlock,
   transformSearchResult,
   transformTransaction,
 } from "$lib/chain-info";
 
+import * as gqlQueries from "./gql-queries";
+
 /** @type {(blocks: APIBlock[]) => Block[]} */
 const transformBlocks = mapWith(transformBlock);
 
 /** @type {(transactions: APITransaction[]) => Transaction[]} */
-const transformTransactions = mapWith(transformTransaction);
+const transformTransactions = mapWith(transformAPITransaction);
 
 /** @type {(s: string) => string} */
 const ensureTrailingSlash = (s) => (s.endsWith("/") ? s : `${s}/`);
+
+/**
+ * Adds the `Rusk-gqlvar-` prefix to all
+ * keys of the given object.
+ * Returns `undefined` if the input is `undefined`.
+ */
+const toHeadersVariables = unless(
+  isUndefined,
+  pipe([ownPairs, mapWith(updateAt(0, (k) => `Rusk-gqlvar-${k}`)), fromPairs])
+);
 
 /**
  * @param {string} endpoint
  * @param {Record<string, any> | undefined} params
  * @returns {URL}
  */
-const makeURL = (endpoint, params) =>
+const makeAPIURL = (endpoint, params) =>
   new URL(
     `${endpoint}?${new URLSearchParams(params)}`,
     ensureTrailingSlash(import.meta.env.VITE_API_ENDPOINT)
   );
+
+/**
+ * @param {string} node
+ * @param {{ query: string, variables: Record<string, string> | undefined }} queryInfo
+ */
+const gqlGet = (node, queryInfo) =>
+  fetch(`https://${node}/02/Chain`, {
+    body: JSON.stringify({
+      data: queryInfo.query,
+      topic: "gql",
+    }),
+    headers: {
+      Accept: "application/json",
+      "Accept-Charset": "utf-8",
+      "Content-Type": "application/json",
+      ...toHeadersVariables(queryInfo.variables),
+    },
+    method: "POST",
+  })
+    .then(failureToRejection)
+    .then((res) => res.json());
 
 /**
  * @param {string} endpoint
@@ -34,7 +78,7 @@ const makeURL = (endpoint, params) =>
  * @returns {Promise<any>}
  */
 const apiGet = (endpoint, params) =>
-  fetch(makeURL(endpoint, params), {
+  fetch(makeAPIURL(endpoint, params), {
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
@@ -111,8 +155,8 @@ export default {
    * @returns {Promise<Transaction>}
    */
   getTransaction(node, id) {
-    return apiGet(`transactions/${id}`, { node })
-      .then(getPath("data.0"))
+    return gqlGet(node, gqlQueries.getTransactionQueryInfo(id))
+      .then(getKey("tx"))
       .then(transformTransaction);
   },
 
@@ -122,8 +166,8 @@ export default {
    * @returns {Promise<string>}
    */
   getTransactionDetails(node, id) {
-    return apiGet(`transactions/${id}/details`, { node }).then(
-      getPath("data.json")
+    return gqlGet(node, gqlQueries.getTransactionDetailsQueryInfo(id)).then(
+      getPath("tx.raw")
     );
   },
 

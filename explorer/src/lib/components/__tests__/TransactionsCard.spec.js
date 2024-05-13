@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { apiTransactions } from "$lib/mock-data";
-import { transformTransaction } from "$lib/chain-info";
+import { transformAPITransaction } from "$lib/chain-info";
 import { TransactionsCard } from "..";
 import { compose, mapWith, take } from "lamb";
 
@@ -11,7 +11,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const getTenTransactions = compose(mapWith(transformTransaction), take(10));
+const getTenTransactions = compose(mapWith(transformAPITransaction), take(10));
 const data = getTenTransactions(apiTransactions.data);
 
 describe("Transactions Card", () => {

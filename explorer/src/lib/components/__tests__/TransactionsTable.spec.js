@@ -1,12 +1,12 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { apiTransactions } from "$lib/mock-data";
-import { transformTransaction } from "$lib/chain-info";
+import { transformAPITransaction } from "$lib/chain-info";
 import { TransactionsTable } from "..";
 import { mapWith, slice } from "lamb";
 
-const transformTransactions = mapWith(transformTransaction);
-const data = slice(transformTransactions(apiTransactions.data), 0, 10);
+const transformAPITransactions = mapWith(transformAPITransaction);
+const data = slice(transformAPITransactions(apiTransactions.data), 0, 10);
 
 describe("Transactions Table", () => {
   vi.useFakeTimers();
