@@ -10,6 +10,7 @@ use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
+use std::cmp::min;
 
 use node_data::message::payload::{GetResource, InvParam, InvType};
 use smallvec::SmallVec;
@@ -368,6 +369,15 @@ impl DataBrokerSrv {
                             }
                         }
                     }
+                    InvType::CandidateFromHash => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            if Candidate::fetch_candidate_block(&t, hash)?
+                                .is_none()
+                            {
+                                inv.add_candidate_from_hash(*hash);
+                            }
+                        }
+                    }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(hash) = &i.param {
                             if Mempool::get_tx(&t, *hash)?.is_none() {
@@ -406,6 +416,11 @@ impl DataBrokerSrv {
         m: &node_data::message::payload::GetResource,
         max_entries: usize,
     ) -> Result<Vec<Message>> {
+        let mut max_entries = max_entries;
+        if m.get_inv().max_entries > 0 {
+            max_entries = min(max_entries, m.get_inv().max_entries as usize);
+        }
+
         db.read().await.view(|t| {
             let res: Vec<Message> = m
                 .get_inv()
@@ -425,6 +440,19 @@ impl DataBrokerSrv {
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
                             Ledger::fetch_block(&t, hash)
+                                .ok()
+                                .flatten()
+                                .map(Message::new_block)
+                        } else {
+                            None
+                        }
+                    }
+                    // GetResource CandidateFromHash is identical to
+                    // GetCandidate msg
+                    // TODO: Deprecate both GetCandidate and CandidateResp
+                    InvType::CandidateFromHash => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            Candidate::fetch_candidate_block(&t, hash)
                                 .ok()
                                 .flatten()
                                 .map(Message::new_block)
