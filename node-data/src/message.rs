@@ -909,9 +909,11 @@ pub mod payload {
         /// (requester) Address to which the resource is sent back, if found
         requester_addr: SocketAddr,
 
-        /// Request Time to live
+        /// Limits request lifespan by absolute (epoch) time
         ttl_as_sec: u64,
-        // TODO: Integrity test with hashing???
+
+        /// Limits request lifespan by number of hops
+        hops_limit: u16,
     }
 
     impl GetResource {
@@ -919,12 +921,23 @@ pub mod payload {
             inventory: Inv,
             requester_addr: SocketAddr,
             ttl_as_sec: u64,
+            hops_limit: u16,
         ) -> Self {
             Self {
                 inventory,
                 requester_addr,
                 ttl_as_sec,
+                hops_limit,
             }
+        }
+
+        pub fn clone_with_hop_decrement(&self) -> Option<Self> {
+            if self.hops_limit == 1 {
+                return None;
+            }
+            let mut req = self.clone();
+            req.hops_limit -= 1;
+            Some(req)
         }
 
         pub fn get_addr(&self) -> SocketAddr {
@@ -948,7 +961,8 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.inventory.write(w)?;
             self.requester_addr.write(w)?;
-            w.write_all(&self.ttl_as_sec.to_le_bytes()[..])
+            w.write_all(&self.ttl_as_sec.to_le_bytes()[..])?;
+            w.write_all(&self.hops_limit.to_le_bytes()[..])
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
@@ -960,11 +974,17 @@ pub mod payload {
 
             let mut buf = [0u8; 8];
             r.read_exact(&mut buf)?;
+            let ttl_as_sec = u64::from_le_bytes(buf);
+
+            let mut buf = [0u8; 2];
+            r.read_exact(&mut buf)?;
+            let hops_limit = u16::from_le_bytes(buf);
 
             Ok(GetResource {
                 inventory: inner,
                 requester_addr,
-                ttl_as_sec: u64::from_le_bytes(buf),
+                ttl_as_sec,
+                hops_limit,
             })
         }
     }
