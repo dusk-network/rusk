@@ -1,10 +1,10 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { DetailList, ListItem } from "$lib/components";
+  import { AppAnchor, DetailList, ListItem } from "$lib/components";
+  import { Badge, ProgressBar } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import { getRelativeTimeString } from "$lib/dusk/string";
-  import { ProgressBar } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import "./BlocksList.css";
 
@@ -21,7 +21,11 @@
   >
     <svelte:fragment slot="term"># block</svelte:fragment>
     <svelte:fragment slot="definition"
-      >{formatter(data.header.height)}</svelte:fragment
+      ><AppAnchor
+        className="block-details__list-link"
+        href={`/blocks/block?id=${data.header.hash}`}
+        >{formatter(data.header.height)}</AppAnchor
+      ></svelte:fragment
     >
   </ListItem>
 
@@ -42,9 +46,9 @@
     tooltipText="The average fee paid for the transactions within the block"
   >
     <svelte:fragment slot="term">average fee paid</svelte:fragment>
-    <svelte:fragment slot="definition"
-      >{formatter(luxToDusk(data.transactions.stats.averageGasPrice))} DUSK</svelte:fragment
-    >
+    <svelte:fragment slot="definition">
+      {formatter(luxToDusk(data.transactions.stats.averageGasPrice))} DUSK
+    </svelte:fragment>
   </ListItem>
 
   <!-- GAS USED -->
@@ -63,16 +67,19 @@
   <!-- TRANSACTIONS -->
   <ListItem tooltipText="The number of transactions included in the block">
     <svelte:fragment slot="term">txn(s)</svelte:fragment>
-    <svelte:fragment slot="definition"
-      >{formatter(data.transactions.data.length)}</svelte:fragment
-    >
+    <svelte:fragment slot="definition">
+      {formatter(data.transactions.data.length)}
+    </svelte:fragment>
   </ListItem>
 
   <!-- BLOCK REWARD -->
   <ListItem tooltipText="The reward allocated to the block generator">
     <svelte:fragment slot="term">rewards</svelte:fragment>
-    <svelte:fragment slot="definition"
-      >{formatter(luxToDusk(data.header.reward))} DUSK</svelte:fragment
-    >
+    <svelte:fragment slot="definition">
+      <Badge
+        variant="alt"
+        text={`${formatter(luxToDusk(data.header.reward))} Dusk`}
+      />
+    </svelte:fragment>
   </ListItem>
 </DetailList>

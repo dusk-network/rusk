@@ -1,0 +1,15 @@
+.block__link {
+  text-decoration: none;
+}
+
+.block__fee-avg-label,
+.block__fee-total-label {
+  font-weight: 500;
+}
+
+.block__time {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.2rem;
+}

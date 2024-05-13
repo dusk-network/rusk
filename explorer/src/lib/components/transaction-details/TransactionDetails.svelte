@@ -1,8 +1,8 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { ListItem } from "$lib/components";
-  import { Badge, Button, Card, Switch } from "$lib/dusk/components";
+  import { DataCard, ListItem } from "$lib/components";
+  import { Badge, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
     createCurrencyFormatter,
@@ -12,10 +12,23 @@
   import {
     calculateAdaptiveCharCount,
     getRelativeTimeString,
+    makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
   import { onMount } from "svelte";
   import "./TransactionDetails.css";
+
+  /** @type {string | Undefined} */
+  export let className = undefined;
+
+  /** @type {Transaction} */
+  export let data;
+
+  /** @type {Error | null}*/
+  export let error;
+
+  /** @type {Boolean} */
+  export let loading;
 
   const formatter = createValueFormatter("en");
   const currencyFormatter = createCurrencyFormatter("en", "usd", 9);
@@ -27,11 +40,7 @@
   /** @type {boolean} */
   let isPayloadToggled = false;
 
-  /** @type {HTMLElement}*/
-  let transactionList;
-
-  /** @type {*} */
-  export let data;
+  $: classes = makeClassName(["transaction-details", className]);
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -40,18 +49,22 @@
       screenWidth = entry.contentRect.width;
     });
 
-    resizeObserver.observe(transactionList.children[1]);
+    resizeObserver.observe(document.body);
 
     return () => resizeObserver.disconnect();
   });
 </script>
 
-<Card className="transaction-details">
-  <header slot="header" class="transaction-details__header">
-    <h3 class="transaction-details__header-heading">Transaction Details</h3>
-    <Button on:click={() => history.back()} text="Back" variant="secondary" />
-  </header>
-  <dl class="transaction-details__list" bind:this={transactionList}>
+<DataCard
+  on:retry
+  {data}
+  {error}
+  {loading}
+  className={classes}
+  title="Transaction Details"
+  headerButtonDetails={{ action: () => history.back(), label: "Back" }}
+>
+  <dl class="transaction-details__list">
     <!-- TRANSACTION ID -->
     <ListItem tooltipText="The ID of the transaction">
       <svelte:fragment slot="term">ID</svelte:fragment>
@@ -87,12 +100,12 @@
     <ListItem tooltipText="The date and time the transaction was created">
       <svelte:fragment slot="term">timestamp</svelte:fragment>
       <time
-        datetime={new Date(data.blockts * 1000).toISOString()}
+        datetime={data.date.toISOString()}
         class="transaction-details__list-timestamp"
         slot="definition"
       >
-        {getRelativeTimeString(new Date(data.blockts * 1000), "long")}
-        {new Date(data.blockts * 1000).toUTCString()}
+        {getRelativeTimeString(data.date, "long")}
+        {data.date.toUTCString()}
       </time>
     </ListItem>
 
@@ -160,4 +173,4 @@
       </svelte:fragment>
     </ListItem>
   </dl>
-</Card>
+</DataCard>

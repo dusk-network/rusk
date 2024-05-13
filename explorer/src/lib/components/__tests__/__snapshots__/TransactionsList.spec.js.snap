@@ -30,7 +30,14 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
     <dd
       class="details-list__definition details-list__definition--table"
     >
-      4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04
+      <a
+        class="dusk-anchor transaction-details__list-link"
+        href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+      >
+        4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04
+      </a>
+      <!--&lt;Anchor&gt;-->
+      <!--&lt;AppAnchor&gt;-->
     </dd>
     <!--&lt;ListItem&gt;-->
      
@@ -76,7 +83,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The ID of the transaction"
+        data-tooltip-text="The transaction gas price in lux"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -105,7 +112,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The ID of the transaction"
+        data-tooltip-text="The transaction gas limit in lux"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -134,7 +141,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The ID of the transaction"
+        data-tooltip-text="The transaction fee amount"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -152,7 +159,12 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
     <dd
       class="details-list__definition details-list__definition--table"
     >
-      290,766
+      <span
+        class="dusk-badge dusk-badge--variant-alt"
+      >
+        0.000290766 Dusk
+      </span>
+      <!--&lt;Badge&gt;-->
     </dd>
     <!--&lt;ListItem&gt;-->
      
@@ -163,7 +175,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The ID of the transaction"
+        data-tooltip-text="The transaction status"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -187,6 +199,8 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         success
       </span>
       <!--&lt;Badge&gt;-->
+      
+      <!--&lt;DataGuard&gt;-->
     </dd>
     <!--&lt;ListItem&gt;-->
      
@@ -197,7 +211,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The ID of the transaction"
+        data-tooltip-text="The transaction type"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -221,6 +235,8 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         transfer
       </span>
       <!--&lt;Badge&gt;-->
+      
+      <!--&lt;DataGuard&gt;-->
     </dd>
     <!--&lt;ListItem&gt;-->
   </dl>

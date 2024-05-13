@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DataGuard > should render the \`DataGuard\` if data is present 1`] = `
+<span>
+  some text
+</span>
+`;
+
+exports[`DataGuard > should render the \`DataGuard\` with the placeholder if no data is passed 1`] = `
+<span>
+  - - -
+</span>
+`;

@@ -1476,7 +1476,6 @@ exports[`World Map > renders the WorldMap component with nodes 1`] = `
       cy="146.09180502519632"
       r="3"
     />
-    
   </svg>
   <!--&lt;WorldMap&gt;-->
 </div>

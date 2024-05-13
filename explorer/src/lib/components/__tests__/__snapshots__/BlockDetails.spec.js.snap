@@ -3,23 +3,17 @@
 exports[`Block Details > renders the Block Details component 1`] = `
 <div>
   <div
-    class="dusk-card block-details"
+    class="dusk-card data-card block-details"
   >
     <header
-      class="block-details__header"
+      class="data-card__header"
       slot="header"
     >
-      <h3
-        class="block-details__header-heading"
+      <h1
+        class="data-card__header-title"
       >
-        Block Details 
-        <span
-          class="block-details__block-height"
-        >
-          - #
-          34,526
-        </span>
-      </h3>
+        Block Details - #495,868
+      </h1>
        
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
@@ -62,7 +56,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        2f37fec165e3891e6f6beb329f0262cd0538edcb478a3db2154381ecf45150aa
+        bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -92,7 +86,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         <a
           class="dusk-anchor block-details__list-anchor"
-          href="/some-base-path/blocks/block?id=64ea046bf4a86e692d79dd8dccffa2114e2dc2c82e2d6cd737da4aa818629b6d"
+          href="/some-base-path/blocks/block?id=07b74b35c2c7cf8f41426cd0870bafa1a2c7adee3fdd876643548096186fc4cb"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -109,11 +103,11 @@ exports[`Block Details > renders the Block Details component 1`] = `
         <!--&lt;Anchor&gt;-->
         <!--&lt;AppAnchor&gt;-->
          
-        488,911
+        495,868
          
         <a
           class="dusk-anchor block-details__list-anchor"
-          href="/some-base-path/blocks/block?id=b95069bdd0ff5b564f8fd6fafb01c6fa75ea69ef6b0325115c65da171538f214"
+          href="/some-base-path/blocks/block?id=6011556208a85e6001bd01ccbf936486b91318a7f6cbcf7ab810adf6fae34204"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -159,10 +153,10 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         <time
           class="block-details__list-timestamp"
-          datetime="1970-01-01T00:00:01.000Z"
+          datetime="2024-04-16T20:07:02.000Z"
           slot="definition"
         >
-          54 years ago
+          last month
            
         </time>
       </dd>
@@ -192,7 +186,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0
+        2
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -220,7 +214,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0
+        0.000580718
          DUSK
       </dd>
       <!--&lt;ListItem&gt;-->
@@ -307,7 +301,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0
+        0.000580718
          DUSK
 
         
@@ -317,7 +311,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
         >
           <div
             class="dusk-progress-bar__filler"
-            style="width: 0%"
+            style="width: 0.01161436%"
           />
         </div>
         <!--&lt;ProgressBar&gt;-->
@@ -349,7 +343,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0
+        0.000000001
          DUSK
       </dd>
       <!--&lt;ListItem&gt;-->
@@ -382,15 +376,17 @@ exports[`Block Details > renders the Block Details component 1`] = `
           class="block-details__state-hash"
           slot="definition"
         >
-          fb4c93bcc64914203b4312cf09e02c230ed3bc013408b124d5679c6cf583efd8
+          20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
         </span>
       </dd>
       <!--&lt;ListItem&gt;-->
     </dl>
+    
      
   </div>
   
   <!--&lt;Card&gt;-->
+  <!--&lt;DataCard&gt;-->
   <!--&lt;BlockDetails&gt;-->
 </div>
 `;

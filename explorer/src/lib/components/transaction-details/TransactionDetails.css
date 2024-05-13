@@ -1,19 +1,9 @@
-.transaction-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.transaction-details__header {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.transaction-details__header-heading {
-  text-transform: uppercase;
-  font-size: 1.5rem;
-  font-weight: 400;
+.transaction-details__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  font-size: 0.875rem;
+  column-gap: 1.875rem;
+  padding: 0 1.125rem;
 }
 
 .transaction-details__status,
@@ -27,13 +17,6 @@
 
 .transaction-details__gas-used {
   width: 12.5rem;
-}
-
-.transaction-details__list {
-  display: grid;
-  grid-template-columns: 1fr;
-  font-size: 0.875rem;
-  column-gap: 1.875rem;
 }
 
 .transaction-details__payload {

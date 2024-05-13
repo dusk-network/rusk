@@ -7,7 +7,7 @@
 
   import "./WorldMap.css";
 
-  /** @type {Array<{lat: number, lon:number}> | Error}*/
+  /** @type {Array<{lat: number, lon:number}> | Error | null}*/
   export let nodes;
 
   /** @type {import("d3-geo").GeoProjection}*/
@@ -19,7 +19,6 @@
   /** Function will return an empty array if an error is passed to it */
   /** Function will always receive an empty array, an array of objects or an error */
   const getUniqueMarkers = uniquesBy(({ lat, lon }) => `${lat}x${lon}`);
-  const nodeLocations = getUniqueMarkers(nodes);
 </script>
 
 <svg id="nodes-world-map" viewBox="0 0 954 477">
@@ -36,13 +35,11 @@
   {#each dataset.features as data, index (index)}
     <path d={path(data)} style="fill:url(#vertical-lines)" />
   {/each}
-  {#if nodeLocations.length}
-    {#each nodeLocations as marker, index (index)}
-      <circle
-        cx={projection([marker.lon, marker.lat])[0]}
-        cy={projection([marker.lon, marker.lat])[1]}
-        r="3"
-      ></circle>
-    {/each}
-  {/if}
+  {#each nodes ? getUniqueMarkers(nodes) : [] as marker (`${marker.lon}x${marker.lat}`)}
+    <circle
+      cx={projection([marker.lon, marker.lat])[0]}
+      cy={projection([marker.lon, marker.lat])[1]}
+      r="3"
+    ></circle>
+  {/each}
 </svg>
