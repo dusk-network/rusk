@@ -784,13 +784,17 @@ async fn flood_request_block<N: Network>(
     network: &Arc<RwLock<N>>,
     req: BlockRequest,
 ) {
-    let mut inv = Inv::default();
+    // Request only one resource
+    let mut inv = Inv::new(1);
     match req {
         BlockRequest::ByHeight(height) => {
             inv.add_block_from_height(height);
         }
         BlockRequest::ByHash(hash) => {
+            // Request from network the full block, if it is missing then
+            // request the candidate block.
             inv.add_block_from_hash(hash);
+            inv.add_candidate_from_hash(hash);
         }
     };
 
