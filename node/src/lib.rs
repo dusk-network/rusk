@@ -44,7 +44,12 @@ pub trait Network: Send + Sync + 'static {
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()>;
 
     /// Broadcasts a request message
-    async fn flood_request(&self, msg_inv: &Inv) -> anyhow::Result<()>;
+    async fn flood_request(
+        &self,
+        msg_inv: &Inv,
+        ttl_as_sec: u64,
+        hops_limit: u16,
+    ) -> anyhow::Result<()>;
 
     /// Sends a message to a specified peer.
     async fn send_to_peer(

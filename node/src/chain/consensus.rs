@@ -198,7 +198,6 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 {
     fn store_candidate_block(&mut self, b: Block) {
         tracing::trace!("store candidate block: {:?}", b);
-
         match self.db.try_read() {
             Ok(db) => {
                 if let Err(e) = db.update(|t| t.store_candidate_block(b)) {

@@ -799,7 +799,7 @@ async fn flood_request_block<N: Network>(
     };
 
     debug!(event = "flood_request block", ?req);
-    if let Err(err) = network.read().await.flood_request(&inv).await {
+    if let Err(err) = network.read().await.flood_request(&inv, 0, 100).await {
         warn!("could not request block {err}")
     };
 }

@@ -24,7 +24,6 @@ use tracing::{error, info, trace, warn};
 mod frame;
 
 const MAX_PENDING_SENDERS: u64 = 1000;
-const FLOOD_REQUEST_TTL: u64 = 10; // seconds
 
 type RoutesList<const N: usize> = [Option<AsyncQueue<Message>>; N];
 type FilterList<const N: usize> = [Option<BoxedFilter>; N];
@@ -231,17 +230,23 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     ///
     /// A receiver of this message is supposed to either look up and return the
     /// resource or rebroadcast it to the next bucket.
-    async fn flood_request(&self, msg_inv: &Inv) -> anyhow::Result<()> {
+    async fn flood_request(
+        &self,
+        msg_inv: &Inv,
+        ttl_as_sec: u64,
+        hops_limit: u16,
+    ) -> anyhow::Result<()> {
         let ttl_as_sec = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs()
-            + FLOOD_REQUEST_TTL;
+            + ttl_as_sec;
 
         self.broadcast(&Message::new_get_resource(GetResource::new(
             msg_inv.clone(),
             self.public_addr,
             ttl_as_sec,
+            hops_limit,
         )))
         .await
     }
