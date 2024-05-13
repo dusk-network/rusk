@@ -12,8 +12,15 @@
   import { Badge } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
-  import { getRelativeTimeString, middleEllipsis } from "$lib/dusk/string";
+  import {
+    getRelativeTimeString,
+    makeClassName,
+    middleEllipsis,
+  } from "$lib/dusk/string";
   import "./TransactionsTable.css";
+
+  /** @type {string | Undefined} */
+  export let className = undefined;
 
   /** @type {Transaction[]}*/
   export let data;
@@ -21,9 +28,11 @@
   const HASH_CHARS_LENGTH = 10;
 
   const numberFormatter = createValueFormatter("en");
+
+  $: classes = makeClassName(["transactions-table", className]);
 </script>
 
-<Table>
+<Table className={classes}>
   <TableHead>
     <TableRow>
       <TableCell type="th">Hash</TableCell>

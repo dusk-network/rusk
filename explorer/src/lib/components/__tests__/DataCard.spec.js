@@ -9,7 +9,7 @@ describe("DataCard", () => {
   const baseProps = {
     data: null,
     error: null,
-    headerButtonDetails: { action: () => {}, label: "Button" },
+    headerButtonDetails: { action: () => {}, disabled: false, label: "Button" },
     loading: false,
     title: "Title",
   };
@@ -73,7 +73,11 @@ describe("DataCard", () => {
 
   it("should pass the correct function to the button on click event", async () => {
     const onClickMock = vi.fn();
-    const headerButtonDetails = { action: onClickMock, label: "Back" };
+    const headerButtonDetails = {
+      action: onClickMock,
+      disabled: false,
+      label: "Back",
+    };
     const { getByRole } = render(DataCard, {
       ...baseOptions,
       props: { ...baseProps, headerButtonDetails },
@@ -82,5 +86,20 @@ describe("DataCard", () => {
     await fireEvent.click(getByRole("button"));
 
     expect(onClickMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("should render the `DataCard` with a disabled button", () => {
+    const headerButtonDetails = {
+      action: () => {},
+      disabled: true,
+      label: "Back",
+    };
+    const { container, getByRole } = render(DataCard, {
+      ...baseOptions,
+      props: { ...baseProps, headerButtonDetails },
+    });
+
+    expect(getByRole("button")).toBeDisabled();
+    expect(container.firstChild).toMatchSnapshot();
   });
 });

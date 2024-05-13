@@ -1,6 +1,6 @@
 <script>
   import { page } from "$app/stores";
-  import { BlockDetails, TransactionsCard } from "$lib/components";
+  import { BlockDetails, LatestTransactionsCard } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
   import { createDataStore } from "$lib/dusk/svelte-stores";
@@ -27,7 +27,7 @@
     <BlockDetails on:retry={getBlock} {data} {error} loading={isLoading} />
   </div>
   <div class="block__transactions">
-    <TransactionsCard
+    <LatestTransactionsCard
       on:retry={getBlock}
       txs={data?.transactions.data}
       {error}

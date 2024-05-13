@@ -1,5 +1,5 @@
 <script>
-  import { BlocksCard, TransactionsCard } from "$lib/components";
+  import { LatestBlocksCard, LatestTransactionsCard } from "$lib/components";
   import { StatisticsPanel } from "$lib/containers";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
@@ -21,7 +21,7 @@
 </section>
 
 <section class="tables">
-  <BlocksCard
+  <LatestBlocksCard
     on:retry={pollingDataStore.start}
     className="tables-layout"
     blocks={data?.blocks}
@@ -29,7 +29,7 @@
     loading={isLoading}
   />
 
-  <TransactionsCard
+  <LatestTransactionsCard
     on:retry={pollingDataStore.start}
     className="tables-layout"
     txs={data?.transactions}

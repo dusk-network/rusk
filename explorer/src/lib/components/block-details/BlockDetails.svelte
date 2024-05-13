@@ -63,7 +63,11 @@
   {loading}
   className={classes}
   title="Block Details - {blockHeight}"
-  headerButtonDetails={{ action: () => history.back(), label: "Back" }}
+  headerButtonDetails={{
+    action: () => history.back(),
+    disabled: false,
+    label: "Back",
+  }}
 >
   <dl class="block-details__list">
     <!-- BLOCK HASH -->

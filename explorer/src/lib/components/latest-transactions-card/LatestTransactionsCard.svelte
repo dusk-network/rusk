@@ -24,7 +24,7 @@
   /** @type {number} */
   let clientWidth;
 
-  $: classes = makeClassName(["transactions-card", className]);
+  $: classes = makeClassName(["latest-transactions-card", className]);
 </script>
 
 <svelte:window bind:outerWidth={clientWidth} />
@@ -37,6 +37,7 @@
   title="Transactions"
   headerButtonDetails={{
     action: () => goto("/transactions"),
+    disabled: false,
     label: "All Transactions",
   }}
 >
