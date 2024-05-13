@@ -748,10 +748,15 @@ pub mod payload {
 
     #[derive(Clone, Default, Debug, Copy)]
     pub enum InvType {
+        /// A transaction fetched by tx_id
         MempoolTx,
         #[default]
+        /// A full block fetched by block hash
         BlockFromHash,
+        /// A full Block fetched by block height
         BlockFromHeight,
+        /// A candidate block fetched by block hash, Cert is None
+        CandidateFromHash,
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -775,9 +780,16 @@ pub mod payload {
     #[derive(Default, Debug, Clone)]
     pub struct Inv {
         pub inv_list: Vec<InvVect>,
+        pub max_entries: u16,
     }
 
     impl Inv {
+        pub fn new(max_entries: u16) -> Self {
+            Self {
+                inv_list: Default::default(),
+                max_entries,
+            }
+        }
         pub fn add_tx_hash(&mut self, hash: [u8; 32]) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::MempoolTx,
@@ -798,6 +810,13 @@ pub mod payload {
                 param: InvParam::Height(height),
             });
         }
+
+        pub fn add_candidate_from_hash(&mut self, hash: [u8; 32]) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::CandidateFromHash,
+                param: InvParam::Hash(hash),
+            });
+        }
     }
 
     impl Serializable for Inv {
@@ -816,6 +835,7 @@ pub mod payload {
                 };
             }
 
+            w.write_all(&self.max_entries.to_le_bytes())?;
             Ok(())
         }
 
@@ -833,6 +853,7 @@ pub mod payload {
                     0 => InvType::MempoolTx,
                     1 => InvType::BlockFromHash,
                     2 => InvType::BlockFromHeight,
+                    3 => InvType::CandidateFromHash,
                     _ => {
                         return Err(io::Error::from(io::ErrorKind::InvalidData))
                     }
@@ -850,9 +871,13 @@ pub mod payload {
                     InvType::BlockFromHeight => {
                         inv.add_block_from_height(Self::read_u64_le(r)?);
                     }
+                    InvType::CandidateFromHash => {
+                        inv.add_candidate_from_hash(Self::read_bytes(r)?);
+                    }
                 }
             }
 
+            inv.max_entries = Self::read_u16_le(r)?;
             Ok(inv)
         }
     }
