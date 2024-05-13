@@ -1,4 +1,5 @@
 <script>
+  /** @type {*}*/
   export let data;
 </script>
 

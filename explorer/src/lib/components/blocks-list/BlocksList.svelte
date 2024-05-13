@@ -1,7 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { AppAnchor, DataGuard, DetailList, ListItem } from "$lib/components";
+  import { AppAnchor, DetailList, ListItem } from "$lib/components";
   import { Badge, ProgressBar } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import { getRelativeTimeString } from "$lib/dusk/string";
@@ -37,9 +37,7 @@
       class="block-details__list-timestamp"
       slot="definition"
     >
-      <DataGuard data={data.header?.date}>
-        {getRelativeTimeString(data.header.date, "long")}
-      </DataGuard>
+      {getRelativeTimeString(data.header.date, "long")}
     </time>
   </ListItem>
 
@@ -49,9 +47,7 @@
   >
     <svelte:fragment slot="term">average fee paid</svelte:fragment>
     <svelte:fragment slot="definition">
-      <DataGuard data={data.transactions?.stats?.averageGasPrice}>
-        {formatter(luxToDusk(data.transactions.stats.averageGasPrice))} DUSK
-      </DataGuard>
+      {formatter(luxToDusk(data.transactions.stats.averageGasPrice))} DUSK
     </svelte:fragment>
   </ListItem>
 
@@ -59,17 +55,12 @@
   <ListItem tooltipText="The amount of gas used generating the block">
     <svelte:fragment slot="term">gas used</svelte:fragment>
     <svelte:fragment slot="definition">
-      <DataGuard
-        data={data.transactions.stats?.gasUsed &&
-          data.transactions.stats?.gasLimit}
-      >
-        <ProgressBar
-          currentPercentage={(data.transactions.stats.gasUsed /
-            data.transactions.stats.gasLimit) *
-            100}
-          className="blocks-list__gas-used"
-        />
-      </DataGuard>
+      <ProgressBar
+        currentPercentage={(data.transactions.stats.gasUsed /
+          data.transactions.stats.gasLimit) *
+          100}
+        className="blocks-list__gas-used"
+      />
     </svelte:fragment>
   </ListItem>
 
@@ -77,9 +68,7 @@
   <ListItem tooltipText="The number of transactions included in the block">
     <svelte:fragment slot="term">txn(s)</svelte:fragment>
     <svelte:fragment slot="definition">
-      <DataGuard data={data.transactions.data?.length}>
-        {formatter(data.transactions.data.length)}
-      </DataGuard>
+      {formatter(data.transactions.data.length)}
     </svelte:fragment>
   </ListItem>
 
@@ -87,12 +76,10 @@
   <ListItem tooltipText="The reward allocated to the block generator">
     <svelte:fragment slot="term">rewards</svelte:fragment>
     <svelte:fragment slot="definition">
-      <DataGuard data={data.header?.reward}>
-        <Badge
-          variant="alt"
-          text={`${formatter(luxToDusk(data.header.reward))} Dusk`}
-        />
-      </DataGuard>
+      <Badge
+        variant="alt"
+        text={`${formatter(luxToDusk(data.header.reward))} Dusk`}
+      />
     </svelte:fragment>
   </ListItem>
 </DetailList>

@@ -12,6 +12,8 @@
   );
 
   onNetworkChange(pollingDataStore.start);
+
+  $: ({ data, error, isLoading } = $pollingDataStore);
 </script>
 
 <section class="chain-info">
@@ -20,19 +22,19 @@
 
 <section class="tables">
   <BlocksCard
-    on:retry={() => pollingDataStore.start()}
+    on:retry={pollingDataStore.start}
     className="tables-layout"
-    blocks={$pollingDataStore.data?.blocks}
-    error={$pollingDataStore.error}
-    loading={$pollingDataStore.isLoading}
+    blocks={data?.blocks}
+    {error}
+    loading={isLoading}
   />
 
   <TransactionsCard
-    on:retry={() => pollingDataStore.start()}
+    on:retry={pollingDataStore.start}
     className="tables-layout"
-    txs={$pollingDataStore.data?.transactions}
-    error={$pollingDataStore.error}
-    loading={$pollingDataStore.isLoading}
+    txs={data?.transactions}
+    {error}
+    loading={isLoading}
   />
 </section>
 

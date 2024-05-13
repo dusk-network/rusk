@@ -31,7 +31,7 @@
   {loading}
   className={classes}
   title="Blocks"
-  button={{ action: () => goto("/blocks"), label: "All Blocks" }}
+  headerButtonDetails={{ action: () => goto("/blocks"), label: "All Blocks" }}
 >
   {#if clientWidth > 768}
     <BlocksTable data={blocks} />

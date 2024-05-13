@@ -1,7 +1,6 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { browser } from "$app/environment";
   import {
     mdiAccountGroupOutline,
     mdiCubeOutline,
@@ -15,9 +14,13 @@
   import { DataGuard, WorldMap } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
-  import { createDataStore, createPollingDataStore } from "$lib/dusk/svelte-stores";
+  import {
+    createDataStore,
+    createPollingDataStore,
+  } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
   import "./StatisticsPanel.css";
+  import { onMount } from "svelte";
 
   const valueFormatter = createCurrencyFormatter("en", "DUSK", 0);
   const millionFormatter = createCompactFormatter("en");
@@ -29,33 +32,39 @@
     return value >= 1e6 ? millionFormatter(value) : valueFormatter(value);
   };
 
-  const dataStore = createDataStore(duskAPI.getNodeLocations);
-  const pollingMarketDataStore = createPollingDataStore(
-    duskAPI.getMarketData,
-    $appStore.fetchInterval
-  );
+  const STATS_FETCH_INTERVAL = 5000;
+
+  const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
+  const marketDataStore = createDataStore(duskAPI.getMarketData);
+
+  const getNodeLocations = () => {
+    nodeLocationsStore.getData($appStore.network);
+  };
+
+  const getMarketData = () => {
+    marketDataStore.getData($appStore.network);
+  };
 
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
-    $appStore.fetchInterval
+    STATS_FETCH_INTERVAL
   );
 
-  onNetworkChange(pollingMarketDataStore.start);
   onNetworkChange(pollingStatsDataStore.start);
+  onNetworkChange(getNodeLocations);
+  onNetworkChange(getMarketData);
 
-  $: {
-    browser && dataStore.getData($appStore.network);
-  }
+  $: ({ data } = $nodeLocationsStore);
 
   $: statistics = [
     [
       {
-        data: $pollingMarketDataStore.data?.currentPrice.usd,
+        data: $marketDataStore.data?.currentPrice.usd,
         icon: mdiCurrencyUsd,
         title: "Dusk Price",
       },
       {
-        data: $pollingMarketDataStore.data?.marketCap.usd,
+        data: $marketDataStore.data?.marketCap.usd,
         icon: mdiCurrencyUsd,
         title: "Total Market Cap",
       },
@@ -104,6 +113,11 @@
       },
     ],
   ];
+
+  onMount(() => {
+    getNodeLocations();
+    getMarketData();
+  });
 </script>
 
 <div class="statistics-panel">
@@ -127,6 +141,6 @@
     {/each}
   </div>
   <div class="statistics-panel__world-map">
-      <WorldMap nodes={$dataStore.data} />
+    <WorldMap nodes={data} />
   </div>
 </div>

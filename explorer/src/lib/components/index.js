@@ -1,4 +1,4 @@
-export { default as Alert } from "./alert/Alert.svelte";
+export { default as DataAlert } from "./data-alert/DataAlert.svelte";
 export { default as AppAnchor } from "./app-anchor/AppAnchor.svelte";
 export { default as AppImage } from "./app-image/AppImage.svelte";
 export { default as BlockDetails } from "./block-details/BlockDetails.svelte";

@@ -1,28 +1,25 @@
+<svelte:options immutable={true} />
+
 <script>
-  import { mdiAlertOutline, mdiReload } from "@mdi/js";
+  import { mdiAlertOutline } from "@mdi/js";
   import { Button, Icon } from "$lib/dusk/components";
   import { createEventDispatcher } from "svelte";
-  import "./Alert.css";
+  import "./DataAlert.css";
 
   /** @type {Error | null}*/
   export let error;
 
-  /** @type {Boolean}*/
-  export let hasEmptyData;
-
   const dispatch = createEventDispatcher();
-
-  $: error = error || null;
 </script>
 
 <div class="alert">
   <Icon path={mdiAlertOutline} size="large" />
   <header>
     {#if error}
-      <h3>There was an error fetching the data.</h3>
-      <p class="alert__error-message">{error?.message ?? ""}</p>
-    {:else if hasEmptyData}
-      <h3>No data to display</h3>
+      <p>There was an error fetching the data.</p>
+      <p class="alert__error-message">{error.message ?? ""}</p>
+    {:else}
+      <p>No data to display</p>
     {/if}
   </header>
   {#if error}
@@ -30,8 +27,8 @@
       on:click={() => {
         dispatch("retry");
       }}
-      icon={{ path: mdiReload, size: "large" }}
       variant="secondary"
+      text="Retry"
     />
   {/if}
 </div>

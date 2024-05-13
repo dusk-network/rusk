@@ -35,7 +35,10 @@
   {loading}
   className={classes}
   title="Transactions"
-  button={{ action: () => goto("/transactions"), label: "All Transactions" }}
+  headerButtonDetails={{
+    action: () => goto("/transactions"),
+    label: "All Transactions",
+  }}
 >
   {#if clientWidth > 768}
     <TransactionsTable data={txs} />

@@ -62,7 +62,7 @@
   {loading}
   className={classes}
   title="Transaction Details"
-  button={{ action: () => history.back(), label: "Back" }}
+  headerButtonDetails={{ action: () => history.back(), label: "Back" }}
 >
   <dl class="transaction-details__list">
     <!-- TRANSACTION ID -->

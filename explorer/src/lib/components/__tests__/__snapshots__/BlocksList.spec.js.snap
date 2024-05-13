@@ -30,7 +30,14 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
     <dd
       class="details-list__definition details-list__definition--table"
     >
-      495,868
+      <a
+        class="dusk-anchor block-details__list-link"
+        href="/some-base-path/blocks/block?id=bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f"
+      >
+        495,868
+      </a>
+      <!--&lt;Anchor&gt;-->
+      <!--&lt;AppAnchor&gt;-->
     </dd>
     <!--&lt;ListItem&gt;-->
      
@@ -191,8 +198,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
     <dd
       class="details-list__definition details-list__definition--table"
     >
-      16
-       DUSK
+      <span
+        class="dusk-badge dusk-badge--variant-alt"
+      >
+        16 Dusk
+      </span>
+      <!--&lt;Badge&gt;-->
     </dd>
     <!--&lt;ListItem&gt;-->
   </dl>

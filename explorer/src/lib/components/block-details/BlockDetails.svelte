@@ -33,13 +33,13 @@
   let screenWidth = window.innerWidth;
 
   /** @type {string}*/
-  let blockHeight;
+  let blockHeight = "";
 
   $: classes = makeClassName(["block-details", className]);
 
   $: {
     if (data) {
-      blockHeight = formatter(data.header.height);
+      blockHeight = `#${formatter(data.header.height)}`;
     }
   }
 
@@ -62,8 +62,8 @@
   {error}
   {loading}
   className={classes}
-  title="Block Details - #{blockHeight}"
-  button={{ action: () => history.back(), label: "Back" }}
+  title="Block Details - {blockHeight}"
+  headerButtonDetails={{ action: () => history.back(), label: "Back" }}
 >
   <dl class="block-details__list">
     <!-- BLOCK HASH -->

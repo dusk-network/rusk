@@ -59,43 +59,35 @@
       class="transaction-details__list-timestamp"
       slot="definition"
     >
-      <DataGuard data={data.date}>
-        {getRelativeTimeString(data.date, "long")}
-      </DataGuard>
+      {getRelativeTimeString(data.date, "long")}
     </time>
   </ListItem>
 
   <!-- GAS PRICE -->
   <ListItem tooltipText="The transaction gas price in lux">
     <svelte:fragment slot="term">Gas Price</svelte:fragment>
-    <svelte:fragment slot="definition"
-      ><DataGuard data={data.gasprice}>
-        {formatter(data.gasprice)}
-      </DataGuard></svelte:fragment
-    >
+    <svelte:fragment slot="definition">
+      {formatter(data.gasprice)}
+    </svelte:fragment>
   </ListItem>
 
   <!-- GAS LIMIT -->
   <ListItem tooltipText="The transaction gas limit in lux">
     <svelte:fragment slot="term">Gas Limit</svelte:fragment>
-    <svelte:fragment slot="definition"
-      ><DataGuard data={data.gaslimit}>
-        {formatter(data.gaslimit)}
-      </DataGuard></svelte:fragment
-    >
+    <svelte:fragment slot="definition">
+      {formatter(data.gaslimit)}
+    </svelte:fragment>
   </ListItem>
 
   <!-- TX FEE -->
   <ListItem tooltipText="The transaction fee amount">
     <svelte:fragment slot="term">Fee</svelte:fragment>
-    <svelte:fragment slot="definition"
-      ><DataGuard data={data.feepaid}>
-        <Badge
-          variant="alt"
-          text={`${formatter(luxToDusk(data.feepaid))} Dusk`}
-        />
-      </DataGuard></svelte:fragment
-    >
+    <svelte:fragment slot="definition">
+      <Badge
+        variant="alt"
+        text={`${formatter(luxToDusk(data.feepaid))} Dusk`}
+      />
+    </svelte:fragment>
   </ListItem>
 
   <!-- STATUS -->
