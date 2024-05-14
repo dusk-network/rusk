@@ -19,17 +19,20 @@ use crate::database::rocksdb::MD_HASH_KEY;
 use crate::database::{Ledger, Metadata};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use dusk_consensus::commons::ConsensusError;
 pub use header_validation::verify_block_cert;
-use node_data::ledger::{to_str, BlockWithLabel, Label};
+use node_data::ledger::{to_str, Block, BlockWithLabel, Certificate, Label};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 
+use node_data::message::payload::Vote;
 use tokio::time::{sleep_until, Instant};
 use tracing::{error, info, warn};
 
@@ -49,6 +52,12 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     inbound: AsyncQueue<Message>,
     keys_path: String,
     acceptor: Option<Arc<RwLock<Acceptor<N, DB, VM>>>>,
+
+    /// Certificates cached from received Quorum messages
+    /// TODO: Spamming attack will be addressed by adding Quorum/Certificate
+    /// sanity check
+    /// TODO: Replace this HashMap with Quorum CF in RocksDB, if needed
+    certificates: HashMap<[u8; 32], Certificate>,
 }
 
 #[async_trait]
@@ -164,13 +173,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 metadata = ?msg.metadata,
                             );
 
-                            // Handle a block that originates from a network peer.
-                            // By disabling block broadcast, a block may be received from a peer
-                            // only after explicit request (on demand).
-                            if let Err(e) = fsm.on_block_event(blk, msg.metadata).await  {
-                                 error!(event = "fsm::on_event failed", src = "wire", err = format!("{}",e));
-                            } else {
-                                timeout = Self::next_timeout();
+                            if let Ok(blk) = self.try_add_cert(blk) {
+                                // Handle a block that originates from a network peer.
+                                // By disabling block broadcast, a block may be received from a peer
+                                // only after explicit request (on demand).
+                                if let Err(e) = fsm.on_block_event(&blk, msg.metadata).await  {
+                                     error!(event = "fsm::on_event failed", src = "wire", err = format!("{}",e));
+                                } else {
+                                    // TODO: Clean up certificates cache
+                                    timeout = Self::next_timeout();
+                                }
                             }
                         }
 
@@ -178,11 +190,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         Payload::Candidate(_)
                         | Payload::Validation(_)
                         | Payload::Ratification(_) => {
+                            let acc = self.acceptor.as_ref().expect("initialize is called");
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
                                 warn!("msg discarded: {e}");
                             }
                         },
                         Payload::Quorum(payload) => {
+                            if let Vote::Valid(hash) = payload.vote() {
+                                // TODO: execute sanity check or full ceriticate verification
+                                self.certificates.insert(*hash, payload.cert);
+                            }
+
+                            let acc = self.acceptor.as_ref().expect("initialize is called");
                             if let Err(e) = acc.read().await.reroute_msg(msg.clone()).await {
                                 warn!("msg discarded: {e}");
                             }
@@ -230,6 +249,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             inbound: AsyncQueue::unbounded(),
             keys_path,
             acceptor: None,
+            certificates: Default::default(),
         }
     }
 
@@ -292,5 +312,23 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         Instant::now()
             .checked_add(ACCEPT_BLOCK_TIMEOUT_SEC)
             .unwrap()
+    }
+
+    fn try_add_cert<'a>(&self, blk: &'a Block) -> Result<Cow<'a, Block>> {
+        if blk.header().cert == Certificate::default() {
+            // The default cert means the block was retrieved from Candidate
+            // CF thus missing the certificate. If so, we try to set the valid
+            // certificate from the cache certificates.
+
+            if let Some(cert) = self.certificates.get(&blk.header().hash) {
+                let mut blk = blk.clone();
+                blk.set_certificate(*cert);
+                Ok(Cow::Owned(blk))
+            } else {
+                Err(anyhow!("cert not found"))
+            }
+        } else {
+            Ok(Cow::Borrowed(blk))
+        }
     }
 }

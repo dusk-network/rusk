@@ -784,7 +784,7 @@ async fn flood_request_block<N: Network>(
     network: &Arc<RwLock<N>>,
     req: BlockRequest,
 ) {
-    // Request only one resource
+    // Request only one resource/block
     let mut inv = Inv::new(1);
     match req {
         BlockRequest::ByHeight(height) => {
