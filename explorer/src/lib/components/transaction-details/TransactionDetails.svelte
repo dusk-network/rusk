@@ -69,6 +69,7 @@
     action: () => history.back(),
     disabled: false,
     label: "Back",
+    variant: "tertiary",
   }}
 >
   <dl class="transaction-details__list">

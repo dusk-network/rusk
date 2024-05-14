@@ -24,6 +24,9 @@
   /** @type {number} */
   let clientWidth;
 
+  /** @type {Boolean} */
+  export let isOnHomeScreen = true;
+
   $: classes = makeClassName(["latest-transactions-card", className]);
 </script>
 
@@ -35,11 +38,14 @@
   {loading}
   className={classes}
   title="Transactions"
-  headerButtonDetails={{
-    action: () => goto("/transactions"),
-    disabled: false,
-    label: "All Transactions",
-  }}
+  headerButtonDetails={isOnHomeScreen
+    ? {
+        action: () => goto("/transactions"),
+        disabled: false,
+        label: "All Transactions",
+        variant: "secondary",
+      }
+    : undefined}
 >
   {#if clientWidth > 768}
     <TransactionsTable data={txs} />

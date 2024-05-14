@@ -19,8 +19,8 @@
   /** @type {String}*/
   export let title;
 
-  /** @type {{action:(e: MouseEvent) => void, disabled:boolean, label: String}}*/
-  export let headerButtonDetails;
+  /** @type {{action:(e: MouseEvent) => void, disabled: boolean, label: String, variant?: ButtonVariant } | undefined}*/
+  export let headerButtonDetails = undefined;
 
   /** @type {string | Undefined} */
   export let className = undefined;
@@ -33,12 +33,14 @@
 <Card className={classes}>
   <header slot="header" class="data-card__header">
     <h1 class="data-card__header-title">{title}</h1>
-    <Button
-      on:click={headerButtonDetails.action}
-      text={headerButtonDetails.label}
-      variant="secondary"
-      disabled={headerButtonDetails.disabled}
-    />
+    {#if headerButtonDetails}
+      <Button
+        on:click={headerButtonDetails.action}
+        text={headerButtonDetails.label}
+        variant={headerButtonDetails.variant || "secondary"}
+        disabled={headerButtonDetails.disabled}
+      />
+    {/if}
   </header>
   {#if loading && data === null}
     <p class="data-card__loading-notice">Loading...</p>
