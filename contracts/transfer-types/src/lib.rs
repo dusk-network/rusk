@@ -90,3 +90,37 @@ pub struct Mint {
     /// A nonce to prevent replay.
     pub nonce: BlsScalar,
 }
+
+///
+/// Events
+
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum EconomicResult {
+    /// Contract's charge has been successfully applied, contract will earn
+    /// fee.
+    ChargeApplied,
+    /// Contract's allowance has been successfully applied, contract will pay
+    /// for gas.
+    AllowanceApplied,
+    /// Contract's charge was not sufficient as it was smaller that the actual
+    /// cost of the call.
+    ChargeNotSufficient,
+    /// Contract's allowance was not sufficient to cover the actual cost of the
+    /// call.
+    AllowanceNotSufficient,
+    /// Contract's balance was not sufficient to pay for the call.
+    BalanceNotSufficient,
+}
+
+/// Event emitted after economic operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct EconomicEvent {
+    /// Module id which is relevant to the event.
+    pub module: ModuleId,
+    /// Value of the relevant operation.
+    pub value: u64,
+    /// Result of the relevant operation.
+    pub result: EconomicResult,
+}
