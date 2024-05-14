@@ -2,6 +2,10 @@
   padding: 1rem 0;
 }
 
+.data-card__loading-notice {
+  padding: 0 1.125rem;
+}
+
 .data-card__header {
   display: flex;
   justify-content: space-between;
