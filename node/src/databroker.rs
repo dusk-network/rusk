@@ -222,23 +222,24 @@ impl DataBrokerSrv {
             }
             // Handle GetResource requests
             Payload::GetResource(m) => {
+                if m.is_expired() {
+                    return Err(anyhow!("message has expired"));
+                }
+
                 match Self::handle_get_resource(db, m, conf.max_inv_entries)
                     .await
                 {
                     Ok(msg_list) => Ok(Response::new(msg_list, m.get_addr())),
                     Err(err) => {
-                        // resource is not found, rebroadcast the request if
-                        // the request is neither expired nor out of hops
+                        // resource is not found, rebroadcast the request only
+                        // if hops_limit is not reached
                         if let Some(m) = m.clone_with_hop_decrement() {
-                            if !m.is_expired() {
-                                // Construct a new message with same
-                                // Message::metadata but with decremented
-                                // hops_limit
-                                let mut msg = msg.clone();
-                                msg.payload = Payload::GetResource(m);
-                                let _ =
-                                    network.read().await.broadcast(&msg).await;
-                            }
+                            // Construct a new message with same
+                            // Message::metadata but with decremented
+                            // hops_limit
+                            let mut msg = msg.clone();
+                            msg.payload = Payload::GetResource(m);
+                            let _ = network.read().await.broadcast(&msg).await;
                         }
                         Err(err)
                     }
@@ -408,11 +409,14 @@ impl DataBrokerSrv {
             return Err(anyhow::anyhow!("no items to fetch"));
         }
 
-        // Send GetResource request with disabled rebroadcast (ttl = 0), Inv
-        // message is part of one-to-one messaging flows
-        // (GetBlocks/Mempool) so it should not be a flooding request.
+        // Send GetResource request with disabled rebroadcast (hops_limit = 1),
+        // Inv message is part of one-to-one messaging flows
+        // (GetBlocks/Mempool) so it should not be treated as flooding request
         Ok(Message::new_get_resource(GetResource::new(
-            inv, recv_addr, 0, 1,
+            inv,
+            recv_addr,
+            u64::MAX,
+            1,
         )))
     }
 
