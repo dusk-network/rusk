@@ -228,8 +228,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     /// broadcast does follow the so-called "Flood with Random Walk" blind
     /// search (resource discovery).
     ///
-    /// A receiver of this message is supposed to either look up and return the
-    /// resource or rebroadcast it to the next bucket.
+    /// A receiver of this message is supposed to look up the resource and
+    /// either return it or, if not found, rebroadcast the message to the next
+    /// Kadcast bucket
+    ///
+    /// * `ttl_as_sec` - Defines the lifespan of the request in seconds
+    ///
+    /// * `hops_limit` - Defines maximum number of hops to receive the request
     async fn flood_request(
         &self,
         msg_inv: &Inv,
