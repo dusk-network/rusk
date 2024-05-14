@@ -830,7 +830,9 @@ exports[`Blocks Card > should disable the \`Show More\` button is the card is in
     <!--&lt;Button&gt;-->
   </header>
    
-  <p>
+  <p
+    class="data-card__loading-notice"
+  >
     Loading...
   </p>
   
