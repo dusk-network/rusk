@@ -31,10 +31,7 @@ impl LicenseCircuit {
 }
 
 impl Circuit for LicenseCircuit {
-    fn circuit<C>(&self, composer: &mut C) -> Result<(), PlonkError>
-    where
-        C: Composer,
-    {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         gadgets::use_license_citadel(composer, &self.lpp, &self.sc)?;
         Ok(())
     }

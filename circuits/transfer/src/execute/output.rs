@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::{PublicKey, StealthAddress};
-use phoenix_core::Note;
+use jubjub_schnorr::PublicKey as NotePublicKey;
+use phoenix_core::{Note, StealthAddress};
 
 use dusk_plonk::prelude::*;
 
@@ -32,7 +32,7 @@ impl CircuitOutput {
     /// Zeroed stealth address used for padding
     pub const ZERO_STEALTH_ADDRESS: StealthAddress = {
         let pk = Self::ZERO_COMMITMENT;
-        let pk = PublicKey::from_raw_unchecked(pk);
+        let pk = NotePublicKey::from_raw_unchecked(pk);
 
         let r = Self::ZERO_COMMITMENT;
 
@@ -65,7 +65,7 @@ impl CircuitOutput {
         Self::new(note, 0, JubJubScalar::zero())
     }
 
-    pub fn to_witness<C: Composer>(&self, composer: &mut C) -> WitnessOutput {
+    pub fn to_witness(&self, composer: &mut Composer) -> WitnessOutput {
         let value = composer.append_witness(self.value);
         let blinding_factor = composer.append_witness(self.blinding_factor);
         let value_commitment = *self.note.value_commitment();

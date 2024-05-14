@@ -1,5 +1,31 @@
-import type { Readable } from "svelte/store";
-import type { Wallet } from "@dusk-network/dusk-wallet-js";
+type Readable<T> = import("svelte/store").Readable<T>;
+
+type Wallet = import("@dusk-network/dusk-wallet-js").Wallet;
+
+type Writable<T> = import("svelte/store").Writable<T>;
+
+type GasStoreContent = {
+  gasLimitLower: number;
+  gasLimitUpper: number;
+  gasPriceLower: number;
+};
+
+type GasStore = Readable<GasStoreContent>;
+
+type SettingsStoreContent = {
+  currency: string;
+  darkMode: boolean;
+  dashboardTransactionLimit: number;
+  gasLimit: number;
+  gasPrice: number;
+  hideStakingNotice: boolean;
+  language: string;
+  minAllowedStake: number;
+  network: string;
+  userId: string;
+};
+
+type SettingsStore = Writable<SettingsStoreContent> & { reset: () => void };
 
 type TransactionsStoreContent = { transactions: Transaction[] };
 
@@ -62,24 +88,3 @@ type WalletStoreServices = {
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;
-
-type SettingsStore = {
-  currency: string;
-  darkMode: boolean;
-  dashboardTransactionLimit: number;
-  gasLimit: number;
-  gasPrice: number;
-  hideStakingNotice: boolean;
-  language: string;
-  minAllowedStake: number;
-  network: string;
-  userId: string;
-};
-
-type GasStoreContent = {
-  gasLimitLower: number;
-  gasLimitUpper: number;
-  gasPriceLower: number;
-};
-
-type GasStore = Readable<GasStoreContent>;

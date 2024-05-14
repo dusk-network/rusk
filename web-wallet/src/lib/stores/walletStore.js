@@ -6,7 +6,7 @@ import { getKey, uniquesBy } from "lamb";
  */
 
 /**
- * @typedef {import("./stores").WalletStoreServices["getTransactionsHistory"]} GetTransactionsHistory
+ * @typedef {WalletStoreServices["getTransactionsHistory"]} GetTransactionsHistory
  */
 
 /** @type {AbortController} */
@@ -20,7 +20,7 @@ let walletInstance = null;
 
 const uniquesById = uniquesBy(getKey("id"));
 
-/** @type {import("./stores").WalletStoreContent} */
+/** @type {WalletStoreContent} */
 const initialState = {
   addresses: [],
   balance: {
@@ -64,7 +64,7 @@ const clearLocalData = async () => walletInstance?.reset();
 const clearLocalDataAndInit = (wallet) =>
   wallet.reset().then(() => init(wallet));
 
-/** @type {import("./stores").WalletStoreServices["getStakeInfo"]} */
+/** @type {WalletStoreServices["getStakeInfo"]} */
 const getStakeInfo = async () =>
   sync()
     // @ts-expect-error
@@ -113,7 +113,7 @@ async function init(wallet) {
   sync();
 }
 
-/** @type {import("./stores").WalletStoreServices["setCurrentAddress"]} */
+/** @type {WalletStoreServices["setCurrentAddress"]} */
 async function setCurrentAddress(address) {
   const store = get(walletStore);
 
@@ -122,7 +122,7 @@ async function setCurrentAddress(address) {
     : Promise.reject(new Error("The received address is not in the list"));
 }
 
-/** @type {import("./stores").WalletStoreServices["stake"]} */
+/** @type {WalletStoreServices["stake"]} */
 
 const stake = async (amount, gasPrice, gasLimit) =>
   syncedAction(() => {
@@ -136,7 +136,7 @@ const stake = async (amount, gasPrice, gasLimit) =>
     return walletInstance.stake(getCurrentAddress(), amount);
   });
 
-/** @type {import("./stores").WalletStoreServices["sync"]} */
+/** @type {WalletStoreServices["sync"]} */
 function sync() {
   if (!walletInstance) {
     throw new Error("No wallet instance to sync");
@@ -161,7 +161,7 @@ function sync() {
   return syncPromise;
 }
 
-/** @type {import("./stores").WalletStoreServices["transfer"]} */
+/** @type {WalletStoreServices["transfer"]} */
 const transfer = async (to, amount, gasPrice, gasLimit) =>
   syncedAction(() => {
     // @ts-expect-error
@@ -174,7 +174,7 @@ const transfer = async (to, amount, gasPrice, gasLimit) =>
     return walletInstance.transfer(getCurrentAddress(), to, amount);
   });
 
-/** @type {import("./stores").WalletStoreServices["unstake"]} */
+/** @type {WalletStoreServices["unstake"]} */
 const unstake = async (gasPrice, gasLimit) =>
   syncedAction(() => {
     // @ts-expect-error
@@ -187,7 +187,7 @@ const unstake = async (gasPrice, gasLimit) =>
     return walletInstance.unstake(getCurrentAddress());
   });
 
-/** @type {import("./stores").WalletStoreServices["withdrawReward"]} */
+/** @type {WalletStoreServices["withdrawReward"]} */
 const withdrawReward = async (gasPrice, gasLimit) =>
   syncedAction(() => {
     // @ts-expect-error
@@ -200,7 +200,7 @@ const withdrawReward = async (gasPrice, gasLimit) =>
     return walletInstance.withdrawReward(getCurrentAddress());
   });
 
-/** @type {import("./stores").WalletStore} */
+/** @type {WalletStore} */
 export default {
   abortSync,
   clearLocalData,

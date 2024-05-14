@@ -4,6 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "abi")]
+use dusk_bytes::Serializable;
+#[cfg(feature = "abi")]
+use phoenix_core::PublicKey;
+
 pub use piecrust_uplink::*;
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
@@ -38,8 +43,8 @@ pub fn verify_proof(
 #[cfg(feature = "abi")]
 pub fn verify_schnorr(
     msg: dusk_bls12_381::BlsScalar,
-    pk: dusk_pki::PublicKey,
-    sig: dusk_schnorr::Signature,
+    pk: jubjub_schnorr::PublicKey,
+    sig: jubjub_schnorr::Signature,
 ) -> bool {
     use crate::Query;
     host_query(Query::VERIFY_SCHNORR, (msg, pk, sig))
@@ -49,8 +54,8 @@ pub fn verify_schnorr(
 #[cfg(feature = "abi")]
 pub fn verify_bls(
     msg: alloc::vec::Vec<u8>,
-    pk: dusk_bls12_381_sign::PublicKey,
-    sig: dusk_bls12_381_sign::Signature,
+    pk: bls12_381_bls::PublicKey,
+    sig: bls12_381_bls::Signature,
 ) -> bool {
     use crate::Query;
     host_query(Query::VERIFY_BLS, (msg, pk, sig))
@@ -69,4 +74,34 @@ pub fn payment_info(
     contract: ContractId,
 ) -> Result<crate::PaymentInfo, ContractError> {
     call(contract, "payment_info", &())
+}
+
+/// Query owner of a given contract.
+/// Returns none if contract is not found.
+/// Panics if owner is not a valid public key (should never happen).
+#[cfg(feature = "abi")]
+pub fn owner(contract: ContractId) -> Option<PublicKey> {
+    owner_raw(contract).map(|buf| {
+        PublicKey::from_bytes(&buf).expect("Owner should deserialize correctly")
+    })
+}
+
+/// Query self owner of a given contract.
+/// Panics if owner is not a valid public key (should never happen).
+#[cfg(feature = "abi")]
+pub fn self_owner() -> PublicKey {
+    let buf = self_owner_raw();
+    PublicKey::from_bytes(&buf).expect("Owner should deserialize correctly")
+}
+
+/// Query raw "to_bytes" serialization of the owner of a given contract.
+#[cfg(feature = "abi")]
+pub fn owner_raw(contract: ContractId) -> Option<[u8; PublicKey::SIZE]> {
+    piecrust_uplink::owner(contract)
+}
+
+/// Query raw "to_bytes" serialization of the self owner.
+#[cfg(feature = "abi")]
+pub fn self_owner_raw() -> [u8; PublicKey::SIZE] {
+    piecrust_uplink::self_owner()
 }

@@ -1,0 +1,17 @@
+#nodes-world-map {
+  aspect-ratio: 2;
+  width: 100%;
+  height: auto;
+}
+
+@media (min-width: 768px) {
+  #nodes-world-map {
+    max-height: 240px;
+  }
+}
+
+@media (min-width: 1280px) {
+  #nodes-world-map {
+    max-height: 105px;
+  }
+}

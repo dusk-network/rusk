@@ -98,9 +98,31 @@ pub struct SpentTransaction {
 }
 
 impl Transaction {
+    /// Computes the hash of the transaction.
+    ///
+    /// This method returns the [hash](rusk_abi::hash()) of the entire
+    /// transaction in its serialized form
+    ///
+    /// ### Returns
+    /// An array of 32 bytes representing the hash of the transaction.
     pub fn hash(&self) -> [u8; 32] {
+        Hasher::digest(self.inner.to_var_bytes()).to_bytes()
+    }
+
+    /// Computes the transaction ID.
+    ///
+    /// The transaction ID is a unique identifier for the transaction.
+    /// Unlike the [`hash()`](#method.hash) method, which is computed over the
+    /// entire transaction, the transaction ID is derived from specific
+    /// fields of the transaction and serves as a unique identifier of the
+    /// transaction itself.
+    ///
+    /// ### Returns
+    /// An array of 32 bytes representing the transaction ID.
+    pub fn id(&self) -> [u8; 32] {
         Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
     }
+
     pub fn gas_price(&self) -> u64 {
         self.inner.fee().gas_price
     }
@@ -316,7 +338,7 @@ impl PartialEq<Self> for Transaction {
     fn eq(&self, other: &Self) -> bool {
         self.r#type == other.r#type
             && self.version == other.version
-            && self.hash() == other.hash()
+            && self.id() == other.id()
     }
 }
 
@@ -351,9 +373,9 @@ impl IterationsInfo {
 
     pub fn to_missed_generators(
         &self,
-    ) -> Result<Vec<dusk_bls12_381_sign::PublicKey>, io::Error> {
+    ) -> Result<Vec<bls12_381_bls::PublicKey>, io::Error> {
         self.to_missed_generators_bytes()
-        .map(|pk| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
+        .map(|pk| bls12_381_bls::PublicKey::from_slice(pk.inner()).map_err(|e|{
             tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
             io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
         }))

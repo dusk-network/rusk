@@ -6,7 +6,6 @@
 
 mod query;
 
-use node_data::bls::PublicKey;
 use phoenix_core::transaction::StakeData;
 use tracing::info;
 
@@ -45,9 +44,8 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator =
-            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
-                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (_, verification_output) = self
             .verify_transactions(
@@ -68,9 +66,8 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator =
-            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
-                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (txs, verification_output) = self
             .accept_transactions(
@@ -123,13 +120,13 @@ impl VMExecution for Rusk {
     fn get_changed_provisioners(
         &self,
         base_commit: [u8; 32],
-    ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
+    ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>> {
         self.query_provisioners_change(Some(base_commit))
     }
 
     fn get_provisioner(
         &self,
-        pk: &dusk_bls12_381_sign::PublicKey,
+        pk: &bls12_381_bls::PublicKey,
     ) -> anyhow::Result<Option<Stake>> {
         let stake = self
             .provisioner(pk)

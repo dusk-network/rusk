@@ -2,28 +2,46 @@
 
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
-  import { AppAnchor, ListItem } from "$lib/components";
-  import { Card, Icon, ProgressBar } from "$lib/dusk/components";
-  import { createValueFormatter } from "$lib/dusk/value";
+  import { AppAnchor, DataCard, ListItem } from "$lib/components";
+  import { Icon, ProgressBar } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
+  import { createValueFormatter } from "$lib/dusk/value";
   import {
     calculateAdaptiveCharCount,
     getRelativeTimeString,
+    makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
   import { onMount } from "svelte";
   import "./BlockDetails.css";
 
-  /** @type {*} */
+  /** @type {string | Undefined} */
+  export let className = undefined;
+
+  /** @type {Block} */
   export let data;
+
+  /** @type {Error | null}*/
+  export let error;
+
+  /** @type {Boolean} */
+  export let loading;
 
   const formatter = createValueFormatter("en");
 
-  /** @type {number} */
+  /** @type {Number} */
   let screenWidth = window.innerWidth;
 
-  /** @type {HTMLElement}*/
-  let blockList;
+  /** @type {string}*/
+  let blockHeight = "";
+
+  $: classes = makeClassName(["block-details", className]);
+
+  $: {
+    if (data) {
+      blockHeight = `#${formatter(data.header.height)}`;
+    }
+  }
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -32,22 +50,22 @@
       screenWidth = entry.contentRect.width;
     });
 
-    resizeObserver.observe(blockList.children[1]);
+    resizeObserver.observe(document.body);
 
     return () => resizeObserver.disconnect();
   });
 </script>
 
-<Card className="block-details">
-  <header slot="header" class="block-details__header">
-    <h3 class="block-details__header-heading">
-      Block Details <span class="block-details__block-height">
-        - #{formatter(34526)}</span
-      >
-    </h3>
-    <button type="button" on:click={() => history.back()}>Back</button>
-  </header>
-  <dl class="block-details__list" bind:this={blockList}>
+<DataCard
+  on:retry
+  {data}
+  {error}
+  {loading}
+  className={classes}
+  title="Block Details - {blockHeight}"
+  headerButtonDetails={{ action: () => history.back(), label: "Back" }}
+>
+  <dl class="block-details__list">
     <!-- BLOCK HASH -->
     <ListItem tooltipText="The hash for the header of the block">
       <svelte:fragment slot="term">block hash</svelte:fragment>
@@ -85,11 +103,11 @@
     <ListItem tooltipText="The date and time the block was created">
       <svelte:fragment slot="term">timestamp</svelte:fragment>
       <time
-        datetime={new Date(data.header.ts * 1000).toISOString()}
+        datetime={data.header.date.toISOString()}
         class="block-details__list-timestamp"
         slot="definition"
       >
-        {getRelativeTimeString(new Date(data.header.ts * 1000), "long")}
+        {getRelativeTimeString(data.header.date, "long")}
       </time>
     </ListItem>
 
@@ -163,4 +181,4 @@
       >
     </ListItem>
   </dl>
-</Card>
+</DataCard>

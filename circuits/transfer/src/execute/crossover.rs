@@ -37,10 +37,7 @@ impl CircuitCrossover {
         &self.value_commitment
     }
 
-    pub fn to_witness<C: Composer>(
-        &self,
-        composer: &mut C,
-    ) -> WitnessCrossover {
+    pub fn to_witness(&self, composer: &mut Composer) -> WitnessCrossover {
         let value_commitment = self.value_commitment;
 
         let fee_value = BlsScalar::from(self.fee);

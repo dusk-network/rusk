@@ -16,12 +16,15 @@ use alloc::vec::Vec;
 mod sig;
 mod stake;
 
-pub use sig::*;
-pub use stake::*;
+pub use sig::{
+    stake_signature_message, unstake_signature_message,
+    withdraw_signature_message,
+};
+pub use stake::{next_epoch, BlockHeight, StakeData, EPOCH};
 
+use bls12_381_bls::{PublicKey as StakePublicKey, Signature as StakeSignature};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{PublicKey, Signature};
-use dusk_pki::StealthAddress;
+use phoenix_core::StealthAddress;
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -31,9 +34,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[archive_attr(derive(bytecheck::CheckBytes))]
 pub struct Stake {
     /// Public key to which the stake will belong.
-    pub public_key: PublicKey,
+    pub public_key: StakePublicKey,
     /// Signature belonging to the given public key.
-    pub signature: Signature,
+    pub signature: StakeSignature,
     /// Value to stake.
     pub value: u64,
     /// Proof of the `STCT` circuit.
@@ -45,9 +48,9 @@ pub struct Stake {
 #[archive_attr(derive(CheckBytes))]
 pub struct Unstake {
     /// Public key to unstake.
-    pub public_key: PublicKey,
+    pub public_key: StakePublicKey,
     /// Signature belonging to the given public key.
-    pub signature: Signature,
+    pub signature: StakeSignature,
     /// Note to withdraw to.
     pub note: Vec<u8>, // todo: not sure it will stay as Vec
     /// A proof of the `WFCT` circuit.
@@ -59,9 +62,9 @@ pub struct Unstake {
 #[archive_attr(derive(CheckBytes))]
 pub struct Withdraw {
     /// Public key to withdraw the rewards.
-    pub public_key: PublicKey,
+    pub public_key: StakePublicKey,
     /// Signature belonging to the given public key.
-    pub signature: Signature,
+    pub signature: StakeSignature,
     /// The address to mint to.
     pub address: StealthAddress,
     /// A nonce to prevent replay.
@@ -76,7 +79,7 @@ pub struct Withdraw {
 #[archive_attr(derive(CheckBytes))]
 pub struct StakingEvent {
     /// Public key which is relevant to the event.
-    pub public_key: PublicKey,
+    pub public_key: StakePublicKey,
     /// Value of the relevant operation, be it stake, unstake, withdrawal,
     /// reward, or slash.
     pub value: u64,

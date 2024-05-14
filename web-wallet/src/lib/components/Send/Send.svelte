@@ -41,7 +41,7 @@
   /** @type {ContractStatus[]} */
   export let statuses;
 
-  /** @type {import("$lib/stores/stores").GasStoreContent} */
+  /** @type {GasStoreContent} */
   export let gasLimits;
 
   /** @type {number} */
@@ -193,7 +193,7 @@
       nextButton={{
         icon: { path: mdiArrowUpBoldBoxOutline, position: "before" },
         label: "SEND",
-        variant: "secondary",
+        variant: "primary",
       }}
     >
       <div in:fade|global class="operation__send">

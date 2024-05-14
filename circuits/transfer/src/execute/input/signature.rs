@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
-use dusk_schnorr::Proof as SchnorrProof;
-use phoenix_core::Note;
+use jubjub_schnorr::SignatureDouble;
+use phoenix_core::{Note, Ownable, SecretKey};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
@@ -18,17 +17,17 @@ pub struct CircuitInputSignature {
     r_p: JubJubAffine,
 }
 
-impl From<SchnorrProof> for CircuitInputSignature {
-    fn from(p: SchnorrProof) -> Self {
-        Self::from(&p)
+impl From<SignatureDouble> for CircuitInputSignature {
+    fn from(sig: SignatureDouble) -> Self {
+        Self::from(&sig)
     }
 }
 
-impl From<&SchnorrProof> for CircuitInputSignature {
-    fn from(p: &SchnorrProof) -> Self {
-        let u = *p.u();
-        let r = p.keys().R().as_ref().into();
-        let r_p = p.keys().R_prime().as_ref().into();
+impl From<&SignatureDouble> for CircuitInputSignature {
+    fn from(sig: &SignatureDouble) -> Self {
+        let u = *sig.u();
+        let r = sig.R().into();
+        let r_p = sig.R_prime().into();
 
         Self { u, r, r_p }
     }
@@ -45,16 +44,14 @@ impl CircuitInputSignature {
 
     pub fn sign<R: RngCore + CryptoRng>(
         rng: &mut R,
-        ssk: &SecretSpendKey,
+        sk: &SecretKey,
         note: &Note,
         tx_hash: BlsScalar,
     ) -> Self {
-        let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
-        let sk_r = SecretKey::from(&sk_r);
+        let note_sk = sk.sk_r(note.stealth_address());
+        let sig = note_sk.sign_double(rng, tx_hash);
 
-        let proof = SchnorrProof::new(&sk_r, rng, tx_hash);
-
-        Self::from(proof)
+        Self::from(sig)
     }
 
     pub const fn u(&self) -> &JubJubScalar {

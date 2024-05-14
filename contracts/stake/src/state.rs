@@ -10,7 +10,7 @@ use crate::*;
 
 use alloc::collections::BTreeMap;
 
-use dusk_bls12_381_sign::PublicKey;
+use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_bytes::Serializable;
 
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
@@ -27,10 +27,12 @@ use transfer_contract_types::*;
 /// valid stake.
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
-    stakes: BTreeMap<[u8; PublicKey::SIZE], (StakeData, PublicKey)>,
+    stakes: BTreeMap<[u8; StakePublicKey::SIZE], (StakeData, StakePublicKey)>,
     slashed_amount: u64,
-    previous_block_state:
-        BTreeMap<[u8; PublicKey::SIZE], (Option<StakeData>, PublicKey)>,
+    previous_block_state: BTreeMap<
+        [u8; StakePublicKey::SIZE],
+        (Option<StakeData>, StakePublicKey),
+    >,
     // This is needed just to keep track of blocks to automatically clear the
     // prev_block_state. Future implementations will rely on
     // `before_state_transition` to handle that
@@ -217,19 +219,21 @@ impl StakeState {
     }
 
     /// Gets a reference to a stake.
-    pub fn get_stake(&self, key: &PublicKey) -> Option<&StakeData> {
+    pub fn get_stake(&self, key: &StakePublicKey) -> Option<&StakeData> {
         self.stakes.get(&key.to_bytes()).map(|(s, _)| s)
     }
 
     /// Gets a mutable reference to a stake.
-    pub fn get_stake_mut(&mut self, key: &PublicKey) -> Option<&mut StakeData> {
+    pub fn get_stake_mut(
+        &mut self,
+        key: &StakePublicKey,
+    ) -> Option<&mut StakeData> {
         self.stakes.get_mut(&key.to_bytes()).map(|(s, _)| s)
     }
 
-    /// Pushes the given `stake` onto the state for a given `public_key`.
-    pub fn insert_stake(&mut self, public_key: PublicKey, stake: StakeData) {
-        self.stakes
-            .insert(public_key.to_bytes(), (stake, public_key));
+    /// Pushes the given `stake` onto the state for a given `stake_pk`.
+    pub fn insert_stake(&mut self, stake_pk: StakePublicKey, stake: StakeData) {
+        self.stakes.insert(stake_pk.to_bytes(), (stake, stake_pk));
     }
 
     /// Gets a mutable reference to the stake of a given key. If said stake
@@ -237,30 +241,33 @@ impl StakeState {
     /// returned.
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
-        pk: &PublicKey,
+        stake_pk: &StakePublicKey,
     ) -> &mut StakeData {
-        let is_missing = self.stakes.get(&pk.to_bytes()).is_none();
+        let is_missing = self.stakes.get(&stake_pk.to_bytes()).is_none();
 
         if is_missing {
             let stake = StakeData::default();
-            self.stakes.insert(pk.to_bytes(), (stake, *pk));
+            self.stakes.insert(stake_pk.to_bytes(), (stake, *stake_pk));
         }
 
         // SAFETY: unwrap is ok since we're sure we inserted an element
-        self.stakes.get_mut(&pk.to_bytes()).map(|(s, _)| s).unwrap()
+        self.stakes
+            .get_mut(&stake_pk.to_bytes())
+            .map(|(s, _)| s)
+            .unwrap()
     }
 
-    /// Rewards a `public_key` with the given `value`. If a stake does not exist
+    /// Rewards a `stake_pk` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
-    pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
+    pub fn reward(&mut self, stake_pk: &StakePublicKey, value: u64) {
         self.clear_prev_if_needed();
 
-        let stake = self.load_or_create_stake_mut(public_key);
+        let stake = self.load_or_create_stake_mut(stake_pk);
         stake.increase_reward(value);
         rusk_abi::emit(
             "reward",
             StakingEvent {
-                public_key: *public_key,
+                public_key: *stake_pk,
                 value,
             },
         );
@@ -276,16 +283,16 @@ impl StakeState {
         STAKE_CONTRACT_VERSION
     }
 
-    /// Slash the given `to_slash` amount from a `public_key` reward
+    /// Slash the given `to_slash` amount from a `stake_pk` reward
     ///
     /// If the reward is less than the `to_slash` amount, then the reward is
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
-    pub fn slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+    pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
         self.clear_prev_if_needed();
 
         let stake = self
-            .get_stake_mut(public_key)
+            .get_stake_mut(stake_pk)
             .expect("The stake to slash should exist");
 
         let prev_value = Some(stake.clone());
@@ -298,7 +305,7 @@ impl StakeState {
             rusk_abi::emit(
                 "slash",
                 StakingEvent {
-                    public_key: *public_key,
+                    public_key: *stake_pk,
                     value: to_slash,
                 },
             );
@@ -312,7 +319,7 @@ impl StakeState {
                 rusk_abi::emit(
                     "shifted",
                     StakingEvent {
-                        public_key: *public_key,
+                        public_key: *stake_pk,
                         value: *eligibility,
                     },
                 );
@@ -322,21 +329,21 @@ impl StakeState {
         // Update the total slashed amount
         self.slashed_amount += to_slash;
 
-        let key = public_key.to_bytes();
+        let key = stake_pk.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_value, *public_key));
+            .or_insert((prev_value, *stake_pk));
     }
 
-    /// Slash the given `to_slash` amount from a `public_key` stake
+    /// Slash the given `to_slash` amount from a `stake_pk` stake
     ///
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
-    pub fn hard_slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+    pub fn hard_slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
         self.clear_prev_if_needed();
 
         let stake_info = self
-            .get_stake_mut(public_key)
+            .get_stake_mut(stake_pk)
             .expect("The stake to slash should exist");
 
         let prev_value = Some(stake_info.clone());
@@ -372,14 +379,14 @@ impl StakeState {
         rusk_abi::emit(
             "hard_slash",
             StakingEvent {
-                public_key: *public_key,
+                public_key: *stake_pk,
                 value: to_slash,
             },
         );
-        let key = public_key.to_bytes();
+        let key = stake_pk.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_value, *public_key));
+            .or_insert((prev_value, *stake_pk));
     }
 
     /// Sets the slashed amount
@@ -389,15 +396,15 @@ impl StakeState {
 
     /// Feeds the host with the stakes.
     pub fn stakes(&self) {
-        for (stake_data, pk) in self.stakes.values() {
-            rusk_abi::feed((*pk, stake_data.clone()));
+        for (stake_data, stake_pk) in self.stakes.values() {
+            rusk_abi::feed((*stake_pk, stake_data.clone()));
         }
     }
 
     /// Feeds the host with previous state of the changed provisioners.
     pub fn prev_state_changes(&self) {
-        for (stake_data, pk) in self.previous_block_state.values() {
-            rusk_abi::feed((*pk, stake_data.clone()));
+        for (stake_data, stake_pk) in self.previous_block_state.values() {
+            rusk_abi::feed((*stake_pk, stake_data.clone()));
         }
     }
 }

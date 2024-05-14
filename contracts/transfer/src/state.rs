@@ -15,9 +15,8 @@ use alloc::vec::Vec;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_jubjub::JubJubAffine;
-use dusk_pki::{Ownable, StealthAddress};
 use phoenix_core::transaction::*;
-use phoenix_core::{Crossover, Fee, Note};
+use phoenix_core::{Crossover, Fee, Note, Ownable, StealthAddress};
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{

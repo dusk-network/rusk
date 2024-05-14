@@ -9,9 +9,9 @@ use crate::Theme;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_jubjub::JubJubScalar;
-use dusk_pki::PublicSpendKey;
 use ff::Field;
 use once_cell::sync::Lazy;
+use phoenix_core::PublicKey;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::{ContractData, ContractId, Session, VM};
@@ -36,16 +36,16 @@ pub const DEFAULT_SNAPSHOT: &str =
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
-pub static DUSK_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
+pub static DUSK_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let addr = include_str!("../assets/dusk.address");
     let bytes = bs58::decode(addr).into_vec().expect("valid hex");
-    PublicSpendKey::from_slice(&bytes).expect("dusk should have a valid key")
+    PublicKey::from_slice(&bytes).expect("dusk should have a valid key")
 });
 
-pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
+pub static FAUCET_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let addr = include_str!("../assets/faucet.address");
     let bytes = bs58::decode(addr).into_vec().expect("valid hex");
-    PublicSpendKey::from_slice(&bytes).expect("faucet should have a valid key")
+    PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
 });
 
 fn deploy_governance_contract(

@@ -10,15 +10,15 @@
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::PublicKey;
+use jubjub_schnorr::PublicKey as NotePublicKey;
 
 const SCRATCH_SIZE: usize = 128;
 
 pub type Transfer = (
-    Option<PublicKey>, // from
-    Option<PublicKey>, // to
-    u64,               // amount
-    u64,               // timestamp
+    Option<NotePublicKey>, // from
+    Option<NotePublicKey>, // to
+    u64,                   // amount
+    u64,                   // timestamp
 );
 
 pub fn transfer_msg(seed: BlsScalar, batch: &Vec<Transfer>) -> Vec<u8> {
@@ -33,13 +33,21 @@ pub fn fee_msg(seed: BlsScalar, batch: &Vec<Transfer>) -> Vec<u8> {
         .to_vec()
 }
 
-pub fn mint_msg(seed: BlsScalar, address: PublicKey, amount: u64) -> Vec<u8> {
+pub fn mint_msg(
+    seed: BlsScalar,
+    address: NotePublicKey,
+    amount: u64,
+) -> Vec<u8> {
     rkyv::to_bytes::<_, SCRATCH_SIZE>(&(0u8, seed, address, amount))
         .expect("Serializing should be infallible")
         .to_vec()
 }
 
-pub fn burn_msg(seed: BlsScalar, address: PublicKey, amount: u64) -> Vec<u8> {
+pub fn burn_msg(
+    seed: BlsScalar,
+    address: NotePublicKey,
+    amount: u64,
+) -> Vec<u8> {
     rkyv::to_bytes::<_, SCRATCH_SIZE>(&(1u8, seed, address, amount))
         .expect("Serializing should be infallible")
         .to_vec()

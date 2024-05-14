@@ -5,13 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::Path;
+use std::sync::LazyLock;
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
-use dusk_bls12_381_sign::PublicKey;
+use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_consensus::operations::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::{
@@ -23,7 +24,7 @@ use node_data::{
 use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::common::keys::BLS_SK;
+use crate::common::keys::STAKE_SK;
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
@@ -65,7 +66,7 @@ pub fn generator_procedure(
     txs: &[PhoenixTransaction],
     block_height: u64,
     block_gas_limit: u64,
-    missed_generators: Vec<PublicKey>,
+    missed_generators: Vec<StakePublicKey>,
     expected: Option<ExecuteResult>,
 ) -> anyhow::Result<Vec<SpentTransaction>> {
     let expected = expected.unwrap_or(ExecuteResult {
@@ -78,7 +79,7 @@ pub fn generator_procedure(
         rusk.preverify(tx)?;
     }
 
-    let generator = PublicKey::from(&*BLS_SK);
+    let generator = StakePublicKey::from(LazyLock::force(&STAKE_SK));
     let generator_pubkey = node_data::bls::PublicKey::new(generator);
     let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;

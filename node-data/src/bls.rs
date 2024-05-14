@@ -7,9 +7,7 @@
 use aes::Aes256;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, BlockModeError, Cbc};
-use dusk_bls12_381_sign::SecretKey;
-use dusk_bytes::DeserializableSlice;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
@@ -20,28 +18,28 @@ use std::fs;
 use std::path::PathBuf;
 use tracing::warn;
 
-pub const PUBLIC_BLS_SIZE: usize = dusk_bls12_381_sign::PublicKey::SIZE;
+pub const PUBLIC_BLS_SIZE: usize = bls12_381_bls::PublicKey::SIZE;
 
-/// Extends dusk_bls12_381_sign::PublicKey by implementing a few traits
+/// Extends bls12_381_bls::PublicKey by implementing a few traits
 ///
 /// See also PublicKey::bytes(&self)
 #[derive(Default, Eq, PartialEq, Clone)]
 pub struct PublicKey {
-    inner: dusk_bls12_381_sign::PublicKey,
+    inner: bls12_381_bls::PublicKey,
     as_bytes: PublicKeyBytes,
 }
 
 impl TryFrom<[u8; 96]> for PublicKey {
-    type Error = dusk_bls12_381_sign::Error;
+    type Error = bls12_381_bls::Error;
     fn try_from(bytes: [u8; 96]) -> Result<Self, Self::Error> {
-        let inner = dusk_bls12_381_sign::PublicKey::from_slice(&bytes)?;
+        let inner = bls12_381_bls::PublicKey::from_slice(&bytes)?;
         let as_bytes = PublicKeyBytes(bytes);
         Ok(Self { as_bytes, inner })
     }
 }
 
 impl PublicKey {
-    pub fn new(inner: dusk_bls12_381_sign::PublicKey) -> Self {
+    pub fn new(inner: bls12_381_bls::PublicKey) -> Self {
         let b = inner.to_bytes();
         Self {
             inner,
@@ -53,9 +51,9 @@ impl PublicKey {
     /// associated public key
     pub fn from_sk_seed_u64(state: u64) -> Self {
         let rng = &mut StdRng::seed_from_u64(state);
-        let sk = SecretKey::random(rng);
+        let sk = bls12_381_bls::SecretKey::random(rng);
 
-        Self::new(dusk_bls12_381_sign::PublicKey::from(&sk))
+        Self::new(bls12_381_bls::PublicKey::from(&sk))
     }
 
     /// `bytes` returns a reference to the pk.to_bytes() initialized on
@@ -65,7 +63,7 @@ impl PublicKey {
         &self.as_bytes
     }
 
-    pub fn inner(&self) -> &dusk_bls12_381_sign::PublicKey {
+    pub fn inner(&self) -> &bls12_381_bls::PublicKey {
         &self.inner
     }
 
@@ -138,7 +136,7 @@ impl Debug for PublicKeyBytes {
 pub fn load_keys(
     path: String,
     pwd: String,
-) -> anyhow::Result<(dusk_bls12_381_sign::SecretKey, PublicKey)> {
+) -> anyhow::Result<(bls12_381_bls::SecretKey, PublicKey)> {
     let path_buf = PathBuf::from(path);
     let (pk, sk) = read_from_file(path_buf, &pwd)?;
 
@@ -151,10 +149,7 @@ pub fn load_keys(
 fn read_from_file(
     path: PathBuf,
     pwd: &str,
-) -> anyhow::Result<(
-    dusk_bls12_381_sign::PublicKey,
-    dusk_bls12_381_sign::SecretKey,
-)> {
+) -> anyhow::Result<(bls12_381_bls::PublicKey, bls12_381_bls::SecretKey)> {
     use serde::Deserialize;
 
     /// Bls key pair helper structure
@@ -195,10 +190,10 @@ fn read_from_file(
     let sk_bytes = base64::decode(keys.secret_key_bls)
         .map_err(|e| anyhow::anyhow!("sk should be base64 {e}"))?;
 
-    let sk = dusk_bls12_381_sign::SecretKey::from_slice(&sk_bytes)
+    let sk = bls12_381_bls::SecretKey::from_slice(&sk_bytes)
         .map_err(|e| anyhow::anyhow!("sk should be valid {e:?}"))?;
 
-    let pk = dusk_bls12_381_sign::PublicKey::from_slice(
+    let pk = bls12_381_bls::PublicKey::from_slice(
         &base64::decode(keys.public_key_bls)
             .map_err(|e| anyhow::anyhow!("pk should be base64 {e}"))?[..],
     )
@@ -222,7 +217,7 @@ fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
 /// It reads RUSK_WALLET_PWD var to unlock wallet files.
 pub fn load_provisioners_keys(
     n: usize,
-) -> Vec<(dusk_bls12_381_sign::SecretKey, PublicKey)> {
+) -> Vec<(bls12_381_bls::SecretKey, PublicKey)> {
     let mut keys = vec![];
 
     let dir = std::env::var("DUSK_WALLET_DIR").unwrap();

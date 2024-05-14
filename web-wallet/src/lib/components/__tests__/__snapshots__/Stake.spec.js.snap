@@ -666,7 +666,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button--labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled"
         type="button"
       >
         <svg

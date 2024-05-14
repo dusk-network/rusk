@@ -1,3 +1,7 @@
+.block-details__list-link {
+  text-decoration: none;
+}
+
 .dusk-progress-bar.blocks-list__gas-used {
   width: 60%;
 }

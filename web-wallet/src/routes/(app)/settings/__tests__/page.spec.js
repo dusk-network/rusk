@@ -31,7 +31,7 @@ function asInput(element) {
 }
 
 vi.mock("$lib/stores", async (importOriginal) => {
-  /** @type {import("$lib/stores/stores").WalletStore} */
+  /** @type {WalletStore} */
   const original = await importOriginal();
 
   return {

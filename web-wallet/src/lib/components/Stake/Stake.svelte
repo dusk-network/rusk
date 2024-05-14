@@ -62,7 +62,7 @@
   /** @type {boolean} */
   export let hideStakingNotice;
 
-  /** @type {import("$lib/stores/stores").GasStoreContent} */
+  /** @type {GasStoreContent} */
   export let gasLimits;
 
   /** @type {number} */
@@ -269,7 +269,7 @@
           position: "before",
         },
         label: confirmLabels[flow],
-        variant: "secondary",
+        variant: "primary",
       }}
     >
       <div in:fade|global class="operation__stake">

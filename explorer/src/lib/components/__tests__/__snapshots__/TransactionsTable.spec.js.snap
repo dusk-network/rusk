@@ -1,0 +1,958 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Transactions Table > should render the \`TransactionsTable\` component 1`] = `
+<div
+  class="table-container"
+>
+  <table
+    class="table"
+  >
+    <thead
+      class="table__head"
+    >
+      <tr
+        class="table__row"
+      >
+        <th
+          class="table__header-cell"
+        >
+          Hash
+        </th>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <th
+          class="table__header-cell"
+        >
+          Gas
+        </th>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <th
+          class="table__header-cell"
+        >
+          Fee
+        </th>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <th
+          class="table__header-cell"
+        >
+          Status
+        </th>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <th
+          class="table__header-cell"
+        >
+          Type
+        </th>
+        
+        <!--&lt;TableCell&gt;-->
+      </tr>
+      <!--&lt;TableRow&gt;-->
+    </thead>
+    <!--&lt;TableHead&gt;-->
+     
+    <tbody
+      class="table__body"
+    >
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+          >
+            3c6e4018cf...308e07bd2d
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000290766 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=807d4f596ea083215bb38decf8b7e824e3efae734d6a43c2549717e57d04cf02"
+          >
+            40d3e59a9b...5e8ade4d3b
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000290053 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=744b1d303f71e76e530b0543c284f65a30a26b75eab194d473c59d7fbd676a0b"
+          >
+            ea86c56ffa...8914074fe3
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000290219 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=34b4404adc0d286e62ddb9bf80429d4491b61de3f5e4c54975724a6d248d8e0b"
+          >
+            ea86c56ffa...8914074fe3
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.00029046 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=88ac1818eb5aeee47a1356fe5d75726943c12ea1fb8ed23efb37c847a318ed0e"
+          >
+            a85a0f5cc2...f0bb827312
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000291263 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=3e430f7bbc123585a21b0689331d77a8c9e3da9b75ccc463aaf22d8a581e5507"
+          >
+            646bd535ae...67c1cb0906
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000290735 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=776c0c54ccdd485fb32d6562b2b8b10f3cb283465da6eecba861f384725e3f0b"
+          >
+            fbcda951c6...4bec844f78
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000289627 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=e022261204125d87ad99d404b73d0ca3ce4c0985e50f08b15a1619248ae0f702"
+          >
+            a90821aca4...11467eb9c6
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.00029061 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=fd9af8e161863389c2c52c900dc3881c754c7d2549f865df95ccfa0f57fe5b04"
+          >
+            4db9e793b1...e2ab163e74
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000291347 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          <a
+            class="dusk-anchor transaction__link"
+            href="/some-base-path/transactions/transaction?id=65be1885cbbf9545bc3b0f3c56b34da79672f2be063d81a5d4f78b2ca5c18101"
+          >
+            47c9f1349f...e7ce5103db
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AppAnchor&gt;-->
+           
+          <small
+            class="transaction__time"
+          >
+            last month
+          </small>
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <b
+            class="transaction__fee-price-label"
+          >
+            PRICE:
+          </b>
+           
+          1
+          <br />
+           
+          <b
+            class="transaction__fee-limit-label"
+          >
+            LIMIT:
+          </b>
+           
+          500,000,000
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            0.000290416 Dusk
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            success
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+        <td
+          class="table__data-cell"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral"
+          >
+            transfer
+          </span>
+          <!--&lt;Badge&gt;-->
+        </td>
+        
+        <!--&lt;TableCell&gt;-->
+         
+      </tr>
+      <!--&lt;TableRow&gt;-->
+      
+    </tbody>
+    <!--&lt;TableBody&gt;-->
+  </table>
+</div>
+`;

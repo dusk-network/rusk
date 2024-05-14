@@ -1,0 +1,13 @@
+.alert {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 400px;
+  justify-content: center;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.alert__error-message {
+  text-align: center;
+}

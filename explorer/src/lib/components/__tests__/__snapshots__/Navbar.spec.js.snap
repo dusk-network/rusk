@@ -4,6 +4,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
 <div>
   <nav
     class="dusk-navbar dusk-navbar--menu-hidden"
+    style="margin-bottom: 0"
   >
     <a
       class="dusk-anchor dusk-navbar__logo"
@@ -22,95 +23,82 @@ exports[`Navbar > renders the Navbar component 1`] = `
     <button
       aria-controls="dusk-navbar-menu"
       aria-expanded="false"
-      class="dusk-navbar__toggle"
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button dusk-navbar__toggle"
       type="button"
     >
       <svg
-        aria-hidden="true"
-        class="dusk-navbar__toggle-svg"
-        viewBox="0 0 41 14"
-        xmlns="http://www.w3.org/2000/svg"
+        class="dusk-icon dusk-icon--size--large dusk-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
       >
-        <line
-          stroke-width="2"
-          x2="40.8"
-          y1="1"
-          y2="1"
-        />
-        <line
-          stroke-width="2"
-          x2="40.8"
-          y1="12.9854"
-          y2="12.9854"
+        <path
+          d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
         />
       </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      
     </button>
+    <!--&lt;Button&gt;-->
      
     <div
       class="dusk-navbar__menu dusk-navbar__menu--hidden"
       id="dusk-navbar-menu"
     >
-      <div
-        class="dusk-navbar__menu--network"
+      <select
+        class="dusk-select dusk-navbar__menu--network"
       >
-        <select
-          class="dusk-select"
+        <option
+          value="nodes.dusk.network"
         >
-          <option
-            value="nodes.dusk.network"
-          >
-            testnet
-             
-          </option>
-          <option
-            value="devnet.nodes.dusk.network"
-          >
-            devnet
-             
-          </option>
-          
-          <!--&lt;Options&gt;-->
-        </select>
-        <!--&lt;Select&gt;-->
-      </div>
-       
-      <div
-        class="dusk-navbar__menu--links"
-      >
-        <nav
-          class="dusk-nav-list"
+          testnet
+           
+        </option>
+        <option
+          value="devnet.nodes.dusk.network"
         >
-          
-          <a
-            class="dusk-anchor dusk-nav-list__link"
-            href="/some-base-path/"
-          >
-            Chain Info
-          </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
-          
-          <a
-            class="dusk-anchor dusk-nav-list__link"
-            href="/some-base-path/blocks"
-          >
-            Blocks
-          </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
-          
-          <a
-            class="dusk-anchor dusk-nav-list__link"
-            href="/some-base-path/transactions"
-          >
-            Transactions
-          </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
-        </nav>
+          devnet
+           
+        </option>
         
-        <!--&lt;NavList&gt;-->
-      </div>
+        <!--&lt;Options&gt;-->
+      </select>
+      <!--&lt;Select&gt;-->
+       
+      <nav
+        class="dusk-nav-list dusk-navbar__menu--links"
+      >
+        
+        <a
+          class="dusk-anchor dusk-nav-list__link"
+          href="/some-base-path/"
+        >
+          Chain Info
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AppAnchor&gt;-->
+        
+        <a
+          class="dusk-anchor dusk-nav-list__link"
+          href="/some-base-path/blocks"
+        >
+          Blocks
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AppAnchor&gt;-->
+        
+        <a
+          class="dusk-anchor dusk-nav-list__link"
+          href="/some-base-path/transactions"
+        >
+          Transactions
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AppAnchor&gt;-->
+      </nav>
+      
+      <!--&lt;NavList&gt;-->
        
       <div
         class="dusk-navbar__menu--search"
@@ -151,6 +139,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
           <!--&lt;TextboxAndButton&gt;-->
         </form>
         <!--&lt;SearchField&gt;-->
+         
       </div>
     </div>
   </nav>

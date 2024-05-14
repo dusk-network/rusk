@@ -7,9 +7,9 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use dusk_bls12_381_sign::PublicKey;
-use dusk_pki::SecretSpendKey;
+use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_wallet_core::{self as wallet, Store};
+use phoenix_core::{PublicKey, SecretKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::chain::MINIMUM_STAKE;
@@ -44,14 +44,14 @@ fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-static SSK: LazyLock<SecretSpendKey> = LazyLock::new(|| {
-    info!("Generating SecretSpendKey");
-    TestStore.retrieve_ssk(0).expect("Should not fail in test")
+static SK: LazyLock<SecretKey> = LazyLock::new(|| {
+    info!("Generating SecretKey");
+    TestStore.retrieve_sk(0).expect("Should not fail in test")
 });
 
-// static SK: LazyLock<SecretKey> = LazyLock::new(|| {
-//     info!("Generating BLS SecretKey");
-//     TestStore.retrieve_sk(0).expect("Should not fail in test")
+// static STAKE_SK: LazyLock<StakeSecretKey> = LazyLock::new(|| {
+//     info!("Generating StakeSecretKey");
+//     TestStore.retrieve_stake_sk(0).expect("Should not fail in test")
 // });
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
@@ -62,8 +62,8 @@ fn wallet_stake(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     value: u64,
 ) {
-    // Sender psk
-    let psk = SSK.public_spend_key();
+    // Sender pk
+    let pk = PublicKey::from(LazyLock::force(&SK));
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -83,7 +83,7 @@ fn wallet_stake(
     );
 
     let tx = wallet
-        .stake(&mut rng, 0, 2, &psk, value, GAS_LIMIT, 1)
+        .stake(&mut rng, 0, 2, &pk, value, GAS_LIMIT, 1)
         .expect("Failed to create a stake transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -114,7 +114,7 @@ fn wallet_stake(
         .expect("stake amount to be found");
 
     let tx = wallet
-        .unstake(&mut rng, 0, 0, &psk, GAS_LIMIT, 1)
+        .unstake(&mut rng, 0, 0, &pk, GAS_LIMIT, 1)
         .expect("Failed to unstake");
     let spent_txs = generator_procedure(
         rusk,
@@ -132,7 +132,7 @@ fn wallet_stake(
     assert_eq!(stake.amount, None);
 
     let tx = wallet
-        .withdraw(&mut rng, 0, 1, &psk, GAS_LIMIT, 1)
+        .withdraw(&mut rng, 0, 1, &pk, GAS_LIMIT, 1)
         .expect("failed to withdraw reward");
     generator_procedure(
         rusk,
@@ -198,14 +198,14 @@ fn wallet_reward(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
 ) {
-    // Sender psk
-    let psk = SSK.public_spend_key();
+    // Sender pk
+    let pk = PublicKey::from(LazyLock::force(&SK));
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let bls_key = wallet.store().retrieve_sk(2).unwrap();
-    let bls_key = PublicKey::from(&bls_key);
-    let reward_calldata = (bls_key, 6u32);
+    let stake_sk = wallet.store().retrieve_stake_sk(2).unwrap();
+    let stake_pk = StakePublicKey::from(&stake_sk);
+    let reward_calldata = (stake_pk, 6u32);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
@@ -217,7 +217,7 @@ fn wallet_reward(
             String::from("reward"),
             reward_calldata,
             0,
-            &psk,
+            &pk,
             GAS_LIMIT,
             1,
         )
@@ -306,7 +306,7 @@ pub async fn slash() -> Result<()> {
     let module_balance = rusk
         .module_balance(STAKE_CONTRACT)
         .expect("balance to exists");
-    let to_slash = wallet.public_key(0).unwrap();
+    let to_slash = wallet.stake_public_key(0).unwrap();
     let stake = wallet.get_stake(0).unwrap();
     assert_eq!(stake.reward, dusk(3.0));
     assert_eq!(stake.amount, Some((dusk(20.0), 0)));
@@ -384,7 +384,7 @@ pub async fn slash() -> Result<()> {
         &[],
         9001,
         BLOCK_GAS_LIMIT,
-        vec![wallet.public_key(1).unwrap()],
+        vec![wallet.stake_public_key(1).unwrap()],
         None,
     )
     .expect_err("Slashing a public key that never staked must fail");

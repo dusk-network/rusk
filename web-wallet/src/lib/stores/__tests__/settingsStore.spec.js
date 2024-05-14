@@ -29,10 +29,10 @@ describe("Settings store", () => {
     writable: true,
   });
 
-  /** @type {typeof import("../settingsStore").default} */
+  /** @type {SettingsStore} */
   let settingsStore;
 
-  /** @type {import("../stores").SettingsStore} */
+  /** @type {SettingsStoreContent} */
   let settingsStoreContent;
 
   beforeEach(async () => {

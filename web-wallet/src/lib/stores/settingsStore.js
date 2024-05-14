@@ -11,6 +11,7 @@ const browserDefaults = browser
       language: "en",
     };
 
+/** @type {SettingsStoreContent} */
 const initialState = {
   ...browserDefaults,
   currency: "USD",
@@ -22,6 +23,7 @@ const initialState = {
   network: "testnet",
   userId: "",
 };
+
 const settingsStore = persisted(
   `${CONFIG.LOCAL_STORAGE_APP_KEY}-preferences`,
   initialState
@@ -32,6 +34,7 @@ function reset() {
   set(initialState);
 }
 
+/** @type {SettingsStore} */
 export default {
   reset,
   set,

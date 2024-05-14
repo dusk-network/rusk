@@ -1,0 +1,233 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DataCard > should render the \`DataCard\` in the data state 1`] = `
+<div
+  class="dusk-card data-card"
+>
+  <header
+    class="data-card__header"
+    slot="header"
+  >
+    <h1
+      class="data-card__header-title"
+    >
+      Title
+    </h1>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Button
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <span>
+    some text
+  </span>
+  
+   
+</div>
+`;
+
+exports[`DataCard > should render the \`DataCard\` in the data state when loading is true 1`] = `
+<div
+  class="dusk-card data-card"
+>
+  <header
+    class="data-card__header"
+    slot="header"
+  >
+    <h1
+      class="data-card__header-title"
+    >
+      Title
+    </h1>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Button
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <span>
+    some text
+  </span>
+  
+   
+</div>
+`;
+
+exports[`DataCard > should render the \`DataCard\` in the error state 1`] = `
+<div
+  class="dusk-card data-card"
+>
+  <header
+    class="data-card__header"
+    slot="header"
+  >
+    <h1
+      class="data-card__header-title"
+    >
+      Title
+    </h1>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Button
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <div
+    class="alert"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--large"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    <header>
+      <p>
+        There was an error fetching the data.
+      </p>
+       
+      <p
+        class="alert__error-message"
+      >
+        error
+      </p>
+    </header>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Retry
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </div>
+  <!--&lt;DataAlert&gt;-->
+  
+   
+</div>
+`;
+
+exports[`DataCard > should render the \`DataCard\` in the loading state 1`] = `
+<div
+  class="dusk-card data-card"
+>
+  <header
+    class="data-card__header"
+    slot="header"
+  >
+    <h1
+      class="data-card__header-title"
+    >
+      Title
+    </h1>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Button
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <p>
+    Loading...
+  </p>
+  
+   
+</div>
+`;
+
+exports[`DataCard > should render the \`DataCard\` in the no data state 1`] = `
+<div
+  class="dusk-card data-card"
+>
+  <header
+    class="data-card__header"
+    slot="header"
+  >
+    <h1
+      class="data-card__header-title"
+    >
+      Title
+    </h1>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Button
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  <div
+    class="alert"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--large"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+      />
+    </svg>
+    
+    <!--&lt;Icon&gt;-->
+     
+    <header>
+      <p>
+        No data to display
+      </p>
+    </header>
+     
+  </div>
+  <!--&lt;DataAlert&gt;-->
+  
+   
+</div>
+`;

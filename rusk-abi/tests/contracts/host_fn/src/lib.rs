@@ -11,13 +11,13 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, Signature as BlsSignature};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, Signature as BlsSignature,
-};
 use dusk_bytes::Serializable;
-use dusk_pki::{PublicKey, PublicSpendKey};
-use dusk_schnorr::Signature;
+use jubjub_schnorr::{
+    PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+};
+use phoenix_core::PublicKey;
 use rusk_abi::{ContractId, PaymentInfo, PublicInput};
 
 #[no_mangle]
@@ -49,8 +49,8 @@ impl HostFnTest {
     pub fn verify_schnorr(
         &self,
         msg: BlsScalar,
-        pk: PublicKey,
-        sig: Signature,
+        pk: SchnorrPublicKey,
+        sig: SchnorrSignature,
     ) -> bool {
         rusk_abi::verify_schnorr(msg, pk, sig)
     }
@@ -68,8 +68,12 @@ impl HostFnTest {
         rusk_abi::block_height()
     }
 
-    pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
+    pub fn owner(&self) -> PublicKey {
         rusk_abi::self_owner()
+    }
+
+    pub fn owner_raw(&self) -> [u8; PublicKey::SIZE] {
+        rusk_abi::self_owner_raw()
     }
 }
 
@@ -112,6 +116,11 @@ unsafe fn block_height(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn contract_owner(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner())
+}
+
+#[no_mangle]
+unsafe fn contract_owner_raw(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner_raw())
 }
 
 const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);

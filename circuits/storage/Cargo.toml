@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dusk-plonk = "0.16"
+dusk-plonk = "0.19"
 rand = "0.8"
 once_cell = "1.13"
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }

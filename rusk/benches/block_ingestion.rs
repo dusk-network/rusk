@@ -13,12 +13,10 @@ use std::io::{BufRead, BufReader};
 use std::sync::Arc;
 use std::time::Duration;
 
+use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
 use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
-};
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use node_data::ledger::Transaction;
 use phoenix_core::Transaction as PhoenixTransaction;
@@ -79,8 +77,8 @@ pub fn accept_benchmark(c: &mut Criterion) {
 
         let generator = {
             let mut rng = StdRng::seed_from_u64(0xbeef);
-            let sk = BlsSecretKey::random(&mut rng);
-            BlsPublicKey::from(&sk)
+            let sk = StakeSecretKey::random(&mut rng);
+            StakePublicKey::from(&sk)
         };
 
         const BLOCK_HEIGHT: u64 = 1;

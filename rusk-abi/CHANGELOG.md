@@ -10,12 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Memoize the `verify_proof` function [#1228]
+- New ABIs: `owner_raw`, `self_owner_raw` [#1710]
 
 ### Changed
 
 - Change dependencies declarations enforce bytecheck [#1371]
 - Update `piecrust` from `0.15` to `0.16`
 - Update `piecrust-uplink` from `0.10` to `0.11`
+- Update dusk dependencies [#1609]
 
 ## [0.11.0] - 2023-10-12
 
@@ -197,6 +199,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add LICENSE
 - Add README.md
 
+[#1710]: https://github.com/dusk-network/rusk/issues/1710
+[#1609]: https://github.com/dusk-network/rusk/issues/1609
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1228]: https://github.com/dusk-network/rusk/issues/1228
 [#945]: https://github.com/dusk-network/rusk/issues/945

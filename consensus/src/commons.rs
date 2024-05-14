@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use dusk_bls12_381_sign::SecretKey;
+use bls12_381_bls::SecretKey;
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
@@ -75,15 +75,15 @@ pub enum StepSigError {
     #[error("Failed to reach a quorum")]
     VoteSetTooSmall,
     #[error("Verification error {0}")]
-    VerificationFailed(dusk_bls12_381_sign::Error),
+    VerificationFailed(bls12_381_bls::Error),
     #[error("Empty Apk instance")]
     EmptyApk,
     #[error("Invalid Type")]
     InvalidType,
 }
 
-impl From<dusk_bls12_381_sign::Error> for StepSigError {
-    fn from(inner: dusk_bls12_381_sign::Error) -> Self {
+impl From<bls12_381_bls::Error> for StepSigError {
+    fn from(inner: bls12_381_bls::Error) -> Self {
         Self::VerificationFailed(inner)
     }
 }
@@ -92,7 +92,7 @@ impl From<dusk_bls12_381_sign::Error> for StepSigError {
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
-    InvalidSignature(dusk_bls12_381_sign::Error),
+    InvalidSignature(bls12_381_bls::Error),
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
     InvalidValidation(QuorumType),
@@ -116,8 +116,8 @@ impl From<StepSigError> for ConsensusError {
         Self::InvalidValidationStepVotes(e)
     }
 }
-impl From<dusk_bls12_381_sign::Error> for ConsensusError {
-    fn from(e: dusk_bls12_381_sign::Error) -> Self {
+impl From<bls12_381_bls::Error> for ConsensusError {
+    fn from(e: bls12_381_bls::Error) -> Self {
         Self::InvalidSignature(e)
     }
 }

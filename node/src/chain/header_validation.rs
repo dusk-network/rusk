@@ -120,13 +120,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         seed: &[u8; 48],
         pk_bytes: &[u8; 96],
     ) -> anyhow::Result<()> {
-        let pk = dusk_bls12_381_sign::PublicKey::from_bytes(pk_bytes)
+        let pk = bls12_381_bls::PublicKey::from_bytes(pk_bytes)
             .map_err(|err| anyhow!("invalid pk bytes: {:?}", err))?;
 
-        let signature = dusk_bls12_381_sign::Signature::from_bytes(seed)
+        let signature = bls12_381_bls::Signature::from_bytes(seed)
             .map_err(|err| anyhow!("invalid signature bytes: {}", err))?;
 
-        dusk_bls12_381_sign::APK::from(&pk)
+        bls12_381_bls::APK::from(&pk)
             .verify(&signature, &self.prev_header.seed.inner()[..])
             .map_err(|err| anyhow!("invalid seed: {:?}", err))?;
 

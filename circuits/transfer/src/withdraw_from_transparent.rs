@@ -6,8 +6,7 @@
 
 use crate::gadgets;
 
-use dusk_plonk::error::Error as PlonkError;
-
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 
 #[derive(Debug, Default, Clone)]
@@ -34,7 +33,7 @@ impl WithdrawFromTransparentCircuit {
 }
 
 impl Circuit for WithdrawFromTransparentCircuit {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         // Witnesses
 
         let blinder = composer.append_witness(self.blinder);

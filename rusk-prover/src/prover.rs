@@ -21,7 +21,7 @@ use rand::rngs::OsRng;
 use rand::{rngs::StdRng, SeedableRng};
 
 use dusk_plonk::prelude::*;
-use dusk_schnorr::Signature;
+use jubjub_schnorr::Signature;
 use phoenix_core::{Crossover, Fee};
 
 use transfer_circuits::{

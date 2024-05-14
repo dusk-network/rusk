@@ -36,7 +36,7 @@
   }
 
   /**
-   * @param {keyof import("$lib/stores/stores").SettingsStore} property
+   * @param {keyof SettingsStoreContent} property
    * @param {any} value
    */
   function updateSetting(property, value) {

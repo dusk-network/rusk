@@ -14,6 +14,12 @@
   color: var(--on-background-color);
 }
 
+.dusk-badge--variant-alt {
+  background-color: white;
+  border-color: white;
+  color: var(--on-background-color);
+}
+
 .dusk-badge--variant-warning {
   background-color: var(--warning-color);
   border-color: var(--warning-color);

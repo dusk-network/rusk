@@ -161,13 +161,13 @@ pub fn verify_votes(
 }
 
 impl Cluster<PublicKey> {
-    fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, StepSigError> {
+    fn aggregate_pks(&self) -> Result<bls12_381_bls::APK, StepSigError> {
         let pks: Vec<_> =
             self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
 
         match pks.split_first() {
             Some((first, rest)) => {
-                let mut apk = dusk_bls12_381_sign::APK::from(first);
+                let mut apk = bls12_381_bls::APK::from(first);
                 apk.aggregate(rest);
                 Ok(apk)
             }
@@ -180,7 +180,7 @@ fn verify_step_signature(
     header: &ConsensusHeader,
     step: StepName,
     vote: &Vote,
-    apk: dusk_bls12_381_sign::APK,
+    apk: bls12_381_bls::APK,
     signature: &[u8; 48],
 ) -> Result<(), StepSigError> {
     // Compile message to verify
@@ -190,7 +190,7 @@ fn verify_step_signature(
         StepName::Proposal => Err(StepSigError::InvalidType)?,
     };
 
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
+    let sig = bls12_381_bls::Signature::from_bytes(signature)?;
     let mut msg = header.signable();
     msg.extend_from_slice(sign_seed);
     vote.write(&mut msg).expect("Writing to vec should succeed");
