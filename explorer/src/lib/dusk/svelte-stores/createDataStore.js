@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 import { getErrorFrom } from "$lib/dusk/error";
 
@@ -17,48 +17,60 @@ function createDataStore(dataRetriever) {
   const dataStore = writable(initialState);
   const { set, subscribe, update } = dataStore;
 
-  /** @type {ReturnType<dataRetriever> | null} */
-  let dataPromise = null;
+  /** @type {number} */
+  let currentRetrieveId = 0;
 
   /** @type {(...args: Parameters<dataRetriever>) => Promise<DataStoreContent>} */
   const getData = (...args) => {
-    if (dataPromise) {
-      return dataPromise;
-    }
+    const retrieveId = ++currentRetrieveId;
 
     update((store) => ({ ...store, error: null, isLoading: true }));
 
-    dataPromise = dataRetriever(...args)
+    return dataRetriever(...args)
       .then((data) => {
-        const newStore = { data, error: null, isLoading: false };
+        if (retrieveId === currentRetrieveId) {
+          const newStoreContent = { data, error: null, isLoading: false };
 
-        set(newStore);
+          set(newStoreContent);
 
-        return newStore;
+          return newStoreContent;
+        } else {
+          return get(dataStore);
+        }
       })
       .catch(
         /** @param {any} error */
         (error) => {
-          const newStore = {
-            data: null,
-            error: getErrorFrom(error),
-            isLoading: false,
-          };
+          if (retrieveId === currentRetrieveId) {
+            const newStoreContent = {
+              data: null,
+              error: getErrorFrom(error),
+              isLoading: false,
+            };
 
-          set(newStore);
+            set(newStoreContent);
 
-          return newStore;
+            return newStoreContent;
+          } else {
+            return get(dataStore);
+          }
         }
-      )
-      .finally(() => {
-        dataPromise = null;
-      });
+      );
+  };
 
-    return dataPromise;
+  const reset = () => {
+    /**
+     * We don't want pending promises to be written
+     * in the store, and we don't want id clashes
+     * if `getData` is called immediately after `reset`.
+     */
+    currentRetrieveId++;
+    set(initialState);
   };
 
   return {
     getData,
+    reset,
     subscribe,
   };
 }
