@@ -6,6 +6,7 @@
   import { Button, NavList, Select } from "$lib/dusk/components";
   import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
+  import { appStore } from "$lib/stores";
 
   import "./Navbar.css";
 
@@ -36,17 +37,6 @@
     },
   ];
 
-  const networks = [
-    {
-      label: "testnet",
-      value: `${import.meta.env.VITE_DUSK_TESTNET_NODE}`,
-    },
-    {
-      label: "devnet",
-      value: `${import.meta.env.VITE_DUSK_DEVNET_NODE}`,
-    },
-  ];
-
   const dispatch = createEventDispatcher();
 
   async function createEmptySpace() {
@@ -56,11 +46,21 @@
     )[0]?.clientHeight;
   }
 
+  /**
+   * @param {Event} e
+   */
+  function handleChange(e) {
+    // @ts-ignore
+    appStore.setNetwork(e.target.value);
+  }
+
   afterNavigate(() => {
     hidden = true;
     dispatch("toggleMenu", hidden);
     showSearchNotification = false;
   });
+
+  $: ({ networks } = $appStore);
 </script>
 
 <nav
@@ -92,7 +92,11 @@
     class:dusk-navbar__menu--hidden={hidden}
     id="dusk-navbar-menu"
   >
-    <Select className="dusk-navbar__menu--network" options={networks} />
+    <Select
+      className="dusk-navbar__menu--network"
+      on:change={handleChange}
+      options={networks}
+    />
     <NavList className="dusk-navbar__menu--links" {navigation} />
     <div class="dusk-navbar__menu--search">
       <SearchField

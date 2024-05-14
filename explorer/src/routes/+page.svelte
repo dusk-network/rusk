@@ -17,6 +17,11 @@
   onDestroy(pollingDataStore.stop);
 
   $: ({ data, error, isLoading } = $pollingDataStore);
+
+  onNetworkChange((network) => {
+    pollingDataStore.stop();
+    pollingDataStore.start(network);
+  });
 </script>
 
 <section class="chain-info">
