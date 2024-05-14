@@ -1,7 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { DataCard, ListItem } from "$lib/components";
+  import { DataCard, DataGuard, ListItem } from "$lib/components";
   import { Badge, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -29,6 +29,9 @@
 
   /** @type {Boolean} */
   export let loading;
+
+  /** @type {String | null} */
+  export let payload;
 
   const formatter = createValueFormatter("en");
   const currencyFormatter = createCurrencyFormatter("en", "usd", 9);
@@ -75,7 +78,7 @@
       <svelte:fragment slot="definition"
         >{middleEllipsis(
           data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
+          calculateAdaptiveCharCount(screenWidth, 320, 1400, 14, 40)
         )}</svelte:fragment
       >
     </ListItem>
@@ -171,7 +174,11 @@
       <svelte:fragment slot="definition">
         {#if isPayloadToggled}
           <Card onSurface={true} className="transaction-details__payload">
-            <svelte:fragment>Some text</svelte:fragment>
+            <svelte:fragment>
+              <DataGuard data={payload}>
+                {payload}
+              </DataGuard>
+            </svelte:fragment>
           </Card>
         {/if}
       </svelte:fragment>

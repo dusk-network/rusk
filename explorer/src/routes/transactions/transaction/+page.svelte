@@ -8,14 +8,17 @@
   import { onMount } from "svelte";
 
   const dataStore = createDataStore(duskAPI.getTransaction);
+  const payloadStore = createDataStore(duskAPI.getTransactionDetails);
 
   const getTransaction = () => {
     dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
+    payloadStore.getData($appStore.network, $page.url.searchParams.get("id"));
   };
 
   onNetworkChange(getTransaction);
 
   $: ({ data, error, isLoading } = $dataStore);
+  $: ({ data: payloadData } = $payloadStore);
 
   onMount(() => {
     getTransaction();
@@ -28,5 +31,6 @@
     {data}
     {error}
     loading={isLoading}
+    payload={payloadData}
   />
 </section>
