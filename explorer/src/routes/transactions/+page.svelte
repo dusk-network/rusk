@@ -21,7 +21,7 @@
   onDestroy(pollingDataStore.stop);
 </script>
 
-<section class="transactions">
+<section id="transactions">
   <TransactionsCard
     on:retry={pollingDataStore.start}
     txs={data}

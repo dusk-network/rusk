@@ -1,5 +1,4 @@
 .blocks-card__table,
 .blocks-card__list {
-  max-height: 70dvh;
   overflow-y: auto;
 }
