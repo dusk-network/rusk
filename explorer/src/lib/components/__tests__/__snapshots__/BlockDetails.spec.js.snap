@@ -12,7 +12,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <h1
         class="data-card__header-title"
       >
-        Block Details - #495,868
+        Block Details
       </h1>
        
       <button

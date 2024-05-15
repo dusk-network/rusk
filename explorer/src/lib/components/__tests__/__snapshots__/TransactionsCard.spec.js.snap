@@ -28,7 +28,9 @@ exports[`Transactions Card > should disable the \`Show More\` button if the card
     <!--&lt;Button&gt;-->
   </header>
    
-  <p>
+  <p
+    class="data-card__loading-notice"
+  >
     Loading...
   </p>
   

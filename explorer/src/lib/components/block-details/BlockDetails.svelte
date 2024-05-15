@@ -32,16 +32,7 @@
   /** @type {Number} */
   let screenWidth = window.innerWidth;
 
-  /** @type {string}*/
-  let blockHeight = "";
-
   $: classes = makeClassName(["block-details", className]);
-
-  $: {
-    if (data) {
-      blockHeight = `#${formatter(data.header.height)}`;
-    }
-  }
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -62,7 +53,7 @@
   {error}
   {loading}
   className={classes}
-  title="Block Details - {blockHeight}"
+  title="Block Details"
   headerButtonDetails={{
     action: () => history.back(),
     disabled: false,
