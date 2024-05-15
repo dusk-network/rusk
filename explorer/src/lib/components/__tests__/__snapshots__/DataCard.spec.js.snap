@@ -169,7 +169,9 @@ exports[`DataCard > should render the \`DataCard\` in the loading state 1`] = `
     <!--&lt;Button&gt;-->
   </header>
    
-  <p>
+  <p
+    class="data-card__loading-notice"
+  >
     Loading...
   </p>
   
