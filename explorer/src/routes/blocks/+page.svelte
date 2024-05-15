@@ -18,9 +18,7 @@
     pollingDataStore.start(network);
   });
 
-  onDestroy(() => {
-    pollingDataStore.stop();
-  });
+  onDestroy(pollingDataStore.stop);
 </script>
 
 <section class="blocks">
