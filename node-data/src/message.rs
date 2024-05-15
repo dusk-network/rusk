@@ -790,7 +790,7 @@ pub mod payload {
                 max_entries,
             }
         }
-      
+
         pub fn add_tx_id(&mut self, id: [u8; 32]) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::MempoolTx,
