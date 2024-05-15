@@ -47,7 +47,7 @@ pub trait Network: Send + Sync + 'static {
     async fn flood_request(
         &self,
         msg_inv: &Inv,
-        ttl_as_sec: u64,
+        ttl_as_sec: Option<u64>,
         hops_limit: u16,
     ) -> anyhow::Result<()>;
 

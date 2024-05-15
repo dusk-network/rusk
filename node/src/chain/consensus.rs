@@ -218,7 +218,6 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
     ) -> anyhow::Result<Block> {
         // Make an attempt to fetch the candidate block from local storage
         let res = self.db.read().await.view(|t| t.fetch_candidate_block(h))?;
-
         if let Some(b) = res {
             return Ok(b);
         }

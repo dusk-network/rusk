@@ -238,14 +238,19 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     async fn flood_request(
         &self,
         msg_inv: &Inv,
-        ttl_as_sec: u64,
+        ttl_as_sec: Option<u64>,
         hops_limit: u16,
     ) -> anyhow::Result<()> {
-        let ttl_as_sec = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs()
-            + ttl_as_sec;
+        let ttl_as_sec = ttl_as_sec.map_or_else(
+            || u64::MAX,
+            |v| {
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
+                    + v
+            },
+        );
 
         self.broadcast(&Message::new_get_resource(GetResource::new(
             msg_inv.clone(),

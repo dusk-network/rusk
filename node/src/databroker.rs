@@ -32,7 +32,7 @@ const TOPICS: &[u8] = &[
 ];
 
 struct Response {
-    /// A response usually consists of a single message. However in case of
+    /// A response usually consists of a single message. However, in case of
     /// GetMempool and GetBlocks we may need to send multiple messages in
     /// response to a single request.
     msgs: SmallVec<[Message; 1]>,
