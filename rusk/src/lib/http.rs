@@ -562,15 +562,6 @@ async fn handle_stream_rues<H: HandleRequest>(
                 // If the event is subscribed, we send it to the client.
                 if is_subscribed {
                     let event = event.to_bytes();
-                    //let event = match serde_json::to_string(&event) {
-                    //    Ok(event) => event,
-                    //    // If we fail to serialize the event, we log the error
-                    //    // and continue processing further.
-                    //    Err(err) => {
-                    //        warn!("Failed serializing event: {err}");
-                    //        continue;
-                    //    }
-                    //};
 
                     // If the event fails sending we close the socket on the client
                     // and stop processing further.
