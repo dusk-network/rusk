@@ -7,6 +7,8 @@
     mdiCurrencyUsd,
     mdiSwapVertical,
   } from "@mdi/js";
+  import { onDestroy, onMount } from "svelte";
+
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { createCompactFormatter } from "$lib/dusk/value";
   import { duskIcon } from "$lib/dusk/icons";
@@ -20,7 +22,6 @@
   } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
   import "./StatisticsPanel.css";
-  import { onMount } from "svelte";
 
   const valueFormatter = createCurrencyFormatter("en", "DUSK", 0);
   const millionFormatter = createCompactFormatter("en");
@@ -53,6 +54,7 @@
   onNetworkChange(pollingStatsDataStore.start);
   onNetworkChange(getNodeLocations);
   onNetworkChange(getMarketData);
+  onDestroy(pollingStatsDataStore.stop);
 
   $: ({ data } = $nodeLocationsStore);
 
