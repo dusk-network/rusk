@@ -2,7 +2,7 @@
 
 exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
 <div
-  class="table-container"
+  class="table-container blocks-table"
 >
   <table
     class="table"

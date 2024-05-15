@@ -2,13 +2,10 @@
 
 <script>
   import { BlocksList, BlocksTable, DataCard } from "$lib/components";
-  import { makeClassName } from "$lib/dusk/string";
-  import { goto } from "$lib/navigation";
 
-  /** @type {string | Undefined} */
-  export let className = undefined;
+  import "./BlocksCard.css";
 
-  /** @type {Block[]}*/
+  /** @type {Block[] | null}*/
   export let blocks;
 
   /** @type {Error | null}*/
@@ -17,10 +14,35 @@
   /** @type {Boolean} */
   export let loading;
 
+  const ITEMS_TO_DISPLAY = 15;
+
+  let itemsToDisplay = ITEMS_TO_DISPLAY;
+
   /** @type {number} */
   let clientWidth;
 
-  $: classes = makeClassName(["blocks-card", className]);
+  /** @type {Block[]}*/
+  let displayedBlocks;
+
+  /** @type {Boolean}*/
+  let isLoadMoreDisabled = false;
+
+  const loadMoreItems = () => {
+    if (blocks && itemsToDisplay < blocks.length) {
+      itemsToDisplay += ITEMS_TO_DISPLAY;
+    }
+  };
+
+  $: displayedBlocks = blocks ? blocks.slice(0, itemsToDisplay) : [];
+  $: {
+    if (blocks && itemsToDisplay >= blocks.length) {
+      isLoadMoreDisabled = true;
+    } else if (loading && blocks === null) {
+      isLoadMoreDisabled = true;
+    } else {
+      isLoadMoreDisabled = false;
+    }
+  }
 </script>
 
 <svelte:window bind:outerWidth={clientWidth} />
@@ -29,15 +51,20 @@
   data={blocks}
   {error}
   {loading}
-  className={classes}
   title="Blocks"
-  headerButtonDetails={{ action: () => goto("/blocks"), label: "All Blocks" }}
+  headerButtonDetails={{
+    action: () => loadMoreItems(),
+    disabled: isLoadMoreDisabled,
+    label: "Show More",
+  }}
 >
   {#if clientWidth > 768}
-    <BlocksTable data={blocks} />
+    <BlocksTable data={displayedBlocks} className="blocks-card__table" />
   {:else}
-    {#each blocks as block (block)}
-      <BlocksList data={block} />
-    {/each}
+    <div class="blocks-card__list">
+      {#each displayedBlocks as block (block)}
+        <BlocksList data={block} />
+      {/each}
+    </div>
   {/if}
 </DataCard>

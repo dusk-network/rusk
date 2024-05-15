@@ -231,3 +231,36 @@ exports[`DataCard > should render the \`DataCard\` in the no data state 1`] = `
    
 </div>
 `;
+
+exports[`DataCard > should render the \`DataCard\` with a disabled button 1`] = `
+<div
+  class="dusk-card data-card"
+>
+  <header
+    class="data-card__header"
+    slot="header"
+  >
+    <h1
+      class="data-card__header-title"
+    >
+      Title
+    </h1>
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      disabled=""
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Back
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </header>
+   
+  
+   
+</div>
+`;

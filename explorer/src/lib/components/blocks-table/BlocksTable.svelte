@@ -11,18 +11,23 @@
   } from "$lib/components/table";
   import { Badge } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
-  import { getRelativeTimeString } from "$lib/dusk/string";
+  import { getRelativeTimeString, makeClassName } from "$lib/dusk/string";
   import { createValueFormatter } from "$lib/dusk/value";
 
   import "./BlocksTable.css";
 
-  /** @type {Block[]}*/
+  /** @type {string | undefined} */
+  export let className = undefined;
+
+  /** @type {Block[]} */
   export let data;
 
   const numberFormatter = createValueFormatter("en");
+
+  $: classes = makeClassName(["blocks-table", className]);
 </script>
 
-<Table>
+<Table className={classes}>
   <TableHead>
     <TableRow>
       <TableCell type="th"># Block</TableCell>

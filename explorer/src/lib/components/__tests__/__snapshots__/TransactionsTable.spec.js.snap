@@ -2,7 +2,7 @@
 
 exports[`Transactions Table > should render the \`TransactionsTable\` component 1`] = `
 <div
-  class="table-container"
+  class="table-container transactions-table"
 >
   <table
     class="table"

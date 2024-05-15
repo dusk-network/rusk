@@ -19,7 +19,7 @@
   /** @type {String}*/
   export let title;
 
-  /** @type {{action:(e: MouseEvent) => void, label: String}}*/
+  /** @type {{action:(e: MouseEvent) => void, disabled:boolean, label: String}}*/
   export let headerButtonDetails;
 
   /** @type {string | Undefined} */
@@ -37,6 +37,7 @@
       on:click={headerButtonDetails.action}
       text={headerButtonDetails.label}
       variant="secondary"
+      disabled={headerButtonDetails.disabled}
     />
   </header>
   {#if loading && data === null}
