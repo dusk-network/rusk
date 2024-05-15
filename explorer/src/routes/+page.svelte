@@ -1,4 +1,6 @@
 <script>
+  import { onDestroy } from "svelte";
+
   import { LatestBlocksCard, LatestTransactionsCard } from "$lib/components";
   import { StatisticsPanel } from "$lib/containers";
   import { duskAPI } from "$lib/services";
@@ -12,6 +14,7 @@
   );
 
   onNetworkChange(pollingDataStore.start);
+  onDestroy(pollingDataStore.stop);
 
   $: ({ data, error, isLoading } = $pollingDataStore);
 </script>
