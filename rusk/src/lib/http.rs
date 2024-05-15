@@ -19,7 +19,7 @@ pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
     RequestData, Target,
 };
-use hyper::http::{HeaderName, HeaderValue};
+
 use rusk_abi::Event;
 use tracing::{info, warn};
 
@@ -31,6 +31,7 @@ use std::net::SocketAddr;
 use std::path::Path;
 use std::pin::Pin;
 use std::str::FromStr;
+use std::sync::mpsc as std_mpsc;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -40,24 +41,36 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::ToSocketAddrs;
 use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 use tokio::{io, task};
+use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
+use tokio_stream::StreamExt;
+use tokio_util::either::Either;
 
-use hyper::server::conn::Http;
+use http_body_util::{BodyExt, Full};
+use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
-use hyper::{body, Body, Method, Request, Response, StatusCode};
+use hyper::{
+    body::{self, Body, Bytes, Incoming},
+    Method, Request, Response, StatusCode,
+};
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
+use hyper_util::server::conn::auto::Builder as HttpBuilder;
 
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
 
 use futures_util::stream::iter as stream_iter;
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{SinkExt, TryStreamExt};
+
+use anyhow::Error as AnyhowError;
+use hyper_util::rt::TokioIo;
 use rand::rngs::OsRng;
 
 #[cfg(feature = "node")]
 use crate::chain::{Rusk, RuskNode};
+use crate::http::event::{FullOrStreamBody, RuesEventData};
 use crate::VERSION;
 
-pub use self::event::ContractEvent;
+pub use self::event::{ContractEvent, RuesEvent};
 use self::event::{MessageRequest, ResponseData, RuesSubscription, SessionId};
 use self::stream::{Listener, Stream};
 
@@ -72,7 +85,7 @@ pub struct HttpServer {
 impl HttpServer {
     pub async fn bind<A, H, P1, P2>(
         handler: H,
-        event_receiver: broadcast::Receiver<ContractEvent>,
+        event_receiver: broadcast::Receiver<RuesEvent>,
         ws_event_channel_cap: usize,
         addr: A,
         cert_and_key: Option<(P1, P2)>,
@@ -149,18 +162,38 @@ impl HandleRequest for DataSources {
     }
 }
 
+#[derive(Clone)]
+struct TokioExecutor;
+
+impl<F> hyper::rt::Executor<F> for TokioExecutor
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    fn execute(&self, fut: F) {
+        task::spawn(fut);
+    }
+}
+
 async fn listening_loop<H>(
     handler: H,
     listener: Listener,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
 ) where
     H: HandleRequest,
 {
     let sources = Arc::new(handler);
-    let http = Http::new();
     let sockets_map = Arc::new(RwLock::new(HashMap::new()));
+
+    let service = ExecutionService {
+        sources: sources.clone(),
+        sockets_map: sockets_map.clone(),
+        events: events.resubscribe(),
+        shutdown: shutdown.resubscribe(),
+        ws_event_channel_cap,
+    };
 
     loop {
         tokio::select! {
@@ -173,16 +206,15 @@ async fn listening_loop<H>(
                     Err(_) => break,
                 };
 
-                let service = ExecutionService {
-                    sources: sources.clone(),
-                    sockets_map: sockets_map.clone(),
-                    events: events.resubscribe(),
-                    shutdown: shutdown.resubscribe(),
-                    ws_event_channel_cap,
-                };
-                let conn = http.serve_connection(stream, service).with_upgrades();
+                let http = HttpBuilder::new(TokioExecutor);
 
-                task::spawn(conn);
+                let stream = TokioIo::new(stream);
+                let service = service.clone();
+
+                task::spawn(async move {
+                    let conn = http.serve_connection_with_upgrades(stream, service);
+                    conn.await
+                });
             }
         }
     }
@@ -341,16 +373,28 @@ struct ExecutionService<H> {
     sources: Arc<H>,
     sockets_map:
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
 }
 
-impl<H> Service<Request<Body>> for ExecutionService<H>
+impl<H> Clone for ExecutionService<H> {
+    fn clone(&self) -> Self {
+        Self {
+            sources: self.sources.clone(),
+            sockets_map: self.sockets_map.clone(),
+            events: self.events.resubscribe(),
+            shutdown: self.shutdown.resubscribe(),
+            ws_event_channel_cap: self.ws_event_channel_cap,
+        }
+    }
+}
+
+impl<H> Service<Request<Incoming>> for ExecutionService<H>
 where
     H: HandleRequest,
 {
-    type Response = Response<Body>;
+    type Response = Response<FullOrStreamBody>;
     type Error = Infallible;
     type Future = Pin<
         Box<
@@ -360,19 +404,12 @@ where
         >,
     >;
 
-    fn poll_ready(
-        &mut self,
-        _: &mut Context<'_>,
-    ) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
     /// Handle the HTTP request.
     ///
     /// A request may be a "normal" request, or a WebSocket upgrade request. In
     /// the former case, the request is handled on the spot, while in the
     /// latter task running the stream handler loop is spawned.
-    fn call(&mut self, mut req: Request<Body>) -> Self::Future {
+    fn call(&self, mut req: Request<Incoming>) -> Self::Future {
         let sources = self.sources.clone();
         let sockets_map = self.sockets_map.clone();
         let events = self.events.resubscribe();
@@ -389,10 +426,10 @@ where
                 ws_event_channel_cap,
             )
             .await;
-            response.or_else(|error| {
+            response.map(Into::into).or_else(|error| {
                 Ok(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(error.to_string()))
+                    .body(Full::new(error.to_string().into()).into())
                     .expect("Failed to build response"))
             })
         })
@@ -402,14 +439,19 @@ where
 enum SubscriptionAction {
     Subscribe(RuesSubscription),
     Unsubscribe(RuesSubscription),
+    Dispatch {
+        sub: RuesSubscription,
+        body: Incoming,
+    },
 }
 
-async fn handle_stream_rues(
+async fn handle_stream_rues<H: HandleRequest>(
     sid: SessionId,
     websocket: HyperWebsocket,
+    events: broadcast::Receiver<RuesEvent>,
     mut subscriptions: mpsc::Receiver<SubscriptionAction>,
-    mut events: broadcast::Receiver<ContractEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
+    handler: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
@@ -429,7 +471,21 @@ async fn handle_stream_rues(
         return;
     }
 
+    // FIXME make this a configuration parameter
+    const DISPATCH_BUFFER_SIZE: usize = 16;
+
     let mut subscription_set = HashSet::new();
+    let (dispatch_sender, dispatch_events) =
+        mpsc::channel(DISPATCH_BUFFER_SIZE);
+
+    // Join the two event receivers together, allowing for reusing the exact
+    // same code when handling them either of them.
+    let mut events = BroadcastStream::new(events);
+    let mut dispatch_events = ReceiverStream::new(dispatch_events);
+
+    let mut events = events
+        .map_err(Either::Left)
+        .merge(dispatch_events.map_err(Either::Right));
 
     loop {
         tokio::select! {
@@ -456,26 +512,41 @@ async fn handle_stream_rues(
                 };
 
                 match subscription {
-                   SubscriptionAction::Subscribe(subscription) => {
+                    SubscriptionAction::Subscribe(subscription) => {
                         subscription_set.insert(subscription);
                     },
                     SubscriptionAction::Unsubscribe(subscription) => {
                         subscription_set.remove(&subscription);
                     },
+                    SubscriptionAction::Dispatch {
+                        sub,
+                        body
+                    } => {
+                        // TODO figure out if we should subscribe to the event we dispatch
+                        task::spawn(handle_dispatch(sub, body, handler.clone(), dispatch_sender.clone()));
+                    }
                 }
             }
 
-            event = events.recv() => {
+            Some(event) = events.next() => {
                 let event = match event {
                     Ok(event) => event,
-                    Err(err) => {
-                        // If the event channel is closed, it means the server has stopped
-                        // producing events, so we should inform the client and stop.
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Away,
-                            reason: Cow::from("Shutting down"),
-                        })).await;
-                        break;
+                    Err(err) => match err {
+                        Either::Left(_berr) => {
+                            // If the event channel is closed, it means the
+                            // server has stopped producing events, so we
+                            // should inform the client and stop.
+                            let _ = stream.close(Some(CloseFrame {
+                                code: CloseCode::Away,
+                                reason: Cow::from("Shutting down"),
+                            })).await;
+                            break;
+
+                        }
+                        Either::Right(_eerr) => {
+                            // TODO handle execution error
+                            continue;
+                        },
                     },
                 };
 
@@ -490,19 +561,11 @@ async fn handle_stream_rues(
 
                 // If the event is subscribed, we send it to the client.
                 if is_subscribed {
-                    let event = match serde_json::to_string(&event) {
-                        Ok(event) => event,
-                        // If we fail to serialize the event, we log the error
-                        // and continue processing further.
-                        Err(err) => {
-                            warn!("Failed serializing event: {err}");
-                            continue;
-                        }
-                    };
+                    let event = event.to_bytes();
 
                     // If the event fails sending we close the socket on the client
                     // and stop processing further.
-                    if stream.send(Message::Text(event)).await.is_err() {
+                    if stream.send(Message::Binary(event)).await.is_err() {
                         let _ = stream.close(Some(CloseFrame {
                             code: CloseCode::Error,
                             reason: Cow::from("Failed sending event"),
@@ -518,25 +581,100 @@ async fn handle_stream_rues(
     sockets.remove(&sid);
 }
 
+async fn handle_dispatch<H: HandleRequest>(
+    sub: RuesSubscription,
+    body: Incoming,
+    handler: Arc<H>,
+    sender: mpsc::Sender<Result<RuesEvent, AnyhowError>>,
+) {
+    let bytes = match body.collect().await {
+        Ok(bytes) => bytes.to_bytes(),
+        Err(err) => {
+            let _ = sender.send(Err(err.into())).await;
+            return;
+        }
+    };
+
+    let req = match MessageRequest::parse(&bytes) {
+        Ok(req) => req,
+        Err(err) => {
+            let _ = sender.send(Err(err)).await;
+            return;
+        }
+    };
+
+    let rsp = match handler.handle(&req).await {
+        Ok(rsp) => rsp,
+        Err(err) => {
+            let _ = sender.send(Err(err)).await;
+            return;
+        }
+    };
+
+    let (data, header) = rsp.into_inner();
+    match data {
+        DataType::Binary(bytes) => {
+            let _ = sender
+                .send(Ok(RuesEvent {
+                    headers: req.headers.clone(),
+                    data: RuesEventData::Other(bytes.inner),
+                }))
+                .await;
+        }
+        DataType::Text(text) => {
+            let _ = sender
+                .send(Ok(RuesEvent {
+                    headers: req.headers.clone(),
+                    data: RuesEventData::Other(text.into_bytes()),
+                }))
+                .await;
+        }
+        DataType::Json(json) => {
+            let _ = sender
+                .send(
+                    serde_json::to_vec(&json)
+                        .map(|bytes| RuesEvent {
+                            headers: req.headers.clone(),
+                            data: RuesEventData::Other(bytes),
+                        })
+                        .map_err(Into::into),
+                )
+                .await;
+        }
+        DataType::Channel(channel) => {
+            for bytes in channel {
+                let _ = sender
+                    .send(Ok(RuesEvent {
+                        headers: req.headers.clone(),
+                        data: RuesEventData::Other(bytes),
+                    }))
+                    .await;
+            }
+        }
+        DataType::None => {}
+    }
+}
+
 fn response(
     status: StatusCode,
-    body: impl Into<Body>,
-) -> Result<Response<Body>, ExecutionError> {
+    body: impl Into<Bytes>,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
     Ok(Response::builder()
         .status(status)
-        .body(body.into())
+        .body(Full::new(body.into()).into())
         .expect("Failed to build response"))
 }
 
-async fn handle_request_rues(
-    mut req: Request<Body>,
+async fn handle_request_rues<H: HandleRequest>(
+    mut req: Request<Incoming>,
+    handler: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
-) -> Result<Response<Body>, ExecutionError> {
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
     if hyper_tungstenite::is_upgrade_request(&req) {
         let (subscription_sender, subscriptions) =
             mpsc::channel(ws_event_channel_cap);
@@ -556,13 +694,14 @@ async fn handle_request_rues(
         task::spawn(handle_stream_rues(
             sid,
             websocket,
-            subscriptions,
             events,
+            subscriptions,
             shutdown,
+            handler.clone(),
             sockets_map.clone(),
         ));
 
-        Ok(response)
+        Ok(response.map(Into::into))
     } else {
         let headers = req.headers();
         let mut path_split = req.uri().path().split('/');
@@ -605,6 +744,10 @@ async fn handle_request_rues(
         let action = match *req.method() {
             Method::GET => SubscriptionAction::Subscribe(subscription),
             Method::DELETE => SubscriptionAction::Unsubscribe(subscription),
+            Method::POST => SubscriptionAction::Dispatch {
+                sub: subscription,
+                body: req.into_body(),
+            },
             _ => {
                 return response(
                     StatusCode::METHOD_NOT_ALLOWED,
@@ -625,15 +768,15 @@ async fn handle_request_rues(
 }
 
 async fn handle_request<H>(
-    mut req: Request<Body>,
+    mut req: Request<Incoming>,
     sources: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-    events: broadcast::Receiver<ContractEvent>,
+    events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
-) -> Result<Response<Body>, ExecutionError>
+) -> Result<Response<FullOrStreamBody>, ExecutionError>
 where
     H: HandleRequest,
 {
@@ -643,6 +786,7 @@ where
     if path.starts_with("/on") {
         return handle_request_rues(
             req,
+            sources.clone(),
             sockets_map,
             events,
             shutdown,
@@ -657,7 +801,7 @@ where
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
         task::spawn(handle_stream(sources, websocket, target, shutdown));
 
-        Ok(response)
+        Ok(response.map(Into::into))
     } else {
         let (execution_request, binary_resp) =
             MessageRequest::from_request(req).await?;
@@ -797,7 +941,7 @@ mod tests {
         let client = reqwest::Client::new();
         let response = client
             .post(format!("http://{}/01/target", server.local_addr))
-            .body(Body::from(request))
+            .body(request)
             .send()
             .await
             .expect("Requesting should succeed");
@@ -859,7 +1003,7 @@ mod tests {
                 "https://localhost:{}/01/target",
                 server.local_addr.port()
             ))
-            .body(Body::from(request))
+            .body(request)
             .send()
             .await
             .expect("Requesting should succeed");
@@ -1031,26 +1175,26 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // This event is subscribed to, so it should be received
-        let received_event = ContractEvent {
+        let received_event = RuesEvent::from(ContractEvent {
             target: SUB_CONTRACT_ID,
             topic: TOPIC.into(),
             data: b"hello, events".to_vec(),
-        };
+        });
 
         // This event is at first subscribed to, so it should be received the
         // first time
-        let at_first_received_event = ContractEvent {
+        let at_first_received_event = RuesEvent::from(ContractEvent {
             target: MAYBE_SUB_CONTRACT_ID,
             topic: TOPIC.into(),
             data: b"hello, events".to_vec(),
-        };
+        });
 
         // This event is not subscribed to, so it should not be received
-        let non_received_event = ContractEvent {
+        let non_received_event = RuesEvent::from(ContractEvent {
             target: NON_SUB_CONTRACT_ID,
             topic: TOPIC.into(),
             data: b"hello, events".to_vec(),
-        };
+        });
 
         event_sender
             .send(non_received_event.clone())
@@ -1065,17 +1209,17 @@ mod tests {
             .expect("Sending event should succeed");
 
         let message = stream.read().expect("Event should be received");
-        let event_text = message.into_text().expect("Event should be text");
+        let event_bytes = message.into_data();
 
-        let event: ContractEvent = serde_json::from_str(&event_text)
+        let event = RuesEvent::from_bytes(&event_bytes)
             .expect("Event should deserialize");
 
         assert_eq!(at_first_received_event, event, "Event should be the same");
 
         let message = stream.read().expect("Event should be received");
-        let event_text = message.into_text().expect("Event should be text");
+        let event_bytes = message.into_data();
 
-        let event: ContractEvent = serde_json::from_str(&event_text)
+        let event = RuesEvent::from_bytes(&event_bytes)
             .expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");
@@ -1105,9 +1249,9 @@ mod tests {
             .expect("Sending event should succeed");
 
         let message = stream.read().expect("Event should be received");
-        let event_text = message.into_text().expect("Event should be text");
+        let event_bytes = message.into_data();
 
-        let event: ContractEvent = serde_json::from_str(&event_text)
+        let event = RuesEvent::from_bytes(&event_bytes)
             .expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");

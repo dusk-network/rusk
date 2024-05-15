@@ -13,7 +13,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use hyper::body::HttpBody;
+use hyper::body::Body;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tokio::io::{self, AsyncRead, AsyncWrite, ReadBuf};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};

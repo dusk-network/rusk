@@ -8,9 +8,16 @@ use super::RUSK_VERSION_HEADER;
 
 use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
-use futures_util::{stream, StreamExt};
+use futures_util::stream::Iter as StreamIter;
+use futures_util::{stream, Stream, StreamExt};
+use http_body_util::{BodyExt, Either, Full, StreamBody};
+use hyper::body::{Buf, Frame};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{Body, Request, Response};
+use hyper::{
+    body::{Body, Bytes, Incoming},
+    Request, Response,
+};
+use pin_project::pin_project;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use rkyv::Archive;
@@ -19,12 +26,13 @@ use semver::{Version, VersionReq};
 use serde::de::{Error, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_with::serde_as;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::pin::Pin;
 use std::str::FromStr;
 use std::str::Split;
 use std::sync::mpsc;
+use std::task::{Context, Poll};
 use tungstenite::http::HeaderValue;
 
 /// A request sent by the websocket client.
@@ -133,7 +141,7 @@ impl MessageRequest {
     }
 
     pub async fn from_request(
-        req: hyper::Request<Body>,
+        req: Request<Incoming>,
     ) -> anyhow::Result<(Self, bool)> {
         let headers = req
             .headers()
@@ -198,11 +206,11 @@ impl MessageResponse {
     pub fn into_http(
         self,
         is_binary: bool,
-    ) -> anyhow::Result<hyper::Response<Body>> {
+    ) -> anyhow::Result<Response<FullOrStreamBody>> {
         if let Some(error) = &self.error {
             return Ok(hyper::Response::builder()
                 .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(error.to_string()))?);
+                .body(Full::new(error.to_string().into()).into())?);
         }
 
         let mut headers = HashMap::new();
@@ -214,30 +222,29 @@ impl MessageResponse {
                         true => wrapper.inner,
                         false => hex::encode(wrapper.inner).as_bytes().to_vec(),
                     };
-                    Body::from(data)
+                    Full::from(Bytes::from(data)).into()
                 }
-                DataType::Text(text) => Body::from(text),
+                DataType::Text(text) => Full::from(Bytes::from(text)).into(),
                 DataType::Json(value) => {
                     headers.insert(CONTENT_TYPE, CONTENT_TYPE_JSON.clone());
-                    Body::from(value.to_string())
+                    Full::from(Bytes::from(value.to_string())).into()
                 }
-                DataType::Channel(channel) => {
-                    Body::wrap_stream(stream::iter(channel).map(move |e| {
-                        match is_binary {
-                            true => Ok::<_, anyhow::Error>(e),
-                            false => Ok::<_, anyhow::Error>(
-                                hex::encode(e).as_bytes().to_vec(),
-                            ),
-                        }
-                    }))
-                }
-                DataType::None => Body::empty(),
+                DataType::Channel(receiver) => FullOrStreamBody {
+                    either: Either::Right(StreamBody::new(
+                        BinaryOrTextStream {
+                            is_binary,
+                            stream: stream::iter(receiver),
+                        },
+                    )),
+                },
+                DataType::None => Full::new(Bytes::new()).into(),
             }
         };
-        let mut response = hyper::Response::new(body);
+        let mut response = Response::new(body);
         for (k, v) in headers {
             response.headers_mut().insert(k, v);
         }
+
         Ok(response)
     }
 
@@ -253,6 +260,61 @@ impl MessageResponse {
         } else {
             self.headers.insert(key.into(), value);
         }
+    }
+}
+
+#[pin_project]
+pub struct FullOrStreamBody {
+    #[pin]
+    either: Either<Full<Bytes>, StreamBody<BinaryOrTextStream>>,
+}
+
+impl From<Full<Bytes>> for FullOrStreamBody {
+    fn from(body: Full<Bytes>) -> Self {
+        Self {
+            either: Either::Left(body),
+        }
+    }
+}
+
+impl Body for FullOrStreamBody {
+    type Data =
+        <Either<Full<Bytes>, StreamBody<BinaryOrTextStream>> as Body>::Data;
+    type Error =
+        <Either<Full<Bytes>, StreamBody<BinaryOrTextStream>> as Body>::Error;
+
+    fn poll_frame(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
+        let this = self.project();
+        this.either.poll_frame(cx)
+    }
+}
+
+#[pin_project]
+pub struct BinaryOrTextStream {
+    is_binary: bool,
+    #[pin]
+    stream: StreamIter<<mpsc::Receiver<Vec<u8>> as IntoIterator>::IntoIter>,
+}
+
+impl Stream for BinaryOrTextStream {
+    type Item = anyhow::Result<Frame<Bytes>>;
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
+        let this = self.project();
+        this.stream.poll_next(cx).map(|next| {
+            next.map(|x| match this.is_binary {
+                true => Ok(Frame::data(Bytes::from(x))),
+                false => Ok(Frame::data(Bytes::from(
+                    hex::encode(x).as_bytes().to_vec(),
+                ))),
+            })
+        })
     }
 }
 
@@ -378,7 +440,7 @@ impl Event {
         })
     }
     pub async fn from_request(
-        req: hyper::Request<Body>,
+        req: Request<Incoming>,
     ) -> anyhow::Result<(Self, bool)> {
         let (parts, req_body) = req.into_parts();
         // HTTP REQUEST
@@ -391,7 +453,7 @@ impl Event {
 
         let target = parts.uri.path().try_into()?;
 
-        let body = hyper::body::to_bytes(req_body).await?;
+        let body = req_body.collect().await?.to_bytes();
 
         let mut event = match binary_request {
             true => Event::parse(&body)
@@ -651,7 +713,12 @@ impl RuesSubscription {
         })
     }
 
-    pub fn matches(&self, event: &ContractEvent) -> bool {
+    pub fn matches(&self, event: &RuesEvent) -> bool {
+        let event = match &event.data {
+            RuesEventData::Contract(event) => event,
+            _ => return false,
+        };
+
         if self.component != "contracts" {
             return false;
         }
@@ -671,7 +738,7 @@ impl RuesSubscription {
 }
 
 /// A contract event that is sent to a websocket client.
-#[serde_as]
+#[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ContractEvent {
     pub target: WrappedContractId,
@@ -696,6 +763,121 @@ impl From<ContractEvent> for rusk_abi::Event {
             source: event.target.0,
             topic: event.topic,
             data: event.data,
+        }
+    }
+}
+
+/// A RUES event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuesEvent {
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: RuesEventData,
+}
+
+impl RuesEvent {
+    /// Serialize the event into a vector of bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let headers_bytes = serde_json::to_vec(&self.headers)
+            .expect("Serializing JSON should succeed");
+
+        let headers_len = headers_bytes.len() as u32;
+        let headers_len_bytes = headers_len.to_le_bytes();
+
+        let data_bytes = self.data.to_bytes();
+
+        let len =
+            headers_len_bytes.len() + headers_bytes.len() + data_bytes.len();
+        let mut bytes = Vec::with_capacity(len);
+
+        bytes.extend(headers_len_bytes);
+        bytes.extend(headers_bytes);
+        bytes.extend(data_bytes);
+
+        bytes
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < 4 {
+            return None;
+        }
+        let (headers_len_bytes, bytes) = bytes.split_at(4);
+
+        let mut headers_len_array = [0u8; 4];
+        headers_len_array.copy_from_slice(headers_len_bytes);
+
+        let headers_len = u32::from_le_bytes(headers_len_array) as usize;
+        if bytes.len() < headers_len {
+            return None;
+        }
+
+        let (headers_bytes, data_bytes) = bytes.split_at(headers_len);
+        let headers = serde_json::from_slice(headers_bytes).ok()?;
+
+        let data = RuesEventData::from_bytes(data_bytes)?;
+
+        Some(Self { headers, data })
+    }
+}
+
+impl From<ContractEvent> for RuesEvent {
+    fn from(event: ContractEvent) -> Self {
+        Self {
+            headers: serde_json::Map::new(),
+            data: RuesEventData::Contract(event),
+        }
+    }
+}
+
+impl From<rusk_abi::Event> for RuesEvent {
+    fn from(event: rusk_abi::Event) -> Self {
+        Self::from(ContractEvent::from(event))
+    }
+}
+
+/// Types of event data that RUES supports.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuesEventData {
+    /// A contract event.
+    Contract(ContractEvent),
+    /// An event whose provenance is unknown.
+    Other(Vec<u8>),
+}
+
+impl RuesEventData {
+    const CONTRACT_TAG: u8 = 1;
+    const OTHER_TAG: u8 = 255;
+
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Contract(event) => {
+                let mut bytes = serde_json::to_vec(event).expect(
+                    "Serializing contract event to JSON should succeed",
+                );
+                bytes.insert(0, Self::CONTRACT_TAG);
+                bytes
+            }
+            Self::Other(data) => {
+                let mut bytes = vec![0; data.len() + 1];
+                bytes[0] = Self::OTHER_TAG;
+                bytes[1..].copy_from_slice(data);
+                bytes
+            }
+        }
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        let (tag, bytes) = bytes.split_first()?;
+
+        match *tag {
+            Self::CONTRACT_TAG => {
+                let event = serde_json::from_slice(bytes).ok()?;
+                Some(Self::Contract(event))
+            }
+            Self::OTHER_TAG => {
+                let data = bytes.to_vec();
+                Some(Self::Other(data))
+            }
+            _ => None,
         }
     }
 }

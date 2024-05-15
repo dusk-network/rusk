@@ -30,7 +30,7 @@ use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
 use super::{coinbase_value, emission_amount, Rusk, RuskTip};
-use crate::http::ContractEvent;
+use crate::http::RuesEvent;
 use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
@@ -44,7 +44,7 @@ impl Rusk {
         dir: P,
         generation_timeout: Option<Duration>,
         feeder_gas_limit: u64,
-        event_sender: broadcast::Sender<ContractEvent>,
+        event_sender: broadcast::Sender<RuesEvent>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);

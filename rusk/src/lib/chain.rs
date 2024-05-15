@@ -19,7 +19,7 @@ use node::network::Kadcast;
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::VM;
 
-use crate::http::ContractEvent;
+use crate::http::RuesEvent;
 
 pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
@@ -36,7 +36,7 @@ pub struct Rusk {
     dir: PathBuf,
     pub(crate) generation_timeout: Option<Duration>,
     pub(crate) feeder_gas_limit: u64,
-    pub(crate) event_sender: broadcast::Sender<ContractEvent>,
+    pub(crate) event_sender: broadcast::Sender<RuesEvent>,
 }
 
 #[derive(Clone)]
