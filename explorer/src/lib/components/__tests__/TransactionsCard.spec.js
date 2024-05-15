@@ -1,8 +1,8 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { apiBlocks } from "$lib/mock-data";
-import { transformBlock } from "$lib/chain-info";
-import { BlocksCard } from "..";
+import { apiTransactions } from "$lib/mock-data";
+import { transformTransaction } from "$lib/chain-info";
+import { TransactionsCard } from "..";
 import { compose, mapWith, take } from "lamb";
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -11,16 +11,16 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const getTenBlocks = compose(mapWith(transformBlock), take(10));
-const data = getTenBlocks(apiBlocks.data.blocks);
+const getTenTransactions = compose(mapWith(transformTransaction), take(10));
+const data = getTenTransactions(apiTransactions.data);
 
-describe("Blocks Card", () => {
+describe("Transactions Card", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));
   const baseProps = {
-    blocks: null,
     error: null,
     loading: false,
+    txs: null,
   };
   const baseOptions = {
     props: baseProps,
@@ -33,16 +33,16 @@ describe("Blocks Card", () => {
     vi.useRealTimers();
   });
 
-  it("should render the `BlocksCard` component", () => {
-    const { container } = render(BlocksCard, baseOptions);
+  it("should render the `TransactionsCard` component", () => {
+    const { container } = render(TransactionsCard, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should disable the `Show More` button is the card is in the loading state", () => {
+  it("should disable the `Show More` button if the card is in the loading state", async () => {
     const loading = true;
 
-    const { container, getByRole } = render(BlocksCard, {
+    const { container, getByRole } = render(TransactionsCard, {
       ...baseOptions,
       props: { ...baseProps, loading },
     });
@@ -54,11 +54,11 @@ describe("Blocks Card", () => {
 
   it("should disable the `Show More` button if there is no more data to display", async () => {
     const loading = false;
-    const blocks = data;
+    const txs = data;
 
-    const { container, getByRole } = render(BlocksCard, {
+    const { container, getByRole } = render(TransactionsCard, {
       ...baseOptions,
-      props: { ...baseProps, blocks, loading },
+      props: { ...baseProps, loading, txs },
     });
 
     expect(getByRole("button")).toBeDisabled();
