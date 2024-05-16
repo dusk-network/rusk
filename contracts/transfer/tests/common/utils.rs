@@ -9,12 +9,11 @@ use std::sync::mpsc;
 use dusk_bls12_381::BlsScalar;
 use dusk_plonk::prelude::*;
 use phoenix_core::transaction::*;
-use phoenix_core::transaction::{TreeLeaf, TRANSFER_TREE_DEPTH};
 use phoenix_core::{Note, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
-use rusk_abi::TRANSFER_CONTRACT;
-use rusk_abi::{ContractError, ContractId, Session};
-use rusk_abi::{EconomicMode, Error};
+use rusk_abi::{
+    ContractError, ContractId, EconomicMode, Error, Session, TRANSFER_CONTRACT,
+};
 
 const POINT_LIMIT: u64 = 0x10_000_000;
 

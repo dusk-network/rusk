@@ -102,7 +102,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
 
 /// Transfers value from given note into contract's account.
 /// Expects transparent note which will fund the subsidy and a subsidy value
-/// which is be smaller or equal to the value of the note.
+/// which is smaller or equal to the value of the note.
 /// Returns the gas spent on the operation.
 fn subsidize_contract<R: RngCore + CryptoRng>(
     rng: &mut R,

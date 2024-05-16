@@ -33,7 +33,7 @@ pub const A: usize = 4;
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 5000;
 
-// estimated cost of returning from the execute method
+// Estimated cost of returning from the execute method
 const SURCHARGE_POINTS: u64 = 10000;
 
 pub struct TransferState {
@@ -274,10 +274,11 @@ impl TransferState {
         result.map(|r| r.data)
     }
 
-    /// Applies contract's charge.
-    /// Caller of the contract will pay a larger fee
-    /// so that contract can earn the difference between charge
-    /// and the actual cost of the call.
+    /// Applies contract's charge. Caller of the contract will pay a
+    /// larger fee so that contract can earn the difference between
+    /// charge and the actual cost of the call.
+    /// Charge has no effect if the actual cost of the call is greater
+    /// than the charge.
     fn apply_charge(
         &mut self,
         contract_id: &ContractId,
@@ -309,10 +310,10 @@ impl TransferState {
         }
     }
 
-    /// Applies contract's allowance.
-    /// Caller of the contract's method won't pay a fee
-    /// and all the cost will be covered by the contract.
-    /// Allowance has no effect if contract does not have enough funds.
+    /// Applies contract's allowance. Caller of the contract's method
+    /// won't pay a fee and all the cost will be covered by the contract.
+    /// Allowance has no effect if contract does not have enough funds or
+    /// if the actual cost of the call is greater than allowance.
     fn apply_allowance(
         &mut self,
         contract_id: &ContractId,
@@ -467,8 +468,10 @@ impl TransferState {
 
     /// Return the current gas price as set by the execute method.
     /// Returns none outside of the lifetime of the execute method.
-    pub fn gas_price(&self) -> Option<u64> {
-        self.gas_price
+    pub fn gas_price(&self) -> u64 {
+        self.gas_price.expect(
+            "During transaction execution host should always set the gas price",
+        )
     }
 
     fn get_note(&self, pos: u64) -> Option<Note> {
