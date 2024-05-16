@@ -759,7 +759,7 @@ pub mod payload {
         CandidateFromHash,
     }
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Clone, Copy)]
     pub enum InvParam {
         Hash([u8; 32]),
         Height(u64),
@@ -768,6 +768,15 @@ pub mod payload {
     impl Default for InvParam {
         fn default() -> Self {
             Self::Height(0)
+        }
+    }
+
+    impl fmt::Debug for InvParam {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                Self::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
+                Self::Height(height) => write!(f, "Height: {}", height),
+            }
         }
     }
 
@@ -883,9 +892,15 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone, Default)]
+    #[derive(Clone, Default)]
     pub struct GetBlocks {
         pub locator: [u8; 32],
+    }
+
+    impl fmt::Debug for GetBlocks {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "GetBlocks, locator: {}", to_str(&self.locator))
+        }
     }
 
     impl Serializable for GetBlocks {
