@@ -195,6 +195,7 @@ impl DataBrokerSrv {
             .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
 
         debug!(event = "handle_request", ?msg);
+        let this_peer = *network.read().await.public_addr();
 
         match &msg.payload {
             // Handle GetCandidate requests
@@ -216,7 +217,7 @@ impl DataBrokerSrv {
             // Handle GetInv requests
             Payload::GetInv(m) => {
                 let msg =
-                    Self::handle_inv(db, m, conf.max_inv_entries, recv_peer)
+                    Self::handle_inv(db, m, conf.max_inv_entries, this_peer)
                         .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
@@ -356,7 +357,7 @@ impl DataBrokerSrv {
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
         max_entries: usize,
-        recv_addr: SocketAddr,
+        requester_addr: SocketAddr,
     ) -> Result<Message> {
         let inv = db.read().await.view(|t| {
             let mut inv = payload::Inv::default();
@@ -414,7 +415,7 @@ impl DataBrokerSrv {
         // (GetBlocks/Mempool) so it should not be treated as flooding request
         Ok(Message::new_get_resource(GetResource::new(
             inv,
-            recv_addr,
+            requester_addr,
             u64::MAX,
             1,
         )))
