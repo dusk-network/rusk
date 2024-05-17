@@ -20,6 +20,7 @@
     createPollingDataStore,
   } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
+  import { appStore } from "$lib/stores";
 
   import "./StatisticsPanel.css";
 
@@ -33,13 +34,11 @@
     return value >= 1e6 ? millionFormatter(value) : valueFormatter(value);
   };
 
-  const STATS_FETCH_INTERVAL = 5000;
-
   const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
   const marketDataStore = createDataStore(duskAPI.getMarketData);
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
-    STATS_FETCH_INTERVAL
+    $appStore.fetchInterval
   );
 
   onNetworkChange((network) => {
@@ -56,11 +55,13 @@
   $: statistics = [
     [
       {
+        compact: true,
         data: marketData?.currentPrice.usd,
         icon: mdiCurrencyUsd,
         title: "Dusk Price",
       },
       {
+        compact: true,
         data: marketData?.marketCap.usd,
         icon: mdiCurrencyUsd,
         title: "Total Market Cap",
@@ -69,15 +70,17 @@
 
     [
       {
+        compact: true,
         data: statsData?.activeStake
-          ? luxToDusk(statsData.activeStake)
+          ? luxToDusk(statsData?.activeStake)
           : undefined,
         icon: duskIcon,
         title: "Current Staked Amount",
       },
       {
+        compact: true,
         data: statsData?.waitingStake
-          ? luxToDusk(statsData.waitingStake)
+          ? luxToDusk(statsData?.waitingStake)
           : undefined,
         icon: duskIcon,
         title: "Next Epoch Staked Amount",
@@ -86,11 +89,13 @@
 
     [
       {
+        compact: false,
         data: statsData?.lastBlock,
         icon: mdiCubeOutline,
         title: "Last Block",
       },
       {
+        compact: true,
         data: statsData?.txs100blocks.transfers,
         icon: mdiSwapVertical,
         title: "TX Last 100 Blocks",
@@ -99,11 +104,13 @@
 
     [
       {
+        compact: true,
         data: statsData?.activeProvisioners,
         icon: mdiAccountGroupOutline,
         title: "Provisioners",
       },
       {
+        compact: true,
         data: statsData?.waitingProvisioners,
         icon: mdiAccountGroupOutline,
         title: "Next Epoch Provisioners",
@@ -121,7 +128,11 @@
             <div class="statistics-panel__statistics-item-value">
               <Icon path={item.icon} size="normal" />
               <DataGuard data={item.data}>
-                {formatter(item.data)}
+                {#if item.compact}
+                  {formatter(item.data)}
+                {:else}
+                  {valueFormatter(item.data)}
+                {/if}
               </DataGuard>
             </div>
             <span class="statistics-panel__statistics-item-title"
