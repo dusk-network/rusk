@@ -1,7 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { DataCard, DataGuard, ListItem } from "$lib/components";
+  import { AppAnchor, DataCard, DataGuard, ListItem } from "$lib/components";
   import { Badge, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -33,8 +33,11 @@
   /** @type {String | null} */
   export let payload;
 
+  /** @type {MarketData}*/ //Can also be null
+  export let market;
+
   const formatter = createValueFormatter("en");
-  const currencyFormatter = createCurrencyFormatter("en", "usd", 9);
+  const currencyFormatter = createCurrencyFormatter("en", "usd", 10);
   const feeFormatter = createFeeFormatter("en");
 
   /** @type {number} */
@@ -87,8 +90,12 @@
     <!-- BLOCK HEIGHT -->
     <ListItem tooltipText="The block height this transaction belongs to">
       <svelte:fragment slot="term">block height</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{formatter(data.blockheight)}</svelte:fragment
+      <svelte:fragment slot="definition">
+        <AppAnchor
+          className="transaction-details__list-anchor"
+          href="/blocks/block?id={data.blockhash}"
+          >{formatter(data.blockheight)}</AppAnchor
+        ></svelte:fragment
       >
     </ListItem>
 
@@ -131,17 +138,21 @@
     <!-- TRANSACTION FEE -->
     <ListItem tooltipText="The fee paid for the transaction">
       <svelte:fragment slot="term">transaction fee</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{`${feeFormatter(luxToDusk(data.feepaid))} DUSK (${currencyFormatter(luxToDusk(data.feepaid) * 0.5)})`}</svelte:fragment
-      >
+      <svelte:fragment slot="definition">
+        <DataGuard data={market?.currentPrice.usd}>
+          {`${feeFormatter(luxToDusk(data.feepaid))} DUSK (${currencyFormatter(luxToDusk(data.feepaid) * market.currentPrice.usd)})`}
+        </DataGuard>
+      </svelte:fragment>
     </ListItem>
 
     <!-- GAS PRICE -->
     <ListItem tooltipText="The transaction gas price">
       <svelte:fragment slot="term">gas price</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{`${feeFormatter(luxToDusk(data.gasprice))} DUSK (${currencyFormatter(luxToDusk(data.gasprice) * 0.5)})`}</svelte:fragment
-      >
+      <svelte:fragment slot="definition">
+        <DataGuard data={market?.currentPrice.usd}>
+          {`${feeFormatter(luxToDusk(data.gasprice))} DUSK (${currencyFormatter(luxToDusk(data.gasprice) * market.currentPrice.usd)})`}
+        </DataGuard>
+      </svelte:fragment>
     </ListItem>
 
     <!-- GAS LIMIT -->

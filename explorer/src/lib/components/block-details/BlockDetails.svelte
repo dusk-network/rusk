@@ -137,7 +137,7 @@
     <ListItem tooltipText="The block gas limit">
       <svelte:fragment slot="term">block gas limit</svelte:fragment>
       <svelte:fragment slot="definition"
-        >{formatter(luxToDusk(data.transactions.stats.gasLimit))} DUSK</svelte:fragment
+        >{formatter(data.transactions.stats.gasLimit)}</svelte:fragment
       >
     </ListItem>
 
@@ -145,7 +145,7 @@
     <ListItem tooltipText="The amount of gas used generating the block">
       <svelte:fragment slot="term">gas used</svelte:fragment>
       <svelte:fragment slot="definition">
-        {formatter(luxToDusk(data.transactions.stats.gasUsed))} DUSK
+        {formatter(data.transactions.stats.gasUsed)}
 
         <ProgressBar
           currentPercentage={(data.transactions.stats.gasUsed /
