@@ -42,7 +42,7 @@
       />
     {/if}
   </header>
-  {#if loading && data === null}
+  {#if loading && !data}
     <p class="data-card__loading-notice">Loading...</p>
   {:else if error || hasEmptyData}
     <DataAlert on:retry {error} />

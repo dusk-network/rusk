@@ -1046,6 +1046,11 @@ exports[`home page > should render the home page, start polling for the latest c
         <!--&lt;Button&gt;-->
       </header>
        
+      <p
+        class="data-card__loading-notice"
+      >
+        Loading...
+      </p>
       
        
     </div>
@@ -1080,6 +1085,11 @@ exports[`home page > should render the home page, start polling for the latest c
         <!--&lt;Button&gt;-->
       </header>
        
+      <p
+        class="data-card__loading-notice"
+      >
+        Loading...
+      </p>
       
        
     </div>
