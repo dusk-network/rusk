@@ -58,6 +58,7 @@
     action: () => history.back(),
     disabled: false,
     label: "Back",
+    variant: "tertiary",
   }}
 >
   <dl class="block-details__list">

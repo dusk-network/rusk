@@ -32,6 +32,7 @@
       txs={data?.transactions.data}
       {error}
       loading={isLoading}
+      isOnHomeScreen={false}
     />
   </div>
 </section>

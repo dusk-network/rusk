@@ -16,7 +16,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
         type="button"
       >
         <span
@@ -369,7 +369,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
         type="button"
       >
         <span
