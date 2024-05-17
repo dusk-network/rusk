@@ -84,7 +84,14 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        487,166
+        <a
+          class="dusk-anchor transaction-details__list-anchor"
+          href="/some-base-path/blocks/block?id=3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d"
+        >
+          487,166
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AppAnchor&gt;-->
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -215,7 +222,10 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0.000290766 DUSK ($0.000145383)
+        0.000290766 DUSK ($0.0001071037)
+        
+        <!--&lt;DataGuard&gt;-->
+         
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -243,7 +253,10 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0.000000001 DUSK ($0.000000001)
+        0.000000001 DUSK ($0.0000000004)
+        
+        <!--&lt;DataGuard&gt;-->
+         
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -437,7 +450,14 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dd
         class="details-list__definition"
       >
-        487,166
+        <a
+          class="dusk-anchor transaction-details__list-anchor"
+          href="/some-base-path/blocks/block?id=3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d"
+        >
+          487,166
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AppAnchor&gt;-->
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -568,7 +588,10 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dd
         class="details-list__definition"
       >
-        0.000290766 DUSK ($0.000145383)
+        0.000290766 DUSK ($0.0001071037)
+        
+        <!--&lt;DataGuard&gt;-->
+         
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -596,7 +619,10 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dd
         class="details-list__definition"
       >
-        0.000000001 DUSK ($0.000000001)
+        0.000000001 DUSK ($0.0000000004)
+        
+        <!--&lt;DataGuard&gt;-->
+         
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt

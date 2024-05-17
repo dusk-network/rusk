@@ -11,6 +11,10 @@
   width: 100%;
 }
 
+.transaction-details__list-anchor {
+  text-decoration: none;
+}
+
 .transaction-details__list-timestamp {
   text-transform: uppercase;
 }

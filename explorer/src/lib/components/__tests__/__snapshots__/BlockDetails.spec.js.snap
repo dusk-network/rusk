@@ -272,8 +272,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        5
-         DUSK
+        5,000,000,000
       </dd>
       <!--&lt;ListItem&gt;-->
       <dt
@@ -301,10 +300,8 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0.000580718
-         DUSK
-
-        
+        580,718
+         
         <div
           class="dusk-progress-bar block-details__gas-used"
           role="progressbar"

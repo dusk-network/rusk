@@ -9,16 +9,19 @@
 
   const dataStore = createDataStore(duskAPI.getTransaction);
   const payloadStore = createDataStore(duskAPI.getTransactionDetails);
+  const marketStore = createDataStore(duskAPI.getMarketData);
 
   const getTransaction = () => {
     dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
     payloadStore.getData($appStore.network, $page.url.searchParams.get("id"));
+    marketStore.getData($appStore.network);
   };
 
   onNetworkChange(getTransaction);
 
   $: ({ data, error, isLoading } = $dataStore);
   $: ({ data: payloadData } = $payloadStore);
+  $: ({ data: marketData } = $marketStore);
 
   onMount(() => {
     getTransaction();
@@ -32,5 +35,6 @@
     {error}
     loading={isLoading}
     payload={payloadData}
+    market={marketData}
   />
 </section>
