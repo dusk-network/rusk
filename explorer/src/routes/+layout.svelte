@@ -22,7 +22,7 @@
 <header>
   <Navbar on:toggleMenu={(e) => toggleScroll(e.detail)} />
 </header>
-<main class="explorer">
+<main id="explorer">
   <slot />
 </main>
 <footer>

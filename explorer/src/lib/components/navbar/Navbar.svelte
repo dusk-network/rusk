@@ -58,6 +58,7 @@
 
   afterNavigate(() => {
     hidden = true;
+    dispatch("toggleMenu", hidden);
     showSearchNotification = false;
   });
 </script>

@@ -21,7 +21,7 @@
   onDestroy(pollingDataStore.stop);
 </script>
 
-<section class="blocks">
+<section id="blocks">
   <BlocksCard
     on:retry={pollingDataStore.start}
     blocks={data}

@@ -1,5 +1,4 @@
 .transactions-card__table,
 .transactions-card__list {
-  max-height: 70dvh;
   overflow-y: auto;
 }
