@@ -12,6 +12,7 @@ use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
+use bls12_381_bls::PublicKey;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_jubjub::JubJubAffine;
@@ -22,7 +23,7 @@ use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
 };
-use transfer_contract_types::{Mint, Stct, Wfct, Wfctc};
+use transfer_contract_types::{Bridge, Mint, Stct, Wfct, Wfctc};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
@@ -35,6 +36,11 @@ pub struct TransferState {
     nullifiers: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
     balances: BTreeMap<ContractId, u64>,
+    bridge_staked: BTreeMap<[u8; PublicKey::SIZE], u64>,
+    bridge: BTreeMap<[u8; PublicKey::SIZE], Vec<Bridge>>,
+    bridge_rewards: BTreeMap<[u8; PublicKey::SIZE], u64>,
+    bridge_blocks_delay: u64,
+    bridge_standard_locked_amount: u64,
     var_crossover: Option<Crossover>,
     var_crossover_addr: Option<StealthAddress>,
 }
@@ -167,6 +173,235 @@ impl TransferState {
         self.add_balance(module, wfctc.value);
 
         true
+    }
+
+    /// Adds the specified value to the staked amount for bridging, utilizing
+    /// the given sequencer public key. The proof will mirror that of a
+    /// "send to contract transparent", asserting the consumption of a
+    /// Phoenix Note value to augment the staked balance.
+    pub fn bridge_stake(
+        &mut self,
+        sequencer: PublicKey,
+        value: u64,
+        proof: Vec<u8>,
+    ) {
+        let mut pi = Vec::with_capacity(3);
+        let balance;
+        match self.bridge_staked.entry(sequencer) {
+            Entry::Vacant(ve) => {
+                balance = value;
+                ve.insert(value);
+            }
+            Entry::Occupied(mut oe) => {
+                let v = oe.get_mut();
+                balance = value + *v;
+                *v += value;
+            }
+        }
+
+        let vd = todo!();
+        Self::assert_proof(vd, proof, pi)
+            .expect("Failed to verify the provided proof!");
+    }
+
+    pub fn bridge(
+        &mut self,
+        sequencer: PublicKey,
+        receiver: PublicKey,
+        fee: u64,
+        value: u64,
+        event: Vec<u8>,
+        proof: Vec<u8>,
+    ) {
+        let mut pi = Vec::with_capacity(3);
+
+        if value == 0 {
+            panic!("The bridged value is invalid.");
+        }
+
+        if value < fee {
+            panic!("The bridged value is not enough to pay the sequencer fee.");
+        }
+
+        let balance = self
+            .bridge_staked
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+        let mut rewards = fee
+            + self
+                .bridge_rewards
+                .get(sequencer.to_bytes())
+                .copied()
+                .unwrap_or_default();
+        let bridged = self
+            .bridge
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+        let bridged_adjusted = Vec::with_capacity(bridged.len() + 1);
+        let mut locked = self.bridge_standard_locked_amount;
+
+        // Locked amount will expire after `self.bridge_blocks_delay` blocks.
+        // Such interval should be enough to assume a fraud proof is
+        // inexistent.
+        for bridge in bridged {
+            if bridge.block + self.bridge_blocks_delay
+                < rusk_abi::block_height()
+            {
+                // the bridge operation is still locked under the delay.
+                locked += bridge.value;
+                bridged_adjusted.push(bridge);
+            } else {
+                // the bridge operation outlived the delay; remove from vector &
+                // add fee reward
+                rewards += bridge.fee;
+            }
+        }
+
+        let balance = balance.saturating_sub(locked);
+        if balance < value {
+            panic!("The sequencer does not have enough balance to perform this operation.");
+        }
+
+        self.bridge.insert(sequencer.to_bytes(), bridged_adjusted);
+        self.bridge_rewards.insert(sequencer.to_bytes(), rewards);
+        self.push_note_current_height(todo!(
+            "receiver note with `value - fee`"
+        ));
+
+        let vd = todo!();
+        Self::assert_proof(vd, proof, pi)
+            .expect("Failed to verify the provided proof!");
+    }
+
+    pub fn bridge_withdraw_rewards(
+        &mut self,
+        sequencer: PublicKey,
+        proof: Vec<u8>,
+    ) {
+        let mut pi = Vec::with_capacity(3);
+
+        let mut rewards = self
+            .bridge_rewards
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+
+        let bridged = self
+            .bridge
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+        let bridged_adjusted = Vec::with_capacity(bridged.len() + 1);
+
+        for bridge in bridged {
+            if bridge.block + self.bridge_blocks_delay
+                < rusk_abi::block_height()
+            {
+                bridged_adjusted.push(bridge);
+            } else {
+                rewards += bridge.fee;
+            }
+        }
+
+        self.bridge_rewards.insert(sequencer.to_bytes(), 0);
+        self.bridge.insert(sequencer.to_bytes(), bridged_adjusted);
+        self.push_note_current_height(todo!("sequencer rewards note"));
+
+        let vd = todo!();
+        Self::assert_proof(vd, proof, pi)
+            .expect("Failed to verify the provided proof!");
+    }
+
+    pub fn bridge_withdraw_stake(
+        &mut self,
+        sequencer: PublicKey,
+        proof: Vec<u8>,
+    ) {
+        let mut pi = Vec::with_capacity(3);
+
+        let mut rewards = self
+            .bridge_rewards
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+
+        let bridged = self
+            .bridge
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+
+        let bridged_adjusted = Vec::with_capacity(bridged.len() + 1);
+
+        for bridge in bridged {
+            if bridge.block + self.bridge_blocks_delay
+                < rusk_abi::block_height()
+            {
+                bridged_adjusted.push(bridge);
+            } else {
+                rewards += bridge.fee;
+            }
+        }
+
+        if !bridged_adjusted.is_empty() {
+            panic!("the sequencer is not allowed to withdraw stake white bridged operations are locked.");
+        }
+
+        let balance = self
+            .bridge_staked
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+
+        self.bridge_rewards.insert(sequencer.to_bytes(), 0);
+        self.bridge_staked.insert(sequencer.to_bytes(), 0);
+        self.bridge.insert(sequencer.to_bytes(), bridged_adjusted);
+        self.push_note_current_height(todo!(
+            "sequencer balance + rewards note"
+        ));
+
+        let vd = todo!();
+        Self::assert_proof(vd, proof, pi)
+            .expect("Failed to verify the provided proof!");
+    }
+
+    /// This function accepts a proof that one bridge operation was performed
+    /// without a corresponding valid L1 event.
+    ///
+    /// The sequencer proven to have performed a fraud will lose all his rewards
+    /// and stake to the prover.
+    pub fn bridge_fraud(
+        &mut self,
+        sequencer: PublicKey,
+        prover: PublicKey,
+        operation: Bridge,
+        proof: Vec<u8>,
+    ) {
+        let mut pi = Vec::with_capacity(3);
+
+        let rewards = self
+            .bridge_rewards
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+
+        let balance = self
+            .bridge_staked
+            .get(sequencer.to_bytes())
+            .copied()
+            .unwrap_or_default();
+
+        self.push_note_current_height(todo!("prover balance + rewards note"));
+
+        self.bridge_rewards.insert(sequencer.to_bytes(), 0);
+        self.bridge_staked.insert(sequencer.to_bytes(), 0);
+        self.bridge.insert(sequencer.to_bytes(), Vec::new());
+
+        let vd = todo!();
+        Self::assert_proof(vd, proof, pi)
+            .expect("Failed to verify the provided proof!");
     }
 
     /// Spends the inputs and creates the given UTXO, and executes the contract

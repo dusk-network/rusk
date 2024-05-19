@@ -14,6 +14,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
+use bls12_381_bls::PublicKey;
 
 use bytecheck::CheckBytes;
 use phoenix_core::{Note, StealthAddress};
@@ -89,4 +90,26 @@ pub struct Mint {
     pub value: u64,
     /// A nonce to prevent replay.
     pub nonce: BlsScalar,
+}
+
+/// Locked staked amount for the bridge.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Bridge {
+    /// Address of the sequencer that performed the bridge operation.
+    pub sequencer: PublicKey,
+    /// Benefitiary of the bridge operation.
+    pub receiver: PublicKey,
+    /// Block number of the operation.
+    pub block: u64,
+    /// Fee paid to the sequencer.
+    pub fee: u64,
+    /// Value to be minted for the receiver.
+    pub value: u64,
+    /// Block number that contains the event.
+    pub event_block: u64,
+    /// Bridge event on L1.
+    pub event: Vec<u8>,
+    /// Proof of validity of the sequencer authorship.
+    pub proof: Vec<u8>,
 }

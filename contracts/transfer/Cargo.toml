@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
+bls12_381-bls = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
 jubjub-schnorr = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
