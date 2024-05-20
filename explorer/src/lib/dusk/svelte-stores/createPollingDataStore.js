@@ -1,5 +1,4 @@
 import { derived, get } from "svelte/store";
-import { isNull, keySatisfies, when } from "lamb";
 
 import { resolveAfter } from "$lib/dusk/promise";
 
@@ -11,37 +10,39 @@ import { createDataStore } from ".";
  * @returns {PollingDataStore}
  */
 const createPollingDataStore = (dataRetriever, fetchInterval) => {
-  /** @type {boolean} */
-  let isPolling = false;
+  /** @type {number} */
+  let currentPollId = 0;
 
   const dataStore = createDataStore(dataRetriever);
 
-  /** @type {(...args: any) => void} */
-  const poll = (...args) => {
-    if (isPolling) {
+  /** @type {(pollId: number, args: Parameters<dataRetriever>) => void} */
+  const poll = (pollId, args) => {
+    if (pollId === currentPollId) {
       dataStore
         .getData(...args)
-        .then(
-          when(keySatisfies(isNull, "error"), () =>
-            resolveAfter(fetchInterval, undefined).then(() => poll(...args))
-          )
+        .then((store) =>
+          store.error === null
+            ? resolveAfter(fetchInterval, undefined).then(() =>
+                poll(pollId, args)
+              )
+            : stop()
         )
         .catch(stop);
     }
   };
 
-  const stop = () => {
-    isPolling = false;
+  const reset = () => {
+    stop();
+    dataStore.reset();
   };
 
-  /** @type {(...args: any) => void} */
-  const start = (...args) => {
-    if (isPolling) {
-      return;
-    }
+  const stop = () => {
+    currentPollId++;
+  };
 
-    isPolling = true;
-    poll(...args);
+  /** @type {(...args: Parameters<dataRetriever>) => void} */
+  const start = (...args) => {
+    poll(++currentPollId, args);
   };
 
   const pollingDataStore = derived(
@@ -53,6 +54,7 @@ const createPollingDataStore = (dataRetriever, fetchInterval) => {
   );
 
   return {
+    reset,
     start,
     stop,
     subscribe: pollingDataStore.subscribe,

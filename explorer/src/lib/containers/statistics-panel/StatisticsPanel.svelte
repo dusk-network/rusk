@@ -7,7 +7,7 @@
     mdiCurrencyUsd,
     mdiSwapVertical,
   } from "@mdi/js";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy } from "svelte";
 
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { createCompactFormatter } from "$lib/dusk/value";
@@ -15,12 +15,12 @@
   import { Icon } from "$lib/dusk/components";
   import { DataGuard, WorldMap } from "$lib/components";
   import { duskAPI } from "$lib/services";
-  import { appStore } from "$lib/stores";
   import {
     createDataStore,
     createPollingDataStore,
   } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
+
   import "./StatisticsPanel.css";
 
   const valueFormatter = createCurrencyFormatter("en", "DUSK", 0);
@@ -37,36 +37,31 @@
 
   const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
   const marketDataStore = createDataStore(duskAPI.getMarketData);
-
-  const getNodeLocations = () => {
-    nodeLocationsStore.getData($appStore.network);
-  };
-
-  const getMarketData = () => {
-    marketDataStore.getData($appStore.network);
-  };
-
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
     STATS_FETCH_INTERVAL
   );
 
-  onNetworkChange(pollingStatsDataStore.start);
-  onNetworkChange(getNodeLocations);
-  onNetworkChange(getMarketData);
+  onNetworkChange((network) => {
+    marketDataStore.getData(network);
+    nodeLocationsStore.getData(network);
+    pollingStatsDataStore.start(network);
+  });
+
   onDestroy(pollingStatsDataStore.stop);
 
-  $: ({ data } = $nodeLocationsStore);
-
+  $: ({ data: marketData } = $marketDataStore);
+  $: ({ data: nodesData } = $nodeLocationsStore);
+  $: ({ data: statsData } = $pollingStatsDataStore);
   $: statistics = [
     [
       {
-        data: $marketDataStore.data?.currentPrice.usd,
+        data: marketData?.currentPrice.usd,
         icon: mdiCurrencyUsd,
         title: "Dusk Price",
       },
       {
-        data: $marketDataStore.data?.marketCap.usd,
+        data: marketData?.marketCap.usd,
         icon: mdiCurrencyUsd,
         title: "Total Market Cap",
       },
@@ -74,15 +69,15 @@
 
     [
       {
-        data: $pollingStatsDataStore.data?.activeStake
-          ? luxToDusk($pollingStatsDataStore.data.activeStake)
+        data: statsData?.activeStake
+          ? luxToDusk(statsData.activeStake)
           : undefined,
         icon: duskIcon,
         title: "Current Staked Amount",
       },
       {
-        data: $pollingStatsDataStore.data?.waitingStake
-          ? luxToDusk($pollingStatsDataStore.data.waitingStake)
+        data: statsData?.waitingStake
+          ? luxToDusk(statsData.waitingStake)
           : undefined,
         icon: duskIcon,
         title: "Next Epoch Staked Amount",
@@ -91,12 +86,12 @@
 
     [
       {
-        data: $pollingStatsDataStore.data?.lastBlock,
+        data: statsData?.lastBlock,
         icon: mdiCubeOutline,
         title: "Last Block",
       },
       {
-        data: $pollingStatsDataStore.data?.txs100blocks.transfers,
+        data: statsData?.txs100blocks.transfers,
         icon: mdiSwapVertical,
         title: "TX Last 100 Blocks",
       },
@@ -104,22 +99,17 @@
 
     [
       {
-        data: $pollingStatsDataStore.data?.activeProvisioners,
+        data: statsData?.activeProvisioners,
         icon: mdiAccountGroupOutline,
         title: "Provisioners",
       },
       {
-        data: $pollingStatsDataStore.data?.waitingProvisioners,
+        data: statsData?.waitingProvisioners,
         icon: mdiAccountGroupOutline,
         title: "Next Epoch Provisioners",
       },
     ],
   ];
-
-  onMount(() => {
-    getNodeLocations();
-    getMarketData();
-  });
 </script>
 
 <div class="statistics-panel">
@@ -143,6 +133,6 @@
     {/each}
   </div>
   <div class="statistics-panel__world-map">
-    <WorldMap nodes={data} />
+    <WorldMap nodes={nodesData} />
   </div>
 </div>

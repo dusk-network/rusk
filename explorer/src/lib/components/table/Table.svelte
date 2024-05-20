@@ -3,7 +3,7 @@
   import "./Table.css";
 
   /** @type {string | Undefined} */
-  export let className;
+  export let className = undefined;
 
   $: classes = makeClassName(["table-container", className]);
 </script>
