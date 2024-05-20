@@ -33,9 +33,6 @@ pub const A: usize = 4;
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 5000;
 
-// Estimated cost of returning from the execute method
-const SURCHARGE_POINTS: u64 = 10000;
-
 pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
@@ -231,19 +228,6 @@ impl TransferState {
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
-        self.execute(tx)
-    }
-
-    /// Executes the contract call if present.
-    ///
-    /// # Panics
-    /// Any failure in the checks performed in processing will result in a
-    /// panic. The contract expects the environment to roll back any change
-    /// in state.
-    pub fn execute(
-        &mut self,
-        tx: Transaction,
-    ) -> Result<Vec<u8>, ContractError> {
         let mut result = Ok(rusk_abi::RawResult::empty());
 
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
@@ -257,14 +241,11 @@ impl TransferState {
             }) = result.clone()
             {
                 match economic_mode {
-                    EconomicMode::Charge(charge) if charge != 0 => self
-                        .apply_charge(&contract_id, charge, tx.fee.gas_price),
+                    EconomicMode::Charge(charge) if charge != 0 => {
+                        rusk_abi::set_charge(charge)
+                    }
                     EconomicMode::Allowance(allowance) if allowance != 0 => {
-                        self.apply_allowance(
-                            &contract_id,
-                            allowance,
-                            tx.fee.gas_price,
-                        )
+                        rusk_abi::set_allowance(allowance)
                     }
                     _ => (),
                 }
@@ -274,22 +255,23 @@ impl TransferState {
         result.map(|r| r.data)
     }
 
-    /// Applies contract's charge. Caller of the contract will pay a
-    /// larger fee so that contract can earn the difference between
-    /// charge and the actual cost of the call.
-    /// Charge has no effect if the actual cost of the call is greater
-    /// than the charge.
+    // Applies contract's charge. Caller of the contract will pay a
+    // larger fee so that contract can earn the difference between
+    // charge and the actual cost of the call.
+    // Charge has no effect if the actual cost of the call is greater
+    // than the charge.
+    // Returns economic gas spent
     fn apply_charge(
         &mut self,
         contract_id: &ContractId,
         charge: u64,
+        gas_spent: u64,
         gas_price: u64,
-    ) {
-        let cost = (rusk_abi::spent() + SURCHARGE_POINTS) * gas_price;
+    ) -> u64 {
+        let cost = gas_spent * gas_price;
         if charge > cost {
-            let earning = charge - cost;
+            let earning = charge * gas_price - cost;
             self.add_balance(*contract_id, earning);
-            rusk_abi::set_charge(earning);
             rusk_abi::emit(
                 "earning",
                 EconomicEvent {
@@ -298,38 +280,43 @@ impl TransferState {
                     result: EconomicResult::ChargeApplied,
                 },
             );
+            charge
         } else {
             rusk_abi::emit(
                 "earning",
                 EconomicEvent {
                     module: contract_id.to_bytes(),
-                    value: charge,
+                    value: charge * gas_price,
                     result: EconomicResult::ChargeNotSufficient,
                 },
             );
+            gas_spent
         }
     }
 
-    /// Applies contract's allowance. Caller of the contract's method
-    /// won't pay a fee and all the cost will be covered by the contract.
-    /// Allowance has no effect if contract does not have enough funds or
-    /// if the actual cost of the call is greater than allowance.
+    // Applies contract's allowance. Caller of the contract's method
+    // won't pay a fee and all the cost will be covered by the contract.
+    // Allowance has no effect if contract does not have enough funds or
+    // if the actual cost of the call is greater than allowance.
+    // Returns economic gas spent
     fn apply_allowance(
         &mut self,
         contract_id: &ContractId,
         allowance: u64,
+        gas_spent: u64,
         gas_price: u64,
-    ) {
-        let spent = (rusk_abi::spent() + SURCHARGE_POINTS) * gas_price;
-        if allowance < spent {
+    ) -> u64 {
+        let spent = gas_spent * gas_price;
+        if allowance * gas_price < spent {
             rusk_abi::emit(
                 "sponsoring",
                 EconomicEvent {
                     module: contract_id.to_bytes(),
-                    value: allowance,
+                    value: allowance * gas_price,
                     result: EconomicResult::AllowanceNotSufficient,
                 },
             );
+            gas_spent
         } else {
             let contract_balance = self.balance(contract_id);
             if spent > contract_balance {
@@ -341,12 +328,12 @@ impl TransferState {
                         result: EconomicResult::BalanceNotSufficient,
                     },
                 );
+                gas_spent
             } else {
                 self.sub_balance(contract_id, spent).expect(
                     "Subtracting callee contract balance should succeed",
                 );
                 self.add_balance(rusk_abi::self_id(), spent);
-                rusk_abi::set_allowance(allowance);
                 rusk_abi::emit(
                     "sponsoring",
                     EconomicEvent {
@@ -355,6 +342,7 @@ impl TransferState {
                         result: EconomicResult::AllowanceApplied,
                     },
                 );
+                0u64
             }
         }
     }
@@ -362,12 +350,42 @@ impl TransferState {
     /// Refund the previously performed transaction, taking into account the
     /// given gas spent. The notes produced will be refunded to the address
     /// present in the fee structure.
+    /// If contract id is present, it applies economic mode to the the contract
+    /// and refund is based on the economic calculation.
     ///
     /// This function guarantees that it will not panic.
-    pub fn refund(&mut self, fee: Fee, gas_spent: u64) {
+    pub fn refund(
+        &mut self,
+        fee: Fee,
+        gas_spent: u64,
+        economic_mode: EconomicMode,
+        contract_id: Option<ContractId>,
+    ) {
+        let economic_gas_spent = if let Some(contract_id) = contract_id {
+            match economic_mode {
+                EconomicMode::Charge(charge) if charge != 0 => self
+                    .apply_charge(
+                        &contract_id,
+                        charge,
+                        gas_spent,
+                        fee.gas_price,
+                    ),
+                EconomicMode::Allowance(allowance) if allowance != 0 => self
+                    .apply_allowance(
+                        &contract_id,
+                        allowance,
+                        gas_spent,
+                        fee.gas_price,
+                    ),
+                _ => gas_spent,
+            }
+        } else {
+            gas_spent
+        };
+
         let block_height = rusk_abi::block_height();
 
-        let remainder = fee.gen_remainder(gas_spent);
+        let remainder = fee.gen_remainder(economic_gas_spent);
         let remainder = Note::from(remainder);
 
         let remainder_value = remainder

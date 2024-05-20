@@ -123,45 +123,44 @@ pub fn prover_verifier(circuit_name: &str) -> (Prover, Verifier) {
     (prover, verifier)
 }
 
-/// Executes a regular (not call-only) transaction.
+/// Executes a transaction.
 /// Returns result containing gas spent and economic mode.
 pub fn execute(
     session: &mut Session,
     tx: Transaction,
 ) -> Result<ExecutionResult, Error> {
-    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
         u64::MAX,
     )?;
 
-    let gas_spent = receipt.gas_spent;
+    // Ensure all gas is consumed if there's an error in the contract call
+    if receipt.data.is_err() {
+        receipt.gas_spent = receipt.gas_limit;
+    }
 
-    session
+    let contract_id = tx
+        .call
+        .clone()
+        .map(|(module_id, _, _)| ContractId::from_bytes(module_id));
+
+    let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.fee, gas_spent),
+            &(
+                tx.fee,
+                receipt.gas_spent,
+                receipt.economic_mode.clone(),
+                contract_id,
+            ),
             u64::MAX,
         )
         .expect("Refunding must succeed");
 
-    Ok(ExecutionResult::new(gas_spent, receipt.economic_mode))
-}
-
-/// Executes a call-only transaction.
-/// Returns result containing gas spent and economic mode.
-pub fn execute_call(
-    session: &mut Session,
-    tx: Transaction,
-) -> Result<ExecutionResult, Error> {
-    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "execute",
-        &tx,
-        u64::MAX,
-    )?;
+    receipt.events.extend(refund_receipt.events);
 
     Ok(ExecutionResult::new(
         receipt.gas_spent,

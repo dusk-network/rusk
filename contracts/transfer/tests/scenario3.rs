@@ -9,7 +9,7 @@ pub mod common;
 use crate::common::utils::*;
 
 use bls12_381_bls::{
-    PublicKey as SubsidyPublicKey, SecretKey as SubsidySecretKey,
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, Signature,
 };
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
@@ -19,11 +19,11 @@ use phoenix_core::{Fee, Note, Ownable};
 use phoenix_core::{PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
+use rkyv::{Archive, Deserialize, Serialize};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{
     ContractData, ContractId, EconomicMode, Session, TRANSFER_CONTRACT, VM,
 };
-use subsidy_types::Subsidy;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
     SendToContractTransparentCircuit,
@@ -39,6 +39,20 @@ const CHARLIE_CONTRACT_ID: ContractId = {
 };
 
 const OWNER: [u8; 32] = [0; 32];
+
+/// Subsidy a contract with a value.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(bytecheck::CheckBytes))]
+pub struct Subsidy {
+    /// Public key to which the subsidy will belong.
+    pub public_key: BlsPublicKey,
+    /// Signature belonging to the given public key.
+    pub signature: Signature,
+    /// Value of the subsidy.
+    pub value: u64,
+    /// Proof of the `STCT` circuit.
+    pub proof: Vec<u8>,
+}
 
 fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
@@ -108,8 +122,8 @@ fn subsidize_contract<R: RngCore + CryptoRng>(
     rng: &mut R,
     mut session: &mut Session,
     contract_id: ContractId,
-    subsidy_keeper_pk: SubsidyPublicKey,
-    subsidy_keeper_sk: SubsidySecretKey,
+    subsidy_keeper_pk: BlsPublicKey,
+    subsidy_keeper_sk: BlsSecretKey,
     subsidizer_psk: PublicKey,
     subsidizer_ssk: SecretKey,
     input_note: Note,
@@ -275,8 +289,8 @@ fn instantiate_and_subsidize_contract(
     let test_sponsor_ssk = SecretKey::random(rng);
     let test_sponsor_psk = PublicKey::from(&test_sponsor_ssk); // sponsor is Charlie's owner
 
-    let subsidy_keeper_sk = SubsidySecretKey::random(rng);
-    let subsidy_keeper_pk = SubsidyPublicKey::from(&subsidy_keeper_sk);
+    let subsidy_keeper_sk = BlsSecretKey::random(rng);
+    let subsidy_keeper_pk = BlsPublicKey::from(&subsidy_keeper_sk);
 
     let mut session =
         instantiate(rng, vm, Some(subsidizer_psk), Some(test_sponsor_psk));
@@ -495,98 +509,6 @@ fn call_contract_method_with_deposit(
     (execution_result, balance_before, balance_after)
 }
 
-/// Creates and executes a transaction
-/// which calls a given method of a given contract.
-/// The transaction will not contain any notes.
-/// The contract is expected to have funds in its wallet.
-fn call_contract_method_without_deposit(
-    mut session: &mut Session,
-    contract_id: ContractId,
-    method: impl AsRef<str>,
-    sponsor_ssk: SecretKey,
-    gas_price: u64,
-) -> (ExecutionResult, u64, u64) {
-    let rng = &mut StdRng::seed_from_u64(0xfeeb);
-    let test_sponsor_psk = PublicKey::from(&sponsor_ssk); // sponsor is Charlie's owner
-
-    // make sure the sponsoring contract is properly subsidized (has funds)
-    let balance_before = module_balance(&mut session, contract_id)
-        .expect("Module balance should succeed");
-    println!(
-        "current balance of contract '{:X?}' is {}",
-        contract_id.to_bytes()[0],
-        balance_before
-    );
-    assert!(balance_before > 0);
-
-    let anchor =
-        root(session).expect("Getting the anchor should be successful");
-
-    let fee = Fee::new(rng, 0, gas_price, &test_sponsor_psk);
-
-    let call = Some((
-        contract_id.to_bytes(),
-        String::from(method.as_ref()),
-        vec![],
-    ));
-
-    let tx = Transaction {
-        anchor,
-        nullifiers: vec![],
-        outputs: vec![],
-        fee,
-        crossover: None,
-        proof: vec![],
-        call,
-    };
-
-    println!(
-        "executing method '{}' - contract '{:X?}' is paying",
-        method.as_ref(),
-        contract_id.to_bytes()[0]
-    );
-    let execution_result =
-        execute_call(session, tx).expect("Executing TX should succeed");
-    update_root(session).expect("Updating the root should succeed");
-
-    println!(
-        "gas spent for the execution of method '{}' is {}",
-        method.as_ref(),
-        execution_result.gas_spent
-    );
-
-    let balance_after = module_balance(&mut session, contract_id)
-        .expect("Module balance should succeed");
-
-    println!(
-        "contract's '{:X?}' balance before the call: {}",
-        contract_id.as_bytes()[0],
-        balance_before
-    );
-    println!(
-        "contract's '{:X?}' balance after the call: {}",
-        contract_id.as_bytes()[0],
-        balance_after
-    );
-    if balance_before > balance_after {
-        println!(
-            "contract '{:X?}' has paid for this call: {}",
-            contract_id.as_bytes()[0],
-            balance_before - balance_after
-        );
-        println!("this call was sponsored by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], execution_result.gas_spent);
-    } else {
-        println!(
-            "contract '{:X?}' has earned: {}",
-            contract_id.as_bytes()[0],
-            balance_after - balance_before
-        );
-        println!("this call was charged by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], execution_result.gas_spent);
-    }
-
-    (execution_result, balance_before, balance_after)
-}
-
 #[test]
 fn contract_sponsors_call_with_deposit() {
     const GAS_PRICE: u64 = 2;
@@ -614,27 +536,6 @@ fn contract_sponsors_call_with_deposit() {
 }
 
 #[test]
-fn contract_sponsors_call_no_deposit() {
-    const GAS_PRICE: u64 = 2;
-    let vm = &mut rusk_abi::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
-
-    let (mut session, sponsor_ssk) =
-        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (execution_result, balance_before, balance_after) =
-        call_contract_method_without_deposit(
-            &mut session,
-            CHARLIE_CONTRACT_ID,
-            "pay",
-            sponsor_ssk,
-            GAS_PRICE,
-        );
-    assert!(balance_after < balance_before);
-    let balance_delta = balance_before - balance_after;
-    assert!(execution_result.gas_spent < balance_delta);
-}
-
-#[test]
 fn contract_sponsors_not_enough_allowance() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
@@ -655,7 +556,7 @@ fn contract_sponsors_not_enough_allowance() {
 }
 
 #[test]
-fn contract_earns_a_fee() {
+fn contract_earns_fee() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -674,10 +575,10 @@ fn contract_earns_a_fee() {
     let balance_delta = balance_after - balance_before;
     assert_eq!(
         execution_result.economic_mode,
-        EconomicMode::Charge(balance_delta)
+        EconomicMode::Charge(
+            balance_delta / GAS_PRICE + execution_result.gas_spent
+        )
     );
-    let effective_gas_spent = execution_result.gas_spent + balance_delta;
-    assert!(balance_delta <= effective_gas_spent);
 }
 
 #[test]
