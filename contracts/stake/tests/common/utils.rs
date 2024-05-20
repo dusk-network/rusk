@@ -10,7 +10,10 @@ use dusk_plonk::prelude::*;
 use phoenix_core::transaction::{TreeLeaf, TRANSFER_TREE_DEPTH};
 use phoenix_core::{Note, Transaction, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
-use rusk_abi::{CallReceipt, ContractError, Error, Session, TRANSFER_CONTRACT};
+use rusk_abi::{
+    CallReceipt, ContractError, ContractId, EconomicMode, Error, Session,
+    TRANSFER_CONTRACT,
+};
 
 const POINT_LIMIT: u64 = 0x100000000;
 
@@ -107,7 +110,12 @@ pub fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.fee, receipt.gas_spent),
+            &(
+                tx.fee,
+                receipt.gas_spent,
+                EconomicMode::None,
+                None::<ContractId>,
+            ),
             u64::MAX,
         )
         .expect("Refunding must succeed");
