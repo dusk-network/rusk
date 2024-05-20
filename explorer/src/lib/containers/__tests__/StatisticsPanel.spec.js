@@ -11,8 +11,7 @@ import { StatisticsPanel } from "..";
 describe("StatisticsPanel", () => {
   vi.useFakeTimers();
 
-  const STATS_FETCH_INTERVAL = 5000;
-  const { network } = get(appStore);
+  const { fetchInterval, network } = get(appStore);
   const getMarketDataSpy = vi
     .spyOn(duskAPI, "getMarketData")
     .mockResolvedValue({
@@ -54,19 +53,19 @@ describe("StatisticsPanel", () => {
     // snapshot with received data from APIs
     expect(container.firstChild).toMatchSnapshot();
 
-    await vi.advanceTimersByTimeAsync(STATS_FETCH_INTERVAL - 1);
+    await vi.advanceTimersByTimeAsync(fetchInterval - 1);
 
     expect(getStatsSpy).toHaveBeenCalledTimes(2);
     expect(getStatsSpy).toHaveBeenNthCalledWith(2, network);
 
-    await vi.advanceTimersByTimeAsync(STATS_FETCH_INTERVAL);
+    await vi.advanceTimersByTimeAsync(fetchInterval);
 
     expect(getStatsSpy).toHaveBeenCalledTimes(3);
     expect(getStatsSpy).toHaveBeenNthCalledWith(3, network);
 
     unmount();
 
-    await vi.advanceTimersByTimeAsync(STATS_FETCH_INTERVAL * 10);
+    await vi.advanceTimersByTimeAsync(fetchInterval * 10);
 
     expect(getStatsSpy).toHaveBeenCalledTimes(3);
     expect(getNodeLocationsSpy).toHaveBeenCalledTimes(1);
