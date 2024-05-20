@@ -10,7 +10,7 @@
   import "./TransactionsCard.css";
 
   /** @type {Transaction[] | null}*/
-  export let txs;
+  export let txns;
 
   /** @type {Error | null}*/
   export let error;
@@ -26,22 +26,22 @@
   let clientWidth;
 
   /** @type {Transaction[]}*/
-  let displayedTxs;
+  let displayedTxns;
 
   /** @type {Boolean}*/
   let isLoadMoreDisabled = false;
 
   const loadMoreItems = () => {
-    if (txs && itemsToDisplay < txs.length) {
+    if (txns && itemsToDisplay < txns.length) {
       itemsToDisplay += ITEMS_TO_DISPLAY;
     }
   };
 
-  $: displayedTxs = txs ? txs.slice(0, itemsToDisplay) : [];
+  $: displayedTxns = txns ? txns.slice(0, itemsToDisplay) : [];
   $: {
-    if (txs && itemsToDisplay >= txs.length) {
+    if (txns && itemsToDisplay >= txns.length) {
       isLoadMoreDisabled = true;
-    } else if (loading && txs === null) {
+    } else if (loading && txns === null) {
       isLoadMoreDisabled = true;
     } else {
       isLoadMoreDisabled = false;
@@ -52,7 +52,7 @@
 <svelte:window bind:outerWidth={clientWidth} />
 <DataCard
   on:retry
-  data={txs}
+  data={txns}
   {error}
   {loading}
   title="Transactions"
@@ -64,13 +64,13 @@
 >
   {#if clientWidth > 768}
     <TransactionsTable
-      data={displayedTxs}
+      data={displayedTxns}
       className="transactions-card__table"
     />
   {:else}
     <div class="transactions-card__list">
-      {#each displayedTxs as tx (tx)}
-        <TransactionsList data={tx} />
+      {#each displayedTxns as txn (txn)}
+        <TransactionsList data={txn} />
       {/each}
     </div>
   {/if}

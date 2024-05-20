@@ -25,7 +25,7 @@
 <section id="transactions">
   <TransactionsCard
     on:retry={() => pollingDataStore.start(currentNetwork)}
-    txs={data}
+    txns={data}
     {error}
     loading={isLoading}
   />

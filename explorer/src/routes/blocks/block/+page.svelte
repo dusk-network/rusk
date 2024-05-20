@@ -27,7 +27,7 @@
   <div class="block__transactions">
     <LatestTransactionsCard
       on:retry={getBlock}
-      txs={data?.transactions.data}
+      txns={data?.transactions.data}
       {error}
       loading={isLoading}
       isOnHomeScreen={false}
