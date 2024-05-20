@@ -42,7 +42,7 @@ describe("StatisticsPanel", () => {
 
     expect(container.firstChild).toMatchSnapshot();
     expect(getMarketDataSpy).toHaveBeenCalledTimes(1);
-    expect(getMarketDataSpy).toHaveBeenNthCalledWith(1, network);
+    expect(getMarketDataSpy).toHaveBeenNthCalledWith(1);
     expect(getNodeLocationsSpy).toHaveBeenCalledTimes(1);
     expect(getNodeLocationsSpy).toHaveBeenNthCalledWith(1, network);
     expect(getStatsSpy).toHaveBeenCalledTimes(1);

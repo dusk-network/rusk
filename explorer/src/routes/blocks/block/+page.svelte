@@ -5,7 +5,6 @@
   import { appStore } from "$lib/stores";
   import { createDataStore } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
-  import { onMount } from "svelte";
 
   const dataStore = createDataStore(duskAPI.getBlock);
 
@@ -13,13 +12,12 @@
     dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
   };
 
-  onNetworkChange(getBlock);
-
-  $: ({ data, error, isLoading } = $dataStore);
-
-  onMount(() => {
+  onNetworkChange(() => {
+    dataStore.reset();
     getBlock();
   });
+
+  $: ({ data, error, isLoading } = $dataStore);
 </script>
 
 <section class="block">

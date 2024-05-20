@@ -17,7 +17,11 @@
     marketStore.getData($appStore.network);
   };
 
-  onNetworkChange(getTransaction);
+  onNetworkChange(() => {
+    dataStore.reset();
+    payloadStore.reset();
+    getTransaction();
+  });
 
   $: ({ data, error, isLoading } = $dataStore);
   $: ({ data: payloadData } = $payloadStore);

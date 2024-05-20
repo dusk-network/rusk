@@ -57,15 +57,9 @@
 }
 
 .dusk-navbar__menu--network {
-  order: 3;
-}
-
-.dusk-navbar__menu--network select {
   text-transform: uppercase;
-  padding: 0.625rem 0.875rem;
-  padding-right: 2.25rem;
-  font-size: 0.875rem;
   font-weight: 500;
+  order: 3;
 }
 
 .dusk-navbar__menu--links {
