@@ -13,15 +13,13 @@
     $appStore.fetchInterval
   );
 
-  onNetworkChange(pollingDataStore.start);
-  onDestroy(pollingDataStore.stop);
-
   $: ({ data, error, isLoading } = $pollingDataStore);
 
   onNetworkChange((network) => {
-    pollingDataStore.stop();
+    pollingDataStore.reset();
     pollingDataStore.start(network);
   });
+  onDestroy(pollingDataStore.stop);
 </script>
 
 <section class="chain-info">

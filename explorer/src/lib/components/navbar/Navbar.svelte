@@ -49,7 +49,7 @@
   /**
    * @param {Event} e
    */
-  function handleChange(e) {
+  function handleNetworkChange(e) {
     // @ts-ignore
     appStore.setNetwork(e.target.value);
   }
@@ -94,7 +94,7 @@
   >
     <Select
       className="dusk-navbar__menu--network"
-      on:change={handleChange}
+      on:change={handleNetworkChange}
       options={networks}
     />
     <NavList className="dusk-navbar__menu--links" {navigation} />

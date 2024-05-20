@@ -42,8 +42,10 @@
   );
 
   onNetworkChange((network) => {
-    marketDataStore.getData(network);
+    marketDataStore.getData();
+    nodeLocationsStore.reset();
     nodeLocationsStore.getData(network);
+    pollingStatsDataStore.reset();
     pollingStatsDataStore.start(network);
   });
 

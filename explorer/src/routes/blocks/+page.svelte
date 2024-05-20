@@ -12,9 +12,10 @@
   );
 
   $: ({ data, error, isLoading } = $pollingDataStore);
+  $: ({ network: currentNetwork } = $appStore);
 
   onNetworkChange((network) => {
-    pollingDataStore.stop();
+    pollingDataStore.reset();
     pollingDataStore.start(network);
   });
 
@@ -23,7 +24,7 @@
 
 <section id="blocks">
   <BlocksCard
-    on:retry={pollingDataStore.start}
+    on:retry={() => pollingDataStore.start(currentNetwork)}
     blocks={data}
     {error}
     loading={isLoading}
