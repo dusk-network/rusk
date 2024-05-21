@@ -5,7 +5,6 @@
   import { appStore } from "$lib/stores";
   import { createDataStore } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
-  import { onMount } from "svelte";
 
   const dataStore = createDataStore(duskAPI.getTransaction);
   const payloadStore = createDataStore(duskAPI.getTransactionDetails);
@@ -26,10 +25,6 @@
   $: ({ data, error, isLoading } = $dataStore);
   $: ({ data: payloadData } = $payloadStore);
   $: ({ data: marketData } = $marketStore);
-
-  onMount(() => {
-    getTransaction();
-  });
 </script>
 
 <section class="transaction">
