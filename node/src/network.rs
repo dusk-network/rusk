@@ -25,6 +25,9 @@ mod frame;
 
 const MAX_PENDING_SENDERS: u64 = 1000;
 
+/// Number of alive peers randomly selected which a `flood_request` is sent to
+const REDUNDANCY_PEER_COUNT: usize = 8;
+
 type RoutesList<const N: usize> = [Option<AsyncQueue<Message>>; N];
 type FilterList<const N: usize> = [Option<BoxedFilter>; N];
 
@@ -252,12 +255,15 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             },
         );
 
-        self.broadcast(&Message::new_get_resource(GetResource::new(
-            msg_inv.clone(),
-            self.public_addr,
-            ttl_as_sec,
-            hops_limit,
-        )))
+        self.send_to_alive_peers(
+            &Message::new_get_resource(GetResource::new(
+                msg_inv.clone(),
+                self.public_addr,
+                ttl_as_sec,
+                hops_limit / REDUNDANCY_PEER_COUNT as u16,
+            )),
+            REDUNDANCY_PEER_COUNT,
+        )
         .await
     }
 
