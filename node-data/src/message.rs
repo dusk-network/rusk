@@ -753,7 +753,7 @@ pub mod payload {
         #[default]
         /// A full block fetched by block hash
         BlockFromHash,
-        /// A full Block fetched by block height
+        /// A full block fetched by block height
         BlockFromHeight,
         /// A candidate block fetched by block hash, Cert is None
         CandidateFromHash,
