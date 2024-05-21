@@ -13,7 +13,7 @@
   export let className = undefined;
 
   /** @type {Transaction[]}*/
-  export let txs;
+  export let txns;
 
   /** @type {Error | null}*/
   export let error;
@@ -33,7 +33,7 @@
 <svelte:window bind:outerWidth={clientWidth} />
 <DataCard
   on:retry
-  data={txs}
+  data={txns}
   {error}
   {loading}
   className={classes}
@@ -48,10 +48,10 @@
     : undefined}
 >
   {#if clientWidth > 768}
-    <TransactionsTable data={txs} />
+    <TransactionsTable data={txns} />
   {:else}
-    {#each txs as tx (tx)}
-      <TransactionsList data={tx} />
+    {#each txns as txn (txn)}
+      <TransactionsList data={txn} />
     {/each}
   {/if}
 </DataCard>

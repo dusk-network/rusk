@@ -58,7 +58,7 @@
 <form on:submit|preventDefault={submitHandler}>
   <TextboxAndButton
     bind:value
-    placeholder="Txs/Hash"
+    placeholder="Block/Hash"
     icon={{
       path: mdiMagnify,
       position: "after",

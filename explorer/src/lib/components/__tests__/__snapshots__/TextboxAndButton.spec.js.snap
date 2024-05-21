@@ -3,7 +3,7 @@
 exports[`TextField > renders the component with default values 1`] = `
 <div
   class="textbox-button foo bar"
-  style="width: 150px;"
+  style="width: 190px;"
 >
   <input
     class="dusk-textbox dusk-textbox-text textbox-button__input"
@@ -38,7 +38,7 @@ exports[`TextField > renders the component with default values 1`] = `
 exports[`TextField > updates input value on change 1`] = `
 <div
   class="textbox-button foo bar"
-  style="width: 150px;"
+  style="width: 190px;"
 >
   <input
     class="dusk-textbox dusk-textbox-text textbox-button__input"

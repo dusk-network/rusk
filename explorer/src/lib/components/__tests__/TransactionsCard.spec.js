@@ -20,7 +20,7 @@ describe("Transactions Card", () => {
   const baseProps = {
     error: null,
     loading: false,
-    txs: null,
+    txns: null,
   };
   const baseOptions = {
     props: baseProps,
@@ -54,11 +54,11 @@ describe("Transactions Card", () => {
 
   it("should disable the `Show More` button if there is no more data to display", async () => {
     const loading = false;
-    const txs = data;
+    const txns = data;
 
     const { container, getByRole } = render(TransactionsCard, {
       ...baseOptions,
-      props: { ...baseProps, loading, txs },
+      props: { ...baseProps, loading, txns },
     });
 
     expect(getByRole("button")).toBeDisabled();

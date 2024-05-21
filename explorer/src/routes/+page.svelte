@@ -38,7 +38,7 @@
   <LatestTransactionsCard
     on:retry={pollingDataStore.start}
     className="tables-layout"
-    txs={data?.transactions}
+    txns={data?.transactions}
     {error}
     loading={isLoading}
   />
