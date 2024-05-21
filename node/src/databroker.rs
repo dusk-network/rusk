@@ -240,7 +240,14 @@ impl DataBrokerSrv {
                             // hops_limit
                             let mut msg = msg.clone();
                             msg.payload = Payload::GetResource(m);
-                            let _ = network.read().await.broadcast(&msg).await;
+
+                            debug!("resend a flood request {:?}", msg);
+
+                            let _ = network
+                                .read()
+                                .await
+                                .send_to_alive_peers(&msg, 1)
+                                .await;
                         }
                         Err(err)
                     }
