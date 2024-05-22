@@ -12,10 +12,12 @@
   </div>
   <div class="footer__links">
     <Anchor
+      onSurface={false}
       href="https://dusk.network/privacy-policy"
       className="footer__links-link">Privacy policy</Anchor
     >
     <Anchor
+      onSurface={false}
       href="https://dusk.network/terms-of-use"
       className="footer__links-link">Terms of use</Anchor
     >

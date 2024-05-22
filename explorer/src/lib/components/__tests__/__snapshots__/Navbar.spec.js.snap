@@ -7,7 +7,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
     style="margin-bottom: 0"
   >
     <a
-      class="dusk-anchor dusk-navbar__logo"
+      class="dusk-anchor dusk-anchor--on-surface dusk-navbar__logo"
       href="/some-base-path/"
     >
       <img
@@ -71,7 +71,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
       >
         
         <a
-          class="dusk-anchor dusk-nav-list__link"
+          class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
           href="/some-base-path/"
         >
           Chain Info
@@ -80,7 +80,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
         <!--&lt;AppAnchor&gt;-->
         
         <a
-          class="dusk-anchor dusk-nav-list__link"
+          class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
           href="/some-base-path/blocks"
         >
           Blocks
@@ -89,7 +89,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
         <!--&lt;AppAnchor&gt;-->
         
         <a
-          class="dusk-anchor dusk-nav-list__link"
+          class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
           href="/some-base-path/transactions"
         >
           Transactions

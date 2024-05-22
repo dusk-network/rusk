@@ -31,7 +31,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       class="details-list__definition details-list__definition--table"
     >
       <a
-        class="dusk-anchor transaction-details__list-link"
+        class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
         href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
       >
         4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04

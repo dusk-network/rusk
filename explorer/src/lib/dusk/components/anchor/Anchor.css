@@ -1,18 +1,30 @@
 .dusk-anchor {
+  text-decoration: none;
+}
+
+.dusk-anchor--off-surface {
   color: var(--anchor-color);
 }
-.dusk-anchor:visited {
+
+.dusk-anchor--off-surface:visited {
   color: var(--anchor-color-visited);
 }
 
-.dusk-anchor:hover {
+.dusk-anchor--off-surface:hover {
   color: var(--anchor-color-hover);
 }
 
-.dusk-anchor:active {
+.dusk-anchor--off-surface:active {
   color: var(--anchor-color-active);
 }
 
-.dusk-anchor.dusk-anchor__disabled {
-  pointer-events: none;
+.dusk-anchor--on-surface,
+.dusk-anchor--on-surface:visited,
+.dusk-anchor--on-surface:hover,
+.dusk-anchor--on-surface:active {
+  color: var(--anchor-color-on-surface);
+}
+
+.dusk-anchor--on-surface:hover {
+  text-decoration: underline;
 }
