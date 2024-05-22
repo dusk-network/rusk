@@ -1,5 +1,5 @@
 <script>
-  import { page } from "$app/stores";
+  import { navigating, page } from "$app/stores";
   import { BlockDetails, LatestTransactionsCard } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
@@ -12,10 +12,19 @@
     dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
   };
 
-  onNetworkChange(() => {
+  const updateData = () => {
     dataStore.reset();
     getBlock();
-  });
+  };
+
+  onNetworkChange(updateData);
+
+  $: if (
+    $navigating &&
+    $navigating.from?.route.id === $navigating.to?.route.id
+  ) {
+    $navigating.complete.then(updateData);
+  }
 
   $: ({ data, error, isLoading } = $dataStore);
 </script>
