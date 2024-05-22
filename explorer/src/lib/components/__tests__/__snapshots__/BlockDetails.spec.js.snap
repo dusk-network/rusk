@@ -156,7 +156,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
           datetime="2024-04-16T20:07:02.000Z"
           slot="definition"
         >
-          last month
+          Tue, 16 Apr 2024 20:07:02 GMT (last month)
            
         </time>
       </dd>

@@ -119,8 +119,7 @@
         class="transaction-details__list-timestamp"
         slot="definition"
       >
-        {getRelativeTimeString(data.date, "long")}
-        {data.date.toUTCString()}
+        {`${data.date.toUTCString()} (${getRelativeTimeString(data.date, "long")})`}
       </time>
     </ListItem>
 

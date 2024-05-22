@@ -71,7 +71,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         datetime="2024-04-16T06:39:09.000Z"
         slot="definition"
       >
-        last month
+        Tue, 16 Apr 2024 06:39:09 GMT (last month)
       </time>
     </dd>
     <!--&lt;ListItem&gt;-->

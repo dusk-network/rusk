@@ -37,7 +37,7 @@
       class="block-details__list-timestamp"
       slot="definition"
     >
-      {getRelativeTimeString(data.header.date, "long")}
+      {`${data.header.date.toUTCString()} (${getRelativeTimeString(data.header.date, "long")})`}
     </time>
   </ListItem>
 
