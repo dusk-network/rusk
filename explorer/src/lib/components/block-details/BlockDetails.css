@@ -11,10 +11,6 @@
   color: var(--primary-color);
 }
 
-.block-details__list-timestamp {
-  text-transform: uppercase;
-}
-
 .block-details__gas-used.dusk-progress-bar {
   width: 12.5rem;
 }
