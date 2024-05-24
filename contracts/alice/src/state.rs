@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use phoenix_core::transaction::*;
+use execution_core::transfer::{Wfct, Wfctc};
 use rusk_abi::TRANSFER_CONTRACT;
 
 /// Alice contract.
