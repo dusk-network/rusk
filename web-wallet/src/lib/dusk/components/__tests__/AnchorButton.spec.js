@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { mdiFolderOutline } from "@mdi/js";
@@ -15,6 +13,7 @@ describe("AnchorButton", () => {
     props: baseProps,
     target: document.body,
   };
+  const iconPositions = /** @type {const} */ (["after", "before", undefined]);
 
   afterEach(cleanup);
 
@@ -56,7 +55,7 @@ describe("AnchorButton", () => {
   });
 
   it("should be able to render a AnchorButton with an icon and text", () => {
-    ["after", "before"].forEach((position) => {
+    iconPositions.forEach((position) => {
       const props = {
         ...baseProps,
         icon: {
@@ -71,7 +70,7 @@ describe("AnchorButton", () => {
   });
 
   it("should be able to render a AnchorButton with an icon only", () => {
-    ["after", "before"].forEach((position) => {
+    iconPositions.forEach((position) => {
       const props = {
         ...baseProps,
         icon: {
