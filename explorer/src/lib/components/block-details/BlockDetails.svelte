@@ -2,8 +2,8 @@
 
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
-  import { AppAnchor, DataCard, ListItem } from "$lib/components";
-  import { Icon, ProgressBar } from "$lib/dusk/components";
+  import { AppAnchorButton, DataCard, ListItem } from "$lib/components";
+  import { ProgressBar } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -80,19 +80,19 @@
     >
       <svelte:fragment slot="term">height</svelte:fragment>
       <svelte:fragment slot="definition">
-        <AppAnchor
+        <AppAnchorButton
           className="block-details__list-anchor"
           href="/blocks/block?id={data.header.prevblockhash}"
-        >
-          <Icon path={mdiArrowLeft} />
-        </AppAnchor>
+          icon={{ path: mdiArrowLeft }}
+          disabled={!data.header.prevblockhash}
+        />
         {formatter(data.header.height)}
-        <AppAnchor
+        <AppAnchorButton
           className="block-details__list-anchor"
           href="/blocks/block?id={data.header.nextblockhash}"
-        >
-          <Icon path={mdiArrowRight} />
-        </AppAnchor>
+          icon={{ path: mdiArrowRight }}
+          disabled={!data.header.nextblockhash}
+        />
       </svelte:fragment>
     </ListItem>
 
