@@ -6,12 +6,13 @@
 
 use alloc::vec::Vec;
 
-use dusk_bls12_381::BlsScalar;
-use phoenix_core::transaction::*;
-use phoenix_core::Note;
-
 use poseidon_merkle::{
     Item as PoseidonItem, Opening as PoseidonOpening, Tree as PoseidonTree,
+};
+
+use execution_core::{
+    transfer::{TreeLeaf, TRANSFER_TREE_DEPTH},
+    BlsScalar, Note,
 };
 
 use crate::state::A;

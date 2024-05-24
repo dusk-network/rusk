@@ -12,17 +12,21 @@ use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-use dusk_jubjub::JubJubAffine;
-use phoenix_core::transaction::*;
-use phoenix_core::{Crossover, Fee, Note, Ownable, StealthAddress};
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
 };
-use transfer_contract_types::{Mint, Stct, Wfct, Wfctc};
+
+use execution_core::{
+    stct_signature_message,
+    transfer::{
+        Mint, Stct, TreeLeaf, Wfct, WfctRaw, Wfctc, TRANSFER_TREE_DEPTH,
+    },
+    BlsScalar, Crossover, Fee, JubJubAffine, Note, Ownable, StealthAddress,
+    Transaction,
+};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
@@ -139,7 +143,7 @@ impl TransferState {
 
     pub fn withdraw_from_contract_transparent_raw(
         &mut self,
-        wfct_raw: transfer_contract_types::WfctRaw,
+        wfct_raw: WfctRaw,
     ) -> bool {
         let note = Note::from_slice(wfct_raw.note.as_slice())
             .expect("Failed to deserialize note");

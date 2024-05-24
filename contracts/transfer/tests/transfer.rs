@@ -6,13 +6,9 @@
 
 use std::sync::mpsc;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_plonk::prelude::*;
 use ff::Field;
-use phoenix_core::transaction::*;
-use phoenix_core::{Fee, Note, Ownable, PublicKey, SecretKey, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -25,6 +21,12 @@ use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
     ExecuteCircuitTwoTwo, SendToContractTransparentCircuit,
     WithdrawFromTransparentCircuit,
+};
+
+use execution_core::{
+    transfer::{Stct, TreeLeaf, Wfct, TRANSFER_TREE_DEPTH},
+    BlsScalar, Fee, JubJubScalar, Note, Ownable, PublicKey, SecretKey,
+    Transaction, ViewKey, GENERATOR_NUMS_EXTENDED,
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
