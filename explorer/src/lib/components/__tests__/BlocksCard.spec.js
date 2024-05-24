@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { apiBlocks } from "$lib/mock-data";
-import { transformBlock } from "$lib/chain-info";
+import { transformAPIBlock } from "$lib/chain-info";
 import { BlocksCard } from "..";
 import { compose, mapWith, take } from "lamb";
 
@@ -11,7 +11,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const getTenBlocks = compose(mapWith(transformBlock), take(10));
+const getTenBlocks = compose(mapWith(transformAPIBlock), take(10));
 const data = getTenBlocks(apiBlocks.data.blocks);
 
 describe("Blocks Card", () => {

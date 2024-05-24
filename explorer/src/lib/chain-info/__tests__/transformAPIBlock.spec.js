@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { setPathIn } from "lamb";
+import { skipIn } from "lamb";
 
-import { gqlBlock } from "$lib/mock-data";
+import { apiBlock } from "$lib/mock-data";
 
-import { transformBlock } from "..";
+import { transformAPIBlock } from "..";
 
-describe("transformBlock", () => {
-  const blockData = gqlBlock.block;
+describe("transformAPIBlock", () => {
+  const blockData = apiBlock.data.blocks[0];
   const expectedBlock = {
     header: {
-      date: new Date(blockData.header.timestamp * 1000),
+      date: new Date(blockData.header.ts * 1000),
       feespaid: 580718,
       hash: "bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f",
       height: 495868,
@@ -29,7 +29,7 @@ describe("transformBlock", () => {
             "bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f",
           blockheight: 495868,
           contract: "Transfer",
-          date: new Date(blockData.transactions[0].blockTimestamp * 1000),
+          date: new Date(blockData.transactions.data[0].blockts * 1000),
           feepaid: 290866,
           gaslimit: 500000000,
           gasprice: 1,
@@ -44,7 +44,7 @@ describe("transformBlock", () => {
             "bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f",
           blockheight: 495868,
           contract: "Transfer",
-          date: new Date(blockData.transactions[1].blockTimestamp * 1000),
+          date: new Date(blockData.transactions.data[1].blockts * 1000),
           feepaid: 289852,
           gaslimit: 500000000,
           gasprice: 1,
@@ -60,16 +60,28 @@ describe("transformBlock", () => {
   };
 
   it("should transform a block received from the API into the format used by the Explorer", () => {
-    expect(transformBlock(blockData)).toStrictEqual(expectedBlock);
+    expect(transformAPIBlock(blockData)).toStrictEqual(expectedBlock);
   });
 
-  it("should set zero as the average gas price if the gas spent isn't greater than zero", () => {
-    expect(transformBlock({ ...blockData, gasSpent: 0 })).toStrictEqual(
-      setPathIn(expectedBlock, "transactions.stats", {
-        ...expectedBlock.transactions.stats,
-        averageGasPrice: 0,
-        gasUsed: 0,
-      })
-    );
+  it("should give defaults to optional properties if they are missing", () => {
+    const incompleteBlockHeader = skipIn(blockData.header, [
+      "nextblockhash",
+      "prevblockhash",
+      "statehash",
+    ]);
+    const incompleteBlock = {
+      ...blockData,
+      header: incompleteBlockHeader,
+    };
+
+    expect(transformAPIBlock(incompleteBlock)).toStrictEqual({
+      ...expectedBlock,
+      header: {
+        ...expectedBlock.header,
+        nextblockhash: "",
+        prevblockhash: "",
+        statehash: "",
+      },
+    });
   });
 });

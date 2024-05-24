@@ -1,38 +1,30 @@
-import { mapWith, pipe, skip, updateIn } from "lamb";
+import { map } from "lamb";
 
 import { unixTsToDate } from "$lib/dusk/date";
 
-import { transformAPITransaction } from ".";
+import { transformTransaction } from ".";
 
-/** @type {(v: APIBlockHeader) => Required<APIBlockHeader>} */
-const mergeWithDefaults = (v) => ({
-  nextblockhash: "",
-  prevblockhash: "",
-  statehash: "",
-  ...v,
-});
-
-/** @type {(header: Required<APIBlockHeader>) => BlockHeader} */
-const addHeaderDate = (header) => ({
-  ...header,
-  date: unixTsToDate(header.ts),
-});
-
-/** @type {(v: APIBlockHeader) => BlockHeader} */
-const transformBlockHeader = pipe([
-  mergeWithDefaults,
-  addHeaderDate,
-  skip(["__typename", "timestamp", "ts"]),
-]);
-
-/** @type {(v: APIBlock) => Block} */
-const transformBlock = ({ header, transactions }) => ({
-  header: transformBlockHeader(header),
-  transactions: updateIn(
-    transactions,
-    "data",
-    mapWith(transformAPITransaction)
-  ),
+/** @type {(v: GQLBlock) => Block} */
+const transformBlock = (v) => ({
+  header: {
+    date: unixTsToDate(v.header.timestamp),
+    feespaid: v.fees,
+    hash: v.header.hash,
+    height: v.header.height,
+    nextblockhash: v.header.nextBlockHash,
+    prevblockhash: v.header.prevBlockHash,
+    reward: v.reward,
+    seed: v.header.seed,
+    statehash: v.header.stateHash,
+  },
+  transactions: {
+    data: map(v.transactions, transformTransaction),
+    stats: {
+      averageGasPrice: v.gasSpent > 0 ? v.fees / v.gasSpent : 0,
+      gasLimit: v.header.gasLimit,
+      gasUsed: v.gasSpent,
+    },
+  },
 });
 
 export default transformBlock;

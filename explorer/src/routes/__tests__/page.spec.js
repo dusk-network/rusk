@@ -3,7 +3,7 @@ import { cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
 import { duskAPI } from "$lib/services";
-import { transformAPITransaction, transformBlock } from "$lib/chain-info";
+import { transformAPIBlock, transformAPITransaction } from "$lib/chain-info";
 import { apiLatestChainInfo } from "$lib/mock-data";
 import { appStore } from "$lib/stores";
 
@@ -16,7 +16,7 @@ describe("home page", () => {
   const getLatestChainInfoSpy = vi
     .spyOn(duskAPI, "getLatestChainInfo")
     .mockResolvedValue({
-      blocks: apiLatestChainInfo.data.blocks.map(transformBlock),
+      blocks: apiLatestChainInfo.data.blocks.map(transformAPIBlock),
       transactions: apiLatestChainInfo.data.transactions.map(
         transformAPITransaction
       ),

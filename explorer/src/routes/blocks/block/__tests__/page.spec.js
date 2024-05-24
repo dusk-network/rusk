@@ -3,7 +3,7 @@ import { cleanup, render } from "@testing-library/svelte";
 
 import { duskAPI } from "$lib/services";
 import { transformBlock } from "$lib/chain-info";
-import { apiBlock } from "$lib/mock-data";
+import { gqlBlock } from "$lib/mock-data";
 
 import BlockDetails from "../+page.svelte";
 
@@ -18,7 +18,7 @@ describe("Block Details", () => {
 
   const getBlockSpy = vi
     .spyOn(duskAPI, "getBlock")
-    .mockResolvedValue(transformBlock(apiBlock.data.blocks[0]));
+    .mockResolvedValue(transformBlock(gqlBlock.block));
 
   afterEach(() => {
     cleanup();

@@ -6,6 +6,7 @@ import {
   mapWith,
   ownPairs,
   pipe,
+  setPathIn,
   unless,
   updateAt,
 } from "lamb";
@@ -13,6 +14,7 @@ import {
 import { failureToRejection } from "$lib/dusk/http";
 
 import {
+  transformAPIBlock,
   transformAPITransaction,
   transformBlock,
   transformSearchResult,
@@ -22,7 +24,7 @@ import {
 import * as gqlQueries from "./gql-queries";
 
 /** @type {(blocks: APIBlock[]) => Block[]} */
-const transformBlocks = mapWith(transformBlock);
+const transformAPIBlocks = mapWith(transformAPIBlock);
 
 /** @type {(transactions: APITransaction[]) => Transaction[]} */
 const transformTransactions = mapWith(transformAPITransaction);
@@ -53,7 +55,7 @@ const makeAPIURL = (endpoint, params) =>
 
 /**
  * @param {string} node
- * @param {{ query: string, variables: Record<string, string> | undefined }} queryInfo
+ * @param {{ query: string, variables: Record<string, string | number> | undefined }} queryInfo
  */
 const gqlGet = (node, queryInfo) =>
   fetch(`https://${node}/02/Chain`, {
@@ -88,16 +90,33 @@ const apiGet = (endpoint, params) =>
     .then(failureToRejection)
     .then((res) => res.json());
 
-export default {
+const duskAPI = {
   /**
    * @param {string} node
    * @param {string} id
    * @returns {Promise<Block>}
    */
   getBlock(node, id) {
-    return apiGet(`blocks/${id}`, { node })
-      .then(getPath("data.blocks.0"))
+    return gqlGet(node, gqlQueries.getBlockQueryInfo(id))
+      .then(async ({ block }) =>
+        setPathIn(
+          block,
+          "header.nextBlockHash",
+          await duskAPI.getBlockHashByHeight(node, block.header.height + 1)
+        )
+      )
       .then(transformBlock);
+  },
+
+  /**
+   * @param {string} node
+   * @param {number} height
+   * @returns {Promise<string>}
+   */
+  getBlockHashByHeight(node, height) {
+    return gqlGet(node, gqlQueries.getBlockHashQueryInfo(height)).then(
+      ({ block }) => (block ? block.header.hash : "")
+    );
   },
 
   /**
@@ -107,7 +126,7 @@ export default {
   getBlocks(node) {
     return apiGet("blocks", { node })
       .then(getPath("data.blocks"))
-      .then(transformBlocks);
+      .then(transformAPIBlocks);
   },
 
   /**
@@ -118,7 +137,7 @@ export default {
     return apiGet("latest", { node })
       .then(getKey("data"))
       .then(({ blocks, transactions }) => ({
-        blocks: transformBlocks(blocks),
+        blocks: transformAPIBlocks(blocks),
         transactions: transformTransactions(transactions),
       }));
   },
@@ -192,3 +211,5 @@ export default {
     );
   },
 };
+
+export default duskAPI;
