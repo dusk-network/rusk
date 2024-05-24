@@ -70,6 +70,33 @@ exports[`AnchorButton > should be able to render a AnchorButton with an icon and
 </a>
 `;
 
+exports[`AnchorButton > should be able to render a AnchorButton with an icon and text 3`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
+  href="/some-url"
+>
+  <span
+    class="dusk-anchor-button__text"
+  >
+    some text
+  </span>
+   
+  <svg
+    class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+  
+</a>
+`;
+
 exports[`AnchorButton > should be able to render a AnchorButton with an icon only 1`] = `
 <a
   aria-disabled="false"
@@ -93,6 +120,28 @@ exports[`AnchorButton > should be able to render a AnchorButton with an icon onl
 `;
 
 exports[`AnchorButton > should be able to render a AnchorButton with an icon only 2`] = `
+<a
+  aria-disabled="false"
+  class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button"
+  href="/some-url"
+>
+   
+  <svg
+    class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+    role="graphics-symbol"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"
+    />
+  </svg>
+  
+  <!--&lt;Icon&gt;-->
+  
+</a>
+`;
+
+exports[`AnchorButton > should be able to render a AnchorButton with an icon only 3`] = `
 <a
   aria-disabled="false"
   class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button"
