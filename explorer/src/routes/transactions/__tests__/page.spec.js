@@ -3,7 +3,7 @@ import { cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
 import { duskAPI } from "$lib/services";
-import { transformTransaction } from "$lib/chain-info";
+import { transformAPITransaction } from "$lib/chain-info";
 import { appStore } from "$lib/stores";
 import { apiTransactions } from "$lib/mock-data";
 
@@ -15,7 +15,7 @@ describe("Transactions page", () => {
   const { fetchInterval, network } = get(appStore);
   const getTransactionSpy = vi
     .spyOn(duskAPI, "getTransactions")
-    .mockResolvedValue(apiTransactions.data.map(transformTransaction));
+    .mockResolvedValue(apiTransactions.data.map(transformAPITransaction));
 
   afterEach(() => {
     cleanup();

@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { apiMarketData, apiTransaction } from "$lib/mock-data";
-import { transformTransaction } from "$lib/chain-info";
+import { transformAPITransaction } from "$lib/chain-info";
 import { TransactionDetails } from "../";
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -11,7 +11,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 const baseProps = {
-  data: transformTransaction(apiTransaction.data[0]),
+  data: transformAPITransaction(apiTransaction.data[0]),
   error: null,
   loading: false,
   market: {

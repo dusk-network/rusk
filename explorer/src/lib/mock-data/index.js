@@ -8,5 +8,6 @@ export { default as apiSearchNoResult } from "./api-search-no-result.json";
 export { default as apiSearchTransactionResult } from "./api-search-transaction-result.json";
 export { default as apiStats } from "./api-stats.json";
 export { default as apiTransaction } from "./api-transaction.json";
-export { default as apiTransactionDetails } from "./api-transaction-details.json";
 export { default as apiTransactions } from "./api-transactions.json";
+export { default as gqlTransaction } from "./gql-transaction.json";
+export { default as gqlTransactionDetails } from "./gql-transaction-details.json";

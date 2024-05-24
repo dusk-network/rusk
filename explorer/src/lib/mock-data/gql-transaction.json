@@ -1,0 +1,16 @@
+{
+  "tx": {
+    "blockHash": "3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d",
+    "blockHeight": 487166,
+    "blockTimestamp": 1713249549,
+    "err": null,
+    "gasSpent": 290766,
+    "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
+    "tx": {
+      "callData": null,
+      "gasLimit": 500000000,
+      "gasPrice": 1,
+      "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+    }
+  }
+}

@@ -5,8 +5,8 @@ import { duskAPI } from "$lib/services";
 import { transformTransaction } from "$lib/chain-info";
 import {
   apiMarketData,
-  apiTransaction,
-  apiTransactionDetails,
+  gqlTransaction,
+  gqlTransactionDetails,
 } from "$lib/mock-data";
 
 import TransactionDetails from "../+page.svelte";
@@ -22,10 +22,10 @@ describe("Transaction Details", () => {
 
   const getTransactionSpy = vi
     .spyOn(duskAPI, "getTransaction")
-    .mockResolvedValue(transformTransaction(apiTransaction.data[0]));
+    .mockResolvedValue(transformTransaction(gqlTransaction.tx));
   const getPayloadSpy = vi
     .spyOn(duskAPI, "getTransactionDetails")
-    .mockResolvedValue(apiTransactionDetails.data.json);
+    .mockResolvedValue(gqlTransactionDetails.tx.raw);
   const getMarketDataSpy = vi
     .spyOn(duskAPI, "getMarketData")
     .mockResolvedValue({

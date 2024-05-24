@@ -2,7 +2,7 @@ import { mapWith, pipe, skip, updateIn } from "lamb";
 
 import { unixTsToDate } from "$lib/dusk/date";
 
-import { transformTransaction } from ".";
+import { transformAPITransaction } from ".";
 
 /** @type {(v: APIBlockHeader) => Required<APIBlockHeader>} */
 const mergeWithDefaults = (v) => ({
@@ -28,7 +28,11 @@ const transformBlockHeader = pipe([
 /** @type {(v: APIBlock) => Block} */
 const transformBlock = ({ header, transactions }) => ({
   header: transformBlockHeader(header),
-  transactions: updateIn(transactions, "data", mapWith(transformTransaction)),
+  transactions: updateIn(
+    transactions,
+    "data",
+    mapWith(transformAPITransaction)
+  ),
 });
 
 export default transformBlock;
