@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::common::utils::update_root;
-use phoenix_core::{Note, PublicKey};
 use rand::{CryptoRng, RngCore};
+
+use execution_core::{Note, PublicKey};
 use rusk_abi::{ContractData, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
+
+use crate::common::utils::update_root;
 
 const OWNER: [u8; 32] = [0; 32];
 const POINT_LIMIT: u64 = 0x100_000_000;

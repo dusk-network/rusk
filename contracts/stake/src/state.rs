@@ -4,18 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use alloc::collections::BTreeMap;
 use core::cmp::min;
 
-use crate::*;
-
-use alloc::collections::BTreeMap;
-
-use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_bytes::Serializable;
 
+use execution_core::{
+    stake::{
+        next_epoch, Stake, StakeData, StakingEvent, Unstake, Withdraw, EPOCH,
+    },
+    transfer::{Mint, Stct, WfctRaw},
+    StakePublicKey,
+};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
-use stake_contract_types::*;
-use transfer_contract_types::*;
+
+use crate::*;
 
 /// Contract keeping track of each public key's stake.
 ///
@@ -79,7 +82,7 @@ impl StakeState {
         loaded_stake.insert_amount(stake.value, rusk_abi::block_height());
 
         // verify the signature is over the correct digest
-        let digest = stake_signature_message(counter, stake.value).to_vec();
+        let digest = Stake::signature_message(counter, stake.value).to_vec();
 
         if !rusk_abi::verify_bls(digest, stake.public_key, stake.signature) {
             panic!("Invalid signature!");
@@ -129,7 +132,7 @@ impl StakeState {
 
         // verify signature
         let digest =
-            unstake_signature_message(counter, unstake.note.as_slice());
+            Unstake::signature_message(counter, unstake.note.as_slice());
 
         if !rusk_abi::verify_bls(digest, unstake.public_key, unstake.signature)
         {
@@ -180,7 +183,7 @@ impl StakeState {
         loaded_stake.increment_counter();
 
         // verify signature
-        let digest = withdraw_signature_message(
+        let digest = Withdraw::signature_message(
             counter,
             withdraw.address,
             withdraw.nonce,
