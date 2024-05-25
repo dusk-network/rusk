@@ -48,7 +48,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The date and time the block was created"
+        data-tooltip-text="Time elapsed since the block was created"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -60,7 +60,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       
       <!--&lt;Icon&gt;-->
        
-      timestamp
+      relative time
     </dt>
      
     <dd
@@ -71,7 +71,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         datetime="2024-04-16T20:07:02.000Z"
         slot="definition"
       >
-        Tue, 16 Apr 2024 20:07:02 GMT (last month)
+        last month
       </time>
     </dd>
     <!--&lt;ListItem&gt;-->

@@ -30,14 +30,14 @@
   </ListItem>
 
   <!-- TIMESTAMP -->
-  <ListItem tooltipText="The date and time the block was created">
-    <svelte:fragment slot="term">timestamp</svelte:fragment>
+  <ListItem tooltipText="Time elapsed since the block was created">
+    <svelte:fragment slot="term">relative time</svelte:fragment>
     <time
       datetime={data.header.date.toISOString()}
       class="block-details__list-timestamp"
       slot="definition"
     >
-      {`${data.header.date.toUTCString()} (${getRelativeTimeString(data.header.date, "long")})`}
+      {getRelativeTimeString(data.header.date, "long")}
     </time>
   </ListItem>
 
