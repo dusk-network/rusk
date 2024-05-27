@@ -260,7 +260,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
                 msg_inv.clone(),
                 self.public_addr,
                 ttl_as_sec,
-                hops_limit / REDUNDANCY_PEER_COUNT as u16,
+                hops_limit,
             )),
             REDUNDANCY_PEER_COUNT,
         )

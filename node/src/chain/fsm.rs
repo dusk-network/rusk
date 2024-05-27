@@ -30,7 +30,10 @@ use tracing::{debug, error, info, warn};
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
 const DEFAULT_CERT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
-const DEFAULT_HOPS_LIMIT: u16 = 128;
+
+/// Maximum number of hops between the requester and the node that contains the
+/// requested resource
+const DEFAULT_HOPS_LIMIT: u16 = 16;
 pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
 
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
