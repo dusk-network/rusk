@@ -5,6 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable as DuskSerializable;
+use execution_core::{
+    BlsAggPublicKey, BlsPublicKey, BlsSecretKey, BlsSigError, BlsSignature,
+};
 use tracing::warn;
 
 use crate::bls::PublicKey;
@@ -1010,19 +1013,15 @@ pub trait StepMessage {
         Self::STEP_NAME.to_step(self.header().iteration)
     }
 
-    fn verify_signature(&self) -> Result<(), bls12_381_bls::Error> {
+    fn verify_signature(&self) -> Result<(), BlsSigError> {
         let signature = self.sign_info().signature.inner();
-        let sig = bls12_381_bls::Signature::from_bytes(signature)?;
-        let pk = bls12_381_bls::APK::from(self.sign_info().signer.inner());
+        let sig = BlsSignature::from_bytes(signature)?;
+        let pk = BlsAggPublicKey::from(self.sign_info().signer.inner());
         let msg = self.signable();
         pk.verify(&sig, &msg)
     }
 
-    fn sign(
-        &mut self,
-        sk: &bls12_381_bls::SecretKey,
-        pk: &bls12_381_bls::PublicKey,
-    ) {
+    fn sign(&mut self, sk: &BlsSecretKey, pk: &BlsPublicKey) {
         let msg = self.signable();
         let sign_info = self.sign_info_mut();
         let signature = sk.sign(pk, &msg).to_bytes();
