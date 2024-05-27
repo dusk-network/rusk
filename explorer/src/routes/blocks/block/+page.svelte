@@ -3,18 +3,18 @@
   import { BlockDetails, LatestTransactionsCard } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
-  import { createDataStore } from "$lib/dusk/svelte-stores";
+  import { createPollingDataStore } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
+  import { onDestroy } from "svelte";
 
-  const dataStore = createDataStore(duskAPI.getBlock);
-
-  const getBlock = () => {
-    dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
-  };
+  const pollingDataStore = createPollingDataStore(
+    duskAPI.getBlock,
+    $appStore.fetchInterval
+  );
 
   const updateData = () => {
-    dataStore.reset();
-    getBlock();
+    pollingDataStore.reset();
+    pollingDataStore.start($appStore.network, $page.url.searchParams.get("id"));
   };
 
   onNetworkChange(updateData);
@@ -26,16 +26,24 @@
     $navigating.complete.then(updateData);
   }
 
-  $: ({ data, error, isLoading } = $dataStore);
+  $: ({ data, error, isLoading } = $pollingDataStore);
+  $: ({ network: currentNetwork } = $appStore);
+
+  onDestroy(pollingDataStore.stop);
 </script>
 
 <section class="block">
   <div class="block__details">
-    <BlockDetails on:retry={getBlock} {data} {error} loading={isLoading} />
+    <BlockDetails
+      on:retry={() => pollingDataStore.start(currentNetwork)}
+      {data}
+      {error}
+      loading={isLoading}
+    />
   </div>
   <div class="block__transactions">
     <LatestTransactionsCard
-      on:retry={getBlock}
+      on:retry={() => pollingDataStore.start(currentNetwork)}
       txns={data?.transactions.data}
       {error}
       loading={isLoading}
