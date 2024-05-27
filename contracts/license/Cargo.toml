@@ -15,7 +15,6 @@ poseidon-merkle = { version = "0.5", features = ["rkyv-impl", "zk", "size_32"] }
 dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
-contract-helpers = { version = "0.1", path = "../../contract-helpers" }
 jubjub-schnorr = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
