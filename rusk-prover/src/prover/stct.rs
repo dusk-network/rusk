@@ -12,7 +12,7 @@ pub const STCT_INPUT_LEN: usize = Fee::SIZE
     + u64::SIZE
     + JubJubScalar::SIZE
     + BlsScalar::SIZE
-    + Signature::SIZE;
+    + SchnorrSignature::SIZE;
 
 pub static STCT_PROVER: Lazy<PlonkProver> =
     Lazy::new(|| fetch_prover("SendToContractTransparentCircuit"));
@@ -42,7 +42,7 @@ impl LocalProver {
             .map_err(|e| ProverError::invalid_data("crossover_blinder", e))?;
         let contract_address = BlsScalar::from_reader(&mut reader)
             .map_err(|e| ProverError::invalid_data("contract_address", e))?;
-        let signature = Signature::from_reader(&mut reader)
+        let signature = SchnorrSignature::from_reader(&mut reader)
             .map_err(|e| ProverError::invalid_data("signature", e))?;
 
         let circ = SendToContractTransparentCircuit::new(

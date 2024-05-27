@@ -7,7 +7,7 @@
 use super::*;
 use crate::prover::fetch_prover;
 use dusk_wallet_core::UnprovenTransaction;
-use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
+use execution_core::transfer::TRANSFER_TREE_DEPTH;
 use rand::{CryptoRng, RngCore};
 use transfer_circuits::{
     ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
