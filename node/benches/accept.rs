@@ -16,15 +16,12 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
 
-use bls12_381_bls::{
-    PublicKey as StakePublicKey, SecretKey as StakeSecretKey,
-    Signature as StakeSignature,
-};
 use dusk_bytes::Serializable;
 use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
+use execution_core::{StakePublicKey, StakeSecretKey, StakeSignature};
 use node_data::ledger::{Certificate, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,

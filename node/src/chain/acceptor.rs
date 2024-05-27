@@ -19,10 +19,10 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use execution_core::stake::Unstake;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
-use stake_contract_types::Unstake;
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -326,7 +326,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 ProvisionerChange::Unstake(PublicKey::new(unstake.public_key))
             }
             STAKE => {
-                let stake: stake_contract_types::Stake =
+                let stake: execution_core::stake::Stake =
                     rkyv::from_bytes(calldata).map_err(|e| {
                         anyhow::anyhow!("Cannot deserialize stake rkyv {e:?}")
                     })?;
