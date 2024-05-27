@@ -39,8 +39,8 @@ pub mod hash;
 
 use hash::Hasher;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
+use execution_core::BlsScalar;
 
 /// Constant depth of the merkle tree that provides the opening proofs.
 pub const POSEIDON_TREE_DEPTH: usize = 17;
