@@ -13,13 +13,14 @@ use std::io::{BufRead, BufReader};
 use std::sync::Arc;
 use std::time::Duration;
 
-use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
 use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
+use execution_core::{
+    StakePublicKey, StakeSecretKey, Transaction as PhoenixTransaction,
+};
 use node_data::ledger::Transaction;
-use phoenix_core::Transaction as PhoenixTransaction;
 use rand::prelude::StdRng;
 use rand::SeedableRng;
 use tempfile::tempdir;

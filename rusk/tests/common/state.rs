@@ -12,9 +12,9 @@ use node::vm::VMExecution;
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
-use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_consensus::operations::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
+use execution_core::StakePublicKey;
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{Block, Certificate, Header, IterationsInfo, SpentTransaction},

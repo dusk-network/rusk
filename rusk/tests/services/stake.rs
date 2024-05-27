@@ -7,9 +7,8 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use bls12_381_bls::PublicKey as StakePublicKey;
 use dusk_wallet_core::{self as wallet, Store};
-use phoenix_core::{PublicKey, SecretKey};
+use execution_core::{PublicKey, SecretKey, StakePublicKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::chain::MINIMUM_STAKE;

@@ -10,19 +10,19 @@ use std::io::Write;
 use std::sync::{Arc, RwLock};
 
 use crate::common::block::Block as BlockAwait;
-use bls12_381_bls::PublicKey as BlsPublicKey;
-use dusk_bls12_381::BlsScalar;
+
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_plonk::prelude::Proof;
 use dusk_wallet_core::{
     self as wallet, StakeInfo, Store, Transaction as PhoenixTransaction,
     UnprovenTransaction,
 };
+use execution_core::transfer::TRANSFER_TREE_DEPTH;
+use execution_core::{
+    BlsPublicKey, BlsScalar, Crossover, Fee, JubJubAffine, JubJubScalar, Note,
+    NoteSignature, ViewKey,
+};
 use futures::StreamExt;
-use jubjub_schnorr::Signature;
-use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
-use phoenix_core::{Crossover, Fee, Note, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
 use rusk_prover::prover::{A, STCT_INPUT_LEN, WFCT_INPUT_LEN};
@@ -162,7 +162,7 @@ impl wallet::ProverClient for TestProverClient {
         value: u64,
         blinder: JubJubScalar,
         address: BlsScalar,
-        signature: Signature,
+        signature: NoteSignature,
     ) -> Result<Proof, Self::Error> {
         let mut buf = [0u8; STCT_INPUT_LEN];
         let mut writer = &mut buf[..];

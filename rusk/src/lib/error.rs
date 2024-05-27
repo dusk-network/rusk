@@ -6,7 +6,8 @@
 
 use std::{fmt, io};
 
-use dusk_bls12_381::BlsScalar;
+use execution_core::BlsScalar;
+use execution_core::PhoenixError;
 use rusk_abi::dusk::Dusk;
 
 #[derive(Debug)]
@@ -32,7 +33,7 @@ pub enum Error {
     /// Bytes Serialization Errors
     Serialization(dusk_bytes::Error),
     /// Originating from Phoenix.
-    Phoenix(phoenix_core::Error),
+    Phoenix(PhoenixError),
     /// Piecrust VM internal Errors
     Vm(rusk_abi::Error),
     /// IO Errors
@@ -80,8 +81,8 @@ impl From<dusk_bytes::Error> for Error {
     }
 }
 
-impl From<phoenix_core::Error> for Error {
-    fn from(pe: phoenix_core::Error) -> Self {
+impl From<PhoenixError> for Error {
+    fn from(pe: PhoenixError) -> Self {
         Self::Phoenix(pe)
     }
 }
