@@ -22,7 +22,7 @@ use std::path::Path;
 use tracing::info;
 use url::Url;
 
-pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
+pub use snapshot::{Balance, GenesisStake, Snapshot};
 use stake_contract_types::StakeData;
 use transfer_contract_types::Mint;
 
@@ -47,47 +47,6 @@ pub static FAUCET_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let bytes = bs58::decode(addr).into_vec().expect("valid hex");
     PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
 });
-
-fn deploy_governance_contract(
-    session: &mut Session,
-    governance: &Governance,
-) -> Result<(), Box<dyn Error>> {
-    let contract_id = governance.contract();
-    let bytecode = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
-    );
-
-    let theme = Theme::default();
-    info!(
-        "{} {} governance to {}",
-        theme.action("Deploying"),
-        governance.name,
-        hex::encode(contract_id)
-    );
-    session.deploy(
-        bytecode,
-        ContractData::builder()
-            .owner(governance.owner())
-            .contract_id(contract_id),
-        u64::MAX,
-    )?;
-
-    // Set the broker and the authority of the governance contract
-    session.call::<_, ()>(
-        contract_id,
-        "set_broker",
-        governance.broker(),
-        u64::MAX,
-    )?;
-    session.call::<_, ()>(
-        contract_id,
-        "set_authority",
-        governance.authority(),
-        u64::MAX,
-    )?;
-
-    Ok(())
-}
 
 fn generate_transfer_state(
     session: &mut Session,
@@ -262,10 +221,6 @@ pub fn deploy<P: AsRef<Path>>(
 
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
-
-    for governance in snapshot.governance_contracts() {
-        deploy_governance_contract(&mut session, governance)?;
-    }
 
     info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
