@@ -4,27 +4,26 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Theme;
-
-use dusk_bls12_381::BlsScalar;
-use dusk_bytes::DeserializableSlice;
-use dusk_jubjub::JubJubScalar;
-use ff::Field;
-use once_cell::sync::Lazy;
-use phoenix_core::PublicKey;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use rusk_abi::{ContractData, ContractId, Session, VM};
-use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::error::Error;
 use std::fs;
 use std::path::Path;
+
+use dusk_bytes::DeserializableSlice;
+use ff::Field;
+use once_cell::sync::Lazy;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use tracing::info;
 use url::Url;
 
+use execution_core::{
+    stake::StakeData, transfer::Mint, BlsScalar, JubJubScalar, PublicKey,
+};
+use rusk_abi::{ContractData, ContractId, Session, VM};
+use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
+
+use crate::Theme;
 pub use snapshot::{Balance, GenesisStake, Snapshot};
-use stake_contract_types::StakeData;
-use transfer_contract_types::Mint;
 
 mod http;
 mod snapshot;

@@ -4,23 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bls12_381_bls::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
-use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
+
+use execution_core::StakePublicKey;
+use rusk_abi::dusk::Dusk;
 
 use super::wrapper::Wrapper;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct GenesisStake {
-    pub(crate) address: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
+    pub(crate) address: Wrapper<StakePublicKey, { StakePublicKey::SIZE }>,
     pub amount: Dusk,
     pub eligibility: Option<u64>,
     pub reward: Option<Dusk>,
 }
 
 impl GenesisStake {
-    pub fn address(&self) -> &BlsPublicKey {
+    pub fn address(&self) -> &StakePublicKey {
         &self.address
     }
 }
