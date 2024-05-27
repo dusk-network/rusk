@@ -1,15 +1,3 @@
-[[governance]]
-contract_address = 3
-name = "security_1"
-authority = "22uowXa4bAwa9uehMFoSZjGCDTUSLGhFjCWxrEGHng8kWsEJSQBZxcCa8PeGMdTXWt9XyYNEx4S85XrGwfE8G1iG5j1ptEU4sSu1Hq3QKHsnBEZwTDLNBQeesSfmUadSjfRh"
-broker = "GrVMPSMnnMeuHnG2i1Vgqw1vMMbfd15NNTV7hbSM19Rt"
-
-[[governance]]
-contract_address = 4
-name = "security_2"
-authority = "uazLgN2HtLqaDZCxAtJtkkurQTXyZWXjQYJ3HdSVbpBjGRzMvKaqvpx3MRw8HTv7bTwyviLosEJAa56G66cdNjL4CJdqTUyFHdufzWWfLz9E7eF97tdc6jZsVTiGXGNGf2E"
-broker = "BzmjwPNbgWDKHxkVrGtiHyo18c9UZgtGm246GCAsHk43"
-
 [[balance]]
 address = '5i9RZjT87TLa1BtWXRRoFy3FoMzFHiXT3GWasHdUaxuo3YapUKYeXXiY1yuAeKng2hmxxaYsGNhKhjyrE9KYTSE7'
 seed = 0xdead_beef

@@ -11,11 +11,6 @@ pub struct Map<K, V> {
     data: Vec<(K, V)>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Set<V> {
-    data: Vec<V>,
-}
-
 #[allow(dead_code)]
 impl<K: PartialEq, V: PartialEq> Map<K, V> {
     pub const fn new() -> Self {
@@ -74,41 +69,7 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
     }
 }
 
-#[allow(dead_code)]
-impl<V: PartialEq> Set<V> {
-    pub const fn new() -> Self {
-        Self { data: Vec::new() }
-    }
-
-    pub fn get(&self, value: &V) -> Option<&V> {
-        self.data.iter().find(|&v| v == value)
-    }
-
-    pub fn contains(&self, value: &V) -> bool {
-        self.data.iter().any(|v| v == value)
-    }
-
-    pub fn insert(&mut self, value: V) -> bool {
-        if self.contains(&value) {
-            return false;
-        }
-
-        self.data.push(value);
-        true
-    }
-
-    pub fn remove(&mut self, value: &V) {
-        self.data.retain(|v| v != value);
-    }
-}
-
 impl<K, V> Default for Map<K, V> {
-    fn default() -> Self {
-        Self { data: Vec::new() }
-    }
-}
-
-impl<V> Default for Set<V> {
     fn default() -> Self {
         Self { data: Vec::new() }
     }
@@ -134,27 +95,5 @@ mod test {
 
         assert!(data.get(&1).is_none());
         assert!(data.get(&12).is_none());
-    }
-
-    #[test]
-    fn test_set() {
-        let mut data = Set::<u8>::default();
-
-        assert!(!data.contains(&1), "1 is not in the set");
-        assert!(!data.contains(&12), "12 is not in the set");
-
-        data.insert(12);
-
-        assert!(!data.contains(&1), "1 is still not in the set");
-        assert!(data.contains(&12), "12 is in the set");
-
-        data.remove(&12);
-
-        assert!(!data.contains(&1), "1 is still not in the set");
-        assert!(!data.contains(&12), "12 is removed from the set");
-
-        data.remove(&10);
-
-        assert!(!data.contains(&10), "10 is not in the set");
     }
 }

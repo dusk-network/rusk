@@ -6,13 +6,13 @@
 
 use crate::error::Error;
 use alloc::vec::Vec;
-use contract_helpers::Map;
 use core::ops::Range;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use poseidon_merkle::{Opening, Tree};
 use rusk_abi::PublicInput;
 
+use crate::collection::Map;
 use crate::license_types::{
     LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
 };
