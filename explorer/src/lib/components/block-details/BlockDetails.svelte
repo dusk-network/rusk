@@ -2,7 +2,12 @@
 
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
-  import { AppAnchorButton, DataCard, ListItem } from "$lib/components";
+  import {
+    AppAnchorButton,
+    DataCard,
+    ListItem,
+    Rerender,
+  } from "$lib/components";
   import { ProgressBar } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -104,7 +109,9 @@
         class="block-details__list-timestamp"
         slot="definition"
       >
-        {`${data.header.date.toUTCString()} (${getRelativeTimeString(data.header.date, "long")})`}
+        <Rerender>
+          {`${data.header.date.toUTCString()} (${getRelativeTimeString(data.header.date, "long")})`}
+        </Rerender>
       </time>
     </ListItem>
 

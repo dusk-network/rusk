@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`updates the slot content every second > should render with slot data 1`] = `
+<span>
+  some text
+</span>
+`;

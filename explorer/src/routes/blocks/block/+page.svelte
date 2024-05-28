@@ -1,6 +1,10 @@
 <script>
   import { navigating, page } from "$app/stores";
-  import { BlockDetails, LatestTransactionsCard } from "$lib/components";
+  import {
+    BlockDetails,
+    LatestTransactionsCard,
+    Rerender,
+  } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
   import { createDataStore } from "$lib/dusk/svelte-stores";
@@ -34,13 +38,15 @@
     <BlockDetails on:retry={getBlock} {data} {error} loading={isLoading} />
   </div>
   <div class="block__transactions">
-    <LatestTransactionsCard
-      on:retry={getBlock}
-      txns={data?.transactions.data}
-      {error}
-      loading={isLoading}
-      isOnHomeScreen={false}
-    />
+    <Rerender>
+      <LatestTransactionsCard
+        on:retry={getBlock}
+        txns={data?.transactions.data}
+        {error}
+        loading={isLoading}
+        isOnHomeScreen={false}
+      />
+    </Rerender>
   </div>
 </section>
 

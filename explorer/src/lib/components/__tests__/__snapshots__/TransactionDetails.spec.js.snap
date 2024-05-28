@@ -158,6 +158,8 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           slot="definition"
         >
           Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>
@@ -522,6 +524,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
           slot="definition"
         >
           Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>
