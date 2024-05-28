@@ -15,8 +15,10 @@
 {#if navigation}
   <nav class={classes}>
     {#each navigation as item, index (`${item.title}-${index}`)}
-      <AppAnchor className="dusk-nav-list__link" href={item.link}
-        >{item.title}</AppAnchor
+      <AppAnchor
+        onSurface={false}
+        className="dusk-nav-list__link"
+        href={item.link}>{item.title}</AppAnchor
       >
     {/each}
   </nav>

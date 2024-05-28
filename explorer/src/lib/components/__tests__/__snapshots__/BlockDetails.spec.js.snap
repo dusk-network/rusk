@@ -86,7 +86,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
           href="/some-base-path/blocks/block?id=07b74b35c2c7cf8f41426cd0870bafa1a2c7adee3fdd876643548096186fc4cb"
         >
           <svg
@@ -112,7 +112,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
          
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
           href="/some-base-path/blocks/block?id=6011556208a85e6001bd01ccbf936486b91318a7f6cbcf7ab810adf6fae34204"
         >
           <svg
