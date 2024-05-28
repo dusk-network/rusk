@@ -6,13 +6,10 @@ help: ## Display this help screen
 all: ## Build the circuits
 	@cargo build --release
 
-circuits: ## Compress and store license circuit
-	@cargo run --release --features store
-
 test: ## Run the transfer circuits tests
-	@cargo test --release --features rusk-profile
+	@cargo test --release
 
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
 
-.PHONY: all circuits test help
+.PHONY: all test help
