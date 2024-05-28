@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use bls12_381_bls::SecretKey;
+use execution_core::{BlsSigError, StakeSecretKey};
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
@@ -29,7 +29,7 @@ pub struct RoundUpdate {
 
     // This provisioner consensus keys
     pub pubkey_bls: PublicKey,
-    pub secret_key: SecretKey,
+    pub secret_key: StakeSecretKey,
 
     seed: Seed,
     hash: [u8; 32],
@@ -41,7 +41,7 @@ pub struct RoundUpdate {
 impl RoundUpdate {
     pub fn new(
         pubkey_bls: PublicKey,
-        secret_key: SecretKey,
+        secret_key: StakeSecretKey,
         mrb_header: &Header,
         base_timeouts: TimeoutSet,
     ) -> Self {
@@ -75,15 +75,15 @@ pub enum StepSigError {
     #[error("Failed to reach a quorum")]
     VoteSetTooSmall,
     #[error("Verification error {0}")]
-    VerificationFailed(bls12_381_bls::Error),
+    VerificationFailed(BlsSigError),
     #[error("Empty Apk instance")]
     EmptyApk,
     #[error("Invalid Type")]
     InvalidType,
 }
 
-impl From<bls12_381_bls::Error> for StepSigError {
-    fn from(inner: bls12_381_bls::Error) -> Self {
+impl From<BlsSigError> for StepSigError {
+    fn from(inner: BlsSigError) -> Self {
         Self::VerificationFailed(inner)
     }
 }
@@ -92,7 +92,7 @@ impl From<bls12_381_bls::Error> for StepSigError {
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
-    InvalidSignature(bls12_381_bls::Error),
+    InvalidSignature(BlsSigError),
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
     InvalidValidation(QuorumType),
@@ -116,8 +116,8 @@ impl From<StepSigError> for ConsensusError {
         Self::InvalidValidationStepVotes(e)
     }
 }
-impl From<bls12_381_bls::Error> for ConsensusError {
-    fn from(e: bls12_381_bls::Error) -> Self {
+impl From<BlsSigError> for ConsensusError {
+    fn from(e: BlsSigError) -> Self {
         Self::InvalidSignature(e)
     }
 }

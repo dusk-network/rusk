@@ -1,4 +1,4 @@
-SUBDIRS := stake-types transfer-types alice bob transfer stake license
+SUBDIRS := alice bob license transfer stake
 
 all: $(SUBDIRS) ## Build all the contracts
 

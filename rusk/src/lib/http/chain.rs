@@ -107,7 +107,7 @@ impl RuskNode {
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
-        let tx = phoenix_core::Transaction::from_slice(tx)
+        let tx = execution_core::Transaction::from_slice(tx)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
             .into();
         let tx_message = Message::new_transaction(tx);

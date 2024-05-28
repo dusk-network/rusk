@@ -7,7 +7,7 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use phoenix_core::PublicKey;
+use execution_core::PublicKey;
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
 

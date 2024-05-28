@@ -10,15 +10,15 @@ pub mod common;
 use crate::common::*;
 use std::collections::HashMap;
 
-use dusk_bls12_381::BlsScalar;
 use std::path::Path;
 use std::sync::{mpsc, Arc, RwLock};
 
 use dusk_wallet_core::{self as wallet};
+use execution_core::{
+    transfer::TreeLeaf, BlsScalar, Note, PublicKey, SecretKey,
+};
 use ff::Field;
 use parking_lot::RwLockWriteGuard;
-use phoenix_core::transaction::TreeLeaf;
-use phoenix_core::{Note, PublicKey, SecretKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::chain::{Rusk, RuskTip};

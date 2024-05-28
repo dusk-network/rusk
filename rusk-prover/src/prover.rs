@@ -21,8 +21,7 @@ use rand::rngs::OsRng;
 use rand::{rngs::StdRng, SeedableRng};
 
 use dusk_plonk::prelude::*;
-use jubjub_schnorr::Signature;
-use phoenix_core::{Crossover, Fee};
+use execution_core::{Crossover, Fee, SchnorrSignature};
 
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuit,

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::fmt;
-use phoenix_core::Error as PhoenixError;
+use execution_core::PhoenixError;
 
 #[derive(Debug, Clone)]
 pub enum Error {

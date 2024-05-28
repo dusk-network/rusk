@@ -8,10 +8,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use dusk_bls12_381::BlsScalar;
 use dusk_wallet_core::{self as wallet, Store};
+use execution_core::{BlsScalar, PublicKey, SecretKey};
 use ff::Field;
-use phoenix_core::{PublicKey, SecretKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};

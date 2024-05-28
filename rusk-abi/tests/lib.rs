@@ -11,13 +11,13 @@ use std::sync::OnceLock;
 
 use rand_core::OsRng;
 
-use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_plonk::prelude::*;
+use execution_core::{
+    BlsScalar, NotePublicKey, NoteSecretKey, PublicKey, SecretKey,
+    StakePublicKey, StakeSecretKey,
+};
 use ff::Field;
-use jubjub_schnorr::{PublicKey as NotePublicKey, SecretKey as NoteSecretKey};
-use phoenix_core::{PublicKey, SecretKey};
 use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};

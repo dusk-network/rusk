@@ -6,14 +6,14 @@
 
 pub mod common;
 
-use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
-use phoenix_core::{PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+
+use execution_core::{
+    stake::StakeData, PublicKey, SecretKey, StakePublicKey, StakeSecretKey,
+};
 use rusk_abi::dusk::dusk;
-use rusk_abi::Error;
-use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
-use stake_contract_types::StakeData;
+use rusk_abi::{Error, STAKE_CONTRACT, TRANSFER_CONTRACT};
 
 use crate::common::assert::assert_event;
 use crate::common::init::instantiate;

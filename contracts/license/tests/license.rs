@@ -6,30 +6,31 @@
 
 extern crate alloc;
 
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
-use dusk_plonk::prelude::*;
-use dusk_poseidon::sponge;
-use phoenix_core::{PublicKey, SecretKey, StealthAddress, ViewKey};
 use std::ops::Range;
 use std::sync::mpsc;
 
+use dusk_plonk::prelude::*;
+use dusk_poseidon::sponge;
+use ff::Field;
 use poseidon_merkle::Opening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rkyv::{check_archived_root, Deserialize, Infallible};
+use zk_citadel::license::{License, Request};
+use zk_citadel::utils::CitadelUtils;
+
+use execution_core::{
+    BlsScalar, JubJubAffine, PublicKey, SecretKey, StealthAddress, ViewKey,
+    GENERATOR_EXTENDED,
+};
+use rusk_abi::{ContractData, ContractId, Session};
+use rusk_profile::get_common_reference_string;
 
 #[path = "../src/license_types.rs"]
 mod license_types;
 use license_types::*;
 
 use license_circuits::LicenseCircuit;
-
-use ff::Field;
-use rusk_abi::{ContractData, ContractId, Session};
-use rusk_profile::get_common_reference_string;
-use zk_citadel::license::{License, Request};
-use zk_citadel::utils::CitadelUtils;
 
 const LICENSE_CONTRACT_ID: ContractId = {
     let mut bytes = [0u8; 32];

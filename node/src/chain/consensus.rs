@@ -53,7 +53,7 @@ pub(crate) struct Task {
     task_id: u64,
 
     /// Loaded Consensus keys
-    pub keys: (bls12_381_bls::SecretKey, node_data::bls::PublicKey),
+    pub keys: (execution_core::StakeSecretKey, node_data::bls::PublicKey),
 }
 
 impl Task {

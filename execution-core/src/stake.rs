@@ -4,11 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Types used by Dusk's stake contract.
+
+extern crate alloc;
+use alloc::vec::Vec;
+
 use bytecheck::CheckBytes;
+use dusk_bytes::Serializable;
 use rkyv::{Archive, Deserialize, Serialize};
 
-/// Block height type alias
-pub type BlockHeight = u64;
+use crate::{
+    BlockHeight, BlsScalar, StakePublicKey, StakeSignature, StealthAddress,
+};
 
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
@@ -18,6 +25,115 @@ pub const EPOCH: u64 = 2160;
 pub const fn next_epoch(block_height: BlockHeight) -> u64 {
     let to_next_epoch = EPOCH - (block_height % EPOCH);
     block_height + to_next_epoch
+}
+
+/// Stake a value on the stake contract.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(bytecheck::CheckBytes))]
+pub struct Stake {
+    /// Public key to which the stake will belong.
+    pub public_key: StakePublicKey,
+    /// Signature belonging to the given public key.
+    pub signature: StakeSignature,
+    /// Value to stake.
+    pub value: u64,
+    /// Proof of the `STCT` circuit.
+    pub proof: Vec<u8>,
+}
+
+impl Stake {
+    const MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
+    /// Return the digest to be signed in the `stake` function of the stake
+    /// contract.
+    #[must_use]
+    pub fn signature_message(
+        counter: u64,
+        value: u64,
+    ) -> [u8; Self::MESSAGE_SIZE] {
+        let mut bytes = [0u8; Self::MESSAGE_SIZE];
+
+        bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
+        bytes[u64::SIZE..].copy_from_slice(&value.to_bytes());
+
+        bytes
+    }
+}
+
+/// Unstake a value from the stake contract.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Unstake {
+    /// Public key to unstake.
+    pub public_key: StakePublicKey,
+    /// Signature belonging to the given public key.
+    pub signature: StakeSignature,
+    /// Note to withdraw to.
+    pub note: Vec<u8>, // todo: not sure it will stay as Vec
+    /// A proof of the `WFCT` circuit.
+    pub proof: Vec<u8>,
+}
+
+impl Unstake {
+    /// Signature message used for [`Unstake`].
+    pub fn signature_message<T>(counter: u64, note: T) -> Vec<u8>
+    where
+        T: AsRef<[u8]>,
+    {
+        let mut vec = Vec::new();
+
+        vec.extend_from_slice(&counter.to_bytes());
+        vec.extend_from_slice(note.as_ref());
+
+        vec
+    }
+}
+
+/// Withdraw the accumulated reward.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Withdraw {
+    /// Public key to withdraw the rewards.
+    pub public_key: StakePublicKey,
+    /// Signature belonging to the given public key.
+    pub signature: StakeSignature,
+    /// The address to mint to.
+    pub address: StealthAddress,
+    /// A nonce to prevent replay.
+    pub nonce: BlsScalar,
+}
+
+impl Withdraw {
+    const MESSAGE_SIZE: usize =
+        u64::SIZE + StealthAddress::SIZE + BlsScalar::SIZE;
+
+    /// Signature message used for [`Withdraw`].
+    #[must_use]
+    pub fn signature_message(
+        counter: u64,
+        address: StealthAddress,
+        nonce: BlsScalar,
+    ) -> [u8; Self::MESSAGE_SIZE] {
+        let mut bytes = [0u8; Self::MESSAGE_SIZE];
+
+        bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
+        bytes[u64::SIZE..u64::SIZE + StealthAddress::SIZE]
+            .copy_from_slice(&address.to_bytes());
+        bytes[u64::SIZE + StealthAddress::SIZE..]
+            .copy_from_slice(&nonce.to_bytes());
+
+        bytes
+    }
+}
+
+/// Event emitted after a stake contract operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakingEvent {
+    /// Public key which is relevant to the event.
+    pub public_key: StakePublicKey,
+    /// Value of the relevant operation, be it stake, unstake, withdrawal,
+    /// reward, or slash.
+    pub value: u64,
 }
 
 /// The representation of a public key's stake.

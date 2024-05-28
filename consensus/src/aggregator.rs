@@ -7,6 +7,7 @@
 use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
+use execution_core::{BlsSigError, BlsSignature};
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
@@ -31,11 +32,11 @@ pub enum AggregatorError {
     #[error("Vote from member not in the committee")]
     NotCommitteeMember,
     #[error("Invalid signature to aggregate {0}")]
-    InvalidSignature(bls12_381_bls::Error),
+    InvalidSignature(BlsSigError),
 }
 
-impl From<bls12_381_bls::Error> for AggregatorError {
-    fn from(value: bls12_381_bls::Error) -> Self {
+impl From<BlsSigError> for AggregatorError {
+    fn from(value: BlsSigError) -> Self {
         Self::InvalidSignature(value)
     }
 }
@@ -152,12 +153,12 @@ impl fmt::Display for Aggregator {
 
 #[derive(Default)]
 pub(super) struct AggrSignature {
-    data: Option<bls12_381_bls::Signature>,
+    data: Option<BlsSignature>,
 }
 
 impl AggrSignature {
-    pub fn add(&mut self, data: &[u8; 48]) -> Result<(), bls12_381_bls::Error> {
-        let sig = bls12_381_bls::Signature::from_bytes(data)?;
+    pub fn add(&mut self, data: &[u8; 48]) -> Result<(), BlsSigError> {
+        let sig = BlsSignature::from_bytes(data)?;
 
         let aggr_sig = match self.data {
             Some(data) => data.aggregate(&[sig]),
@@ -182,8 +183,8 @@ mod tests {
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
-    use bls12_381_bls::{PublicKey, SecretKey};
     use dusk_bytes::DeserializableSlice;
+    use execution_core::{StakePublicKey, StakeSecretKey};
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
     use node_data::message::StepMessage;
@@ -216,7 +217,7 @@ mod tests {
             .iter()
             .map(|hex| hex::decode(hex).expect("valid hex"))
             .map(|data| {
-                SecretKey::from_slice(&data[..]).expect("valid secret key")
+                StakeSecretKey::from_slice(&data[..]).expect("valid secret key")
             })
             .collect();
 
@@ -237,8 +238,9 @@ mod tests {
         mrb_header.height = 0;
 
         for secret_key in sks {
-            let pubkey_bls =
-                node_data::bls::PublicKey::new(PublicKey::from(&secret_key));
+            let pubkey_bls = node_data::bls::PublicKey::new(
+                StakePublicKey::from(&secret_key),
+            );
 
             p.add_member_with_value(pubkey_bls.clone(), 1000 * DUSK);
 

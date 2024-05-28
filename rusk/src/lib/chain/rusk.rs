@@ -14,13 +14,13 @@ use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
-use bls12_381_bls::PublicKey as StakePublicKey;
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
+use execution_core::{
+    stake::StakeData, BlsScalar, StakePublicKey,
+    Transaction as PhoenixTransaction,
+};
 use node_data::ledger::{SpentTransaction, Transaction};
-use phoenix_core::transaction::StakeData;
-use phoenix_core::Transaction as PhoenixTransaction;
 use rusk_abi::dusk::Dusk;
 use rusk_abi::{
     CallReceipt, ContractError, Error as PiecrustError, Event, Session,

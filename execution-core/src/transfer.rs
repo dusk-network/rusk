@@ -4,23 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Types used for transactions with Dusk's transfer contract.
-
-#![no_std]
-#![deny(missing_docs)]
-#![deny(clippy::pedantic)]
+//! Types used by Dusk's transfer contract.
 
 extern crate alloc;
 use alloc::vec::Vec;
 
-use dusk_bls12_381::BlsScalar;
-
 use bytecheck::CheckBytes;
-use phoenix_core::{Note, StealthAddress};
 use rkyv::{Archive, Deserialize, Serialize};
+
+use crate::{BlsScalar, Note, StealthAddress};
 
 /// Module Id
 pub type ModuleId = [u8; 32];
+
+/// The depth of the transfer tree.
+pub const TRANSFER_TREE_DEPTH: usize = 17;
 
 /// A leaf of the transfer tree.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]

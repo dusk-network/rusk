@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use blake2b_simd::{Params, State};
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
+use execution_core::BlsScalar;
 
 /// Hashes scalars and arbitrary slices of bytes using Blake2b-256, returning
 /// a valid [`BlsScalar`].

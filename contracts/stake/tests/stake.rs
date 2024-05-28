@@ -6,30 +6,28 @@
 
 pub mod common;
 
-use crate::common::assert::assert_event;
-use crate::common::init::instantiate;
-use crate::common::utils::*;
-use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use ff::Field;
-use phoenix_core::{
-    Fee, Note, Ownable, PublicKey, SecretKey, Transaction, ViewKey,
-};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+
+use execution_core::stake::{Stake, StakeData, Unstake, Withdraw};
+use execution_core::{
+    BlsScalar, Fee, JubJubScalar, Note, Ownable, PublicKey, SecretKey,
+    StakePublicKey, StakeSecretKey, Transaction, ViewKey,
+    GENERATOR_NUMS_EXTENDED,
+};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::STAKE_CONTRACT;
-use stake_contract_types::{
-    stake_signature_message, unstake_signature_message,
-    withdraw_signature_message, Stake, StakeData, Unstake, Withdraw,
-};
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
     ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
     SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
 };
+
+use crate::common::assert::assert_event;
+use crate::common::init::instantiate;
+use crate::common::utils::*;
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
 const POINT_LIMIT: u64 = 0x100_000_000;
@@ -116,7 +114,7 @@ fn stake_withdraw_unstake() {
         .prove(rng, &stct_circuit)
         .expect("Proving STCT circuit should succeed");
 
-    let stake_digest = stake_signature_message(0, crossover_value);
+    let stake_digest = Stake::signature_message(0, crossover_value);
     let stake_sig = stake_sk.sign(&stake_pk, &stake_digest);
 
     // Fashion a Stake struct
@@ -314,7 +312,7 @@ fn stake_withdraw_unstake() {
 
     let withdraw_nonce = BlsScalar::random(&mut *rng);
 
-    let withdraw_digest = withdraw_signature_message(
+    let withdraw_digest = Withdraw::signature_message(
         stake_data.counter,
         withdraw_address,
         withdraw_nonce,
@@ -519,8 +517,10 @@ fn stake_withdraw_unstake() {
         .prove(rng, &wfct_circuit)
         .expect("Proving WFCT circuit should succeed");
 
-    let unstake_digest =
-        unstake_signature_message(stake_data.counter, withdraw_note.to_bytes());
+    let unstake_digest = Unstake::signature_message(
+        stake_data.counter,
+        withdraw_note.to_bytes(),
+    );
     let unstake_sig = stake_sk.sign(&stake_pk, unstake_digest.as_slice());
 
     let unstake = Unstake {
