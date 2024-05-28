@@ -7,6 +7,8 @@ members = [
     "contract-helpers",
     "contracts/alice",
     "contracts/bob",
+    "contracts/moonlight",
+    "contracts/moonlight-types",
     "contracts/stake",
     "contracts/stake-types",
     "contracts/governance",
