@@ -15,6 +15,8 @@ use rusk_profile::Circuit as CircuitProfile;
 
 use tracing::{info, warn};
 
+mod circuits;
+
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
@@ -120,6 +122,12 @@ pub fn exec(keep_circuits: bool) -> Result<(), Box<dyn std::error::Error>> {
     // See also: https://github.com/dusk-network/rusk/issues/767
     Lazy::force(&PUB_PARAMS);
 
+    // cache all circuit descriptions, check if they changed
+    circuits::cache_all()?;
+
+    // create a list of the circuit names under whish they are stored
+    // it is also possible to fetch a circuit by its ID, however that ID changes
+    // when the circuit changes.
     let circuits = circuits_from_names(&[
         "SendToContractTransparentCircuit",
         "WithdrawFromTransparentCircuit",
