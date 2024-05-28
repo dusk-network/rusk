@@ -209,6 +209,8 @@ exports[`Transaction Details > should render the Transaction details page and qu
             slot="definition"
           >
             Tue, 16 Apr 2024 06:39:09 GMT (last month)
+            
+            <!--&lt;Rerender&gt;-->
              
           </time>
         </dd>

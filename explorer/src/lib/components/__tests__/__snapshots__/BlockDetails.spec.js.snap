@@ -167,6 +167,8 @@ exports[`Block Details > renders the Block Details component 1`] = `
           slot="definition"
         >
           Tue, 16 Apr 2024 20:07:02 GMT (last month)
+          
+          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>

@@ -1,7 +1,13 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { AppAnchor, DataCard, DataGuard, ListItem } from "$lib/components";
+  import {
+    AppAnchor,
+    DataCard,
+    DataGuard,
+    ListItem,
+    Rerender,
+  } from "$lib/components";
   import { Badge, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -120,7 +126,9 @@
         class="transaction-details__list-timestamp"
         slot="definition"
       >
-        {`${data.date.toUTCString()} (${getRelativeTimeString(data.date, "long")})`}
+        <Rerender>
+          {`${data.date.toUTCString()} (${getRelativeTimeString(data.date, "long")})`}
+        </Rerender>
       </time>
     </ListItem>
 

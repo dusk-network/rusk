@@ -78,6 +78,8 @@ exports[`Block Details > should render the Block Details page and query the nece
       <!--&lt;Card&gt;-->
       <!--&lt;DataCard&gt;-->
       <!--&lt;LatestTransactionsCard&gt;-->
+      
+      <!--&lt;Rerender&gt;-->
     </div>
   </section>
   <!--&lt;+page&gt;-->
@@ -257,6 +259,8 @@ exports[`Block Details > should render the Block Details page and query the nece
               slot="definition"
             >
               Tue, 16 Apr 2024 20:07:02 GMT (last month)
+              
+              <!--&lt;Rerender&gt;-->
                
             </time>
           </dd>
@@ -757,6 +761,8 @@ exports[`Block Details > should render the Block Details page and query the nece
       <!--&lt;Card&gt;-->
       <!--&lt;DataCard&gt;-->
       <!--&lt;LatestTransactionsCard&gt;-->
+      
+      <!--&lt;Rerender&gt;-->
     </div>
   </section>
   <!--&lt;+page&gt;-->
