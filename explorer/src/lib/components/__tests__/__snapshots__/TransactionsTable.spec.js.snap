@@ -69,9 +69,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+            href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
           >
-            3c6e4018cf...308e07bd2d
+            904ad41723...1b50b2dc54
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -79,7 +79,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -103,7 +103,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             LIMIT:
           </b>
            
-          500,000,000
+          50,000,000
         </td>
         
         <!--&lt;TableCell&gt;-->
@@ -114,7 +114,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000290766 Dusk
+            0.000215552 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -158,9 +158,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=807d4f596ea083215bb38decf8b7e824e3efae734d6a43c2549717e57d04cf02"
+            href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
           >
-            40d3e59a9b...5e8ade4d3b
+            6971e17e16...d38530d800
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -168,7 +168,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -192,7 +192,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             LIMIT:
           </b>
            
-          500,000,000
+          50,000,000
         </td>
         
         <!--&lt;TableCell&gt;-->
@@ -203,7 +203,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000290053 Dusk
+            0.000215617 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -247,9 +247,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=744b1d303f71e76e530b0543c284f65a30a26b75eab194d473c59d7fbd676a0b"
+            href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
           >
-            ea86c56ffa...8914074fe3
+            c28cfe813e...bbca988fed
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -257,7 +257,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -281,7 +281,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             LIMIT:
           </b>
            
-          500,000,000
+          50,000,000
         </td>
         
         <!--&lt;TableCell&gt;-->
@@ -292,7 +292,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000290219 Dusk
+            0.000214413 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -336,9 +336,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=34b4404adc0d286e62ddb9bf80429d4491b61de3f5e4c54975724a6d248d8e0b"
+            href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
           >
-            ea86c56ffa...8914074fe3
+            e4a232262c...4db4b3cdec
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -346,7 +346,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -381,7 +381,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.00029046 Dusk
+            0.000291769 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -425,9 +425,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=88ac1818eb5aeee47a1356fe5d75726943c12ea1fb8ed23efb37c847a318ed0e"
+            href="/some-base-path/transactions/transaction?id=4fa6e913c083aa595530b1f6c010c7e5a58121307c991ea6782f9e9e4dd5510d"
           >
-            a85a0f5cc2...f0bb827312
+            ea1cfc01b6...ce792d0e8a
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -435,7 +435,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -470,7 +470,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000291263 Dusk
+            0.000290764 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -514,9 +514,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=3e430f7bbc123585a21b0689331d77a8c9e3da9b75ccc463aaf22d8a581e5507"
+            href="/some-base-path/transactions/transaction?id=d1a7928a435021d87ea3649bff57c8154fc7b5c6c68081a61fea5779ccdb2e04"
           >
-            646bd535ae...67c1cb0906
+            e4c3e5f688...50ebdcbff4
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -524,7 +524,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -559,7 +559,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000290735 Dusk
+            0.000291961 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -603,9 +603,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=776c0c54ccdd485fb32d6562b2b8b10f3cb283465da6eecba861f384725e3f0b"
+            href="/some-base-path/transactions/transaction?id=004ca8683c315b9270e04d3768dfb58fb0f65d92a9469ca31a5d97cff9718b06"
           >
-            fbcda951c6...4bec844f78
+            10cd59c725...eed7adc1f8
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -613,7 +613,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            18 hours ago
           </small>
         </td>
         
@@ -648,7 +648,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000289627 Dusk
+            0.000292039 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -692,9 +692,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=e022261204125d87ad99d404b73d0ca3ce4c0985e50f08b15a1619248ae0f702"
+            href="/some-base-path/transactions/transaction?id=b5a77063e45dd90b97b2c30b4cd670fbf04ae60c4b8e3ea9fd0d0b4496253a05"
           >
-            a90821aca4...11467eb9c6
+            31bcdcbf06...347aac19f3
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -702,7 +702,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            19 hours ago
           </small>
         </td>
         
@@ -737,7 +737,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.00029061 Dusk
+            0.000290406 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -781,9 +781,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=fd9af8e161863389c2c52c900dc3881c754c7d2549f865df95ccfa0f57fe5b04"
+            href="/some-base-path/transactions/transaction?id=b263d9d594439be92bb9349bd97f55a05060956419f2f4a32925639d80b06e0b"
           >
-            4db9e793b1...e2ab163e74
+            deb6807ba2...ecf6f1b837
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -791,7 +791,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            19 hours ago
           </small>
         </td>
         
@@ -826,7 +826,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000291347 Dusk
+            0.000291537 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>
@@ -870,9 +870,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
-            href="/some-base-path/transactions/transaction?id=65be1885cbbf9545bc3b0f3c56b34da79672f2be063d81a5d4f78b2ca5c18101"
+            href="/some-base-path/transactions/transaction?id=b4525cb82f5cd56fcf8ceb2eb30f647d2c3567e82abb8265dd12daf5275d7709"
           >
-            47c9f1349f...e7ce5103db
+            62fbd83edb...1b54a5ad89
           </a>
           <!--&lt;Anchor&gt;-->
           <!--&lt;AppAnchor&gt;-->
@@ -880,7 +880,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <small
             class="transaction__time"
           >
-            last month
+            19 hours ago
           </small>
         </td>
         
@@ -915,7 +915,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           <span
             class="dusk-badge dusk-badge--variant-alt"
           >
-            0.000290416 Dusk
+            0.000291361 Dusk
           </span>
           <!--&lt;Badge&gt;-->
         </td>

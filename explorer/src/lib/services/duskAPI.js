@@ -14,8 +14,6 @@ import {
 import { failureToRejection } from "$lib/dusk/http";
 
 import {
-  transformAPIBlock,
-  transformAPITransaction,
   transformBlock,
   transformSearchResult,
   transformTransaction,
@@ -23,11 +21,11 @@ import {
 
 import * as gqlQueries from "./gql-queries";
 
-/** @type {(blocks: APIBlock[]) => Block[]} */
-const transformAPIBlocks = mapWith(transformAPIBlock);
+/** @type {(blocks: GQLBlock[]) => Block[]} */
+const transformBlocks = mapWith(transformBlock);
 
-/** @type {(transactions: APITransaction[]) => Transaction[]} */
-const transformTransactions = mapWith(transformAPITransaction);
+/** @type {(transactions: GQLTransaction[]) => Transaction[]} */
+const transformTransactions = mapWith(transformTransaction);
 
 /** @type {(s: string) => string} */
 const ensureTrailingSlash = (s) => (s.endsWith("/") ? s : `${s}/`);
@@ -121,25 +119,27 @@ const duskAPI = {
 
   /**
    * @param {string} node
+   * @param {number} amount
    * @returns {Promise<Block[]>}
    */
-  getBlocks(node) {
-    return apiGet("blocks", { node })
-      .then(getPath("data.blocks"))
-      .then(transformAPIBlocks);
+  getBlocks(node, amount) {
+    return gqlGet(node, gqlQueries.getBlocksQueryInfo(amount))
+      .then(getKey("blocks"))
+      .then(transformBlocks);
   },
 
   /**
    * @param {string} node
+   * @param {number} amount
    * @returns {Promise<ChainInfo>}
    */
-  getLatestChainInfo(node) {
-    return apiGet("latest", { node })
-      .then(getKey("data"))
-      .then(({ blocks, transactions }) => ({
-        blocks: transformAPIBlocks(blocks),
+  getLatestChainInfo(node, amount) {
+    return gqlGet(node, gqlQueries.getLatestChainQueryInfo(amount)).then(
+      ({ blocks, transactions }) => ({
+        blocks: transformBlocks(blocks),
         transactions: transformTransactions(transactions),
-      }));
+      })
+    );
   },
 
   /** @returns {Promise<MarketData>} */
@@ -192,11 +192,12 @@ const duskAPI = {
 
   /**
    * @param {string} node
+   * @param {number} amount
    * @returns {Promise<Transaction[]>}
    */
-  getTransactions(node) {
-    return apiGet("transactions", { node })
-      .then(getKey("data"))
+  getTransactions(node, amount) {
+    return gqlGet(node, gqlQueries.getTransactionsQueryInfo(amount))
+      .then(getKey("transactions"))
       .then(transformTransactions);
   },
 

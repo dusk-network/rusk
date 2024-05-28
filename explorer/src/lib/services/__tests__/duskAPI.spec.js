@@ -4,8 +4,6 @@ import { skip, updatePathIn } from "lamb";
 import * as mockData from "$lib/mock-data";
 
 import {
-  transformAPIBlock,
-  transformAPITransaction,
   transformBlock,
   transformSearchResult,
   transformTransaction,
@@ -161,32 +159,49 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the list of blocks", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks));
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlocks));
 
-    await expect(duskAPI.getBlocks(node)).resolves.toStrictEqual(
-      mockData.apiBlocks.data.blocks.map(transformAPIBlock)
+    await expect(duskAPI.getBlocks(node, 100)).resolves.toStrictEqual(
+      mockData.gqlBlocks.blocks.map(transformBlock)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      getAPIExpectedURL("blocks"),
-      apiGetOptions
-    );
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-amount": 100,
+        },
+        "method": "POST",
+      }
+    `);
   });
 
   it("should expose a method to retrieve the latest chain info", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiLatestChainInfo));
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlLatestChainInfo));
 
-    await expect(duskAPI.getLatestChainInfo(node)).resolves.toStrictEqual({
-      blocks: mockData.apiLatestChainInfo.data.blocks.map(transformAPIBlock),
-      transactions: mockData.apiLatestChainInfo.data.transactions.map(
-        transformAPITransaction
-      ),
+    await expect(duskAPI.getLatestChainInfo(node, 15)).resolves.toStrictEqual({
+      blocks: mockData.gqlLatestChainInfo.blocks.map(transformBlock),
+      transactions:
+        mockData.gqlLatestChainInfo.transactions.map(transformTransaction),
     });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      getAPIExpectedURL("latest"),
-      apiGetOptions
-    );
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) {\\n      blocks(last: $amount) {...BlockInfo},\\n      transactions(last: $amount) {...TransactionInfo}\\n    }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-amount": 15,
+        },
+        "method": "POST",
+      }
+    `);
   });
 
   it("should expose a method to retrieve the market data", async () => {
@@ -279,16 +294,25 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the list of transactions", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiTransactions));
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlTransactions));
 
-    await expect(duskAPI.getTransactions(node)).resolves.toStrictEqual(
-      mockData.apiTransactions.data.map(transformAPITransaction)
+    await expect(duskAPI.getTransactions(node, 100)).resolves.toStrictEqual(
+      mockData.gqlTransactions.transactions.map(transformTransaction)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      getAPIExpectedURL("transactions"),
-      apiGetOptions
-    );
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id\\n  }\\n}\\n\\n    query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-amount": 100,
+        },
+        "method": "POST",
+      }
+    `);
   });
 
   it("should return a rejected promise, with the original Response in the error's `cause` property, for a 4xx error", async () => {
@@ -313,19 +337,19 @@ describe("duskAPI", () => {
   });
 
   it("should be able to make the correct request whether the endpoint in env vars ends with a trailing slash or not", () => {
-    const expectedURL = new URL(`http://example.com/blocks?node=${node}`);
+    const expectedURL = new URL("http://example.com/quote?");
 
     fetchSpy
-      .mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks))
-      .mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks));
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData))
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData));
 
     vi.stubEnv(endpointEnvName, "http://example.com");
 
-    duskAPI.getBlocks(node);
+    duskAPI.getMarketData();
 
     vi.stubEnv(endpointEnvName, "http://example.com/");
 
-    duskAPI.getBlocks(node);
+    duskAPI.getMarketData();
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy).toHaveBeenNthCalledWith(1, expectedURL, apiGetOptions);

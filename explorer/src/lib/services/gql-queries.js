@@ -56,6 +56,27 @@ export const getBlockQueryInfo = (id) => ({
   variables: { id },
 });
 
+/** @param {number} amount */
+export const getBlocksQueryInfo = (amount) => ({
+  query: `
+    ${blockFragment}
+    query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }
+  `,
+  variables: { amount },
+});
+
+/** @param {number} amount */
+export const getLatestChainQueryInfo = (amount) => ({
+  query: `
+    ${blockFragment}
+    query($amount: Int!) {
+      blocks(last: $amount) {...BlockInfo},
+      transactions(last: $amount) {...TransactionInfo}
+    }
+  `,
+  variables: { amount },
+});
+
 /** @param {string} id */
 export const getTransactionQueryInfo = (id) => ({
   query: `
@@ -63,6 +84,15 @@ export const getTransactionQueryInfo = (id) => ({
     query($id: String!) { tx(hash: $id) {...TransactionInfo} }
   `,
   variables: { id },
+});
+
+/** @param {number} amount */
+export const getTransactionsQueryInfo = (amount) => ({
+  query: `
+    ${transactionFragment}
+    query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }
+  `,
+  variables: { amount },
 });
 
 /** @param {string} id */

@@ -1,16 +1,23 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { apiTransactions } from "$lib/mock-data";
-import { transformAPITransaction } from "$lib/chain-info";
-import { TransactionsTable } from "..";
 import { mapWith, slice } from "lamb";
 
-const transformAPITransactions = mapWith(transformAPITransaction);
-const data = slice(transformAPITransactions(apiTransactions.data), 0, 10);
+import { gqlTransactions } from "$lib/mock-data";
+import { transformTransaction } from "$lib/chain-info";
+
+import { TransactionsTable } from "..";
 
 describe("Transactions Table", () => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(2024, 4, 20));
+  vi.setSystemTime(new Date(2024, 4, 30));
+
+  const transformTransactions = mapWith(transformTransaction);
+  const data = slice(
+    transformTransactions(gqlTransactions.transactions),
+    0,
+    10
+  );
+
   const baseProps = {
     data: data,
   };

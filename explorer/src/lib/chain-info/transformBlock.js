@@ -11,7 +11,7 @@ const transformBlock = (v) => ({
     feespaid: v.fees,
     hash: v.header.hash,
     height: v.header.height,
-    nextblockhash: v.header.nextBlockHash,
+    nextblockhash: v.header.nextBlockHash ?? "",
     prevblockhash: v.header.prevBlockHash,
     reward: v.reward,
     seed: v.header.seed,

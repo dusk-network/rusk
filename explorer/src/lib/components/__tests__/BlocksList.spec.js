@@ -10,11 +10,11 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const baseProps = { data: transformBlock(gqlBlock.block) };
-
 describe("Blocks List", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));
+
+  const baseProps = { data: transformBlock(gqlBlock.block) };
 
   afterEach(cleanup);
 

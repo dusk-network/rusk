@@ -5,7 +5,7 @@ type GQLBlock = {
     gasLimit: number;
     hash: string;
     height: number;
-    nextBlockHash: string;
+    nextBlockHash?: string;
     prevBlockHash: string;
     seed: string;
     stateHash: string;
@@ -18,6 +18,11 @@ type GQLBlock = {
 type GQLCallData = {
   contractId: string;
   fnName: string;
+};
+
+type GQLChainInfo = {
+  blocks: GQLBlock[];
+  transactions: GQLTransaction[];
 };
 
 type GQLTransaction = {

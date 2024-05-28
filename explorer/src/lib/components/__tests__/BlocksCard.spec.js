@@ -1,9 +1,11 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { apiBlocks } from "$lib/mock-data";
-import { transformAPIBlock } from "$lib/chain-info";
-import { BlocksCard } from "..";
 import { compose, mapWith, take } from "lamb";
+
+import { gqlBlocks } from "$lib/mock-data";
+import { transformBlock } from "$lib/chain-info";
+
+import { BlocksCard } from "..";
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
@@ -11,12 +13,13 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const getTenBlocks = compose(mapWith(transformAPIBlock), take(10));
-const data = getTenBlocks(apiBlocks.data.blocks);
-
 describe("Blocks Card", () => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(2024, 4, 20));
+  vi.setSystemTime(new Date(2024, 4, 30));
+
+  const getTenBlocks = compose(mapWith(transformBlock), take(10));
+  const data = getTenBlocks(gqlBlocks.blocks);
+
   const baseProps = {
     blocks: null,
     error: null,
