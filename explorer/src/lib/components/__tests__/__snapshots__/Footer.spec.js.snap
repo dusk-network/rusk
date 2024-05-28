@@ -40,13 +40,9 @@ exports[`Footer > renders the Footer component 1`] = `
       <picture>
         <source
           media="(max-width:768px)"
-          srcset="/dusk_logo_icon.svg"
+          srcset="/some-base-path/dusk_logo_icon.svg"
         />
-         
-        <source
-          media="(min-width:769px)"
-          srcset="/dusk_logo.svg"
-        />
+        <!--&lt;AppSource&gt;-->
          
         <img
           alt="Dusk Logo"
