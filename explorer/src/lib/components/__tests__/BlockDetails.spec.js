@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { apiBlock } from "$lib/mock-data";
+import { gqlBlock } from "$lib/mock-data";
 import { transformBlock } from "$lib/chain-info";
 import { BlockDetails } from "../";
 
@@ -11,7 +11,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 const baseProps = {
-  data: transformBlock(apiBlock.data.blocks[0]),
+  data: transformBlock(gqlBlock.block),
   error: null,
   loading: false,
 };

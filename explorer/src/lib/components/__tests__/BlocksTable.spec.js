@@ -1,12 +1,12 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { apiBlocks } from "$lib/mock-data";
-import { transformBlock } from "$lib/chain-info";
+import { transformAPIBlock } from "$lib/chain-info";
 import { BlocksTable } from "..";
 import { mapWith, slice } from "lamb";
 
-const transformBlocks = mapWith(transformBlock);
-const data = slice(transformBlocks(apiBlocks.data.blocks), 0, 10);
+const transformAPIBlocks = mapWith(transformAPIBlock);
+const data = slice(transformAPIBlocks(apiBlocks.data.blocks), 0, 10);
 
 describe("Blocks Table", () => {
   vi.useFakeTimers();

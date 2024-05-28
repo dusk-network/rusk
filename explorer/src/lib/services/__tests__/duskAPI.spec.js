@@ -1,8 +1,10 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { skip, updatePathIn } from "lamb";
 
 import * as mockData from "$lib/mock-data";
 
 import {
+  transformAPIBlock,
   transformAPITransaction,
   transformBlock,
   transformSearchResult,
@@ -45,23 +47,124 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve a single block", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiBlock));
+    const getByHeightSpy = vi.spyOn(duskAPI, "getBlockHashByHeight");
+
+    fetchSpy
+      .mockResolvedValueOnce(
+        makeOKResponse(
+          updatePathIn(
+            mockData.gqlBlock,
+            "block.header",
+            skip(["nextBlockHash"])
+          )
+        )
+      )
+      .mockResolvedValueOnce(
+        makeOKResponse({
+          block: {
+            header: {
+              hash: mockData.gqlBlock.block.header.nextBlockHash,
+            },
+          },
+        })
+      );
 
     await expect(duskAPI.getBlock(node, fakeID)).resolves.toStrictEqual(
-      transformBlock(mockData.apiBlock.data.blocks[0])
+      transformBlock(mockData.gqlBlock.block)
     );
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      getAPIExpectedURL(`blocks/${fakeID}`),
-      apiGetOptions
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($id: String!) { block(hash: $id) {...BlockInfo} }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-id": "some-id",
+        },
+        "method": "POST",
+      }
+    `);
+    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-height": 495869,
+        },
+        "method": "POST",
+      }
+    `);
+    expect(getByHeightSpy).toHaveBeenCalledTimes(1);
+    expect(getByHeightSpy).toHaveBeenCalledWith(
+      node,
+      mockData.gqlBlock.block.header.height + 1
     );
+
+    getByHeightSpy.mockRestore();
+  });
+
+  it("should expose a method to retrieve a block hash by its height", async () => {
+    const expectedHash = mockData.gqlBlock.block.header.nextBlockHash;
+
+    fetchSpy
+      .mockResolvedValueOnce(
+        makeOKResponse({
+          block: {
+            header: {
+              hash: expectedHash,
+            },
+          },
+        })
+      )
+      .mockResolvedValueOnce(
+        makeOKResponse({
+          block: null,
+        })
+      );
+
+    await expect(duskAPI.getBlockHashByHeight(node, 11)).resolves.toBe(
+      expectedHash
+    );
+    await expect(duskAPI.getBlockHashByHeight(node, 11)).resolves.toBe("");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-height": 11,
+        },
+        "method": "POST",
+      }
+    `);
+    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-height": 11,
+        },
+        "method": "POST",
+      }
+    `);
   });
 
   it("should expose a method to retrieve the list of blocks", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiBlocks));
 
     await expect(duskAPI.getBlocks(node)).resolves.toStrictEqual(
-      mockData.apiBlocks.data.blocks.map(transformBlock)
+      mockData.apiBlocks.data.blocks.map(transformAPIBlock)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
@@ -74,7 +177,7 @@ describe("duskAPI", () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiLatestChainInfo));
 
     await expect(duskAPI.getLatestChainInfo(node)).resolves.toStrictEqual({
-      blocks: mockData.apiLatestChainInfo.data.blocks.map(transformBlock),
+      blocks: mockData.apiLatestChainInfo.data.blocks.map(transformAPIBlock),
       transactions: mockData.apiLatestChainInfo.data.transactions.map(
         transformAPITransaction
       ),
@@ -189,13 +292,8 @@ describe("duskAPI", () => {
   });
 
   it("should return a rejected promise, with the original Response in the error's `cause` property, for a 4xx error", async () => {
-    /**
-     * @template T
-     * @typedef {{[K in keyof T]: T[K] extends Function ? K : never}[keyof T]} Methods<T>
-     */
-
-    const apiMethods = /** @type {Methods<typeof import("..").duskAPI>[]} */ (
-      Object.keys(duskAPI).filter((k) => typeof k === "function")
+    const apiMethods = Object.keys(duskAPI).filter(
+      (k) => typeof k === "function"
     );
 
     for (const apiMethod of apiMethods) {
@@ -204,6 +302,7 @@ describe("duskAPI", () => {
       fetchSpy.mockResolvedValueOnce(notFoundResponse);
 
       await expect(() =>
+        // @ts-expect-error we don't care of the parameters we pass as the call to fetch is mocked
         duskAPI[apiMethod]("foo/bar", "some-id")
       ).rejects.toThrow(
         expect.objectContaining({
