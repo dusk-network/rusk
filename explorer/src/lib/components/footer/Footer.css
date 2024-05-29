@@ -1,9 +1,14 @@
 .footer {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   padding: 1.25rem 0;
   font-size: 0.875rem;
-  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 0.625rem;
+}
+
+.footer__content {
+  display: flex;
 }
 
 .footer__copyright {
@@ -41,6 +46,10 @@
 
 @media (max-width: 768px) {
   .footer {
+    align-items: center;
+  }
+
+  .footer__content {
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 0.625rem;

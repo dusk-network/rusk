@@ -6,49 +6,71 @@ exports[`Footer > renders the Footer component 1`] = `
     class="footer"
   >
     <div
-      class="footer__copyright"
+      class="footer__content"
     >
-      <span>
-        © 2018 - 2024 Dusk Network B.V. All Rights Reserved.
-      </span>
+      <div
+        class="footer__copyright"
+      >
+        <span>
+          © 2018 - 2024 Dusk Network B.V. All Rights Reserved.
+        </span>
+      </div>
+       
+      <div
+        class="footer__links"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+          href="https://dusk.network/privacy-policy"
+        >
+          Privacy policy
+        </a>
+        <!--&lt;Anchor&gt;-->
+         
+        <a
+          class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+          href="https://dusk.network/terms-of-use"
+        >
+          Terms of use
+        </a>
+        <!--&lt;Anchor&gt;-->
+      </div>
+       
+      <a
+        class="dusk-anchor dusk-anchor--on-surface footer__logo"
+        href="https://dusk.network"
+      >
+        <picture>
+          <source
+            media="(max-width:768px)"
+            srcset="/some-base-path/dusk_logo_icon.svg"
+          />
+          <!--&lt;AppSource&gt;-->
+           
+          <img
+            alt="Dusk Logo"
+            class="footer__logo-image"
+            sizes="(max-width:768px) 20px, 86px"
+            src="/some-base-path/dusk_logo.svg"
+          />
+          <!--&lt;AppImage&gt;-->
+        </picture>
+      </a>
+      <!--&lt;Anchor&gt;-->
+      <!--&lt;AppAnchor&gt;-->
     </div>
      
     <div
-      class="footer__links"
+      class="footer__build-info"
     >
-      <a
-        class="dusk-anchor dusk-anchor--off-surface footer__links-link"
-        href="https://dusk.network/privacy-policy"
-      >
-        Privacy policy
-      </a>
-       
-      <a
-        class="dusk-anchor dusk-anchor--off-surface footer__links-link"
-        href="https://dusk.network/terms-of-use"
-      >
-        Terms of use
-      </a>
+      <span>
+        Explorer v
+        0.0.0
+         (
+        hash1234 2024-01-12
+        )
+      </span>
     </div>
-     
-    <a
-      class="dusk-anchor dusk-anchor--on-surface footer__logo"
-      href="https://dusk.network"
-    >
-      <picture>
-        <source
-          media="(max-width:768px)"
-          srcset="/some-base-path/dusk_logo_icon.svg"
-        />
-         
-        <img
-          alt="Dusk Logo"
-          class="footer__logo-image"
-          sizes="(max-width:768px) 20px, 86px"
-          src="/some-base-path/dusk_logo.svg"
-        />
-      </picture>
-    </a>
   </div>
 </div>
 `;
