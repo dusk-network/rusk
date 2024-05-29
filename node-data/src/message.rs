@@ -108,7 +108,7 @@ impl Serializable for Message {
             Payload::GetMempool(p) => p.write(w),
             Payload::GetInv(p) => p.write(w),
             Payload::GetBlocks(p) => p.write(w),
-            Payload::GetData(p) => p.write(w),
+            Payload::GetResource(p) => p.write(w),
             Payload::Ratification(p) => p.write(w),
             Payload::Empty | Payload::ValidationResult(_) => Ok(()), /* internal message, not sent on the wire */
         }
@@ -141,8 +141,8 @@ impl Serializable for Message {
             Topics::GetCandidate => {
                 Message::new_get_candidate(payload::GetCandidate::read(r)?)
             }
-            Topics::GetData => {
-                Message::new_get_data(payload::GetData::read(r)?)
+            Topics::GetResource => {
+                Message::new_get_resource(payload::GetResource::read(r)?)
             }
             Topics::GetBlocks => {
                 Message::new_get_blocks(payload::GetBlocks::read(r)?)
@@ -240,11 +240,11 @@ impl Message {
         }
     }
 
-    /// Creates topics.GetData  message
-    pub fn new_get_data(p: payload::GetData) -> Message {
+    /// Creates topics.GetResource  message
+    pub fn new_get_resource(p: payload::GetResource) -> Message {
         Self {
-            topic: Topics::GetData,
-            payload: Payload::GetData(p),
+            topic: Topics::GetResource,
+            payload: Payload::GetResource(p),
             ..Default::default()
         }
     }
@@ -375,7 +375,7 @@ pub enum Payload {
     GetMempool(payload::GetMempool),
     GetInv(payload::Inv),
     GetBlocks(payload::GetBlocks),
-    GetData(payload::GetData),
+    GetResource(payload::GetResource),
     CandidateResp(Box<payload::GetCandidateResp>),
 
     // Internal messages payload
@@ -391,6 +391,10 @@ pub mod payload {
     use crate::Serializable;
     use std::fmt;
     use std::io::{self, Read, Write};
+    use std::net::{
+        Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
+    };
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{ConsensusHeader, SignInfo};
 
@@ -747,13 +751,18 @@ pub mod payload {
 
     #[derive(Clone, Default, Debug, Copy)]
     pub enum InvType {
+        /// A transaction fetched by tx_id
         MempoolTx,
         #[default]
+        /// A full block fetched by block hash
         BlockFromHash,
+        /// A full block fetched by block height
         BlockFromHeight,
+        /// A candidate block fetched by block hash, Cert is None
+        CandidateFromHash,
     }
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Clone, Copy)]
     pub enum InvParam {
         Hash([u8; 32]),
         Height(u64),
@@ -762,6 +771,15 @@ pub mod payload {
     impl Default for InvParam {
         fn default() -> Self {
             Self::Height(0)
+        }
+    }
+
+    impl fmt::Debug for InvParam {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                Self::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
+                Self::Height(height) => write!(f, "Height: {}", height),
+            }
         }
     }
 
@@ -774,9 +792,17 @@ pub mod payload {
     #[derive(Default, Debug, Clone)]
     pub struct Inv {
         pub inv_list: Vec<InvVect>,
+        pub max_entries: u16,
     }
 
     impl Inv {
+        pub fn new(max_entries: u16) -> Self {
+            Self {
+                inv_list: Default::default(),
+                max_entries,
+            }
+        }
+
         pub fn add_tx_id(&mut self, id: [u8; 32]) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::MempoolTx,
@@ -797,6 +823,13 @@ pub mod payload {
                 param: InvParam::Height(height),
             });
         }
+
+        pub fn add_candidate_from_hash(&mut self, hash: [u8; 32]) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::CandidateFromHash,
+                param: InvParam::Hash(hash),
+            });
+        }
     }
 
     impl Serializable for Inv {
@@ -815,6 +848,7 @@ pub mod payload {
                 };
             }
 
+            w.write_all(&self.max_entries.to_le_bytes())?;
             Ok(())
         }
 
@@ -832,6 +866,7 @@ pub mod payload {
                     0 => InvType::MempoolTx,
                     1 => InvType::BlockFromHash,
                     2 => InvType::BlockFromHeight,
+                    3 => InvType::CandidateFromHash,
                     _ => {
                         return Err(io::Error::from(io::ErrorKind::InvalidData))
                     }
@@ -849,16 +884,26 @@ pub mod payload {
                     InvType::BlockFromHeight => {
                         inv.add_block_from_height(Self::read_u64_le(r)?);
                     }
+                    InvType::CandidateFromHash => {
+                        inv.add_candidate_from_hash(Self::read_bytes(r)?);
+                    }
                 }
             }
 
+            inv.max_entries = Self::read_u16_le(r)?;
             Ok(inv)
         }
     }
 
-    #[derive(Debug, Clone, Default)]
+    #[derive(Clone, Default)]
     pub struct GetBlocks {
         pub locator: [u8; 32],
+    }
+
+    impl fmt::Debug for GetBlocks {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "GetBlocks, locator: {}", to_str(&self.locator))
+        }
     }
 
     impl Serializable for GetBlocks {
@@ -875,23 +920,153 @@ pub mod payload {
         }
     }
 
-    #[derive(Default, Debug, Clone)]
-    pub struct GetData {
-        pub inner: Inv,
+    #[derive(Debug, Clone)]
+    pub struct GetResource {
+        /// Inventory/Resource to search for
+        inventory: Inv,
+
+        /// (requester) Address to which the resource is sent back, if found
+        requester_addr: SocketAddr,
+
+        /// Limits request lifespan by absolute (epoch) time
+        ttl_as_sec: u64,
+
+        /// Limits request lifespan by number of hops
+        hops_limit: u16,
     }
 
-    impl Serializable for GetData {
+    impl GetResource {
+        pub fn new(
+            inventory: Inv,
+            requester_addr: SocketAddr,
+            ttl_as_sec: u64,
+            hops_limit: u16,
+        ) -> Self {
+            Self {
+                inventory,
+                requester_addr,
+                ttl_as_sec,
+                hops_limit,
+            }
+        }
+
+        pub fn clone_with_hop_decrement(&self) -> Option<Self> {
+            if self.hops_limit == 1 {
+                return None;
+            }
+            let mut req = self.clone();
+            req.hops_limit -= 1;
+            Some(req)
+        }
+
+        pub fn get_addr(&self) -> SocketAddr {
+            self.requester_addr
+        }
+
+        pub fn get_inv(&self) -> &Inv {
+            &self.inventory
+        }
+
+        pub fn is_expired(&self) -> bool {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+                > self.ttl_as_sec
+        }
+    }
+
+    impl Serializable for GetResource {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            self.inner.write(w)
+            self.inventory.write(w)?;
+            self.requester_addr.write(w)?;
+            w.write_all(&self.ttl_as_sec.to_le_bytes()[..])?;
+            w.write_all(&self.hops_limit.to_le_bytes()[..])
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
         {
-            Ok(GetData {
-                inner: Inv::read(r)?,
+            let inner = Inv::read(r)?;
+            let requester_addr = SocketAddr::read(r)?;
+
+            let mut buf = [0u8; 8];
+            r.read_exact(&mut buf)?;
+            let ttl_as_sec = u64::from_le_bytes(buf);
+
+            let mut buf = [0u8; 2];
+            r.read_exact(&mut buf)?;
+            let hops_limit = u16::from_le_bytes(buf);
+
+            Ok(GetResource {
+                inventory: inner,
+                requester_addr,
+                ttl_as_sec,
+                hops_limit,
             })
+        }
+    }
+
+    impl Serializable for SocketAddr {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            match self {
+                SocketAddr::V4(addr_v4) => {
+                    w.write_all(&[4])?;
+                    w.write_all(&addr_v4.ip().octets())?;
+                    w.write_all(&addr_v4.port().to_le_bytes())?;
+                }
+                SocketAddr::V6(addr_v6) => {
+                    w.write_all(&[6])?;
+                    w.write_all(&addr_v6.ip().octets())?;
+                    w.write_all(&addr_v6.port().to_le_bytes())?;
+                }
+            }
+            Ok(())
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut ip_type = [0u8; 1];
+            r.read_exact(&mut ip_type)?;
+
+            let ip = match ip_type[0] {
+                4 => {
+                    let mut octets = [0u8; 4];
+                    r.read_exact(&mut octets)?;
+
+                    let mut port_bytes = [0u8; 2];
+                    r.read_exact(&mut port_bytes)?;
+
+                    SocketAddr::V4(SocketAddrV4::new(
+                        Ipv4Addr::from(octets),
+                        u16::from_le_bytes(port_bytes),
+                    ))
+                }
+                6 => {
+                    let mut octets = [0u8; 16];
+                    r.read_exact(&mut octets)?;
+
+                    let mut port_bytes = [0u8; 2];
+                    r.read_exact(&mut port_bytes)?;
+
+                    SocketAddr::V6(SocketAddrV6::new(
+                        Ipv6Addr::from(octets),
+                        u16::from_le_bytes(port_bytes),
+                        0,
+                        0,
+                    ))
+                }
+                _ => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid IP type",
+                    ))
+                }
+            };
+            Ok(ip)
         }
     }
 }
@@ -908,7 +1083,7 @@ macro_rules! map_topic {
 #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
 pub enum Topics {
     // Data exchange topics.
-    GetData = 8,
+    GetResource = 8,
     GetBlocks = 9,
     GetMempool = 13, // NB: This is aliased as Mempool in the golang impl
     GetInv = 14,     // NB: This is aliased as Inv in the golang impl
@@ -945,7 +1120,7 @@ impl Topics {
 
 impl From<u8> for Topics {
     fn from(v: u8) -> Self {
-        map_topic!(v, Topics::GetData);
+        map_topic!(v, Topics::GetResource);
         map_topic!(v, Topics::GetBlocks);
         map_topic!(v, Topics::Tx);
         map_topic!(v, Topics::Block);

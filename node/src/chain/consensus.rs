@@ -198,7 +198,6 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 {
     fn store_candidate_block(&mut self, b: Block) {
         tracing::trace!("store candidate block: {:?}", b);
-
         match self.db.try_read() {
             Ok(db) => {
                 if let Err(e) = db.update(|t| t.store_candidate_block(b)) {
@@ -219,7 +218,6 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
     ) -> anyhow::Result<Block> {
         // Make an attempt to fetch the candidate block from local storage
         let res = self.db.read().await.view(|t| t.fetch_candidate_block(h))?;
-
         if let Some(b) = res {
             return Ok(b);
         }
@@ -229,7 +227,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 
         // For redundancy reasons, we send the GetCandidate request to multiple
         // network peers
-        let request = Message::new_get_candidate(GetCandidate { hash: *h });
+        let request = Message::new_get_candidate(GetCandidate { hash: *h }); // TODO: Use GetResource
         let res = self
             .network
             .write()

@@ -6,16 +6,17 @@
 
 use std::net::{AddrParseError, SocketAddr};
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
+use node_data::message::payload::{GetResource, Inv};
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
 use tracing::{error, info, trace, warn};
@@ -23,6 +24,9 @@ use tracing::{error, info, trace, warn};
 mod frame;
 
 const MAX_PENDING_SENDERS: u64 = 1000;
+
+/// Number of alive peers randomly selected which a `flood_request` is sent to
+const REDUNDANCY_PEER_COUNT: usize = 8;
 
 type RoutesList<const N: usize> = [Option<AsyncQueue<Message>>; N];
 type FilterList<const N: usize> = [Option<BoxedFilter>; N];
@@ -123,6 +127,9 @@ pub struct Kadcast<const N: usize> {
     conf: Config,
 
     counter: AtomicU64,
+
+    /// Represents a parsed conf.public_addr
+    public_addr: SocketAddr,
 }
 
 impl<const N: usize> Kadcast<N> {
@@ -143,6 +150,10 @@ impl<const N: usize> Kadcast<N> {
             pending_senders: Arc::new(AtomicU64::new(0)),
         };
         let peer = Peer::new(conf.clone(), listener)?;
+        let public_addr = conf
+            .public_address
+            .parse::<SocketAddr>()
+            .expect("valid kadcast public address");
 
         Ok(Kadcast {
             routes,
@@ -150,6 +161,7 @@ impl<const N: usize> Kadcast<N> {
             peer,
             conf,
             counter: AtomicU64::new(0),
+            public_addr,
         })
     }
 
@@ -211,6 +223,48 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         self.peer.broadcast(&encoded, height).await;
 
         Ok(())
+    }
+
+    /// Broadcast a GetResource request.
+    ///
+    /// By utilizing the randomly selected peers per bucket in Kadcast, this
+    /// broadcast does follow the so-called "Flood with Random Walk" blind
+    /// search (resource discovery).
+    ///
+    /// A receiver of this message is supposed to look up the resource and
+    /// either return it or, if not found, rebroadcast the message to the next
+    /// Kadcast bucket
+    ///
+    /// * `ttl_as_sec` - Defines the lifespan of the request in seconds
+    ///
+    /// * `hops_limit` - Defines maximum number of hops to receive the request
+    async fn flood_request(
+        &self,
+        msg_inv: &Inv,
+        ttl_as_sec: Option<u64>,
+        hops_limit: u16,
+    ) -> anyhow::Result<()> {
+        let ttl_as_sec = ttl_as_sec.map_or_else(
+            || u64::MAX,
+            |v| {
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
+                    + v
+            },
+        );
+
+        self.send_to_alive_peers(
+            &Message::new_get_resource(GetResource::new(
+                msg_inv.clone(),
+                self.public_addr,
+                ttl_as_sec,
+                hops_limit,
+            )),
+            REDUNDANCY_PEER_COUNT,
+        )
+        .await
     }
 
     /// Sends an encoded message to a given peer.
@@ -322,8 +376,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         Ok(())
     }
 
+    // TODO: Duplicated func
     fn get_info(&self) -> anyhow::Result<String> {
         Ok(self.conf.public_address.to_string())
+    }
+
+    fn public_addr(&self) -> &SocketAddr {
+        &self.public_addr
     }
 
     async fn alive_nodes_count(&self) -> usize {

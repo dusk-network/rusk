@@ -11,13 +11,14 @@ use crate::{vm, Network};
 
 use crate::database::{Candidate, Ledger};
 use metrics::counter;
-use node_data::ledger::{to_str, Block, Label};
+use node_data::ledger::{to_str, Block, Certificate, Label};
 use node_data::message::payload::{
-    GetBlocks, GetData, RatificationResult, Vote,
+    GetBlocks, GetResource, Inv, RatificationResult, Vote,
 };
+
 use node_data::message::{payload, Message, Metadata};
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug, Formatter};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
 use std::time::Duration;
@@ -28,7 +29,11 @@ use tracing::{debug, error, info, warn};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
+const DEFAULT_CERT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
+/// Maximum number of hops between the requester and the node that contains the
+/// requested resource
+const DEFAULT_HOPS_LIMIT: u16 = 16;
 pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
 
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
@@ -73,6 +78,9 @@ pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
     network: Arc<RwLock<N>>,
 
     blacklisted_blocks: SharedHashSet,
+
+    /// Certificates cached from received Quorum messages
+    certificates_cache: HashMap<[u8; 32], (Certificate, Instant)>,
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
@@ -91,17 +99,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             acc,
             network,
             blacklisted_blocks,
+            certificates_cache: Default::default(),
         }
     }
 
     pub async fn on_idle(&mut self, timeout: Duration) {
         let acc = self.acc.read().await;
-        let height = acc.get_curr_height().await;
+        let tip_height = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
         if let Ok(last_finalized) = acc.get_latest_final_block().await {
             info!(
                 event = "fsm::idle",
-                height,
+                tip_height,
                 iter,
                 timeout_sec = timeout.as_secs(),
                 "finalized_height" = last_finalized.header().height,
@@ -126,6 +135,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         } else {
             error!("could not request blocks");
         }
+
+        let now = Instant::now();
+        self.certificates_cache
+            .retain(|_, (_, expiry)| *expiry > now);
     }
 
     pub async fn on_failed_consensus(&mut self) {
@@ -160,43 +173,70 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             return Ok(());
         }
 
-        match &mut self.curr {
-            State::InSync(ref mut curr) => {
-                if let Some((b, peer_addr)) =
-                    curr.on_block_event(blk, metadata).await?
-                {
-                    // Transition from InSync to OutOfSync state
-                    curr.on_exiting().await;
+        if let Some(blk) = self.attach_cert_if_needed(blk).as_ref() {
+            match &mut self.curr {
+                State::InSync(ref mut curr) => {
+                    if let Some((b, peer_addr)) =
+                        curr.on_block_event(blk, metadata).await?
+                    {
+                        // Transition from InSync to OutOfSync state
+                        curr.on_exiting().await;
 
-                    // Enter new state
-                    let mut next = OutOfSyncImpl::new(
-                        self.acc.clone(),
-                        self.network.clone(),
-                    );
-                    next.on_entering(&b, peer_addr).await;
-                    self.curr = State::OutOfSync(next);
+                        // Enter new state
+                        let mut next = OutOfSyncImpl::new(
+                            self.acc.clone(),
+                            self.network.clone(),
+                        );
+                        next.on_entering(&b, peer_addr).await;
+                        self.curr = State::OutOfSync(next);
+                    }
                 }
-            }
-            State::OutOfSync(ref mut curr) => {
-                if curr.on_block_event(blk, metadata).await? {
-                    // Transition from OutOfSync to InSync state
-                    curr.on_exiting().await;
+                State::OutOfSync(ref mut curr) => {
+                    if curr.on_block_event(blk, metadata).await? {
+                        // Transition from OutOfSync to InSync state
+                        curr.on_exiting().await;
 
-                    // Enter new state
-                    let mut next = InSyncImpl::new(
-                        self.acc.clone(),
-                        self.network.clone(),
-                        self.blacklisted_blocks.clone(),
-                    );
-                    next.on_entering(blk).await.map_err(|e| {
-                        error!("Unable to enter in_sync state: {e}");
-                        e
-                    })?;
-                    self.curr = State::InSync(next);
+                        // Enter new state
+                        let mut next = InSyncImpl::new(
+                            self.acc.clone(),
+                            self.network.clone(),
+                            self.blacklisted_blocks.clone(),
+                        );
+                        next.on_entering(blk).await.map_err(|e| {
+                            error!("Unable to enter in_sync state: {e}");
+                            e
+                        })?;
+                        self.curr = State::InSync(next);
+                    }
                 }
             }
         }
+
+        // Clean up certificate cache
+        let now = Instant::now();
+        self.certificates_cache
+            .retain(|_, (_, expiry)| *expiry > now);
+        self.certificates_cache.remove(&blk.header().hash);
+
         Ok(())
+    }
+
+    async fn request_block(&mut self, hash: [u8; 32], cert: Certificate) {
+        if self.certificates_cache.contains_key(&hash) {
+            return;
+        }
+
+        // Save certificate in case only candidate block is received
+        let expiry = Instant::now()
+            .checked_add(DEFAULT_CERT_CACHE_EXPIRY)
+            .unwrap();
+        self.certificates_cache.insert(hash, (cert, expiry));
+
+        let mut inv = Inv::new(1);
+        inv.add_block_from_hash(hash);
+        inv.add_candidate_from_hash(hash);
+
+        flood_request(&self.network, &inv).await;
     }
 
     /// Handles a Quorum message.
@@ -211,8 +251,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     ) -> anyhow::Result<()> {
         let res = match quorum.cert.result {
             RatificationResult::Success(Vote::Valid(hash)) => {
-                let acc = self.acc.read().await;
-                let local_header = acc.tip_header().await;
+                let local_header = self.acc.read().await.tip_header().await;
+                let db = self.acc.read().await.db.clone();
                 let remote_height = msg.header.round;
 
                 // Quorum from future
@@ -223,13 +263,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         height = remote_height,
                     );
 
-                    // Request by hash
-                    request_block(
-                        &self.network,
-                        BlockRequest::ByHash(hash),
-                        msg.metadata.as_ref().unwrap().src_addr,
-                    )
-                    .await;
+                    self.request_block(hash, quorum.cert).await;
 
                     Ok(None)
                 } else {
@@ -242,12 +276,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         || (remote_height == local_header.height
                             && local_header.hash != hash)
                     {
-                        match acc
-                            .db
+                        let res = db
                             .read()
                             .await
-                            .view(|t| t.fetch_candidate_block(&hash))
-                        {
+                            .view(|t| t.fetch_candidate_block(&hash));
+
+                        match res {
                             Ok(b) => Ok(b),
                             Err(err) => {
                                 error!(
@@ -257,14 +291,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                     err = ?err,
                                 );
 
-                                // Request by hash
-                                request_block(
-                                    &self.network,
-                                    BlockRequest::ByHash(hash),
-                                    msg.metadata.as_ref().unwrap().src_addr,
-                                )
-                                .await;
-
+                                // Candidate block is not found from local
+                                // storage.  Cache the certificate and request
+                                // candidate block only.
+                                self.request_block(hash, quorum.cert).await;
                                 Err(err)
                             }
                         }
@@ -323,6 +353,30 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         };
 
         Ok(())
+    }
+
+    /// Try to attach the certificate to a block that misses it
+    fn attach_cert_if_needed<'a>(
+        &self,
+        blk: &'a Block,
+    ) -> Option<Cow<'a, Block>> {
+        if blk.header().cert == Certificate::default() {
+            // The default cert means the block was retrieved from Candidate
+            // CF thus missing the certificate. If so, we try to set the valid
+            // certificate from the cache certificates.
+            if let Some((cert, _)) =
+                self.certificates_cache.get(&blk.header().hash)
+            {
+                let mut blk = blk.clone();
+                blk.set_certificate(*cert);
+                Some(Cow::Owned(blk))
+            } else {
+                error!("cert not found for {}", hex::encode(blk.header().hash));
+                None
+            }
+        } else {
+            Some(Cow::Borrowed(blk))
+        }
     }
 }
 
@@ -572,9 +626,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 ));
             }
 
-            request_block(
+            Self::request_block_by_height(
                 &self.network,
-                BlockRequest::ByHeight(local_header.height + 1),
+                local_header.height + 1,
                 metadata.src_addr,
             )
             .await;
@@ -583,8 +637,31 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         Ok(None)
     }
 
+    /// Requests a block by height from a `peer_addr`
+    async fn request_block_by_height(
+        network: &Arc<RwLock<N>>,
+        height: u64,
+        peer_addr: SocketAddr,
+    ) {
+        let mut inv = Inv::new(1);
+        inv.add_block_from_height(height);
+        let this_peer = *network.read().await.public_addr();
+        let req = GetResource::new(inv, this_peer, u64::MAX, 1);
+        debug!(event = "request block by height", ?req, ?peer_addr);
+
+        if let Err(err) = network
+            .read()
+            .await
+            .send_to_peer(&Message::new_get_resource(req), peer_addr)
+            .await
+        {
+            warn!("could not request block {err}")
+        }
+    }
+
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
         // TODO: Consider reporting metrics here
+
         // TODO: Consider handling ACCEPT_BLOCK_TIMEOUT event here
 
         if let Some(pre_sync) = &mut self.presync {
@@ -720,10 +797,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 }
             }
 
+            let tip = acc.get_curr_height().await;
             // Check target height is reached
-            if acc.get_curr_height().await == self.range.1 {
+            if tip >= self.range.1 {
+                debug!(event = "sync target reached", height = tip);
+
                 // Block sync-up procedure manages to download all requested
-                // blocks
                 acc.restart_consensus().await;
 
                 // Transit to InSync mode
@@ -751,6 +830,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             .unwrap()
             <= SystemTime::now()
         {
+            debug!(event = "out_of_sync timer expired");
             // sync-up has timed out, recover consensus task
             self.acc.write().await.restart_consensus().await;
 
@@ -762,45 +842,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     }
 }
 
-enum BlockRequest {
-    ByHeight(u64),
-    ByHash([u8; 32]),
-}
-impl Debug for BlockRequest {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            BlockRequest::ByHeight(height) => {
-                write!(f, "BlockRequest::ByHeight({})", height)
-            }
-            BlockRequest::ByHash(hash) => {
-                write!(f, "BlockRequest::ByHash({})", to_str(hash))
-            }
-        }
-    }
-}
-
-/// Requests a block by height from a specified peer
-async fn request_block<N: Network>(
-    network: &Arc<RwLock<N>>,
-    req: BlockRequest,
-    peer_addr: SocketAddr,
-) {
-    let mut get_data = GetData::default();
-    match req {
-        BlockRequest::ByHeight(height) => {
-            get_data.inner.add_block_from_height(height);
-        }
-        BlockRequest::ByHash(hash) => {
-            get_data.inner.add_block_from_hash(hash);
-        }
-    };
-
-    debug!(event = "request block", ?req, ?peer_addr);
+/// Requests a block by height/hash from the network with so-called
+/// Flood-request approach.
+async fn flood_request<N: Network>(network: &Arc<RwLock<N>>, inv: &Inv) {
+    debug!(event = "flood_request", ?inv);
 
     if let Err(err) = network
         .read()
         .await
-        .send_to_peer(&Message::new_get_data(get_data), peer_addr)
+        .flood_request(inv, None, DEFAULT_HOPS_LIMIT)
         .await
     {
         warn!("could not request block {err}")

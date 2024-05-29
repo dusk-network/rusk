@@ -10,8 +10,9 @@ use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
+use std::cmp::min;
 
-use node_data::message::payload::{GetData, InvParam, InvType};
+use node_data::message::payload::{GetResource, InvParam, InvType};
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -26,12 +27,12 @@ const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
     Topics::GetMempool as u8,
     Topics::GetInv as u8,
-    Topics::GetData as u8,
+    Topics::GetResource as u8,
     Topics::GetCandidate as u8,
 ];
 
 struct Response {
-    /// A response usually consists of a single message. However in case of
+    /// A response usually consists of a single message. However, in case of
     /// GetMempool and GetBlocks we may need to send multiple messages in
     /// response to a single request.
     msgs: SmallVec<[Message; 1]>,
@@ -138,7 +139,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
             // Spawn a task to handle the request asynchronously.
             tokio::spawn(async move {
-                match Self::handle_request(&db, &msg, &conf).await {
+                match Self::handle_request::<N, DB>(&db, &network, &msg, &conf)
+                    .await
+                {
                     Ok(resp) => {
                         // Send response
                         let net = network.read().await;
@@ -177,8 +180,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
 impl DataBrokerSrv {
     /// Handles inbound messages.
-    async fn handle_request<DB: database::DB>(
+    async fn handle_request<N: Network, DB: database::DB>(
         db: &Arc<RwLock<DB>>,
+        network: &Arc<RwLock<N>>,
         msg: &Message,
         conf: &conf::Params,
     ) -> anyhow::Result<Response> {
@@ -191,6 +195,7 @@ impl DataBrokerSrv {
             .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
 
         debug!(event = "handle_request", ?msg);
+        let this_peer = *network.read().await.public_addr();
 
         match &msg.payload {
             // Handle GetCandidate requests
@@ -211,14 +216,42 @@ impl DataBrokerSrv {
             }
             // Handle GetInv requests
             Payload::GetInv(m) => {
-                let msg = Self::handle_inv(db, m, conf.max_inv_entries).await?;
+                let msg =
+                    Self::handle_inv(db, m, conf.max_inv_entries, this_peer)
+                        .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
-            // Handle GetData requests
-            Payload::GetData(m) => {
-                let msgs =
-                    Self::handle_get_data(db, m, conf.max_inv_entries).await?;
-                Ok(Response::new(msgs, recv_peer))
+            // Handle GetResource requests
+            Payload::GetResource(m) => {
+                if m.is_expired() {
+                    return Err(anyhow!("message has expired"));
+                }
+
+                match Self::handle_get_resource(db, m, conf.max_inv_entries)
+                    .await
+                {
+                    Ok(msg_list) => Ok(Response::new(msg_list, m.get_addr())),
+                    Err(err) => {
+                        // resource is not found, rebroadcast the request only
+                        // if hops_limit is not reached
+                        if let Some(m) = m.clone_with_hop_decrement() {
+                            // Construct a new message with same
+                            // Message::metadata but with decremented
+                            // hops_limit
+                            let mut msg = msg.clone();
+                            msg.payload = Payload::GetResource(m);
+
+                            debug!("resend a flood request {:?}", msg);
+
+                            let _ = network
+                                .read()
+                                .await
+                                .send_to_alive_peers(&msg, 1)
+                                .await;
+                        }
+                        Err(err)
+                    }
+                }
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
         }
@@ -248,7 +281,7 @@ impl DataBrokerSrv {
     }
 
     /// Handles GetMempool requests.
-    /// Message flow: GetMempool -> Inv -> GetData -> Tx
+    /// Message flow: GetMempool -> Inv -> GetResource -> Tx
     async fn handle_get_mempool<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
     ) -> Result<Message> {
@@ -274,7 +307,7 @@ impl DataBrokerSrv {
 
     /// Handles GetBlocks message request.
     ///
-    ///  Message flow: GetBlocks -> Inv -> GetData -> Block
+    ///  Message flow: GetBlocks -> Inv -> GetResource -> Block
     async fn handle_get_blocks<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &payload::GetBlocks,
@@ -323,7 +356,7 @@ impl DataBrokerSrv {
     /// Handles inventory message request.
     ///
     /// This takes an inventory message (topics.Inv), checks it for any
-    /// items that the node state is missing, puts these items in a GetData
+    /// items that the node state is missing, puts these items in a GetResource
     /// wire message, and sends it back to request the items in full.
     ///
     /// An item is a block or a transaction.
@@ -331,6 +364,7 @@ impl DataBrokerSrv {
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
         max_entries: usize,
+        requester_addr: SocketAddr,
     ) -> Result<Message> {
         let inv = db.read().await.view(|t| {
             let mut inv = payload::Inv::default();
@@ -350,6 +384,15 @@ impl DataBrokerSrv {
                         if let InvParam::Hash(hash) = &i.param {
                             if Ledger::fetch_block(&t, hash)?.is_none() {
                                 inv.add_block_from_hash(*hash);
+                            }
+                        }
+                    }
+                    InvType::CandidateFromHash => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            if Candidate::fetch_candidate_block(&t, hash)?
+                                .is_none()
+                            {
+                                inv.add_candidate_from_hash(*hash);
                             }
                         }
                     }
@@ -374,20 +417,34 @@ impl DataBrokerSrv {
             return Err(anyhow::anyhow!("no items to fetch"));
         }
 
-        Ok(Message::new_get_data(GetData { inner: inv }))
+        // Send GetResource request with disabled rebroadcast (hops_limit = 1),
+        // Inv message is part of one-to-one messaging flows
+        // (GetBlocks/Mempool) so it should not be treated as flooding request
+        Ok(Message::new_get_resource(GetResource::new(
+            inv,
+            requester_addr,
+            u64::MAX,
+            1,
+        )))
     }
 
-    /// Handles GetData message request.
+    /// Handles GetResource message request.
     ///
-    /// The response to a GetData message is a vector of messages, each of which
-    /// could be either topics.Block or topics.Tx.
-    async fn handle_get_data<DB: database::DB>(
+    /// The response to a GetResource message is a vector of messages, each of
+    /// which could be either topics.Block or topics.Tx.
+    async fn handle_get_resource<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
-        m: &node_data::message::payload::GetData,
+        m: &node_data::message::payload::GetResource,
         max_entries: usize,
     ) -> Result<Vec<Message>> {
+        let mut max_entries = max_entries;
+        if m.get_inv().max_entries > 0 {
+            max_entries = min(max_entries, m.get_inv().max_entries as usize);
+        }
+
         db.read().await.view(|t| {
-            Ok(m.inner
+            let res: Vec<Message> = m
+                .get_inv()
                 .inv_list
                 .iter()
                 .filter_map(|i| match i.inv_type {
@@ -411,6 +468,19 @@ impl DataBrokerSrv {
                             None
                         }
                     }
+                    // GetResource CandidateFromHash is identical to
+                    // GetCandidate msg
+                    // TODO: Deprecate both GetCandidate and CandidateResp
+                    InvType::CandidateFromHash => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            Candidate::fetch_candidate_block(&t, hash)
+                                .ok()
+                                .flatten()
+                                .map(Message::new_block)
+                        } else {
+                            None
+                        }
+                    }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(tx_id) = &i.param {
                             Mempool::get_tx(&t, *tx_id)
@@ -423,7 +493,16 @@ impl DataBrokerSrv {
                     }
                 })
                 .take(max_entries)
-                .collect())
+                .collect();
+
+            if res.is_empty() {
+                // If nothing was found, return an error so that the caller is
+                // instructed to rebroadcast the request, if needed
+                debug!("handle_get_resource not found {:?}", m);
+                return Err(anyhow!("not found"));
+            }
+
+            Ok(res)
         })
     }
 }
