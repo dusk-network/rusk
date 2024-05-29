@@ -9,15 +9,18 @@ use core::ops::{Deref, DerefMut};
 
 use bls12_381_bls::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable as _;
-use moonlight_contract_types::{Account, Deposit, MoonlightEvent, Transfer, Withdraw};
+use moonlight_contract_types::{
+    Account, Deposit, MoonlightEvent, Transfer, Withdraw,
+};
 use rusk_abi::TRANSFER_CONTRACT;
 use transfer_contract_types::{Stct, WfctRaw};
 
 /// The Moonlight contract maintains a mapping of an address to account states.
 ///
-/// Comprised of a nonce and balance, the account state is utilized to monitor and update
-/// transaction counters during balance adjustments (transfers, withdrawals), while deposits leave
-/// the nonce unchanged and merely enhance the account's balance.
+/// Comprised of a nonce and balance, the account state is utilized to monitor
+/// and update transaction counters during balance adjustments (transfers,
+/// withdrawals), while deposits leave the nonce unchanged and merely enhance
+/// the account's balance.
 #[derive(Debug, Default, Clone)]
 pub struct MoonlightState {
     accounts: BTreeMap<[u8; BlsPublicKey::SIZE], Account>,
@@ -45,11 +48,21 @@ impl MoonlightState {
         }
     }
 
-    /// Deposits a note into the account, consuming it via the `send to contract transparent`
-    /// functionality of the transfer contract.
+    /// Deposits a note into the account, consuming it via the `send to contract
+    /// transparent` functionality of the transfer contract.
     ///
-    /// This operation will not affect the nonce of the account that receives the funds.
+    /// This operation will not affect the nonce of the account that receives
+    /// the funds.
     pub fn deposit(&mut self, deposit: Deposit) {
+        let message = transfer.to_signature_message();
+        if !rusk_abi::verify_bls(
+            message,
+            transfer.from_address,
+            transfer.signature,
+        ) {
+            panic!("Invalid signature!");
+        }
+
         let account = self.get_account_mut(&deposit.address);
 
         account.balance = account
@@ -63,7 +76,8 @@ impl MoonlightState {
             proof: deposit.proof,
         };
 
-        let res = rusk_abi::call(TRANSFER_CONTRACT, "stct", &stct).expect("failed to consume note");
+        let res = rusk_abi::call(TRANSFER_CONTRACT, "stct", &stct)
+            .expect("failed to consume note");
 
         assert!(res, "failed to consume note");
 
@@ -81,6 +95,15 @@ impl MoonlightState {
     ///
     /// This function will assert and mutate the nonce of the active account.
     pub fn transfer(&mut self, transfer: Transfer) {
+        let message = transfer.to_signature_message();
+        if !rusk_abi::verify_bls(
+            message,
+            transfer.from_address,
+            transfer.signature,
+        ) {
+            panic!("Invalid signature!");
+        }
+
         {
             let from_account = self.get_account_mut(&transfer.from_address);
 
@@ -102,11 +125,6 @@ impl MoonlightState {
                 .expect("balance overflow");
         }
 
-        let message = transfer.to_signature_message();
-        if !rusk_abi::verify_bls(message, transfer.from_address, transfer.signature) {
-            panic!("Invalid signature!");
-        }
-
         rusk_abi::emit(
             "transfer",
             MoonlightEvent {
@@ -117,12 +135,18 @@ impl MoonlightState {
         );
     }
 
-    /// Deducts the balance from the account and generates a new Phoenix note via "withdraw from
-    /// contract transparent". a note into the account, consuming it via the `send to contract
-    /// transparent`
+    /// Deducts the balance from the account and generates a new Phoenix note
+    /// via "withdraw from contract transparent". a note into the account,
+    /// consuming it via the `send to contract transparent`
     ///
     /// This function will assert and mutate the nonce of the active account.
     pub fn withdraw(&mut self, withdraw: Withdraw) {
+        let message = withdraw.to_signature_message();
+        if !rusk_abi::verify_bls(message, withdraw.address, withdraw.signature)
+        {
+            panic!("Invalid signature!");
+        }
+
         let account = self.get_account_mut(&withdraw.address);
 
         assert_eq!(account.nonce, withdraw.nonce);
@@ -132,11 +156,6 @@ impl MoonlightState {
             .balance
             .checked_sub(withdraw.value)
             .expect("insufficient balance");
-
-        let message = withdraw.to_signature_message();
-        if !rusk_abi::verify_bls(message, withdraw.address, withdraw.signature) {
-            panic!("Invalid signature!");
-        }
 
         let res = rusk_abi::call(
             TRANSFER_CONTRACT,
@@ -161,8 +180,12 @@ impl MoonlightState {
         );
     }
 
-    /// Gets or creates a default instance of the account state mapped by the provided key.
-    pub(crate) fn get_account_mut(&mut self, address: &BlsPublicKey) -> &mut Account {
+    /// Gets or creates a default instance of the account state mapped by the
+    /// provided key.
+    pub(crate) fn get_account_mut(
+        &mut self,
+        address: &BlsPublicKey,
+    ) -> &mut Account {
         self.accounts.entry(address.to_bytes()).or_default()
     }
 }

@@ -30,6 +30,7 @@ pub struct Deposit {
     pub address: BlsPublicKey,
     pub value: u64,
     pub proof: Vec<u8>,
+    pub signature: BlsSignature,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -51,6 +52,18 @@ pub struct Withdraw {
     pub note: Vec<u8>,
     pub proof: Vec<u8>,
     pub signature: BlsSignature,
+}
+
+impl Deposit {
+    pub fn to_signature_message(&self) -> Vec<u8> {
+        let mut message = Vec::with_capacity(BlsPublicKey::SIZE + 8 + self.proof.len());
+
+        message.extend_from_slice(&self.address.to_bytes());
+        message.extend_from_slice(&self.value.to_le_bytes());
+        message.extend_from_slice(&self.proof);
+
+        message
+    }
 }
 
 impl Transfer {
