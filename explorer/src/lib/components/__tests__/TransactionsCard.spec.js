@@ -1,9 +1,11 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { apiTransactions } from "$lib/mock-data";
-import { transformAPITransaction } from "$lib/chain-info";
-import { TransactionsCard } from "..";
 import { compose, mapWith, take } from "lamb";
+
+import { gqlTransactions } from "$lib/mock-data";
+import { transformTransaction } from "$lib/chain-info";
+
+import { TransactionsCard } from "..";
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
@@ -11,12 +13,13 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const getTenTransactions = compose(mapWith(transformAPITransaction), take(10));
-const data = getTenTransactions(apiTransactions.data);
-
 describe("Transactions Card", () => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(2024, 4, 20));
+  vi.setSystemTime(new Date(2024, 4, 30));
+
+  const getTenTransactions = compose(mapWith(transformTransaction), take(10));
+  const data = getTenTransactions(gqlTransactions.transactions);
+
   const baseProps = {
     error: null,
     loading: false,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setPathIn } from "lamb";
+import { setPathIn, skip, updateIn } from "lamb";
 
 import { gqlBlock } from "$lib/mock-data";
 
@@ -70,6 +70,18 @@ describe("transformBlock", () => {
         averageGasPrice: 0,
         gasUsed: 0,
       })
+    );
+  });
+
+  it("should set an empty string to the `nextblockhash` if it's missing", () => {
+    const blockWithoutNextHash = updateIn(
+      blockData,
+      "header",
+      skip(["nextBlockHash"])
+    );
+
+    expect(transformBlock(blockWithoutNextHash)).toStrictEqual(
+      setPathIn(expectedBlock, "header.nextblockhash", "")
     );
   });
 });

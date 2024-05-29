@@ -148,9 +148,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+                  href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
                 >
-                  3c6e4018cf...308e07bd2d
+                  904ad41723...1b50b2dc54
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -158,7 +158,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -182,7 +182,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   LIMIT:
                 </b>
                  
-                500,000,000
+                50,000,000
               </td>
               
               <!--&lt;TableCell&gt;-->
@@ -193,7 +193,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290766 Dusk
+                  0.000215552 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -237,9 +237,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=807d4f596ea083215bb38decf8b7e824e3efae734d6a43c2549717e57d04cf02"
+                  href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
                 >
-                  40d3e59a9b...5e8ade4d3b
+                  6971e17e16...d38530d800
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -247,7 +247,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -271,7 +271,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   LIMIT:
                 </b>
                  
-                500,000,000
+                50,000,000
               </td>
               
               <!--&lt;TableCell&gt;-->
@@ -282,7 +282,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290053 Dusk
+                  0.000215617 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -326,9 +326,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=744b1d303f71e76e530b0543c284f65a30a26b75eab194d473c59d7fbd676a0b"
+                  href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
                 >
-                  ea86c56ffa...8914074fe3
+                  c28cfe813e...bbca988fed
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -336,7 +336,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -360,7 +360,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   LIMIT:
                 </b>
                  
-                500,000,000
+                50,000,000
               </td>
               
               <!--&lt;TableCell&gt;-->
@@ -371,7 +371,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290219 Dusk
+                  0.000214413 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -415,9 +415,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=34b4404adc0d286e62ddb9bf80429d4491b61de3f5e4c54975724a6d248d8e0b"
+                  href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
                 >
-                  ea86c56ffa...8914074fe3
+                  e4a232262c...4db4b3cdec
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -425,7 +425,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -460,7 +460,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.00029046 Dusk
+                  0.000291769 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -504,9 +504,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=88ac1818eb5aeee47a1356fe5d75726943c12ea1fb8ed23efb37c847a318ed0e"
+                  href="/some-base-path/transactions/transaction?id=4fa6e913c083aa595530b1f6c010c7e5a58121307c991ea6782f9e9e4dd5510d"
                 >
-                  a85a0f5cc2...f0bb827312
+                  ea1cfc01b6...ce792d0e8a
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -514,7 +514,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -549,7 +549,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000291263 Dusk
+                  0.000290764 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -593,9 +593,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=3e430f7bbc123585a21b0689331d77a8c9e3da9b75ccc463aaf22d8a581e5507"
+                  href="/some-base-path/transactions/transaction?id=d1a7928a435021d87ea3649bff57c8154fc7b5c6c68081a61fea5779ccdb2e04"
                 >
-                  646bd535ae...67c1cb0906
+                  e4c3e5f688...50ebdcbff4
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -603,7 +603,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -638,7 +638,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290735 Dusk
+                  0.000291961 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -682,9 +682,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=776c0c54ccdd485fb32d6562b2b8b10f3cb283465da6eecba861f384725e3f0b"
+                  href="/some-base-path/transactions/transaction?id=004ca8683c315b9270e04d3768dfb58fb0f65d92a9469ca31a5d97cff9718b06"
                 >
-                  fbcda951c6...4bec844f78
+                  10cd59c725...eed7adc1f8
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -692,7 +692,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  18 hours ago
                 </small>
               </td>
               
@@ -727,7 +727,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000289627 Dusk
+                  0.000292039 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -771,9 +771,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=e022261204125d87ad99d404b73d0ca3ce4c0985e50f08b15a1619248ae0f702"
+                  href="/some-base-path/transactions/transaction?id=b5a77063e45dd90b97b2c30b4cd670fbf04ae60c4b8e3ea9fd0d0b4496253a05"
                 >
-                  a90821aca4...11467eb9c6
+                  31bcdcbf06...347aac19f3
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -781,7 +781,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -816,7 +816,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.00029061 Dusk
+                  0.000290406 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -860,9 +860,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=fd9af8e161863389c2c52c900dc3881c754c7d2549f865df95ccfa0f57fe5b04"
+                  href="/some-base-path/transactions/transaction?id=b263d9d594439be92bb9349bd97f55a05060956419f2f4a32925639d80b06e0b"
                 >
-                  4db9e793b1...e2ab163e74
+                  deb6807ba2...ecf6f1b837
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -870,7 +870,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -905,7 +905,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000291347 Dusk
+                  0.000291537 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -949,9 +949,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=65be1885cbbf9545bc3b0f3c56b34da79672f2be063d81a5d4f78b2ca5c18101"
+                  href="/some-base-path/transactions/transaction?id=b4525cb82f5cd56fcf8ceb2eb30f647d2c3567e82abb8265dd12daf5275d7709"
                 >
-                  47c9f1349f...e7ce5103db
+                  62fbd83edb...1b54a5ad89
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -959,7 +959,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -994,7 +994,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290416 Dusk
+                  0.000291361 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -1038,9 +1038,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=80f99e41794be445401bff0d8502b093fa41a88a6c3ed63061a7ec8d3fdaf30c"
+                  href="/some-base-path/transactions/transaction?id=40fb9d20eb9e6ffb27be4914f49cdf8059e2fdcc88a7b17f9499ff516584df08"
                 >
-                  4a62ff5839...6ad8084dca
+                  f76d5ee9b8...2a82c1aa9c
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1048,7 +1048,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -1083,7 +1083,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290006 Dusk
+                  0.000290385 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -1127,9 +1127,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=1391f6681e1437f4aec9db9de0d353aca41000e24bd2e4e465d4ec54c1ce8502"
+                  href="/some-base-path/transactions/transaction?id=b5ad0ec014ac415dc8ea214f9baf555728126558afc8e142f8223504f807910b"
                 >
-                  ce994d006c...966e9c1499
+                  3c48e11411...22a78a0fd7
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1137,7 +1137,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -1172,7 +1172,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290424 Dusk
+                  0.000290795 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -1216,9 +1216,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=9cc2ad9734df30b12e0283b5a40a710e334351399da4225618cb65c7982e1d04"
+                  href="/some-base-path/transactions/transaction?id=56504a6d6236fbd64671d86e6f60f20fc3e1ce09f7ee9ebc13b593ba14520c00"
                 >
-                  e852377c09...9e20371c77
+                  c5908eb686...8deece6755
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1226,7 +1226,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -1261,7 +1261,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290304 Dusk
+                  0.000290449 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -1305,9 +1305,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=63c782c0bf3867ecac8f58a58902d264ccb0c4aa40af16dbc1223e0e18d5c902"
+                  href="/some-base-path/transactions/transaction?id=d65e4ebe379d0d67142e80b377b41eaa35fa7d6e9acd3e034e6d63d5026ea001"
                 >
-                  d3d49fff7b...e944085bb8
+                  8bdc2bd0bb...be39650b45
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1315,7 +1315,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -1350,7 +1350,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000290815 Dusk
+                  0.000290555 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>
@@ -1394,9 +1394,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                  href="/some-base-path/transactions/transaction?id=052134003432470e86e62d127b97d28b2541110a78f0c79f4407ee778afe5e04"
+                  href="/some-base-path/transactions/transaction?id=6c0ac7828bd57ddf18834505b0cd64f7db91ed6504dd7224a3094e10b1febf06"
                 >
-                  a3f465cce5...82162bd94f
+                  36a09d923c...8c6663fbd7
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1404,7 +1404,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <small
                   class="transaction__time"
                 >
-                  last month
+                  19 hours ago
                 </small>
               </td>
               
@@ -1439,7 +1439,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  0.000289437 Dusk
+                  0.000291983 Dusk
                 </span>
                 <!--&lt;Badge&gt;-->
               </td>

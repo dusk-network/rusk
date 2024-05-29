@@ -140,9 +140,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=9ebf7e785d75bc7c8fdc386f6806ffa0964b19c6f18f56d869274ea046ed0148"
+                  href="/some-base-path/blocks/block?id=3d43be31a8cb5d3f61b4e8391800a01033d650b11c4c874210dbaa3c118474a6"
                 >
-                  487,491
+                  1,365,454
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -150,7 +150,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -211,9 +211,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=d5d5d211791468e09d3224eb194b9ae89f0ba1ad5dea1e8e458e7a3cb9b01bfa"
+                  href="/some-base-path/blocks/block?id=2bc290511be774ec9c04e6c0ceb2469798242b997422c542a7d6b0b6f3368414"
                 >
-                  487,490
+                  1,365,453
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -221,7 +221,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -282,9 +282,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=07d8c3fedd76afcf108dacc311867062393a39cf34a76d5226c7ec8360017117"
+                  href="/some-base-path/blocks/block?id=02f38d2e2a986cf77a70e8fe4f333ef9c5e075987891f3f526c8a57590800178"
                 >
-                  487,489
+                  1,365,452
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -292,7 +292,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -353,9 +353,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=6ffed76cc339260d215219c3e6a710ae8fc0d81f68cfb201b1db1c9c57d9ca4c"
+                  href="/some-base-path/blocks/block?id=c79e31ce8e6133ebfb0d85649a12167769ddc83420550faebc536e613d74d676"
                 >
-                  487,488
+                  1,365,451
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -363,7 +363,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -424,9 +424,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=284f14e50099db32bc34fc0cbecc016224100dd461fa4e2e02a60ffc77f7b391"
+                  href="/some-base-path/blocks/block?id=22ffe1b159e1b33b06d566b3ce3119af6f4bec4d2a3f6916560fe3cb30fcc1ef"
                 >
-                  487,487
+                  1,365,450
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -434,7 +434,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -495,9 +495,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=adb7e41bd1509ee542b782a9ae59d82aec00d7ac0810b0bf6d6a6ea6fb54bced"
+                  href="/some-base-path/blocks/block?id=79c2d3213df80f8113d1ca16c49b1818fb5c31d1437e0a447719491a9c1b5f85"
                 >
-                  487,486
+                  1,365,449
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -505,7 +505,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -566,9 +566,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=b16fa4cac5f70b0b021fb7fc0f5388c6a4ad56d21f5170dea8e2abdfc836462c"
+                  href="/some-base-path/blocks/block?id=fb3e82e43b141409156f935afc69ccb09a59a72a10258401b539123981db571c"
                 >
-                  487,485
+                  1,365,448
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -576,7 +576,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -637,9 +637,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=0848155ae84398b4a2424a526d9a9e28befa2fff5e54eb253592df9e62cda572"
+                  href="/some-base-path/blocks/block?id=4b402a917bf42561096a9224e6451b77b8cbdc50272013442eccb5fcc542ef12"
                 >
-                  487,484
+                  1,365,447
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -647,7 +647,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -708,9 +708,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=e583705447034015672243dc5ec694e673344d3969846d5606cca88e2a6fef9f"
+                  href="/some-base-path/blocks/block?id=38d069620a7cbad7cadb10ecc797b1344284b6324ac85f5e126226a08d47398a"
                 >
-                  487,483
+                  1,365,446
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -718,7 +718,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -779,9 +779,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=8bc650bb577f6d4a93b41523712f2f2c82911395e871c022dfa56d54c12061bc"
+                  href="/some-base-path/blocks/block?id=14c7d9f5e44d599a167d82a449d73daf54e32bf002c6cd5893de5f904024922a"
                 >
-                  487,482
+                  1,365,445
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -789,7 +789,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -850,9 +850,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=e9433700000599cc70a554242416c1fdffbc23e426f93b30a357a3cc459882cd"
+                  href="/some-base-path/blocks/block?id=e8e93e35a501d03e47b9693a32ab58ba1dc3ea1e59dd860de0c7085ff1548838"
                 >
-                  487,481
+                  1,365,444
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -860,7 +860,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -921,9 +921,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=53ff5df0b09509463ed7b0454ce311b7db1c285333c7a4d9c9e7ab338dc22589"
+                  href="/some-base-path/blocks/block?id=32b85beacd508de90fc292914101edc47f96391896ccca8b37c90030a0c6cf5a"
                 >
-                  487,480
+                  1,365,443
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -931,7 +931,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -992,9 +992,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=b44d1d9cd1f3875e62c46e26829e0f0666aacca839f8e0e9c404c24a9721bd21"
+                  href="/some-base-path/blocks/block?id=0a4e8eb58f138cad89fbb5c281771a71c5efef3fa3d1ecfd66526b0214e9c02c"
                 >
-                  487,479
+                  1,365,442
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1002,7 +1002,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -1063,9 +1063,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=f2ebec819f7f3637e21ac00e29d20e827ffb1ad2fc476d1612c2ef64e8f913ae"
+                  href="/some-base-path/blocks/block?id=261bf76439948b7c371f6b14f6b94b43b0c992b85f35abd615c41407aebac019"
                 >
-                  487,478
+                  1,365,441
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1073,7 +1073,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               
@@ -1134,9 +1134,9 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
-                  href="/some-base-path/blocks/block?id=176129640e2fca151bde3dbd48fe1e2a75af3bf892041650395bc5b8e6d5c0c5"
+                  href="/some-base-path/blocks/block?id=0606a98c2bf324976e64c85c90e12a8e38275b9a24da2ce807be0cca98bd3f2e"
                 >
-                  487,477
+                  1,365,440
                 </a>
                 <!--&lt;Anchor&gt;-->
                 <!--&lt;AppAnchor&gt;-->
@@ -1144,7 +1144,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <small
                   class="block__time"
                 >
-                  last month
+                  yesterday
                 </small>
               </td>
               

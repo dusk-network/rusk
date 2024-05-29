@@ -11,20 +11,20 @@
     $appStore.fetchInterval
   );
 
-  $: ({ data, error, isLoading } = $pollingDataStore);
-  $: ({ network: currentNetwork } = $appStore);
-
   onNetworkChange((network) => {
     pollingDataStore.reset();
-    pollingDataStore.start(network);
+    pollingDataStore.start(network, $appStore.blocksListEntries);
   });
 
   onDestroy(pollingDataStore.stop);
+
+  $: ({ data, error, isLoading } = $pollingDataStore);
+  $: ({ blocksListEntries, network: currentNetwork } = $appStore);
 </script>
 
 <section id="blocks">
   <BlocksCard
-    on:retry={() => pollingDataStore.start(currentNetwork)}
+    on:retry={() => pollingDataStore.start(currentNetwork, blocksListEntries)}
     blocks={data}
     {error}
     loading={isLoading}
