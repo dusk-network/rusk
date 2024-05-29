@@ -5,6 +5,8 @@ members = [
 
     "contracts/alice",
     "contracts/bob",
+    "contracts/moonlight",
+    "contracts/moonlight-types",
     "contracts/stake",
     "contracts/transfer",
     "contracts/license",

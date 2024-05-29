@@ -1,0 +1,17 @@
+[package]
+name = "moonlight-contract"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
+dusk-bytes = "0.1"
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+transfer-contract-types = { version = "0.1.0", path = "../transfer-types", default-features = false }
+moonlight-contract-types = { version = "0.1.0-rc", path = "../moonlight-types", default-features = false }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi" }
