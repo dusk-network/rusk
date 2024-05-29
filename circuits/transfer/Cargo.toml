@@ -16,32 +16,8 @@ dusk-merkle = { version = "0.5", features = ["size_32"] }
 jubjub-schnorr = { version = "0.2", features = ["double"] }
 phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl", "alloc"] }
 
-rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
-storage = { version = "0.1", path = "../storage", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
 ff = { version = "0.13", default-features = false }
-
-[features]
-store = ["rusk-profile", "storage"]
-
-[[bin]]
-name = "transfer-circuits-store"
-path = "src/bin/store.rs"
-required-features = ["store"]
-
-[[test]]
-name = "test-execute"
-path = "tests/execute.rs"
-required-features = ["rusk-profile"]
-
-[[test]]
-name = "test-stct"
-path = "tests/send_to_contract_transparent.rs"
-required-features = ["rusk-profile"]
-
-[[test]]
-name = "test-wft"
-path = "tests/withdraw_from_transparent.rs"
-required-features = ["rusk-profile"]
+rusk-profile = { version = "0.6", path = "../../rusk-profile" }

@@ -4,25 +4,50 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::io::{self, ErrorKind};
+
 use cargo_toml::{Dependency, Manifest};
 use dusk_plonk::prelude::Circuit;
-use rusk_profile::{Circuit as CircuitProfile, Theme};
-use std::io::{self, ErrorKind};
 use tracing::info;
-use tracing_subscriber::prelude::*;
 
-pub fn store_circuit<C>(name: Option<String>) -> io::Result<()>
+use license_circuits::LicenseCircuit;
+use transfer_circuits::{
+    ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
+    ExecuteCircuitTwoTwo, SendToContractTransparentCircuit,
+    WithdrawFromTransparentCircuit,
+};
+
+use rusk_profile::{Circuit as CircuitProfile, Theme};
+
+pub fn cache_all() -> io::Result<()> {
+    // cache the circuit description, this only updates the circuit description
+    // if the new circuit is different from a previously cached version
+    cache::<WithdrawFromTransparentCircuit>(Some(String::from(
+        "WithdrawFromTransparentCircuit",
+    )))?;
+    cache::<SendToContractTransparentCircuit>(Some(String::from(
+        "SendToContractTransparentCircuit",
+    )))?;
+    cache::<ExecuteCircuitOneTwo>(Some(String::from("ExecuteCircuitOneTwo")))?;
+    cache::<ExecuteCircuitTwoTwo>(Some(String::from("ExecuteCircuitTwoTwo")))?;
+    cache::<ExecuteCircuitThreeTwo>(Some(String::from(
+        "ExecuteCircuitThreeTwo",
+    )))?;
+    cache::<ExecuteCircuitFourTwo>(Some(String::from(
+        "ExecuteCircuitFourTwo",
+    )))?;
+    cache::<LicenseCircuit>(Some(String::from("LicenseCircuit")))?;
+
+    Ok(())
+}
+
+// Caches the compressed circuit description of the generic `Circuit`.
+// If there is a circuit stored under the same name already, it is only
+// overridden if the description changed or plonk had a major verision bump.
+pub fn cache<C>(name: Option<String>) -> io::Result<()>
 where
     C: Circuit,
 {
-    // enable tracing logs
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .without_time()
-        .with_target(false)
-        .with_level(false)
-        .compact();
-    let _ = tracing_subscriber::registry().with(fmt_layer).try_init();
-
     // check if a circuit with the same name is stored already
     let stored_circuit = match name {
         Some(ref circuit_name) => {
@@ -70,7 +95,7 @@ where
 }
 
 fn parse_plonk_version() -> io::Result<String> {
-    let cargo_toml = include_bytes!("../Cargo.toml");
+    let cargo_toml = include_bytes!("../../Cargo.toml");
     let cargo_toml = Manifest::from_slice(cargo_toml).map_err(|e| {
         io::Error::new(
             ErrorKind::InvalidInput,

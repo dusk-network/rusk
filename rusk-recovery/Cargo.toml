@@ -23,6 +23,10 @@ zip = "0.5"
 url = "2.3"
 flate2 = "1"
 tar = "0.4"
+cargo_toml = "0.15"
+
+transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
+license-circuits = { version = "0.1", path = "../circuits/license" }
 
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
