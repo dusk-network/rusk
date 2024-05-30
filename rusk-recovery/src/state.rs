@@ -138,15 +138,15 @@ fn generate_empty_state<P: AsRef<Path>>(
     let mut session = rusk_abi::new_genesis_session(&vm);
 
     let transfer_code = include_bytes!(
-        "../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
 
     let stake_code = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+        "../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
     let license_code = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/license_contract.wasm"
+        "../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
