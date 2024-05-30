@@ -58,13 +58,13 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     pk: &PublicKey,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let alice_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     );
     let bob_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
