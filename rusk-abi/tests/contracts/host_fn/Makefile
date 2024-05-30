@@ -1,5 +1,8 @@
+TARGET_DIR:="../../../../target/dusk"
+
 wasm: ## Generate the optimized WASM for the contract given
 	@RUSTFLAGS="-C link-args=-zstack-size=65536" \
+	CARGO_TARGET_DIR=$(TARGET_DIR) \
     	cargo +dusk build \
     	  --release \
     	  --color=always \

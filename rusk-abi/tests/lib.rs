@@ -50,7 +50,7 @@ fn hash_host() {
 
 fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
     let bytecode = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+        "../../target/dusk/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
