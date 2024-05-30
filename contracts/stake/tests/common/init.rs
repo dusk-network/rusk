@@ -23,10 +23,10 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     genesis_value: u64,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let stake_bytecode = include_bytes!(
-        "../../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+        "../../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
