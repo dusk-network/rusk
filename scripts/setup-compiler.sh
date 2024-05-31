@@ -17,7 +17,7 @@ COMPILER_ARCH=$(rustc -vV | sed -n 's|host: ||p')
 ARTIFACT_NAME=duskc-$COMPILER_ARCH.zip
 ARTIFACT_URL=$RELEASES_URL/$COMPILER_VERSION/$ARTIFACT_NAME
 
-ARTIFACT_DIR=$PWD/target/dusk/$COMPILER_VERSION
+ARTIFACT_DIR=$PWD/target/dusk/compiler/$COMPILER_VERSION
 ARTIFACT_PATH=$ARTIFACT_DIR/$ARTIFACT_NAME
 
 # If the artifact doesn't already exist in the target directory, download it,

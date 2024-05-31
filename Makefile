@@ -16,7 +16,6 @@ state: keys wasm ## Create the network state
 
 wasm: setup-compiler ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@
-	$(MAKE) -C ./rusk-abi $@
 
 allcircuits: ## Build circuit crates
 	$(MAKE) -j -C ./circuits all
