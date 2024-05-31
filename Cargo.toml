@@ -3,8 +3,12 @@ members = [
     "circuits/transfer",
     "circuits/license",
 
+    # Test contracts
     "contracts/alice",
     "contracts/bob",
+    "contracts/host_fn",
+
+    # Genesis contracts
     "contracts/stake",
     "contracts/transfer",
     "contracts/license",
@@ -15,10 +19,7 @@ members = [
 
     "rusk-recovery",
     "rusk-profile",
-
     "rusk-abi",
-    "rusk-abi/tests/contracts/host_fn",
-
     "rusk",
 
     "node-data",
