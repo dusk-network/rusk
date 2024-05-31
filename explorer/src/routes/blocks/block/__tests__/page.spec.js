@@ -15,6 +15,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 describe("Block Details", () => {
   vi.useFakeTimers();
+  vi.setSystemTime(new Date(2024, 4, 20));
 
   const getBlockSpy = vi
     .spyOn(duskAPI, "getBlock")

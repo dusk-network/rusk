@@ -19,6 +19,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 describe("Transaction Details", () => {
   vi.useFakeTimers();
+  vi.setSystemTime(new Date(2024, 4, 20));
 
   const getTransactionSpy = vi
     .spyOn(duskAPI, "getTransaction")
