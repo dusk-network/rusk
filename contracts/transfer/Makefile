@@ -18,11 +18,11 @@ test: wasm ## Perform the contract tests defined in the host module
 wasm: ## Build the WASM files
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \
 	CARGO_TARGET_DIR=$(TARGET_DIR) \
-		cargo +dusk build \
-			--release \
-			--color=always \
-			-Z build-std=core,alloc \
-			--target wasm64-unknown-unknown
+	cargo +dusk build \
+		--release \
+		--color=always \
+		-Z build-std=core,alloc \
+		--target wasm64-unknown-unknown
 			
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
