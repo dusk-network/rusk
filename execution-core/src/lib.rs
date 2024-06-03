@@ -51,7 +51,7 @@ pub type NoteSignature = SchnorrSignature;
 
 // phoenix types
 pub use phoenix_core::{
-    transaction::stct_signature_message, Crossover, Error as PhoenixError, Fee,
-    Message, Note, Ownable, PublicKey, Remainder, SecretKey, StealthAddress,
-    Transaction, ViewKey,
+    value_commitment, Error as PhoenixError, Note, PublicKey, SecretKey,
+    Sender, StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE,
+    OUTPUT_NOTES,
 };

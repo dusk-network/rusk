@@ -7,7 +7,6 @@
 //! Types used by Dusk's stake contract.
 
 extern crate alloc;
-use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
@@ -37,8 +36,6 @@ pub struct Stake {
     pub signature: StakeSignature,
     /// Value to stake.
     pub value: u64,
-    /// Proof of the `STCT` circuit.
-    pub proof: Vec<u8>,
 }
 
 impl Stake {
@@ -60,31 +57,36 @@ impl Stake {
 }
 
 /// Unstake a value from the stake contract.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Unstake {
     /// Public key to unstake.
     pub public_key: StakePublicKey,
     /// Signature belonging to the given public key.
     pub signature: StakeSignature,
-    /// Note to withdraw to.
-    pub note: Vec<u8>, // todo: not sure it will stay as Vec
-    /// A proof of the `WFCT` circuit.
-    pub proof: Vec<u8>,
+    /// The address to mint to.
+    pub address: StealthAddress,
 }
 
 impl Unstake {
+    const MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE + StealthAddress::SIZE;
     /// Signature message used for [`Unstake`].
-    pub fn signature_message<T>(counter: u64, note: T) -> Vec<u8>
-    where
-        T: AsRef<[u8]>,
-    {
-        let mut vec = Vec::new();
+    #[must_use]
+    pub fn signature_message(
+        counter: u64,
+        value: u64,
+        address: StealthAddress,
+    ) -> [u8; Self::MESSAGE_SIZE] {
+        let mut bytes = [0u8; Self::MESSAGE_SIZE];
 
-        vec.extend_from_slice(&counter.to_bytes());
-        vec.extend_from_slice(note.as_ref());
+        bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
+        bytes[u64::SIZE..u64::SIZE + u64::SIZE]
+            .copy_from_slice(&value.to_bytes());
+        bytes[u64::SIZE + u64::SIZE
+            ..u64::SIZE + u64::SIZE + StealthAddress::SIZE]
+            .copy_from_slice(&address.to_bytes());
 
-        vec
+        bytes
     }
 }
 
