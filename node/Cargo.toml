@@ -48,6 +48,7 @@ rand = "0.8"
 rand_core = "0.6"
 tempdir = "0.3"
 criterion = { version = "0.5", features = ["async_futures"] }
+rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false }
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"
