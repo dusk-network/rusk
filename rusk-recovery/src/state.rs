@@ -231,8 +231,6 @@ where
 
     closure(&mut session);
 
-    closure(&mut session);
-
     info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
     fs::write(state_id_path, commit_id)?;
