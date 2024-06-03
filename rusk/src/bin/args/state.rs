@@ -63,7 +63,7 @@ pub fn recovery_state(
 
     info!("{} new state", theme.info("Building"));
 
-    let (_, commit_id) = deploy(&state_dir, &init)?;
+    let (_, commit_id) = deploy(&state_dir, &init, |_| {})?;
 
     info!("{} {}", theme.action("Final Root"), hex::encode(commit_id));
 
