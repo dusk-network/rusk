@@ -80,31 +80,31 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
         if candidate_block.version > 0 {
-            return Err(anyhow!("unsupported block version"));
+            anyhow::bail!("unsupported block version");
         }
 
         if candidate_block.hash == [0u8; 32] {
-            return Err(anyhow!("empty block hash"));
+            anyhow::bail!("empty block hash");
         }
 
         if candidate_block.height != self.prev_header.height + 1 {
-            return Err(anyhow!(
+            anyhow::bail!(
                 "invalid block height block_height: {:?}, curr_height: {:?}",
                 candidate_block.height,
                 self.prev_header.height,
-            ));
+            );
         }
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
-            return Err(anyhow!("invalid previous block hash"));
+            anyhow::bail!("invalid previous block hash");
         }
 
         if candidate_block.timestamp > get_current_timestamp() {
-            return Err(anyhow!("invalid future timestamp"));
+            anyhow::bail!("invalid future timestamp");
         }
 
         if candidate_block.timestamp < self.prev_header.timestamp {
-            return Err(anyhow!("invalid timestamp"));
+            anyhow::bail!("invalid timestamp");
         }
 
         if candidate_block.iteration < RELAX_ITERATION_THRESHOLD {
@@ -123,7 +123,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         // Ensure block is not already in the ledger
         self.db.read().await.view(|v| {
             if Ledger::get_block_exists(&v, &candidate_block.hash)? {
-                return Err(anyhow!("block already exists"));
+                anyhow::bail!("block already exists");
             }
 
             Ok(())
