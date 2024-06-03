@@ -85,6 +85,11 @@ unsafe fn num_notes(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.num_notes())
 }
 
+#[no_mangle]
+unsafe fn gas_price(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.gas_price())
+}
+
 // "Feeder" queries
 
 #[no_mangle]
@@ -109,10 +114,13 @@ unsafe fn spend_and_execute(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn refund(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(fee, gas_spent)| {
-        assert_external_caller();
-        STATE.refund(fee, gas_spent)
-    })
+    rusk_abi::wrap_call(
+        arg_len,
+        |(fee, gas_spent, economic_mode, contract_id)| {
+            assert_external_caller();
+            STATE.refund(fee, gas_spent, economic_mode, contract_id)
+        },
+    )
 }
 
 #[no_mangle]
