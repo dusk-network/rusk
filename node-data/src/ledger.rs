@@ -17,6 +17,7 @@ use execution_core::{BlsPublicKey, Transaction as PhoenixTransaction};
 
 #[cfg(any(feature = "faker", test))]
 use fake::{Dummy, Fake, Faker};
+use rusk_abi::EconomicMode;
 
 pub type Seed = Signature;
 pub type Hash = [u8; 32];
@@ -96,6 +97,7 @@ pub struct SpentTransaction {
     pub inner: Transaction,
     pub block_height: u64,
     pub gas_spent: u64,
+    pub economic_mode: EconomicMode,
     pub err: Option<String>,
 }
 
@@ -443,6 +445,7 @@ pub mod faker {
                 inner: tx,
                 block_height: 0,
                 gas_spent: 3,
+                economic_mode: EconomicMode::None,
                 err: Some("error".to_string()),
             }
         }
