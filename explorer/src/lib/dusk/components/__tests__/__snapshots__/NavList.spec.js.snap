@@ -7,7 +7,7 @@ exports[`NavList > renders the NavList component 1`] = `
   >
     
     <a
-      class="dusk-anchor dusk-nav-list__link"
+      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
       href="https://dusk.network"
     >
       Dusk
@@ -16,7 +16,7 @@ exports[`NavList > renders the NavList component 1`] = `
     <!--&lt;AppAnchor&gt;-->
     
     <a
-      class="dusk-anchor dusk-nav-list__link"
+      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
       href="https://explorer.dusk.network"
     >
       Explorer
@@ -36,7 +36,7 @@ exports[`NavList > should pass additional class names and attributes to the rend
   >
     
     <a
-      class="dusk-anchor dusk-nav-list__link"
+      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
       href="https://dusk.network"
     >
       Dusk
@@ -45,7 +45,7 @@ exports[`NavList > should pass additional class names and attributes to the rend
     <!--&lt;AppAnchor&gt;-->
     
     <a
-      class="dusk-anchor dusk-nav-list__link"
+      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
       href="https://explorer.dusk.network"
     >
       Explorer

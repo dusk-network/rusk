@@ -52,8 +52,8 @@
   </ListItem>
 
   <!-- TIMESTAMP -->
-  <ListItem tooltipText="The date and time the transaction was created">
-    <svelte:fragment slot="term">timestamp</svelte:fragment>
+  <ListItem tooltipText="Time elapsed since the transaction was created">
+    <svelte:fragment slot="term">relative time</svelte:fragment>
     <time
       datetime={data.date.toISOString()}
       class="transaction-details__list-timestamp"

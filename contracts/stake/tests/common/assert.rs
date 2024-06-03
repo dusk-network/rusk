@@ -4,16 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bls12_381_bls::PublicKey;
 use dusk_bytes::Serializable;
 use rkyv::{check_archived_root, Deserialize, Infallible};
+
+use execution_core::{stake::StakingEvent, StakePublicKey};
 use rusk_abi::Event;
-use stake_contract_types::StakingEvent;
 
 pub fn assert_event<S>(
     events: &Vec<Event>,
     topic: S,
-    should_pk: &PublicKey,
+    should_pk: &StakePublicKey,
     should_amount: u64,
 ) where
     S: AsRef<str>,

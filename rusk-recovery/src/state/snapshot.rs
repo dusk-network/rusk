@@ -7,19 +7,16 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use phoenix_core::PublicKey;
+use execution_core::PublicKey;
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
-mod governance;
 mod stake;
 mod wrapper;
 
 use crate::state;
 pub use stake::GenesisStake;
 use wrapper::Wrapper;
-
-pub use self::governance::Governance;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct Balance {
@@ -45,8 +42,6 @@ pub struct Snapshot {
     balance: Vec<Balance>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     stake: Vec<GenesisStake>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
-    governance: Vec<Governance>,
 }
 
 impl Debug for Snapshot {
@@ -78,10 +73,6 @@ impl Snapshot {
 
     pub fn base_state(&self) -> Option<&str> {
         self.base_state.as_deref()
-    }
-
-    pub fn governance_contracts(&self) -> impl Iterator<Item = &Governance> {
-        self.governance.iter()
     }
 }
 

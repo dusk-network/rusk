@@ -4,27 +4,26 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Theme;
-
-use dusk_bls12_381::BlsScalar;
-use dusk_bytes::DeserializableSlice;
-use dusk_jubjub::JubJubScalar;
-use ff::Field;
-use once_cell::sync::Lazy;
-use phoenix_core::PublicKey;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use rusk_abi::{ContractData, ContractId, Session, VM};
-use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::error::Error;
 use std::fs;
 use std::path::Path;
+
+use dusk_bytes::DeserializableSlice;
+use ff::Field;
+use once_cell::sync::Lazy;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use tracing::info;
 use url::Url;
 
-pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
-use stake_contract_types::StakeData;
-use transfer_contract_types::Mint;
+use execution_core::{
+    stake::StakeData, transfer::Mint, BlsScalar, JubJubScalar, PublicKey,
+};
+use rusk_abi::{ContractData, ContractId, Session, VM};
+use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
+
+use crate::Theme;
+pub use snapshot::{Balance, GenesisStake, Snapshot};
 
 mod http;
 mod snapshot;
@@ -47,47 +46,6 @@ pub static FAUCET_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let bytes = bs58::decode(addr).into_vec().expect("valid hex");
     PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
 });
-
-fn deploy_governance_contract(
-    session: &mut Session,
-    governance: &Governance,
-) -> Result<(), Box<dyn Error>> {
-    let contract_id = governance.contract();
-    let bytecode = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
-    );
-
-    let theme = Theme::default();
-    info!(
-        "{} {} governance to {}",
-        theme.action("Deploying"),
-        governance.name,
-        hex::encode(contract_id)
-    );
-    session.deploy(
-        bytecode,
-        ContractData::builder()
-            .owner(governance.owner())
-            .contract_id(contract_id),
-        u64::MAX,
-    )?;
-
-    // Set the broker and the authority of the governance contract
-    session.call::<_, ()>(
-        contract_id,
-        "set_broker",
-        governance.broker(),
-        u64::MAX,
-    )?;
-    session.call::<_, ()>(
-        contract_id,
-        "set_authority",
-        governance.authority(),
-        u64::MAX,
-    )?;
-
-    Ok(())
-}
 
 fn generate_transfer_state(
     session: &mut Session,
@@ -180,15 +138,15 @@ fn generate_empty_state<P: AsRef<Path>>(
     let mut session = rusk_abi::new_genesis_session(&vm);
 
     let transfer_code = include_bytes!(
-        "../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
 
     let stake_code = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+        "../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
     let license_code = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/license_contract.wasm"
+        "../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
@@ -271,9 +229,7 @@ where
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
 
-    for governance in snapshot.governance_contracts() {
-        deploy_governance_contract(&mut session, governance)?;
-    }
+    closure(&mut session);
 
     closure(&mut session);
 

@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import { apiBlock } from "$lib/mock-data";
+import { gqlBlock } from "$lib/mock-data";
 import { transformBlock } from "$lib/chain-info";
 import { BlockDetails } from "../";
 
@@ -10,16 +10,18 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const baseProps = {
-  data: transformBlock(apiBlock.data.blocks[0]),
-  error: null,
-  loading: false,
-};
-
 describe("Block Details", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));
+
+  const baseProps = {
+    data: transformBlock(gqlBlock.block),
+    error: null,
+    loading: false,
+  };
+
   afterEach(cleanup);
+
   afterAll(() => {
     vi.useRealTimers();
   });

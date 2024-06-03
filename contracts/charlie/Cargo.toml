@@ -8,10 +8,8 @@ resolver = "2"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+execution-core = { version = "0.1.0", path = "../../execution-core" }
+rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", features = ["dlmalloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
-bls12_381-bls = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", features = ["dlmalloc"] }
 dusk-bytes = "0.1"
-transfer-contract-types = { version = "0.1.0", path = "../transfer-types", default-features = false }

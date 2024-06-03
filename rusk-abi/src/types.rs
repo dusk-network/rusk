@@ -6,9 +6,9 @@
 
 #![allow(dead_code)]
 
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
-use phoenix_core::PublicKey;
+use execution_core::{
+    BlsScalar, JubJubAffine, JubJubExtended, JubJubScalar, PublicKey,
+};
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};

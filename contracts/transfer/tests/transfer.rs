@@ -8,12 +8,8 @@ pub mod common;
 
 use crate::common::utils::*;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use ff::Field;
-use phoenix_core::transaction::*;
-use phoenix_core::{Fee, Note, Ownable, PublicKey, SecretKey, ViewKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
@@ -22,6 +18,12 @@ use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
     ExecuteCircuitTwoTwo, SendToContractTransparentCircuit,
     WithdrawFromTransparentCircuit,
+};
+
+use execution_core::{
+    transfer::{Stct, Wfct, TRANSFER_TREE_DEPTH},
+    BlsScalar, Fee, JubJubScalar, Note, Ownable, PublicKey, SecretKey,
+    Transaction, ViewKey, GENERATOR_NUMS_EXTENDED,
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
@@ -51,13 +53,13 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     pk: &PublicKey,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let alice_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     );
     let bob_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);

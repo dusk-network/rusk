@@ -131,3 +131,13 @@
     top: 5rem;
   }
 }
+
+/*
+  Workaround for Bug 1851397
+  https: //bugzilla.mozilla.org/show_bug.cgi?id=1851397
+*/
+@-moz-document url-prefix() {
+  .dusk-navbar__menu--network {
+    letter-spacing: 0 !important;
+  }
+}

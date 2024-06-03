@@ -10,6 +10,7 @@
 
 extern crate alloc;
 
+pub(crate) mod collection;
 mod error;
 mod license_types;
 #[cfg(target_family = "wasm")]

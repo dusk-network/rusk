@@ -75,7 +75,7 @@
   border-top: 1px solid var(--primary-color);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 992px) {
   .statistics-panel {
     flex-direction: row;
   }

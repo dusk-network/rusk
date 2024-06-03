@@ -2,27 +2,25 @@
 members = [
     "circuits/transfer",
     "circuits/license",
-    "circuits/storage",
 
-    "contract-helpers",
+    # Test contracts
     "contracts/alice",
     "contracts/bob",
     "contracts/charlie",
+    "contracts/host_fn",
+
+    # Genesis contracts
     "contracts/stake",
-    "contracts/stake-types",
-    "contracts/governance",
     "contracts/transfer",
-    "contracts/transfer-types",
     "contracts/license",
+
+    "execution-core",
 
     "rusk-prover",
 
     "rusk-recovery",
     "rusk-profile",
-
     "rusk-abi",
-    "rusk-abi/tests/contracts/host_fn",
-
     "rusk",
 
     "node-data",

@@ -6,8 +6,11 @@
 
   /** @type {string} */
   export let href;
+
+  /** @type {boolean} */
+  export let onSurface = true;
 </script>
 
-<Anchor {...$$restProps} href={addBasePath(href)} on:click>
+<Anchor {onSurface} {...$$restProps} href={addBasePath(href)} on:click>
   <slot />
 </Anchor>

@@ -85,7 +85,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         class="details-list__definition"
       >
         <a
-          class="dusk-anchor transaction-details__list-anchor"
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
           href="/some-base-path/blocks/block?id=3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d"
         >
           487,166
@@ -157,9 +157,9 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           datetime="2024-04-16T06:39:09.000Z"
           slot="definition"
         >
-          last month
-           
-          Tue, 16 Apr 2024 06:39:09 GMT
+          Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>
@@ -451,7 +451,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         class="details-list__definition"
       >
         <a
-          class="dusk-anchor transaction-details__list-anchor"
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
           href="/some-base-path/blocks/block?id=3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d"
         >
           487,166
@@ -523,9 +523,9 @@ exports[`Transaction Details > renders the Transaction Details component with th
           datetime="2024-04-16T06:39:09.000Z"
           slot="definition"
         >
-          last month
-           
-          Tue, 16 Apr 2024 06:39:09 GMT
+          Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>

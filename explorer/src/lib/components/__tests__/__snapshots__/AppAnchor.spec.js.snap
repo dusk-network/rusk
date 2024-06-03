@@ -2,7 +2,7 @@
 
 exports[`AppAnchor > should render an \`Anchor\` with the base path prepended to the \`href\` attribute, if the \`href\` represents an absolute URL 1`] = `
 <a
-  class="dusk-anchor foo bar"
+  class="dusk-anchor dusk-anchor--on-surface foo bar"
   href="/some-base-path/setup"
   id="some-id"
 >

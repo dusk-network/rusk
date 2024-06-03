@@ -178,11 +178,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         Payload::Candidate(_)
                         | Payload::Validation(_)
                         | Payload::Ratification(_) => {
+                            let acc = self.acceptor.as_ref().expect("initialize is called");
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
                                 warn!("msg discarded: {e}");
                             }
                         },
                         Payload::Quorum(payload) => {
+                            let acc = self.acceptor.as_ref().expect("initialize is called");
                             if let Err(e) = acc.read().await.reroute_msg(msg.clone()).await {
                                 warn!("msg discarded: {e}");
                             }

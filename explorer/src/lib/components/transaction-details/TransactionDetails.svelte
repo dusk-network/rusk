@@ -1,7 +1,13 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { AppAnchor, DataCard, DataGuard, ListItem } from "$lib/components";
+  import {
+    AppAnchor,
+    DataCard,
+    DataGuard,
+    ListItem,
+    Rerender,
+  } from "$lib/components";
   import { Badge, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -15,6 +21,7 @@
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
+  import { goto } from "$lib/navigation";
   import { onMount } from "svelte";
   import "./TransactionDetails.css";
 
@@ -69,7 +76,7 @@
   className={classes}
   title="Transaction Details"
   headerButtonDetails={{
-    action: () => history.back(),
+    action: () => goto("/transactions"),
     disabled: false,
     label: "Back",
     variant: "tertiary",
@@ -119,8 +126,9 @@
         class="transaction-details__list-timestamp"
         slot="definition"
       >
-        {getRelativeTimeString(data.date, "long")}
-        {data.date.toUTCString()}
+        <Rerender>
+          {`${data.date.toUTCString()} (${getRelativeTimeString(data.date, "long")})`}
+        </Rerender>
       </time>
     </ListItem>
 

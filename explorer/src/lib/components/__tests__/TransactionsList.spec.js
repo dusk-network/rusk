@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { TransactionsList } from "..";
-import { apiTransaction } from "$lib/mock-data";
+import { gqlTransaction } from "$lib/mock-data";
 import { transformTransaction } from "$lib/chain-info";
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -10,11 +10,11 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-const baseProps = { data: transformTransaction(apiTransaction.data[0]) };
-
 describe("Transactions List", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));
+
+  const baseProps = { data: transformTransaction(gqlTransaction.tx) };
 
   afterEach(cleanup);
 

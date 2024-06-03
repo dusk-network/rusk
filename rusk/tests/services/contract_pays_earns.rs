@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
-use phoenix_core::{PublicKey, SecretKey};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
@@ -19,6 +18,8 @@ use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
 use tracing::info;
+
+use execution_core::{BlsPublicKey, BlsSecretKey};
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, ExecuteResult};
@@ -46,12 +47,12 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
         let charlie_bytecode = include_bytes!(
-            "../../../target/wasm32-unknown-unknown/release/charlie.wasm"
+            "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
         );
 
         let mut rng = StdRng::seed_from_u64(0xcafe);
-        let charlie_owner_ssk = SecretKey::random(&mut rng);
-        let charlie_owner_psk = PublicKey::from(&charlie_owner_ssk);
+        let charlie_owner_ssk = BlsSecretKey::random(&mut rng);
+        let charlie_owner_psk = BlsPublicKey::from(&charlie_owner_ssk);
 
         session
             .deploy(
@@ -101,7 +102,7 @@ fn make_and_execute_transaction(
         "The sender should have the given initial balance"
     );
 
-    let mut rng = StdRng::seed_from_u64(0xdead);
+    let mut rng = StdRng::seed_from_u64(0xcafe);
 
     let tx = wallet
         .execute(

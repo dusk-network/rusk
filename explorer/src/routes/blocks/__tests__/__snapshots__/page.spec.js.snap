@@ -1,0 +1,1217 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Blocks page > should render the Blocks page, start polling for blocks and stop the polling when unmounted 1`] = `
+<div>
+  <section
+    id="blocks"
+  >
+    <div
+      class="dusk-card data-card"
+    >
+      <header
+        class="data-card__header"
+        slot="header"
+      >
+        <h1
+          class="data-card__header-title"
+        >
+          Blocks
+        </h1>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+          disabled=""
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Show More
+          </span>
+        </button>
+        <!--&lt;Button&gt;-->
+      </header>
+       
+      <p
+        class="data-card__loading-notice"
+      >
+        Loading...
+      </p>
+      
+       
+    </div>
+    
+    <!--&lt;Card&gt;-->
+    <!--&lt;DataCard&gt;-->
+    <!--&lt;BlocksCard&gt;-->
+  </section>
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Blocks page > should render the Blocks page, start polling for blocks and stop the polling when unmounted 2`] = `
+<div>
+  <section
+    id="blocks"
+  >
+    <div
+      class="dusk-card data-card"
+    >
+      <header
+        class="data-card__header"
+        slot="header"
+      >
+        <h1
+          class="data-card__header-title"
+        >
+          Blocks
+        </h1>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Show More
+          </span>
+        </button>
+        <!--&lt;Button&gt;-->
+      </header>
+       
+      <div
+        class="table-container blocks-table blocks-card__table"
+      >
+        <table
+          class="table"
+        >
+          <thead
+            class="table__head"
+          >
+            <tr
+              class="table__row"
+            >
+              <th
+                class="table__header-cell"
+              >
+                # Block
+              </th>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <th
+                class="table__header-cell"
+              >
+                Fee
+              </th>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <th
+                class="table__header-cell"
+              >
+                Txn(s)
+              </th>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <th
+                class="table__header-cell"
+              >
+                Rewards
+              </th>
+              
+              <!--&lt;TableCell&gt;-->
+            </tr>
+            <!--&lt;TableRow&gt;-->
+          </thead>
+          <!--&lt;TableHead&gt;-->
+           
+          <tbody
+            class="table__body"
+          >
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=3d43be31a8cb5d3f61b4e8391800a01033d650b11c4c874210dbaa3c118474a6"
+                >
+                  1,365,454
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=2bc290511be774ec9c04e6c0ceb2469798242b997422c542a7d6b0b6f3368414"
+                >
+                  1,365,453
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=02f38d2e2a986cf77a70e8fe4f333ef9c5e075987891f3f526c8a57590800178"
+                >
+                  1,365,452
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=c79e31ce8e6133ebfb0d85649a12167769ddc83420550faebc536e613d74d676"
+                >
+                  1,365,451
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=22ffe1b159e1b33b06d566b3ce3119af6f4bec4d2a3f6916560fe3cb30fcc1ef"
+                >
+                  1,365,450
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=79c2d3213df80f8113d1ca16c49b1818fb5c31d1437e0a447719491a9c1b5f85"
+                >
+                  1,365,449
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=fb3e82e43b141409156f935afc69ccb09a59a72a10258401b539123981db571c"
+                >
+                  1,365,448
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=4b402a917bf42561096a9224e6451b77b8cbdc50272013442eccb5fcc542ef12"
+                >
+                  1,365,447
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=38d069620a7cbad7cadb10ecc797b1344284b6324ac85f5e126226a08d47398a"
+                >
+                  1,365,446
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=14c7d9f5e44d599a167d82a449d73daf54e32bf002c6cd5893de5f904024922a"
+                >
+                  1,365,445
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=e8e93e35a501d03e47b9693a32ab58ba1dc3ea1e59dd860de0c7085ff1548838"
+                >
+                  1,365,444
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=32b85beacd508de90fc292914101edc47f96391896ccca8b37c90030a0c6cf5a"
+                >
+                  1,365,443
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=0a4e8eb58f138cad89fbb5c281771a71c5efef3fa3d1ecfd66526b0214e9c02c"
+                >
+                  1,365,442
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=261bf76439948b7c371f6b14f6b94b43b0c992b85f35abd615c41407aebac019"
+                >
+                  1,365,441
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell"
+              >
+                <a
+                  class="dusk-anchor dusk-anchor--on-surface block__link"
+                  href="/some-base-path/blocks/block?id=0606a98c2bf324976e64c85c90e12a8e38275b9a24da2ce807be0cca98bd3f2e"
+                >
+                  1,365,440
+                </a>
+                <!--&lt;Anchor&gt;-->
+                <!--&lt;AppAnchor&gt;-->
+                 
+                <small
+                  class="block__time"
+                >
+                  yesterday
+                </small>
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <b
+                  class="block__fee-avg-label"
+                >
+                  AVG:
+                </b>
+                 
+                0
+                <br />
+                 
+                <b
+                  class="block__fee-total-label"
+                >
+                  TOTAL:
+                </b>
+                 
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                0
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-alt"
+                >
+                  16 Dusk
+                </span>
+                <!--&lt;Badge&gt;-->
+              </td>
+              
+              <!--&lt;TableCell&gt;-->
+               
+            </tr>
+            <!--&lt;TableRow&gt;-->
+            
+          </tbody>
+          <!--&lt;TableBody&gt;-->
+        </table>
+      </div>
+      <!--&lt;Table&gt;-->
+      <!--&lt;BlocksTable&gt;-->
+      
+      
+       
+    </div>
+    
+    <!--&lt;Card&gt;-->
+    <!--&lt;DataCard&gt;-->
+    <!--&lt;BlocksCard&gt;-->
+  </section>
+  <!--&lt;+page&gt;-->
+</div>
+`;

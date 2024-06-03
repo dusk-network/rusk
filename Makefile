@@ -1,4 +1,4 @@
-all: circuits keys wasm abi allcircuits state contracts rusk web-wallet ## Build everything
+all: keys wasm abi allcircuits state contracts rusk web-wallet ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -8,10 +8,7 @@ help: ## Display this help screen
 abi: ## Build the ABI
 	$(MAKE) -C ./rusk-abi all
 
-circuits: ## Compress and store all circuits
-	$(MAKE) -C ./circuits $@
-
-keys: circuits ## Create the keys for the circuits
+keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk recovery-keys
 
 state: keys wasm ## Create the network state
@@ -19,7 +16,6 @@ state: keys wasm ## Create the network state
 
 wasm: setup-compiler ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@
-	$(MAKE) -C ./rusk-abi $@
 
 allcircuits: ## Build circuit crates
 	$(MAKE) -j -C ./circuits all
@@ -64,4 +60,4 @@ COMPILER_VERSION=v0.2.0
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 
-.PHONY: all abi circuits keys state wasm allcircuits contracts test run help rusk web-wallet setup-compiler
+.PHONY: all abi keys state wasm allcircuits contracts test run help rusk web-wallet setup-compiler

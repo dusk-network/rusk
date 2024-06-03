@@ -1,6 +1,10 @@
 <script>
-  import { page } from "$app/stores";
-  import { BlockDetails, LatestTransactionsCard } from "$lib/components";
+  import { navigating, page } from "$app/stores";
+  import {
+    BlockDetails,
+    LatestTransactionsCard,
+    Rerender,
+  } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
   import { createDataStore } from "$lib/dusk/svelte-stores";
@@ -12,10 +16,19 @@
     dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
   };
 
-  onNetworkChange(() => {
+  const updateData = () => {
     dataStore.reset();
     getBlock();
-  });
+  };
+
+  onNetworkChange(updateData);
+
+  $: if (
+    $navigating &&
+    $navigating.from?.route.id === $navigating.to?.route.id
+  ) {
+    $navigating.complete.then(updateData);
+  }
 
   $: ({ data, error, isLoading } = $dataStore);
 </script>
@@ -25,13 +38,15 @@
     <BlockDetails on:retry={getBlock} {data} {error} loading={isLoading} />
   </div>
   <div class="block__transactions">
-    <LatestTransactionsCard
-      on:retry={getBlock}
-      txns={data?.transactions.data}
-      {error}
-      loading={isLoading}
-      isOnHomeScreen={false}
-    />
+    <Rerender>
+      <LatestTransactionsCard
+        on:retry={getBlock}
+        txns={data?.transactions.data}
+        {error}
+        loading={isLoading}
+        isOnHomeScreen={false}
+      />
+    </Rerender>
   </div>
 </section>
 

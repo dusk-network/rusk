@@ -6,13 +6,13 @@
 
 mod query;
 
-use phoenix_core::transaction::StakeData;
 use tracing::info;
 
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
+use execution_core::{stake::StakeData, StakePublicKey};
 use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
@@ -44,7 +44,7 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+        let generator = StakePublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (_, verification_output) = self
@@ -66,7 +66,7 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+        let generator = StakePublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (txs, verification_output) = self
@@ -126,7 +126,7 @@ impl VMExecution for Rusk {
 
     fn get_provisioner(
         &self,
-        pk: &bls12_381_bls::PublicKey,
+        pk: &StakePublicKey,
     ) -> anyhow::Result<Option<Stake>> {
         let stake = self
             .provisioner(pk)

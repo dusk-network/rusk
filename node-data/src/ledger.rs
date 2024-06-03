@@ -13,6 +13,8 @@ use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};
 
+use execution_core::{BlsPublicKey, Transaction as PhoenixTransaction};
+
 #[cfg(any(feature = "faker", test))]
 use fake::{Dummy, Fake, Faker};
 use rusk_abi::EconomicMode;
@@ -77,11 +79,11 @@ impl std::fmt::Debug for Header {
 pub struct Transaction {
     pub version: u32,
     pub r#type: u32,
-    pub inner: phoenix_core::Transaction,
+    pub inner: PhoenixTransaction,
 }
 
-impl From<phoenix_core::Transaction> for Transaction {
-    fn from(value: phoenix_core::Transaction) -> Self {
+impl From<PhoenixTransaction> for Transaction {
+    fn from(value: PhoenixTransaction) -> Self {
         Self {
             inner: value,
             r#type: 1,
@@ -373,11 +375,9 @@ impl IterationsInfo {
         }
     }
 
-    pub fn to_missed_generators(
-        &self,
-    ) -> Result<Vec<bls12_381_bls::PublicKey>, io::Error> {
+    pub fn to_missed_generators(&self) -> Result<Vec<BlsPublicKey>, io::Error> {
         self.to_missed_generators_bytes()
-        .map(|pk| bls12_381_bls::PublicKey::from_slice(pk.inner()).map_err(|e|{
+        .map(|pk| BlsPublicKey::from_slice(pk.inner()).map_err(|e|{
             tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
             io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
         }))
@@ -503,7 +503,7 @@ pub mod faker {
         ))
         .expect("decodable data");
 
-        let inner = phoenix_core::Transaction::from_slice(&utx_bytes)
+        let inner = PhoenixTransaction::from_slice(&utx_bytes)
             .expect("should be valid");
         inner.into()
     }

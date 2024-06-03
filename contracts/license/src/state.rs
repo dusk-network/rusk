@@ -4,15 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::error::Error;
-use alloc::vec::Vec;
-use contract_helpers::Map;
 use core::ops::Range;
-use dusk_bls12_381::BlsScalar;
+
+use alloc::vec::Vec;
+
 use dusk_bytes::Serializable;
 use poseidon_merkle::{Opening, Tree};
+
+use execution_core::BlsScalar;
 use rusk_abi::PublicInput;
 
+use crate::collection::Map;
+use crate::error::Error;
 use crate::license_types::{
     LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
 };

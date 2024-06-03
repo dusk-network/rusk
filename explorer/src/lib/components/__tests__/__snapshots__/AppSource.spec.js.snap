@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AppSource > src attribute > should render a source element forwarding all attributes but with the base path prepended to the \`src\` if it's an absolute URL 1`] = `
+<div>
+  <source
+    data-foo="bar"
+    height="600"
+    src="/some-base-path/images/some-image.jpg"
+    type="image/jpeg"
+    width="800"
+  />
+  <!--&lt;AppSource&gt;-->
+</div>
+`;
+
+exports[`AppSource > srcset attribute > should render a source element forwarding all attributes but with the base path prepended to absolute URLs in the \`srcset\` 1`] = `
+<div>
+  <source
+    data-foo="bar"
+    height="600"
+    srcset="/some-base-path/images/some-image.jpg 1.5x"
+    type="image/jpeg"
+    width="800"
+  />
+  <!--&lt;AppSource&gt;-->
+</div>
+`;

@@ -31,7 +31,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       class="details-list__definition details-list__definition--table"
     >
       <a
-        class="dusk-anchor block-details__list-link"
+        class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
         href="/some-base-path/blocks/block?id=bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f"
       >
         495,868
@@ -48,7 +48,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         class="dusk-icon dusk-icon--size--normal detail-list__help"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
-        data-tooltip-text="The date and time the block was created"
+        data-tooltip-text="Time elapsed since the block was created"
         data-tooltip-type="info"
         role="graphics-symbol"
         viewBox="0 0 24 24"
@@ -60,7 +60,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       
       <!--&lt;Icon&gt;-->
        
-      timestamp
+      relative time
     </dt>
      
     <dd

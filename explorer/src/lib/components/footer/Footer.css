@@ -19,6 +19,7 @@
 }
 
 .footer__links-link {
+  text-decoration: underline;
   color: var(--primary-color);
 }
 

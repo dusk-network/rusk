@@ -99,10 +99,8 @@ mod tests {
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
-    use bls12_381_bls::{
-        PublicKey as StakePublicKey, SecretKey as StakeSecretKey,
-    };
     use dusk_bytes::DeserializableSlice;
+    use execution_core::{StakePublicKey, StakeSecretKey};
 
     use node_data::ledger::Seed;
 

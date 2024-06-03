@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::common::utils::update_root;
-use phoenix_core::{Note, PublicKey};
 use rand::{CryptoRng, RngCore};
+
+use execution_core::{Note, PublicKey};
 use rusk_abi::{ContractData, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
+
+use crate::common::utils::update_root;
 
 const OWNER: [u8; 32] = [0; 32];
 const POINT_LIMIT: u64 = 0x100_000_000;
@@ -21,10 +23,10 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     genesis_value: u64,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let stake_bytecode = include_bytes!(
-        "../../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+        "../../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);

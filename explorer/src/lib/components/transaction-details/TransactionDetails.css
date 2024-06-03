@@ -11,14 +11,6 @@
   width: 100%;
 }
 
-.transaction-details__list-anchor {
-  text-decoration: none;
-}
-
-.transaction-details__list-timestamp {
-  text-transform: uppercase;
-}
-
 .transaction-details__gas-used {
   width: 12.5rem;
 }

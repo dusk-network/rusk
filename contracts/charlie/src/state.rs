@@ -5,11 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
-use bls12_381_bls::{PublicKey, Signature};
 use dusk_bytes::Serializable;
+use execution_core::transfer::Stct;
+use execution_core::{BlsPublicKey, BlsSignature};
 use rkyv::{Archive, Deserialize, Serialize};
 use rusk_abi::TRANSFER_CONTRACT;
-use transfer_contract_types::Stct;
 
 #[derive(Debug, Clone)]
 pub struct Charlie;
@@ -19,9 +19,9 @@ pub struct Charlie;
 #[archive_attr(derive(bytecheck::CheckBytes))]
 pub struct Subsidy {
     /// Public key to which the subsidy will belong.
-    pub public_key: PublicKey,
+    pub public_key: BlsPublicKey,
     /// Signature belonging to the given public key.
-    pub signature: Signature,
+    pub signature: BlsSignature,
     /// Value of the subsidy.
     pub value: u64,
     /// Proof of the `STCT` circuit.

@@ -2,8 +2,13 @@
 
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
-  import { AppAnchor, DataCard, ListItem } from "$lib/components";
-  import { Icon, ProgressBar } from "$lib/dusk/components";
+  import {
+    AppAnchorButton,
+    DataCard,
+    ListItem,
+    Rerender,
+  } from "$lib/components";
+  import { ProgressBar } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -12,6 +17,7 @@
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
+  import { goto } from "$lib/navigation";
   import { onMount } from "svelte";
   import "./BlockDetails.css";
 
@@ -55,7 +61,7 @@
   className={classes}
   title="Block Details"
   headerButtonDetails={{
-    action: () => history.back(),
+    action: () => goto("/blocks"),
     disabled: false,
     label: "Back",
     variant: "tertiary",
@@ -79,19 +85,19 @@
     >
       <svelte:fragment slot="term">height</svelte:fragment>
       <svelte:fragment slot="definition">
-        <AppAnchor
+        <AppAnchorButton
           className="block-details__list-anchor"
           href="/blocks/block?id={data.header.prevblockhash}"
-        >
-          <Icon path={mdiArrowLeft} />
-        </AppAnchor>
+          icon={{ path: mdiArrowLeft }}
+          disabled={!data.header.prevblockhash}
+        />
         {formatter(data.header.height)}
-        <AppAnchor
+        <AppAnchorButton
           className="block-details__list-anchor"
           href="/blocks/block?id={data.header.nextblockhash}"
-        >
-          <Icon path={mdiArrowRight} />
-        </AppAnchor>
+          icon={{ path: mdiArrowRight }}
+          disabled={!data.header.nextblockhash}
+        />
       </svelte:fragment>
     </ListItem>
 
@@ -103,7 +109,9 @@
         class="block-details__list-timestamp"
         slot="definition"
       >
-        {getRelativeTimeString(data.header.date, "long")}
+        <Rerender>
+          {`${data.header.date.toUTCString()} (${getRelativeTimeString(data.header.date, "long")})`}
+        </Rerender>
       </time>
     </ListItem>
 

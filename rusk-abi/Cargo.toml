@@ -13,17 +13,14 @@ blake2b_simd = { version = "1", default-features = false }
 cfg-if = "1"
 
 dusk-poseidon = { version = "0.33", default-features = false }
-dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-bls12_381-bls = { version = "0.2", features = ["rkyv-impl"] }
-jubjub-schnorr = { version = "0.2", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-impl"] }
-dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 piecrust-uplink = { version = "0.12" }
 piecrust = { version = "0.19", optional = true }
+
+execution-core = { version = "0.1.0", path = "../execution-core" }
 
 # These are patches since these crates don't seem to like semver.
 rkyv = { version = "=0.7.39", default-features = false, features = ["size_32"] }

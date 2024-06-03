@@ -4,14 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bls12_381_bls::{PublicKey, SecretKey};
 use criterion::{criterion_group, criterion_main, Criterion};
+use execution_core::{stake::StakeData, StakePublicKey, StakeSecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::{
     ContractData, Error, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
-use stake_contract_types::StakeData;
 use std::sync::mpsc;
 
 const SAMPLE_SIZE: usize = 10;
@@ -33,10 +32,10 @@ fn update_root(session: &mut Session) -> Result<(), Error> {
 
 fn instantiate(vm: &VM) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let stake_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
@@ -67,7 +66,7 @@ fn instantiate(vm: &VM) -> Session {
 
 fn do_get_provisioners(
     session: &mut Session,
-) -> Result<impl Iterator<Item = (PublicKey, StakeData)>, Error> {
+) -> Result<impl Iterator<Item = (StakePublicKey, StakeData)>, Error> {
     let (sender, receiver) = mpsc::channel();
     session.feeder_call::<_, ()>(
         STAKE_CONTRACT,
@@ -77,7 +76,7 @@ fn do_get_provisioners(
         sender,
     )?;
     Ok(receiver.into_iter().map(|bytes| {
-        rkyv::from_bytes::<(PublicKey, StakeData)>(&bytes)
+        rkyv::from_bytes::<(StakePublicKey, StakeData)>(&bytes)
             .expect("The contract should only return (pk, stake_data) tuples")
     }))
 }
@@ -91,8 +90,8 @@ fn do_insert_stake<Rng: RngCore + CryptoRng>(
         counter: 1,
         reward: 0,
     };
-    let sk = SecretKey::random(rng);
-    let pk = PublicKey::from(&sk);
+    let sk = StakeSecretKey::random(rng);
+    let pk = StakePublicKey::from(&sk);
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
@@ -117,7 +116,7 @@ fn get_provisioners(c: &mut Criterion) {
 
     c.bench_function("get_provisioners", |b| {
         b.iter(|| {
-            let _: Vec<(PublicKey, StakeData)> =
+            let _: Vec<(StakePublicKey, StakeData)> =
                 do_get_provisioners(&mut session)
                     .expect("getting provisioners should succeed")
                     .collect();

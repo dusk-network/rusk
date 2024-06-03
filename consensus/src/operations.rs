@@ -7,7 +7,7 @@
 use std::fmt;
 use std::time::Duration;
 
-use bls12_381_bls::PublicKey;
+use execution_core::StakePublicKey;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 use node_data::StepName;
 
@@ -25,7 +25,7 @@ pub struct CallParams {
     pub round: u64,
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
-    pub missed_generators: Vec<PublicKey>,
+    pub missed_generators: Vec<StakePublicKey>,
 }
 
 #[derive(Default)]

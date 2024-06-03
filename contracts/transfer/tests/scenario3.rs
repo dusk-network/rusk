@@ -8,15 +8,12 @@ pub mod common;
 
 use crate::common::utils::*;
 
-use bls12_381_bls::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, Signature,
-};
 use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
+use execution_core::{
+    stake::Stake, BlsPublicKey, BlsSecretKey, BlsSignature, Fee, JubJubScalar,
+    Note, Ownable, PublicKey, SecretKey, Transaction, GENERATOR_NUMS_EXTENDED,
+};
 use ff::Field;
-use phoenix_core::transaction::*;
-use phoenix_core::{Fee, Note, Ownable};
-use phoenix_core::{PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rkyv::{Archive, Deserialize, Serialize};
@@ -47,7 +44,7 @@ pub struct Subsidy {
     /// Public key to which the subsidy will belong.
     pub public_key: BlsPublicKey,
     /// Signature belonging to the given public key.
-    pub signature: Signature,
+    pub signature: BlsSignature,
     /// Value of the subsidy.
     pub value: u64,
     /// Proof of the `STCT` circuit.
@@ -61,10 +58,10 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     charlie_owner: Option<PublicKey>,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
+        "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let charlie_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/charlie.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
@@ -184,7 +181,7 @@ fn subsidize_contract<R: RngCore + CryptoRng>(
         .prove(rng, &stct_circuit)
         .expect("Proving STCT circuit should succeed");
 
-    let stake_digest = stake_signature_message(0, subsidy_value);
+    let stake_digest = Stake::signature_message(0, subsidy_value);
     let sig = subsidy_keeper_sk.sign(&subsidy_keeper_pk, &stake_digest);
 
     let subsidy = Subsidy {

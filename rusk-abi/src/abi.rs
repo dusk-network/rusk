@@ -7,23 +7,24 @@
 #[cfg(feature = "abi")]
 use dusk_bytes::Serializable;
 #[cfg(feature = "abi")]
-use phoenix_core::PublicKey;
+use execution_core::{
+    BlsPublicKey, BlsScalar, BlsSignature, PublicKey, SchnorrPublicKey,
+    SchnorrSignature,
+};
 
 pub use piecrust_uplink::*;
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
 /// The output of the hasher is truncated (last nibble) to fit onto a scalar.
 #[cfg(feature = "abi")]
-pub fn hash(bytes: alloc::vec::Vec<u8>) -> dusk_bls12_381::BlsScalar {
+pub fn hash(bytes: alloc::vec::Vec<u8>) -> BlsScalar {
     use crate::Query;
     host_query(Query::HASH, bytes)
 }
 
 /// Compute the poseidon hash of the given scalars
 #[cfg(feature = "abi")]
-pub fn poseidon_hash(
-    scalars: alloc::vec::Vec<dusk_bls12_381::BlsScalar>,
-) -> dusk_bls12_381::BlsScalar {
+pub fn poseidon_hash(scalars: alloc::vec::Vec<BlsScalar>) -> BlsScalar {
     use crate::Query;
     host_query(Query::POSEIDON_HASH, scalars)
 }
@@ -42,9 +43,9 @@ pub fn verify_proof(
 /// Verify a schnorr signature is valid for the given public key and message
 #[cfg(feature = "abi")]
 pub fn verify_schnorr(
-    msg: dusk_bls12_381::BlsScalar,
-    pk: jubjub_schnorr::PublicKey,
-    sig: jubjub_schnorr::Signature,
+    msg: BlsScalar,
+    pk: SchnorrPublicKey,
+    sig: SchnorrSignature,
 ) -> bool {
     use crate::Query;
     host_query(Query::VERIFY_SCHNORR, (msg, pk, sig))
@@ -54,8 +55,8 @@ pub fn verify_schnorr(
 #[cfg(feature = "abi")]
 pub fn verify_bls(
     msg: alloc::vec::Vec<u8>,
-    pk: bls12_381_bls::PublicKey,
-    sig: bls12_381_bls::Signature,
+    pk: BlsPublicKey,
+    sig: BlsSignature,
 ) -> bool {
     use crate::Query;
     host_query(Query::VERIFY_BLS, (msg, pk, sig))

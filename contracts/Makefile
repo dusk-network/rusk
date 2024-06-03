@@ -1,4 +1,4 @@
-SUBDIRS := stake-types transfer-types alice bob charlie transfer stake governance license
+SUBDIRS := alice bob charlie license transfer stake host_fn
 
 all: $(SUBDIRS) ## Build all the contracts
 

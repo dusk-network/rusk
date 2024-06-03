@@ -1,7 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { AppAnchor, AppImage } from "$lib/components";
+  import { AppAnchor, AppImage, AppSource } from "$lib/components";
   import { Anchor } from "$lib/dusk/components";
   import "./Footer.css";
 </script>
@@ -12,18 +12,19 @@
   </div>
   <div class="footer__links">
     <Anchor
+      onSurface={false}
       href="https://dusk.network/privacy-policy"
       className="footer__links-link">Privacy policy</Anchor
     >
     <Anchor
+      onSurface={false}
       href="https://dusk.network/terms-of-use"
       className="footer__links-link">Terms of use</Anchor
     >
   </div>
   <AppAnchor href="https://dusk.network" className="footer__logo">
     <picture>
-      <source media="(max-width:768px)" srcset="/dusk_logo_icon.svg" />
-      <source media="(min-width:769px)" srcset="/dusk_logo.svg" />
+      <AppSource media="(max-width:768px)" srcset="/dusk_logo_icon.svg" />
       <AppImage
         src="/dusk_logo.svg"
         alt="Dusk Logo"
