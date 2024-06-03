@@ -9,6 +9,7 @@ use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::commons::get_current_timestamp;
+use dusk_consensus::config::{MAX_STEP_TIMEOUT, RELAX_ITERATION_THRESHOLD};
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -104,6 +105,19 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         if candidate_block.timestamp < self.prev_header.timestamp {
             return Err(anyhow!("invalid timestamp"));
+        }
+
+        if candidate_block.iteration < RELAX_ITERATION_THRESHOLD {
+            let max_delta = candidate_block.iteration as u64
+                * MAX_STEP_TIMEOUT.as_secs()
+                * 3;
+            let current_delta =
+                candidate_block.timestamp - self.prev_header.timestamp;
+            if current_delta > max_delta {
+                anyhow::bail!(
+                    "invalid timestamp, delta: {current_delta}/{max_delta}"
+                );
+            }
         }
 
         // Ensure block is not already in the ledger
