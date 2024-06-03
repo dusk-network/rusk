@@ -8,7 +8,6 @@ import {
   pipe,
   setPathIn,
   unless,
-  updateAt,
 } from "lamb";
 
 import { failureToRejection } from "$lib/dusk/http";
@@ -32,12 +31,21 @@ const ensureTrailingSlash = (s) => (s.endsWith("/") ? s : `${s}/`);
 
 /**
  * Adds the `Rusk-gqlvar-` prefix to all
- * keys of the given object.
+ * keys of the given object and calls `JSON.stringify`
+ * on their values. *
  * Returns `undefined` if the input is `undefined`.
+ *
+ * The `JSON.stringify` call is because the GraphQL
+ * server will parse a variable containing only digits
+ * as a number otherwise, when the expected type is a string.
  */
 const toHeadersVariables = unless(
   isUndefined,
-  pipe([ownPairs, mapWith(updateAt(0, (k) => `Rusk-gqlvar-${k}`)), fromPairs])
+  pipe([
+    ownPairs,
+    mapWith(([k, v]) => [`Rusk-gqlvar-${k}`, JSON.stringify(v)]),
+    fromPairs,
+  ])
 );
 
 /**
@@ -207,9 +215,16 @@ const duskAPI = {
    * @returns {Promise<SearchResult[]>}
    */
   search(node, query) {
-    return apiGet(`search/${encodeURIComponent(query)}`, { node }).then(
-      transformSearchResult
-    );
+    return Promise.all(
+      [
+        query.length === 64
+          ? gqlGet(node, gqlQueries.searchByHashQueryInfo(query))
+          : undefined,
+        /^\d+$/.test(query)
+          ? gqlGet(node, gqlQueries.getBlockHashQueryInfo(+query))
+          : undefined,
+      ].filter(Boolean)
+    ).then(transformSearchResult);
   },
 };
 

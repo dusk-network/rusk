@@ -79,7 +79,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-id": "some-id",
+          "Rusk-gqlvar-id": ""some-id"",
         },
         "method": "POST",
       }
@@ -92,7 +92,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-height": 495869,
+          "Rusk-gqlvar-height": "495869",
         },
         "method": "POST",
       }
@@ -138,7 +138,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-height": 11,
+          "Rusk-gqlvar-height": "11",
         },
         "method": "POST",
       }
@@ -151,7 +151,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-height": 11,
+          "Rusk-gqlvar-height": "11",
         },
         "method": "POST",
       }
@@ -173,7 +173,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-amount": 100,
+          "Rusk-gqlvar-amount": "100",
         },
         "method": "POST",
       }
@@ -197,7 +197,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-amount": 15,
+          "Rusk-gqlvar-amount": "15",
         },
         "method": "POST",
       }
@@ -263,7 +263,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-id": "some-id",
+          "Rusk-gqlvar-id": ""some-id"",
         },
         "method": "POST",
       }
@@ -286,7 +286,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-id": "some-id",
+          "Rusk-gqlvar-id": ""some-id"",
         },
         "method": "POST",
       }
@@ -308,7 +308,7 @@ describe("duskAPI", () => {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-amount": 100,
+          "Rusk-gqlvar-amount": "100",
         },
         "method": "POST",
       }
@@ -359,21 +359,118 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to search for blocks and transactions", async () => {
+    const fakeHash1 = Array(64).fill(1).join("");
+    const fakeHash2 = Array(64).fill(2).join("");
+    const hashResult = {
+      block: {
+        header: {
+          hash: fakeHash1,
+        },
+      },
+    };
+    const heightResult = {
+      block: {
+        header: {
+          hash: fakeHash2,
+        },
+      },
+    };
+
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(hashResult))
+      .mockResolvedValueOnce(makeOKResponse(heightResult));
+
+    await expect(duskAPI.search(node, fakeHash1)).resolves.toStrictEqual(
+      transformSearchResult([hashResult, heightResult])
+    );
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($id: String!) {\\n      block(hash: $id) { header { hash } },\\n      tx(hash: $id) { id }\\n    }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-id": ""1111111111111111111111111111111111111111111111111111111111111111"",
+        },
+        "method": "POST",
+      }
+    `);
+    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-height": "1.1111111111111112e+63",
+        },
+        "method": "POST",
+      }
+    `);
+  });
+
+  it("should not perform the height search if the query string doesn't contain only numbers", async () => {
+    const entryHash =
+      "fda46b4e06cc78542db9c780adbaee83a27fdf917de653e8ac34294cf924dd63";
+
     fetchSpy.mockResolvedValueOnce(
-      makeOKResponse(mockData.apiSearchBlockResult)
+      makeOKResponse(mockData.gqlSearchPossibleResults[0])
     );
 
-    const query = "some search string";
-
-    await expect(duskAPI.search(node, query)).resolves.toStrictEqual(
-      transformSearchResult(mockData.apiSearchBlockResult)
+    await expect(duskAPI.search(node, entryHash)).resolves.toStrictEqual(
+      transformSearchResult([mockData.gqlSearchPossibleResults[0]])
     );
+
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      new URL(
-        `${import.meta.env[endpointEnvName]}/search/${encodeURIComponent(query)}?node=${node}`
-      ),
-      apiGetOptions
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($id: String!) {\\n      block(hash: $id) { header { hash } },\\n      tx(hash: $id) { id }\\n    }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-id": ""fda46b4e06cc78542db9c780adbaee83a27fdf917de653e8ac34294cf924dd63"",
+        },
+        "method": "POST",
+      }
+    `);
+  });
+
+  it("should not perform the hash search if the query string isn't of 64 characters", async () => {
+    const entryHeight = "123456";
+
+    fetchSpy.mockResolvedValueOnce(
+      makeOKResponse(mockData.gqlSearchPossibleResults[0])
     );
+
+    await expect(duskAPI.search(node, entryHeight)).resolves.toStrictEqual(
+      transformSearchResult([mockData.gqlSearchPossibleResults[0]])
+    );
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-height": "123456",
+        },
+        "method": "POST",
+      }
+    `);
+  });
+
+  it("should not perform any search at all if the query string doesn't satisfy criteria for both hash and height", async () => {
+    await expect(duskAPI.search(node, "abc")).resolves.toStrictEqual([]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

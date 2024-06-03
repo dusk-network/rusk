@@ -25,6 +25,17 @@ type GQLChainInfo = {
   transactions: GQLTransaction[];
 };
 
+type GQLSearchResult = {
+  block: {
+    header: {
+      hash: string;
+    };
+  } | null;
+  transaction?: {
+    id: string;
+  } | null;
+};
+
 type GQLTransaction = {
   blockHash: string;
   blockHeight: number;

@@ -100,3 +100,14 @@ export const getTransactionDetailsQueryInfo = (id) => ({
   query: "query($id: String!) { tx(hash: $id) { raw } }",
   variables: { id },
 });
+
+/** @param {string} id */
+export const searchByHashQueryInfo = (id) => ({
+  query: `
+    query($id: String!) {
+      block(hash: $id) { header { hash } },
+      tx(hash: $id) { id }
+    }
+  `,
+  variables: { id },
+});
