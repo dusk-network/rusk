@@ -28,7 +28,6 @@ bytecheck = { version = "0.6", default-features = false }
 hex = "0.4"
 rand = "0.8"
 ff = { version = "0.13", default-features = false }
-bls12_381-bls = "0.2"
 
 [build-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile"}
