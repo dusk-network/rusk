@@ -8,3 +8,4 @@ export { default as gqlSearchPossibleResults } from "./gql-search-possible-resul
 export { default as gqlTransaction } from "./gql-transaction.json";
 export { default as gqlTransactionDetails } from "./gql-transaction-details.json";
 export { default as gqlTransactions } from "./gql-transactions.json";
+export { default as hostProvisioners } from "./host-provisioners.json";

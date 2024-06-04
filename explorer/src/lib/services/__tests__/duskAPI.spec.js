@@ -4,6 +4,7 @@ import { skip, updatePathIn } from "lamb";
 import * as mockData from "$lib/mock-data";
 
 import {
+  calculateStats,
   transformBlock,
   transformSearchResult,
   transformTransaction,
@@ -32,7 +33,7 @@ describe("duskAPI", () => {
   const getAPIExpectedURL = (endpoint) =>
     new URL(`${import.meta.env[endpointEnvName]}/${endpoint}?node=${node}`);
 
-  /** @type {(data: Record<string | number, any>) => Response} */
+  /** @type {(data: Record<string | number, any> | number) => Response} */
   const makeOKResponse = (data) =>
     new Response(JSON.stringify(data), { status: 200 });
 
@@ -236,16 +237,66 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the statistics", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiStats));
+    const lastBlockHeight = 1498332;
+    const last100BlocksTxs = {
+      blocks: [
+        { transactions: [{ err: null }] },
+        { transactions: [] },
+        { transactions: [{ err: "some-error" }] },
+      ],
+    };
+    const expectedStats = calculateStats(
+      mockData.hostProvisioners,
+      lastBlockHeight,
+      [{ err: null }, { err: "some-error" }]
+    );
 
-    await expect(duskAPI.getStats(node)).resolves.toStrictEqual(
-      mockData.apiStats
-    );
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      getAPIExpectedURL("stats"),
-      apiGetOptions
-    );
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(mockData.hostProvisioners))
+      .mockResolvedValueOnce(
+        makeOKResponse({ block: { header: { height: lastBlockHeight } } })
+      )
+      .mockResolvedValueOnce(makeOKResponse(last100BlocksTxs));
+
+    await expect(duskAPI.getStats(node)).resolves.toStrictEqual(expectedStats);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(fetchSpy.mock.calls[0][0]).toBe(`https://${node}/2/rusk`);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"","topic":"provisioners"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      }
+    `);
+    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"query { block(height: -1) { header { height } } }","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      }
+    `);
+    expect(fetchSpy.mock.calls[2][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[2][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"query { blocks(last: 100) { transactions { err } } }","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      }
+    `);
   });
 
   it("should expose a method to retrieve a single transaction", async () => {

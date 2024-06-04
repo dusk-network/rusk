@@ -1,4 +1,6 @@
 import {
+  apply,
+  flatMapWith,
   fromPairs,
   getKey,
   getPath,
@@ -13,6 +15,7 @@ import {
 import { failureToRejection } from "$lib/dusk/http";
 
 import {
+  calculateStats,
   transformBlock,
   transformSearchResult,
   transformTransaction,
@@ -61,7 +64,7 @@ const makeAPIURL = (endpoint, params) =>
 
 /**
  * @param {string} node
- * @param {{ query: string, variables: Record<string, string | number> | undefined }} queryInfo
+ * @param {{ query: string, variables?: Record<string, string | number> }} queryInfo
  */
 const gqlGet = (node, queryInfo) =>
   fetch(`https://${node}/02/Chain`, {
@@ -74,6 +77,25 @@ const gqlGet = (node, queryInfo) =>
       "Accept-Charset": "utf-8",
       "Content-Type": "application/json",
       ...toHeadersVariables(queryInfo.variables),
+    },
+    method: "POST",
+  })
+    .then(failureToRejection)
+    .then((res) => res.json());
+
+/**
+ * @param {string} node
+ * @param {"Chain" | "rusk"} target
+ * @param {"alive_nodes" | "provisioners"} topic
+ * @param {any} data
+ */
+const hostGet = (node, target, topic, data) =>
+  fetch(`https://${node}/2/${target}`, {
+    body: JSON.stringify({ data, topic }),
+    headers: {
+      Accept: "application/json",
+      "Accept-Charset": "utf-8",
+      "Content-Type": "application/json",
     },
     method: "POST",
   })
@@ -95,6 +117,23 @@ const apiGet = (endpoint, params) =>
   })
     .then(failureToRejection)
     .then((res) => res.json());
+
+/** @type {(node: string) => Promise<HostProvisioner[]>} */
+const getProvisioners = (node) => hostGet(node, "rusk", "provisioners", "");
+
+/** @type {(node: string) => Promise<number>} */
+const getLastHeight = (node) =>
+  gqlGet(node, {
+    query: "query { block(height: -1) { header { height } } }",
+  }).then(getPath("block.header.height"));
+
+/** @type {(node: string) => Promise<Pick<GQLTransaction, "err">[]>} */
+const getLast100BlocksTxs = (node) =>
+  gqlGet(node, {
+    query: "query { blocks(last: 100) { transactions { err } } }",
+  })
+    .then(getKey("blocks"))
+    .then(flatMapWith(getKey("transactions")));
 
 const duskAPI = {
   /**
@@ -173,7 +212,11 @@ const duskAPI = {
    * @returns {Promise<Stats>}
    */
   getStats(node) {
-    return apiGet("stats", { node });
+    return Promise.all([
+      getProvisioners(node),
+      getLastHeight(node),
+      getLast100BlocksTxs(node),
+    ]).then(apply(calculateStats));
   },
 
   /**
