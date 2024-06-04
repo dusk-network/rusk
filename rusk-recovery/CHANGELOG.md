@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Removed 'phoenix-core' dependency [#1139]
+- Added closure argument to the 'deploy' method [#1630]
 
 ### Removed
 
@@ -18,4 +19,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2023-12-14
 
 [#1675]: https://github.com/dusk-network/rusk/issues/1675
+[#1630]: https://github.com/dusk-network/rusk/issues/1630
 [#1139]: https://github.com/dusk-network/rusk/issues/1139

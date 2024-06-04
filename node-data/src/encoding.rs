@@ -18,6 +18,7 @@ use crate::message::payload::{
 };
 use crate::message::{ConsensusHeader, SignInfo};
 use crate::Serializable;
+use rusk_abi::{EconomicMode, ECO_MODE_LEN};
 
 impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
@@ -90,6 +91,11 @@ impl Serializable for SpentTransaction {
         self.inner.write(w)?;
         w.write_all(&self.block_height.to_le_bytes())?;
         w.write_all(&self.gas_spent.to_le_bytes())?;
+        {
+            let mut buf = [0u8; ECO_MODE_LEN];
+            self.economic_mode.write(&mut buf);
+            w.write_all(&buf)?;
+        }
 
         match &self.err {
             Some(e) => {
@@ -113,6 +119,9 @@ impl Serializable for SpentTransaction {
 
         let block_height = Self::read_u64_le(r)?;
         let gas_spent = Self::read_u64_le(r)?;
+        let mut buf = [0u8; ECO_MODE_LEN];
+        r.read_exact(&mut buf)?;
+        let economic_mode = EconomicMode::read(&buf);
         let error_len = Self::read_u32_le(r)?;
 
         let err = if error_len > 0 {
@@ -128,6 +137,7 @@ impl Serializable for SpentTransaction {
             inner,
             block_height,
             gas_spent,
+            economic_mode,
             err,
         })
     }

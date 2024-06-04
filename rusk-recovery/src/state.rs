@@ -200,11 +200,19 @@ fn generate_empty_state<P: AsRef<Path>>(
     Ok((vm, commit_id))
 }
 
-// note: deploy consumes session as it produces commit id
-pub fn deploy<P: AsRef<Path>>(
+/// Deploys a snapshot.
+/// note: deploy consumes session as it produces commit id so it gives
+/// the caller a possibility of providing a closure to perform additional
+/// operations on the session (an empty closure is required when this is not
+/// needed).
+pub fn deploy<P: AsRef<Path>, F>(
     state_dir: P,
     snapshot: &Snapshot,
-) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+    closure: F,
+) -> Result<(VM, [u8; 32]), Box<dyn Error>>
+where
+    F: FnOnce(&mut Session),
+{
     let theme = Theme::default();
 
     let state_dir = state_dir.as_ref();
@@ -220,6 +228,8 @@ pub fn deploy<P: AsRef<Path>>(
 
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
+
+    closure(&mut session);
 
     info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
