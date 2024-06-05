@@ -4,5 +4,4 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub(crate) mod task;
 pub mod verifiers;
