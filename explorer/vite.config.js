@@ -1,7 +1,6 @@
 // eslint-disable-next-line import/no-unresolved
 import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig, loadEnv } from "vite";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { execSync } from "child_process";
 
 export default defineConfig(({ mode }) => {
@@ -12,13 +11,7 @@ export default defineConfig(({ mode }) => {
   );
   const APP_VERSION = process.env.npm_package_version ?? "unknown";
   const APP_BUILD_INFO = `${buildHash.toString() || "unknown"} ${buildDate}`;
-  const commonPlugins = [
-    sveltekit(),
-    nodePolyfills({
-      globals: { Buffer: true },
-      include: ["buffer"],
-    }),
-  ];
+  const commonPlugins = [sveltekit()];
 
   // needed to use %sveltekit.env.PUBLIC_APP_VERSION% in app.html
   process.env.PUBLIC_APP_VERSION = APP_VERSION;
