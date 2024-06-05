@@ -127,7 +127,7 @@ fn poseidon_hash() {
         .data;
 
     assert_eq!(
-        "0x2885ca6d908b34ca83f2177d78283c25d8c5c7230877025bc8d558b8a94e6fe3",
+        "0x6ee56db5a9ffb1ed8cc923bba770d01b7f49feb9cd5ffe6e73ba73643089b54a",
         format!("{scalar:?}")
     );
 }
@@ -144,7 +144,7 @@ fn schnorr_signature() {
 
     let note_sig = note_sk.sign(&mut OsRng, message);
 
-    assert!(note_pk.verify(&note_sig, message));
+    assert!(note_pk.verify(&note_sig, message).is_ok());
 
     let valid: bool = session
         .call(

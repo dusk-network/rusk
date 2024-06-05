@@ -12,7 +12,7 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 blake2b_simd = { version = "1", default-features = false }
 cfg-if = "1"
 
-dusk-poseidon = { version = "0.33", default-features = false }
+dusk-poseidon = "0.39"
 dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }

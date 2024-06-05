@@ -13,6 +13,7 @@ use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use dusk_bytes::DeserializableSlice;
 use dusk_plonk::prelude::{Proof, Verifier};
+use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use execution_core::{
     BlsAggPublicKey, BlsPublicKey, BlsScalar, BlsSignature, SchnorrPublicKey,
     SchnorrSignature,
@@ -127,7 +128,7 @@ pub fn hash(bytes: Vec<u8>) -> BlsScalar {
 
 /// Compute the poseidon hash of the given scalars
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
-    dusk_poseidon::sponge::hash(&scalars)
+    PoseidonHash::digest(Domain::Other, &scalars)[0]
 }
 
 /// A simple LRU cache for plonk verification.
@@ -239,7 +240,7 @@ pub fn verify_schnorr(
     pk: SchnorrPublicKey,
     sig: SchnorrSignature,
 ) -> bool {
-    pk.verify(&sig, msg)
+    pk.verify(&sig, msg).is_ok()
 }
 
 /// Verify a BLS signature is valid for the given public key and message
