@@ -221,7 +221,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         Ok(())
     }
 
-    async fn request_block(&mut self, hash: [u8; 32], cert: Certificate) {
+    async fn flood_request_block(&mut self, hash: [u8; 32], cert: Certificate) {
         if self.certificates_cache.contains_key(&hash) {
             return;
         }
@@ -239,7 +239,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         flood_request(&self.network, &inv).await;
     }
 
-    /// Handles a Quorum message.
+    /// Handles a Quorum message that is received from either from the network
+    /// or from internal consensus execution.
     ///
     /// Ideally, the winning block will be built from the quorum certificate
     /// and candidate block. If the candidate is not found then the
@@ -263,7 +264,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         height = remote_height,
                     );
 
-                    self.request_block(hash, quorum.cert).await;
+                    self.flood_request_block(hash, quorum.cert).await;
 
                     Ok(None)
                 } else {
@@ -294,7 +295,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                 // Candidate block is not found from local
                                 // storage.  Cache the certificate and request
                                 // candidate block only.
-                                self.request_block(hash, quorum.cert).await;
+                                self.flood_request_block(hash, quorum.cert)
+                                    .await;
                                 Err(err)
                             }
                         }

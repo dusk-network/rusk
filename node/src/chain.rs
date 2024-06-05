@@ -199,6 +199,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Re-routes messages originated from Consensus (upper) layer to the network layer.
                 recv = &mut outbound_chan.recv() => {
                     let msg = recv?;
+
+                    // Handle quorum messages from Consensus layer.
+                    // If the associated candidate block already exists,
+                    // the winner block will be compiled and redirected to the Acceptor.
+                    if let Payload::Quorum(quorum) = &msg.payload {
+                        if let Err(err) = fsm.on_quorum_msg(quorum, &msg).await {
+                            warn!(event = "handle quorum msg from internal consensus failed", ?err);
+                        }
+                    }
+
                     if let Err(e) = network.read().await.broadcast(&msg).await {
                         warn!("Unable to re-route message {e}");
                     }

@@ -178,7 +178,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list,
             &self.db,
             &self.vm,
-            &self.network,
             base_timeouts,
         );
     }
@@ -215,11 +214,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     if *hash != self.get_curr_hash().await {
                         broadcast(&self.network, &msg).await;
                     }
-                }
-
-                if enable_enqueue {
-                    let task = self.task.read().await;
-                    task.quorum_inbound.try_send(msg)?;
                 }
             }
             _ => warn!("invalid inbound message"),
@@ -605,7 +599,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
-                &self.network,
                 base_timeouts,
             );
         }
@@ -727,7 +720,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list,
             &self.db,
             &self.vm,
-            &self.network,
             base_timeouts,
         );
     }
