@@ -5,19 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 // Note: all ID environment variables are set in the contracts build script
-const VD_STCT: &[u8] = include_bytes!(concat!(
-    env!("RUSK_BUILT_KEYS_PATH"),
-    "/",
-    env!("ID_SENDTOCONTRACTTRANSPARENTCIRCUIT"),
-    ".vd"
-));
-const VD_WFCT: &[u8] = include_bytes!(concat!(
-    env!("RUSK_BUILT_KEYS_PATH"),
-    "/",
-    env!("ID_WITHDRAWFROMTRANSPARENTCIRCUIT"),
-    ".vd"
-));
-
 const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_BUILT_KEYS_PATH"),
     "/",
@@ -43,7 +30,7 @@ const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(
     ".vd"
 ));
 
-/// Verifier data for the execute circuits.
+/// Verifier data for the phoenix-circuits.
 pub const fn verifier_data_execute(inputs: usize) -> Option<&'static [u8]> {
     let vd = match inputs {
         1 => VD_EXEC_1_2,
@@ -54,14 +41,4 @@ pub const fn verifier_data_execute(inputs: usize) -> Option<&'static [u8]> {
     };
 
     Some(vd)
-}
-
-/// Verifier data for the `STCT` circuit.
-pub const fn verifier_data_stct() -> &'static [u8] {
-    VD_STCT
-}
-
-/// Verifier data for the `WFCT` circuit.
-pub const fn verifier_data_wfct() -> &'static [u8] {
-    VD_WFCT
 }

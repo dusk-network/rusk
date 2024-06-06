@@ -10,10 +10,10 @@
 
 extern crate alloc;
 
-mod circuits;
 mod error;
 mod state;
 mod tree;
+mod verifier_data;
 
 use rusk_abi::{ContractId, STAKE_CONTRACT};
 use state::TransferState;
@@ -31,29 +31,13 @@ unsafe fn mint(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn stct(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| STATE.send_to_contract_transparent(arg))
+unsafe fn deposit(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
 }
 
 #[no_mangle]
-unsafe fn wfct(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
-        STATE.withdraw_from_contract_transparent(arg)
-    })
-}
-
-#[no_mangle]
-unsafe fn wfct_raw(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
-        STATE.withdraw_from_contract_transparent_raw(arg)
-    })
-}
-
-#[no_mangle]
-unsafe fn wfctc(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
-        STATE.withdraw_from_contract_transparent_to_contract(arg)
-    })
+unsafe fn withdraw(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
 }
 
 // Queries
@@ -64,8 +48,8 @@ unsafe fn root(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn module_balance(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |module| STATE.balance(&module))
+unsafe fn contract_balance(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |contract| STATE.balance(&contract))
 }
 
 #[no_mangle]
@@ -140,7 +124,7 @@ unsafe fn update_root(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn add_module_balance(arg_len: u32) -> u32 {
+unsafe fn add_contract_balance(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(module, value)| {
         assert_external_caller();
         STATE.add_balance(module, value)
@@ -148,7 +132,7 @@ unsafe fn add_module_balance(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn sub_module_balance(arg_len: u32) -> u32 {
+unsafe fn sub_contract_balance(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(module, value)| {
         if rusk_abi::caller() != STAKE_CONTRACT {
             panic!("Can only be called by the stake contract!")

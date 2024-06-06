@@ -4,34 +4,28 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::circuits::*;
 use crate::error::Error;
 use crate::tree::Tree;
+use crate::verifier_data::*;
 
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use dusk_bytes::DeserializableSlice;
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{
-    ContractError, ContractId, EconomicMode, PaymentInfo, PublicInput,
-    RawResult, STAKE_CONTRACT,
+    ContractError, ContractId, EconomicMode, PublicInput, RawResult,
+    STAKE_CONTRACT,
 };
 
 use execution_core::{
-    stct_signature_message,
     transfer::{
-        EconomicEvent, EconomicResult, Mint, Stct, TreeLeaf, Wfct, WfctRaw,
-        Wfctc, TRANSFER_TREE_DEPTH,
+        EconomicEvent, EconomicResult, Fee, Mint, SenderAccount, Transaction,
+        TreeLeaf, TRANSFER_TREE_DEPTH,
     },
-    BlsScalar, Crossover, Fee, JubJubAffine, Note, Ownable, StealthAddress,
-    Transaction,
+    BlsScalar, Note,
 };
-
-/// Arity of the transfer tree.
-pub const A: usize = 4;
 
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 5000;
@@ -41,8 +35,7 @@ pub struct TransferState {
     nullifiers: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
     balances: BTreeMap<ContractId, u64>,
-    var_crossover: Option<Crossover>,
-    var_crossover_addr: Option<StealthAddress>,
+    deposit: Option<(ContractId, u64)>,
     gas_price: Option<u64>,
 }
 
@@ -53,128 +46,107 @@ impl TransferState {
             nullifiers: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
             balances: BTreeMap::new(),
-            var_crossover: None,
-            var_crossover_addr: None,
+            deposit: None,
             gas_price: None,
         }
     }
 
+    /// Mint a new phoenix note.
+    ///
+    /// This can only be called by the transfer- and stake-contracts.
+    /// If called by the `stake-contract`, this method will increase the total
+    /// amount of circulating dusk. This happens when the reward for staking
+    /// and participating in the consensus is withdrawn.
+    /// If called by the transfer-contract itself, it is important to make sure
+    /// that the minted value is subtracted from a contracts balance before
+    /// creating a phoenix-note.
     pub fn mint(&mut self, mint: Mint) -> bool {
-        // Only the stake contract can mint notes to a particular stealth
-        // address. This happens when the reward for staking and participating
-        // in the consensus is withdrawn.
-        if rusk_abi::caller() != STAKE_CONTRACT
-            && !rusk_abi::caller().is_uninitialized()
-        {
+        // why return bool?
+        let caller = rusk_abi::caller();
+        if caller != STAKE_CONTRACT && !rusk_abi::caller().is_uninitialized() {
             panic!("Can only be called by the stake contract!")
         }
+        let sender = SenderAccount {
+            contract: caller.to_bytes(),
+            account: mint.sender,
+        };
 
-        let note =
-            Note::transparent_stealth(mint.address, mint.value, mint.nonce);
+        let note = Note::transparent_stealth(mint.address, mint.value, sender);
 
         self.push_note_current_height(note);
 
         true
     }
 
-    pub fn send_to_contract_transparent(&mut self, stct: Stct) -> bool {
-        let (crossover, stealth_addr) =
-            self.take_crossover().expect("Crossover not present");
-
-        let address =
-            rusk_abi::contract_to_scalar(&ContractId::from_bytes(stct.module));
-
-        let message =
-            stct_signature_message(&crossover, stct.value, address).to_vec();
-        let message = rusk_abi::poseidon_hash(message);
-
-        let mut pi = Vec::with_capacity(6);
-
-        pi.push(crossover.value_commitment().into());
-        pi.push(stct.value.into());
-        pi.push(stealth_addr.pk_r().as_ref().into());
-        pi.push(message.into());
-
-        //  1. v < 2^64
-        //  2. B_a↦ = B_a↦ + v
-        let contract_id = ContractId::from_bytes(stct.module);
-        self.add_balance(contract_id, stct.value);
-
-        //  3. if a.isPayable() ↦ true then continue
-        let contract_id = ContractId::from_bytes(stct.module);
-        match rusk_abi::payment_info(contract_id)
-            .expect("Querying the payment info should succeed")
-        {
-            PaymentInfo::Transparent(_) | PaymentInfo::Any(_) => (),
-            _ => panic!("The caller doesn't accept transparent notes"),
+    /// Withdraw from a contract's balance into a phoenix-note.
+    ///
+    /// Even though a new phoenix-note is minted, the funds are only moved there
+    /// from the contract's balance. This means that, unlike [`mint`], calling
+    /// this function will not increase the total amount of circulating dusk.
+    ///
+    /// # Panics
+    /// This can only be called by a contract that with sufficient balance.
+    pub fn withdraw(&mut self, withdraw: Mint) {
+        // check if the request comes from a contract
+        let contract = rusk_abi::caller();
+        if contract.is_uninitialized() {
+            panic!("The \"withdraw\" method can only be called by another contract.")
         }
 
-        //  4. verify(C.c, v, π)
-        let vd = verifier_data_stct();
-        Self::assert_proof(vd, stct.proof, pi)
-            .expect("Failed to verify the provided proof!");
+        // check if the contract has enough balance
+        if self.balance(&contract) < withdraw.value {
+            panic!("The contract doesn't have enough balance.");
+        }
 
-        //  5. C ← C(0,0,0)
-        //  Crossover is already taken
+        // subtract the withdraw-value from the contract's balance
+        self.sub_balance(&contract, withdraw.value)
+            .expect("The contract should have enough balance");
 
-        true
+        // push a new phoenix-note with the given data to the tree
+        let sender = SenderAccount {
+            contract: contract.to_bytes(),
+            account: withdraw.sender,
+        };
+        let note =
+            Note::transparent_stealth(withdraw.address, withdraw.value, sender);
+        self.push_note_current_height(note);
     }
 
-    pub fn withdraw_from_contract_transparent(&mut self, wfct: Wfct) -> bool {
-        let address = rusk_abi::caller();
-        let mut pi = Vec::with_capacity(3);
+    /// Deposit funds to a contract's balance.
+    ///
+    /// This function checks whether a deposit has been placed earlier on the
+    /// state. If so and the contract-id matches the caller, the deposit will be
+    /// added to the contract's balance.
+    ///
+    /// # Panics
+    /// This function will panic if there is no deposit on the state or the
+    /// caller-id doesn't match the contract-id stored for the deposit.
+    pub fn deposit(&mut self, value: u64) {
+        // check is the request comes from a contract
+        let caller = rusk_abi::caller();
+        if caller.is_uninitialized() {
+            panic!("Only a contract is authorized to claim a deposit.")
+        }
 
-        pi.push(wfct.value.into());
-        pi.push(wfct.note.value_commitment().into());
-
-        //  1. a ∈ B↦
-        //  2. B_a↦ ← B_a↦ − v
-        self.sub_balance(&address, wfct.value)
-            .expect("Failed to subtract the balance from the provided address");
-
-        //  3. N↦.append(N_p^t)
-        //  4. N_p^* ← encode(N_p^t)
-        //  5. N.append(N_p^*)
-        self.push_note_current_height(wfct.note);
-
-        //  6. verify(C.c, M, pk, π)
-        let vd = verifier_data_wfct();
-        Self::assert_proof(vd, wfct.proof, pi)
-            .expect("Failed to verify the provided proof!");
-
-        true
-    }
-
-    pub fn withdraw_from_contract_transparent_raw(
-        &mut self,
-        wfct_raw: WfctRaw,
-    ) -> bool {
-        let note = Note::from_slice(wfct_raw.note.as_slice())
-            .expect("Failed to deserialize note");
-        self.withdraw_from_contract_transparent(Wfct {
-            value: wfct_raw.value,
-            note,
-            proof: wfct_raw.proof,
-        })
-    }
-
-    pub fn withdraw_from_contract_transparent_to_contract(
-        &mut self,
-        wfctc: Wfctc,
-    ) -> bool {
-        let from = rusk_abi::caller();
-
-        //  1. from ∈ B↦
-        //  2. B_from↦ ← B_from↦ − v
-        self.sub_balance(&from, wfctc.value).expect(
-            "Failed to subtract the balance from the provided address!",
-        );
-
-        //  3. B_to↦ = B_to↦ + v
-        let module = ContractId::from_bytes(wfctc.module);
-        self.add_balance(module, wfctc.value);
-
-        true
+        let deposit = self.deposit.take();
+        match deposit {
+            Some((deposit_contract, deposit_value)) => {
+                if deposit_value != value {
+                    panic!(
+                        "The value to deposit doesn't match the previously deposited value"
+                        );
+                } else if deposit_contract != caller {
+                    panic!(
+                        "The caller is not authorized to claim the deposit."
+                    );
+                } else {
+                    self.add_balance(deposit_contract, deposit_value);
+                }
+            }
+            None => {
+                panic!("There is no deposit on the state.");
+            }
+        }
     }
 
     /// Spends the inputs and creates the given UTXO, and executes the contract
@@ -182,7 +154,7 @@ impl TransferState {
     /// transaction is valid - hash matches, anchor has been a root of the
     /// tree, proof checks out, etc...
     ///
-    /// This will emplace the crossover in the state, if it exists - making it
+    /// This will emplace the deposit in the state, if it exists - making it
     /// available for any contracts called.
     ///
     /// [`refund`] **must** be called if this function succeeds, otherwise we
@@ -198,45 +170,51 @@ impl TransferState {
         &mut self,
         tx: Transaction,
     ) -> Result<Vec<u8>, ContractError> {
-        //  1. α ∈ R
-        if !self.root_exists(&tx.anchor) {
-            panic!("Anchor not found in the state!");
+        let tx_skeleton = tx.payload().tx_skeleton();
+
+        // panic if the root is invalid
+        if !self.root_exists(&tx_skeleton.root) {
+            panic!("Root not found in the state!");
         }
 
-        //  2. ν[] !∈ Nullifiers
-        if self.any_nullifier_exists(&tx.nullifiers) {
+        // panic if any of the given nullifiers already exist
+        if self.any_nullifier_exists(&tx_skeleton.nullifiers) {
             panic!("A provided nullifier already exists!");
         }
 
-        //  3. Nullifiers.append(ν[])
-        self.nullifiers.extend(&tx.nullifiers);
+        // append the nullifiers to the nullifiers set
+        self.nullifiers.extend(&tx_skeleton.nullifiers);
 
-        //  4. if |C|=0 then set C ← (0,0,0)
-        //  Crossover is received as option
-
-        //  5. N↦.append((No.R[], No.pk[])
-        //  6. Notes.append(No[])
-        let block_height = rusk_abi::block_height();
-        self.tree.extend_notes(block_height, tx.outputs.clone());
-
-        //  7. g_l < 2^64
-        //  8. g_pmin < g_p
-        //  9. fee ← g_l ⋅ g_p
-        // 10. verify(α, ν[], C.c, No.c[], fee)
+        // verify the phoenix-circuit
         if !verify_tx_proof(&tx) {
             panic!("Invalid transaction proof!");
         }
 
-        // 11. if ∣k∣≠0 then call(k)
-        self.var_crossover = tx.crossover;
-        self.var_crossover_addr.replace(*tx.fee.stealth_address());
+        // append the output notes to the phoenix-notes tree
+        let block_height = rusk_abi::block_height();
+        self.tree
+            .extend_notes(block_height, tx_skeleton.outputs.clone());
 
+        // place the contract deposit on the state
+        if tx.payload().deposit {
+            let contract = match tx.payload().contract_call() {
+                Some(call) => ContractId::from_bytes(call.contract),
+                None => {
+                    panic!("There needs to be a contract call when depositing funds");
+                }
+            };
+            self.deposit = Some((contract, tx.payload().tx_skeleton.deposit));
+        }
+
+        // perform contract call if present
         let mut result = Ok(rusk_abi::RawResult::empty());
-
-        if let Some((contract_id, fn_name, fn_args)) = tx.call {
-            let contract_id = ContractId::from_bytes(contract_id);
-            self.gas_price = Some(tx.fee.gas_price);
-            result = rusk_abi::call_raw(contract_id, &fn_name, &fn_args);
+        if let Some(call) = tx.payload().contract_call() {
+            self.gas_price = Some(tx.payload().fee.gas_price);
+            result = rusk_abi::call_raw(
+                ContractId::from_bytes(call.contract),
+                &call.fn_name,
+                &call.fn_args,
+            );
             self.gas_price = None;
             if let Ok(RawResult {
                 data: _,
@@ -272,7 +250,7 @@ impl TransferState {
             rusk_abi::emit(
                 "sponsoring",
                 EconomicEvent {
-                    module: contract_id.to_bytes(),
+                    contract: contract_id.to_bytes(),
                     value: allowance * gas_price,
                     result: EconomicResult::AllowanceNotSufficient,
                 },
@@ -284,7 +262,7 @@ impl TransferState {
                 rusk_abi::emit(
                     "sponsoring",
                     EconomicEvent {
-                        module: contract_id.to_bytes(),
+                        contract: contract_id.to_bytes(),
                         value: allowance,
                         result: EconomicResult::BalanceNotSufficient,
                     },
@@ -298,7 +276,7 @@ impl TransferState {
                 rusk_abi::emit(
                     "sponsoring",
                     EconomicEvent {
-                        module: contract_id.to_bytes(),
+                        contract: contract_id.to_bytes(),
                         value: spent,
                         result: EconomicResult::AllowanceApplied,
                     },
@@ -337,22 +315,14 @@ impl TransferState {
             gas_spent
         };
 
-        let block_height = rusk_abi::block_height();
+        let remainder_note = fee.gen_remainder_note(economic_gas_spent);
 
-        let remainder = fee.gen_remainder(economic_gas_spent);
-        let remainder = Note::from(remainder);
-
-        let remainder_value = remainder
+        let remainder_value = remainder_note
             .value(None)
             .expect("Should always succeed for a transparent note");
 
         if remainder_value > 0 {
-            self.push_note(block_height, remainder);
-        }
-
-        if let Some(crossover) = self.var_crossover {
-            let note = Note::from((fee, crossover));
-            self.push_note(block_height, note);
+            self.push_note_current_height(remainder_note);
         }
     }
 
@@ -404,7 +374,7 @@ impl TransferState {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>> {
+    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>> {
         self.tree.opening(pos)
     }
 
@@ -490,65 +460,20 @@ impl TransferState {
             _ => Err(Error::NotEnoughBalance),
         }
     }
-
-    fn take_crossover(&mut self) -> Result<(Crossover, StealthAddress), Error> {
-        let crossover =
-            self.var_crossover.take().ok_or(Error::CrossoverNotFound)?;
-
-        let sa = self
-            .var_crossover_addr
-            .take()
-            .ok_or(Error::CrossoverNotFound)?;
-
-        Ok((crossover, sa))
-    }
-
-    fn assert_proof(
-        verifier_data: &[u8],
-        proof: Vec<u8>,
-        public_inputs: Vec<PublicInput>,
-    ) -> Result<(), Error> {
-        rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
-            .then_some(())
-            .ok_or(Error::ProofVerification)
-    }
 }
 
 fn verify_tx_proof(tx: &Transaction) -> bool {
-    // Constant for a pedersen commitment with zero value.
-    // Calculated as `G^0 · G'^0`
-    const ZERO_COMMITMENT: JubJubAffine =
-        JubJubAffine::from_raw_unchecked(BlsScalar::zero(), BlsScalar::one());
+    let pis: Vec<PublicInput> =
+        tx.public_inputs().iter().map(|pi| pi.into()).collect();
 
-    let n_nullifiers = tx.nullifiers.len();
-    let n_outputs = tx.outputs.len();
-
-    let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
-    let crossover_commitment = tx
-        .crossover
-        .map(|c| *c.value_commitment())
-        .unwrap_or_default();
-    let fee_value = tx.fee.gas_limit * tx.fee.gas_price;
-
-    let mut pis =
-        Vec::<PublicInput>::with_capacity(5 + n_nullifiers + 2 * n_outputs);
-
-    pis.push(tx_hash.into());
-    pis.push(tx.anchor.into());
-    pis.extend(tx.nullifiers.iter().map(Into::into));
-    pis.push(crossover_commitment.into());
-
-    pis.push(fee_value.into());
-    pis.extend(tx.outputs.iter().map(|n| n.value_commitment().into()));
-    pis.extend(
-        (0usize..2usize.saturating_sub(n_outputs))
-            .map(|_| ZERO_COMMITMENT.into()),
-    );
-
-    let vd = verifier_data_execute(n_nullifiers)
+    // fetch the verifier data
+    let num_inputs = tx.payload().tx_skeleton.nullifiers.len();
+    let vd = verifier_data_execute(num_inputs)
         .expect("No circuit available for given number of inputs!")
         .to_vec();
-    rusk_abi::verify_proof(vd, tx.proof.clone(), pis)
+
+    // verify the proof
+    rusk_abi::verify_proof(vd, tx.proof().clone(), pis)
 }
 
 #[cfg(test)]
