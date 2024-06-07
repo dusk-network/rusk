@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::transfer::{Wfct, Wfctc};
+use execution_core::transfer::Mint;
 use rusk_abi::TRANSFER_CONTRACT;
 
 /// Alice contract.
@@ -16,13 +16,13 @@ impl Alice {
         // no-op
     }
 
-    pub fn withdraw(&mut self, wfct: Wfct) {
-        let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfct", &wfct)
+    pub fn withdraw(&mut self, mint: Mint) {
+        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &mint)
             .expect("Transparent withdrawal transaction should succeed");
     }
 
-    pub fn withdraw_to_contract(&mut self, wfctc: Wfctc) {
-        let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfctc", &wfctc)
-            .expect("Withdrawal tco contract transaction should succeed");
+    pub fn deposit(&mut self, value: u64) {
+        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &value)
+            .expect("Transparent withdrawal transaction should succeed");
     }
 }
