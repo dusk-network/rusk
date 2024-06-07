@@ -29,6 +29,7 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
+const GAS_PRICE: u64 = 2;
 const CHARLIES_FUNDS: u64 = 140_000_000;
 const POINT_LIMIT: u64 = 0x10000000;
 const SENDER_INDEX: u64 = 0;
@@ -85,8 +86,10 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 fn make_and_execute_transaction(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    contract_id: &ContractId,
     method: impl AsRef<str>,
-) -> EconomicMode {
+    gas_limit: u64,
+) -> (EconomicMode, u64) {
     // We will refund the transaction to ourselves.
     let refund = wallet
         .public_key(SENDER_INDEX)
@@ -107,13 +110,13 @@ fn make_and_execute_transaction(
     let tx = wallet
         .execute(
             &mut rng,
-            CHARLIE_CONTRACT_ID.to_bytes().into(),
+            contract_id.to_bytes().into(),
             String::from(method.as_ref()),
             (),
             SENDER_INDEX,
             &refund,
-            GAS_LIMIT,
-            1,
+            gas_limit,
+            GAS_PRICE,
         )
         .expect("Making the transaction should succeed");
 
@@ -132,18 +135,24 @@ fn make_and_execute_transaction(
     )
     .expect("generator procedure should succeed");
 
+    let after_balance = wallet
+        .get_balance(SENDER_INDEX)
+        .expect("Getting initial balance should succeed")
+        .value;
+
     let mut spent_transactions = spent_transactions.into_iter();
     let tx = spent_transactions
         .next()
         .expect("There should be one spent transactions");
 
     assert!(tx.err.is_none(), "Transaction should succeed");
-    tx.economic_mode
+    (tx.economic_mode, after_balance)
 }
 
 /// We call method 'pay' of a Charlie contract
 /// and make sure the gas spent for us is zero
 /// as it is the Charlie contract who has paid for gas.
+/// Note that deposit is needed to execute the transaction.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_pays() -> Result<()> {
     logger();
@@ -166,7 +175,13 @@ pub async fn contract_pays() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    let economic_mode = make_and_execute_transaction(&rusk, &wallet, "pay");
+    let (economic_mode, after_balance) = make_and_execute_transaction(
+        &rusk,
+        &wallet,
+        &CHARLIE_CONTRACT_ID,
+        "pay",
+        GAS_LIMIT,
+    );
     assert!(
         match economic_mode {
             EconomicMode::Allowance(allowance) if allowance > 0 => true,
@@ -174,6 +189,7 @@ pub async fn contract_pays() -> Result<()> {
         },
         "Transaction should be free"
     );
+    assert_eq!(after_balance, INITIAL_BALANCE); // transaction was free
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
@@ -187,11 +203,11 @@ pub async fn contract_pays() -> Result<()> {
 }
 
 /// We call method 'earn' of a Charlie contract
-/// and make sure the gas spent is approximately
-/// equal to Charlie contract's charge for the call.
+/// which will earn on this call a CHARLIE_CHARGE amount
+/// minus the cost of the call.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_earns() -> Result<()> {
-    const CHARLIE_CHARGE: u64 = 80_000_000; // that much Charlie contract's method 'earn' is charging
+    const CHARLIE_CHARGE: u64 = 40_000_000; // that much Charlie contract's method 'earn' is charging
 
     logger();
 
@@ -213,12 +229,20 @@ pub async fn contract_earns() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    let economic_mode = make_and_execute_transaction(&rusk, &wallet, "earn");
+    let (economic_mode, after_balance) = make_and_execute_transaction(
+        &rusk,
+        &wallet,
+        &CHARLIE_CONTRACT_ID,
+        "earn",
+        // minimum acceptable limit is the charge converted to gas points
+        CHARLIE_CHARGE / GAS_PRICE,
+    );
     assert_eq!(
         economic_mode,
         EconomicMode::Charge(CHARLIE_CHARGE),
         "Transaction should cost as much as contract is charging"
     );
+    assert_eq!(INITIAL_BALANCE - after_balance, CHARLIE_CHARGE); // we paid 'CHARLIE_CHARGE' fee
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
@@ -229,4 +253,43 @@ pub async fn contract_earns() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     Ok(())
+}
+
+/// We call method 'earn' of a Charlie contract
+/// but our limit is smaller than CHARLIE_CHARGE.
+/// The call should panic.
+#[tokio::test(flavor = "multi_thread")]
+#[should_panic(expected = "Gas limit not sufficient")]
+pub async fn contract_earns_insufficient_limit() {
+    const CHARLIE_CHARGE: u64 = 40_000_000; // that much Charlie contract's method 'earn' is charging
+
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp).expect("Instantiating rusk should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let _ = make_and_execute_transaction(
+        &rusk,
+        &wallet,
+        &CHARLIE_CONTRACT_ID,
+        "earn",
+        // maximum insufficient limit is one less that the charge converted to
+        // points
+        (CHARLIE_CHARGE / GAS_PRICE) - 1,
+    );
 }
