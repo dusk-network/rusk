@@ -80,7 +80,7 @@ impl Charlie {
     }
 
     /// calling this method will cause the transaction fee to be
-    /// increased, yet its sets the charge to a value  too small to cover
+    /// increased, yet it sets the charge to a value too small to cover
     /// the actual execution cost, as a result the transaction will fail
     /// and contract balance won't be affected
     pub fn earn_and_fail(&mut self) {
