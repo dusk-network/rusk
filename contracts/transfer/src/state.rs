@@ -270,7 +270,11 @@ impl TransferState {
         charge: u64,
         gas_spent: u64,
         gas_price: u64,
+        gas_limit: u64,
     ) -> u64 {
+        if gas_limit * gas_price < charge {
+            panic!("Gas limit not sufficient")
+        }
         let cost = gas_spent * gas_price;
         if charge > cost {
             let earning = charge * gas_price - cost;
@@ -372,6 +376,7 @@ impl TransferState {
                         charge,
                         gas_spent,
                         fee.gas_price,
+                        fee.gas_limit,
                     ),
                 EconomicMode::Allowance(allowance) if allowance != 0 => self
                     .apply_allowance(
