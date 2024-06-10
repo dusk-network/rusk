@@ -9,8 +9,6 @@ use crate::config::CONSENSUS_MAX_ITER;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
-use node_data::ledger::Block;
-
 use node_data::message::{AsyncQueue, Message, Topics};
 
 use crate::execution_ctx::ExecutionCtx;
@@ -88,27 +86,24 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         cancel_rx: oneshot::Receiver<i32>,
-    ) -> Result<Block, ConsensusError> {
+    ) -> Result<(), ConsensusError> {
         let round = ru.round;
         debug!(event = "consensus started", round);
         let sender = QuorumMsgSender::new(self.outbound.clone());
 
-        // Consensus loop - proposal-validation-ratificaton loop
-        let mut main_task_handle =
-            self.spawn_main_loop(ru, provisioners, sender);
+        // proposal-validation-ratification loop
+        let mut handle = self.spawn_consensus(ru, provisioners, sender);
 
         // Usually this select will be terminated due to cancel signal however
         // it may also be terminated due to unrecoverable error in the main loop
         let result;
         tokio::select! {
-            recv = &mut main_task_handle => {
+            recv = &mut handle => {
                 result = recv.map_err(|_| ConsensusError::Canceled)?;
-                if let Err(ref err) = result{
+                if let Err(ref err) = result {
                     tracing::error!(event = "consensus failed", ?err);
                 }
             },
-            // Canceled from outside.
-            // This could be triggered by either by Chain or Synchronizer.
             _ = cancel_rx => {
                 result = Err(ConsensusError::Canceled);
                 tracing::debug!(event = "consensus canceled", round);
@@ -116,17 +111,24 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         }
 
         // Tear-down procedure
-        abort(&mut main_task_handle).await;
+        abort(&mut handle).await;
 
         result
     }
 
-    fn spawn_main_loop(
+    /// Executes Consensus algorithm
+    ///
+    /// Consensus loop terminates on any of these conditions:
+    ///
+    /// * A fully valid block for current round is accepted
+    /// * Consensus reaches  CONSENSUS_MAX_ITER
+    /// * Unrecoverable error is returned by a step execution
+    fn spawn_consensus(
         &self,
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         sender: QuorumMsgSender,
-    ) -> JoinHandle<Result<Block, ConsensusError>> {
+    ) -> JoinHandle<Result<(), ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
         let future_msgs = self.future_msgs.clone();
