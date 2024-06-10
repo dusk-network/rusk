@@ -13,6 +13,17 @@ const createPollingDataStore = (dataRetriever, fetchInterval) => {
   /** @type {number} */
   let currentPollId = 0;
 
+  /** @type {Parameters<dataRetriever>?} */
+  let resumeArgs = null;
+
+  function visibilityChangeHandler() {
+    if (document.hidden && resumeArgs) {
+      currentPollId++;
+    } else if (resumeArgs) {
+      start(...resumeArgs);
+    }
+  }
+
   const dataStore = createDataStore(dataRetriever);
 
   /** @type {(pollId: number, args: Parameters<dataRetriever>) => void} */
@@ -37,11 +48,15 @@ const createPollingDataStore = (dataRetriever, fetchInterval) => {
   };
 
   const stop = () => {
+    document.removeEventListener("visibilitychange", visibilityChangeHandler);
+    resumeArgs = null;
     currentPollId++;
   };
 
   /** @type {(...args: Parameters<dataRetriever>) => void} */
   const start = (...args) => {
+    document.addEventListener("visibilitychange", visibilityChangeHandler);
+    resumeArgs = args;
     poll(++currentPollId, args);
   };
 
