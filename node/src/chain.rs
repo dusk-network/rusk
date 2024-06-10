@@ -117,37 +117,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 biased;
                 // Receives results from the upper layer
                 recv = &mut result_chan.recv() => {
-                    let mut failed_consensus = false;
                     match recv? {
-                        Ok(blk) => {
-                            info!(
-                                event = "block received",
-                                src = "consensus",
-                                blk_height = blk.header().height,
-                                blk_hash = to_str(&blk.header().hash),
-                            );
-
-                            // Handle a block that originates from local consensus execution
-                            if let Err(err) = fsm.on_block_event(&blk, None).await  {
-                                // Internal consensus execution has produced an invalid block
-                                error!(event = "failed_consensus",  ?err);
-                                failed_consensus = true;
-                            } else {
-                                timeout = Self::next_timeout();
-                            }
-                        }
                         Err(ConsensusError::Canceled) => {
                             info!("consensus canceled");
                         }
                         Err(err) => {
-                            // Internal consensus execution has terminated with an error instead of a valid block
-                            failed_consensus = true;
+                            // Internal consensus execution has terminated with an error
                             error!(event = "failed_consensus", ?err);
+                            fsm.on_failed_consensus().await;
                         }
-                    }
-
-                    if failed_consensus {
-                        fsm.on_failed_consensus().await;
+                        _ => {}
                     }
                 },
                 // Handles any inbound wire.

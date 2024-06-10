@@ -773,7 +773,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_result_chan(
         &self,
-    ) -> AsyncQueue<Result<Block, ConsensusError>> {
+    ) -> AsyncQueue<Result<(), ConsensusError>> {
         self.task.read().await.result.clone()
     }
 

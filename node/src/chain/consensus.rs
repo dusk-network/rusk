@@ -40,7 +40,7 @@ pub(crate) struct Task {
 
     pub(crate) future_msg: Arc<Mutex<MsgRegistry<Message>>>,
 
-    pub(crate) result: AsyncQueue<Result<Block, ConsensusError>>,
+    pub(crate) result: AsyncQueue<Result<(), ConsensusError>>,
 
     /// a pair of join_handle and cancel_chan of the running consensus task.
     ///
