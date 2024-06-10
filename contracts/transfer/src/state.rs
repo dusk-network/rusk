@@ -244,9 +244,6 @@ impl TransferState {
             }) = result.clone()
             {
                 match economic_mode {
-                    EconomicMode::Charge(charge) if charge != 0 => {
-                        rusk_abi::set_charge(charge)
-                    }
                     EconomicMode::Allowance(allowance) if allowance != 0 => {
                         rusk_abi::set_allowance(allowance)
                     }
@@ -256,45 +253,6 @@ impl TransferState {
         }
 
         result.map(|r| r.data)
-    }
-
-    // Applies contract's charge. Caller of the contract will pay a
-    // larger fee so that contract can earn the difference between
-    // charge and the actual cost of the call.
-    // Charge has no effect if the actual cost of the call is greater
-    // than the charge.
-    // Returns economic gas spent
-    fn apply_charge(
-        &mut self,
-        contract_id: &ContractId,
-        charge: u64,
-        gas_spent: u64,
-        gas_price: u64,
-    ) -> u64 {
-        let cost = gas_spent * gas_price;
-        if charge > cost {
-            let earning = charge * gas_price - cost;
-            self.add_balance(*contract_id, earning);
-            rusk_abi::emit(
-                "earning",
-                EconomicEvent {
-                    module: contract_id.to_bytes(),
-                    value: earning,
-                    result: EconomicResult::ChargeApplied,
-                },
-            );
-            charge
-        } else {
-            rusk_abi::emit(
-                "earning",
-                EconomicEvent {
-                    module: contract_id.to_bytes(),
-                    value: charge * gas_price,
-                    result: EconomicResult::ChargeNotSufficient,
-                },
-            );
-            gas_spent
-        }
     }
 
     // Applies contract's allowance. Caller of the contract's method
@@ -366,13 +324,6 @@ impl TransferState {
     ) {
         let economic_gas_spent = if let Some(contract_id) = contract_id {
             match economic_mode {
-                EconomicMode::Charge(charge) if charge != 0 => self
-                    .apply_charge(
-                        &contract_id,
-                        charge,
-                        gas_spent,
-                        fee.gas_price,
-                    ),
                 EconomicMode::Allowance(allowance) if allowance != 0 => self
                     .apply_allowance(
                         &contract_id,

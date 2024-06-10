@@ -18,10 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Removed support for scenario 'contract earns fee' [#1644]
 - Remove STCO and WFCO [#1675]
 
 ## [0.7.0] - 2023-12-15
 
+[#1644]: https://github.com/dusk-network/rusk/issues/1644
 [#1630]: https://github.com/dusk-network/rusk/issues/1630
 [#1604]: https://github.com/dusk-network/rusk/issues/1604
 [#1675]: https://github.com/dusk-network/rusk/issues/1675
