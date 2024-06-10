@@ -6,7 +6,8 @@
 
 use rand::{CryptoRng, RngCore};
 
-use execution_core::{Note, PublicKey};
+use execution_core::{JubJubScalar, Note, PublicKey};
+use ff::Field;
 use rusk_abi::{ContractData, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
 
 use crate::common::utils::update_root;
@@ -19,7 +20,7 @@ const POINT_LIMIT: u64 = 0x100_000_000;
 pub fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
-    psk: &PublicKey,
+    pk: &PublicKey,
     genesis_value: u64,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
@@ -51,7 +52,12 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
         )
         .expect("Deploying the stake contract should succeed");
 
-    let genesis_note = Note::transparent(rng, psk, genesis_value);
+    let sender_blinder = [
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
+    ];
+    let genesis_note =
+        Note::transparent(rng, pk, pk, genesis_value, sender_blinder);
 
     // push genesis note to the contract
     session

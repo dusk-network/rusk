@@ -18,10 +18,14 @@ pub fn assert_event<S>(
 ) where
     S: AsRef<str>,
 {
-    let event = events
-        .iter()
-        .find(|e| e.topic == topic.as_ref())
-        .expect("event should exist in the event list");
+    let event =
+        events
+            .iter()
+            .find(|e| e.topic == topic.as_ref())
+            .expect(&format!(
+                "event: {} should exist in the event list",
+                topic.as_ref()
+            ));
     let staking_event_data =
         check_archived_root::<StakingEvent>(event.data.as_slice())
             .expect("Stake event data should deserialize correctly");

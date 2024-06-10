@@ -18,11 +18,11 @@ rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi" }
 [dev-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
-transfer-circuits = { version = "0.5", path = "../../circuits/transfer" }
+phoenix-circuits = "0.2.1-rc"
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 hex = "0.4"
 rand = "0.8"
-poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
+poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
 ff = { version = "0.13", default-features = false }
 criterion = "0.5"
 
