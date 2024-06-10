@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::vec::Vec;
 use dusk_bytes::Serializable;
-use execution_core::transfer::Stct;
 use execution_core::{BlsPublicKey, BlsSignature};
 use rkyv::{Archive, Deserialize, Serialize};
 use rusk_abi::TRANSFER_CONTRACT;
@@ -24,8 +22,6 @@ pub struct Subsidy {
     pub signature: BlsSignature,
     /// Value of the subsidy.
     pub value: u64,
-    /// Proof of the `STCT` circuit.
-    pub proof: Vec<u8>,
 }
 
 const SUBSIDY_MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
@@ -94,16 +90,7 @@ impl Charlie {
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let transfer_module = TRANSFER_CONTRACT;
-
-        let stct = Stct {
-            module: rusk_abi::self_id().to_bytes(),
-            value: subsidy.value,
-            proof: subsidy.proof,
-        };
-
-        // subsidizing self with 'subsidy.value'
-        rusk_abi::call::<_, bool>(transfer_module, "stct", &stct)
+        rusk_abi::call::<_, bool>(TRANSFER_CONTRACT, "deposit", &subsidy.value)
             .expect("Sending note to contract should succeed");
     }
 }
