@@ -95,17 +95,11 @@ pub struct Mint {
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
 pub enum EconomicResult {
-    /// Contract's charge has been successfully applied, contract will earn
-    /// fee.
-    ChargeApplied,
     /// Contract's allowance has been successfully applied, contract will pay
     /// for gas.
     AllowanceApplied,
-    /// Contract's charge was not sufficient as it was smaller that the actual
-    /// cost of the call.
-    ChargeNotSufficient,
-    /// Contract's allowance was not sufficient to cover the actual cost of the
-    /// call.
+    /// Contract's allowance was not sufficient as it was smaller than the
+    /// actual cost of the call.
     AllowanceNotSufficient,
     /// Contract's balance was not sufficient to pay for the call.
     BalanceNotSufficient,
