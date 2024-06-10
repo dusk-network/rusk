@@ -145,44 +145,56 @@ exports[`Main layout > should render the app's main layout 1`] = `
         <span>
           © 2018 - 2024 Dusk Network B.V. All Rights Reserved.
         </span>
+         
+        <span>
+          Explorer v
+          0.0.0
+           (
+          hash1234 2024-01-12
+          )
+        </span>
       </div>
        
       <div
-        class="footer__links"
+        class="footer__links-test"
       >
-        <a
-          class="dusk-anchor dusk-anchor--off-surface footer__links-link"
-          href="https://dusk.network/privacy-policy"
+        <div
+          class="footer__links"
         >
-          Privacy policy
-        </a>
+          <a
+            class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+            href="https://dusk.network/privacy-policy"
+          >
+            Privacy policy
+          </a>
+           
+          <a
+            class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+            href="https://dusk.network/terms-of-use"
+          >
+            Terms of use
+          </a>
+        </div>
          
         <a
-          class="dusk-anchor dusk-anchor--off-surface footer__links-link"
-          href="https://dusk.network/terms-of-use"
+          class="dusk-anchor dusk-anchor--on-surface footer__logo"
+          href="https://dusk.network"
         >
-          Terms of use
+          <picture>
+            <source
+              media="(max-width:768px)"
+              srcset="/some-base-path/dusk_logo_icon.svg"
+            />
+             
+            <img
+              alt="Dusk Logo"
+              class="footer__logo-image"
+              sizes="(max-width:768px) 20px, 86px"
+              src="/some-base-path/dusk_logo.svg"
+            />
+          </picture>
         </a>
       </div>
-       
-      <a
-        class="dusk-anchor dusk-anchor--on-surface footer__logo"
-        href="https://dusk.network"
-      >
-        <picture>
-          <source
-            media="(max-width:768px)"
-            srcset="/some-base-path/dusk_logo_icon.svg"
-          />
-           
-          <img
-            alt="Dusk Logo"
-            class="footer__logo-image"
-            sizes="(max-width:768px) 20px, 86px"
-            src="/some-base-path/dusk_logo.svg"
-          />
-        </picture>
-      </a>
     </div>
   </footer>
    

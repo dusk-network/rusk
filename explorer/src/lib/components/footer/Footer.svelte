@@ -7,10 +7,15 @@
 </script>
 
 <div class="footer">
-  <div class="footer__content">
-    <div class="footer__copyright">
-      <span>© 2018 - 2024 Dusk Network B.V. All Rights Reserved.</span>
-    </div>
+  <div class="footer__copyright">
+    <span>© 2018 - 2024 Dusk Network B.V. All Rights Reserved.</span>
+    <span
+      >Explorer v{import.meta.env.APP_VERSION} ({import.meta.env
+        .APP_BUILD_INFO})</span
+    >
+  </div>
+
+  <div class="footer__links-test">
     <div class="footer__links">
       <Anchor
         onSurface={false}
@@ -34,11 +39,5 @@
         />
       </picture>
     </AppAnchor>
-  </div>
-  <div class="footer__build-info">
-    <span
-      >Explorer v{import.meta.env.APP_VERSION} ({import.meta.env
-        .APP_BUILD_INFO})</span
-    >
   </div>
 </div>

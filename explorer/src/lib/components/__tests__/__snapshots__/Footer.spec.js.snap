@@ -6,16 +6,24 @@ exports[`Footer > renders the Footer component 1`] = `
     class="footer"
   >
     <div
-      class="footer__content"
+      class="footer__copyright"
     >
-      <div
-        class="footer__copyright"
-      >
-        <span>
-          © 2018 - 2024 Dusk Network B.V. All Rights Reserved.
-        </span>
-      </div>
+      <span>
+        © 2018 - 2024 Dusk Network B.V. All Rights Reserved.
+      </span>
        
+      <span>
+        Explorer v
+        0.0.0
+         (
+        hash1234 2024-01-12
+        )
+      </span>
+    </div>
+     
+    <div
+      class="footer__links-test"
+    >
       <div
         class="footer__links"
       >
@@ -25,7 +33,6 @@ exports[`Footer > renders the Footer component 1`] = `
         >
           Privacy policy
         </a>
-        <!--&lt;Anchor&gt;-->
          
         <a
           class="dusk-anchor dusk-anchor--off-surface footer__links-link"
@@ -33,7 +40,6 @@ exports[`Footer > renders the Footer component 1`] = `
         >
           Terms of use
         </a>
-        <!--&lt;Anchor&gt;-->
       </div>
        
       <a
@@ -45,7 +51,6 @@ exports[`Footer > renders the Footer component 1`] = `
             media="(max-width:768px)"
             srcset="/some-base-path/dusk_logo_icon.svg"
           />
-          <!--&lt;AppSource&gt;-->
            
           <img
             alt="Dusk Logo"
@@ -53,23 +58,8 @@ exports[`Footer > renders the Footer component 1`] = `
             sizes="(max-width:768px) 20px, 86px"
             src="/some-base-path/dusk_logo.svg"
           />
-          <!--&lt;AppImage&gt;-->
         </picture>
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AppAnchor&gt;-->
-    </div>
-     
-    <div
-      class="footer__build-info"
-    >
-      <span>
-        Explorer v
-        0.0.0
-         (
-        hash1234 2024-01-12
-        )
-      </span>
     </div>
   </div>
 </div>
