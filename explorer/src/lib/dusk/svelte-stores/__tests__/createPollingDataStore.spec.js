@@ -13,6 +13,19 @@ describe("createPollingDataStore", () => {
   const dataRetriever = vi.fn().mockResolvedValue(data1);
   const fetchInterval = 1000;
 
+  const originalDocumentHidden = /** @type {PropertyDescriptor} */ (
+    Object.getOwnPropertyDescriptor(Document.prototype, "hidden")
+  );
+
+  /** @param {boolean} isHidden */
+  function changeDocumentHiddenTo(isHidden) {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: isHidden,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }
+
   /** @type {PollingDataStore} */
   let pollingDataStore;
 
@@ -25,6 +38,7 @@ describe("createPollingDataStore", () => {
 
   afterAll(() => {
     vi.useRealTimers();
+    Object.defineProperty(Document.prototype, "hidden", originalDocumentHidden);
   });
 
   it("should create a readable data store and expose `reset`, `start` and `stop` as service methods", () => {
@@ -345,5 +359,81 @@ describe("createPollingDataStore", () => {
     });
 
     pollingDataStore.stop();
+  });
+
+  it("should pause the polling when the document visibility changes to hidden and resume it when it goes back to visible", async () => {
+    dataRetriever.mockResolvedValueOnce(data1).mockResolvedValueOnce(data2);
+
+    pollingDataStore.start(...args);
+
+    await vi.advanceTimersToNextTimerAsync();
+
+    expect(dataRetriever).toHaveBeenCalledTimes(1);
+    expect(get(pollingDataStore)).toStrictEqual({
+      data: data1,
+      error: null,
+      isLoading: false,
+    });
+
+    changeDocumentHiddenTo(true);
+
+    await vi.advanceTimersByTimeAsync(fetchInterval * 10);
+
+    expect(dataRetriever).toHaveBeenCalledTimes(1);
+    expect(get(pollingDataStore)).toStrictEqual({
+      data: data1,
+      error: null,
+      isLoading: false,
+    });
+
+    changeDocumentHiddenTo(false);
+
+    expect(dataRetriever).toHaveBeenCalledTimes(2);
+    expect(get(pollingDataStore)).toStrictEqual({
+      data: data1,
+      error: null,
+      isLoading: true,
+    });
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(dataRetriever).toHaveBeenCalledTimes(2);
+    expect(get(pollingDataStore)).toStrictEqual({
+      data: data2,
+      error: null,
+      isLoading: false,
+    });
+
+    pollingDataStore.stop();
+    dataRetriever.mockResolvedValue(data1);
+  });
+
+  it("shouldn't resume the polling if `stop` is called before the document becomes hidden", async () => {
+    pollingDataStore.start(...args);
+
+    await vi.advanceTimersToNextTimerAsync();
+
+    expect(dataRetriever).toHaveBeenCalledTimes(1);
+    expect(get(pollingDataStore)).toStrictEqual({
+      data: data1,
+      error: null,
+      isLoading: false,
+    });
+
+    pollingDataStore.stop();
+    changeDocumentHiddenTo(true);
+
+    await vi.advanceTimersByTimeAsync(fetchInterval * 10);
+
+    expect(dataRetriever).toHaveBeenCalledTimes(1);
+
+    changeDocumentHiddenTo(false);
+
+    expect(dataRetriever).toHaveBeenCalledTimes(1);
+    expect(get(pollingDataStore)).toStrictEqual({
+      data: data1,
+      error: null,
+      isLoading: false,
+    });
   });
 });
