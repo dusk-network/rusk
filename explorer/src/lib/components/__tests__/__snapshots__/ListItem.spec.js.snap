@@ -19,13 +19,11 @@ exports[`List Item > renders the List Item component 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
   </dt>
    
   <dd
     class="details-list__definition"
   />
-  <!--&lt;ListItem&gt;-->
 </div>
 `;

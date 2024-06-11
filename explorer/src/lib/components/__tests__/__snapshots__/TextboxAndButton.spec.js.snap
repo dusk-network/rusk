@@ -12,7 +12,6 @@ exports[`TextField > renders the component with default values 1`] = `
     type="text"
   />
   
-  <!--&lt;Textbox&gt;-->
    
   <button
     class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
@@ -29,9 +28,7 @@ exports[`TextField > renders the component with default values 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;
 
@@ -47,7 +44,6 @@ exports[`TextField > updates input value on change 1`] = `
     type="text"
   />
   
-  <!--&lt;Textbox&gt;-->
    
   <button
     class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
@@ -64,8 +60,6 @@ exports[`TextField > updates input value on change 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;

@@ -25,7 +25,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           Back
         </span>
       </button>
-      <!--&lt;Button&gt;-->
     </header>
      
     <dl
@@ -48,7 +47,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         ID
       </dt>
@@ -58,7 +56,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       >
         4877687c2dbf154248d3ddee9ba0d81...431f39056f82a46819da041d4ac0e04
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -76,7 +73,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         block height
       </dt>
@@ -90,10 +86,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         >
           487,166
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AppAnchor&gt;-->
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -111,7 +104,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         Status
       </dt>
@@ -124,9 +116,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         >
           success
         </span>
-        <!--&lt;Badge&gt;-->
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -144,7 +134,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         timestamp
       </dt>
@@ -159,11 +148,9 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         >
           Tue, 16 Apr 2024 06:39:09 GMT (last month)
           
-          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -181,7 +168,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         type
       </dt>
@@ -194,9 +180,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         >
           transfer
         </span>
-        <!--&lt;Badge&gt;-->
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -214,7 +198,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         transaction fee
       </dt>
@@ -224,10 +207,8 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       >
         0.000290766 DUSK ($0.0001071037)
         
-        <!--&lt;DataGuard&gt;-->
          
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -245,7 +226,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         gas price
       </dt>
@@ -255,10 +235,8 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       >
         0.000000001 DUSK ($0.0000000004)
         
-        <!--&lt;DataGuard&gt;-->
          
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -276,7 +254,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         transaction gas limit
       </dt>
@@ -287,7 +264,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         0.50
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -305,7 +281,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         gas spent
       </dt>
@@ -316,7 +291,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         0.000290766
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -334,7 +308,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         payload
 
@@ -346,7 +319,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           role="switch"
           tabindex="0"
         />
-        <!--&lt;Switch&gt;-->
       </dt>
        
       <dd
@@ -354,15 +326,11 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       >
         
       </dd>
-      <!--&lt;ListItem&gt;-->
     </dl>
     
      
   </div>
   
-  <!--&lt;Card&gt;-->
-  <!--&lt;DataCard&gt;-->
-  <!--&lt;TransactionDetails&gt;-->
 </div>
 `;
 
@@ -391,7 +359,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           Back
         </span>
       </button>
-      <!--&lt;Button&gt;-->
     </header>
      
     <dl
@@ -414,7 +381,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         ID
       </dt>
@@ -424,7 +390,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
       >
         4877687c2dbf154248d3ddee9ba0d81...431f39056f82a46819da041d4ac0e04
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -442,7 +407,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         block height
       </dt>
@@ -456,10 +420,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         >
           487,166
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AppAnchor&gt;-->
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -477,7 +438,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         Status
       </dt>
@@ -490,9 +450,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         >
           success
         </span>
-        <!--&lt;Badge&gt;-->
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -510,7 +468,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         timestamp
       </dt>
@@ -525,11 +482,9 @@ exports[`Transaction Details > renders the Transaction Details component with th
         >
           Tue, 16 Apr 2024 06:39:09 GMT (last month)
           
-          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -547,7 +502,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         type
       </dt>
@@ -560,9 +514,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         >
           transfer
         </span>
-        <!--&lt;Badge&gt;-->
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -580,7 +532,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         transaction fee
       </dt>
@@ -590,10 +541,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
       >
         0.000290766 DUSK ($0.0001071037)
         
-        <!--&lt;DataGuard&gt;-->
          
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -611,7 +560,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         gas price
       </dt>
@@ -621,10 +569,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
       >
         0.000000001 DUSK ($0.0000000004)
         
-        <!--&lt;DataGuard&gt;-->
          
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -642,7 +588,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         transaction gas limit
       </dt>
@@ -653,7 +598,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
         0.50
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -671,7 +615,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         gas spent
       </dt>
@@ -682,7 +625,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
         0.000290766
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -700,7 +642,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         payload
 
@@ -712,7 +653,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
           role="switch"
           tabindex="0"
         />
-        <!--&lt;Switch&gt;-->
       </dt>
        
       <dd
@@ -724,21 +664,15 @@ exports[`Transaction Details > renders the Transaction Details component with th
            
           db0794770322802a22905c4364511f3186e6184085f875dbb9f11a3ae914766c020000000000000014bc23b875c67d0dbecfdd45f5964f3fea7188aff2035730c8802
           
-          <!--&lt;DataGuard&gt;-->
            
         </div>
         
-        <!--&lt;Card&gt;-->
         
       </dd>
-      <!--&lt;ListItem&gt;-->
     </dl>
     
      
   </div>
   
-  <!--&lt;Card&gt;-->
-  <!--&lt;DataCard&gt;-->
-  <!--&lt;TransactionDetails&gt;-->
 </div>
 `;

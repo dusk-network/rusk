@@ -9,7 +9,6 @@ exports[`Table > renders the Table component 1`] = `
       class="table"
     />
   </div>
-  <!--&lt;Table&gt;-->
 </div>
 `;
 
@@ -18,7 +17,6 @@ exports[`Table > renders the TableBody component 1`] = `
   <tbody
     class="table__body"
   />
-  <!--&lt;TableBody&gt;-->
 </div>
 `;
 
@@ -28,7 +26,6 @@ exports[`Table > renders the TableCell component 1`] = `
     class="table__data-cell"
   />
   
-  <!--&lt;TableCell&gt;-->
 </div>
 `;
 
@@ -38,7 +35,6 @@ exports[`Table > renders the TableCell component as a head cell 1`] = `
     class="table__header-cell"
   />
   
-  <!--&lt;TableCell&gt;-->
 </div>
 `;
 
@@ -47,7 +43,6 @@ exports[`Table > renders the TableHead component 1`] = `
   <thead
     class="table__head"
   />
-  <!--&lt;TableHead&gt;-->
 </div>
 `;
 
@@ -56,6 +51,5 @@ exports[`Table > renders the TableRow component 1`] = `
   <tr
     class="table__row"
   />
-  <!--&lt;TableRow&gt;-->
 </div>
 `;

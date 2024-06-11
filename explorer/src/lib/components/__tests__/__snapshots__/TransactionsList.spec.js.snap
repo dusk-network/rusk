@@ -22,7 +22,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       Hash
     </dt>
@@ -36,10 +35,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       >
         4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AppAnchor&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -58,7 +54,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       relative time
     </dt>
@@ -74,7 +69,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         last month
       </time>
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -93,7 +87,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       Gas Price
     </dt>
@@ -103,7 +96,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
     >
       1
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -122,7 +114,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       Gas Limit
     </dt>
@@ -132,7 +123,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
     >
       500,000,000
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -151,7 +141,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       Fee
     </dt>
@@ -164,9 +153,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       >
         0.000290766 Dusk
       </span>
-      <!--&lt;Badge&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -185,7 +172,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       Status
     </dt>
@@ -198,11 +184,8 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       >
         success
       </span>
-      <!--&lt;Badge&gt;-->
       
-      <!--&lt;DataGuard&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -221,7 +204,6 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       Type
     </dt>
@@ -234,13 +216,8 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       >
         transfer
       </span>
-      <!--&lt;Badge&gt;-->
       
-      <!--&lt;DataGuard&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
   </dl>
-  <!--&lt;DetailList&gt;-->
-  <!--&lt;TransactionsList&gt;-->
 </div>
 `;

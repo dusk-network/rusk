@@ -15,10 +15,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
         sizes="(max-width: 1024px) 86px, 129px"
         src="/some-base-path/dusk_logo.svg"
       />
-      <!--&lt;AppImage&gt;-->
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AppAnchor&gt;-->
      
     <button
       aria-controls="dusk-navbar-menu"
@@ -36,11 +33,9 @@ exports[`Navbar > renders the Navbar component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       
     </button>
-    <!--&lt;Button&gt;-->
      
     <div
       class="dusk-navbar__menu dusk-navbar__menu--hidden"
@@ -62,9 +57,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
            
         </option>
         
-        <!--&lt;Options&gt;-->
       </select>
-      <!--&lt;Select&gt;-->
        
       <nav
         class="dusk-nav-list dusk-navbar__menu--links"
@@ -76,8 +69,6 @@ exports[`Navbar > renders the Navbar component 1`] = `
         >
           Chain Info
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AppAnchor&gt;-->
         
         <a
           class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
@@ -85,8 +76,6 @@ exports[`Navbar > renders the Navbar component 1`] = `
         >
           Blocks
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AppAnchor&gt;-->
         
         <a
           class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
@@ -94,11 +83,8 @@ exports[`Navbar > renders the Navbar component 1`] = `
         >
           Transactions
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AppAnchor&gt;-->
       </nav>
       
-      <!--&lt;NavList&gt;-->
        
       <div
         class="dusk-navbar__menu--search"
@@ -115,7 +101,6 @@ exports[`Navbar > renders the Navbar component 1`] = `
               type="text"
             />
             
-            <!--&lt;Textbox&gt;-->
              
             <button
               class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
@@ -132,17 +117,12 @@ exports[`Navbar > renders the Navbar component 1`] = `
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
             </button>
-            <!--&lt;Button&gt;-->
           </div>
-          <!--&lt;TextboxAndButton&gt;-->
         </form>
-        <!--&lt;SearchField&gt;-->
          
       </div>
     </div>
   </nav>
-  <!--&lt;Navbar&gt;-->
 </div>
 `;

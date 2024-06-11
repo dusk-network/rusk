@@ -24,7 +24,6 @@ exports[`DataCard > should render the \`DataCard\` in the data state 1`] = `
         Button
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <span>
@@ -59,7 +58,6 @@ exports[`DataCard > should render the \`DataCard\` in the data state when loadin
         Button
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <span>
@@ -94,7 +92,6 @@ exports[`DataCard > should render the \`DataCard\` in the error state 1`] = `
         Button
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <div
@@ -110,7 +107,6 @@ exports[`DataCard > should render the \`DataCard\` in the error state 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     <header>
       <p>
@@ -134,9 +130,7 @@ exports[`DataCard > should render the \`DataCard\` in the error state 1`] = `
         Retry
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </div>
-  <!--&lt;DataAlert&gt;-->
   
    
 </div>
@@ -166,7 +160,6 @@ exports[`DataCard > should render the \`DataCard\` in the loading state 1`] = `
         Button
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <p
@@ -203,7 +196,6 @@ exports[`DataCard > should render the \`DataCard\` in the no data state 1`] = `
         Button
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <div
@@ -219,7 +211,6 @@ exports[`DataCard > should render the \`DataCard\` in the no data state 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     <header>
       <p>
@@ -228,7 +219,6 @@ exports[`DataCard > should render the \`DataCard\` in the no data state 1`] = `
     </header>
      
   </div>
-  <!--&lt;DataAlert&gt;-->
   
    
 </div>
@@ -259,7 +249,6 @@ exports[`DataCard > should render the \`DataCard\` with a disabled button 1`] = 
         Back
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   

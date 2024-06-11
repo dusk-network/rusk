@@ -28,7 +28,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             Back
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <p
@@ -40,11 +39,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;TransactionDetails&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -76,7 +71,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             Back
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <dl
@@ -99,7 +93,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           ID
         </dt>
@@ -109,7 +102,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
         >
           4877687c2dbf154248d3ddee9ba0d81...431f39056f82a46819da041d4ac0e04
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -127,7 +119,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           block height
         </dt>
@@ -141,10 +132,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
           >
             487,166
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -162,7 +150,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           Status
         </dt>
@@ -175,9 +162,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
           >
             success
           </span>
-          <!--&lt;Badge&gt;-->
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -195,7 +180,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           timestamp
         </dt>
@@ -210,11 +194,9 @@ exports[`Transaction Details > should render the Transaction details page and qu
           >
             Tue, 16 Apr 2024 06:39:09 GMT (last month)
             
-            <!--&lt;Rerender&gt;-->
              
           </time>
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -232,7 +214,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           type
         </dt>
@@ -245,9 +226,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
           >
             transfer
           </span>
-          <!--&lt;Badge&gt;-->
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -265,7 +244,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           transaction fee
         </dt>
@@ -275,10 +253,8 @@ exports[`Transaction Details > should render the Transaction details page and qu
         >
           0.000290766 DUSK ($0.0001071037)
           
-          <!--&lt;DataGuard&gt;-->
            
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -296,7 +272,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           gas price
         </dt>
@@ -306,10 +281,8 @@ exports[`Transaction Details > should render the Transaction details page and qu
         >
           0.000000001 DUSK ($0.0000000004)
           
-          <!--&lt;DataGuard&gt;-->
            
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -327,7 +300,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           transaction gas limit
         </dt>
@@ -338,7 +310,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
           0.50
            DUSK
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -356,7 +327,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           gas spent
         </dt>
@@ -367,7 +337,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
           0.000290766
            DUSK
         </dd>
-        <!--&lt;ListItem&gt;-->
         <dt
           class="details-list__term"
         >
@@ -385,7 +354,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           payload
 
@@ -397,7 +365,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
             role="switch"
             tabindex="0"
           />
-          <!--&lt;Switch&gt;-->
         </dt>
          
         <dd
@@ -405,16 +372,11 @@ exports[`Transaction Details > should render the Transaction details page and qu
         >
           
         </dd>
-        <!--&lt;ListItem&gt;-->
       </dl>
       
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;TransactionDetails&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;

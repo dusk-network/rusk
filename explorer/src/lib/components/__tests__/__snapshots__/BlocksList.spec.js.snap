@@ -22,7 +22,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       # block
     </dt>
@@ -36,10 +35,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       >
         495,868
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AppAnchor&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -58,7 +54,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       relative time
     </dt>
@@ -74,7 +69,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         last month
       </time>
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -93,7 +87,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       average fee paid
     </dt>
@@ -104,7 +97,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       0.000000001
        DUSK
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -123,7 +115,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       gas used
     </dt>
@@ -140,9 +131,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
           style="width: 0.01161436%"
         />
       </div>
-      <!--&lt;ProgressBar&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -161,7 +150,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       txn(s)
     </dt>
@@ -171,7 +159,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
     >
       2
     </dd>
-    <!--&lt;ListItem&gt;-->
      
     <dt
       class="details-list__term details-list__term--table"
@@ -190,7 +177,6 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       rewards
     </dt>
@@ -203,11 +189,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       >
         16 Dusk
       </span>
-      <!--&lt;Badge&gt;-->
     </dd>
-    <!--&lt;ListItem&gt;-->
   </dl>
-  <!--&lt;DetailList&gt;-->
-  <!--&lt;BlocksList&gt;-->
 </div>
 `;

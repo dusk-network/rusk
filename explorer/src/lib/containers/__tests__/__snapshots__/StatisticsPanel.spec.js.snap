@@ -27,13 +27,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -58,13 +56,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -94,13 +90,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -125,13 +119,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -161,13 +153,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -192,13 +182,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -228,13 +216,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -259,13 +245,11 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span>
               - - -
             </span>
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1008,10 +992,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         />
         
       </svg>
-      <!--&lt;WorldMap&gt;-->
     </div>
   </div>
-  <!--&lt;StatisticsPanel&gt;-->
 </div>
 `;
 
@@ -1042,12 +1024,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             0.368
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1072,12 +1052,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             168M
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1107,12 +1085,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             58.2M
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1137,12 +1113,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             2.6M
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1172,12 +1146,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             487,596
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1202,12 +1174,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             10
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1237,12 +1207,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             945
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -1267,12 +1235,10 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             34
             
             
-            <!--&lt;DataGuard&gt;-->
           </div>
            
           <span
@@ -2290,9 +2256,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           r="3"
         />
       </svg>
-      <!--&lt;WorldMap&gt;-->
     </div>
   </div>
-  <!--&lt;StatisticsPanel&gt;-->
 </div>
 `;

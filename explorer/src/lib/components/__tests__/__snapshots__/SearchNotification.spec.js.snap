@@ -29,9 +29,7 @@ exports[`Search Notification > renders the Search Notification component with a 
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <div
@@ -94,9 +92,7 @@ exports[`Search Notification > renders the Search Notification component with th
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <div

@@ -19,7 +19,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           # Block
         </th>
         
-        <!--&lt;TableCell&gt;-->
          
         <th
           class="table__header-cell"
@@ -27,7 +26,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           Fee
         </th>
         
-        <!--&lt;TableCell&gt;-->
          
         <th
           class="table__header-cell"
@@ -35,7 +33,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           Txn(s)
         </th>
         
-        <!--&lt;TableCell&gt;-->
          
         <th
           class="table__header-cell"
@@ -43,11 +40,8 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           Rewards
         </th>
         
-        <!--&lt;TableCell&gt;-->
       </tr>
-      <!--&lt;TableRow&gt;-->
     </thead>
-    <!--&lt;TableHead&gt;-->
      
     <tbody
       class="table__body"
@@ -65,8 +59,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,454
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -75,7 +67,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -98,7 +89,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -106,7 +96,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -116,13 +105,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -136,8 +122,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,453
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -146,7 +130,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -169,7 +152,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -177,7 +159,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -187,13 +168,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -207,8 +185,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,452
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -217,7 +193,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -240,7 +215,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -248,7 +222,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -258,13 +231,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -278,8 +248,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,451
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -288,7 +256,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -311,7 +278,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -319,7 +285,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -329,13 +294,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -349,8 +311,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,450
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -359,7 +319,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -382,7 +341,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -390,7 +348,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -400,13 +357,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -420,8 +374,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,449
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -430,7 +382,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -453,7 +404,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -461,7 +411,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -471,13 +420,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -491,8 +437,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,448
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -501,7 +445,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -524,7 +467,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -532,7 +474,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -542,13 +483,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -562,8 +500,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,447
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -572,7 +508,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -595,7 +530,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -603,7 +537,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -613,13 +546,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -633,8 +563,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,446
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -643,7 +571,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -666,7 +593,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -674,7 +600,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -684,13 +609,10 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
       <tr
         class="table__row"
@@ -704,8 +626,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             1,365,445
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            
           <small
             class="block__time"
@@ -714,7 +634,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           </small>
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -737,7 +656,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -745,7 +663,6 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           0
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
         <td
           class="table__data-cell"
@@ -755,16 +672,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           >
             16 Dusk
           </span>
-          <!--&lt;Badge&gt;-->
         </td>
         
-        <!--&lt;TableCell&gt;-->
          
       </tr>
-      <!--&lt;TableRow&gt;-->
       
     </tbody>
-    <!--&lt;TableBody&gt;-->
   </table>
 </div>
 `;

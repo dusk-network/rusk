@@ -25,7 +25,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           Back
         </span>
       </button>
-      <!--&lt;Button&gt;-->
     </header>
      
     <dl
@@ -48,7 +47,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         block hash
       </dt>
@@ -58,7 +56,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -76,7 +73,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         height
       </dt>
@@ -99,14 +95,10 @@ exports[`Block Details > renders the Block Details component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           
           
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-        <!--&lt;AppAnchorButton&gt;-->
          
         495,868
          
@@ -125,17 +117,12 @@ exports[`Block Details > renders the Block Details component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           
           
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-        <!--&lt;AppAnchorButton&gt;-->
          
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -153,7 +140,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         timestamp
       </dt>
@@ -168,11 +154,9 @@ exports[`Block Details > renders the Block Details component 1`] = `
         >
           Tue, 16 Apr 2024 20:07:02 GMT (last month)
           
-          <!--&lt;Rerender&gt;-->
            
         </time>
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -190,7 +174,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         transactions
       </dt>
@@ -200,7 +183,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         2
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -218,7 +200,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         block fees paid
       </dt>
@@ -229,7 +210,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
         0.000580718
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -247,7 +227,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         block reward
       </dt>
@@ -258,7 +237,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
         16
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -276,7 +254,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         block gas limit
       </dt>
@@ -286,7 +263,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
       >
         5,000,000,000
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -304,7 +280,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         gas used
       </dt>
@@ -323,10 +298,8 @@ exports[`Block Details > renders the Block Details component 1`] = `
             style="width: 0.01161436%"
           />
         </div>
-        <!--&lt;ProgressBar&gt;-->
          
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -344,7 +317,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         average fee paid
       </dt>
@@ -355,7 +327,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
         0.000000001
          DUSK
       </dd>
-      <!--&lt;ListItem&gt;-->
       <dt
         class="details-list__term"
       >
@@ -373,7 +344,6 @@ exports[`Block Details > renders the Block Details component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         state root hash
       </dt>
@@ -388,14 +358,10 @@ exports[`Block Details > renders the Block Details component 1`] = `
           20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
         </span>
       </dd>
-      <!--&lt;ListItem&gt;-->
     </dl>
     
      
   </div>
   
-  <!--&lt;Card&gt;-->
-  <!--&lt;DataCard&gt;-->
-  <!--&lt;BlockDetails&gt;-->
 </div>
 `;

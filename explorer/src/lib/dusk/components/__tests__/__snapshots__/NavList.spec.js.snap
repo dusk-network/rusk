@@ -12,8 +12,6 @@ exports[`NavList > renders the NavList component 1`] = `
     >
       Dusk
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AppAnchor&gt;-->
     
     <a
       class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
@@ -21,11 +19,8 @@ exports[`NavList > renders the NavList component 1`] = `
     >
       Explorer
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AppAnchor&gt;-->
   </nav>
   
-  <!--&lt;NavList&gt;-->
 </div>
 `;
 
@@ -41,8 +36,6 @@ exports[`NavList > should pass additional class names and attributes to the rend
     >
       Dusk
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AppAnchor&gt;-->
     
     <a
       class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
@@ -50,10 +43,7 @@ exports[`NavList > should pass additional class names and attributes to the rend
     >
       Explorer
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AppAnchor&gt;-->
   </nav>
   
-  <!--&lt;NavList&gt;-->
 </div>
 `;

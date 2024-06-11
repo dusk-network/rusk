@@ -14,7 +14,6 @@ exports[`DataAlert > should render the \`DataAlert\` in the error state 1`] = `
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
    
   <header>
     <p>
@@ -38,7 +37,6 @@ exports[`DataAlert > should render the \`DataAlert\` in the error state 1`] = `
       Retry
     </span>
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;
 
@@ -56,7 +54,6 @@ exports[`DataAlert > should render the \`DataAlert\` in the no data state 1`] = 
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
    
   <header>
     <p>

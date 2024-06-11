@@ -29,7 +29,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
             Show More
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <p
@@ -41,11 +40,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;TransactionsCard&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -77,7 +72,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
             Show More
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <div
@@ -98,7 +92,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 Hash
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -106,7 +99,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 Gas
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -114,7 +106,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 Fee
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -122,7 +113,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 Status
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -130,11 +120,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 Type
               </th>
               
-              <!--&lt;TableCell&gt;-->
             </tr>
-            <!--&lt;TableRow&gt;-->
           </thead>
-          <!--&lt;TableHead&gt;-->
            
           <tbody
             class="table__body"
@@ -152,8 +139,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   904ad41723...1b50b2dc54
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -162,7 +147,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -185,7 +169,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 50,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -195,10 +178,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000215552 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -208,10 +189,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -221,13 +200,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -241,8 +217,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   6971e17e16...d38530d800
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -251,7 +225,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -274,7 +247,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 50,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -284,10 +256,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000215617 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -297,10 +267,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -310,13 +278,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -330,8 +295,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   c28cfe813e...bbca988fed
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -340,7 +303,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -363,7 +325,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 50,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -373,10 +334,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000214413 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -386,10 +345,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -399,13 +356,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -419,8 +373,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   e4a232262c...4db4b3cdec
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -429,7 +381,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -452,7 +403,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -462,10 +412,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000291769 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -475,10 +423,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -488,13 +434,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -508,8 +451,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   ea1cfc01b6...ce792d0e8a
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -518,7 +459,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -541,7 +481,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -551,10 +490,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000290764 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -564,10 +501,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -577,13 +512,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -597,8 +529,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   e4c3e5f688...50ebdcbff4
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -607,7 +537,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -630,7 +559,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -640,10 +568,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000291961 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -653,10 +579,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -666,13 +590,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -686,8 +607,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   10cd59c725...eed7adc1f8
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -696,7 +615,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -719,7 +637,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -729,10 +646,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000292039 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -742,10 +657,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -755,13 +668,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -775,8 +685,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   31bcdcbf06...347aac19f3
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -785,7 +693,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -808,7 +715,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -818,10 +724,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000290406 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -831,10 +735,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -844,13 +746,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -864,8 +763,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   deb6807ba2...ecf6f1b837
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -874,7 +771,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -897,7 +793,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -907,10 +802,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000291537 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -920,10 +813,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -933,13 +824,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -953,8 +841,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   62fbd83edb...1b54a5ad89
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -963,7 +849,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -986,7 +871,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -996,10 +880,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000291361 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1009,10 +891,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1022,13 +902,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1042,8 +919,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   f76d5ee9b8...2a82c1aa9c
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -1052,7 +927,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1075,7 +949,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1085,10 +958,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000290385 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1098,10 +969,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1111,13 +980,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1131,8 +997,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   3c48e11411...22a78a0fd7
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -1141,7 +1005,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1164,7 +1027,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1174,10 +1036,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000290795 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1187,10 +1047,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1200,13 +1058,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1220,8 +1075,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   c5908eb686...8deece6755
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -1230,7 +1083,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1253,7 +1105,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1263,10 +1114,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000290449 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1276,10 +1125,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1289,13 +1136,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1309,8 +1153,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   8bdc2bd0bb...be39650b45
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -1319,7 +1161,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1342,7 +1183,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1352,10 +1192,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000290555 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1365,10 +1203,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1378,13 +1214,10 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1398,8 +1231,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   36a09d923c...8c6663fbd7
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -1408,7 +1239,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1431,7 +1261,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1441,10 +1270,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   0.000291983 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1454,10 +1281,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1467,29 +1292,19 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
           </tbody>
-          <!--&lt;TableBody&gt;-->
         </table>
       </div>
-      <!--&lt;Table&gt;-->
-      <!--&lt;TransactionsTable&gt;-->
       
       
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;TransactionsCard&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
