@@ -729,7 +729,6 @@ exports[`World Map > renders the WorldMap component even if nodes is empty array
     />
     
   </svg>
-  <!--&lt;WorldMap&gt;-->
 </div>
 `;
 
@@ -1477,7 +1476,6 @@ exports[`World Map > renders the WorldMap component with nodes 1`] = `
       r="3"
     />
   </svg>
-  <!--&lt;WorldMap&gt;-->
 </div>
 `;
 
@@ -2210,6 +2208,5 @@ exports[`World Map > renders the WorldMap component without nodes if Error is pa
     />
     
   </svg>
-  <!--&lt;WorldMap&gt;-->
 </div>
 `;

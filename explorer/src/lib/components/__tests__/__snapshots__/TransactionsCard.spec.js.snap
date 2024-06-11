@@ -25,7 +25,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if the card
         Show More
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <p
@@ -63,7 +62,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
         Show More
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <div
@@ -84,7 +82,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             Hash
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -92,7 +89,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             Gas
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -100,7 +96,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             Fee
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -108,7 +103,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             Status
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -116,11 +110,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             Type
           </th>
           
-          <!--&lt;TableCell&gt;-->
         </tr>
-        <!--&lt;TableRow&gt;-->
       </thead>
-      <!--&lt;TableHead&gt;-->
        
       <tbody
         class="table__body"
@@ -138,8 +129,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               904ad41723...1b50b2dc54
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -148,7 +137,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -171,7 +159,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             50,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -181,10 +168,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000215552 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -194,10 +179,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -207,13 +190,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -227,8 +207,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               6971e17e16...d38530d800
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -237,7 +215,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -260,7 +237,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             50,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -270,10 +246,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000215617 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -283,10 +257,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -296,13 +268,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -316,8 +285,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               c28cfe813e...bbca988fed
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -326,7 +293,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -349,7 +315,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             50,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -359,10 +324,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000214413 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -372,10 +335,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -385,13 +346,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -405,8 +363,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               e4a232262c...4db4b3cdec
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -415,7 +371,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -438,7 +393,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -448,10 +402,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000291769 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -461,10 +413,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -474,13 +424,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -494,8 +441,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               ea1cfc01b6...ce792d0e8a
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -504,7 +449,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -527,7 +471,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -537,10 +480,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000290764 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -550,10 +491,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -563,13 +502,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -583,8 +519,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               e4c3e5f688...50ebdcbff4
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -593,7 +527,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -616,7 +549,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -626,10 +558,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000291961 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -639,10 +569,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -652,13 +580,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -672,8 +597,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               10cd59c725...eed7adc1f8
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -682,7 +605,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -705,7 +627,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -715,10 +636,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000292039 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -728,10 +647,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -741,13 +658,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -761,8 +675,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               31bcdcbf06...347aac19f3
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -771,7 +683,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -794,7 +705,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -804,10 +714,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000290406 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -817,10 +725,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -830,13 +736,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -850,8 +753,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               deb6807ba2...ecf6f1b837
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -860,7 +761,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -883,7 +783,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -893,10 +792,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000291537 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -906,10 +803,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -919,13 +814,10 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -939,8 +831,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               62fbd83edb...1b54a5ad89
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="transaction__time"
@@ -949,7 +839,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -972,7 +861,6 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             500,000,000
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -982,10 +870,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               0.000291361 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -995,10 +881,8 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               success
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -1008,20 +892,14 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               transfer
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
       </tbody>
-      <!--&lt;TableBody&gt;-->
     </table>
   </div>
-  <!--&lt;Table&gt;-->
-  <!--&lt;TransactionsTable&gt;-->
   
   
    
@@ -1052,7 +930,6 @@ exports[`Transactions Card > should render the \`TransactionsCard\` component 1`
         Show More
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   

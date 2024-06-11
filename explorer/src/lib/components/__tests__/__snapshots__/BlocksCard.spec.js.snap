@@ -25,7 +25,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         Show More
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <div
@@ -46,7 +45,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             # Block
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -54,7 +52,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             Fee
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -62,7 +59,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             Txn(s)
           </th>
           
-          <!--&lt;TableCell&gt;-->
            
           <th
             class="table__header-cell"
@@ -70,11 +66,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             Rewards
           </th>
           
-          <!--&lt;TableCell&gt;-->
         </tr>
-        <!--&lt;TableRow&gt;-->
       </thead>
-      <!--&lt;TableHead&gt;-->
        
       <tbody
         class="table__body"
@@ -92,8 +85,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,454
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -102,7 +93,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -125,7 +115,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -133,7 +122,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -143,13 +131,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -163,8 +148,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,453
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -173,7 +156,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -196,7 +178,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -204,7 +185,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -214,13 +194,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -234,8 +211,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,452
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -244,7 +219,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -267,7 +241,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -275,7 +248,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -285,13 +257,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -305,8 +274,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,451
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -315,7 +282,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -338,7 +304,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -346,7 +311,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -356,13 +320,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -376,8 +337,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,450
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -386,7 +345,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -409,7 +367,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -417,7 +374,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -427,13 +383,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -447,8 +400,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,449
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -457,7 +408,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -480,7 +430,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -488,7 +437,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -498,13 +446,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -518,8 +463,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,448
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -528,7 +471,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -551,7 +493,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -559,7 +500,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -569,13 +509,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -589,8 +526,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,447
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -599,7 +534,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -622,7 +556,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -630,7 +563,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -640,13 +572,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -660,8 +589,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,446
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -670,7 +597,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -693,7 +619,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -701,7 +626,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -711,13 +635,10 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
         <tr
           class="table__row"
@@ -731,8 +652,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               1,365,445
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AppAnchor&gt;-->
              
             <small
               class="block__time"
@@ -741,7 +660,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             </small>
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -764,7 +682,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -772,7 +689,6 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             0
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
           <td
             class="table__data-cell"
@@ -782,20 +698,14 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             >
               16 Dusk
             </span>
-            <!--&lt;Badge&gt;-->
           </td>
           
-          <!--&lt;TableCell&gt;-->
            
         </tr>
-        <!--&lt;TableRow&gt;-->
         
       </tbody>
-      <!--&lt;TableBody&gt;-->
     </table>
   </div>
-  <!--&lt;Table&gt;-->
-  <!--&lt;BlocksTable&gt;-->
   
   
    
@@ -827,7 +737,6 @@ exports[`Blocks Card > should disable the \`Show More\` button is the card is in
         Show More
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   <p
@@ -864,7 +773,6 @@ exports[`Blocks Card > should render the \`BlocksCard\` component 1`] = `
         Show More
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </header>
    
   

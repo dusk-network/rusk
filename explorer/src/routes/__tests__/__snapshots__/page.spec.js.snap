@@ -3,7 +3,7 @@
 exports[`home page > should render the home page, start polling for the latest chain info and stop the polling when the component is destroyed 1`] = `
 <div>
   <section
-    class="chain-info s-y_bCXRrkrYfP"
+    class="chain-info svelte-m0gc0x"
   >
     <div
       class="statistics-panel"
@@ -30,13 +30,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -61,13 +59,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -97,13 +93,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -128,13 +122,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -164,13 +156,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -195,13 +185,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -231,13 +219,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -262,13 +248,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1011,14 +995,12 @@ exports[`home page > should render the home page, start polling for the latest c
           />
           
         </svg>
-        <!--&lt;WorldMap&gt;-->
       </div>
     </div>
-    <!--&lt;StatisticsPanel&gt;-->
   </section>
    
   <section
-    class="tables s-y_bCXRrkrYfP"
+    class="tables svelte-m0gc0x"
   >
     <div
       class="dusk-card data-card latest-blocks-card tables-layout"
@@ -1043,7 +1025,6 @@ exports[`home page > should render the home page, start polling for the latest c
             All Blocks
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <p
@@ -1055,9 +1036,6 @@ exports[`home page > should render the home page, start polling for the latest c
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;LatestBlocksCard&gt;-->
      
     <div
       class="dusk-card data-card latest-transactions-card tables-layout"
@@ -1082,7 +1060,6 @@ exports[`home page > should render the home page, start polling for the latest c
             All Transactions
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <p
@@ -1094,18 +1071,14 @@ exports[`home page > should render the home page, start polling for the latest c
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;LatestTransactionsCard&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`home page > should render the home page, start polling for the latest chain info and stop the polling when the component is destroyed 2`] = `
 <div>
   <section
-    class="chain-info s-y_bCXRrkrYfP"
+    class="chain-info svelte-m0gc0x"
   >
     <div
       class="statistics-panel"
@@ -1132,13 +1105,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1163,13 +1134,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1199,13 +1168,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1230,13 +1197,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1266,13 +1231,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1297,13 +1260,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1333,13 +1294,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -1364,13 +1323,11 @@ exports[`home page > should render the home page, start polling for the latest c
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               <span>
                 - - -
               </span>
               
-              <!--&lt;DataGuard&gt;-->
             </div>
              
             <span
@@ -2113,14 +2070,12 @@ exports[`home page > should render the home page, start polling for the latest c
           />
           
         </svg>
-        <!--&lt;WorldMap&gt;-->
       </div>
     </div>
-    <!--&lt;StatisticsPanel&gt;-->
   </section>
    
   <section
-    class="tables s-y_bCXRrkrYfP"
+    class="tables svelte-m0gc0x"
   >
     <div
       class="dusk-card data-card latest-blocks-card tables-layout"
@@ -2145,7 +2100,6 @@ exports[`home page > should render the home page, start polling for the latest c
             All Blocks
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <div
@@ -2166,7 +2120,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 # Block
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -2174,7 +2127,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 Fee
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -2182,7 +2134,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 Txn(s)
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -2190,11 +2141,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 Rewards
               </th>
               
-              <!--&lt;TableCell&gt;-->
             </tr>
-            <!--&lt;TableRow&gt;-->
           </thead>
-          <!--&lt;TableHead&gt;-->
            
           <tbody
             class="table__body"
@@ -2212,8 +2160,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,753
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2222,7 +2168,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2245,7 +2190,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2253,7 +2197,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2263,13 +2206,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2283,8 +2223,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,752
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2293,7 +2231,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2316,7 +2253,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2324,7 +2260,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2334,13 +2269,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2354,8 +2286,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,751
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2364,7 +2294,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2387,7 +2316,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2395,7 +2323,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2405,13 +2332,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2425,8 +2349,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,750
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2435,7 +2357,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2458,7 +2379,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2466,7 +2386,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2476,13 +2395,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2496,8 +2412,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,749
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2506,7 +2420,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2529,7 +2442,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2537,7 +2449,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2547,13 +2458,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2567,8 +2475,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,748
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2577,7 +2483,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2600,7 +2505,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2608,7 +2512,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2618,13 +2521,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2638,8 +2538,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,747
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2648,7 +2546,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2671,7 +2568,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2679,7 +2575,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2689,13 +2584,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2709,8 +2601,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,746
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2719,7 +2609,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2742,7 +2631,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2750,7 +2638,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2760,13 +2647,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2780,8 +2664,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,745
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2790,7 +2672,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2813,7 +2694,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2821,7 +2701,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2831,13 +2710,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2851,8 +2727,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,744
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2861,7 +2735,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2884,7 +2757,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2892,7 +2764,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2902,13 +2773,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2922,8 +2790,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,743
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -2932,7 +2798,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2955,7 +2820,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2963,7 +2827,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -2973,13 +2836,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -2993,8 +2853,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,742
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -3003,7 +2861,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3026,7 +2883,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3034,7 +2890,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3044,13 +2899,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3064,8 +2916,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,741
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -3074,7 +2924,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3097,7 +2946,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3105,7 +2953,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3115,13 +2962,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3135,8 +2979,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,740
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -3145,7 +2987,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3168,7 +3009,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3176,7 +3016,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3186,13 +3025,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3206,8 +3042,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   1,378,739
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -3216,7 +3050,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3239,7 +3072,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3247,7 +3079,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3257,28 +3088,19 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
           </tbody>
-          <!--&lt;TableBody&gt;-->
         </table>
       </div>
-      <!--&lt;Table&gt;-->
-      <!--&lt;BlocksTable&gt;-->
       
       
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;LatestBlocksCard&gt;-->
      
     <div
       class="dusk-card data-card latest-transactions-card tables-layout"
@@ -3303,7 +3125,6 @@ exports[`home page > should render the home page, start polling for the latest c
             All Transactions
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <div
@@ -3324,7 +3145,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 Hash
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -3332,7 +3152,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 Gas
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -3340,7 +3159,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 Fee
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -3348,7 +3166,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 Status
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -3356,11 +3173,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 Type
               </th>
               
-              <!--&lt;TableCell&gt;-->
             </tr>
-            <!--&lt;TableRow&gt;-->
           </thead>
-          <!--&lt;TableHead&gt;-->
            
           <tbody
             class="table__body"
@@ -3378,8 +3192,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   86c094e883...552d07019f
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3388,7 +3200,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3411,7 +3222,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3421,10 +3231,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000290681 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3434,10 +3242,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3447,13 +3253,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3467,8 +3270,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   37e93b1a76...088bba3726
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3477,7 +3278,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3500,7 +3300,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3510,10 +3309,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000291225 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3523,10 +3320,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3536,13 +3331,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3556,8 +3348,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   b1261a1c5f...74bfdef427
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3566,7 +3356,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3589,7 +3378,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3599,10 +3387,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000292137 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3612,10 +3398,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3625,13 +3409,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3645,8 +3426,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   7f1d3731cc...494b695611
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3655,7 +3434,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3678,7 +3456,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3688,10 +3465,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000290572 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3701,10 +3476,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3714,13 +3487,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3734,8 +3504,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   904ad41723...1b50b2dc54
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3744,7 +3512,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3767,7 +3534,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 50,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3777,10 +3543,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000215552 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3790,10 +3554,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3803,13 +3565,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3823,8 +3582,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   6971e17e16...d38530d800
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3833,7 +3590,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3856,7 +3612,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 50,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3866,10 +3621,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000215617 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3879,10 +3632,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3892,13 +3643,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -3912,8 +3660,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   c28cfe813e...bbca988fed
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -3922,7 +3668,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3945,7 +3690,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 50,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3955,10 +3699,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000214413 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3968,10 +3710,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -3981,13 +3721,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4001,8 +3738,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   e4a232262c...4db4b3cdec
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4011,7 +3746,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4034,7 +3768,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4044,10 +3777,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000291769 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4057,10 +3788,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4070,13 +3799,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4090,8 +3816,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   ea1cfc01b6...ce792d0e8a
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4100,7 +3824,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4123,7 +3846,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4133,10 +3855,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000290764 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4146,10 +3866,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4159,13 +3877,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4179,8 +3894,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   e4c3e5f688...50ebdcbff4
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4189,7 +3902,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4212,7 +3924,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4222,10 +3933,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000291961 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4235,10 +3944,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4248,13 +3955,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4268,8 +3972,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   10cd59c725...eed7adc1f8
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4278,7 +3980,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4301,7 +4002,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4311,10 +4011,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000292039 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4324,10 +4022,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4337,13 +4033,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4357,8 +4050,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   31bcdcbf06...347aac19f3
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4367,7 +4058,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4390,7 +4080,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4400,10 +4089,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000290406 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4413,10 +4100,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4426,13 +4111,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4446,8 +4128,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   deb6807ba2...ecf6f1b837
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4456,7 +4136,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4479,7 +4158,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4489,10 +4167,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000291537 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4502,10 +4178,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4515,13 +4189,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4535,8 +4206,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   62fbd83edb...1b54a5ad89
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4545,7 +4214,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4568,7 +4236,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4578,10 +4245,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000291361 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4591,10 +4256,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4604,13 +4267,10 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -4624,8 +4284,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   f76d5ee9b8...2a82c1aa9c
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="transaction__time"
@@ -4634,7 +4292,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4657,7 +4314,6 @@ exports[`home page > should render the home page, start polling for the latest c
                 500,000,000
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4667,10 +4323,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   0.000290385 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4680,10 +4334,8 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   success
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -4693,29 +4345,19 @@ exports[`home page > should render the home page, start polling for the latest c
                 >
                   transfer
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
           </tbody>
-          <!--&lt;TableBody&gt;-->
         </table>
       </div>
-      <!--&lt;Table&gt;-->
-      <!--&lt;TransactionsTable&gt;-->
       
       
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;LatestTransactionsCard&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;

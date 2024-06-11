@@ -21,7 +21,6 @@ exports[`Button > should be able to render a button with an icon and text 1`] = 
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
 </button>
 `;
 
@@ -46,7 +45,6 @@ exports[`Button > should be able to render a button with an icon and text 2`] = 
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
 </button>
 `;
 
@@ -66,7 +64,6 @@ exports[`Button > should be able to render a button with an icon only 1`] = `
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
 </button>
 `;
 
@@ -86,7 +83,6 @@ exports[`Button > should be able to render a button with an icon only 2`] = `
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
 </button>
 `;
 

@@ -3,10 +3,10 @@
 exports[`Block Details > should render the Block Details page and query the necessary info 1`] = `
 <div>
   <section
-    class="block s-vKBwXbsZSIaK"
+    class="block svelte-qy5n2j"
   >
     <div
-      class="block__details s-vKBwXbsZSIaK"
+      class="block__details"
     >
       <div
         class="dusk-card data-card block-details"
@@ -31,7 +31,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               Back
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </header>
          
         <p
@@ -43,13 +42,10 @@ exports[`Block Details > should render the Block Details page and query the nece
          
       </div>
       
-      <!--&lt;Card&gt;-->
-      <!--&lt;DataCard&gt;-->
-      <!--&lt;BlockDetails&gt;-->
     </div>
      
     <div
-      class="block__transactions s-vKBwXbsZSIaK"
+      class="block__transactions"
     >
       <div
         class="dusk-card data-card latest-transactions-card"
@@ -75,24 +71,19 @@ exports[`Block Details > should render the Block Details page and query the nece
          
       </div>
       
-      <!--&lt;Card&gt;-->
-      <!--&lt;DataCard&gt;-->
-      <!--&lt;LatestTransactionsCard&gt;-->
       
-      <!--&lt;Rerender&gt;-->
     </div>
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`Block Details > should render the Block Details page and query the necessary info 2`] = `
 <div>
   <section
-    class="block s-vKBwXbsZSIaK"
+    class="block svelte-qy5n2j"
   >
     <div
-      class="block__details s-vKBwXbsZSIaK"
+      class="block__details"
     >
       <div
         class="dusk-card data-card block-details"
@@ -117,7 +108,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               Back
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </header>
          
         <dl
@@ -140,7 +130,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             block hash
           </dt>
@@ -150,7 +139,6 @@ exports[`Block Details > should render the Block Details page and query the nece
           >
             bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -168,7 +156,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             height
           </dt>
@@ -191,14 +178,10 @@ exports[`Block Details > should render the Block Details page and query the nece
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               
               
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AnchorButton&gt;-->
-            <!--&lt;AppAnchorButton&gt;-->
              
             495,868
              
@@ -217,17 +200,12 @@ exports[`Block Details > should render the Block Details page and query the nece
                 />
               </svg>
               
-              <!--&lt;Icon&gt;-->
                
               
               
             </a>
-            <!--&lt;Anchor&gt;-->
-            <!--&lt;AnchorButton&gt;-->
-            <!--&lt;AppAnchorButton&gt;-->
              
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -245,7 +223,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             timestamp
           </dt>
@@ -260,11 +237,9 @@ exports[`Block Details > should render the Block Details page and query the nece
             >
               Tue, 16 Apr 2024 20:07:02 GMT (last month)
               
-              <!--&lt;Rerender&gt;-->
                
             </time>
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -282,7 +257,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             transactions
           </dt>
@@ -292,7 +266,6 @@ exports[`Block Details > should render the Block Details page and query the nece
           >
             2
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -310,7 +283,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             block fees paid
           </dt>
@@ -321,7 +293,6 @@ exports[`Block Details > should render the Block Details page and query the nece
             0.000580718
              DUSK
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -339,7 +310,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             block reward
           </dt>
@@ -350,7 +320,6 @@ exports[`Block Details > should render the Block Details page and query the nece
             16
              DUSK
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -368,7 +337,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             block gas limit
           </dt>
@@ -378,7 +346,6 @@ exports[`Block Details > should render the Block Details page and query the nece
           >
             5,000,000,000
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -396,7 +363,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             gas used
           </dt>
@@ -415,10 +381,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                 style="width: 0.01161436%"
               />
             </div>
-            <!--&lt;ProgressBar&gt;-->
              
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -436,7 +400,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             average fee paid
           </dt>
@@ -447,7 +410,6 @@ exports[`Block Details > should render the Block Details page and query the nece
             0.000000001
              DUSK
           </dd>
-          <!--&lt;ListItem&gt;-->
           <dt
             class="details-list__term"
           >
@@ -465,7 +427,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             state root hash
           </dt>
@@ -480,19 +441,15 @@ exports[`Block Details > should render the Block Details page and query the nece
               20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
             </span>
           </dd>
-          <!--&lt;ListItem&gt;-->
         </dl>
         
          
       </div>
       
-      <!--&lt;Card&gt;-->
-      <!--&lt;DataCard&gt;-->
-      <!--&lt;BlockDetails&gt;-->
     </div>
      
     <div
-      class="block__transactions s-vKBwXbsZSIaK"
+      class="block__transactions"
     >
       <div
         class="dusk-card data-card latest-transactions-card"
@@ -527,7 +484,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   Hash
                 </th>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <th
                   class="table__header-cell"
@@ -535,7 +491,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   Gas
                 </th>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <th
                   class="table__header-cell"
@@ -543,7 +498,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   Fee
                 </th>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <th
                   class="table__header-cell"
@@ -551,7 +505,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   Status
                 </th>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <th
                   class="table__header-cell"
@@ -559,11 +512,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                   Type
                 </th>
                 
-                <!--&lt;TableCell&gt;-->
               </tr>
-              <!--&lt;TableRow&gt;-->
             </thead>
-            <!--&lt;TableHead&gt;-->
              
             <tbody
               class="table__body"
@@ -581,8 +531,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     bd5c99bb72...d15977719f
                   </a>
-                  <!--&lt;Anchor&gt;-->
-                  <!--&lt;AppAnchor&gt;-->
                    
                   <small
                     class="transaction__time"
@@ -591,7 +539,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   </small>
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -614,7 +561,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   500,000,000
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -624,10 +570,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     0.000290866 Dusk
                   </span>
-                  <!--&lt;Badge&gt;-->
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -637,10 +581,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     success
                   </span>
-                  <!--&lt;Badge&gt;-->
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -650,13 +592,10 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     transfer
                   </span>
-                  <!--&lt;Badge&gt;-->
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
               </tr>
-              <!--&lt;TableRow&gt;-->
               
               <tr
                 class="table__row"
@@ -670,8 +609,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     bd5c99bb72...d15977719f
                   </a>
-                  <!--&lt;Anchor&gt;-->
-                  <!--&lt;AppAnchor&gt;-->
                    
                   <small
                     class="transaction__time"
@@ -680,7 +617,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   </small>
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -703,7 +639,6 @@ exports[`Block Details > should render the Block Details page and query the nece
                   500,000,000
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -713,10 +648,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     0.000289852 Dusk
                   </span>
-                  <!--&lt;Badge&gt;-->
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -726,10 +659,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     success
                   </span>
-                  <!--&lt;Badge&gt;-->
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
                 <td
                   class="table__data-cell"
@@ -739,32 +670,21 @@ exports[`Block Details > should render the Block Details page and query the nece
                   >
                     transfer
                   </span>
-                  <!--&lt;Badge&gt;-->
                 </td>
                 
-                <!--&lt;TableCell&gt;-->
                  
               </tr>
-              <!--&lt;TableRow&gt;-->
               
             </tbody>
-            <!--&lt;TableBody&gt;-->
           </table>
         </div>
-        <!--&lt;Table&gt;-->
-        <!--&lt;TransactionsTable&gt;-->
         
         
          
       </div>
       
-      <!--&lt;Card&gt;-->
-      <!--&lt;DataCard&gt;-->
-      <!--&lt;LatestTransactionsCard&gt;-->
       
-      <!--&lt;Rerender&gt;-->
     </div>
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;

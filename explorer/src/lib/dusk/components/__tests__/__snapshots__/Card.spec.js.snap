@@ -9,6 +9,5 @@ exports[`Card > renders the Card component 1`] = `
      
   </div>
   
-  <!--&lt;Card&gt;-->
 </div>
 `;

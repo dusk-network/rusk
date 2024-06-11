@@ -29,7 +29,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             Show More
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <p
@@ -41,11 +40,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;BlocksCard&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -77,7 +72,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             Show More
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </header>
        
       <div
@@ -98,7 +92,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 # Block
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -106,7 +99,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 Fee
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -114,7 +106,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 Txn(s)
               </th>
               
-              <!--&lt;TableCell&gt;-->
                
               <th
                 class="table__header-cell"
@@ -122,11 +113,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 Rewards
               </th>
               
-              <!--&lt;TableCell&gt;-->
             </tr>
-            <!--&lt;TableRow&gt;-->
           </thead>
-          <!--&lt;TableHead&gt;-->
            
           <tbody
             class="table__body"
@@ -144,8 +132,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,454
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -154,7 +140,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -177,7 +162,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -185,7 +169,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -195,13 +178,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -215,8 +195,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,453
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -225,7 +203,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -248,7 +225,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -256,7 +232,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -266,13 +241,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -286,8 +258,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,452
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -296,7 +266,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -319,7 +288,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -327,7 +295,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -337,13 +304,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -357,8 +321,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,451
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -367,7 +329,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -390,7 +351,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -398,7 +358,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -408,13 +367,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -428,8 +384,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,450
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -438,7 +392,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -461,7 +414,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -469,7 +421,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -479,13 +430,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -499,8 +447,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,449
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -509,7 +455,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -532,7 +477,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -540,7 +484,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -550,13 +493,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -570,8 +510,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,448
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -580,7 +518,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -603,7 +540,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -611,7 +547,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -621,13 +556,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -641,8 +573,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,447
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -651,7 +581,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -674,7 +603,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -682,7 +610,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -692,13 +619,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -712,8 +636,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,446
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -722,7 +644,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -745,7 +666,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -753,7 +673,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -763,13 +682,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -783,8 +699,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,445
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -793,7 +707,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -816,7 +729,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -824,7 +736,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -834,13 +745,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -854,8 +762,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,444
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -864,7 +770,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -887,7 +792,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -895,7 +799,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -905,13 +808,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -925,8 +825,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,443
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -935,7 +833,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -958,7 +855,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -966,7 +862,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -976,13 +871,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -996,8 +888,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,442
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -1006,7 +896,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1029,7 +918,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1037,7 +925,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1047,13 +934,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1067,8 +951,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,441
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -1077,7 +959,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1100,7 +981,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1108,7 +988,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1118,13 +997,10 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
             <tr
               class="table__row"
@@ -1138,8 +1014,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   1,365,440
                 </a>
-                <!--&lt;Anchor&gt;-->
-                <!--&lt;AppAnchor&gt;-->
                  
                 <small
                   class="block__time"
@@ -1148,7 +1022,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 </small>
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1171,7 +1044,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1179,7 +1051,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 0
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
               <td
                 class="table__data-cell"
@@ -1189,29 +1060,19 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 >
                   16 Dusk
                 </span>
-                <!--&lt;Badge&gt;-->
               </td>
               
-              <!--&lt;TableCell&gt;-->
                
             </tr>
-            <!--&lt;TableRow&gt;-->
             
           </tbody>
-          <!--&lt;TableBody&gt;-->
         </table>
       </div>
-      <!--&lt;Table&gt;-->
-      <!--&lt;BlocksTable&gt;-->
       
       
        
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;DataCard&gt;-->
-    <!--&lt;BlocksCard&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
