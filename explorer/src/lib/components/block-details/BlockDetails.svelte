@@ -89,7 +89,7 @@
           className="block-details__list-anchor"
           href="/blocks/block?id={data.header.prevblockhash}"
           icon={{ path: mdiArrowLeft }}
-          disabled={!data.header.prevblockhash}
+          disabled={!data.header.prevblockhash || data.header.height === 0}
         />
         {formatter(data.header.height)}
         <AppAnchorButton
