@@ -241,7 +241,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     /// Handles a Quorum message that is received from either the network
     /// or internal consensus execution.
     ///
-    /// The winner block is be built from the quorum certificate and candidate
+    /// The winner block is built from the quorum certificate and candidate
     /// block. If the candidate is not found in local storage then the
     /// block/candidate is requested from the network.
     pub(crate) async fn on_quorum_msg(

@@ -457,9 +457,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
 
-        // Reset Consensus
-        task.abort_with_wait().await;
-
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
         let mut block_size_on_disk = 0;
@@ -518,6 +515,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             anyhow::Ok(())
         }?;
+
+        // Abort consensus.
+        // A fully valid block is accepted, consensus task must be aborted.
+        task.abort_with_wait().await;
 
         Self::emit_metrics(
             mrb.inner(),
