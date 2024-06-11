@@ -34,6 +34,7 @@ pub struct RoundUpdate {
     seed: Seed,
     hash: [u8; 32],
     cert: Certificate,
+    timestamp: u64,
 
     pub base_timeouts: TimeoutSet,
 }
@@ -53,6 +54,7 @@ impl RoundUpdate {
             cert: mrb_header.cert,
             hash: mrb_header.hash,
             seed: mrb_header.seed,
+            timestamp: mrb_header.timestamp,
             base_timeouts,
         }
     }
@@ -67,6 +69,10 @@ impl RoundUpdate {
 
     pub fn cert(&self) -> &Certificate {
         &self.cert
+    }
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
     }
 }
 
@@ -100,6 +106,7 @@ pub enum ConsensusError {
     InvalidQuorumType,
     InvalidVote(Vote),
     InvalidMsgIteration(u8),
+    InvalidTimestamp,
     FutureEvent,
     PastEvent,
     NotCommitteeMember,

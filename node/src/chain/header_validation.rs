@@ -8,6 +8,8 @@ use crate::database;
 use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
+use dusk_consensus::commons::get_current_timestamp;
+use dusk_consensus::config::{MAX_STEP_TIMEOUT, RELAX_ITERATION_THRESHOLD};
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -78,29 +80,50 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
         if candidate_block.version > 0 {
-            return Err(anyhow!("unsupported block version"));
+            anyhow::bail!("unsupported block version");
         }
 
         if candidate_block.hash == [0u8; 32] {
-            return Err(anyhow!("empty block hash"));
+            anyhow::bail!("empty block hash");
         }
 
         if candidate_block.height != self.prev_header.height + 1 {
-            return Err(anyhow!(
+            anyhow::bail!(
                 "invalid block height block_height: {:?}, curr_height: {:?}",
                 candidate_block.height,
                 self.prev_header.height,
-            ));
+            );
         }
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
-            return Err(anyhow!("invalid previous block hash"));
+            anyhow::bail!("invalid previous block hash");
+        }
+
+        if candidate_block.timestamp > get_current_timestamp() {
+            anyhow::bail!("invalid future timestamp");
+        }
+
+        if candidate_block.timestamp < self.prev_header.timestamp {
+            anyhow::bail!("invalid timestamp");
+        }
+
+        if candidate_block.iteration < RELAX_ITERATION_THRESHOLD {
+            let max_delta = candidate_block.iteration as u64
+                * MAX_STEP_TIMEOUT.as_secs()
+                * 3;
+            let current_delta =
+                candidate_block.timestamp - self.prev_header.timestamp;
+            if current_delta > max_delta {
+                anyhow::bail!(
+                    "invalid timestamp, delta: {current_delta}/{max_delta}"
+                );
+            }
         }
 
         // Ensure block is not already in the ledger
         self.db.read().await.view(|v| {
             if Ledger::get_block_exists(&v, &candidate_block.hash)? {
-                return Err(anyhow!("block already exists"));
+                anyhow::bail!("block already exists");
             }
 
             Ok(())
