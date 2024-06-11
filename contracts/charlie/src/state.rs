@@ -69,33 +69,12 @@ impl Charlie {
         rusk_abi::set_allowance(allowance);
     }
 
-    /// calling this method will cause the transaction fee to be
-    /// increased so that contract can earn the difference between
-    /// the contract's charge and the cost of gas actually spent
-    pub fn earn(&mut self) {
-        const CHARGE: u64 = 80_000_000;
-        let charge = CHARGE / Self::gas_price();
-        // charging 'charge' for the call
-        rusk_abi::set_charge(charge);
-    }
-
-    /// calling this method will cause the transaction fee to be
-    /// increased, yet its sets the charge to a value  too small to cover
-    /// the actual execution cost, as a result the transaction will fail
+    /// this method calls the `pay` method indirectly, and in such case, since
+    /// allowance is set by an indirectly called method, it won't have effect
     /// and contract balance won't be affected
-    pub fn earn_and_fail(&mut self) {
-        const CHARGE: u64 = 8_000_000;
-        let charge = CHARGE / Self::gas_price();
-        // charging 'charge' for the call
-        rusk_abi::set_charge(charge);
-    }
-
-    /// this method calls the `earn` method indirectly, and in such case, since
-    /// charge is set by an indirectly called method, it won't have effect and
-    /// contract balance won't be affected
-    pub fn earn_indirectly_and_fail(&mut self) {
-        rusk_abi::call::<_, ()>(rusk_abi::self_id(), "earn", &())
-            .expect("earn call should succeed");
+    pub fn pay_indirectly_and_fail(&mut self) {
+        rusk_abi::call::<_, ()>(rusk_abi::self_id(), "pay", &())
+            .expect("pay call should succeed");
     }
 
     /// Subsidizes the contract with funds which can then be used

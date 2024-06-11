@@ -487,27 +487,12 @@ fn call_contract_method_with_deposit(
         contract_id.as_bytes()[0],
         balance_after
     );
-    if balance_before > balance_after {
-        println!(
-            "contract '{:X?}' has paid for this call: {}",
-            contract_id.as_bytes()[0],
-            balance_before - balance_after
-        );
-        println!("this call was sponsored by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], execution_result.gas_spent);
-    } else {
-        println!(
-            "contract '{:X?}' has earned: {}",
-            contract_id.as_bytes()[0],
-            balance_after - balance_before
-        );
-        println!("this call was charged by contract '{:X?}', gas spent by the caller is: {}", contract_id.as_bytes()[0], execution_result.gas_spent);
-    }
 
     (execution_result, balance_before, balance_after)
 }
 
 #[test]
-fn contract_sponsors_call_with_deposit() {
+fn contract_pays_for_call_with_deposit() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -533,7 +518,7 @@ fn contract_sponsors_call_with_deposit() {
 }
 
 #[test]
-fn contract_sponsors_not_enough_allowance() {
+fn contract_pays_not_enough_allowance() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -553,7 +538,7 @@ fn contract_sponsors_not_enough_allowance() {
 }
 
 #[test]
-fn contract_earns_fee() {
+fn contract_does_not_pay_indirectly() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -564,53 +549,7 @@ fn contract_earns_fee() {
         call_contract_method_with_deposit(
             &mut session,
             CHARLIE_CONTRACT_ID,
-            "earn",
-            sponsor_ssk,
-            GAS_PRICE,
-        );
-    assert!(balance_after > balance_before);
-    let balance_delta = balance_after - balance_before;
-    assert_eq!(
-        execution_result.economic_mode,
-        EconomicMode::Charge(
-            balance_delta / GAS_PRICE + execution_result.gas_spent
-        )
-    );
-}
-
-#[test]
-fn contract_earns_not_enough_charge() {
-    const GAS_PRICE: u64 = 2;
-    let vm = &mut rusk_abi::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
-
-    let (mut session, sponsor_ssk) =
-        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (execution_result, balance_before, balance_after) =
-        call_contract_method_with_deposit(
-            &mut session,
-            CHARLIE_CONTRACT_ID,
-            "earn_and_fail",
-            sponsor_ssk,
-            GAS_PRICE,
-        );
-    assert_eq!(balance_before, balance_after);
-    assert!(execution_result.gas_spent > 0);
-}
-
-#[test]
-fn contract_does_not_earn_indirectly() {
-    const GAS_PRICE: u64 = 2;
-    let vm = &mut rusk_abi::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
-
-    let (mut session, sponsor_ssk) =
-        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
-    let (execution_result, balance_before, balance_after) =
-        call_contract_method_with_deposit(
-            &mut session,
-            CHARLIE_CONTRACT_ID,
-            "earn_indirectly_and_fail",
+            "pay_indirectly_and_fail",
             sponsor_ssk,
             GAS_PRICE,
         );

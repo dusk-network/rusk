@@ -35,18 +35,8 @@ mod wasm {
     }
 
     #[no_mangle]
-    unsafe fn earn(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.earn())
-    }
-
-    #[no_mangle]
-    unsafe fn earn_and_fail(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.earn_and_fail())
-    }
-
-    #[no_mangle]
-    unsafe fn earn_indirectly_and_fail(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.earn_indirectly_and_fail())
+    unsafe fn pay_indirectly_and_fail(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.pay_indirectly_and_fail())
     }
 
     #[no_mangle]
