@@ -164,8 +164,9 @@ impl Provisioners {
         &self,
         cfg: &sortition::Config,
     ) -> Vec<PublicKey> {
-        let committee_size = cfg.committee_size();
-        let mut extracted: Vec<PublicKey> = Vec::with_capacity(committee_size);
+        let committee_credits = cfg.committee_credits();
+        let mut extracted: Vec<PublicKey> =
+            Vec::with_capacity(committee_credits);
 
         let mut comm = CommitteeGenerator::from_provisioners(
             self,
@@ -175,7 +176,7 @@ impl Provisioners {
 
         let mut total_weight = comm.total_weight().into();
 
-        while extracted.len() != committee_size {
+        while extracted.len() != committee_credits {
             let counter = extracted.len() as u32;
 
             // 1. Compute n ← H(seed ∣∣ step ∣∣ counter)

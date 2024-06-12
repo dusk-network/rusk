@@ -36,12 +36,13 @@ impl Committee {
     pub fn new(provisioners: &Provisioners, cfg: &sortition::Config) -> Self {
         // Generate committee using deterministic sortition.
         let extracted = provisioners.create_committee(cfg);
-        let committe_size = cfg.committee_size() as f64;
+        let committee_credits = cfg.committee_credits() as f64;
 
-        let super_majority =
-            (committe_size * config::SUPERMAJORITY_THRESHOLD).ceil() as usize;
+        let super_majority = (committee_credits
+            * config::SUPERMAJORITY_THRESHOLD)
+            .ceil() as usize;
         let majority =
-            (committe_size * config::MAJORITY_THRESHOLD) as usize + 1;
+            (committee_credits * config::MAJORITY_THRESHOLD) as usize + 1;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its
         // occurrences.
