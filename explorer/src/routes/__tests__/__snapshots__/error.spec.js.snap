@@ -1,0 +1,35 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Error page > should be able to render the error page even without an error 1`] = `
+<body>
+  <section
+    class="error-message svelte-1wuvb8w"
+  >
+    <h2>
+      Error - 
+      200
+    </h2>
+     
+    <p>
+      
+    </p>
+  </section>
+</body>
+`;
+
+exports[`Error page > should render the error page 1`] = `
+<body>
+  <section
+    class="error-message svelte-1wuvb8w"
+  >
+    <h2>
+      Error - 
+      500
+    </h2>
+     
+    <p>
+      some error message
+    </p>
+  </section>
+</body>
+`;
