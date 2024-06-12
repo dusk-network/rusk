@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update `piecrust` from `0.19` to `0.20` [#1644]
+- Update `piecrust-uplink` from `0.12` to `0.13` [#1644]
 - Change dependencies declarations enforce bytecheck [#1371]
 - Update `piecrust` from `0.15` to `0.16`
 - Update `piecrust-uplink` from `0.10` to `0.11`
@@ -202,6 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add README.md
 
 [#1710]: https://github.com/dusk-network/rusk/issues/1710
+[#1644]: https://github.com/dusk-network/rusk/issues/1644
 [#1630]: https://github.com/dusk-network/rusk/issues/1630
 [#1609]: https://github.com/dusk-network/rusk/issues/1609
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
