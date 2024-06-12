@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for scenario 'contract pays for gas' [#1644]
 - Added support for Economic Protocol scenario 3 [#1630]
 - Added method which exposes the current gas price [#1604]
 

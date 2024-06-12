@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::avg_price::AvgGasPrice;
 use crate::circuits::*;
 use crate::error::Error;
 use crate::tree::Tree;
@@ -44,6 +45,7 @@ pub struct TransferState {
     var_crossover: Option<Crossover>,
     var_crossover_addr: Option<StealthAddress>,
     gas_price: Option<u64>,
+    avg_gas_price: AvgGasPrice,
 }
 
 impl TransferState {
@@ -56,6 +58,7 @@ impl TransferState {
             var_crossover: None,
             var_crossover_addr: None,
             gas_price: None,
+            avg_gas_price: AvgGasPrice::new(),
         }
     }
 
@@ -177,6 +180,46 @@ impl TransferState {
         true
     }
 
+    // Returns free gas price, obtained from the average gas price adjusted
+    // (if possible) by a factor obtained from contract's free price hint
+    fn get_free_gas_price(&self, contract_id: &ContractId) -> u64 {
+        match rusk_abi::free_price_hint(*contract_id) {
+            Some((num, denom)) => self.avg_gas_price.get() * num / denom,
+            _ => self.avg_gas_price.get(),
+        }
+    }
+
+    // Returns adjusted gas price if the transaction is free (gas price set
+    // to zero is interpreted as a free transaction), otherwise returns
+    // the original gas price
+    fn effective_gas_price(
+        &self,
+        gas_price: u64,
+        contract_id: &ContractId,
+    ) -> u64 {
+        if gas_price == 0u64 {
+            self.get_free_gas_price(contract_id)
+        } else {
+            gas_price
+        }
+    }
+
+    // Returns free gas limit obtained from the contract if the transaction is
+    // free and free limit was obtained successfully (gas_price set to zero is
+    // interpreted as a free transaction), otherwise returns 0.
+    // Panics if it is a free transaction yet there is no free limit greater
+    // than zero.
+    fn effective_gas_limit(gas_price: u64, contract_id: &ContractId) -> u64 {
+        if gas_price == 0u64 {
+            match rusk_abi::free_limit(*contract_id) {
+                Some(limit) if limit > 0 => limit,
+                _ => panic!("Gas limit not sufficient"),
+            }
+        } else {
+            0
+        }
+    }
+
     /// Spends the inputs and creates the given UTXO, and executes the contract
     /// call if present. It performs all checks necessary to ensure the
     /// transaction is valid - hash matches, anchor has been a root of the
@@ -203,40 +246,53 @@ impl TransferState {
             panic!("Anchor not found in the state!");
         }
 
-        //  2. ν[] !∈ Nullifiers
-        if self.any_nullifier_exists(&tx.nullifiers) {
-            panic!("A provided nullifier already exists!");
+        if !tx.nullifiers.is_empty() {
+            //  2. ν[] !∈ Nullifiers
+            if self.any_nullifier_exists(&tx.nullifiers) {
+                panic!("A provided nullifier already exists!");
+            }
+
+            //  3. Nullifiers.append(ν[])
+            self.nullifiers.extend(&tx.nullifiers);
+
+            //  4. if |C|=0 then set C ← (0,0,0)
+            //  Crossover is received as option
+
+            //  5. N↦.append((No.R[], No.pk[])
+            //  6. Notes.append(No[])
+            let block_height = rusk_abi::block_height();
+            self.tree.extend_notes(block_height, tx.outputs.clone());
+
+            //  7. g_l < 2^64
+            //  8. g_pmin < g_p
+            //  9. fee ← g_l ⋅ g_p
+            // 10. verify(α, ν[], C.c, No.c[], fee)
+            if !verify_tx_proof(&tx) {
+                panic!("Invalid transaction proof!");
+            }
+
+            // 11. if ∣k∣≠0 then call(k)
+            self.var_crossover = tx.crossover;
+            self.var_crossover_addr.replace(*tx.fee.stealth_address());
         }
-
-        //  3. Nullifiers.append(ν[])
-        self.nullifiers.extend(&tx.nullifiers);
-
-        //  4. if |C|=0 then set C ← (0,0,0)
-        //  Crossover is received as option
-
-        //  5. N↦.append((No.R[], No.pk[])
-        //  6. Notes.append(No[])
-        let block_height = rusk_abi::block_height();
-        self.tree.extend_notes(block_height, tx.outputs.clone());
-
-        //  7. g_l < 2^64
-        //  8. g_pmin < g_p
-        //  9. fee ← g_l ⋅ g_p
-        // 10. verify(α, ν[], C.c, No.c[], fee)
-        if !verify_tx_proof(&tx) {
-            panic!("Invalid transaction proof!");
-        }
-
-        // 11. if ∣k∣≠0 then call(k)
-        self.var_crossover = tx.crossover;
-        self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
         let mut result = Ok(rusk_abi::RawResult::empty());
 
+        // we calculate moving average gas price of non-free calls only
+        if tx.fee.gas_price != 0 {
+            self.avg_gas_price.update(tx.fee.gas_price);
+        }
+
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
             let contract_id = ContractId::from_bytes(contract_id);
-            self.gas_price = Some(tx.fee.gas_price);
-            result = rusk_abi::call_raw(contract_id, &fn_name, &fn_args);
+            self.gas_price =
+                Some(self.effective_gas_price(tx.fee.gas_price, &contract_id));
+            result = rusk_abi::call_raw_with_limit(
+                contract_id,
+                &fn_name,
+                &fn_args,
+                Self::effective_gas_limit(tx.fee.gas_price, &contract_id),
+            );
             self.gas_price = None;
             if let Ok(RawResult {
                 data: _,
@@ -267,6 +323,7 @@ impl TransferState {
         gas_spent: u64,
         gas_price: u64,
     ) -> u64 {
+        let gas_price = self.effective_gas_price(gas_price, contract_id);
         let spent = gas_spent * gas_price;
         if allowance * gas_price < spent {
             rusk_abi::emit(
@@ -277,7 +334,7 @@ impl TransferState {
                     result: EconomicResult::AllowanceNotSufficient,
                 },
             );
-            gas_spent
+            panic!("Allowance not sufficient!")
         } else {
             let contract_balance = self.balance(contract_id);
             if spent > contract_balance {
@@ -289,7 +346,7 @@ impl TransferState {
                         result: EconomicResult::BalanceNotSufficient,
                     },
                 );
-                gas_spent
+                panic!("Balance for allowance not sufficient!")
             } else {
                 self.sub_balance(contract_id, spent).expect(
                     "Subtracting callee contract balance should succeed",
@@ -314,7 +371,10 @@ impl TransferState {
     /// If contract id is present, it applies economic mode to the the contract
     /// and refund is based on the economic calculation.
     ///
-    /// This function guarantees that it will not panic.
+    /// This function guarantees that it will not panic except for when
+    /// economic mode is `Allowance` and allowance amount is not sufficient to
+    /// cover the gas spent or contract's balance is not sufficient to pay
+    /// for allowance.
     pub fn refund(
         &mut self,
         fee: Fee,
