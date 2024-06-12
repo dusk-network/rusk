@@ -21,7 +21,6 @@
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
-  import { goto } from "$lib/navigation";
   import { onMount } from "svelte";
   import "./TransactionDetails.css";
 
@@ -75,12 +74,6 @@
   {loading}
   className={classes}
   title="Transaction Details"
-  headerButtonDetails={{
-    action: () => goto("/transactions"),
-    disabled: false,
-    label: "Back",
-    variant: "tertiary",
-  }}
 >
   <dl class="transaction-details__list">
     <!-- TRANSACTION ID -->

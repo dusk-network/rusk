@@ -17,7 +17,6 @@
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
-  import { goto } from "$lib/navigation";
   import { onMount } from "svelte";
   import "./BlockDetails.css";
 
@@ -60,12 +59,6 @@
   {loading}
   className={classes}
   title="Block Details"
-  headerButtonDetails={{
-    action: () => goto("/blocks"),
-    disabled: false,
-    label: "Back",
-    variant: "tertiary",
-  }}
 >
   <dl class="block-details__list">
     <!-- BLOCK HASH -->

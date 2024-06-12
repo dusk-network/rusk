@@ -21,16 +21,6 @@ exports[`Block Details > should render the Block Details page and query the nece
             Block Details
           </h1>
            
-          <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-            type="button"
-          >
-            <span
-              class="dusk-button__text"
-            >
-              Back
-            </span>
-          </button>
         </header>
          
         <p
@@ -98,16 +88,6 @@ exports[`Block Details > should render the Block Details page and query the nece
             Block Details
           </h1>
            
-          <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-            type="button"
-          >
-            <span
-              class="dusk-button__text"
-            >
-              Back
-            </span>
-          </button>
         </header>
          
         <dl
