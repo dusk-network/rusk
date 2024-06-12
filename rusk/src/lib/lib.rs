@@ -10,6 +10,7 @@
 pub mod chain;
 mod error;
 pub mod http;
+pub mod pow_verifier;
 pub mod verifier;
 mod version;
 

@@ -8,6 +8,7 @@ mod query;
 
 use tracing::info;
 
+use crate::pow_verifier::POW_DIFFICULTY;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
@@ -95,6 +96,13 @@ impl VMExecution for Rusk {
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
         info!("Received preverify request");
         let tx = &tx.inner;
+        if tx.nullifiers.is_empty() {
+            return match crate::pow_verifier::verify_pow(tx, POW_DIFFICULTY) {
+                Ok(true) => Ok(()),
+                Ok(false) => Err(anyhow::anyhow!("Invalid PoW")),
+                Err(e) => Err(anyhow::anyhow!("Cannot verify the PoW: {e}")),
+            };
+        }
         let existing_nullifiers = self
             .existing_nullifiers(&tx.nullifiers)
             .map_err(|e| anyhow::anyhow!("Cannot check nullifiers: {e}"))?;
