@@ -7,10 +7,6 @@
    * @param {Boolean} bool
    */
   const toggleScroll = (bool) => {
-    if (!document.body) {
-      return;
-    }
-
     if (bool) {
       document.body.style.overflow = "auto";
     } else {
