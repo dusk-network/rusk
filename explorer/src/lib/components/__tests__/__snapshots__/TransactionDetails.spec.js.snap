@@ -15,16 +15,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         Transaction Details
       </h1>
        
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-        type="button"
-      >
-        <span
-          class="dusk-button__text"
-        >
-          Back
-        </span>
-      </button>
     </header>
      
     <dl
@@ -349,16 +339,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
         Transaction Details
       </h1>
        
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-        type="button"
-      >
-        <span
-          class="dusk-button__text"
-        >
-          Back
-        </span>
-      </button>
     </header>
      
     <dl

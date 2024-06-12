@@ -18,16 +18,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
           Transaction Details
         </h1>
          
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-          type="button"
-        >
-          <span
-            class="dusk-button__text"
-          >
-            Back
-          </span>
-        </button>
       </header>
        
       <p
@@ -61,16 +51,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
           Transaction Details
         </h1>
          
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-          type="button"
-        >
-          <span
-            class="dusk-button__text"
-          >
-            Back
-          </span>
-        </button>
       </header>
        
       <dl
