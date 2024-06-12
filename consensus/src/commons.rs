@@ -125,10 +125,6 @@ impl From<BlsSigError> for ConsensusError {
 #[async_trait::async_trait]
 pub trait Database: Send + Sync {
     fn store_candidate_block(&mut self, b: Block);
-    async fn get_candidate_block_by_hash(
-        &self,
-        h: &Hash,
-    ) -> anyhow::Result<Block>;
     fn delete_candidate_blocks(&mut self);
 }
 
@@ -142,7 +138,7 @@ impl QuorumMsgSender {
         Self { queue }
     }
 
-    /// Sends an quorum (internally) to the quorum loop.
+    /// Sends an quorum (internally) to the lower layer.
     pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
             Payload::Quorum(q) if !q.cert.ratification.is_empty() => {

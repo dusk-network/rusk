@@ -468,14 +468,16 @@ impl DataBrokerSrv {
                             None
                         }
                     }
-                    // GetResource CandidateFromHash is identical to
-                    // GetCandidate msg
-                    // TODO: Deprecate both GetCandidate and CandidateResp
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            Candidate::fetch_candidate_block(&t, hash)
+                            Ledger::fetch_block(&t, hash)
                                 .ok()
                                 .flatten()
+                                .or_else(|| {
+                                    Candidate::fetch_candidate_block(&t, hash)
+                                        .ok()
+                                        .flatten()
+                                })
                                 .map(Message::new_block)
                         } else {
                             None

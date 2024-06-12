@@ -221,7 +221,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         Ok(())
     }
 
-    async fn request_block(&mut self, hash: [u8; 32], cert: Certificate) {
+    async fn flood_request_block(&mut self, hash: [u8; 32], cert: Certificate) {
         if self.certificates_cache.contains_key(&hash) {
             return;
         }
@@ -233,17 +233,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.certificates_cache.insert(hash, (cert, expiry));
 
         let mut inv = Inv::new(1);
-        inv.add_block_from_hash(hash);
         inv.add_candidate_from_hash(hash);
 
         flood_request(&self.network, &inv).await;
     }
 
-    /// Handles a Quorum message.
+    /// Handles a Quorum message that is received from either the network
+    /// or internal consensus execution.
     ///
-    /// Ideally, the winning block will be built from the quorum certificate
-    /// and candidate block. If the candidate is not found then the
-    /// winning block will be requested from the network/peer.
+    /// The winner block is built from the quorum certificate and candidate
+    /// block. If the candidate is not found in local storage then the
+    /// block/candidate is requested from the network.
     pub(crate) async fn on_quorum_msg(
         &mut self,
         quorum: &payload::Quorum,
@@ -263,7 +263,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         height = remote_height,
                     );
 
-                    self.request_block(hash, quorum.cert).await;
+                    self.flood_request_block(hash, quorum.cert).await;
 
                     Ok(None)
                 } else {
@@ -294,7 +294,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                 // Candidate block is not found from local
                                 // storage.  Cache the certificate and request
                                 // candidate block only.
-                                self.request_block(hash, quorum.cert).await;
+                                self.flood_request_block(hash, quorum.cert)
+                                    .await;
                                 Err(err)
                             }
                         }

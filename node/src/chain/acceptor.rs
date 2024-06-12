@@ -178,7 +178,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list,
             &self.db,
             &self.vm,
-            &self.network,
             base_timeouts,
         );
     }
@@ -215,11 +214,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     if *hash != self.get_curr_hash().await {
                         broadcast(&self.network, &msg).await;
                     }
-                }
-
-                if enable_enqueue {
-                    let task = self.task.read().await;
-                    task.quorum_inbound.try_send(msg)?;
                 }
             }
             _ => warn!("invalid inbound message"),
@@ -463,9 +457,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
 
-        // Reset Consensus
-        task.abort_with_wait().await;
-
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
         let mut block_size_on_disk = 0;
@@ -524,6 +515,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             anyhow::Ok(())
         }?;
+
+        // Abort consensus.
+        // A fully valid block is accepted, consensus task must be aborted.
+        task.abort_with_wait().await;
 
         Self::emit_metrics(
             mrb.inner(),
@@ -605,7 +600,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
-                &self.network,
                 base_timeouts,
             );
         }
@@ -727,7 +721,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list,
             &self.db,
             &self.vm,
-            &self.network,
             base_timeouts,
         );
     }
@@ -781,7 +774,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_result_chan(
         &self,
-    ) -> AsyncQueue<Result<Block, ConsensusError>> {
+    ) -> AsyncQueue<Result<(), ConsensusError>> {
         self.task.read().await.result.clone()
     }
 

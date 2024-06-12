@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::database::{self, Candidate, Mempool, Metadata};
-use crate::{vm, Message, Network};
+use crate::{vm, Message};
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
@@ -14,10 +14,9 @@ use dusk_consensus::operations::{
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
-use node_data::ledger::{Block, Hash, Header};
-use node_data::message::payload::GetCandidate;
+use node_data::ledger::{Block, Header};
 use node_data::message::AsyncQueue;
-use node_data::message::{Payload, Topics};
+
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info, trace, warn};
@@ -36,13 +35,12 @@ use std::time::Duration;
 ///
 /// It manages consensus lifecycle and provides a way to interact with it.
 pub(crate) struct Task {
-    pub(crate) quorum_inbound: AsyncQueue<Message>,
     pub(crate) main_inbound: AsyncQueue<Message>,
     pub(crate) outbound: AsyncQueue<Message>,
 
     pub(crate) future_msg: Arc<Mutex<MsgRegistry<Message>>>,
 
-    pub(crate) result: AsyncQueue<Result<Block, ConsensusError>>,
+    pub(crate) result: AsyncQueue<Result<(), ConsensusError>>,
 
     /// a pair of join_handle and cancel_chan of the running consensus task.
     ///
@@ -71,7 +69,6 @@ impl Task {
         );
 
         Ok(Self {
-            quorum_inbound: AsyncQueue::unbounded(),
             main_inbound: AsyncQueue::unbounded(),
             outbound: AsyncQueue::unbounded(),
             future_msg: Arc::new(Mutex::new(MsgRegistry::default())),
@@ -82,20 +79,17 @@ impl Task {
         })
     }
 
-    pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
+    pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution>(
         &mut self,
         most_recent_block: &node_data::ledger::Block,
         provisioners_list: ContextProvisioners,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
-        network: &Arc<RwLock<N>>,
         base_timeout: TimeoutSet,
     ) {
         let current = provisioners_list.to_current();
         let consensus_task = Consensus::new(
             self.main_inbound.clone(),
-            self.outbound.clone(),
-            self.quorum_inbound.clone(),
             self.outbound.clone(),
             self.future_msg.clone(),
             Arc::new(Mutex::new(Executor::new(
@@ -104,7 +98,7 @@ impl Task {
                 most_recent_block.header().clone(),
                 provisioners_list, // TODO: Avoid cloning
             ))),
-            Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
+            Arc::new(Mutex::new(CandidateDB::new(db.clone()))),
         );
 
         let ru = RoundUpdate::new(
@@ -181,21 +175,18 @@ impl Task {
 #[derive(Debug, Default)]
 /// Implements dusk_consensus Database trait to store candidate blocks in the
 /// RocksDB storage.
-pub struct CandidateDB<DB: database::DB, N: Network> {
+pub struct CandidateDB<DB: database::DB> {
     db: Arc<RwLock<DB>>,
-    network: Arc<RwLock<N>>,
 }
 
-impl<DB: database::DB, N: Network> CandidateDB<DB, N> {
-    pub fn new(db: Arc<RwLock<DB>>, network: Arc<RwLock<N>>) -> Self {
-        Self { db, network }
+impl<DB: database::DB> CandidateDB<DB> {
+    pub fn new(db: Arc<RwLock<DB>>) -> Self {
+        Self { db }
     }
 }
 
 #[async_trait]
-impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
-    for CandidateDB<DB, N>
-{
+impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
     fn store_candidate_block(&mut self, b: Block) {
         tracing::trace!("store candidate block: {:?}", b);
         match self.db.try_read() {
@@ -207,60 +198,6 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
             Err(e) => {
                 warn!("Cannot acquire lock to store candidate block: {e}");
             }
-        }
-    }
-
-    /// Makes attempts to fetch a candidate block from either the local storage
-    /// or the network.
-    async fn get_candidate_block_by_hash(
-        &self,
-        h: &Hash,
-    ) -> anyhow::Result<Block> {
-        // Make an attempt to fetch the candidate block from local storage
-        let res = self.db.read().await.view(|t| t.fetch_candidate_block(h))?;
-        if let Some(b) = res {
-            return Ok(b);
-        }
-
-        const RECV_PEERS_COUNT: usize = 7;
-        const TIMEOUT_MILLIS: u64 = 2000;
-
-        // For redundancy reasons, we send the GetCandidate request to multiple
-        // network peers
-        let request = Message::new_get_candidate(GetCandidate { hash: *h }); // TODO: Use GetResource
-        let res = self
-            .network
-            .write()
-            .await
-            .send_and_wait(
-                &request,
-                Topics::GetCandidateResp,
-                TIMEOUT_MILLIS,
-                RECV_PEERS_COUNT,
-            )
-            .await?;
-
-        match res.payload {
-            Payload::CandidateResp(cr) => {
-                let b = cr.candidate;
-
-                // Ensure that the received candidate block is the one we
-                // requested
-                if b.header().hash != *h {
-                    return Err(anyhow::anyhow!(
-                        "incorrect candidate block hash"
-                    ));
-                }
-
-                tracing::info!(
-                    "received candidate height: {:?}  hash: {:?}",
-                    b.header().height,
-                    hex::ToHex::encode_hex::<String>(&b.header().hash)
-                );
-
-                Ok(b)
-            }
-            _ => Err(anyhow::anyhow!("couldn't get candidate block")),
         }
     }
 

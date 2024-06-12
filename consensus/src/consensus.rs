@@ -9,20 +9,18 @@ use crate::config::CONSENSUS_MAX_ITER;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
-use node_data::ledger::Block;
-
 use node_data::message::{AsyncQueue, Message, Topics};
 
 use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
 use crate::queue::MsgRegistry;
-use crate::quorum::task;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{info, Instrument};
+use tracing::{debug, info, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::CertInfoRegistry;
+
 use std::env;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -40,10 +38,6 @@ pub struct Consensus<T: Operations, D: Database> {
     /// msgs are pending to be handled in a future round/step.
     future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
 
-    /// quorum_process implements Quorum message handler within the context
-    /// of a separate task execution.
-    quorum_process: task::Quorum,
-
     /// Reference to the executor of any EST-related call
     executor: Arc<Mutex<T>>,
 
@@ -60,15 +54,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// * `outbound` - a queue of output messages that  main loop broadcasts to
     ///   the outside world
     ///
-    /// * `quorum_inbound_queue` - a queue of input messages consumed solely by
-    ///   Quorum loop
-    /// * `quorum_outbound_queue` - a queue of output messages that Quorum loop
     ///   broadcasts to the outside world
     pub fn new(
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
-        quorum_inbound_queue: AsyncQueue<Message>,
-        quorum_outbound_queue: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
         executor: Arc<Mutex<T>>,
         db: Arc<Mutex<D>>,
@@ -77,10 +66,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             inbound,
             outbound,
             future_msgs,
-            quorum_process: task::Quorum::new(
-                quorum_inbound_queue,
-                quorum_outbound_queue,
-            ),
             executor,
             db,
         }
@@ -101,35 +86,24 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         cancel_rx: oneshot::Receiver<i32>,
-    ) -> Result<Block, ConsensusError> {
+    ) -> Result<(), ConsensusError> {
         let round = ru.round;
+        debug!(event = "consensus started", round);
+        let sender = QuorumMsgSender::new(self.outbound.clone());
 
-        let mut quorum_task_handle = self.quorum_process.spawn(
-            ru.clone(),
-            provisioners.clone(),
-            self.db.clone(),
-        );
+        // proposal-validation-ratification loop
+        let mut handle = self.spawn_consensus(ru, provisioners, sender);
 
-        let sender =
-            QuorumMsgSender::new(self.quorum_process.inbound_queue.clone());
-
-        // Consensus loop - proposal-validation-ratificaton loop
-        let mut main_task_handle =
-            self.spawn_main_loop(ru, provisioners, sender);
-
-        // Wait for any of the tasks to complete.
+        // Usually this select will be terminated due to cancel signal however
+        // it may also be terminated due to unrecoverable error in the main loop
         let result;
         tokio::select! {
-            recv = &mut quorum_task_handle => {
+            recv = &mut handle => {
                 result = recv.map_err(|_| ConsensusError::Canceled)?;
-                tracing::trace!("quorum result: {:?}", result);
+                if let Err(ref err) = result {
+                    tracing::error!(event = "consensus failed", ?err);
+                }
             },
-            recv = &mut main_task_handle => {
-                result = recv.map_err(|_| ConsensusError::Canceled)?;
-                tracing::trace!("main_loop result: {:?}", result);
-            },
-            // Canceled from outside.
-            // This could be triggered by Synchronizer or on node termination.
             _ = cancel_rx => {
                 result = Err(ConsensusError::Canceled);
                 tracing::debug!(event = "consensus canceled", round);
@@ -137,19 +111,24 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         }
 
         // Tear-down procedure
-        // Abort all tasks
-        abort(&mut quorum_task_handle).await;
-        abort(&mut main_task_handle).await;
+        abort(&mut handle).await;
 
         result
     }
 
-    fn spawn_main_loop(
+    /// Executes Consensus algorithm
+    ///
+    /// Consensus loop terminates on any of these conditions:
+    ///
+    /// * A fully valid block for current round is accepted
+    /// * Consensus reaches  CONSENSUS_MAX_ITER
+    /// * Unrecoverable error is returned by a step execution
+    fn spawn_consensus(
         &self,
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         sender: QuorumMsgSender,
-    ) -> JoinHandle<Result<Block, ConsensusError>> {
+    ) -> JoinHandle<Result<(), ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
         let future_msgs = self.future_msgs.clone();
@@ -237,11 +216,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         sender.clone(),
                     );
 
-                    // Execute a phase.
-                    // An error returned here terminates consensus
-                    // round. This normally happens if consensus channel is
-                    // cancelled by quorum loop on
-                    // finding the winning block for this round.
+                    // Execute a phase
                     msg = phase
                         .run(ctx)
                         .instrument(tracing::info_span!(
@@ -263,8 +238,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 iter_ctx.on_close();
 
                 iter += 1;
-                // Delegate (quorum) message result to quorum loop for
-                // further processing.
             }
             Err(ConsensusError::MaxIterationReached)
         })
