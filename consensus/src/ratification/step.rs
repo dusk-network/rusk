@@ -101,7 +101,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         // There are these possible outputs:
         //  - Quorum on Valid Candidate
         //  - (unsupported) Quorum on Invalid Candidate
-        //  - Quorum on Timeout (NilQuorum)
+        //  - Quorum on Timeout
         //  - No Quorum (Validation step time-ed out)
         match msg.payload {
             Payload::ValidationResult(p) => handler.reset(iteration, *p),

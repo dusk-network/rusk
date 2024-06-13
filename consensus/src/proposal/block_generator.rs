@@ -6,7 +6,7 @@
 
 use crate::commons::{get_current_timestamp, RoundUpdate};
 use crate::operations::{CallParams, Operations};
-use node_data::ledger::{to_str, Block, Certificate, IterationsInfo, Seed};
+use node_data::ledger::{to_str, Attestation, Block, IterationsInfo, Seed};
 
 use crate::config;
 use crate::merkle::merkle_root;
@@ -117,8 +117,8 @@ impl<T: Operations> Generator<T> {
             state_hash: result.verification_output.state_root,
             event_hash: result.verification_output.event_hash,
             hash: [0; 32],
-            cert: Certificate::default(),
-            prev_block_cert: *ru.cert(),
+            att: Attestation::default(),
+            prev_block_cert: *ru.att(),
             txroot,
             iteration,
             failed_iterations,

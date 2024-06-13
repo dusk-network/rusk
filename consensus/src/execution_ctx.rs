@@ -10,7 +10,7 @@ use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
 use crate::queue::MsgRegistry;
-use crate::step_votes_reg::SafeCertificateInfoRegistry;
+use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
@@ -52,7 +52,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
 
     pub client: Arc<Mutex<T>>,
 
-    pub sv_registry: SafeCertificateInfoRegistry,
+    pub sv_registry: SafeAttestationInfoRegistry,
     quorum_sender: QuorumMsgSender,
 }
 
@@ -69,7 +69,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         iteration: u8,
         step: StepName,
         client: Arc<Mutex<T>>,
-        sv_registry: SafeCertificateInfoRegistry,
+        sv_registry: SafeAttestationInfoRegistry,
         quorum_sender: QuorumMsgSender,
     ) -> Self {
         Self {
