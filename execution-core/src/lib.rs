@@ -15,6 +15,7 @@ extern crate alloc;
 /// Block height type alias
 pub type BlockHeight = u64;
 
+pub mod hash;
 pub mod stake;
 pub mod transfer;
 pub mod tx;

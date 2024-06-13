@@ -16,6 +16,8 @@ use jubjub_schnorr::SignatureDouble;
 use piecrust_uplink::{ContractId, CONTRACT_ID_BYTES};
 use poseidon_merkle::Opening as PoseidonOpening;
 
+use crate::hash::Hasher;
+
 use super::*;
 
 /// Constant depth of the merkle tree that provides the opening proofs.
@@ -88,6 +90,45 @@ impl UnprovenTransaction {
             call,
         })
     }
+    /// Returns the hash of the transaction.
+    pub fn hash(&self) -> BlsScalar {
+        let nullifiers: Vec<BlsScalar> =
+            self.inputs.iter().map(|input| input.nullifier).collect();
+
+        let hash_outputs: Vec<Note> =
+            self.outputs.iter().map(|(note, _, _)| *note).collect();
+        let hash_crossover = self.crossover.map(|c| c.0);
+        let hash_bytes = self.call.clone().map(|c| (c.0.to_bytes(), c.1, c.2));
+
+        Hasher::digest(Transaction::hash_input_bytes_from_components(
+            &nullifiers,
+            &hash_outputs,
+            &self.anchor,
+            &self.fee,
+            &hash_crossover,
+            &hash_bytes,
+        ))
+    }
+
+    /// Returns the inputs to the transaction.
+    pub fn inputs(&self) -> &[UnprovenTransactionInput] {
+        &self.inputs
+    }
+
+    /// Returns the outputs of the transaction.
+    pub fn outputs(&self) -> &[(Note, u64, JubJubScalar)] {
+        &self.outputs
+    }
+
+    /// Returns the crossover of the transaction.
+    pub fn crossover(&self) -> Option<&(Crossover, u64, JubJubScalar)> {
+        self.crossover.as_ref()
+    }
+
+    /// Returns the fee of the transaction.
+    pub fn fee(&self) -> &Fee {
+        &self.fee
+    }
 }
 
 impl UnprovenTransactionInput {
@@ -118,6 +159,41 @@ impl UnprovenTransactionInput {
             opening,
             npk_prime,
         })
+    }
+
+    /// Returns the nullifier of the input.
+    pub fn nullifier(&self) -> BlsScalar {
+        self.nullifier
+    }
+
+    /// Returns the opening of the input.
+    pub fn opening(&self) -> &PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4> {
+        &self.opening
+    }
+
+    /// Returns the note of the input.
+    pub fn note(&self) -> &Note {
+        &self.note
+    }
+
+    /// Returns the value of the input.
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    /// Returns the blinding factor of the input.
+    pub fn blinding_factor(&self) -> JubJubScalar {
+        self.blinder
+    }
+
+    /// Returns the input's note public key prime.
+    pub fn note_pk_prime(&self) -> JubJubExtended {
+        self.npk_prime
+    }
+
+    /// Returns the input's signature.
+    pub fn signature(&self) -> &SignatureDouble {
+        &self.sig
     }
 }
 

@@ -30,3 +30,4 @@ rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
 piecrust-uplink = { version = "0.12" }
+blake2b_simd = { version = "1", default-features = false }
