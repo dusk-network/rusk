@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   const buildDate = new Date().toISOString().substring(0, 10);
   const buildHash = execSync(
-    "git log -1 --grep='web-wallet:' --format=format:'%h'"
+    "git log -1 --grep='explorer:' --format=format:'%h'"
   );
   const APP_VERSION = process.env.npm_package_version ?? "unknown";
   const APP_BUILD_INFO = `${buildHash.toString() || "unknown"} ${buildDate}`;
