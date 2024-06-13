@@ -7,7 +7,6 @@ autobins = false
 
 [dependencies]
 dusk-bytes = { version = "0.1" }
-dusk-wallet-core = { version = "0.25.0-phoenix.0.26", default-features = false }
 
 ## feature local_prover
 once_cell = { version = "1.9", optional = true }

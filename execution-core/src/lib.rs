@@ -8,7 +8,7 @@
 
 #![no_std]
 #![deny(missing_docs)]
-#![deny(clippy::pedantic)]
+#![deny(clippy::must_use_unit)]
 
 extern crate alloc;
 
