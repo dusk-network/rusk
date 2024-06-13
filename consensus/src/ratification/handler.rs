@@ -6,9 +6,9 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::SafeCertificateInfoRegistry;
+use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
-use node_data::ledger::Certificate;
+use node_data::ledger::Attestation;
 use node_data::{ledger, StepName};
 use tracing::{error, warn};
 
@@ -24,7 +24,7 @@ use node_data::message::{
 use crate::user::committee::Committee;
 
 pub struct RatificationHandler {
-    pub(crate) sv_registry: SafeCertificateInfoRegistry,
+    pub(crate) sv_registry: SafeAttestationInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
     validation_result: ValidationResult,
@@ -172,7 +172,7 @@ impl MsgHandler for RatificationHandler {
 }
 
 impl RatificationHandler {
-    pub(crate) fn new(sv_registry: SafeCertificateInfoRegistry) -> Self {
+    pub(crate) fn new(sv_registry: SafeAttestationInfoRegistry) -> Self {
         Self {
             sv_registry,
             aggregator: Default::default(),
@@ -197,7 +197,7 @@ impl RatificationHandler {
 
         let quorum = payload::Quorum {
             header,
-            cert: Certificate {
+            att: Attestation {
                 result: vote.into(),
                 validation,
                 ratification,

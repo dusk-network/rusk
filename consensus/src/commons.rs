@@ -33,7 +33,7 @@ pub struct RoundUpdate {
 
     seed: Seed,
     hash: [u8; 32],
-    cert: Certificate,
+    att: Attestation,
 
     pub base_timeouts: TimeoutSet,
 }
@@ -42,17 +42,17 @@ impl RoundUpdate {
     pub fn new(
         pubkey_bls: PublicKey,
         secret_key: StakeSecretKey,
-        mrb_header: &Header,
+        tip_header: &Header,
         base_timeouts: TimeoutSet,
     ) -> Self {
-        let round = mrb_header.height + 1;
+        let round = tip_header.height + 1;
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            cert: mrb_header.cert,
-            hash: mrb_header.hash,
-            seed: mrb_header.seed,
+            att: tip_header.att,
+            hash: tip_header.hash,
+            seed: tip_header.seed,
             base_timeouts,
         }
     }
@@ -65,8 +65,8 @@ impl RoundUpdate {
         self.hash
     }
 
-    pub fn cert(&self) -> &Certificate {
-        &self.cert
+    pub fn att(&self) -> &Attestation {
+        &self.att
     }
 }
 
@@ -141,14 +141,14 @@ impl QuorumMsgSender {
     /// Sends an quorum (internally) to the lower layer.
     pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
-            Payload::Quorum(q) if !q.cert.ratification.is_empty() => {
+            Payload::Quorum(q) if !q.att.ratification.is_empty() => {
                 tracing::debug!(
                     event = "send quorum_msg",
                     vote = ?q.vote(),
                     round = msg.header.round,
                     iteration = msg.header.iteration,
-                    validation = ?q.cert.validation,
-                    ratification = ?q.cert.ratification,
+                    validation = ?q.att.validation,
+                    ratification = ?q.att.ratification,
                 );
             }
             _ => return,

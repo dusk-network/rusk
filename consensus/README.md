@@ -47,15 +47,15 @@ let mut consensus = Consensus::new(
 	Arc::new(Mutex::new(crate::mocks::SimpleDB::default())),
 );
 
-let mut most_recent_block = Block::default();
+let mut tip = Block::default();
 
 loop {
 	/// Provisioners list is retrieved from contract storage state.
 	let provisioners = rusk::get_provisioners();
 
 	// Round update is the input data for any consensus round execution.
-	// Round update includes mostly data from most recent block. 
-	let round_update = from(most_recent_block);
+	// Round update includes mostly data from the tip. 
+	let round_update = from(tip);
 
 	/// Consensus::Spin call initializes a consensus round
 	/// and spawns main consensus tokio::tasks.
@@ -76,7 +76,7 @@ loop {
 			// Max Step Reached - happens only if no consensus is reached for up to 213 steps/71 iterations.
 		}
 	}
-	most_recent_block = winner;
+	tip = winner;
 
 	/// Internally, consensus instance may accept future messages for next round. 
 	/// They will be drained on running the round, that's why same consensus instance is used for all round executions.

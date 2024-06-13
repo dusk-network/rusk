@@ -7,7 +7,7 @@
 use crate::aggregator::Aggregator;
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::SafeCertificateInfoRegistry;
+use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
 use node_data::ledger::{Block, StepVotes};
 use node_data::StepName;
@@ -33,12 +33,12 @@ fn final_result(
 pub struct ValidationHandler {
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Option<Block>,
-    sv_registry: SafeCertificateInfoRegistry,
+    sv_registry: SafeAttestationInfoRegistry,
     curr_iteration: u8,
 }
 
 impl ValidationHandler {
-    pub(crate) fn new(sv_registry: SafeCertificateInfoRegistry) -> Self {
+    pub(crate) fn new(sv_registry: SafeAttestationInfoRegistry) -> Self {
         Self {
             sv_registry,
             aggr: Aggregator::default(),

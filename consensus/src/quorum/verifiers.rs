@@ -30,7 +30,7 @@ pub async fn verify_quorum(
     verify_step_votes(
         &quorum.header,
         quorum.vote(),
-        &quorum.cert.validation,
+        &quorum.att.validation,
         committees_set,
         seed,
         StepName::Validation,
@@ -39,7 +39,7 @@ pub async fn verify_quorum(
     .map_err(|e| {
         error!(
             desc = "invalid validation",
-            sv = ?quorum.cert.validation,
+            sv = ?quorum.att.validation,
             hdr = ?quorum.header,
         );
         e
@@ -49,7 +49,7 @@ pub async fn verify_quorum(
     verify_step_votes(
         &quorum.header,
         quorum.vote(),
-        &quorum.cert.ratification,
+        &quorum.att.ratification,
         committees_set,
         seed,
         StepName::Ratification,
@@ -58,7 +58,7 @@ pub async fn verify_quorum(
     .map_err(|e| {
         error!(
             desc = "invalid ratification",
-            sv = ?quorum.cert.ratification,
+            sv = ?quorum.att.ratification,
             hdr = ?quorum.header,
         );
         e
@@ -146,7 +146,7 @@ pub fn verify_votes(
     }
 
     // If bitset=0 this means that we are checking for failed iteration
-    // certificates. If a winning certificate is checked with bitset=0 it will
+    // attestations. If a winning attestation is checked with bitset=0 it will
     // fail to pass the quorum and results in VoteSetTooSmall.
     // FIXME: Anyway this should be handled properly, maybe with a different
     // function

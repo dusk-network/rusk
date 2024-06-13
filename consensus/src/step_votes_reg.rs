@@ -6,7 +6,7 @@
 
 use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Certificate, IterationInfo, StepVotes};
+use node_data::ledger::{Attestation, IterationInfo, StepVotes};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{payload, Message};
 use node_data::StepName;
@@ -17,31 +17,31 @@ use tokio::sync::Mutex;
 use tracing::{debug, warn};
 
 #[derive(Clone)]
-struct CertificateInfo {
-    cert: Certificate,
+struct AttestationInfo {
+    att: Attestation,
 
     quorum_reached_validation: bool,
     quorum_reached_ratification: bool,
 }
 
-impl fmt::Display for CertificateInfo {
+impl fmt::Display for AttestationInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "cert_info: {:?}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
-            self.cert.result,
-            self.cert.validation,
+            "att_info: {:?}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
+            self.att.result,
+            self.att.validation,
             self.quorum_reached_validation,
-            self.cert.ratification,
+            self.att.ratification,
             self.quorum_reached_ratification
         )
     }
 }
 
-impl CertificateInfo {
+impl AttestationInfo {
     pub(crate) fn new(vote: Vote) -> Self {
-        CertificateInfo {
-            cert: Certificate {
+        AttestationInfo {
+            att: Attestation {
                 result: vote.into(),
                 ..Default::default()
             },
@@ -50,8 +50,8 @@ impl CertificateInfo {
         }
     }
 
-    /// Set certificate stepvotes according to [step]. Store [quorum_reached] to
-    /// calculate [CertificateInfo::is_ready]
+    /// Set attestation stepvotes according to [step]. Store [quorum_reached] to
+    /// calculate [AttestationInfo::is_ready]
     pub(crate) fn set_sv(
         &mut self,
         iter: u8,
@@ -61,14 +61,14 @@ impl CertificateInfo {
     ) {
         match step {
             StepName::Validation => {
-                self.cert.validation = sv;
+                self.att.validation = sv;
 
                 if quorum_reached {
                     self.quorum_reached_validation = quorum_reached;
                 }
             }
             StepName::Ratification => {
-                self.cert.ratification = sv;
+                self.att.ratification = sv;
 
                 if quorum_reached {
                     self.quorum_reached_ratification = quorum_reached;
@@ -98,7 +98,7 @@ impl CertificateInfo {
     /// ratification, except for NoQuorum votes where only the ratification
     /// quorum is checked
     fn is_ready(&self) -> bool {
-        match self.cert.result {
+        match self.att.result {
             RatificationResult::Fail(Vote::NoQuorum) => {
                 self.quorum_reached_ratification
             }
@@ -119,15 +119,15 @@ impl CertificateInfo {
     }
 }
 
-pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
+pub type SafeAttestationInfoRegistry = Arc<Mutex<AttInfoRegistry>>;
 
 #[derive(Clone)]
-struct IterationCerts {
-    votes: HashMap<Vote, CertificateInfo>,
+struct IterationAtts {
+    votes: HashMap<Vote, AttestationInfo>,
     generator: PublicKeyBytes,
 }
 
-impl IterationCerts {
+impl IterationAtts {
     fn new(generator: PublicKeyBytes) -> Self {
         Self {
             votes: HashMap::new(),
@@ -135,32 +135,32 @@ impl IterationCerts {
         }
     }
 
-    fn failed(&self) -> Option<&CertificateInfo> {
+    fn failed(&self) -> Option<&AttestationInfo> {
         self.votes
             .values()
-            .find(|c| c.is_ready() && c.cert.result.failed())
+            .find(|c| c.is_ready() && c.att.result.failed())
     }
 
-    fn get_or_insert(&mut self, vote: &Vote) -> &mut CertificateInfo {
+    fn get_or_insert(&mut self, vote: &Vote) -> &mut AttestationInfo {
         if !self.votes.contains_key(vote) {
-            self.votes.insert(*vote, CertificateInfo::new(*vote));
+            self.votes.insert(*vote, AttestationInfo::new(*vote));
         }
         self.votes.get_mut(vote).expect("Vote to be inserted")
     }
 }
 
-pub struct CertInfoRegistry {
+pub struct AttInfoRegistry {
     ru: RoundUpdate,
 
-    /// Iterations certificates for current round keyed by iteration
-    cert_list: HashMap<u8, IterationCerts>,
+    /// Iterations attestations for current round keyed by iteration
+    att_list: HashMap<u8, IterationAtts>,
 }
 
-impl CertInfoRegistry {
+impl AttInfoRegistry {
     pub(crate) fn new(ru: RoundUpdate) -> Self {
         Self {
             ru,
-            cert_list: HashMap::new(),
+            att_list: HashMap::new(),
         }
     }
 
@@ -176,23 +176,23 @@ impl CertInfoRegistry {
         quorum_reached: bool,
         generator: &PublicKeyBytes,
     ) -> Option<Message> {
-        let cert = self
-            .cert_list
+        let att = self
+            .att_list
             .entry(iteration)
-            .or_insert_with(|| IterationCerts::new(*generator));
+            .or_insert_with(|| IterationAtts::new(*generator));
 
-        let cert_info = cert.get_or_insert(vote);
+        let att_info = att.get_or_insert(vote);
 
-        cert_info.set_sv(iteration, sv, step, quorum_reached);
-        cert_info.is_ready().then(|| {
-            Self::build_quorum_msg(&self.ru, iteration, cert_info.cert)
-        })
+        att_info.set_sv(iteration, sv, step, quorum_reached);
+        att_info
+            .is_ready()
+            .then(|| Self::build_quorum_msg(&self.ru, iteration, att_info.att))
     }
 
     fn build_quorum_msg(
         ru: &RoundUpdate,
         iteration: u8,
-        cert: Certificate,
+        att: Attestation,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
             prev_block_hash: ru.hash(),
@@ -200,26 +200,23 @@ impl CertInfoRegistry {
             iteration,
         };
 
-        let payload = payload::Quorum { header, cert };
+        let payload = payload::Quorum { header, att };
 
         Message::new_quorum(payload)
     }
 
-    pub(crate) fn get_failed_certs(
-        &self,
-        to: u8,
-    ) -> Vec<Option<IterationInfo>> {
+    pub(crate) fn get_failed_atts(&self, to: u8) -> Vec<Option<IterationInfo>> {
         let mut res = Vec::with_capacity(to as usize);
 
         for iteration in 0u8..to {
             res.push(
-                self.cert_list
+                self.att_list
                     .get(&iteration)
                     .and_then(|iter| {
                         iter.failed().map(|ci| (ci, iter.generator))
                     })
                     .filter(|(ci, _)| ci.is_ready())
-                    .map(|(ci, pk)| (ci.cert, pk)),
+                    .map(|(ci, pk)| (ci.att, pk)),
             );
         }
 

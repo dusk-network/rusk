@@ -16,12 +16,12 @@ pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 20;
 pub const SUPERMAJORITY_THRESHOLD: f64 = 0.67;
 pub const MAJORITY_THRESHOLD: f64 = 0.5;
 
-/// Steps committee sizes
-pub const PROPOSAL_COMMITTEE_SIZE: usize = 1;
-pub const VALIDATION_COMMITTEE_SIZE: usize = 64;
-pub const RATIFICATION_COMMITTEE_SIZE: usize = 64;
+/// Total credits of steps committees
+pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
+pub const VALIDATION_COMMITTEE_CREDITS: usize = 64;
+pub const RATIFICATION_COMMITTEE_CREDITS: usize = 64;
 
-/// Artifical delay on each Proposal step.
+/// Artificial delay on each Proposal step.
 pub const CONSENSUS_DELAY_MS: u64 = 1000;
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;

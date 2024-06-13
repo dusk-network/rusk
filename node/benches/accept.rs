@@ -22,7 +22,7 @@ use dusk_consensus::user::{
     sortition::Config as SortitionConfig,
 };
 use execution_core::{StakePublicKey, StakeSecretKey, StakeSignature};
-use node_data::ledger::{Certificate, StepVotes};
+use node_data::ledger::{Attestation, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
@@ -31,15 +31,15 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 fn create_step_votes(
-    mrb_header: &ledger::Header,
+    tip_header: &ledger::Header,
     vote: &Vote,
     step: StepName,
     iteration: u8,
     provisioners: &Provisioners,
     keys: &[(node_data::bls::PublicKey, StakeSecretKey)],
 ) -> StepVotes {
-    let round = mrb_header.height + 1;
-    let seed = mrb_header.seed;
+    let round = tip_header.height + 1;
+    let seed = tip_header.seed;
 
     let generator = provisioners.get_generator(iteration, seed, round);
 
@@ -56,7 +56,7 @@ fn create_step_votes(
             let ru = RoundUpdate::new(
                 pk.clone(),
                 *sk,
-                mrb_header,
+                tip_header,
                 HashMap::default(),
             );
             let sig = match step {
@@ -104,8 +104,8 @@ where
     r
 }
 
-pub fn verify_block_cert(c: &mut Criterion) {
-    with_group("verify_block_cert", c, |group| {
+pub fn verify_block_att(c: &mut Criterion) {
+    with_group("verify_block_att", c, |group| {
         for input in INPUTS {
             group.measurement_time(Duration::from_secs(input.measurement_time));
             let mut keys = vec![];
@@ -118,7 +118,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 keys.push((pk.clone(), sk));
                 provisioners.add_member_with_value(pk, 1000000000000)
             }
-            let mrb_header = ledger::Header {
+            let tip_header = ledger::Header {
                 seed: [5; 48].into(),
                 ..Default::default()
             };
@@ -127,7 +127,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
             let iteration = 0;
 
             let validation = create_step_votes(
-                &mrb_header,
+                &tip_header,
                 &vote,
                 StepName::Validation,
                 iteration,
@@ -135,14 +135,14 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 &keys[..],
             );
             let ratification = create_step_votes(
-                &mrb_header,
+                &tip_header,
                 &vote,
                 StepName::Ratification,
                 iteration,
                 &provisioners,
                 &keys[..],
             );
-            let cert = Certificate {
+            let att = Attestation {
                 result: RatificationResult::Success(Vote::Valid(block_hash)),
                 validation,
                 ratification,
@@ -150,17 +150,17 @@ pub fn verify_block_cert(c: &mut Criterion) {
 
             group.bench_function(
                 BenchmarkId::new(
-                    "verify_block_cert",
+                    "verify_block_att",
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
                     b.to_async(FuturesExecutor).iter(|| async {
-                        chain::verify_block_cert(
+                        chain::verify_block_att(
                             [0u8; 32],
-                            mrb_header.seed,
+                            tip_header.seed,
                             &provisioners,
-                            mrb_header.height + 1,
-                            &cert,
+                            tip_header.height + 1,
+                            &att,
                             iteration,
                         )
                         .await
@@ -199,5 +199,5 @@ const INPUTS: &[Input] = &[
         measurement_time: 15,
     },
 ];
-criterion_group!(benches, verify_block_cert);
+criterion_group!(benches, verify_block_att);
 criterion_main!(benches);

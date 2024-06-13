@@ -43,14 +43,14 @@ pub struct Header {
     pub txroot: Hash,
     pub gas_limit: u64,
     pub iteration: u8,
-    pub prev_block_cert: Certificate,
+    pub prev_block_cert: Attestation,
     pub failed_iterations: IterationsInfo,
 
     // Block hash
     pub hash: Hash,
 
     // Non-hashable fields
-    pub cert: Certificate,
+    pub att: Attestation,
 }
 
 impl std::fmt::Debug for Header {
@@ -70,7 +70,7 @@ impl std::fmt::Debug for Header {
             .field("gen_bls_pubkey", &to_str(self.generator_bls_pubkey.inner()))
             .field("gas_limit", &self.gas_limit)
             .field("hash", &to_str(&self.hash))
-            .field("cert", &self.cert)
+            .field("att", &self.att)
             .finish()
     }
 }
@@ -141,7 +141,7 @@ impl Transaction {
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
-pub struct Certificate {
+pub struct Attestation {
     pub result: RatificationResult,
     pub validation: StepVotes,
     pub ratification: StepVotes,
@@ -186,7 +186,7 @@ impl Header {
         let gas_limit = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
 
-        let prev_block_cert = Certificate::read(r)?;
+        let prev_block_cert = Attestation::read(r)?;
         let failed_iterations = IterationsInfo::read(r)?;
 
         Ok(Header {
@@ -202,7 +202,7 @@ impl Header {
             event_hash,
             txroot,
             hash: [0; 32],
-            cert: Default::default(),
+            att: Default::default(),
             prev_block_cert,
             failed_iterations,
         })
@@ -237,8 +237,8 @@ impl Block {
         &self.txs
     }
 
-    pub fn set_certificate(&mut self, cert: Certificate) {
-        self.header.cert = cert;
+    pub fn set_attestation(&mut self, att: Attestation) {
+        self.header.att = att;
     }
 }
 
@@ -356,22 +356,22 @@ impl PartialEq<Self> for SpentTransaction {
 
 impl Eq for SpentTransaction {}
 
-/// Includes a `NilQuorum` certificate and the key of the expected block
+/// Includes a failed attestation and the key of the expected block
 /// generator
-pub type IterationInfo = (Certificate, PublicKeyBytes);
+pub type IterationInfo = (Attestation, PublicKeyBytes);
 
-/// Defines a set of certificates of any former iterations
+/// Defines a set of attestations of any former iterations
 #[derive(Default, Eq, PartialEq, Clone)]
 pub struct IterationsInfo {
-    /// Represents a list of certificates where position is the iteration
+    /// Represents a list of attestations where position is the iteration
     /// number
-    pub cert_list: Vec<Option<IterationInfo>>,
+    pub att_list: Vec<Option<IterationInfo>>,
 }
 
 impl IterationsInfo {
-    pub fn new(certificates: Vec<Option<IterationInfo>>) -> Self {
+    pub fn new(attestations: Vec<Option<IterationInfo>>) -> Self {
         Self {
-            cert_list: certificates,
+            att_list: attestations,
         }
     }
 
@@ -387,7 +387,7 @@ impl IterationsInfo {
     pub fn to_missed_generators_bytes(
         &self,
     ) -> impl Iterator<Item = &PublicKeyBytes> {
-        self.cert_list
+        self.att_list
             .iter()
             .flatten()
             .filter(|(c, _)| {
@@ -479,14 +479,14 @@ pub mod faker {
 
     impl<T> Dummy<T> for IterationsInfo {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
-            let cert_list = vec![
+            let att_list = vec![
                 None,
                 Some(Faker.fake_with_rng(rng)),
                 None,
                 Some(Faker.fake_with_rng(rng)),
                 None,
             ];
-            IterationsInfo { cert_list }
+            IterationsInfo { att_list }
         }
     }
 

@@ -11,7 +11,7 @@ use crate::{vm, Network};
 
 use crate::database::{Candidate, Ledger};
 use metrics::counter;
-use node_data::ledger::{to_str, Block, Certificate, Label};
+use node_data::ledger::{to_str, Attestation, Block, Label};
 use node_data::message::payload::{
     GetBlocks, GetResource, Inv, RatificationResult, Vote,
 };
@@ -29,7 +29,7 @@ use tracing::{debug, error, info, warn};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
-const DEFAULT_CERT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
+const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
 /// Maximum number of hops between the requester and the node that contains the
 /// requested resource
@@ -79,8 +79,8 @@ pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
 
     blacklisted_blocks: SharedHashSet,
 
-    /// Certificates cached from received Quorum messages
-    certificates_cache: HashMap<[u8; 32], (Certificate, Instant)>,
+    /// Attestations cached from received Quorum messages
+    attestations_cache: HashMap<[u8; 32], (Attestation, Instant)>,
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
@@ -99,7 +99,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             acc,
             network,
             blacklisted_blocks,
-            certificates_cache: Default::default(),
+            attestations_cache: Default::default(),
         }
     }
 
@@ -137,7 +137,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
 
         let now = Instant::now();
-        self.certificates_cache
+        self.attestations_cache
             .retain(|_, (_, expiry)| *expiry > now);
     }
 
@@ -173,7 +173,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             return Ok(());
         }
 
-        if let Some(blk) = self.attach_cert_if_needed(blk).as_ref() {
+        if let Some(blk) = self.attach_att_if_needed(blk).as_ref() {
             match &mut self.curr {
                 State::InSync(ref mut curr) => {
                     if let Some((b, peer_addr)) =
@@ -212,25 +212,25 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             }
         }
 
-        // Clean up certificate cache
+        // Clean up attestation cache
         let now = Instant::now();
-        self.certificates_cache
+        self.attestations_cache
             .retain(|_, (_, expiry)| *expiry > now);
-        self.certificates_cache.remove(&blk.header().hash);
+        self.attestations_cache.remove(&blk.header().hash);
 
         Ok(())
     }
 
-    async fn flood_request_block(&mut self, hash: [u8; 32], cert: Certificate) {
-        if self.certificates_cache.contains_key(&hash) {
+    async fn flood_request_block(&mut self, hash: [u8; 32], att: Attestation) {
+        if self.attestations_cache.contains_key(&hash) {
             return;
         }
 
-        // Save certificate in case only candidate block is received
+        // Save attestation in case only candidate block is received
         let expiry = Instant::now()
-            .checked_add(DEFAULT_CERT_CACHE_EXPIRY)
+            .checked_add(DEFAULT_ATT_CACHE_EXPIRY)
             .unwrap();
-        self.certificates_cache.insert(hash, (cert, expiry));
+        self.attestations_cache.insert(hash, (att, expiry));
 
         let mut inv = Inv::new(1);
         inv.add_candidate_from_hash(hash);
@@ -241,7 +241,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     /// Handles a Quorum message that is received from either the network
     /// or internal consensus execution.
     ///
-    /// The winner block is built from the quorum certificate and candidate
+    /// The winner block is built from the quorum attestation and candidate
     /// block. If the candidate is not found in local storage then the
     /// block/candidate is requested from the network.
     pub(crate) async fn on_quorum_msg(
@@ -249,7 +249,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         quorum: &payload::Quorum,
         msg: &Message,
     ) -> anyhow::Result<()> {
-        let res = match quorum.cert.result {
+        let res = match quorum.att.result {
             RatificationResult::Success(Vote::Valid(hash)) => {
                 let local_header = self.acc.read().await.tip_header().await;
                 let db = self.acc.read().await.db.clone();
@@ -263,7 +263,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         height = remote_height,
                     );
 
-                    self.flood_request_block(hash, quorum.cert).await;
+                    self.flood_request_block(hash, quorum.att).await;
 
                     Ok(None)
                 } else {
@@ -292,9 +292,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                 );
 
                                 // Candidate block is not found from local
-                                // storage.  Cache the certificate and request
+                                // storage.  Cache the attestation and request
                                 // candidate block only.
-                                self.flood_request_block(hash, quorum.cert)
+                                self.flood_request_block(hash, quorum.att)
                                     .await;
                                 Err(err)
                             }
@@ -315,7 +315,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 blk_hash = to_str(&block.header().hash),
             );
 
-            block.set_certificate(quorum.cert);
+            block.set_attestation(quorum.att);
             self.on_block_event(&block, msg.metadata.clone()).await?;
         }
 
@@ -356,23 +356,23 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         Ok(())
     }
 
-    /// Try to attach the certificate to a block that misses it
-    fn attach_cert_if_needed<'a>(
+    /// Try to attach the attestation to a block that misses it
+    fn attach_att_if_needed<'a>(
         &self,
         blk: &'a Block,
     ) -> Option<Cow<'a, Block>> {
-        if blk.header().cert == Certificate::default() {
-            // The default cert means the block was retrieved from Candidate
-            // CF thus missing the certificate. If so, we try to set the valid
-            // certificate from the cache certificates.
-            if let Some((cert, _)) =
-                self.certificates_cache.get(&blk.header().hash)
+        if blk.header().att == Attestation::default() {
+            // The default att means the block was retrieved from Candidate
+            // CF thus missing the attestation. If so, we try to set the valid
+            // attestation from the cache attestations.
+            if let Some((att, _)) =
+                self.attestations_cache.get(&blk.header().hash)
             {
                 let mut blk = blk.clone();
-                blk.set_certificate(*cert);
+                blk.set_attestation(*att);
                 Some(Cow::Owned(blk))
             } else {
-                error!("cert not found for {}", hex::encode(blk.header().hash));
+                error!("att not found for {}", hex::encode(blk.header().hash));
                 None
             }
         } else {

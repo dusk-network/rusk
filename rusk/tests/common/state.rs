@@ -17,7 +17,7 @@ use dusk_wallet_core::Transaction as PhoenixTransaction;
 use execution_core::StakePublicKey;
 use node_data::{
     bls::PublicKeyBytes,
-    ledger::{Block, Certificate, Header, IterationsInfo, SpentTransaction},
+    ledger::{Attestation, Block, Header, IterationsInfo, SpentTransaction},
     message::payload::Vote,
 };
 
@@ -86,8 +86,8 @@ pub fn generator_procedure(
 
     let mut failed_iterations = IterationsInfo::default();
     for to_slash in &missed_generators {
-        failed_iterations.cert_list.push(Some((
-            Certificate {
+        failed_iterations.att_list.push(Some((
+            Attestation {
                 result: node_data::message::payload::RatificationResult::Fail(
                     Vote::NoCandidate,
                 ),

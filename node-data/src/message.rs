@@ -387,7 +387,7 @@ pub enum Payload {
 }
 
 pub mod payload {
-    use crate::ledger::{self, to_str, Block, Certificate, Hash, StepVotes};
+    use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
     use crate::Serializable;
     use std::fmt;
     use std::io::{self, Read, Write};
@@ -663,13 +663,13 @@ pub mod payload {
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct Quorum {
         pub header: ConsensusHeader,
-        pub cert: Certificate,
+        pub att: Attestation,
     }
 
     impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
-            self.cert.write(w)?;
+            self.att.write(w)?;
 
             Ok(())
         }
@@ -679,15 +679,15 @@ pub mod payload {
             Self: Sized,
         {
             let header = ConsensusHeader::read(r)?;
-            let cert = Certificate::read(r)?;
+            let att = Attestation::read(r)?;
 
-            Ok(Quorum { header, cert })
+            Ok(Quorum { header, att })
         }
     }
 
     impl Quorum {
         pub fn vote(&self) -> &Vote {
-            self.cert.result.vote()
+            self.att.result.vote()
         }
     }
 
@@ -758,7 +758,7 @@ pub mod payload {
         BlockFromHash,
         /// A full block fetched by block height
         BlockFromHeight,
-        /// A candidate block fetched by block hash, Cert is None
+        /// A candidate block fetched by block hash, Att is None
         CandidateFromHash,
     }
 
@@ -1338,13 +1338,13 @@ mod tests {
             event_hash: [5; 32],
             hash: [6; 32],
             txroot: [7; 32],
-            cert: Certificate {
+            att: Attestation {
                 validation: ledger::StepVotes::new([6; 48], 22222222),
                 ratification: ledger::StepVotes::new([7; 48], 3333333),
                 ..Default::default()
             },
             iteration: 1,
-            prev_block_cert: Certificate {
+            prev_block_cert: Attestation {
                 validation: ledger::StepVotes::new([6; 48], 444444444),
                 ratification: ledger::StepVotes::new([7; 48], 55555555),
                 ..Default::default()
@@ -1390,7 +1390,7 @@ mod tests {
 
         assert_serialize(payload::Quorum {
             header: consensus_header.clone(),
-            cert: Certificate {
+            att: Attestation {
                 result: payload::Vote::Valid([4; 32]).into(),
                 validation: ledger::StepVotes::new([1; 48], 12345),
                 ratification: ledger::StepVotes::new([2; 48], 98765),

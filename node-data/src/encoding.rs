@@ -10,7 +10,7 @@ use execution_core::Transaction as PhoenixTransaction;
 
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
-    Block, Certificate, Header, IterationsInfo, Label, SpentTransaction,
+    Attestation, Block, Header, IterationsInfo, Label, SpentTransaction,
     StepVotes, Transaction,
 };
 use crate::message::payload::{
@@ -146,7 +146,7 @@ impl Serializable for SpentTransaction {
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.marshal_hashable(w)?;
-        self.cert.write(w)?;
+        self.att.write(w)?;
         w.write_all(&self.hash)?;
 
         Ok(())
@@ -157,13 +157,13 @@ impl Serializable for Header {
         Self: Sized,
     {
         let mut header = Self::unmarshal_hashable(r)?;
-        header.cert = Certificate::read(r)?;
+        header.att = Attestation::read(r)?;
         header.hash = Self::read_bytes(r)?;
         Ok(header)
     }
 }
 
-impl Serializable for Certificate {
+impl Serializable for Attestation {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.result.write(w)?;
         self.validation.write(w)?;
@@ -180,7 +180,7 @@ impl Serializable for Certificate {
         let validation = StepVotes::read(r)?;
         let ratification = StepVotes::read(r)?;
 
-        Ok(Certificate {
+        Ok(Attestation {
             result,
             validation,
             ratification,
@@ -251,14 +251,14 @@ impl Serializable for RatificationResult {
 
 impl Serializable for IterationsInfo {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        let count = self.cert_list.len() as u8;
+        let count = self.att_list.len() as u8;
         w.write_all(&count.to_le_bytes())?;
 
-        for iter in &self.cert_list {
+        for iter in &self.att_list {
             match iter {
-                Some((cert, pk)) => {
+                Some((att, pk)) => {
                     w.write_all(&[1])?;
-                    cert.write(w)?;
+                    att.write(w)?;
                     w.write_all(pk.inner())?;
                 }
                 None => w.write_all(&[0])?,
@@ -272,19 +272,19 @@ impl Serializable for IterationsInfo {
     where
         Self: Sized,
     {
-        let mut cert_list = vec![];
+        let mut att_list = vec![];
 
         let count = Self::read_u8(r)?;
 
         for _ in 0..count {
             let opt = Self::read_u8(r)?;
 
-            let cert = match opt {
+            let att = match opt {
                 0 => None,
                 1 => {
-                    let cert = Certificate::read(r)?;
+                    let att = Attestation::read(r)?;
                     let pk = Self::read_bytes(r)?;
-                    Some((cert, PublicKeyBytes(pk)))
+                    Some((att, PublicKeyBytes(pk)))
                 }
                 _ => {
                     return Err(io::Error::new(
@@ -293,10 +293,10 @@ impl Serializable for IterationsInfo {
                     ))
                 }
             };
-            cert_list.push(cert)
+            att_list.push(att)
         }
 
-        Ok(IterationsInfo { cert_list })
+        Ok(IterationsInfo { att_list })
     }
 }
 
@@ -433,8 +433,8 @@ mod tests {
     }
 
     #[test]
-    fn test_encoding_cert() {
-        assert_serializable::<Certificate>();
+    fn test_encoding_att() {
+        assert_serializable::<Attestation>();
     }
 
     #[test]

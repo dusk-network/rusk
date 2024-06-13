@@ -12,8 +12,8 @@ use sha3::{Digest, Sha3_256};
 use node_data::{bls::PublicKeyBytes, ledger::Seed, StepName};
 
 use crate::config::{
-    PROPOSAL_COMMITTEE_SIZE, RATIFICATION_COMMITTEE_SIZE,
-    VALIDATION_COMMITTEE_SIZE,
+    PROPOSAL_COMMITTEE_CREDITS, RATIFICATION_COMMITTEE_CREDITS,
+    VALIDATION_COMMITTEE_CREDITS,
 };
 
 #[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
@@ -21,7 +21,7 @@ pub struct Config {
     seed: Seed,
     round: u64,
     step: u16,
-    committee_size: usize,
+    committee_credits: usize,
     exclusion: Option<PublicKeyBytes>,
 }
 
@@ -33,23 +33,23 @@ impl Config {
         step: StepName,
         exclusion: Option<PublicKeyBytes>,
     ) -> Config {
-        let committee_size = match step {
-            StepName::Proposal => PROPOSAL_COMMITTEE_SIZE,
-            StepName::Ratification => RATIFICATION_COMMITTEE_SIZE,
-            StepName::Validation => VALIDATION_COMMITTEE_SIZE,
+        let committee_credits = match step {
+            StepName::Proposal => PROPOSAL_COMMITTEE_CREDITS,
+            StepName::Ratification => RATIFICATION_COMMITTEE_CREDITS,
+            StepName::Validation => VALIDATION_COMMITTEE_CREDITS,
         };
         let step = step.to_step(iteration);
         Self {
             seed,
             round,
             step,
-            committee_size,
+            committee_credits,
             exclusion,
         }
     }
 
-    pub fn committee_size(&self) -> usize {
-        self.committee_size
+    pub fn committee_credits(&self) -> usize {
+        self.committee_credits
     }
 
     pub fn step(&self) -> u16 {
@@ -109,14 +109,14 @@ mod tests {
             seed: Seed,
             round: u64,
             step: u16,
-            committee_size: usize,
+            committee_credits: usize,
             exclusion: Option<PublicKeyBytes>,
         ) -> Config {
             Self {
                 seed,
                 round,
                 step,
-                committee_size,
+                committee_credits,
                 exclusion,
             }
         }
@@ -163,16 +163,16 @@ mod tests {
     fn test_deterministic_sortition_1() {
         let p = generate_provisioners(5);
 
-        let committee_size = 64;
+        let committee_credits = 64;
 
         // Execute sortition with specific config
         let cfg = Config::raw(Seed::default(), 1, 1, 64, None);
 
         let committee = Committee::new(&p, &cfg);
 
-        // Verify expected committee size
+        // Verify expected committee credits
         assert_eq!(
-            committee_size,
+            committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
 
@@ -184,13 +184,18 @@ mod tests {
     fn test_deterministic_sortition_2() {
         let p = generate_provisioners(5);
 
-        let committee_size = 45;
-        let cfg =
-            Config::raw(Seed::from([3u8; 48]), 7777, 8, committee_size, None);
+        let committee_credits = 45;
+        let cfg = Config::raw(
+            Seed::from([3u8; 48]),
+            7777,
+            8,
+            committee_credits,
+            None,
+        );
 
         let committee = Committee::new(&p, &cfg);
         assert_eq!(
-            committee_size,
+            committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
         assert_eq!(vec![3, 17, 9, 16], committee.get_occurrences());
@@ -202,12 +207,12 @@ mod tests {
 
         let seed = Seed::from([3u8; 48]);
         let round = 7777;
-        let committee_size = 45;
+        let committee_credits = 45;
         let iteration = 2;
         let relative_step = 2;
         let step = iteration as u16 * 3 + relative_step;
 
-        let cfg = Config::raw(seed, round, step, committee_size, None);
+        let cfg = Config::raw(seed, round, step, committee_credits, None);
         let generator = p.get_generator(iteration, seed, round);
         let committee = Committee::new(&p, &cfg);
 
@@ -216,14 +221,14 @@ mod tests {
             .find(|&p| p.bytes() == &generator)
             .expect("Generator to be included");
         assert_eq!(
-            committee_size,
+            committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
         assert_eq!(vec![3, 17, 9, 16], committee.get_occurrences());
 
         // Run the same extraction, with the generator excluded
         let cfg =
-            Config::raw(seed, round, step, committee_size, Some(generator));
+            Config::raw(seed, round, step, committee_credits, Some(generator));
         let committee = Committee::new(&p, &cfg);
 
         assert!(
@@ -234,7 +239,7 @@ mod tests {
             "Generator to be excluded"
         );
         assert_eq!(
-            committee_size,
+            committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
         assert_eq!(vec![5, 23, 17], committee.get_occurrences());

@@ -79,8 +79,8 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let candidate = candidate.expect("Candidate to be already checked");
         let header = candidate.header();
 
-        // Verify candidate header (all fields except the winning certificate)
-        // NB: Winning certificate is produced only on reaching consensus
+        // Verify candidate header (all fields except the winning attestation)
+        // NB: Winning attestation is produced only on reaching consensus
         if let Err(err) = executor
             .lock()
             .await
