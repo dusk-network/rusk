@@ -42,17 +42,17 @@ impl RoundUpdate {
     pub fn new(
         pubkey_bls: PublicKey,
         secret_key: StakeSecretKey,
-        mrb_header: &Header,
+        tip_header: &Header,
         base_timeouts: TimeoutSet,
     ) -> Self {
-        let round = mrb_header.height + 1;
+        let round = tip_header.height + 1;
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            cert: mrb_header.cert,
-            hash: mrb_header.hash,
-            seed: mrb_header.seed,
+            cert: tip_header.cert,
+            hash: tip_header.hash,
+            seed: tip_header.seed,
             base_timeouts,
         }
     }

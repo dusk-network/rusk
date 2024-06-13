@@ -234,8 +234,8 @@ mod tests {
         // Also populate a vector of headers
         let mut p = Provisioners::empty();
         let mut input = vec![];
-        let mut mrb_header = Header::default();
-        mrb_header.height = 0;
+        let mut tip_header = Header::default();
+        tip_header.height = 0;
 
         for secret_key in sks {
             let pubkey_bls = node_data::bls::PublicKey::new(
@@ -247,7 +247,7 @@ mod tests {
             let ru = RoundUpdate::new(
                 pubkey_bls,
                 secret_key,
-                &mrb_header,
+                &tip_header,
                 HashMap::new(),
             );
 
