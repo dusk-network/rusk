@@ -244,7 +244,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     async fn verify_block_header(
         &self,
         candidate_header: &Header,
-        disable_winning_cert_check: bool,
+        disable_winning_att_check: bool,
     ) -> Result<(), Error> {
         let validator = Validator::new(
             self.db.clone(),
@@ -253,7 +253,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         );
 
         validator
-            .execute_checks(candidate_header, disable_winning_cert_check)
+            .execute_checks(candidate_header, disable_winning_att_check)
             .await
             .map_err(|err| {
                 error!("failed to verify header {}", err);

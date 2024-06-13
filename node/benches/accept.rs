@@ -22,7 +22,7 @@ use dusk_consensus::user::{
     sortition::Config as SortitionConfig,
 };
 use execution_core::{StakePublicKey, StakeSecretKey, StakeSignature};
-use node_data::ledger::{Certificate, StepVotes};
+use node_data::ledger::{Attestation, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
@@ -104,8 +104,8 @@ where
     r
 }
 
-pub fn verify_block_cert(c: &mut Criterion) {
-    with_group("verify_block_cert", c, |group| {
+pub fn verify_block_att(c: &mut Criterion) {
+    with_group("verify_block_att", c, |group| {
         for input in INPUTS {
             group.measurement_time(Duration::from_secs(input.measurement_time));
             let mut keys = vec![];
@@ -142,7 +142,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 &provisioners,
                 &keys[..],
             );
-            let cert = Certificate {
+            let att = Attestation {
                 result: RatificationResult::Success(Vote::Valid(block_hash)),
                 validation,
                 ratification,
@@ -150,17 +150,17 @@ pub fn verify_block_cert(c: &mut Criterion) {
 
             group.bench_function(
                 BenchmarkId::new(
-                    "verify_block_cert",
+                    "verify_block_att",
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
                     b.to_async(FuturesExecutor).iter(|| async {
-                        chain::verify_block_cert(
+                        chain::verify_block_att(
                             [0u8; 32],
                             tip_header.seed,
                             &provisioners,
                             tip_header.height + 1,
-                            &cert,
+                            &att,
                             iteration,
                         )
                         .await
@@ -199,5 +199,5 @@ const INPUTS: &[Input] = &[
         measurement_time: 15,
     },
 ];
-criterion_group!(benches, verify_block_cert);
+criterion_group!(benches, verify_block_att);
 criterion_main!(benches);

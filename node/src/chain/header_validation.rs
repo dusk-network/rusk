@@ -50,29 +50,29 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
     /// Executes check points to make sure a candidate header is fully valid
     ///
-    /// * `disable_winner_cert_check` - disables the check of the winning
-    /// certificate
+    /// * `disable_winner_att_check` - disables the check of the winning
+    /// attestation
     ///
-    /// Returns true if there is a certificate for each failed iteration, and if
-    /// that certificate has a quorum in the ratification phase.
+    /// Returns true if there is a attestation for each failed iteration, and if
+    /// that attestation has a quorum in the ratification phase.
     ///
     /// If there are no failed iterations, it returns true
     pub async fn execute_checks(
         &self,
         candidate_block: &'a ledger::Header,
-        disable_winner_cert_check: bool,
+        disable_winner_att_check: bool,
     ) -> anyhow::Result<bool> {
         self.verify_basic_fields(candidate_block).await?;
         self.verify_prev_block_cert(candidate_block).await?;
 
-        if !disable_winner_cert_check {
-            self.verify_winning_cert(candidate_block).await?;
+        if !disable_winner_att_check {
+            self.verify_winning_att(candidate_block).await?;
         }
 
         self.verify_failed_iterations(candidate_block).await
     }
 
-    /// Verifies any non-certificate field
+    /// Verifies any non-attestation field
     pub async fn verify_basic_fields(
         &self,
         candidate_block: &'a ledger::Header,
@@ -149,7 +149,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
-        verify_block_cert(
+        verify_block_att(
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
@@ -162,8 +162,8 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(())
     }
 
-    /// Return true if there is a certificate for each failed iteration, and if
-    /// that certificate has a quorum in the ratification phase.
+    /// Return true if there is a attestation for each failed iteration, and if
+    /// that attestation has a quorum in the ratification phase.
     ///
     /// If there are no failed iterations, it returns true
     pub async fn verify_failed_iterations(
@@ -173,16 +173,16 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         // Verify Failed iterations
         let mut all_failed = true;
 
-        for (iter, cert) in candidate_block
+        for (iter, att) in candidate_block
             .failed_iterations
-            .cert_list
+            .att_list
             .iter()
             .enumerate()
         {
-            if let Some((cert, pk)) = cert {
-                info!(event = "verify_cert", cert_type = "failed_cert", iter);
+            if let Some((att, pk)) = att {
+                info!(event = "verify_att", att_type = "failed_att", iter);
 
-                if let RatificationResult::Success(_) = cert.result {
+                if let RatificationResult::Success(_) = att.result {
                     anyhow::bail!("Failed iterations should not contains a RatificationResult::Success");
                 }
 
@@ -194,12 +194,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let quorums = verify_block_cert(
+                let quorums = verify_block_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
                     candidate_block.height,
-                    cert,
+                    att,
                     iter as u8,
                 )
                 .await?;
@@ -215,16 +215,16 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(all_failed)
     }
 
-    pub async fn verify_winning_cert(
+    pub async fn verify_winning_att(
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
-        verify_block_cert(
+        verify_block_att(
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
             candidate_block.height,
-            &candidate_block.cert,
+            &candidate_block.att,
             candidate_block.iteration,
         )
         .await?;
@@ -233,12 +233,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     }
 }
 
-pub async fn verify_block_cert(
+pub async fn verify_block_att(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
     round: u64,
-    cert: &ledger::Certificate,
+    att: &ledger::Attestation,
     iteration: u8,
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
@@ -250,12 +250,12 @@ pub async fn verify_block_cert(
         round,
         prev_block_hash,
     };
-    let vote = cert.result.vote();
+    let vote = att.result.vote();
     // Verify validation
     match verifiers::verify_step_votes(
         &consensus_header,
         vote,
-        &cert.validation,
+        &att.validation,
         &committee,
         curr_seed,
         StepName::Validation,
@@ -272,7 +272,7 @@ pub async fn verify_block_cert(
                 round,
                 iteration,
                 to_str(curr_seed.inner()),
-                cert.validation,
+                att.validation,
                 e
             ));
         }
@@ -282,7 +282,7 @@ pub async fn verify_block_cert(
     match verifiers::verify_step_votes(
         &consensus_header,
         vote,
-        &cert.ratification,
+        &att.ratification,
         &committee,
         curr_seed,
         StepName::Ratification,
@@ -299,7 +299,7 @@ pub async fn verify_block_cert(
                 round,
                 iteration,
                 to_str(curr_seed.inner()),
-                cert.ratification,
+                att.ratification,
                 e,
             ));
         }

@@ -50,7 +50,7 @@ pub(crate) enum RevertTarget {
 }
 
 /// Implements block acceptance procedure. This includes block header,
-/// certificate and transactions full verifications.
+/// attestation and transactions full verifications.
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
@@ -572,8 +572,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
         }
 
-        let fsv_bitset = tip.inner().header().cert.validation.bitset;
-        let ssv_bitset = tip.inner().header().cert.ratification.bitset;
+        let fsv_bitset = tip.inner().header().att.validation.bitset;
+        let ssv_bitset = tip.inner().header().att.ratification.bitset;
 
         let duration = start.elapsed();
         info!(
@@ -867,8 +867,8 @@ async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
 /// Performs full verification of block header against prev_block header where
 /// prev_block is usually the blockchain tip
 ///
-/// Returns true if there is a cerificate for each failed iteration, and if
-/// that certificate has a quorum in the ratification phase.
+/// Returns true if there is a attestation for each failed iteration, and if
+/// that attestation has a quorum in the ratification phase.
 ///
 /// If there are no failed iterations, it returns true
 pub(crate) async fn verify_block_header<DB: database::DB>(
