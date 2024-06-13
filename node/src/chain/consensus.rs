@@ -81,7 +81,7 @@ impl Task {
 
     pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution>(
         &mut self,
-        most_recent_block: &node_data::ledger::Block,
+        tip: &node_data::ledger::Block,
         provisioners_list: ContextProvisioners,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
@@ -95,7 +95,7 @@ impl Task {
             Arc::new(Mutex::new(Executor::new(
                 db,
                 vm,
-                most_recent_block.header().clone(),
+                tip.header().clone(),
                 provisioners_list, // TODO: Avoid cloning
             ))),
             Arc::new(Mutex::new(CandidateDB::new(db.clone()))),
@@ -104,7 +104,7 @@ impl Task {
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
             self.keys.0,
-            most_recent_block.header(),
+            tip.header(),
             base_timeout.clone(),
         );
 
@@ -219,7 +219,7 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
 pub struct Executor<DB: database::DB, VM: vm::VMExecution> {
     db: Arc<RwLock<DB>>,
     vm: Arc<RwLock<VM>>,
-    mrb_header: ledger::Header,
+    tip_header: ledger::Header,
     provisioners: ContextProvisioners,
 }
 
@@ -227,13 +227,13 @@ impl<DB: database::DB, VM: vm::VMExecution> Executor<DB, VM> {
     fn new(
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
-        mrb_header: ledger::Header,
+        tip_header: ledger::Header,
         provisioners: ContextProvisioners,
     ) -> Self {
         Executor {
             db: db.clone(),
             vm: vm.clone(),
-            mrb_header,
+            tip_header,
             provisioners,
         }
     }
@@ -248,7 +248,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     ) -> Result<(), Error> {
         let validator = Validator::new(
             self.db.clone(),
-            &self.mrb_header,
+            &self.tip_header,
             &self.provisioners,
         );
 

@@ -54,7 +54,7 @@ pub(crate) enum RevertTarget {
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
-    mrb: RwLock<BlockWithLabel>,
+    tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
     pub(crate) provisioners_list: RwLock<ContextProvisioners>,
@@ -124,25 +124,25 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Finally it spawns a new consensus [`Task`]
     pub async fn init_consensus(
         keys_path: &str,
-        mrb: BlockWithLabel,
+        tip: BlockWithLabel,
         provisioners_list: Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<Self> {
-        let mrb_height = mrb.inner().header().height;
-        let mrb_state_hash = mrb.inner().header().state_hash;
+        let tip_height = tip.inner().header().height;
+        let tip_state_hash = tip.inner().header().state_hash;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
-        if mrb.inner().header().height > 0 {
+        if tip.inner().header().height > 0 {
             let changed_provisioners =
-                vm.read().await.get_changed_provisioners(mrb_state_hash)?;
+                vm.read().await.get_changed_provisioners(tip_state_hash)?;
             provisioners_list.apply_changes(changed_provisioners);
         }
 
         let acc = Self {
-            mrb: RwLock::new(mrb),
+            tip: RwLock::new(tip),
             provisioners_list: RwLock::new(provisioners_list),
             db: db.clone(),
             vm: vm.clone(),
@@ -160,7 +160,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         );
 
         // Detect a consistency issue between VM and Ledger states.
-        if mrb_height > 0 && mrb_state_hash != state_root {
+        if tip_height > 0 && tip_state_hash != state_root {
             info!("revert to last finalized state");
             // Revert to last known finalized state.
             acc.try_revert(RevertTarget::LastFinalizedState).await?;
@@ -174,7 +174,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let base_timeouts = self.adjust_round_base_timeouts().await;
 
         self.task.write().await.spawn(
-            self.mrb.read().await.inner(),
+            self.tip.read().await.inner(),
             provisioners_list,
             &self.db,
             &self.vm,
@@ -331,19 +331,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         Ok(change)
     }
 
-    /// Updates most_recent_block together with provisioners list.
+    /// Updates tip together with provisioners list.
     ///
     /// # Arguments
     ///
     /// * `blk` - Block that already exists in ledger
-    pub(crate) async fn update_most_recent_block(
+    pub(crate) async fn update_tip(
         &self,
         blk: &Block,
         label: Label,
     ) -> anyhow::Result<()> {
         let mut task = self.task.write().await;
 
-        let mut mrb = self.mrb.write().await;
+        let mut tip = self.tip.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
 
         // Ensure block that will be marked as blockchain tip does exist
@@ -374,7 +374,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             vm.get_changed_provisioners(blk.header().state_hash)?;
         provisioners_list.apply_changes(changed_provisioners);
 
-        *mrb = BlockWithLabel::new_with_label(blk.clone(), label);
+        *tip = BlockWithLabel::new_with_label(blk.clone(), label);
 
         Ok(())
     }
@@ -403,16 +403,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     ) -> anyhow::Result<Label> {
         let mut task = self.task.write().await;
 
-        let mut mrb = self.mrb.write().await;
+        let mut tip = self.tip.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
         let block_time =
-            blk.header().timestamp - mrb.inner().header().timestamp;
+            blk.header().timestamp - tip.inner().header().timestamp;
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
         let attested = verify_block_header(
             self.db.clone(),
-            &mrb.inner().header().clone(),
+            &tip.inner().header().clone(),
             &provisioners_list,
             blk.header(),
         )
@@ -426,7 +426,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mut ffr = false;
 
         // Define new block label
-        let label = match (attested, mrb.is_final()) {
+        let label = match (attested, tip.is_final()) {
             (true, true) => Label::Final,
             (false, _) => Label::Accepted,
             (true, _) => {
@@ -482,7 +482,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             self.log_missing_iterations(
                 provisioners_list.current(),
                 header.iteration,
-                mrb.inner().header().seed,
+                tip.inner().header().seed,
                 header.height,
             );
 
@@ -506,11 +506,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 provisioners_list.update_and_swap(new_prov)
             }
 
-            // Update most_recent_block
-            *mrb = blk;
+            // Update tip
+            *tip = blk;
 
-            if mrb.is_final() {
-                vm.finalize_state(mrb.inner().header().state_hash)?;
+            if tip.is_final() {
+                vm.finalize_state(tip.inner().header().state_hash)?;
             }
 
             anyhow::Ok(())
@@ -521,7 +521,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         Self::emit_metrics(
-            mrb.inner(),
+            tip.inner(),
             &label,
             est_elapsed_time,
             block_time,
@@ -536,7 +536,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .await
             .update(|t| {
                 // Delete any candidate block older than TIP - OFFSET
-                let threshold = mrb
+                let threshold = tip
                     .inner()
                     .header()
                     .height
@@ -546,7 +546,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 // Delete from mempool any transaction already included in the
                 // block
-                for tx in mrb.inner().txs().iter() {
+                for tx in tip.inner().txs().iter() {
                     let _ = Mempool::delete_tx(t, tx.id())
                         .map_err(|e| warn!("Error while deleting tx: {e}"));
 
@@ -566,27 +566,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         {
             // Avoid accumulation of future msgs while the node is syncing up
-            let round = mrb.inner().header().height;
+            let round = tip.inner().header().height;
             let mut f = task.future_msg.lock().await;
             f.remove_msgs_out_of_range(round + 1, OFFSET_FUTURE_MSGS);
             histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
         }
 
-        let fsv_bitset = mrb.inner().header().cert.validation.bitset;
-        let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
+        let fsv_bitset = tip.inner().header().cert.validation.bitset;
+        let ssv_bitset = tip.inner().header().cert.ratification.bitset;
 
         let duration = start.elapsed();
         info!(
             event = "block accepted",
-            height = mrb.inner().header().height,
-            iter = mrb.inner().header().iteration,
-            hash = to_str(&mrb.inner().header().hash),
-            txs = mrb.inner().txs().len(),
-            state_hash = to_str(&mrb.inner().header().state_hash),
+            height = tip.inner().header().height,
+            iter = tip.inner().header().iteration,
+            hash = to_str(&tip.inner().header().hash),
+            txs = tip.inner().txs().len(),
+            state_hash = to_str(&tip.inner().header().state_hash),
             fsv_bitset,
             ssv_bitset,
             block_time,
-            generator = mrb.inner().header().generator_bls_pubkey.to_bs58(),
+            generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
             label = format!("{:?}", label),
             ffr
@@ -596,7 +596,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if enable_consensus {
             let base_timeouts = self.adjust_round_base_timeouts().await;
             task.spawn(
-                mrb.inner(),
+                tip.inner(),
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
@@ -645,7 +645,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Delete any block until we reach the target_state_hash, the
         // VM was reverted to.
 
-        // The blockchain tip (most recent block) after reverting
+        // The blockchain tip after reverting
         let (blk, label) = self.db.read().await.update(|t| {
             let mut height = curr_height;
             while height != 0 {
@@ -698,26 +698,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             state_root = hex::encode(blk.header().state_hash)
         );
 
-        self.update_most_recent_block(&blk, label).await
+        self.update_tip(&blk, label).await
     }
 
     /// Spawns consensus algorithm after aborting currently running one
     pub(crate) async fn restart_consensus(&mut self) {
         let mut task = self.task.write().await;
-        let mrb = self.mrb.read().await;
+        let tip = self.tip.read().await;
         let provisioners_list = self.provisioners_list.read().await.clone();
 
         task.abort_with_wait().await;
         info!(
             event = "restart consensus",
-            height = mrb.inner().header().height,
-            iter = mrb.inner().header().iteration,
-            hash = to_str(&mrb.inner().header().hash),
+            height = tip.inner().header().height,
+            iter = tip.inner().header().iteration,
+            hash = to_str(&tip.inner().header().hash),
         );
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
-            mrb.inner(),
+            tip.inner(),
             provisioners_list,
             &self.db,
             &self.vm,
@@ -726,27 +726,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn get_curr_height(&self) -> u64 {
-        self.mrb.read().await.inner().header().height
+        self.tip.read().await.inner().header().height
     }
 
     /// Returns chain tip header
     pub(crate) async fn tip_header(&self) -> ledger::Header {
-        self.mrb.read().await.inner().header().clone()
+        self.tip.read().await.inner().header().clone()
     }
 
     pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
-        self.mrb.read().await.inner().header().hash
+        self.tip.read().await.inner().header().hash
     }
 
     pub(crate) async fn get_latest_final_block(&self) -> Result<Block> {
-        let mrb = self.mrb.read().await;
-        if mrb.is_final() {
-            return Ok(mrb.inner().clone());
+        let tip = self.tip.read().await;
+        if tip.is_final() {
+            return Ok(tip.inner().clone());
         }
 
         // Retrieve the latest final block from the database
         let final_block = self.db.read().await.view(|v| {
-            let prev_height = mrb.inner().header().height - 1;
+            let prev_height = tip.inner().header().height - 1;
 
             for height in (0..prev_height).rev() {
                 if let Ok(Some(Label::Final)) =
@@ -769,7 +769,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn get_curr_iteration(&self) -> u8 {
-        self.mrb.read().await.inner().header().iteration
+        self.tip.read().await.inner().header().iteration
     }
 
     pub(crate) async fn get_result_chan(

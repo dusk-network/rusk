@@ -61,15 +61,15 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<()> {
-        let mrb = Self::load_most_recent_block(db.clone(), vm.clone()).await?;
+        let tip = Self::load_tip(db.clone(), vm.clone()).await?;
 
-        let state_hash = mrb.inner().header().state_hash;
+        let state_hash = tip.inner().header().state_hash;
         let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
 
         // Initialize Acceptor
         let acc = Acceptor::init_consensus(
             &self.keys_path,
-            mrb,
+            tip,
             provisioners_list,
             db,
             network.clone(),
@@ -224,18 +224,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         }
     }
 
-    /// Load both most recent and last_finalized blocks from persisted ledger.
+    /// Load both the chain tip and last finalized block from persisted ledger.
     ///
     /// Panics
     ///
     /// If register entry is read but block is not found.
-    async fn load_most_recent_block(
+    async fn load_tip(
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
     ) -> Result<BlockWithLabel> {
         let stored_block = db.read().await.update(|t| {
-            Ok(t.op_read(MD_HASH_KEY)?.and_then(|mrb_hash| {
-                t.fetch_block(&mrb_hash[..])
+            Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
+                t.fetch_block(&tip_hash[..])
                     .expect("block to be found if metadata is set")
             }))
         })?;
