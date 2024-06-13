@@ -35,7 +35,7 @@
 <Table className={classes}>
   <TableHead>
     <TableRow>
-      <TableCell type="th">Hash</TableCell>
+      <TableCell type="th">ID</TableCell>
       <TableCell type="th">Gas</TableCell>
       <TableCell type="th">Fee</TableCell>
       <TableCell type="th">Status</TableCell>
@@ -49,10 +49,7 @@
           <AppAnchor
             className="transaction__link"
             href={`/transactions/transaction?id=${transaction.txid}`}
-            >{middleEllipsis(
-              transaction.blockhash,
-              HASH_CHARS_LENGTH
-            )}</AppAnchor
+            >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</AppAnchor
           >
           <small class="transaction__time"
             >{getRelativeTimeString(transaction.date, "long")}</small

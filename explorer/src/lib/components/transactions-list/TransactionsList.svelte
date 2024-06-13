@@ -38,7 +38,7 @@
 <DetailList>
   <!-- TRANSACTION ID -->
   <ListItem tooltipText="The ID of the transaction">
-    <svelte:fragment slot="term">Hash</svelte:fragment>
+    <svelte:fragment slot="term">ID</svelte:fragment>
     <svelte:fragment slot="definition">
       <AppAnchor
         className="transaction-details__list-link"

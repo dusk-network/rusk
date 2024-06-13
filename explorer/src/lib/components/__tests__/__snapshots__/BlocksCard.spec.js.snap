@@ -42,7 +42,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           <th
             class="table__header-cell"
           >
-            # Block
+            Block
           </th>
           
            

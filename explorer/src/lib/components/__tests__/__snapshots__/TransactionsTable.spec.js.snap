@@ -16,7 +16,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <th
           class="table__header-cell"
         >
-          Hash
+          ID
         </th>
         
          
@@ -64,7 +64,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
           >
-            904ad41723...1b50b2dc54
+            070280c695...94efca2a0e
           </a>
            
           <small
@@ -142,7 +142,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
           >
-            6971e17e16...d38530d800
+            534f753d5a...5153259c00
           </a>
            
           <small
@@ -220,7 +220,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
           >
-            c28cfe813e...bbca988fed
+            c6f13af20c...fc68ebb102
           </a>
            
           <small
@@ -298,7 +298,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
           >
-            e4a232262c...4db4b3cdec
+            31c7dce26a...bf7bcb4c04
           </a>
            
           <small
@@ -376,7 +376,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=4fa6e913c083aa595530b1f6c010c7e5a58121307c991ea6782f9e9e4dd5510d"
           >
-            ea1cfc01b6...ce792d0e8a
+            4fa6e913c0...9e4dd5510d
           </a>
            
           <small
@@ -454,7 +454,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=d1a7928a435021d87ea3649bff57c8154fc7b5c6c68081a61fea5779ccdb2e04"
           >
-            e4c3e5f688...50ebdcbff4
+            d1a7928a43...79ccdb2e04
           </a>
            
           <small
@@ -532,7 +532,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=004ca8683c315b9270e04d3768dfb58fb0f65d92a9469ca31a5d97cff9718b06"
           >
-            10cd59c725...eed7adc1f8
+            004ca8683c...cff9718b06
           </a>
            
           <small
@@ -610,7 +610,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=b5a77063e45dd90b97b2c30b4cd670fbf04ae60c4b8e3ea9fd0d0b4496253a05"
           >
-            31bcdcbf06...347aac19f3
+            b5a77063e4...4496253a05
           </a>
            
           <small
@@ -688,7 +688,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=b263d9d594439be92bb9349bd97f55a05060956419f2f4a32925639d80b06e0b"
           >
-            deb6807ba2...ecf6f1b837
+            b263d9d594...9d80b06e0b
           </a>
            
           <small
@@ -766,7 +766,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="dusk-anchor dusk-anchor--on-surface transaction__link"
             href="/some-base-path/transactions/transaction?id=b4525cb82f5cd56fcf8ceb2eb30f647d2c3567e82abb8265dd12daf5275d7709"
           >
-            62fbd83edb...1b54a5ad89
+            b4525cb82f...f5275d7709
           </a>
            
           <small

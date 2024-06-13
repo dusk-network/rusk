@@ -100,32 +100,6 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="dusk-icon dusk-icon--size--normal detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
-              data-tooltip-text="The hash for the header of the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block hash
-          </dt>
-           
-          <dd
-            class="details-list__definition"
-          >
-            bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
-          </dd>
-          <dt
-            class="details-list__term"
-          >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
               data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
               data-tooltip-type="info"
               role="graphics-symbol"
@@ -185,6 +159,32 @@ exports[`Block Details > should render the Block Details page and query the nece
               
             </a>
              
+          </dd>
+          <dt
+            class="details-list__term"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The hash for the header of the block"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            hash
+          </dt>
+           
+          <dd
+            class="details-list__definition"
+          >
+            bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
           </dd>
           <dt
             class="details-list__term"
@@ -461,7 +461,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 <th
                   class="table__header-cell"
                 >
-                  Hash
+                  ID
                 </th>
                 
                  
@@ -509,7 +509,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                     class="dusk-anchor dusk-anchor--on-surface transaction__link"
                     href="/some-base-path/transactions/transaction?id=3a3f6f90a1012ae751b4448bcb8e98def0ba2b18170239bd69fcf8e2e37f0602"
                   >
-                    bd5c99bb72...d15977719f
+                    3a3f6f90a1...e2e37f0602
                   </a>
                    
                   <small
@@ -587,7 +587,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                     class="dusk-anchor dusk-anchor--on-surface transaction__link"
                     href="/some-base-path/transactions/transaction?id=07bfabea1d94c16f2dc3697fa642f6cecea6e81bf76b9644efbb6e2723b76d00"
                   >
-                    bd5c99bb72...d15977719f
+                    07bfabea1d...2723b76d00
                   </a>
                    
                   <small

@@ -89,7 +89,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <th
                 class="table__header-cell"
               >
-                # Block
+                Block
               </th>
               
                

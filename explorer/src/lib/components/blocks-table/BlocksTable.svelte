@@ -30,7 +30,7 @@
 <Table className={classes}>
   <TableHead>
     <TableRow>
-      <TableCell type="th"># Block</TableCell>
+      <TableCell type="th">Block</TableCell>
       <TableCell type="th">Fee</TableCell>
       <TableCell type="th">Txn(s)</TableCell>
       <TableCell type="th">Rewards</TableCell>

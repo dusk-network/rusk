@@ -23,7 +23,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       </svg>
       
        
-      # block
+      block
     </dt>
      
     <dd
