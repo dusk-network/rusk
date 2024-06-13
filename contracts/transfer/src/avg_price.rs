@@ -4,41 +4,76 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-const AVG_GAS_PRICE_K: u64 = 200; // moving average of K data points
-const AVG_GAS_PRICE_FACTOR: u64 = 1_048_576; // factor for division precision
+use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
+
+const AVG_GAS_PRICE_K: usize = 200; // moving average of K data points
+const RING_SIZE: usize = AVG_GAS_PRICE_K + 1;
+const AVG_GAS_PRICE_FACTOR: i64 = 1_048_576; // factor for division precision
 
 pub struct AvgGasPrice {
-    avg_price: u64, // actual price times AVG_PRICE_FACTOR
-    first: u64,     // moving first price times AVG_PRICE_FACTOR
-    count: u64,     // counts to AVG_PRICE_K elements
+    avg_price: i64, // actual price times AVG_PRICE_FACTOR
+    window: ConstGenericRingBuffer<i64, RING_SIZE>,
+    count: usize,
 }
 
 impl AvgGasPrice {
     pub const fn new() -> Self {
         Self {
-            avg_price: AVG_GAS_PRICE_FACTOR,
-            first: AVG_GAS_PRICE_FACTOR,
-            count: 0,
+            avg_price: 0,
+            window: ConstGenericRingBuffer::new(),
+            count: AVG_GAS_PRICE_K,
         }
     }
 
     pub fn update(&mut self, gas_price: u64) {
-        let gas_price = gas_price * AVG_GAS_PRICE_FACTOR;
-        if self.count > AVG_GAS_PRICE_K {
-            self.avg_price += (gas_price - self.first) / AVG_GAS_PRICE_K;
+        let gas_price = gas_price as i64 * AVG_GAS_PRICE_FACTOR;
+        self.window.push(gas_price);
+        if self.count == 0 {
+            let first = *self.window.get(0).unwrap();
+            self.avg_price += (gas_price - first) / AVG_GAS_PRICE_K as i64;
         } else {
-            self.avg_price =
-                (self.avg_price * self.count + gas_price) / (self.count + 1)
-        }
-        self.first = gas_price;
-        self.count += 1;
-        if self.count > AVG_GAS_PRICE_K * 512 {
-            // to avoid count overflow
-            self.count = AVG_GAS_PRICE_K * 2;
+            self.avg_price = (self.avg_price
+                * (AVG_GAS_PRICE_K - self.count) as i64
+                + gas_price)
+                / ((AVG_GAS_PRICE_K - self.count) + 1) as i64;
+            self.count -= 1;
         }
     }
 
     pub fn get(&self) -> u64 {
-        self.avg_price / AVG_GAS_PRICE_FACTOR
+        (self.avg_price / AVG_GAS_PRICE_FACTOR) as u64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn avg_no_items() {
+        let avg = AvgGasPrice::new();
+        assert_eq!(avg.get(), 0);
+    }
+
+    #[test]
+    fn avg_window_not_full() {
+        let mut avg = AvgGasPrice::new();
+        avg.update(2000000);
+        avg.update(3000000);
+        avg.update(4000000);
+        avg.update(5000000);
+        assert_eq!(avg.get(), 3500000);
+    }
+
+    #[test]
+    fn avg_window_full() {
+        let mut avg = AvgGasPrice::new();
+        for _ in 0..AVG_GAS_PRICE_K {
+            avg.update(2000000);
+        }
+        for _ in 0..(AVG_GAS_PRICE_K / 2) {
+            avg.update(4000000);
+        }
+        assert_eq!(avg.get(), 3000000);
     }
 }
