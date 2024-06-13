@@ -75,7 +75,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
       </header>
        
       <div
-        class="table-container transactions-table transactions-card__table"
+        class="table-container transactions-table transactions-card__table mobile-hidden"
       >
         <table
           class="table"
@@ -1300,7 +1300,3281 @@ exports[`Transactions page > should render the Transactions page, start polling 
           </tbody>
         </table>
       </div>
-      
+       
+      <div
+        class="transactions-card__list desktop-hidden"
+      >
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
+            >
+              070280c69500df7d1b40942981a3b5...f9f71ba62f96d63e322994efca2a0e
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:42:20.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            50,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000215552 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
+            >
+              534f753d5a420fddc21c84d76ff26b...48ea75b450c082759d155153259c00
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:42:08.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            50,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000215617 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
+            >
+              c6f13af20c23b8bc55d22a416a191e...a47128b4d7dc3ac6fce5fc68ebb102
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:41:58.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            50,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000214413 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
+            >
+              31c7dce26a5a6ef1392f53630b8e27...1f10eaeea2685c5a37dbbf7bcb4c04
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:40:57.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000291769 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=4fa6e913c083aa595530b1f6c010c7e5a58121307c991ea6782f9e9e4dd5510d"
+            >
+              4fa6e913c083aa595530b1f6c010c7...8121307c991ea6782f9e9e4dd5510d
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:40:28.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000290764 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=d1a7928a435021d87ea3649bff57c8154fc7b5c6c68081a61fea5779ccdb2e04"
+            >
+              d1a7928a435021d87ea3649bff57c8...c7b5c6c68081a61fea5779ccdb2e04
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:39:59.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000291961 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=004ca8683c315b9270e04d3768dfb58fb0f65d92a9469ca31a5d97cff9718b06"
+            >
+              004ca8683c315b9270e04d3768dfb5...f65d92a9469ca31a5d97cff9718b06
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:39:13.000Z"
+              slot="definition"
+            >
+              18 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000292039 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=b5a77063e45dd90b97b2c30b4cd670fbf04ae60c4b8e3ea9fd0d0b4496253a05"
+            >
+              b5a77063e45dd90b97b2c30b4cd670...4ae60c4b8e3ea9fd0d0b4496253a05
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:01:59.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000290406 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=b263d9d594439be92bb9349bd97f55a05060956419f2f4a32925639d80b06e0b"
+            >
+              b263d9d594439be92bb9349bd97f55...60956419f2f4a32925639d80b06e0b
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:01:15.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000291537 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=b4525cb82f5cd56fcf8ceb2eb30f647d2c3567e82abb8265dd12daf5275d7709"
+            >
+              b4525cb82f5cd56fcf8ceb2eb30f64...3567e82abb8265dd12daf5275d7709
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T05:00:40.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000291361 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=40fb9d20eb9e6ffb27be4914f49cdf8059e2fdcc88a7b17f9499ff516584df08"
+            >
+              40fb9d20eb9e6ffb27be4914f49cdf...e2fdcc88a7b17f9499ff516584df08
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T04:52:39.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000290385 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=b5ad0ec014ac415dc8ea214f9baf555728126558afc8e142f8223504f807910b"
+            >
+              b5ad0ec014ac415dc8ea214f9baf55...126558afc8e142f8223504f807910b
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T04:51:02.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000290795 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=56504a6d6236fbd64671d86e6f60f20fc3e1ce09f7ee9ebc13b593ba14520c00"
+            >
+              56504a6d6236fbd64671d86e6f60f2...e1ce09f7ee9ebc13b593ba14520c00
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T04:50:30.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000290449 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=d65e4ebe379d0d67142e80b377b41eaa35fa7d6e9acd3e034e6d63d5026ea001"
+            >
+              d65e4ebe379d0d67142e80b377b41e...fa7d6e9acd3e034e6d63d5026ea001
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T04:48:45.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000290555 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The ID of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            ID
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <a
+              class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+              href="/some-base-path/transactions/transaction?id=6c0ac7828bd57ddf18834505b0cd64f7db91ed6504dd7224a3094e10b1febf06"
+            >
+              6c0ac7828bd57ddf18834505b0cd64...91ed6504dd7224a3094e10b1febf06
+            </a>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Time elapsed since the transaction was created"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            relative time
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <time
+              class="transaction-details__list-timestamp"
+              datetime="2024-05-29T04:47:48.000Z"
+              slot="definition"
+            >
+              19 hours ago
+            </time>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas price in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Price
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction gas limit in lux"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Gas Limit
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000,000
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction fee amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Fee
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-alt"
+            >
+              0.000291983 Dusk
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction status"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Status
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-success"
+            >
+              success
+            </span>
+            
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction type"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            Type
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+            
+          </dd>
+        </dl>
+      </div>
       
        
     </div>

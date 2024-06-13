@@ -18,9 +18,6 @@
 
   let itemsToDisplay = ITEMS_TO_DISPLAY;
 
-  /** @type {number} */
-  let clientWidth;
-
   /** @type {Block[]}*/
   let displayedBlocks;
 
@@ -45,7 +42,6 @@
   }
 </script>
 
-<svelte:window bind:outerWidth={clientWidth} />
 <DataCard
   on:retry
   data={blocks}
@@ -58,13 +54,14 @@
     label: "Show More",
   }}
 >
-  {#if clientWidth > 768}
-    <BlocksTable data={displayedBlocks} className="blocks-card__table" />
-  {:else}
-    <div class="blocks-card__list">
-      {#each displayedBlocks as block (block)}
-        <BlocksList data={block} />
-      {/each}
-    </div>
-  {/if}
+  <BlocksTable
+    data={displayedBlocks}
+    className="blocks-card__table mobile-hidden"
+  />
+
+  <div class="blocks-card__list desktop-hidden">
+    {#each displayedBlocks as block (block)}
+      <BlocksList data={block} />
+    {/each}
+  </div>
 </DataCard>
