@@ -10,11 +10,14 @@
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
 
+extern crate alloc;
+
 /// Block height type alias
 pub type BlockHeight = u64;
 
 pub mod stake;
 pub mod transfer;
+pub mod tx;
 
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
