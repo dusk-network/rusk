@@ -13,3 +13,7 @@ phoenix-core = { version = "0.26", default-features = false, features = ["rkyv-i
 dusk-bytes = "0.1"
 rkyv = { version = "0.7", default-features = false,  features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
+
+[features]
+# It enables parallel thread aggregation of BlsPublicKey
+parallel = ["bls12_381-bls/parallel"]
