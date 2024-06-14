@@ -37,6 +37,9 @@ pub const A: usize = 4;
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 5000;
 
+/// Default gas price
+pub const DEFAULT_GAS_PRICE: u64 = 1;
+
 pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
@@ -58,7 +61,7 @@ impl TransferState {
             var_crossover: None,
             var_crossover_addr: None,
             gas_price: None,
-            avg_gas_price: AvgGasPrice::new(),
+            avg_gas_price: AvgGasPrice::new(DEFAULT_GAS_PRICE),
         }
     }
 

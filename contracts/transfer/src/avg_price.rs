@@ -17,9 +17,9 @@ pub struct AvgGasPrice {
 }
 
 impl AvgGasPrice {
-    pub const fn new() -> Self {
+    pub const fn new(default: u64) -> Self {
         Self {
-            avg_price: 0,
+            avg_price: default as i64 * AVG_GAS_PRICE_FACTOR,
             window: ConstGenericRingBuffer::new(),
             count: AVG_GAS_PRICE_K,
         }
@@ -51,13 +51,13 @@ mod tests {
 
     #[test]
     fn avg_no_items() {
-        let avg = AvgGasPrice::new();
-        assert_eq!(avg.get(), 0);
+        let avg = AvgGasPrice::new(1);
+        assert_eq!(avg.get(), 1);
     }
 
     #[test]
     fn avg_window_not_full() {
-        let mut avg = AvgGasPrice::new();
+        let mut avg = AvgGasPrice::new(1);
         avg.update(2000000);
         avg.update(3000000);
         avg.update(4000000);
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn avg_window_full() {
-        let mut avg = AvgGasPrice::new();
+        let mut avg = AvgGasPrice::new(1);
         for _ in 0..AVG_GAS_PRICE_K {
             avg.update(2000000);
         }
