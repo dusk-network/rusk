@@ -24,7 +24,7 @@ use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
 use std::sync::{Arc, LazyLock};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
@@ -516,6 +516,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             anyhow::Ok(())
         }?;
 
+        if attested {
+            let header = tip.inner().header();
+            // Waits until next slot, if the block is attested
+            // A non-attested block suggests another winner may be on its way
+            Self::wait_until_next_slot(header.timestamp).await;
+        }
+
         // Abort consensus.
         // A fully valid block is accepted, consensus task must be aborted.
         task.abort_with_wait().await;
@@ -605,6 +612,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
 
         Ok(label)
+    }
+
+    /// Waits until the next slot is reached.
+    async fn wait_until_next_slot(tip_timestamp: u64) {
+        let current_time_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("valid unix epoch")
+            .as_secs();
+
+        if current_time_secs >= tip_timestamp {
+            return;
+        }
+
+        // block_timestamp - localtime
+        let delay = Duration::from_secs(tip_timestamp - current_time_secs);
+        info!(event = "next_slot {:?}", ?delay);
+        tokio::time::sleep(delay).await;
     }
 
     /// Implements the algorithm of full revert to any of supported targets.
