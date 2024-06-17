@@ -242,7 +242,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
 
         let block = match stored_block {
             Some(blk) => {
-                let label = db
+                let (_, label) = db
                     .read()
                     .await
                     .view(|t| {

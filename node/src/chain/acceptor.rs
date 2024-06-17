@@ -434,18 +434,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let target = current
                     .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
                     .unwrap_or_default();
-                self.db.read().await.view(|t| {
+                self.db.read().await.update(|t| {
                     for h in (target..current).rev() {
                         match t.fetch_block_label_by_height(h)? {
                             None => panic!(
                                 "Cannot find block label for height: {h}"
                             ),
-                            Some(Label::Final) => {
+                            Some((_,Label::Final)) => {
                                 warn!("Found Attested block following a Final one");
                                 break;
                             }
-                            Some(Label::Accepted) => return Ok(Label::Attested),
-                            Some(Label::Attested) => {} // just continue scan
+                            Some((_,Label::Accepted)) => return Ok(Label::Attested),
+                            Some((_,Label::Attested)) => {} // just continue scan
                         };
                     }
                     ffr = true;
@@ -646,7 +646,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
-        let (blk, label) = self.db.read().await.update(|t| {
+        let (blk, (_, label)) = self.db.read().await.update(|t| {
             let mut height = curr_height;
             while height != 0 {
                 let b = Ledger::fetch_block_by_height(t, height)?
@@ -749,10 +749,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let prev_height = tip.inner().header().height - 1;
 
             for height in (0..prev_height).rev() {
-                if let Ok(Some(Label::Final)) =
+                if let Ok(Some((hash, Label::Final))) =
                     v.fetch_block_label_by_height(height)
                 {
-                    if let Some(blk) = v.fetch_block_by_height(height)? {
+                    if let Some(blk) = v.fetch_block(&hash)? {
                         return Ok(blk);
                     } else {
                         return Err(anyhow::anyhow!(

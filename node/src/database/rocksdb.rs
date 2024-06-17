@@ -429,13 +429,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn fetch_block_label_by_height(
         &self,
         height: u64,
-    ) -> Result<Option<Label>> {
-        const LEN: usize = 32 + 1;
+    ) -> Result<Option<([u8; 32], Label)>> {
+        const HASH_LEN: usize = 32;
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
-            .filter(|v| v.len() == LEN)
-            .map(|h| Label::from(h[LEN - 1])))
+            .filter(|v| v.len() == HASH_LEN + 1)
+            .map(|h| {
+                let mut hash = [0u8; HASH_LEN];
+                hash.copy_from_slice(&h.as_slice()[0..HASH_LEN]);
+                let label = Label::from(h[HASH_LEN]);
+                (hash, label)
+            }))
     }
 }
 
@@ -1201,6 +1206,7 @@ mod tests {
                     .fetch_block_label_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
+                    .1
                     .eq(&Label::Attested));
             });
         });
