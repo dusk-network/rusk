@@ -5,14 +5,16 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::prover::fetch_prover;
-use dusk_wallet_core::UnprovenTransaction;
+
 use execution_core::transfer::TRANSFER_TREE_DEPTH;
 use rand::{CryptoRng, RngCore};
 use transfer_circuits::{
     ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
     ExecuteCircuitTwoTwo,
 };
+
+use crate::prover::fetch_prover;
+use crate::UnprovenTransaction;
 
 pub static EXEC_1_2_PROVER: Lazy<PlonkProver> =
     Lazy::new(|| fetch_prover("ExecuteCircuitOneTwo"));

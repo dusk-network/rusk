@@ -26,6 +26,9 @@ members = [
     "node-data",
     "consensus",
     "node",
+
+    # Test utils
+    "test-wallet",
 ]
 resolver = "2"
 

@@ -45,7 +45,6 @@ sha3 = "0.10"
 dusk-plonk = "0.19"
 dusk-bytes = "0.1"
 kadcast = "0.6.0-rc"
-dusk-wallet-core = "0.25.0-phoenix.0.26"
 pin-project = "1"
 tungstenite = "0.21"
 hyper-tungstenite = "0.13"
@@ -83,6 +82,7 @@ rusk-recovery = { version = "0.6", path = "../rusk-recovery", optional = true }
 futures = { version = "0.3", optional = true }
 
 [dev-dependencies]
+test-wallet = { version = "0.1.0", path = "../test-wallet" }
 test-context = "0.1"
 reqwest = "0.12"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }

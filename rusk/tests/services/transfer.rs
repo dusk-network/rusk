@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use dusk_wallet_core::{self as wallet, Store};
 use execution_core::{BlsScalar, PublicKey, SecretKey};
 use ff::Field;
 use node_data::ledger::SpentTransaction;
@@ -16,6 +15,7 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
+use test_wallet::{self as wallet, Store};
 use tracing::info;
 
 use crate::common::logger;

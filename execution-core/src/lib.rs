@@ -40,7 +40,7 @@ pub type StakeAggPublicKey = BlsAggPublicKey;
 
 pub use jubjub_schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
-    Signature as SchnorrSignature,
+    Signature as SchnorrSignature, SignatureDouble as SchnorrSignatureDouble,
 };
 /// Secret key associated with a note.
 pub type NoteSecretKey = SchnorrSecretKey;

@@ -13,7 +13,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{mpsc, Arc, RwLock};
 
-use dusk_wallet_core::{self as wallet};
 use execution_core::{
     transfer::TreeLeaf, BlsScalar, Note, PublicKey, SecretKey,
 };
@@ -26,6 +25,7 @@ use rusk::Result;
 use rusk_abi::dusk::LUX;
 use rusk_abi::{TRANSFER_CONTRACT, VM};
 use tempfile::tempdir;
+use test_wallet::{self as wallet};
 use tokio::task;
 use tracing::info;
 

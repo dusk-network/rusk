@@ -8,12 +8,12 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use dusk_wallet_core::{self as wallet};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use rusk_abi::TRANSFER_CONTRACT;
 use tempfile::tempdir;
+use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
