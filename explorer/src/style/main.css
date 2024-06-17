@@ -83,3 +83,7 @@ svg {
     display: block;
   }
 }
+
+.explorer-badge {
+  min-width: 100px;
+}

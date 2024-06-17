@@ -82,7 +82,7 @@
       <svelte:fragment slot="definition"
         >{middleEllipsis(
           data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1400, 14, 40)
+          calculateAdaptiveCharCount(screenWidth, 320, 1400, 10, 36)
         )}</svelte:fragment
       >
     </ListItem>
@@ -104,7 +104,7 @@
       <svelte:fragment slot="term">Status</svelte:fragment>
       <svelte:fragment slot="definition"
         ><Badge
-          className="transaction-details__status"
+          className="transaction-details__status explorer-badge"
           variant={data.success ? "success" : "error"}
           text={data.success ? "success" : "failed"}
         /></svelte:fragment
@@ -130,7 +130,7 @@
       <svelte:fragment slot="term">type</svelte:fragment>
       <svelte:fragment slot="definition"
         ><Badge
-          className="transaction-details__type"
+          className="transaction-details__type explorer-badge"
           text={data.method}
         /></svelte:fragment
       >

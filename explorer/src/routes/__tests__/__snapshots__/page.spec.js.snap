@@ -2124,7 +2124,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <th
                 class="table__header-cell"
               >
-                Fee
+                Fee (Dusk)
               </th>
               
                
@@ -2138,7 +2138,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <th
                 class="table__header-cell"
               >
-                Rewards
+                Rewards (Dusk)
               </th>
               
             </tr>
@@ -2204,7 +2204,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2267,7 +2267,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2330,7 +2330,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2393,7 +2393,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2456,7 +2456,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2519,7 +2519,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2582,7 +2582,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2645,7 +2645,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2708,7 +2708,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2771,7 +2771,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2834,7 +2834,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2897,7 +2897,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -2960,7 +2960,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -3023,7 +3023,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -3086,7 +3086,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -3286,7 +3286,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3476,7 +3476,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3666,7 +3666,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3856,7 +3856,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -4046,7 +4046,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -4236,7 +4236,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -4426,7 +4426,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -4616,7 +4616,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -4806,7 +4806,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -4996,7 +4996,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -5186,7 +5186,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -5376,7 +5376,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -5566,7 +5566,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -5756,7 +5756,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -5946,7 +5946,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -6010,7 +6010,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <th
                 class="table__header-cell"
               >
-                Fee
+                Fee (DUSK)
               </th>
               
                
@@ -6080,11 +6080,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290681 Dusk
-                </span>
+                0.000290681
               </td>
               
                
@@ -6103,7 +6099,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6158,11 +6154,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291225 Dusk
-                </span>
+                0.000291225
               </td>
               
                
@@ -6181,7 +6173,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6236,11 +6228,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000292137 Dusk
-                </span>
+                0.000292137
               </td>
               
                
@@ -6259,7 +6247,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6314,11 +6302,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290572 Dusk
-                </span>
+                0.000290572
               </td>
               
                
@@ -6337,7 +6321,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6392,11 +6376,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000215552 Dusk
-                </span>
+                0.000215552
               </td>
               
                
@@ -6415,7 +6395,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6470,11 +6450,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000215617 Dusk
-                </span>
+                0.000215617
               </td>
               
                
@@ -6493,7 +6469,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6548,11 +6524,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000214413 Dusk
-                </span>
+                0.000214413
               </td>
               
                
@@ -6571,7 +6543,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6626,11 +6598,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291769 Dusk
-                </span>
+                0.000291769
               </td>
               
                
@@ -6649,7 +6617,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6704,11 +6672,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290764 Dusk
-                </span>
+                0.000290764
               </td>
               
                
@@ -6727,7 +6691,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6782,11 +6746,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291961 Dusk
-                </span>
+                0.000291961
               </td>
               
                
@@ -6805,7 +6765,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6860,11 +6820,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000292039 Dusk
-                </span>
+                0.000292039
               </td>
               
                
@@ -6883,7 +6839,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -6938,11 +6894,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290406 Dusk
-                </span>
+                0.000290406
               </td>
               
                
@@ -6961,7 +6913,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -7016,11 +6968,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291537 Dusk
-                </span>
+                0.000291537
               </td>
               
                
@@ -7039,7 +6987,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -7094,11 +7042,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291361 Dusk
-                </span>
+                0.000291361
               </td>
               
                
@@ -7117,7 +7061,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -7172,11 +7116,7 @@ exports[`home page > should render the home page, start polling for the latest c
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290385 Dusk
-                </span>
+                0.000290385
               </td>
               
                
@@ -7195,7 +7135,7 @@ exports[`home page > should render the home page, start polling for the latest c
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -7358,11 +7298,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290681 Dusk
-            </span>
+            0.000290681
+             DUSK
           </dd>
            
           <dt
@@ -7390,7 +7327,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -7422,7 +7359,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -7576,11 +7513,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291225 Dusk
-            </span>
+            0.000291225
+             DUSK
           </dd>
            
           <dt
@@ -7608,7 +7542,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -7640,7 +7574,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -7794,11 +7728,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000292137 Dusk
-            </span>
+            0.000292137
+             DUSK
           </dd>
            
           <dt
@@ -7826,7 +7757,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -7858,7 +7789,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -8012,11 +7943,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290572 Dusk
-            </span>
+            0.000290572
+             DUSK
           </dd>
            
           <dt
@@ -8044,7 +7972,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -8076,7 +8004,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -8230,11 +8158,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000215552 Dusk
-            </span>
+            0.000215552
+             DUSK
           </dd>
            
           <dt
@@ -8262,7 +8187,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -8294,7 +8219,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -8448,11 +8373,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000215617 Dusk
-            </span>
+            0.000215617
+             DUSK
           </dd>
            
           <dt
@@ -8480,7 +8402,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -8512,7 +8434,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -8666,11 +8588,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000214413 Dusk
-            </span>
+            0.000214413
+             DUSK
           </dd>
            
           <dt
@@ -8698,7 +8617,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -8730,7 +8649,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -8884,11 +8803,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291769 Dusk
-            </span>
+            0.000291769
+             DUSK
           </dd>
            
           <dt
@@ -8916,7 +8832,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -8948,7 +8864,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -9102,11 +9018,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290764 Dusk
-            </span>
+            0.000290764
+             DUSK
           </dd>
            
           <dt
@@ -9134,7 +9047,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -9166,7 +9079,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -9320,11 +9233,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291961 Dusk
-            </span>
+            0.000291961
+             DUSK
           </dd>
            
           <dt
@@ -9352,7 +9262,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -9384,7 +9294,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -9538,11 +9448,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000292039 Dusk
-            </span>
+            0.000292039
+             DUSK
           </dd>
            
           <dt
@@ -9570,7 +9477,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -9602,7 +9509,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -9756,11 +9663,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290406 Dusk
-            </span>
+            0.000290406
+             DUSK
           </dd>
            
           <dt
@@ -9788,7 +9692,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -9820,7 +9724,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -9974,11 +9878,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291537 Dusk
-            </span>
+            0.000291537
+             DUSK
           </dd>
            
           <dt
@@ -10006,7 +9907,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -10038,7 +9939,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -10192,11 +10093,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291361 Dusk
-            </span>
+            0.000291361
+             DUSK
           </dd>
            
           <dt
@@ -10224,7 +10122,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -10256,7 +10154,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -10410,11 +10308,8 @@ exports[`home page > should render the home page, start polling for the latest c
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290385 Dusk
-            </span>
+            0.000290385
+             DUSK
           </dd>
            
           <dt
@@ -10442,7 +10337,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -10474,7 +10369,7 @@ exports[`home page > should render the home page, start polling for the latest c
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>

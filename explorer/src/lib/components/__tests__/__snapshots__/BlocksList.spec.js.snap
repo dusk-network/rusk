@@ -187,7 +187,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
       <span
         class="dusk-badge dusk-badge--variant-alt"
       >
-        16 Dusk
+        16 DUSK
       </span>
     </dd>
   </dl>

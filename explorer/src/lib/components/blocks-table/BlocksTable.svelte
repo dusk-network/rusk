@@ -31,9 +31,9 @@
   <TableHead>
     <TableRow>
       <TableCell type="th">Block</TableCell>
-      <TableCell type="th">Fee</TableCell>
+      <TableCell type="th">Fee (Dusk)</TableCell>
       <TableCell type="th">Txn(s)</TableCell>
-      <TableCell type="th">Rewards</TableCell>
+      <TableCell type="th">Rewards (Dusk)</TableCell>
     </TableRow>
   </TableHead>
   <TableBody>
@@ -59,7 +59,7 @@
         <TableCell
           ><Badge
             variant="alt"
-            text={`${numberFormatter(luxToDusk(block.header.reward))} Dusk`}
+            text={numberFormatter(luxToDusk(block.header.reward))}
           /></TableCell
         >
       </TableRow>

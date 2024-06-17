@@ -37,7 +37,7 @@
     <TableRow>
       <TableCell type="th">ID</TableCell>
       <TableCell type="th">Gas</TableCell>
-      <TableCell type="th">Fee</TableCell>
+      <TableCell type="th">Fee (DUSK)</TableCell>
       <TableCell type="th">Status</TableCell>
       <TableCell type="th">Type</TableCell>
     </TableRow>
@@ -61,19 +61,19 @@
           <b class="transaction__fee-limit-label">LIMIT:</b>
           {numberFormatter(transaction.gaslimit)}
         </TableCell>
-        <TableCell
-          ><Badge
-            variant="alt"
-            text={`${numberFormatter(luxToDusk(transaction.feepaid))} Dusk`}
-          /></TableCell
-        >
+        <TableCell>{numberFormatter(luxToDusk(transaction.feepaid))}</TableCell>
         <TableCell>
           <Badge
             variant={transaction.success ? "success" : "error"}
             text={transaction.success ? "success" : "failed"}
           />
         </TableCell>
-        <TableCell><Badge text={transaction.method} /></TableCell>
+        <TableCell
+          ><Badge
+            className="transaction__type"
+            text={transaction.method}
+          /></TableCell
+        >
       </TableRow>
     {/each}
   </TableBody>
