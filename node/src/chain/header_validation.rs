@@ -8,6 +8,7 @@ use crate::database;
 use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
+use dusk_consensus::config::MINIMUM_BLOCK_TIME;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -18,9 +19,12 @@ use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::info;
+
+const MARGIN_TIMESTAMP: u64 = 10;
 
 // TODO: Use thiserror instead of anyhow
 
@@ -91,6 +95,30 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 candidate_block.height,
                 self.prev_header.height,
             ));
+        }
+
+        if candidate_block.height != self.prev_header.height + 1 {
+            return Err(anyhow!(
+                "invalid block height block_height: {:?}, curr_height: {:?}",
+                candidate_block.height,
+                self.prev_header.height,
+            ));
+        }
+
+        // Ensure rule of minimum block time is addressed
+        if candidate_block.timestamp
+            < self.prev_header.timestamp + MINIMUM_BLOCK_TIME
+        {
+            return Err(anyhow!("block time is less than minimum block time"));
+        }
+
+        let local_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|n| n.as_secs())
+            .expect("valid unix epoch");
+
+        if candidate_block.timestamp >= local_time + MARGIN_TIMESTAMP {
+            return Err(anyhow!("block timestamp is too far in the future"));
         }
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
