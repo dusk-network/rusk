@@ -13,10 +13,6 @@ use crate::common::block::Block as BlockAwait;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_plonk::prelude::Proof;
-use dusk_wallet_core::{
-    self as wallet, StakeInfo, Store, Transaction as PhoenixTransaction,
-    UnprovenTransaction,
-};
 use execution_core::transfer::TRANSFER_TREE_DEPTH;
 use execution_core::{
     BlsPublicKey, BlsScalar, Crossover, Fee, JubJubAffine, JubJubScalar, Note,
@@ -27,6 +23,10 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
 use rusk_prover::prover::{A, STCT_INPUT_LEN, WFCT_INPUT_LEN};
 use rusk_prover::{LocalProver, Prover};
+use test_wallet::{
+    self as wallet, StakeInfo, Store, Transaction as PhoenixTransaction,
+    UnprovenTransaction,
+};
 use tracing::info;
 
 #[derive(Debug, Clone)]

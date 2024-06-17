@@ -13,8 +13,7 @@ use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_consensus::operations::CallParams;
-use dusk_wallet_core::Transaction as PhoenixTransaction;
-use execution_core::StakePublicKey;
+use execution_core::{StakePublicKey, Transaction as PhoenixTransaction};
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{Attestation, Block, Header, IterationsInfo, SpentTransaction},

@@ -9,13 +9,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use dusk_wallet_core::{self as wallet};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use rusk_abi::{ContractData, ContractId, EconomicMode, TRANSFER_CONTRACT};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
+use test_wallet::{self as wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 

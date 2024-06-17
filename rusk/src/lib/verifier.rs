@@ -9,7 +9,7 @@
 use crate::error::Error;
 use crate::Result;
 
-use dusk_wallet_core::Transaction;
+use execution_core::Transaction;
 use rusk_profile::Circuit as CircuitProfile;
 use transfer_circuits::CircuitOutput;
 

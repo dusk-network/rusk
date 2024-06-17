@@ -7,7 +7,6 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use dusk_wallet_core::{self as wallet, Store};
 use execution_core::{PublicKey, SecretKey, StakePublicKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -17,6 +16,7 @@ use rusk_abi::dusk::dusk;
 use rusk_abi::STAKE_CONTRACT;
 use std::collections::HashMap;
 use tempfile::tempdir;
+use test_wallet::{self as wallet, Store};
 use tracing::info;
 
 use crate::common::state::{generator_procedure, new_state};
