@@ -11,11 +11,13 @@ use alloc::vec::Vec;
 use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
-use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubExtended, JubJubScalar};
 use dusk_plonk::prelude::Proof;
-use jubjub_schnorr::SignatureDouble;
-use phoenix_core::transaction::Transaction;
-use phoenix_core::{Crossover, Fee, Note, Ownable, SecretKey};
+use execution_core::{
+    BlsScalar, Crossover, Fee, JubJubAffine, JubJubExtended, JubJubScalar,
+    Note, Ownable, SchnorrSignatureDouble, SecretKey, Transaction,
+    GENERATOR_NUMS_EXTENDED,
+};
+
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand_core::{CryptoRng, RngCore};
 use rusk_abi::hash::Hasher;
@@ -30,7 +32,7 @@ pub struct UnprovenTransactionInput {
     pub value: u64,
     pub blinder: JubJubScalar,
     pub npk_prime: JubJubExtended,
-    pub sig: SignatureDouble,
+    pub sig: SchnorrSignatureDouble,
 }
 
 impl UnprovenTransactionInput {
@@ -47,7 +49,7 @@ impl UnprovenTransactionInput {
         let nsk = sk.sk_r(note.stealth_address());
         let sig = nsk.sign_double(rng, tx_hash);
 
-        let npk_prime = dusk_jubjub::GENERATOR_NUMS_EXTENDED * nsk.as_ref();
+        let npk_prime = GENERATOR_NUMS_EXTENDED * nsk.as_ref();
 
         Self {
             note,
@@ -72,7 +74,7 @@ impl UnprovenTransactionInput {
             BlsScalar::SIZE
                 + Note::SIZE
                 + JubJubAffine::SIZE
-                + SignatureDouble::SIZE
+                + SchnorrSignatureDouble::SIZE
                 + u64::SIZE
                 + JubJubScalar::SIZE
                 + opening_bytes.len(),
@@ -99,7 +101,7 @@ impl UnprovenTransactionInput {
         let blinder = JubJubScalar::from_reader(&mut bytes)?;
         let npk_prime =
             JubJubExtended::from(JubJubAffine::from_reader(&mut bytes)?);
-        let sig = SignatureDouble::from_reader(&mut bytes)?;
+        let sig = SchnorrSignatureDouble::from_reader(&mut bytes)?;
 
         // `to_vec` is required here otherwise `rkyv` will throw an alignment
         // error
@@ -149,7 +151,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Returns the input's signature.
-    pub fn signature(&self) -> &SignatureDouble {
+    pub fn signature(&self) -> &SchnorrSignatureDouble {
         &self.sig
     }
 }
