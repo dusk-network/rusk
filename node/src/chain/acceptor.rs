@@ -422,8 +422,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         histogram!("dusk_block_header_elapsed")
             .record(header_verification_start.elapsed());
 
-        let (label, ffr) =
-            self.rolling_finality(attested, tip.is_final(), blk).await?;
+        let tip_is_final = tip.is_final();
+        let label = self.rolling_finality(attested, tip_is_final, blk).await?;
 
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
@@ -560,7 +560,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
             label = format!("{:?}", label),
-            ffr
         );
 
         // Restart Consensus.
@@ -583,9 +582,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         attested: bool,
         tip_is_final: bool,
         blk: &Block,
-    ) -> Result<(Label, bool), anyhow::Error> {
-        // Final from rolling
-        let mut ffr = false;
+    ) -> Result<Label, anyhow::Error> {
         let label = match (attested, tip_is_final) {
             (true, true) => Label::Final,
             (false, _) => Label::Accepted,
@@ -608,12 +605,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             Some((_,Label::Attested)) => {} // just continue scan
                         };
                     }
-                    ffr = true;
+                    info!(
+                        event = "rolling finality",
+                        height = blk.header().height,
+                        hash = to_str(&blk.header().hash),
+                        state_hash = to_str(&blk.header().state_hash),
+                    );
                     anyhow::Ok(Label::Final)
                 })?
             }
         };
-        Ok((label, ffr))
+        Ok(label)
     }
 
     /// Implements the algorithm of full revert to any of supported targets.
