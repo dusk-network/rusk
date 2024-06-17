@@ -34,6 +34,7 @@ pub struct RoundUpdate {
     seed: Seed,
     hash: [u8; 32],
     att: Attestation,
+    timestamp: u64,
 
     pub base_timeouts: TimeoutSet,
 }
@@ -53,6 +54,7 @@ impl RoundUpdate {
             att: tip_header.att,
             hash: tip_header.hash,
             seed: tip_header.seed,
+            timestamp: tip_header.timestamp,
             base_timeouts,
         }
     }
@@ -67,6 +69,10 @@ impl RoundUpdate {
 
     pub fn att(&self) -> &Attestation {
         &self.att
+    }
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
     }
 }
 

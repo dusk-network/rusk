@@ -7,16 +7,18 @@
 use crate::commons::{get_current_timestamp, RoundUpdate};
 use crate::operations::{CallParams, Operations};
 use node_data::ledger::{to_str, Attestation, Block, IterationsInfo, Seed};
+use std::cmp::max;
 
 use crate::config;
 use crate::merkle::merkle_root;
 
+use crate::config::MINIMUM_BLOCK_TIME;
 use dusk_bytes::Serializable;
 use node_data::ledger;
 use node_data::message::payload::Candidate;
 use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio::sync::Mutex;
 use tracing::{debug, info};
 
@@ -80,8 +82,6 @@ impl<T: Operations> Generator<T> {
         iteration: u8,
         failed_iterations: IterationsInfo,
     ) -> Result<Block, crate::operations::Error> {
-        let start_time = Instant::now();
-
         let missed_generators = failed_iterations
             .to_missed_generators()
             .map_err(|_| crate::operations::Error::InvalidIterationInfo)?;
@@ -104,12 +104,14 @@ impl<T: Operations> Generator<T> {
             result.txs.iter().map(|t| t.inner.hash()).collect();
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
         let txroot = merkle_root(&tx_hashes[..]);
+        let timestamp =
+            max(ru.timestamp() + MINIMUM_BLOCK_TIME, get_current_timestamp());
 
         let prev_block_hash = ru.hash();
         let blk_header = ledger::Header {
             version: 0,
             height: ru.round,
-            timestamp: get_current_timestamp(),
+            timestamp,
             gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             prev_block_hash,
             seed,
@@ -123,15 +125,6 @@ impl<T: Operations> Generator<T> {
             iteration,
             failed_iterations,
         };
-
-        // Apply a delay in block generator accordingly
-        // In case EST call costs a second (assuming CONSENSUS_DELAY_MS=1000ms),
-        // we should not sleep here
-        if let Some(delay) = Duration::from_millis(config::CONSENSUS_DELAY_MS)
-            .checked_sub(start_time.elapsed())
-        {
-            tokio::time::sleep(delay).await;
-        }
 
         Ok(Block::new(blk_header, txs).expect("block should be valid"))
     }
