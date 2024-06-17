@@ -422,37 +422,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         histogram!("dusk_block_header_elapsed")
             .record(header_verification_start.elapsed());
 
-        // Final from rolling
-        let mut ffr = false;
-
-        // Define new block label
-        let label = match (attested, tip.is_final()) {
-            (true, true) => Label::Final,
-            (false, _) => Label::Accepted,
-            (true, _) => {
-                let current = blk.header().height;
-                let target = current
-                    .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
-                    .unwrap_or_default();
-                self.db.read().await.update(|t| {
-                    for h in (target..current).rev() {
-                        match t.fetch_block_label_by_height(h)? {
-                            None => panic!(
-                                "Cannot find block label for height: {h}"
-                            ),
-                            Some((_,Label::Final)) => {
-                                warn!("Found Attested block following a Final one");
-                                break;
-                            }
-                            Some((_,Label::Accepted)) => return Ok(Label::Attested),
-                            Some((_,Label::Attested)) => {} // just continue scan
-                        };
-                    }
-                    ffr = true;
-                    anyhow::Ok(Label::Final)
-                })?
-            }
-        };
+        let (label, ffr) =
+            self.rolling_finality(attested, tip.is_final(), blk).await?;
 
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
@@ -605,6 +576,44 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
 
         Ok(label)
+    }
+
+    async fn rolling_finality(
+        &self,
+        attested: bool,
+        tip_is_final: bool,
+        blk: &Block,
+    ) -> Result<(Label, bool), anyhow::Error> {
+        // Final from rolling
+        let mut ffr = false;
+        let label = match (attested, tip_is_final) {
+            (true, true) => Label::Final,
+            (false, _) => Label::Accepted,
+            (true, _) => {
+                let current = blk.header().height;
+                let target = current
+                    .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
+                    .unwrap_or_default();
+                self.db.read().await.update(|t| {
+                    for h in (target..current).rev() {
+                        match t.fetch_block_label_by_height(h)? {
+                            None => panic!(
+                                "Cannot find block label for height: {h}"
+                            ),
+                            Some((_,Label::Final)) => {
+                                warn!("Found Attested block following a Final one");
+                                break;
+                            }
+                            Some((_,Label::Accepted)) => return Ok(Label::Attested),
+                            Some((_,Label::Attested)) => {} // just continue scan
+                        };
+                    }
+                    ffr = true;
+                    anyhow::Ok(Label::Final)
+                })?
+            }
+        };
+        Ok((label, ffr))
     }
 
     /// Implements the algorithm of full revert to any of supported targets.
