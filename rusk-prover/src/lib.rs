@@ -4,7 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
+use alloc::vec::Vec;
+
 mod errors;
+mod tx;
 
 #[cfg(feature = "local_prover")]
 pub mod prover;
@@ -12,6 +21,7 @@ pub mod prover;
 pub use crate::prover::LocalProver;
 
 pub use errors::ProverError;
+pub use tx::{UnprovenTransaction, UnprovenTransactionInput};
 
 pub type ProverResult = Result<Vec<u8>, ProverError>;
 

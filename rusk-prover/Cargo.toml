@@ -4,14 +4,22 @@ version = "0.3.0"
 edition = "2021"
 autobins = false
 
-
 [dependencies]
 dusk-bytes = { version = "0.1" }
-dusk-wallet-core = { version = "0.25.0-phoenix.0.26", default-features = false }
+phoenix-core = { version = "0.26", default-features = false, features = ["alloc", "rkyv-impl"] }
+dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
+dusk-plonk = { version = "0.19", default-features = false }
+jubjub-schnorr = { version = "0.2", default-features = false, features = ["double","rkyv-impl"] }
+poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
+rand_core = "0.6"
+
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+bytecheck = { version = "0.6", default-features = false }
+
+rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false }
 
 ## feature local_prover
 once_cell = { version = "1.9", optional = true }
-dusk-plonk = { version = "0.19", optional = true }
 rand = { version = "0.8", optional = true }
 rusk-profile = { version = "0.6", path = "../rusk-profile", optional = true }
 transfer-circuits = { version = "0.5", path = "../circuits/transfer", optional = true }
@@ -25,10 +33,12 @@ tokio = { version = "1.17.0", features = ["full"] }
 default = ["local_prover"]
 local_prover = [
     "once_cell",
-    "dusk-plonk",
+    "dusk-plonk/std",
     "rand",
     "rusk-profile",
     "transfer-circuits",
     "execution-core",
+    "std",
 ]
 no_random = []
+std = []

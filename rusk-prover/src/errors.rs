@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::error;
-use std::fmt;
+use alloc::string::String;
+use core::fmt;
 
 #[derive(Debug)]
 pub enum ProverError {
@@ -15,10 +15,13 @@ pub enum ProverError {
     },
     Other(String),
 }
+
 impl ProverError {
     pub fn invalid_data(field: &'static str, inner: dusk_bytes::Error) -> Self {
         Self::InvalidData { field, inner }
     }
+
+    #[cfg(feature = "std")]
     pub fn with_context<E: std::error::Error>(
         context: &'static str,
         err: E,
@@ -27,8 +30,9 @@ impl ProverError {
     }
 }
 
-impl error::Error for ProverError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+#[cfg(feature = "std")]
+impl std::error::Error for ProverError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }
