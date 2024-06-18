@@ -16,7 +16,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <th
           class="table__header-cell"
         >
-          # Block
+          Block
         </th>
         
          

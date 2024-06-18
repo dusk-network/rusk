@@ -23,7 +23,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       </svg>
       
        
-      Hash
+      ID
     </dt>
      
     <dd

@@ -61,17 +61,6 @@
   title="Block Details"
 >
   <dl class="block-details__list">
-    <!-- BLOCK HASH -->
-    <ListItem tooltipText="The hash for the header of the block">
-      <svelte:fragment slot="term">block hash</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{middleEllipsis(
-          data.header.hash,
-          calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
-        )}</svelte:fragment
-      >
-    </ListItem>
-
     <!-- HEIGHT -->
     <ListItem
       tooltipText="The height of the block indicates the length of the block chain and is increased with each additional block"
@@ -92,6 +81,17 @@
           disabled={!data.header.nextblockhash}
         />
       </svelte:fragment>
+    </ListItem>
+
+    <!-- BLOCK HASH -->
+    <ListItem tooltipText="The hash for the header of the block">
+      <svelte:fragment slot="term">hash</svelte:fragment>
+      <svelte:fragment slot="definition"
+        >{middleEllipsis(
+          data.header.hash,
+          calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
+        )}</svelte:fragment
+      >
     </ListItem>
 
     <!-- TIMESTAMP -->

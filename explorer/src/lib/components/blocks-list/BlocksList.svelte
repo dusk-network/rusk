@@ -19,7 +19,7 @@
   <ListItem
     tooltipText="The height of the block indicates the length of the block chain and is increased with each additional block"
   >
-    <svelte:fragment slot="term"># block</svelte:fragment>
+    <svelte:fragment slot="term">block</svelte:fragment>
     <svelte:fragment slot="definition"
       ><AppAnchor
         className="block-details__list-link"
