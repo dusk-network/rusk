@@ -19,7 +19,9 @@
 <Card className={classes}>
   <header slot="header" class="search-notification__header">
     <span class="search-notification__header-text"
-      >{data.res instanceof Error ? "Error" : "No results found"}</span
+      >The search string you entered is: <span
+        class="search-notification__content-query">{data.query}</span
+      ></span
     >
     <Button
       className="search-notification__header-action"
@@ -31,21 +33,9 @@
       }}
     />
   </header>
-  <div class="search-notification__content">
-    {#if data.res instanceof Error}
-      <code>
-        {data.res.message}
-      </code>
-    {/if}
-    <span class="search-notification__content-text">
-      The search string you entered is: <span
-        class="search-notification__content-query">{data.query}</span
-      >
+  {#if data.res instanceof Error}
+    <span class="search-notification__content">
+      {data.res.message}
     </span>
-  </div>
-  <div slot="footer">
-    <span class="search-notification__footer-text">
-      If you think there is a problem with this result, please contact us.
-    </span>
-  </div>
+  {/if}
 </Card>

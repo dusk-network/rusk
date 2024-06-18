@@ -1,7 +1,6 @@
 .search-notification {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
   border: var(--control-border-size) solid var(--error-color);
   width: 100%;
   margin-top: 1.25rem;
@@ -10,23 +9,20 @@
 .search-notification__header {
   display: flex;
   justify-content: space-between;
-}
-
-.search-notification__header-action {
-  width: 2.25rem;
+  padding-bottom: 0.625rem;
 }
 
 .search-notification__header-text {
-  font-size: 1.75rem;
+  font-size: 1.125rem;
+}
+
+.search-notification__header-action {
+  height: 1.75rem;
+  width: 1.75rem;
 }
 
 .search-notification__content {
   display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
-.search-notification__content-text {
   font-size: 1.125rem;
 }
 
