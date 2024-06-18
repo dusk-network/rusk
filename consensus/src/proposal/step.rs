@@ -12,12 +12,14 @@ use node_data::ledger::IterationsInfo;
 use node_data::message::Message;
 use std::cmp;
 use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
 use crate::config;
+use crate::config::MINIMUM_BLOCK_TIME;
 use crate::proposal::block_generator::Generator;
 use crate::proposal::handler;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 pub struct ProposalStep<T, D: Database>
 where
@@ -72,7 +74,6 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 )
                 .await
             {
-                // Broadcast the candidate block for this round/iteration.
                 if let Err(e) = ctx.outbound.send(msg.clone()).await {
                     error!("could not send newblock msg due to {:?}", e);
                 }
@@ -96,12 +97,34 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             }
         }
 
+        Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
+
         // handle queued messages for current round and step.
         if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
             return Ok(m);
         }
 
         ctx.event_loop(self.handler.clone()).await
+    }
+
+    /// Waits until the next slot is reached
+    async fn wait_until_next_slot(tip_timestamp: u64) {
+        let current_time_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("valid unix epoch")
+            .as_secs();
+
+        let next_slot_timestamp = tip_timestamp + MINIMUM_BLOCK_TIME;
+        if current_time_secs >= next_slot_timestamp {
+            return;
+        }
+
+        // block_timestamp - localtime
+        let delay =
+            Duration::from_secs(next_slot_timestamp - current_time_secs);
+
+        info!(event = "next_slot", ?delay);
+        tokio::time::sleep(delay).await;
     }
 
     pub fn name(&self) -> &'static str {
