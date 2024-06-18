@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Result;
 use blake2::{Blake2s256, Digest};
-use dusk_wallet_core::Transaction;
 
 pub const POW_DIFFICULTY: usize = 16;
 
@@ -63,14 +61,11 @@ impl PoW {
     }
 }
 
-pub fn verify_pow(tx: &Transaction, difficulty: usize) -> Result<bool> {
-    let bytes = tx.to_hash_input_bytes();
-    Ok(PoW::verify(bytes, tx.proof.as_slice(), difficulty))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    pub const POW_DIFFICULTY: usize = 16;
 
     #[test]
     fn pow() {

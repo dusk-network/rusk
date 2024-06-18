@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use node::database::DBViewer;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 
@@ -37,6 +38,7 @@ pub struct Rusk {
     pub(crate) generation_timeout: Option<Duration>,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
+    db_viewer: Option<Arc<dyn DBViewer>>,
 }
 
 #[derive(Clone)]

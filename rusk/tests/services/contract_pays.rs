@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
+use node::database::DBViewer;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::pow_verifier::{PoW, POW_DIFFICULTY};
@@ -49,6 +50,24 @@ const ALICE_OWNER: [u8; 32] = [0; 32];
 
 const CHARLIE_FREE_LIMIT: u64 = 20_000_000;
 const CHARLIE_FREE_PRICE_HINT: (u64, u64) = (200, 1);
+
+struct DBMock;
+
+const TOP_HEIGHT: u64 = 2;
+const USER_HEIGHT: u64 = TOP_HEIGHT - 1;
+const BLOCK_HASH: [u8; 32] = [3u8; 32];
+
+impl DBViewer for DBMock {
+    fn fetch_block_hash(
+        &self,
+        _block_height: u64,
+    ) -> Result<Option<[u8; 32]>, anyhow::Error> {
+        Ok(Some(BLOCK_HASH))
+    }
+    fn fetch_tip_height(&self) -> anyhow::Result<u64, anyhow::Error> {
+        Ok(TOP_HEIGHT)
+    }
+}
 
 fn initial_state<P: AsRef<Path>>(dir: P, charlies_funds: u64) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/contract_pays.toml"))
@@ -103,8 +122,9 @@ fn initial_state<P: AsRef<Path>>(dir: P, charlies_funds: u64) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk = Rusk::new(dir, None, u64::MAX, sender)
+    let mut rusk = Rusk::new(dir, None, u64::MAX, sender)
         .expect("Instantiating rusk should succeed");
+    rusk.set_db_viewer(DBMock {});
     Ok(rusk)
 }
 
@@ -213,8 +233,11 @@ fn make_and_execute_transaction_no_deposit(
         executed: if should_discard { 0 } else { 1 },
     };
 
-    let pow_input = tx.to_hash_input_bytes();
-    tx.proof = PoW::generate(pow_input, POW_DIFFICULTY);
+    let mut pow_input = tx.to_hash_input_bytes();
+    pow_input.extend(BLOCK_HASH);
+    let mut proof = USER_HEIGHT.to_le_bytes().to_vec();
+    proof.extend(PoW::generate(pow_input, POW_DIFFICULTY));
+    tx.proof = proof;
 
     let spent_transactions = generator_procedure(
         rusk,

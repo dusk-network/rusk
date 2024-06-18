@@ -20,6 +20,7 @@ use execution_core::{
     stake::StakeData, BlsScalar, StakePublicKey,
     Transaction as PhoenixTransaction,
 };
+use node::database::DBViewer;
 use node_data::ledger::{SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
 use rusk_abi::{
@@ -30,6 +31,7 @@ use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
 use super::{coinbase_value, emission_amount, Rusk, RuskTip};
+use crate::free_tx_verifier::FreeTxVerifier;
 use crate::http::RuesEvent;
 use crate::{Error, Result};
 
@@ -77,7 +79,16 @@ impl Rusk {
             generation_timeout,
             feeder_gas_limit,
             event_sender,
+            db_viewer: None,
         })
+    }
+
+    pub fn set_db_viewer(&mut self, db_viewer: impl DBViewer) {
+        self.db_viewer = Some(Arc::new(db_viewer))
+    }
+
+    pub fn db_viewer(&self) -> &Arc<dyn DBViewer> {
+        self.db_viewer.as_ref().expect("DBViewer must be set")
     }
 
     pub fn execute_transactions<I: Iterator<Item = Transaction>>(
@@ -104,6 +115,8 @@ impl Rusk {
 
         let mut event_hasher = Sha3_256::new();
 
+        let free_tx_verifier = FreeTxVerifier::new(self.db_viewer().as_ref());
+
         for unspent_tx in txs {
             if let Some(timeout) = self.generation_timeout {
                 if started.elapsed() > timeout {
@@ -115,6 +128,16 @@ impl Rusk {
             if unspent_tx.inner.fee().gas_limit > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
+            }
+
+            // check free transaction
+            if unspent_tx.inner.nullifiers.len() == 0 {
+                if let Some(e) = free_tx_verifier.verify(&unspent_tx).err() {
+                    info!(
+                        "Skipping {tx_id} due to unverified proof of work: {e}"
+                    );
+                    continue;
+                }
             }
 
             match execute(&mut session, &unspent_tx.inner) {

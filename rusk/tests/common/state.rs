@@ -20,10 +20,25 @@ use node_data::{
     message::payload::Vote,
 };
 
+use node::database::DBViewer;
 use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::keys::STAKE_SK;
+
+struct DBMock;
+
+impl DBViewer for DBMock {
+    fn fetch_block_hash(
+        &self,
+        _block_height: u64,
+    ) -> Result<Option<[u8; 32]>, anyhow::Error> {
+        Ok(Some([3u8; 32]))
+    }
+    fn fetch_tip_height(&self) -> anyhow::Result<u64, anyhow::Error> {
+        Ok(1)
+    }
+}
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
@@ -34,8 +49,9 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk = Rusk::new(dir, None, u64::MAX, sender)
+    let mut rusk = Rusk::new(dir, None, u64::MAX, sender)
         .expect("Instantiating rusk should succeed");
+    rusk.set_db_viewer(DBMock {});
 
     assert_eq!(
         commit_id,
