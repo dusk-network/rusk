@@ -22,9 +22,6 @@
 
   let itemsToDisplay = ITEMS_TO_DISPLAY;
 
-  /** @type {number} */
-  let clientWidth;
-
   /** @type {Transaction[]}*/
   let displayedTxns;
 
@@ -49,7 +46,6 @@
   }
 </script>
 
-<svelte:window bind:outerWidth={clientWidth} />
 <DataCard
   on:retry
   data={txns}
@@ -62,16 +58,14 @@
     label: "Show More",
   }}
 >
-  {#if clientWidth > 768}
-    <TransactionsTable
-      data={displayedTxns}
-      className="transactions-card__table"
-    />
-  {:else}
-    <div class="transactions-card__list">
-      {#each displayedTxns as txn (txn)}
-        <TransactionsList data={txn} />
-      {/each}
-    </div>
-  {/if}
+  <TransactionsTable
+    data={displayedTxns}
+    className="transactions-card__table mobile-hidden"
+  />
+
+  <div class="transactions-card__list desktop-hidden">
+    {#each displayedTxns as txn (txn)}
+      <TransactionsList data={txn} />
+    {/each}
+  </div>
 </DataCard>

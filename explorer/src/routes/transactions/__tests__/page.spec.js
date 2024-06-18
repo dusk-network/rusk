@@ -9,6 +9,12 @@ import { gqlTransactions } from "$lib/mock-data";
 
 import Transactions from "../+page.svelte";
 
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  disconnect: vi.fn(),
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+}));
+
 describe("Transactions page", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 30));

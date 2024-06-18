@@ -21,16 +21,12 @@
   /** @type {Boolean} */
   export let loading;
 
-  /** @type {number} */
-  let clientWidth;
-
   /** @type {Boolean} */
   export let isOnHomeScreen = true;
 
   $: classes = makeClassName(["latest-transactions-card", className]);
 </script>
 
-<svelte:window bind:outerWidth={clientWidth} />
 <DataCard
   on:retry
   data={txns}
@@ -47,11 +43,11 @@
       }
     : undefined}
 >
-  {#if clientWidth > 768}
-    <TransactionsTable data={txns} />
-  {:else}
+  <TransactionsTable data={txns} className="mobile-hidden" />
+
+  <div class="desktop-hidden">
     {#each txns as txn (txn)}
       <TransactionsList data={txn} />
     {/each}
-  {/if}
+  </div>
 </DataCard>

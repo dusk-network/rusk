@@ -17,13 +17,9 @@
   /** @type {Boolean} */
   export let loading;
 
-  /** @type {number} */
-  let clientWidth;
-
   $: classes = makeClassName(["latest-blocks-card", className]);
 </script>
 
-<svelte:window bind:outerWidth={clientWidth} />
 <DataCard
   on:retry
   data={blocks}
@@ -37,11 +33,11 @@
     label: "All Blocks",
   }}
 >
-  {#if clientWidth > 768}
-    <BlocksTable data={blocks} />
-  {:else}
+  <BlocksTable data={blocks} className="mobile-hidden" />
+
+  <div class="desktop-hidden">
     {#each blocks as block (block)}
       <BlocksList data={block} />
     {/each}
-  {/if}
+  </div>
 </DataCard>

@@ -62,8 +62,24 @@ svg {
   fill: currentColor;
 }
 
+.mobile-hidden {
+  display: block;
+}
+
+.desktop-hidden {
+  display: none;
+}
+
 @media (max-width: 768px) {
   body {
     padding: 0 1.25rem;
+  }
+
+  .mobile-hidden {
+    display: none;
+  }
+
+  .desktop-hidden {
+    display: block;
   }
 }
