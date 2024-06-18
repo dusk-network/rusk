@@ -1,0 +1,124 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`IconHeaderToggleCard > renders the IconHeaderToggleCard component with a heading 1`] = `
+<div>
+  <div
+    class="dusk-card dusk-card--gap-default"
+  >
+    <header
+      class="card__header"
+      slot="header"
+    >
+      <div
+        class="card__header-title"
+      >
+         
+        <h3
+          class="h4"
+        >
+          My Card
+        </h3>
+      </div>
+       
+    </header>
+     
+    
+     
+  </div>
+  
+  <!--&lt;Card&gt;-->
+  <!--&lt;IconHeaderToggleCard&gt;-->
+</div>
+`;
+
+exports[`IconHeaderToggleCard > renders the IconHeaderToggleCard component with a heading and an icon 1`] = `
+<div>
+  <div
+    class="dusk-card dusk-card--gap-default"
+  >
+    <header
+      class="card__header"
+      slot="header"
+    >
+      <div
+        class="card__header-title"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <h3
+          class="h4"
+        >
+          My Card
+        </h3>
+      </div>
+       
+    </header>
+     
+    
+     
+  </div>
+  
+  <!--&lt;Card&gt;-->
+  <!--&lt;IconHeaderToggleCard&gt;-->
+</div>
+`;
+
+exports[`IconHeaderToggleCard > renders the IconHeaderToggleCard component with a toggle 1`] = `
+<div>
+  <div
+    class="dusk-card dusk-card--gap-default"
+  >
+    <header
+      class="card__header"
+      slot="header"
+    >
+      <div
+        class="card__header-title"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M3,3H21V21H3V3M5,5V19H19V5H5Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <h3
+          class="h4"
+        >
+          My Card
+        </h3>
+      </div>
+       
+      <div
+        aria-checked="true"
+        aria-disabled="false"
+        class="dusk-switch dusk-switch--on-surface"
+        role="switch"
+        tabindex="0"
+      />
+      <!--&lt;Switch&gt;-->
+    </header>
+     
+    
+     
+  </div>
+  
+  <!--&lt;Card&gt;-->
+  <!--&lt;IconHeaderToggleCard&gt;-->
+</div>
+`;
