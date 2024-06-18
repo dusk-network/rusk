@@ -29,6 +29,7 @@ pub struct Subsidy {
 }
 
 const SUBSIDY_MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
+const PING_RETURN: u64 = 775;
 
 /// Return the digest to be signed in the `subsidize` function of a contract.
 #[must_use]
@@ -48,6 +49,11 @@ impl Charlie {
     fn gas_price() -> u64 {
         rusk_abi::call::<(), u64>(TRANSFER_CONTRACT, "gas_price", &())
             .expect("Obtaining gas price should succeed")
+    }
+
+    /// ping
+    pub fn ping(&mut self) -> u64 {
+        PING_RETURN
     }
 
     /// calling this method will be paid by the contract

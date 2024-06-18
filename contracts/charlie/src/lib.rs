@@ -25,6 +25,11 @@ mod wasm {
     static mut STATE: Charlie = Charlie;
 
     #[no_mangle]
+    unsafe fn ping(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
+    }
+
+    #[no_mangle]
     unsafe fn pay(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |()| STATE.pay())
     }
