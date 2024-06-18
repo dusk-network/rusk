@@ -516,13 +516,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             anyhow::Ok(())
         }?;
 
-        if attested {
-            let header = tip.inner().header();
-            // Waits until next slot, if the block is attested
-            // A non-attested block suggests another winner may be on its way
-            Self::wait_until_next_slot(header.timestamp).await;
-        }
-
         // Abort consensus.
         // A fully valid block is accepted, consensus task must be aborted.
         task.abort_with_wait().await;
@@ -598,6 +591,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             label = format!("{:?}", label),
             ffr
         );
+
+        if attested {
+            let header = tip.inner().header();
+            // Waits until next slot, if the block is attested
+            // A non-attested block suggests another winner may be on its way
+            Self::wait_until_next_slot(header.timestamp).await;
+        }
 
         // Restart Consensus.
         if enable_consensus {

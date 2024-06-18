@@ -63,7 +63,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// If there are no failed iterations, it returns true
     pub async fn execute_checks(
         &self,
-        candidate_block: &'a ledger::Header,
+        candidate_block: &'_ ledger::Header,
         disable_winner_att_check: bool,
     ) -> anyhow::Result<bool> {
         self.verify_basic_fields(candidate_block).await?;
@@ -97,14 +97,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             ));
         }
 
-        if candidate_block.height != self.prev_header.height + 1 {
-            return Err(anyhow!(
-                "invalid block height block_height: {:?}, curr_height: {:?}",
-                candidate_block.height,
-                self.prev_header.height,
-            ));
-        }
-
         // Ensure rule of minimum block time is addressed
         if candidate_block.timestamp
             < self.prev_header.timestamp + MINIMUM_BLOCK_TIME
@@ -117,8 +109,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .map(|n| n.as_secs())
             .expect("valid unix epoch");
 
-        if candidate_block.timestamp >= local_time + MARGIN_TIMESTAMP {
-            return Err(anyhow!("block timestamp is too far in the future"));
+        if candidate_block.timestamp
+            > local_time + MINIMUM_BLOCK_TIME + MARGIN_TIMESTAMP
+        {
+            return Err(anyhow!(
+                "block timestamp {} is too far in the future",
+                candidate_block.timestamp
+            ));
         }
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
