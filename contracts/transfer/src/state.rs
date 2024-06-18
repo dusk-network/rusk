@@ -216,7 +216,7 @@ impl TransferState {
         if gas_price == 0u64 {
             match rusk_abi::free_limit(*contract_id) {
                 Some(limit) if limit > 0 => limit,
-                _ => panic!("Gas limit not sufficient"),
+                _ => panic!("Insufficient gas limit or contract not found"),
             }
         } else {
             0
