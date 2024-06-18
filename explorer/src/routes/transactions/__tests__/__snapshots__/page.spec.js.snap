@@ -103,7 +103,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <th
                 class="table__header-cell"
               >
-                Fee
+                Fee (DUSK)
               </th>
               
                
@@ -173,11 +173,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000215552 Dusk
-                </span>
+                0.000215552
               </td>
               
                
@@ -196,7 +192,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -251,11 +247,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000215617 Dusk
-                </span>
+                0.000215617
               </td>
               
                
@@ -274,7 +266,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -329,11 +321,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000214413 Dusk
-                </span>
+                0.000214413
               </td>
               
                
@@ -352,7 +340,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -407,11 +395,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291769 Dusk
-                </span>
+                0.000291769
               </td>
               
                
@@ -430,7 +414,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -485,11 +469,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290764 Dusk
-                </span>
+                0.000290764
               </td>
               
                
@@ -508,7 +488,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -563,11 +543,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291961 Dusk
-                </span>
+                0.000291961
               </td>
               
                
@@ -586,7 +562,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -641,11 +617,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000292039 Dusk
-                </span>
+                0.000292039
               </td>
               
                
@@ -664,7 +636,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -719,11 +691,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290406 Dusk
-                </span>
+                0.000290406
               </td>
               
                
@@ -742,7 +710,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -797,11 +765,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291537 Dusk
-                </span>
+                0.000291537
               </td>
               
                
@@ -820,7 +784,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -875,11 +839,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291361 Dusk
-                </span>
+                0.000291361
               </td>
               
                
@@ -898,7 +858,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -953,11 +913,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290385 Dusk
-                </span>
+                0.000290385
               </td>
               
                
@@ -976,7 +932,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -1031,11 +987,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290795 Dusk
-                </span>
+                0.000290795
               </td>
               
                
@@ -1054,7 +1006,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -1109,11 +1061,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290449 Dusk
-                </span>
+                0.000290449
               </td>
               
                
@@ -1132,7 +1080,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -1187,11 +1135,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000290555 Dusk
-                </span>
+                0.000290555
               </td>
               
                
@@ -1210,7 +1154,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -1265,11 +1209,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  0.000291983 Dusk
-                </span>
+                0.000291983
               </td>
               
                
@@ -1288,7 +1228,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction__type"
                 >
                   transfer
                 </span>
@@ -1451,11 +1391,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000215552 Dusk
-            </span>
+            0.000215552
+             DUSK
           </dd>
            
           <dt
@@ -1483,7 +1420,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -1515,7 +1452,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -1669,11 +1606,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000215617 Dusk
-            </span>
+            0.000215617
+             DUSK
           </dd>
            
           <dt
@@ -1701,7 +1635,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -1733,7 +1667,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -1887,11 +1821,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000214413 Dusk
-            </span>
+            0.000214413
+             DUSK
           </dd>
            
           <dt
@@ -1919,7 +1850,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -1951,7 +1882,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -2105,11 +2036,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291769 Dusk
-            </span>
+            0.000291769
+             DUSK
           </dd>
            
           <dt
@@ -2137,7 +2065,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -2169,7 +2097,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -2323,11 +2251,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290764 Dusk
-            </span>
+            0.000290764
+             DUSK
           </dd>
            
           <dt
@@ -2355,7 +2280,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -2387,7 +2312,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -2541,11 +2466,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291961 Dusk
-            </span>
+            0.000291961
+             DUSK
           </dd>
            
           <dt
@@ -2573,7 +2495,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -2605,7 +2527,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -2759,11 +2681,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000292039 Dusk
-            </span>
+            0.000292039
+             DUSK
           </dd>
            
           <dt
@@ -2791,7 +2710,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -2823,7 +2742,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -2977,11 +2896,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290406 Dusk
-            </span>
+            0.000290406
+             DUSK
           </dd>
            
           <dt
@@ -3009,7 +2925,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -3041,7 +2957,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -3195,11 +3111,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291537 Dusk
-            </span>
+            0.000291537
+             DUSK
           </dd>
            
           <dt
@@ -3227,7 +3140,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -3259,7 +3172,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -3413,11 +3326,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291361 Dusk
-            </span>
+            0.000291361
+             DUSK
           </dd>
            
           <dt
@@ -3445,7 +3355,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -3477,7 +3387,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -3631,11 +3541,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290385 Dusk
-            </span>
+            0.000290385
+             DUSK
           </dd>
            
           <dt
@@ -3663,7 +3570,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -3695,7 +3602,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -3849,11 +3756,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290795 Dusk
-            </span>
+            0.000290795
+             DUSK
           </dd>
            
           <dt
@@ -3881,7 +3785,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -3913,7 +3817,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -4067,11 +3971,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290449 Dusk
-            </span>
+            0.000290449
+             DUSK
           </dd>
            
           <dt
@@ -4099,7 +4000,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -4131,7 +4032,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -4285,11 +4186,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000290555 Dusk
-            </span>
+            0.000290555
+             DUSK
           </dd>
            
           <dt
@@ -4317,7 +4215,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -4349,7 +4247,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>
@@ -4503,11 +4401,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              0.000291983 Dusk
-            </span>
+            0.000291983
+             DUSK
           </dd>
            
           <dt
@@ -4535,7 +4430,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success"
+              class="dusk-badge dusk-badge--variant-success explorer-badge"
             >
               success
             </span>
@@ -4567,7 +4462,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral explorer-badge"
             >
               transfer
             </span>

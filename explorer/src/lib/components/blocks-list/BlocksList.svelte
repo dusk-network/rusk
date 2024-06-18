@@ -78,7 +78,7 @@
     <svelte:fragment slot="definition">
       <Badge
         variant="alt"
-        text={`${formatter(luxToDusk(data.header.reward))} Dusk`}
+        text={`${formatter(luxToDusk(data.header.reward))} DUSK`}
       />
     </svelte:fragment>
   </ListItem>

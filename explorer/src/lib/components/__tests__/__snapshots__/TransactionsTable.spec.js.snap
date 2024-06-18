@@ -30,7 +30,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <th
           class="table__header-cell"
         >
-          Fee
+          Fee (DUSK)
         </th>
         
          
@@ -100,11 +100,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000215552 Dusk
-          </span>
+          0.000215552
         </td>
         
          
@@ -123,7 +119,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -178,11 +174,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000215617 Dusk
-          </span>
+          0.000215617
         </td>
         
          
@@ -201,7 +193,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -256,11 +248,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000214413 Dusk
-          </span>
+          0.000214413
         </td>
         
          
@@ -279,7 +267,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -334,11 +322,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000291769 Dusk
-          </span>
+          0.000291769
         </td>
         
          
@@ -357,7 +341,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -412,11 +396,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000290764 Dusk
-          </span>
+          0.000290764
         </td>
         
          
@@ -435,7 +415,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -490,11 +470,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000291961 Dusk
-          </span>
+          0.000291961
         </td>
         
          
@@ -513,7 +489,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -568,11 +544,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000292039 Dusk
-          </span>
+          0.000292039
         </td>
         
          
@@ -591,7 +563,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -646,11 +618,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000290406 Dusk
-          </span>
+          0.000290406
         </td>
         
          
@@ -669,7 +637,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -724,11 +692,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000291537 Dusk
-          </span>
+          0.000291537
         </td>
         
          
@@ -747,7 +711,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>
@@ -802,11 +766,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            0.000291361 Dusk
-          </span>
+          0.000291361
         </td>
         
          
@@ -825,7 +785,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction__type"
           >
             transfer
           </span>

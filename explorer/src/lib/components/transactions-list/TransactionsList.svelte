@@ -83,10 +83,7 @@
   <ListItem tooltipText="The transaction fee amount">
     <svelte:fragment slot="term">Fee</svelte:fragment>
     <svelte:fragment slot="definition">
-      <Badge
-        variant="alt"
-        text={`${formatter(luxToDusk(data.feepaid))} Dusk`}
-      />
+      {formatter(luxToDusk(data.feepaid))} DUSK
     </svelte:fragment>
   </ListItem>
 
@@ -96,6 +93,7 @@
     <svelte:fragment slot="definition">
       <DataGuard data={data.success}>
         <Badge
+          className="explorer-badge"
           variant={data.success ? "success" : "error"}
           text={data.success ? "success" : "failed"}
         />
@@ -108,7 +106,7 @@
     <svelte:fragment slot="term">Type</svelte:fragment>
     <svelte:fragment slot="definition"
       ><DataGuard data={data.method}>
-        <Badge text={data.method} />
+        <Badge className="explorer-badge" text={data.method} />
       </DataGuard></svelte:fragment
     >
   </ListItem>

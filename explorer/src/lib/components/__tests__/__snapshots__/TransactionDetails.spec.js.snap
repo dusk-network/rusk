@@ -44,7 +44,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        4877687c2dbf154248d3ddee9ba0d81...431f39056f82a46819da041d4ac0e04
+        4877687c2dbf154248d3ddee9ba...39056f82a46819da041d4ac0e04
       </dd>
       <dt
         class="details-list__term"
@@ -102,7 +102,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         class="details-list__definition"
       >
         <span
-          class="dusk-badge dusk-badge--variant-success transaction-details__status"
+          class="dusk-badge dusk-badge--variant-success transaction-details__status explorer-badge"
         >
           success
         </span>
@@ -166,7 +166,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         class="details-list__definition"
       >
         <span
-          class="dusk-badge dusk-badge--variant-neutral transaction-details__type"
+          class="dusk-badge dusk-badge--variant-neutral transaction-details__type explorer-badge"
         >
           transfer
         </span>
@@ -368,7 +368,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dd
         class="details-list__definition"
       >
-        4877687c2dbf154248d3ddee9ba0d81...431f39056f82a46819da041d4ac0e04
+        4877687c2dbf154248d3ddee9ba...39056f82a46819da041d4ac0e04
       </dd>
       <dt
         class="details-list__term"
@@ -426,7 +426,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         class="details-list__definition"
       >
         <span
-          class="dusk-badge dusk-badge--variant-success transaction-details__status"
+          class="dusk-badge dusk-badge--variant-success transaction-details__status explorer-badge"
         >
           success
         </span>
@@ -490,7 +490,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         class="details-list__definition"
       >
         <span
-          class="dusk-badge dusk-badge--variant-neutral transaction-details__type"
+          class="dusk-badge dusk-badge--variant-neutral transaction-details__type explorer-badge"
         >
           transfer
         </span>

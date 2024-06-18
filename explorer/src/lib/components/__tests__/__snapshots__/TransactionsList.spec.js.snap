@@ -148,11 +148,8 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
     <dd
       class="details-list__definition details-list__definition--table"
     >
-      <span
-        class="dusk-badge dusk-badge--variant-alt"
-      >
-        0.000290766 Dusk
-      </span>
+      0.000290766
+       DUSK
     </dd>
      
     <dt
@@ -180,7 +177,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       class="details-list__definition details-list__definition--table"
     >
       <span
-        class="dusk-badge dusk-badge--variant-success"
+        class="dusk-badge dusk-badge--variant-success explorer-badge"
       >
         success
       </span>
@@ -212,7 +209,7 @@ exports[`Transactions List > renders the Transactions List component 1`] = `
       class="details-list__definition details-list__definition--table"
     >
       <span
-        class="dusk-badge dusk-badge--variant-neutral"
+        class="dusk-badge dusk-badge--variant-neutral explorer-badge"
       >
         transfer
       </span>

@@ -475,7 +475,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 <th
                   class="table__header-cell"
                 >
-                  Fee
+                  Fee (DUSK)
                 </th>
                 
                  
@@ -545,11 +545,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 <td
                   class="table__data-cell"
                 >
-                  <span
-                    class="dusk-badge dusk-badge--variant-alt"
-                  >
-                    0.000290866 Dusk
-                  </span>
+                  0.000290866
                 </td>
                 
                  
@@ -568,7 +564,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                   class="table__data-cell"
                 >
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction__type"
                   >
                     transfer
                   </span>
@@ -623,11 +619,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 <td
                   class="table__data-cell"
                 >
-                  <span
-                    class="dusk-badge dusk-badge--variant-alt"
-                  >
-                    0.000289852 Dusk
-                  </span>
+                  0.000289852
                 </td>
                 
                  
@@ -646,7 +638,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                   class="table__data-cell"
                 >
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction__type"
                   >
                     transfer
                   </span>
@@ -809,11 +801,8 @@ exports[`Block Details > should render the Block Details page and query the nece
             <dd
               class="details-list__definition details-list__definition--table"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                0.000290866 Dusk
-              </span>
+              0.000290866
+               DUSK
             </dd>
              
             <dt
@@ -841,7 +830,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__definition details-list__definition--table"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success explorer-badge"
               >
                 success
               </span>
@@ -873,7 +862,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__definition details-list__definition--table"
             >
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral explorer-badge"
               >
                 transfer
               </span>
@@ -1027,11 +1016,8 @@ exports[`Block Details > should render the Block Details page and query the nece
             <dd
               class="details-list__definition details-list__definition--table"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                0.000289852 Dusk
-              </span>
+              0.000289852
+               DUSK
             </dd>
              
             <dt
@@ -1059,7 +1045,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__definition details-list__definition--table"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success explorer-badge"
               >
                 success
               </span>
@@ -1091,7 +1077,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__definition details-list__definition--table"
             >
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral explorer-badge"
               >
                 transfer
               </span>

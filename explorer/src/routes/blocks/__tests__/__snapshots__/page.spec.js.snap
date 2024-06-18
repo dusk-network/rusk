@@ -96,7 +96,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <th
                 class="table__header-cell"
               >
-                Fee
+                Fee (Dusk)
               </th>
               
                
@@ -110,7 +110,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <th
                 class="table__header-cell"
               >
-                Rewards
+                Rewards (Dusk)
               </th>
               
             </tr>
@@ -176,7 +176,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -239,7 +239,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -302,7 +302,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -365,7 +365,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -428,7 +428,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -491,7 +491,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -554,7 +554,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -617,7 +617,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -680,7 +680,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -743,7 +743,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -806,7 +806,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -869,7 +869,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -932,7 +932,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -995,7 +995,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -1058,7 +1058,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                 <span
                   class="dusk-badge dusk-badge--variant-alt"
                 >
-                  16 Dusk
+                  16
                 </span>
               </td>
               
@@ -1258,7 +1258,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -1448,7 +1448,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -1638,7 +1638,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -1828,7 +1828,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -2018,7 +2018,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -2208,7 +2208,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -2398,7 +2398,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -2588,7 +2588,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -2778,7 +2778,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -2968,7 +2968,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3158,7 +3158,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3348,7 +3348,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3538,7 +3538,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3728,7 +3728,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
@@ -3918,7 +3918,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
             <span
               class="dusk-badge dusk-badge--variant-alt"
             >
-              16 Dusk
+              16 DUSK
             </span>
           </dd>
         </dl>
