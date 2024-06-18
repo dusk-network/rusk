@@ -109,11 +109,9 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .map(|n| n.as_secs())
             .expect("valid unix epoch");
 
-        if candidate_block.timestamp
-            > local_time + MINIMUM_BLOCK_TIME + MARGIN_TIMESTAMP
-        {
+        if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
             return Err(anyhow!(
-                "block timestamp {} is too far in the future",
+                "block timestamp {} is higher than local time",
                 candidate_block.timestamp
             ));
         }
