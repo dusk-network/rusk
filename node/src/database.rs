@@ -14,6 +14,13 @@ use node_data::ledger;
 use node_data::ledger::{Label, SpentTransaction};
 use serde::{Deserialize, Serialize};
 
+pub trait DBViewer: Send + Sync + 'static {
+    /// Provides hash of a given block.
+    fn fetch_block_hash(&self, block_height: u64) -> Result<Option<[u8; 32]>>;
+    /// Provides the current block height.
+    fn fetch_tip_height(&self) -> Result<u64>;
+}
+
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
 
