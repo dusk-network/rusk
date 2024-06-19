@@ -15,7 +15,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
         <h1
           class="data-card__header-title"
         >
-          Transactions
+          Transactions  - 0 Displayed Items
         </h1>
          
         <button
@@ -59,7 +59,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
         <h1
           class="data-card__header-title"
         >
-          Transactions
+          Transactions  - 15 Displayed Items
         </h1>
          
         <button
