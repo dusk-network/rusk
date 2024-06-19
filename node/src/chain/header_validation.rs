@@ -24,7 +24,7 @@ use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::info;
 
-const MARGIN_TIMESTAMP: u64 = 10;
+const MARGIN_TIMESTAMP: u64 = 3;
 
 // TODO: Use thiserror instead of anyhow
 
