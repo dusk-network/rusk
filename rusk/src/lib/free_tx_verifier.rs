@@ -37,35 +37,28 @@ impl fmt::Display for Error {
     }
 }
 
-pub struct FreeTxVerifier<'a> {
-    db_viewer: &'a dyn DBViewer,
-}
+pub struct FreeTxVerifier;
 
-impl<'a> FreeTxVerifier<'a> {
-    pub fn new(db_viewer: &'a dyn DBViewer) -> FreeTxVerifier<'a> {
-        Self { db_viewer }
-    }
-
-    pub fn verify(&self, tx: &Transaction) -> Result<(), Error> {
+impl FreeTxVerifier {
+    pub fn verify(
+        db_viewer: &dyn DBViewer,
+        tx: &Transaction,
+    ) -> Result<(), Error> {
         let tx = &tx.inner;
-        let tip = self.db_viewer.fetch_tip_height()?;
-        info!("top height={}", tip);
+        let tip = db_viewer.fetch_tip_height()?;
         let user_height = Self::extract_block_id(&tx.proof)?;
-        info!("user height={}", user_height);
         if user_height >= tip {
             return Err(BlockHeightInvalid);
         }
         if tip - user_height > FRESHNESS {
             return Err(BlockHeightExpired);
         }
-        let block_hash = match self.db_viewer.fetch_block_hash(user_height)? {
+        let block_hash = match db_viewer.fetch_block_hash(user_height)? {
             Some(block_hash) => block_hash,
             _ => return Err(BlockNotFound),
         };
-        info!("block hash={:x?}", block_hash);
         let mut bytes = tx.to_hash_input_bytes();
         bytes.extend(block_hash.as_ref());
-        info!("about to verify PoW");
         if !PoW::verify(bytes, &tx.proof[BLOCK_HEIGHT_LEN..], POW_DIFFICULTY) {
             info!("PoW invalid");
             return Err(PoWInvalid);

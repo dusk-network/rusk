@@ -112,8 +112,6 @@ impl Rusk {
 
         let mut event_hasher = Sha3_256::new();
 
-        let free_tx_verifier = FreeTxVerifier::new(self.db_viewer().as_ref());
-
         for unspent_tx in txs {
             if let Some(timeout) = self.generation_timeout {
                 if started.elapsed() > timeout {
@@ -128,8 +126,13 @@ impl Rusk {
             }
 
             // check free transaction
-            if unspent_tx.inner.nullifiers.len() == 0 {
-                if let Some(e) = free_tx_verifier.verify(&unspent_tx).err() {
+            if unspent_tx.inner.nullifiers.is_empty() {
+                if let Some(e) = FreeTxVerifier::verify(
+                    self.db_viewer().as_ref(),
+                    &unspent_tx,
+                )
+                .err()
+                {
                     info!(
                         "Skipping {tx_id} due to unverified proof of work: {e}"
                     );

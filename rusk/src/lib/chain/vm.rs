@@ -97,10 +97,7 @@ impl VMExecution for Rusk {
         info!("Received preverify request");
         let txi = &tx.inner;
         if txi.nullifiers.is_empty() {
-            let free_tx_verifier =
-                FreeTxVerifier::new(self.db_viewer().as_ref());
-            return free_tx_verifier
-                .verify(tx)
+            return FreeTxVerifier::verify(self.db_viewer().as_ref(), tx)
                 .map_err(|e| anyhow::anyhow!("Invalid PoW: {e}"));
         }
         let existing_nullifiers = self
