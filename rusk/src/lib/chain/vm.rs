@@ -8,6 +8,7 @@ mod query;
 
 use tracing::info;
 
+use crate::free_tx_verifier::FreeTxVerifier;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::Provisioners;
@@ -94,19 +95,23 @@ impl VMExecution for Rusk {
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
         info!("Received preverify request");
-        let tx = &tx.inner;
-        if tx.nullifiers.is_empty() {
-            return Ok(());
+        let txi = &tx.inner;
+        if txi.nullifiers.is_empty() {
+            let free_tx_verifier =
+                FreeTxVerifier::new(self.db_viewer().as_ref());
+            return free_tx_verifier
+                .verify(tx)
+                .map_err(|e| anyhow::anyhow!("Invalid PoW: {e}"));
         }
         let existing_nullifiers = self
-            .existing_nullifiers(&tx.nullifiers)
+            .existing_nullifiers(&txi.nullifiers)
             .map_err(|e| anyhow::anyhow!("Cannot check nullifiers: {e}"))?;
 
         if !existing_nullifiers.is_empty() {
             let err = crate::Error::RepeatingNullifiers(existing_nullifiers);
             return Err(anyhow::anyhow!("Invalid tx: {err}"));
         }
-        match crate::verifier::verify_proof(tx) {
+        match crate::verifier::verify_proof(txi) {
             Ok(true) => Ok(()),
             Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
             Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),

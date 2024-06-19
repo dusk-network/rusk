@@ -47,9 +47,10 @@ impl<'a> FreeTxVerifier<'a> {
     }
 
     pub fn verify(&self, tx: &Transaction) -> Result<(), Error> {
+        let tx = &tx.inner;
         let tip = self.db_viewer.fetch_tip_height()?;
         info!("top height={}", tip);
-        let user_height = Self::extract_block_id(&tx.inner.proof)?;
+        let user_height = Self::extract_block_id(&tx.proof)?;
         info!("user height={}", user_height);
         if user_height >= tip {
             return Err(BlockHeightInvalid);
@@ -62,14 +63,10 @@ impl<'a> FreeTxVerifier<'a> {
             _ => return Err(BlockNotFound),
         };
         info!("block hash={:x?}", block_hash);
-        let mut bytes = tx.inner.to_hash_input_bytes();
+        let mut bytes = tx.to_hash_input_bytes();
         bytes.extend(block_hash.as_ref());
         info!("about to verify PoW");
-        if !PoW::verify(
-            bytes,
-            &tx.inner.proof[BLOCK_HEIGHT_LEN..],
-            POW_DIFFICULTY,
-        ) {
+        if !PoW::verify(bytes, &tx.proof[BLOCK_HEIGHT_LEN..], POW_DIFFICULTY) {
             info!("PoW invalid");
             return Err(PoWInvalid);
         }
