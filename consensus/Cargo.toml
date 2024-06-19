@@ -28,7 +28,7 @@ async-channel = "1.7.1"
 async-trait = "0.1"
 anyhow = "1.0"
 node-data = { version = "0.1", path = "../node-data" }
-execution-core = { version = "0.1.0", path = "../execution-core" }
+execution-core = { version = "0.1.0", path = "../execution-core", features = ["parallel"] }
 dusk-merkle = { version = "0.5", features = ["size_32"] }
 thiserror = "1"
 time-util = { version = "0.3", features = ["chrono"] }
