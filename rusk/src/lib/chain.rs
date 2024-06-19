@@ -38,7 +38,7 @@ pub struct Rusk {
     pub(crate) generation_timeout: Option<Duration>,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
-    db_viewer: Option<Arc<dyn DBViewer>>,
+    db_viewer: Arc<dyn DBViewer>,
 }
 
 #[derive(Clone)]

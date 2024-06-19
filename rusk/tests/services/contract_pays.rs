@@ -122,9 +122,8 @@ fn initial_state<P: AsRef<Path>>(dir: P, charlies_funds: u64) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let mut rusk = Rusk::new(dir, None, u64::MAX, sender)
+    let rusk = Rusk::new(dir, None, u64::MAX, sender, DBMock {})
         .expect("Instantiating rusk should succeed");
-    rusk.set_db_viewer(DBMock {});
     Ok(rusk)
 }
 

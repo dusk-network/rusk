@@ -47,6 +47,7 @@ impl Rusk {
         generation_timeout: Option<Duration>,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
+        db_viewer: impl DBViewer,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -79,16 +80,12 @@ impl Rusk {
             generation_timeout,
             feeder_gas_limit,
             event_sender,
-            db_viewer: None,
+            db_viewer: Arc::new(db_viewer),
         })
     }
 
-    pub fn set_db_viewer(&mut self, db_viewer: impl DBViewer) {
-        self.db_viewer = Some(Arc::new(db_viewer))
-    }
-
     pub fn db_viewer(&self) -> &Arc<dyn DBViewer> {
-        self.db_viewer.as_ref().expect("DBViewer must be set")
+        &self.db_viewer
     }
 
     pub fn execute_transactions<I: Iterator<Item = Transaction>>(

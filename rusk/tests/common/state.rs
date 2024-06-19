@@ -49,9 +49,8 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let mut rusk = Rusk::new(dir, None, u64::MAX, sender)
+    let rusk = Rusk::new(dir, None, u64::MAX, sender, DBMock {})
         .expect("Instantiating rusk should succeed");
-    rusk.set_db_viewer(DBMock {});
 
     assert_eq!(
         commit_id,
