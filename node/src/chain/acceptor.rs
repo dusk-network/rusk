@@ -410,7 +410,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let attested = verify_block_header(
+        let pni = verify_block_header(
             self.db.clone(),
             &tip.inner().header().clone(),
             &provisioners_list,
@@ -423,7 +423,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .record(header_verification_start.elapsed());
 
         let tip_is_final = tip.is_final();
-        let label = self.rolling_finality(attested, tip_is_final, blk).await?;
+        let label = self.rolling_finality(pni, tip_is_final, blk).await?;
 
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
@@ -579,10 +579,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     async fn rolling_finality(
         &self,
-        attested: bool,
+        pni: u8,
         tip_is_final: bool,
         blk: &Block,
     ) -> Result<Label, anyhow::Error> {
+        let attested = pni == 0;
         let label = match (attested, tip_is_final) {
             (true, true) => Label::Final,
             (false, _) => Label::Accepted,
@@ -878,16 +879,13 @@ async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
 /// Performs full verification of block header against prev_block header where
 /// prev_block is usually the blockchain tip
 ///
-/// Returns true if there is a attestation for each failed iteration, and if
-/// that attestation has a quorum in the ratification phase.
-///
-/// If there are no failed iterations, it returns true
+/// Returns the number of Previous Non-Attested Iterations (PNI).
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<u8> {
     let validator = Validator::new(db, prev_header, provisioners);
     validator.execute_checks(header, false).await
 }
