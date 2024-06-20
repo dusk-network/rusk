@@ -422,32 +422,32 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         histogram!("dusk_block_header_elapsed")
             .record(header_verification_start.elapsed());
 
-        let tip_is_final = tip.is_final();
-        let label = self.rolling_finality(pni, tip_is_final, blk).await?;
-
-        let blk = BlockWithLabel::new_with_label(blk.clone(), label);
-        let header = blk.inner().header();
-
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
         let mut block_size_on_disk = 0;
         let mut slashed_count: usize = 0;
         // Persist block in consistency with the VM state update
-        {
+        let label = {
+            let header = blk.header();
+
             let vm = self.vm.write().await;
-            let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = vm.accept(blk.inner())?;
+            let (txs, label) = self.db.read().await.update(|db| {
+                let (txs, verification_output) = vm.accept(blk)?;
 
                 est_elapsed_time = start.elapsed();
 
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_hash, verification_output.event_hash);
 
-                // Store block with updated transactions with Error and GasSpent
-                block_size_on_disk =
-                    t.store_block(header, &txs, blk.label())?;
+                let tip_is_final = tip.is_final();
 
-                Ok(txs)
+                let label =
+                    self.rolling_finality::<DB>(pni, tip_is_final, blk, db)?;
+
+                // Store block with updated transactions with Error and GasSpent
+                block_size_on_disk = db.store_block(header, &txs, label)?;
+
+                Ok((txs, label))
             })?;
 
             self.log_missing_iterations(
@@ -463,28 +463,24 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 slashed_count += 1;
             }
 
-            let selective_update = Self::selective_update(
-                blk.inner(),
-                &txs,
-                &vm,
-                &mut provisioners_list,
-            );
+            let selective_update =
+                Self::selective_update(blk, &txs, &vm, &mut provisioners_list);
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
-                let state_hash = blk.inner().header().state_hash;
+                let state_hash = blk.header().state_hash;
                 let new_prov = vm.get_provisioners(state_hash)?;
                 provisioners_list.update_and_swap(new_prov)
             }
 
             // Update tip
-            *tip = blk;
+            *tip = BlockWithLabel::new_with_label(blk.clone(), label);
 
             if tip.is_final() {
                 vm.finalize_state(tip.inner().header().state_hash)?;
             }
 
-            anyhow::Ok(())
+            anyhow::Ok(label)
         }?;
 
         // Abort consensus.
@@ -559,7 +555,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             block_time,
             generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
-            label = format!("{:?}", label),
+            ?label
         );
 
         // Restart Consensus.
@@ -577,11 +573,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         Ok(label)
     }
 
-    async fn rolling_finality(
+    fn rolling_finality<D: database::DB>(
         &self,
         pni: u8,
         tip_is_final: bool,
         blk: &Block,
+        db: &D::P<'_>,
     ) -> Result<Label, anyhow::Error> {
         let attested = pni == 0;
         let label = match (attested, tip_is_final) {
@@ -592,28 +589,28 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let target = current
                     .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
                     .unwrap_or_default();
-                self.db.read().await.update(|t| {
-                    for h in (target..current).rev() {
-                        match t.fetch_block_label_by_height(h)? {
-                            None => panic!(
-                                "Cannot find block label for height: {h}"
-                            ),
-                            Some((_,Label::Final)) => {
-                                warn!("Found Attested block following a Final one");
-                                break;
-                            }
-                            Some((_,Label::Accepted)) => return Ok(Label::Attested),
-                            Some((_,Label::Attested)) => {} // just continue scan
-                        };
-                    }
-                    info!(
-                        event = "rolling finality",
-                        height = blk.header().height,
-                        hash = to_str(&blk.header().hash),
-                        state_hash = to_str(&blk.header().state_hash),
-                    );
-                    anyhow::Ok(Label::Final)
-                })?
+                for h in (target..current).rev() {
+                    match db.fetch_block_label_by_height(h)? {
+                        None => {
+                            panic!("Cannot find block label for height: {h}")
+                        }
+                        Some((_, Label::Final)) => {
+                            warn!("Found Attested block following a Final one");
+                            break;
+                        }
+                        Some((_, Label::Accepted)) => {
+                            return Ok(Label::Attested)
+                        }
+                        Some((_, Label::Attested)) => {} // just continue scan
+                    };
+                }
+                info!(
+                    event = "rolling finality",
+                    height = blk.header().height,
+                    hash = to_str(&blk.header().hash),
+                    state_hash = to_str(&blk.header().state_hash),
+                );
+                Label::Final
             }
         };
         Ok(label)
