@@ -55,13 +55,15 @@
   const executeOperations = {
     stake: (amount, gasPrice, gasLimit) =>
       walletStore
-        .stake(amount, gasPrice, gasLimit)
+        .stake(amount, { limit: gasLimit, price: gasPrice })
         .then(getLastTransactionHash),
     unstake: (gasPrice, gasLimit) =>
-      walletStore.unstake(gasPrice, gasLimit).then(getLastTransactionHash),
+      walletStore
+        .unstake({ limit: gasLimit, price: gasPrice })
+        .then(getLastTransactionHash),
     "withdraw-rewards": (gasPrice, gasLimit) =>
       walletStore
-        .withdrawReward(gasPrice, gasLimit)
+        .withdrawReward({ limit: gasLimit, price: gasPrice })
         .then(getLastTransactionHash),
   };
 

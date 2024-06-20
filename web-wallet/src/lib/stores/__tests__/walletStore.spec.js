@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { get } from "svelte/store";
 import { keys } from "lamb";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
+import { Gas, Wallet } from "@dusk-network/dusk-wallet-js";
 
 import { addresses, transactions } from "$lib/mock-data";
 
@@ -21,6 +21,9 @@ describe("walletStore", async () => {
   const balance = { maximum: 100, value: 1 };
   const wallet = new Wallet([]);
 
+  const blockHeightSpy = vi
+    .spyOn(Wallet, "networkBlockHeight", "get")
+    .mockResolvedValue(1536);
   const getBalanceSpy = vi
     .spyOn(Wallet.prototype, "getBalance")
     .mockResolvedValue(balance);
@@ -68,12 +71,13 @@ describe("walletStore", async () => {
     currentAddress: addresses[0],
     initialized: true,
   };
-  const gas = {
+  const gasSettings = {
     limit: 30000000,
     price: 1,
   };
 
   afterEach(() => {
+    blockHeightSpy.mockClear();
     getBalanceSpy.mockClear();
     getPsksSpy.mockClear();
     historySpy.mockClear();
@@ -87,6 +91,7 @@ describe("walletStore", async () => {
   });
 
   afterAll(() => {
+    blockHeightSpy.mockRestore();
     getBalanceSpy.mockRestore();
     getPsksSpy.mockRestore();
     historySpy.mockRestore();
@@ -130,6 +135,35 @@ describe("walletStore", async () => {
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+      expect(getBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
+      expect(get(walletStore)).toStrictEqual(initializedStore);
+    });
+
+    it("should allow to start the sync from a specific block height after initializing the wallet", async () => {
+      const from = 9999;
+
+      await walletStore.init(wallet, from);
+
+      expect(get(walletStore)).toStrictEqual({
+        ...initialState,
+        addresses: addresses,
+        currentAddress: addresses[0],
+        error: null,
+        initialized: true,
+        isSyncing: true,
+      });
+
+      expect(getPsksSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).not.toHaveBeenCalled();
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({
+        from,
+        signal: expect.any(AbortSignal),
+      });
       expect(getBalanceSpy).toHaveBeenCalledTimes(1);
       expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
       expect(get(walletStore)).toStrictEqual(initializedStore);
@@ -293,16 +327,62 @@ describe("walletStore", async () => {
       expect(getBalanceSpy).toHaveBeenCalledTimes(1);
       expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 
       await vi.advanceTimersToNextTimerAsync();
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
     });
 
+    it("should allow to start the sync from a specific block height after clearing and initializing the wallet", async () => {
+      getPsksSpy.mockClear();
+      getBalanceSpy.mockClear();
+      syncSpy.mockClear();
+      walletStore.reset();
+
+      const from = 4276;
+
+      await walletStore.clearLocalDataAndInit(wallet, from);
+
+      expect(get(walletStore)).toStrictEqual({
+        ...initialState,
+        addresses: addresses,
+        currentAddress: addresses[0],
+        error: null,
+        initialized: true,
+        isSyncing: true,
+      });
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(getPsksSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({
+        from,
+        signal: expect.any(AbortSignal),
+      });
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(get(walletStore)).toStrictEqual(initializedStore);
+    });
+
+    it("should expose a method to retrieve the current block height", async () => {
+      // This method needs to work even without a wallet instance
+      walletStore.reset();
+
+      await walletStore.getCurrentBlockHeight();
+
+      expect(blockHeightSpy).toHaveBeenCalledTimes(1);
+    });
+
     it("should expose a method to retrieve the stake info", async () => {
       await walletStore.getStakeInfo();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
       expect(stakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(stakeInfoSpy).toHaveBeenCalledWith(currentAddress);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -329,6 +409,7 @@ describe("walletStore", async () => {
       const result = await walletStore.getStakeInfo();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
       expect(stakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(stakeInfoSpy).toHaveBeenCalledWith(currentAddress);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -341,6 +422,7 @@ describe("walletStore", async () => {
       await walletStore.getTransactionsHistory();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
       expect(historySpy).toHaveBeenCalledTimes(1);
       expect(historySpy).toHaveBeenCalledWith(currentAddress);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -362,6 +444,7 @@ describe("walletStore", async () => {
       await walletStore.setCurrentAddress(addresses[1]);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
       expect(get(walletStore).currentAddress).toBe(addresses[1]);
       expect(setCurrentAddressSpy.mock.invocationCallOrder[0]).toBeLessThan(
         syncSpy.mock.invocationCallOrder[0]
@@ -378,14 +461,18 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to allow to stake an amount of Dusk", async () => {
-      await walletStore.stake(10, gas.price, gas.limit);
-
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      await walletStore.stake(10, gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, {
+        signal: expect.any(AbortSignal),
+      });
+      expect(syncSpy).toHaveBeenNthCalledWith(2, {
+        signal: expect.any(AbortSignal),
+      });
       expect(stakeSpy).toHaveBeenCalledTimes(1);
-      expect(stakeSpy).toHaveBeenCalledWith(currentAddress, 10);
+      expect(stakeSpy).toHaveBeenCalledWith(currentAddress, 10, gasSettings);
+      expect(stakeSpy.mock.calls[0][2]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         stakeSpy.mock.invocationCallOrder[0]
       );
@@ -394,19 +481,43 @@ describe("walletStore", async () => {
       );
     });
 
-    it("should expose a method to allow to transfer an amount of Dusk", async () => {
-      await walletStore.transfer(addresses[1], 10, gas.price, gas.limit);
+    it("should expose a method to manually start a synchronization", async () => {
+      await walletStore.sync();
 
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+    });
+
+    it("should allow to start a synchronization from a specific block height", async () => {
+      const from = 7654;
+
+      await walletStore.sync(from);
+
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({
+        from,
+        signal: expect.any(AbortSignal),
+      });
+    });
+
+    it("should expose a method to allow to transfer an amount of Dusk", async () => {
+      await walletStore.transfer(addresses[1], 10, gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, {
+        signal: expect.any(AbortSignal),
+      });
+      expect(syncSpy).toHaveBeenNthCalledWith(2, {
+        signal: expect.any(AbortSignal),
+      });
       expect(transferSpy).toHaveBeenCalledTimes(1);
       expect(transferSpy).toHaveBeenCalledWith(
         currentAddress,
         addresses[1],
-        10
+        10,
+        gasSettings
       );
+      expect(transferSpy.mock.calls[0][3]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         transferSpy.mock.invocationCallOrder[0]
       );
@@ -416,14 +527,18 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to allow to unstake the current address", async () => {
-      await walletStore.unstake(gas.price, gas.limit);
-
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      await walletStore.unstake(gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, {
+        signal: expect.any(AbortSignal),
+      });
+      expect(syncSpy).toHaveBeenNthCalledWith(2, {
+        signal: expect.any(AbortSignal),
+      });
       expect(unstakeSpy).toHaveBeenCalledTimes(1);
-      expect(unstakeSpy).toHaveBeenCalledWith(currentAddress);
+      expect(unstakeSpy).toHaveBeenCalledWith(currentAddress, gasSettings);
+      expect(unstakeSpy.mock.calls[0][1]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         unstakeSpy.mock.invocationCallOrder[0]
       );
@@ -433,14 +548,21 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to allow to withdraw a reward", async () => {
-      await walletStore.withdrawReward(gas.price, gas.limit);
-
-      expect(wallet.gasLimit).toBe(gas.limit);
-      expect(wallet.gasPrice).toBe(gas.price);
+      await walletStore.withdrawReward(gasSettings);
 
       expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenNthCalledWith(1, {
+        signal: expect.any(AbortSignal),
+      });
+      expect(syncSpy).toHaveBeenNthCalledWith(2, {
+        signal: expect.any(AbortSignal),
+      });
       expect(withdrawRewardSpy).toHaveBeenCalledTimes(1);
-      expect(withdrawRewardSpy).toHaveBeenCalledWith(currentAddress);
+      expect(withdrawRewardSpy).toHaveBeenCalledWith(
+        currentAddress,
+        gasSettings
+      );
+      expect(withdrawRewardSpy.mock.calls[0][1]).toBeInstanceOf(Gas);
       expect(syncSpy.mock.invocationCallOrder[0]).toBeLessThan(
         withdrawRewardSpy.mock.invocationCallOrder[0]
       );
@@ -452,7 +574,7 @@ describe("walletStore", async () => {
 
   describe("State changing failures", () => {
     /** @typedef {"stake" | "transfer" | "unstake" | "withdrawReward"} Operation */
-    /** @type {Record<Operation, import("vitest").SpyInstance<any>>} */
+    /** @type {Record<Operation, import("vitest").MockInstance<any>>} */
     const operationsMap = {
       stake: stakeSpy,
       transfer: transferSpy,
@@ -466,7 +588,7 @@ describe("walletStore", async () => {
     keys(operationsMap).forEach((operation) => {
       const spy = operationsMap[operation];
 
-      it("should return a resolved promise with the operation result if an operation succeeds", async () => {
+      it("should return a resolved promise with the operation result if an operation succeeds even if the last sync fails", async () => {
         await walletStore.init(wallet);
         await vi.advanceTimersToNextTimerAsync();
 
@@ -480,6 +602,16 @@ describe("walletStore", async () => {
         // @ts-ignore it's a mock and we don't care to pass the correct arguments
         expect(await walletStore[operation]()).toBe(fakeSuccess);
         expect(get(walletStore).error).toBe(fakeSyncError);
+        expect(syncSpy).toHaveBeenCalledTimes(3);
+        expect(syncSpy).toHaveBeenNthCalledWith(1, {
+          signal: expect.any(AbortSignal),
+        });
+        expect(syncSpy).toHaveBeenNthCalledWith(2, {
+          signal: expect.any(AbortSignal),
+        });
+        expect(syncSpy).toHaveBeenNthCalledWith(3, {
+          signal: expect.any(AbortSignal),
+        });
 
         walletStore.reset();
       });
@@ -501,6 +633,16 @@ describe("walletStore", async () => {
         await vi.advanceTimersToNextTimerAsync();
 
         expect(get(walletStore).error).toBe(fakeSyncError);
+        expect(syncSpy).toHaveBeenCalledTimes(3);
+        expect(syncSpy).toHaveBeenNthCalledWith(1, {
+          signal: expect.any(AbortSignal),
+        });
+        expect(syncSpy).toHaveBeenNthCalledWith(2, {
+          signal: expect.any(AbortSignal),
+        });
+        expect(syncSpy).toHaveBeenNthCalledWith(3, {
+          signal: expect.any(AbortSignal),
+        });
 
         walletStore.reset();
       });
