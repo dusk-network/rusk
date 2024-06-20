@@ -13,6 +13,7 @@ use node_data::StepName;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
+pub type VoterWithCredits = (StakePublicKey, u8);
 
 #[derive(Debug)]
 pub enum Error {
@@ -26,6 +27,7 @@ pub struct CallParams {
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
     pub missed_generators: Vec<StakePublicKey>,
+    pub voters_pubkey: Vec<VoterWithCredits>,
 }
 
 #[derive(Default)]
@@ -63,6 +65,7 @@ pub trait Operations: Send + Sync {
     async fn verify_state_transition(
         &self,
         blk: &Block,
+        voters: &[VoterWithCredits],
     ) -> Result<VerificationOutput, Error>;
 
     async fn execute_state_transition(

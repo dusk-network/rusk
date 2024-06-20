@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{get_current_timestamp, RoundUpdate};
-use crate::operations::{CallParams, Operations};
+use crate::operations::{CallParams, Operations, VoterWithCredits};
 use node_data::ledger::{to_str, Attestation, Block, IterationsInfo, Seed};
 use std::cmp::max;
 
@@ -46,7 +46,13 @@ impl<T: Operations> Generator<T> {
         let start = Instant::now();
 
         let candidate = self
-            .generate_block(ru, Seed::from(seed), iteration, failed_iterations)
+            .generate_block(
+                ru,
+                Seed::from(seed),
+                iteration,
+                failed_iterations,
+                ru.prev_block_voters(),
+            )
             .await?;
 
         info!(
@@ -81,6 +87,7 @@ impl<T: Operations> Generator<T> {
         seed: Seed,
         iteration: u8,
         failed_iterations: IterationsInfo,
+        voters: &[VoterWithCredits],
     ) -> Result<Block, crate::operations::Error> {
         let missed_generators = failed_iterations
             .to_missed_generators()
@@ -91,6 +98,7 @@ impl<T: Operations> Generator<T> {
             block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             generator_pubkey: ru.pubkey_bls.clone(),
             missed_generators,
+            voters_pubkey: voters.to_owned(),
         };
 
         let result = self

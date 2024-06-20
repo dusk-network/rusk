@@ -7,7 +7,7 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config;
 use crate::execution_ctx::ExecutionCtx;
-use crate::operations::Operations;
+use crate::operations::{Operations, VoterWithCredits};
 use crate::validation::handler;
 use anyhow::anyhow;
 use node_data::ledger::{to_str, Block};
@@ -104,13 +104,16 @@ impl<T: Operations + 'static> ValidationStep<T> {
         };
 
         // Call Verify State Transition to make sure transactions set is valid
-        let vote = match Self::call_vst(candidate, executor).await {
-            Ok(_) => Vote::Valid(header.hash),
-            Err(err) => {
-                error!(event = "failed_vst_call", ?err);
-                Vote::Invalid(header.hash)
-            }
-        };
+        let vote =
+            match Self::call_vst(candidate, ru.prev_block_voters(), executor)
+                .await
+            {
+                Ok(_) => Vote::Valid(header.hash),
+                Err(err) => {
+                    error!(event = "failed_vst_call", ?err);
+                    Vote::Invalid(header.hash)
+                }
+            };
 
         Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
     }
@@ -140,12 +143,13 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
     async fn call_vst(
         candidate: &Block,
+        voters: &[VoterWithCredits],
         executor: Arc<Mutex<T>>,
     ) -> anyhow::Result<()> {
         match executor
             .lock()
             .await
-            .verify_state_transition(candidate)
+            .verify_state_transition(candidate, voters)
             .await
         {
             Ok(output) => {
