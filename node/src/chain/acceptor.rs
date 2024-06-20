@@ -173,12 +173,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
 
+        // TODO: Read last block
+        let voters = vec![];
+
         self.task.write().await.spawn(
             self.tip.read().await.inner(),
             provisioners_list,
             &self.db,
             &self.vm,
             base_timeouts,
+            voters,
         );
     }
 
@@ -454,6 +458,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         };
 
+        let voters = vec![];
+
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
 
@@ -465,7 +471,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = vm.accept(blk.inner())?;
+                let (txs, verification_output) =
+                    vm.accept(blk.inner(), &voters[..])?;
 
                 est_elapsed_time = start.elapsed();
 
@@ -601,6 +608,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.db,
                 &self.vm,
                 base_timeouts,
+                voters,
             );
         }
 
@@ -715,6 +723,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&tip.inner().header().hash),
         );
 
+        // TODO: Read last block
+        let voters = vec![];
+
         let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
             tip.inner(),
@@ -722,6 +733,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             base_timeouts,
+            voters,
         );
     }
 

@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
-    CallParams, Error, Operations, Output, VerificationOutput,
+    CallParams, Error, Operations, Output, VerificationOutput, VoterWithCredits,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
@@ -86,6 +86,7 @@ impl Task {
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         base_timeout: TimeoutSet,
+        voters: Vec<VoterWithCredits>,
     ) {
         let current = provisioners_list.to_current();
         let consensus_task = Consensus::new(
@@ -106,6 +107,7 @@ impl Task {
             self.keys.0,
             tip.header(),
             base_timeout.clone(),
+            voters,
         );
 
         self.task_id += 1;
@@ -266,12 +268,13 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     async fn verify_state_transition(
         &self,
         blk: &Block,
+        voters: &[VoterWithCredits],
     ) -> Result<VerificationOutput, dusk_consensus::operations::Error> {
         info!("verifying state");
 
         let vm = self.vm.read().await;
 
-        Ok(vm.verify_state_transition(blk).map_err(|err| {
+        Ok(vm.verify_state_transition(blk, voters).map_err(|err| {
             error!("failed to call VST {}", err);
             Error::Failed
         })?)
