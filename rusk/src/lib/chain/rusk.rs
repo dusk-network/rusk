@@ -15,7 +15,9 @@ use tokio::task;
 use tracing::{debug, info, warn};
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{CallParams, VerificationOutput};
+use dusk_consensus::operations::{
+    CallParams, VerificationOutput, VoterWithCredits,
+};
 use execution_core::{
     stake::StakeData, BlsScalar, StakePublicKey,
     Transaction as PhoenixTransaction,
@@ -92,6 +94,7 @@ impl Rusk {
         let block_gas_limit = params.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let missed_generators = &params.missed_generators[..];
+        let voters = &params.voters_pubkey[..];
 
         let mut session = self.session(block_height, None)?;
 
@@ -170,6 +173,7 @@ impl Rusk {
             dusk_spent,
             generator,
             missed_generators,
+            voters,
         )?;
         update_hasher(&mut event_hasher, &coinbase_events);
 
@@ -194,6 +198,7 @@ impl Rusk {
         generator: &StakePublicKey,
         txs: &[Transaction],
         missed_generators: &[StakePublicKey],
+        voters: &[VoterWithCredits],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -204,6 +209,7 @@ impl Rusk {
             generator,
             txs,
             missed_generators,
+            voters,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -222,6 +228,7 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[StakePublicKey],
+        voters: &[VoterWithCredits],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -232,6 +239,7 @@ impl Rusk {
             &generator,
             &txs[..],
             missed_generators,
+            voters,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -406,6 +414,7 @@ fn accept(
     generator: &StakePublicKey,
     txs: &[Transaction],
     missed_generators: &[StakePublicKey],
+    voters: &[VoterWithCredits],
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -452,6 +461,7 @@ fn accept(
         dusk_spent,
         generator,
         missed_generators,
+        voters,
     )?;
 
     update_hasher(&mut event_hasher, &coinbase_events);
@@ -541,9 +551,18 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &StakePublicKey,
     slashing: &[StakePublicKey],
+    voters: &[(StakePublicKey, u8)],
 ) -> Result<Vec<Event>> {
-    let (dusk_value, generator_value) =
-        coinbase_value(block_height, dusk_spent);
+    let (dusk_value, reward_value) = coinbase_value(block_height, dusk_spent);
+
+    let voters_reward = reward_value.checked_div(10).expect("valid reward");
+    let generator_reward = reward_value.checked_sub(voters_reward);
+
+    let credits = voters.iter().map(|(_, credits)| credits).sum();
+    let credit_reward = match credits {
+        0 => 0,
+        _ => voters_reward / credits as u64,
+    };
 
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -557,10 +576,23 @@ fn reward_slash_and_update_root(
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
-        &(*generator, generator_value),
+        &(*generator, generator_reward),
         u64::MAX,
     )?;
     events.extend(r.events);
+
+    if credit_reward > 0 {
+        for (to_voter, credits) in voters {
+            let voter_reward = *credits as u64 * credit_reward;
+            let r = session.call::<_, ()>(
+                STAKE_CONTRACT,
+                "reward",
+                &(*to_voter, voter_reward),
+                u64::MAX,
+            )?;
+            events.extend(r.events);
+        }
+    }
 
     let slash_amount = emission_amount(block_height);
 
