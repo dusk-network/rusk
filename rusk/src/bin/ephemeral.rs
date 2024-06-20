@@ -15,18 +15,20 @@ use tracing::error;
 pub(crate) fn configure(state_zip: &PathBuf) -> Result<Option<TempDir>> {
     let tmpdir = tempfile::tempdir()?;
 
+    let state_dir = tmpdir.path().join("state");
+
     let mut f = File::open(state_zip)?;
     let mut data = Vec::new();
     f.read_to_end(&mut data)?;
 
-    let unarchive = tar::unarchive(&data[..], tmpdir.path());
+    let unarchive = tar::unarchive(&data[..], state_dir.as_path());
 
     if let Err(e) = unarchive {
         error!("Invalid state input {}", e);
         return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, ""));
     }
 
-    env::set_var("RUSK_STATE_PATH", tmpdir.as_ref().as_os_str());
+    env::set_var("RUSK_STATE_PATH", state_dir.as_os_str());
 
     Ok(Some(tmpdir))
 }
