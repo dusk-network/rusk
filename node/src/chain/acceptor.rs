@@ -19,6 +19,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use dusk_consensus::operations::VoterWithCredits;
 use execution_core::stake::Unstake;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
@@ -414,13 +415,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let attested = verify_block_header(
-            self.db.clone(),
-            &tip.inner().header().clone(),
-            &provisioners_list,
-            blk.header(),
-        )
-        .await?;
+        let (attested, prev_block_voters, tip_block_voters) =
+            verify_block_header(
+                self.db.clone(),
+                &tip.inner().header().clone(),
+                &provisioners_list,
+                blk.header(),
+            )
+            .await?;
 
         // Elapsed time header verification
         histogram!("dusk_block_header_elapsed")
@@ -458,8 +460,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         };
 
-        let voters = vec![];
-
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
         let header = blk.inner().header();
 
@@ -472,7 +472,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
                 let (txs, verification_output) =
-                    vm.accept(blk.inner(), &voters[..])?;
+                    vm.accept(blk.inner(), &prev_block_voters[..])?;
 
                 est_elapsed_time = start.elapsed();
 
@@ -608,7 +608,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.db,
                 &self.vm,
                 base_timeouts,
-                voters,
+                tip_block_voters,
             );
         }
 
@@ -888,7 +888,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<(bool, Vec<VoterWithCredits>, Vec<VoterWithCredits>)> {
     let validator = Validator::new(db, prev_header, provisioners);
     validator.execute_checks(header, false).await
 }
