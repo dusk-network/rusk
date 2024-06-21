@@ -13,7 +13,7 @@ use node_data::StepName;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
-pub type VoterWithCredits = (StakePublicKey, u8);
+pub type VoterWithCredits = (StakePublicKey, usize);
 
 #[derive(Debug)]
 pub enum Error {
