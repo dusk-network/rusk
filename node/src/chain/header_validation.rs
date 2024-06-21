@@ -345,7 +345,7 @@ pub async fn verify_block_att(
 fn merge_committees(a: &Committee, b: &Committee) -> Vec<VoterWithCredits> {
     let mut members = a.members().clone();
     for (key, value) in b.members() {
-        /// Keeps track of the number of occurrences for each member.
+        // Keeps track of the number of occurrences for each member.
         let counter = members.entry(key.clone()).or_insert(0);
         *counter += *value;
     }

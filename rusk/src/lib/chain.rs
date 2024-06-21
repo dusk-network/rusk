@@ -56,13 +56,19 @@ impl RuskNode {
 ///
 /// 90% of the total value goes to the generator (rounded up).
 /// 10% of the total value goes to the Dusk address (rounded down).
-const fn coinbase_value(block_height: u64, dusk_spent: u64) -> (Dusk, Dusk) {
+const fn coinbase_value(
+    block_height: u64,
+    dusk_spent: u64,
+) -> (Dusk, Dusk, Dusk) {
     let value = emission_amount(block_height) + dusk_spent;
 
     let dusk_value = value / 10;
-    let generator_value = value - dusk_value;
+    let reward = value - dusk_value;
 
-    (dusk_value, generator_value)
+    let voters_value = reward / 10;
+    let generator_value = reward - voters_value;
+
+    (dusk_value, generator_value, voters_value)
 }
 
 /// This implements the emission schedule described in the economic paper.

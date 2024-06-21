@@ -14,7 +14,7 @@ use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
 };
@@ -551,12 +551,10 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &StakePublicKey,
     slashing: &[StakePublicKey],
-    voters: &[(StakePublicKey, u8)],
+    voters: &[(StakePublicKey, usize)],
 ) -> Result<Vec<Event>> {
-    let (dusk_value, reward_value) = coinbase_value(block_height, dusk_spent);
-
-    let voters_reward = reward_value.checked_div(10).expect("valid reward");
-    let generator_reward = reward_value.checked_sub(voters_reward);
+    let (dusk_value, generator_reward, voters_reward) =
+        coinbase_value(block_height, dusk_spent);
 
     let credits = voters.iter().map(|(_, credits)| credits).sum();
     let credit_reward = match credits {
@@ -581,6 +579,12 @@ fn reward_slash_and_update_root(
     )?;
     events.extend(r.events);
 
+    info!(
+        event = "generator rewarded",
+        voter = ?bs58::encode(&generator.to_bytes()).into_string(),
+        reward = generator_reward
+    );
+
     if credit_reward > 0 {
         for (to_voter, credits) in voters {
             let voter_reward = *credits as u64 * credit_reward;
@@ -591,6 +595,12 @@ fn reward_slash_and_update_root(
                 u64::MAX,
             )?;
             events.extend(r.events);
+
+            info!(
+                event = "voter rewarded",
+                voter = ?bs58::encode(&to_voter.to_bytes()).into_string(),
+                reward = voter_reward
+            )
         }
     }
 
