@@ -9,15 +9,18 @@ use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::MINIMUM_BLOCK_TIME;
+use dusk_consensus::operations::VoterWithCredits;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
+use dusk_consensus::user::sortition::Config;
 use node_data::ledger::to_str;
 use node_data::ledger::Signature;
 use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
@@ -65,15 +68,17 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'_ ledger::Header,
         disable_winner_att_check: bool,
-    ) -> anyhow::Result<bool> {
+    ) -> anyhow::Result<(bool, Vec<VoterWithCredits>)> {
         self.verify_basic_fields(candidate_block).await?;
-        self.verify_prev_block_cert(candidate_block).await?;
+        let prev_block_voters =
+            self.verify_prev_block_cert(candidate_block).await?;
 
         if !disable_winner_att_check {
             self.verify_winning_att(candidate_block).await?;
         }
 
-        self.verify_failed_iterations(candidate_block).await
+        let res = self.verify_failed_iterations(candidate_block).await?;
+        Ok((res, prev_block_voters))
     }
 
     /// Verifies any non-attestation field
@@ -159,9 +164,9 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<VoterWithCredits>> {
         if self.prev_header.height == 0 {
-            return Ok(());
+            return Ok(vec![]);
         }
 
         let prev_block_seed = self.db.read().await.view(|v| {
@@ -172,7 +177,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
-        verify_block_att(
+        let (_, _, committee_set) = verify_block_att(
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
@@ -182,7 +187,38 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         )
         .await?;
 
-        Ok(())
+        let v_committee = committee_set
+            .get(&Config::new(
+                prev_block_seed,
+                self.prev_header.height,
+                self.prev_header.iteration,
+                StepName::Validation,
+                None,
+            ))
+            .expect("validation committee");
+
+        let r_committee = committee_set
+            .get(&Config::new(
+                prev_block_seed,
+                self.prev_header.height,
+                self.prev_header.iteration,
+                StepName::Ratification,
+                None,
+            ))
+            .expect("ratification committee");
+
+        let mut members = v_committee.members().clone();
+        for (key, value) in r_committee.members() {
+            let counter = members.entry(key.clone()).or_insert(0);
+            *counter += *value;
+        }
+
+        let voters_with_rewards: Vec<_> = members
+            .into_iter()
+            .map(|(key, credits)| (*key.inner(), credits))
+            .collect();
+
+        Ok(voters_with_rewards)
     }
 
     /// Return true if there is a attestation for each failed iteration, and if
@@ -256,14 +292,14 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     }
 }
 
-pub async fn verify_block_att(
+pub async fn verify_block_att<'a>(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
-    curr_eligible_provisioners: &Provisioners,
+    curr_eligible_provisioners: &'a Provisioners,
     round: u64,
     att: &ledger::Attestation,
     iteration: u8,
-) -> anyhow::Result<(QuorumResult, QuorumResult)> {
+) -> anyhow::Result<(QuorumResult, QuorumResult, CommitteeSet<'a>)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
@@ -327,6 +363,7 @@ pub async fn verify_block_att(
             ));
         }
     }
+    let committee_set = committee.read().await.deref().clone();
 
-    Ok(result)
+    Ok((result.0, result.1, committee_set))
 }
