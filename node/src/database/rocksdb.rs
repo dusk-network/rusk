@@ -303,15 +303,24 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 self.put_cf(cf, tx.inner.id(), d)?;
             }
         }
-
-        // CF: HEIGHT -> (BLOCK_HASH, BLOCK_LABEL)
-        let mut buf = vec![];
-        buf.write_all(&header.hash[..])?;
-        label.write(&mut buf)?;
-
-        self.put_cf(self.ledger_height_cf, header.height.to_le_bytes(), buf)?;
+        self.store_block_label(header.height, &header.hash, label)?;
 
         Ok(self.get_size())
+    }
+
+    fn store_block_label(
+        &self,
+        height: u64,
+        hash: &[u8; 32],
+        label: Label,
+    ) -> Result<()> {
+        // CF: HEIGHT -> (BLOCK_HASH, BLOCK_LABEL)
+        let mut buf = vec![];
+        buf.write_all(hash)?;
+        label.write(&mut buf)?;
+
+        self.put_cf(self.ledger_height_cf, height.to_le_bytes(), buf)?;
+        Ok(())
     }
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()> {
