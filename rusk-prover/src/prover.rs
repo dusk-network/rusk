@@ -5,12 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod execute;
-mod stct;
-mod wfct;
 
 use crate::{ProverError, ProverResult};
 
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::Serializable;
 use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
 
@@ -21,18 +19,6 @@ use rand::rngs::OsRng;
 use rand::{rngs::StdRng, SeedableRng};
 
 use dusk_plonk::prelude::*;
-use execution_core::{Crossover, Fee, SchnorrSignature};
-
-use transfer_circuits::{
-    CircuitInput, CircuitInputSignature, ExecuteCircuit,
-    SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
-};
-
-pub use stct::STCT_INPUT_LEN;
-pub use wfct::WFCT_INPUT_LEN;
-
-/// Arity of the transfer tree.
-pub const A: usize = 4;
 
 #[derive(Debug, Default)]
 pub struct LocalProver;
@@ -40,14 +26,6 @@ pub struct LocalProver;
 impl crate::Prover for LocalProver {
     fn prove_execute(&self, circuit_inputs: &[u8]) -> ProverResult {
         self.local_prove_execute(circuit_inputs)
-    }
-
-    fn prove_stct(&self, circuit_inputs: &[u8]) -> ProverResult {
-        self.local_prove_stct(circuit_inputs)
-    }
-
-    fn prove_wfct(&self, circuit_inputs: &[u8]) -> ProverResult {
-        self.local_prove_wfct(circuit_inputs)
     }
 }
 

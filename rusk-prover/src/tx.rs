@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -13,24 +12,23 @@ use dusk_bytes::{
 };
 use dusk_plonk::prelude::Proof;
 use execution_core::{
-    BlsScalar, Crossover, Fee, JubJubAffine, JubJubExtended, JubJubScalar,
-    Note, Ownable, SchnorrSignatureDouble, SecretKey, Transaction,
-    GENERATOR_NUMS_EXTENDED,
+    transfer::{Payload, Transaction, TRANSFER_TREE_DEPTH},
+    BlsScalar, JubJubAffine, JubJubExtended, JubJubScalar, Note, PublicKey,
+    SchnorrSignature, SchnorrSignatureDouble, SecretKey,
+    GENERATOR_NUMS_EXTENDED, OUTPUT_NOTES,
 };
 
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand_core::{CryptoRng, RngCore};
-use rusk_abi::hash::Hasher;
-use rusk_abi::{ContractId, CONTRACT_ID_BYTES, POSEIDON_TREE_DEPTH};
 
 /// An input to a transaction that is yet to be proven.
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct UnprovenTransactionInput {
     pub nullifier: BlsScalar,
-    pub opening: PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>,
+    pub opening: PoseidonOpening<(), TRANSFER_TREE_DEPTH>,
     pub note: Note,
     pub value: u64,
-    pub blinder: JubJubScalar,
+    pub value_blinder: JubJubScalar,
     pub npk_prime: JubJubExtended,
     pub sig: SchnorrSignatureDouble,
 }
@@ -38,23 +36,23 @@ pub struct UnprovenTransactionInput {
 impl UnprovenTransactionInput {
     pub fn new<Rng: RngCore + CryptoRng>(
         rng: &mut Rng,
-        sk: &SecretKey,
+        sender_sk: &SecretKey,
         note: Note,
         value: u64,
-        blinder: JubJubScalar,
-        opening: PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>,
-        tx_hash: BlsScalar,
+        value_blinder: JubJubScalar,
+        opening: PoseidonOpening<(), TRANSFER_TREE_DEPTH>,
+        payload_hash: BlsScalar,
     ) -> Self {
-        let nullifier = note.gen_nullifier(sk);
-        let nsk = sk.sk_r(note.stealth_address());
-        let sig = nsk.sign_double(rng, tx_hash);
+        let nullifier = note.gen_nullifier(sender_sk);
+        let nsk = sender_sk.gen_note_sk(note.stealth_address());
+        let sig = nsk.sign_double(rng, payload_hash);
 
         let npk_prime = GENERATOR_NUMS_EXTENDED * nsk.as_ref();
 
         Self {
             note,
             value,
-            blinder,
+            value_blinder,
             sig,
             nullifier,
             opening,
@@ -83,7 +81,7 @@ impl UnprovenTransactionInput {
         bytes.extend_from_slice(&self.nullifier.to_bytes());
         bytes.extend_from_slice(&self.note.to_bytes());
         bytes.extend_from_slice(&self.value.to_bytes());
-        bytes.extend_from_slice(&self.blinder.to_bytes());
+        bytes.extend_from_slice(&self.value_blinder.to_bytes());
         bytes.extend_from_slice(&affine_npk_p.to_bytes());
         bytes.extend_from_slice(&self.sig.to_bytes());
         bytes.extend(opening_bytes);
@@ -98,7 +96,7 @@ impl UnprovenTransactionInput {
         let nullifier = BlsScalar::from_reader(&mut bytes)?;
         let note = Note::from_reader(&mut bytes)?;
         let value = u64::from_reader(&mut bytes)?;
-        let blinder = JubJubScalar::from_reader(&mut bytes)?;
+        let value_blinder = JubJubScalar::from_reader(&mut bytes)?;
         let npk_prime =
             JubJubExtended::from(JubJubAffine::from_reader(&mut bytes)?);
         let sig = SchnorrSignatureDouble::from_reader(&mut bytes)?;
@@ -112,7 +110,7 @@ impl UnprovenTransactionInput {
         Ok(Self {
             note,
             value,
-            blinder,
+            value_blinder,
             sig,
             nullifier,
             opening,
@@ -126,7 +124,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Returns the opening of the input.
-    pub fn opening(&self) -> &PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4> {
+    pub fn opening(&self) -> &PoseidonOpening<(), TRANSFER_TREE_DEPTH> {
         &self.opening
     }
 
@@ -140,9 +138,9 @@ impl UnprovenTransactionInput {
         self.value
     }
 
-    /// Returns the blinding factor of the input.
-    pub fn blinding_factor(&self) -> JubJubScalar {
-        self.blinder
+    /// Returns the blinding factor for the value of the input.
+    pub fn value_blinder(&self) -> JubJubScalar {
+        self.value_blinder
     }
 
     /// Returns the input's note public key prime.
@@ -158,36 +156,19 @@ impl UnprovenTransactionInput {
 
 /// A transaction that is yet to be proven. The purpose of this is solely to
 /// send to the node to perform a circuit proof.
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct UnprovenTransaction {
     pub inputs: Vec<UnprovenTransactionInput>,
-    pub outputs: Vec<(Note, u64, JubJubScalar)>,
-    pub anchor: BlsScalar,
-    pub fee: Fee,
-    pub crossover: Option<(Crossover, u64, JubJubScalar)>,
-    pub call: Option<(ContractId, String, Vec<u8>)>,
+    pub outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
+    pub payload: Payload,
+    pub sender_pk: PublicKey,
+    pub signatures: (SchnorrSignature, SchnorrSignature),
 }
 
 impl UnprovenTransaction {
     /// Consumes self and a proof to generate a transaction.
-    pub fn prove(self, proof: Proof) -> Transaction {
-        Transaction {
-            anchor: self.anchor,
-            nullifiers: self
-                .inputs
-                .into_iter()
-                .map(|input| input.nullifier)
-                .collect(),
-            outputs: self
-                .outputs
-                .into_iter()
-                .map(|(note, _, _)| note)
-                .collect(),
-            fee: self.fee,
-            crossover: self.crossover.map(|c| c.0),
-            proof: proof.to_bytes().to_vec(),
-            call: self.call.map(|c| (c.0.to_bytes(), c.1, c.2)),
-        }
+    pub fn gen_transaction(self, proof: Proof) -> Transaction {
+        Transaction::new(self.payload, proof.to_bytes().to_vec())
     }
 
     /// Serialize the transaction to a variable length byte buffer.
@@ -203,20 +184,28 @@ impl UnprovenTransaction {
             .iter()
             .fold(0, |len, input| len + input.len());
 
-        let serialized_outputs: Vec<
-            [u8; Note::SIZE + u64::SIZE + JubJubScalar::SIZE],
-        > = self
+        const OUTPUT_SIZE: usize = Note::SIZE
+            + u64::SIZE
+            + JubJubScalar::SIZE
+            + 2 * JubJubScalar::SIZE;
+        let serialized_outputs: Vec<[u8; OUTPUT_SIZE]> = self
             .outputs
             .iter()
-            .map(|(note, value, blinder)| {
-                let mut buf = [0; Note::SIZE + u64::SIZE + JubJubScalar::SIZE];
+            .map(|(note, value, value_blinder, sender_blinder)| {
+                let mut buf = [0; OUTPUT_SIZE];
 
                 buf[..Note::SIZE].copy_from_slice(&note.to_bytes());
                 buf[Note::SIZE..Note::SIZE + u64::SIZE]
                     .copy_from_slice(&value.to_bytes());
                 buf[Note::SIZE + u64::SIZE
                     ..Note::SIZE + u64::SIZE + JubJubScalar::SIZE]
-                    .copy_from_slice(&blinder.to_bytes());
+                    .copy_from_slice(&value_blinder.to_bytes());
+                let mut start = Note::SIZE + u64::SIZE + JubJubScalar::SIZE;
+                buf[start..start + JubJubScalar::SIZE]
+                    .copy_from_slice(&sender_blinder[0].to_bytes());
+                start += JubJubScalar::SIZE;
+                buf[start..start + JubJubScalar::SIZE]
+                    .copy_from_slice(&sender_blinder[1].to_bytes());
 
                 buf
             })
@@ -226,25 +215,29 @@ impl UnprovenTransaction {
             .iter()
             .fold(0, |len, output| len + output.len());
 
-        let size = u64::SIZE
+        let payload_bytes = self.payload.to_var_bytes();
+
+        let size =
+            // the amount of inputs
+            u64::SIZE
+            // the len of each input item
             + num_inputs * u64::SIZE
+            // the total amount of bytes of the inputs
             + total_input_len
+            // the amount of outputs
             + u64::SIZE
+            // the total amount of bytes of the outputs
             + total_output_len
+            // the total amount of bytes of the payload
+            + u64::SIZE
+            // the payload
+            + payload_bytes.len()
+            // the payload-hash
             + BlsScalar::SIZE
-            + Fee::SIZE
-            + u64::SIZE
-            + self.crossover.map_or(0, |_| {
-                Crossover::SIZE + u64::SIZE + JubJubScalar::SIZE
-            })
-            + u64::SIZE
-            + self
-                .call
-                .as_ref()
-                .map(|(_, cname, cdata)| {
-                    CONTRACT_ID_BYTES + u64::SIZE + cname.len() + cdata.len()
-                })
-                .unwrap_or(0);
+            // the sender-pk
+            + PublicKey::SIZE
+            // the two signatures
+            + 2 * SchnorrSignature::SIZE;
 
         let mut buf = vec![0; size];
         let mut writer = &mut buf[..];
@@ -260,11 +253,12 @@ impl UnprovenTransaction {
             writer.write(&soutput);
         }
 
-        writer.write(&self.anchor.to_bytes());
-        writer.write(&self.fee.to_bytes());
+        writer.write(&(payload_bytes.len() as u64).to_bytes());
+        writer.write(&payload_bytes[..]);
 
-        write_crossover_value_blinder(&mut writer, self.crossover);
-        write_optional_call(&mut writer, &self.call);
+        writer.write(&self.sender_pk.to_bytes());
+        writer.write(&self.signatures.0.to_bytes());
+        writer.write(&self.signatures.1.to_bytes());
 
         buf
     }
@@ -286,46 +280,36 @@ impl UnprovenTransaction {
         for _ in 0..num_outputs {
             let note = Note::from_reader(&mut buffer)?;
             let value = u64::from_reader(&mut buffer)?;
-            let blinder = JubJubScalar::from_reader(&mut buffer)?;
+            let value_blinder = JubJubScalar::from_reader(&mut buffer)?;
+            let sender_blinder_a = JubJubScalar::from_reader(&mut buffer)?;
+            let sender_blinder_b = JubJubScalar::from_reader(&mut buffer)?;
 
-            outputs.push((note, value, blinder));
+            outputs.push((
+                note,
+                value,
+                value_blinder,
+                [sender_blinder_a, sender_blinder_b],
+            ));
         }
+        let outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]);
+            OUTPUT_NOTES] =
+            outputs.try_into().map_err(|_| BytesError::InvalidData)?;
 
-        let anchor = BlsScalar::from_reader(&mut buffer)?;
-        let fee = Fee::from_reader(&mut buffer)?;
+        let payload_len = u64::from_reader(&mut buffer)?;
+        let payload = Payload::from_slice(buffer)?;
+        let mut buffer = &buffer[payload_len as usize..];
 
-        let crossover = read_crossover_value_blinder(&mut buffer)?;
-
-        let call = read_optional_call(&mut buffer)?;
+        let sender_pk = PublicKey::from_reader(&mut buffer)?;
+        let sig_a = SchnorrSignature::from_reader(&mut buffer)?;
+        let sig_b = SchnorrSignature::from_reader(&mut buffer)?;
 
         Ok(Self {
             inputs,
             outputs,
-            anchor,
-            fee,
-            crossover,
-            call,
+            payload,
+            sender_pk,
+            signatures: (sig_a, sig_b),
         })
-    }
-
-    /// Returns the hash of the transaction.
-    pub fn hash(&self) -> BlsScalar {
-        let nullifiers: Vec<BlsScalar> =
-            self.inputs.iter().map(|input| input.nullifier).collect();
-
-        let hash_outputs: Vec<Note> =
-            self.outputs.iter().map(|(note, _, _)| *note).collect();
-        let hash_crossover = self.crossover.map(|c| c.0);
-        let hash_bytes = self.call.clone().map(|c| (c.0.to_bytes(), c.1, c.2));
-
-        Hasher::digest(Transaction::hash_input_bytes_from_components(
-            &nullifiers,
-            &hash_outputs,
-            &self.anchor,
-            &self.fee,
-            &hash_crossover,
-            &hash_bytes,
-        ))
     }
 
     /// Returns the inputs to the transaction.
@@ -334,135 +318,187 @@ impl UnprovenTransaction {
     }
 
     /// Returns the outputs of the transaction.
-    pub fn outputs(&self) -> &[(Note, u64, JubJubScalar)] {
+    pub fn outputs(&self) -> &[(Note, u64, JubJubScalar, [JubJubScalar; 2])] {
         &self.outputs
     }
 
-    /// Returns the anchor of the transaction.
-    pub fn anchor(&self) -> BlsScalar {
-        self.anchor
+    /// Returns the payload of the transaction.
+    pub fn payload(&self) -> &Payload {
+        &self.payload
     }
 
-    /// Returns the fee of the transaction.
-    pub fn fee(&self) -> &Fee {
-        &self.fee
-    }
-
-    /// Returns the crossover of the transaction.
-    pub fn crossover(&self) -> Option<&(Crossover, u64, JubJubScalar)> {
-        self.crossover.as_ref()
-    }
-
-    /// Returns the call of the transaction.
-    pub fn call(&self) -> Option<&(ContractId, String, Vec<u8>)> {
-        self.call.as_ref()
+    /// Returns the payload-hash of the transaction.
+    pub fn payload_hash(&self) -> BlsScalar {
+        self.payload().hash()
     }
 }
 
-/// Writes an optional call into the writer, prepending it with a `u64` denoting
-/// if it is present or not. This should be called at the end of writing other
-/// fields since it doesn't write any information about the length of the call
-/// data.
-fn write_optional_call<W: Write>(
-    writer: &mut W,
-    call: &Option<(ContractId, String, Vec<u8>)>,
-) -> Result<(), BytesError> {
-    match call {
-        Some((cid, cname, cdata)) => {
-            writer.write(&1_u64.to_bytes())?;
-
-            writer.write(cid.as_bytes())?;
-
-            let cname_len = cname.len() as u64;
-            writer.write(&cname_len.to_bytes())?;
-            writer.write(cname.as_bytes())?;
-
-            writer.write(cdata)?;
-        }
-        None => {
-            writer.write(&0_u64.to_bytes())?;
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use execution_core::{
+        transfer::{ContractCall, Fee},
+        SchnorrSecretKey, TxSkeleton,
     };
+    use poseidon_merkle::{Item, Tree};
+    use rand::{rngs::StdRng, SeedableRng};
 
-    Ok(())
-}
+    #[test]
+    fn serialize_deserialize() -> Result<(), BytesError> {
+        let mut rng = StdRng::seed_from_u64(0xbeef);
+        let sender_sk = SecretKey::random(&mut rng);
+        let sender_pk = PublicKey::from(&sender_sk);
+        let receiver_pk = PublicKey::from(&SecretKey::random(&mut rng));
 
-/// Reads an optional call from the given buffer. This should be called at the
-/// end of parsing other fields since it consumes the entirety of the buffer.
-fn read_optional_call(
-    buffer: &mut &[u8],
-) -> Result<Option<(ContractId, String, Vec<u8>)>, BytesError> {
-    let mut call = None;
-
-    if u64::from_reader(buffer)? != 0 {
-        let buf_len = buffer.len();
-
-        // needs to be at least the size of a contract ID and have some call
-        // data.
-        if buf_len < CONTRACT_ID_BYTES {
-            return Err(BytesError::BadLength {
-                found: buf_len,
-                expected: CONTRACT_ID_BYTES,
-            });
-        }
-        let (mid_buffer, mut buffer_left) = {
-            let (buf, left) = buffer.split_at(CONTRACT_ID_BYTES);
-
-            let mut mid_buf = [0u8; CONTRACT_ID_BYTES];
-            mid_buf.copy_from_slice(buf);
-
-            (mid_buf, left)
+        let transfer_value = 42;
+        let transfer_value_blinder = JubJubScalar::from(5647890216u64);
+        let transfer_sender_blinder =
+            [JubJubScalar::from(57u64), JubJubScalar::from(789u64)];
+        let transfer_note = Note::obfuscated(
+            &mut rng,
+            &sender_pk,
+            &receiver_pk,
+            transfer_value,
+            transfer_value_blinder,
+            transfer_sender_blinder,
+        );
+        let change_value = 24;
+        let change_sender_blinder =
+            [JubJubScalar::from(7483u64), JubJubScalar::from(265829u64)];
+        let change_note = Note::transparent(
+            &mut rng,
+            &sender_pk,
+            &receiver_pk,
+            change_value,
+            transfer_sender_blinder,
+        );
+        let tx_skeleton = TxSkeleton {
+            root: BlsScalar::from(1),
+            nullifiers: vec![
+                BlsScalar::from(2),
+                BlsScalar::from(3),
+                BlsScalar::from(4),
+                BlsScalar::from(5),
+            ],
+            outputs: [transfer_note.clone(), change_note.clone()],
+            max_fee: 10000,
+            deposit: 20,
         };
 
-        let contract_id = ContractId::from(mid_buffer);
+        let fee = Fee::new(&mut rng, &sender_pk, 4242, 42);
+        let has_deposit = true;
+        let call = ContractCall::new(
+            [10; 32],
+            "some method",
+            &vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        )
+        .unwrap();
 
-        let buffer = &mut buffer_left;
+        let payload = Payload {
+            tx_skeleton,
+            fee,
+            deposit: has_deposit,
+            contract_call: Some(call),
+        };
 
-        let cname_len = u64::from_reader(buffer)?;
-        let (cname_bytes, buffer_left) = buffer.split_at(cname_len as usize);
+        let sender_blinder_1 =
+            [JubJubScalar::from(521u64), JubJubScalar::from(6521u64)];
+        let sender_blinder_2 = [
+            JubJubScalar::from(585631u64),
+            JubJubScalar::from(65658151u64),
+        ];
+        let value1 = 100;
+        let value2 = 200;
+        let note1 = Note::transparent(
+            &mut rng,
+            &sender_pk,
+            &receiver_pk,
+            value1,
+            sender_blinder_1,
+        );
+        let note2 = Note::transparent(
+            &mut rng,
+            &sender_pk,
+            &receiver_pk,
+            value2,
+            sender_blinder_2,
+        );
+        let mut tree = Tree::new();
+        let pos1 = 12;
+        tree.insert(
+            pos1,
+            Item {
+                hash: note1.hash(),
+                data: (),
+            },
+        );
+        let pos2 = 13;
+        tree.insert(
+            pos2,
+            Item {
+                hash: note2.hash(),
+                data: (),
+            },
+        );
+        let opening1 = tree.opening(pos1).unwrap();
+        let opening2 = tree.opening(pos2).unwrap();
 
-        let cname = String::from_utf8(cname_bytes.to_vec())
-            .map_err(|_| BytesError::InvalidData)?;
+        let payload_hash = payload.hash();
+        let inputs = vec![
+            UnprovenTransactionInput::new(
+                &mut rng,
+                &sender_sk,
+                note1,
+                value1,
+                JubJubScalar::zero(),
+                opening1,
+                payload_hash,
+            ),
+            UnprovenTransactionInput::new(
+                &mut rng,
+                &sender_sk,
+                note2,
+                value2,
+                JubJubScalar::zero(),
+                opening2,
+                payload_hash,
+            ),
+        ];
 
-        let call_data = Vec::from(buffer_left);
-        call = Some((contract_id, cname, call_data));
+        let schnorr_sk_a = SchnorrSecretKey::from(sender_sk.a());
+        let sig_a = schnorr_sk_a.sign(&mut rng, payload_hash);
+        let schnorr_sk_b = SchnorrSecretKey::from(sender_sk.b());
+        let sig_b = schnorr_sk_b.sign(&mut rng, payload_hash);
+
+        let utx = UnprovenTransaction {
+            inputs,
+            outputs: [
+                (
+                    transfer_note,
+                    transfer_value,
+                    transfer_value_blinder,
+                    transfer_sender_blinder,
+                ),
+                (
+                    change_note,
+                    change_value,
+                    JubJubScalar::zero(),
+                    change_sender_blinder,
+                ),
+            ],
+            payload,
+            sender_pk,
+            signatures: (sig_a, sig_b),
+        };
+
+        let utx_bytes = utx.to_var_bytes();
+        let deserialized_utx = UnprovenTransaction::from_slice(&utx_bytes[..])?;
+        assert_eq!(utx.inputs, deserialized_utx.inputs);
+        assert_eq!(utx.outputs, deserialized_utx.outputs);
+        assert_eq!(utx.payload, deserialized_utx.payload);
+        assert_eq!(utx.sender_pk, deserialized_utx.sender_pk);
+        assert_eq!(utx.signatures, deserialized_utx.signatures);
+
+        Ok(())
     }
-
-    Ok(call)
-}
-
-fn write_crossover_value_blinder<W: Write>(
-    writer: &mut W,
-    crossover: Option<(Crossover, u64, JubJubScalar)>,
-) -> Result<(), BytesError> {
-    match crossover {
-        Some((crossover, value, blinder)) => {
-            writer.write(&1_u64.to_bytes())?;
-            writer.write(&crossover.to_bytes())?;
-            writer.write(&value.to_bytes())?;
-            writer.write(&blinder.to_bytes())?;
-        }
-        None => {
-            writer.write(&0_u64.to_bytes())?;
-        }
-    }
-
-    Ok(())
-}
-
-/// Reads an optional crossover from the given buffer.
-fn read_crossover_value_blinder(
-    buffer: &mut &[u8],
-) -> Result<Option<(Crossover, u64, JubJubScalar)>, BytesError> {
-    let ser = match u64::from_reader(buffer)? {
-        0 => None,
-        _ => {
-            let crossover = Crossover::from_reader(buffer)?;
-            let value = u64::from_reader(buffer)?;
-            let blinder = JubJubScalar::from_reader(buffer)?;
-            Some((crossover, value, blinder))
-        }
-    };
-
-    Ok(ser)
 }

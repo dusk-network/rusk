@@ -7,7 +7,7 @@ autobins = false
 [dependencies]
 dusk-bytes = { version = "0.1" }
 dusk-plonk = { version = "0.19", default-features = false }
-poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
+poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
 rand_core = "0.6"
 
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
@@ -20,11 +20,12 @@ execution-core = { version = "0.1.0", path = "../execution-core" }
 once_cell = { version = "1.9", optional = true }
 rand = { version = "0.8", optional = true }
 rusk-profile = { version = "0.6", path = "../rusk-profile", optional = true }
-transfer-circuits = { version = "0.5", path = "../circuits/transfer", optional = true }
+phoenix-circuits = { version = "0.2.1-rc", optional = true }
 
 [dev-dependencies]
 hex = "0.4"
 tokio = { version = "1.17.0", features = ["full"] }
+rand = "0.8"
 
 [features]
 default = ["local_prover"]
@@ -33,7 +34,7 @@ local_prover = [
     "dusk-plonk/std",
     "rand",
     "rusk-profile",
-    "transfer-circuits",
+    "phoenix-circuits",
     "std",
 ]
 no_random = []
