@@ -118,8 +118,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Receives results from the upper layer
                 recv = &mut result_chan.recv() => {
                     match recv? {
-                        Err(ConsensusError::Canceled) => {
-                            info!("consensus canceled");
+                        Err(ConsensusError::Canceled(round)) => {
+                            info!(event = "consensus canceled", round);
                         }
                         Err(err) => {
                             // Internal consensus execution has terminated with an error

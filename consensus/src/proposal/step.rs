@@ -78,6 +78,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     error!("could not send newblock msg due to {:?}", e);
                 }
 
+                Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
                 // register new candidate in local state
                 match self
                     .handler
