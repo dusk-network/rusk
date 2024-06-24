@@ -17,8 +17,8 @@ use tracing::{debug, info, warn};
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput};
 use execution_core::{
-    stake::StakeData, BlsScalar, StakePublicKey,
-    Transaction as PhoenixTransaction,
+    stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
+    StakePublicKey,
 };
 use node_data::ledger::{SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
@@ -112,7 +112,7 @@ impl Rusk {
                 }
             }
             let tx_id = hex::encode(unspent_tx.id());
-            if unspent_tx.inner.fee().gas_limit > block_gas_left {
+            if unspent_tx.inner.payload().fee().gas_limit > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
             }
@@ -145,7 +145,7 @@ impl Rusk {
                     update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
-                    let gas_price = unspent_tx.inner.fee.gas_price;
+                    let gas_price = unspent_tx.inner.payload().fee.gas_price;
                     dusk_spent += gas_spent * gas_price;
                     spent_txs.push(SpentTransaction {
                         inner: unspent_tx,
@@ -431,7 +431,7 @@ fn accept(
 
         let gas_spent = receipt.gas_spent;
 
-        dusk_spent += gas_spent * tx.fee.gas_price;
+        dusk_spent += gas_spent * tx.payload().fee.gas_price;
         block_gas_left = block_gas_left
             .checked_sub(gas_spent)
             .ok_or(Error::OutOfGas)?;
@@ -492,7 +492,7 @@ fn execute(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         tx,
-        tx.fee.gas_limit,
+        tx.payload().fee.gas_limit,
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -501,9 +501,10 @@ fn execute(
     }
 
     let contract_id = tx
-        .call
+        .payload()
+        .contract_call
         .clone()
-        .map(|(module_id, _, _)| ContractId::from_bytes(module_id));
+        .map(|call| ContractId::from_bytes(call.contract));
 
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
@@ -513,7 +514,7 @@ fn execute(
             TRANSFER_CONTRACT,
             "refund",
             &(
-                tx.fee,
+                tx.payload().fee,
                 receipt.gas_spent,
                 receipt.economic_mode.clone(),
                 contract_id,

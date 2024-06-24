@@ -6,15 +6,13 @@
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{Arc, RwLock};
 
-use execution_core::{BlsScalar, PublicKey, SecretKey};
-use ff::Field;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Store};
+use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
@@ -37,21 +35,6 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-static SK_0: LazyLock<SecretKey> = LazyLock::new(|| {
-    info!("Generating SecretKey #0");
-    TestStore.retrieve_sk(0).expect("Should not fail in test")
-});
-
-static SK_1: LazyLock<SecretKey> = LazyLock::new(|| {
-    info!("Generating SecretKey #1");
-    TestStore.retrieve_sk(1).expect("Should not fail in test")
-});
-
-static SK_2: LazyLock<SecretKey> = LazyLock::new(|| {
-    info!("Generating SecretKey #2");
-    TestStore.retrieve_sk(2).expect("Should not fail in test")
-});
-
 /// Executes three different transactions in the same block, expecting only two
 /// to be included due to exceeding the block gas limit
 fn wallet_transfer(
@@ -59,18 +42,10 @@ fn wallet_transfer(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     amount: u64,
 ) {
-    // Sender pk
-    let pk_0 = PublicKey::from(LazyLock::force(&SK_0));
-    let pk_1 = PublicKey::from(LazyLock::force(&SK_1));
-    let pk_2 = PublicKey::from(LazyLock::force(&SK_2));
-
-    let refunds = vec![pk_0, pk_1, pk_2];
-
     // Generate a receiver pk
     let receiver = wallet.public_key(3).expect("Failed to get public key");
 
     let mut rng = StdRng::seed_from_u64(0xdead);
-    let nonce = BlsScalar::random(&mut rng);
 
     let initial_balance_0 = wallet
         .get_balance(0)
@@ -113,16 +88,7 @@ fn wallet_transfer(
 
     for i in 0..3 {
         let tx = wallet
-            .transfer(
-                &mut rng,
-                i,
-                &refunds[i as usize],
-                &receiver,
-                amount,
-                GAS_LIMIT,
-                1,
-                nonce,
-            )
+            .transfer(&mut rng, i, &receiver, amount, GAS_LIMIT, 1)
             .expect("Failed to transfer");
         txs.push(tx);
     }
@@ -156,14 +122,14 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee_0 = txs[0].fee();
+    let fee_0 = txs[0].payload().fee();
     let fee_0 = fee_0.gas_limit * fee_0.gas_price;
 
     let final_balance_1 = wallet
         .get_balance(1)
         .expect("Failed to get the balance")
         .value;
-    let fee_1 = txs[1].fee();
+    let fee_1 = txs[1].payload().fee();
     let fee_1 = fee_1.gas_limit * fee_1.gas_price;
 
     assert!(

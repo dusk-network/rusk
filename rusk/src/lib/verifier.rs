@@ -9,9 +9,8 @@
 use crate::error::Error;
 use crate::Result;
 
-use execution_core::Transaction;
+use execution_core::transfer::Transaction;
 use rusk_profile::Circuit as CircuitProfile;
-use transfer_circuits::CircuitOutput;
 
 use std::sync::LazyLock;
 
@@ -28,57 +27,25 @@ pub static VD_EXEC_4_2: LazyLock<Vec<u8>> =
     LazyLock::new(|| fetch_verifier("ExecuteCircuitFourTwo"));
 
 pub fn verify_proof(tx: &Transaction) -> Result<bool> {
-    let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
+    let pi: Vec<rusk_abi::PublicInput> =
+        tx.public_inputs().iter().map(|pi| pi.into()).collect();
 
-    let inputs = &tx.nullifiers;
-    let outputs = &tx.outputs;
-    let proof = &tx.proof;
-    if outputs.len() > 2 {
-        return Err(Error::InvalidCircuitArguments(
-            inputs.len(),
-            outputs.len(),
-        ));
-    }
-    let mut pi: Vec<rusk_abi::PublicInput> =
-        Vec::with_capacity(9 + inputs.len());
+    let inputs_len = tx.payload().tx_skeleton.nullifiers.len();
+    let outputs_len = tx.payload().tx_skeleton.outputs.len();
 
-    pi.push(tx_hash.into());
-    pi.push(tx.anchor.into());
-    pi.extend(inputs.iter().map(|n| n.into()));
-
-    pi.push(
-        tx.crossover()
-            .copied()
-            .unwrap_or_default()
-            .value_commitment()
-            .into(),
-    );
-
-    let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
-
-    pi.push(fee_value.into());
-    pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
-    pi.extend(
-        (0usize..2usize.saturating_sub(outputs.len()))
-            .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),
-    );
-
-    let vd = match inputs.len() {
+    let vd = match inputs_len {
         1 => &VD_EXEC_1_2,
         2 => &VD_EXEC_2_2,
         3 => &VD_EXEC_3_2,
         4 => &VD_EXEC_4_2,
         _ => {
-            return Err(Error::InvalidCircuitArguments(
-                inputs.len(),
-                outputs.len(),
-            ))
+            return Err(Error::InvalidCircuitArguments(inputs_len, outputs_len))
         }
     };
 
     // Maybe we want to handle internal serialization error too, currently
     // they map to `false`.
-    Ok(rusk_abi::verify_proof(vd.to_vec(), proof.clone(), pi))
+    Ok(rusk_abi::verify_proof(vd.to_vec(), tx.proof().clone(), pi))
 }
 
 fn fetch_verifier(circuit_name: &str) -> Vec<u8> {

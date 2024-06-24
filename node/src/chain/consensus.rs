@@ -103,7 +103,7 @@ impl Task {
 
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
-            self.keys.0,
+            self.keys.0.clone(),
             tip.header(),
             base_timeout.clone(),
         );

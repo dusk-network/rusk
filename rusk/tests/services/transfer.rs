@@ -6,16 +6,14 @@
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{Arc, RwLock};
 
-use execution_core::{BlsScalar, PublicKey, SecretKey};
-use ff::Field;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Store};
+use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
@@ -34,11 +32,6 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-static SK: LazyLock<SecretKey> = LazyLock::new(|| {
-    info!("Generating SecretKey");
-    TestStore.retrieve_sk(0).expect("Should not fail in test")
-});
-
 /// Transacts between two accounts on the in the same wallet and produces a
 /// block with a single transaction, checking balances are transferred
 /// successfully.
@@ -48,14 +41,10 @@ fn wallet_transfer(
     amount: u64,
     block_height: u64,
 ) {
-    // Sender pk
-    let pk = PublicKey::from(LazyLock::force(&SK));
-
     // Generate a receiver pk
-    let receiver = wallet.public_key(1).expect("Failed to get public key");
+    let receiver_pk = wallet.public_key(1).expect("Failed to get public key");
 
     let mut rng = StdRng::seed_from_u64(0xdead);
-    let nonce = BlsScalar::random(&mut rng);
 
     // Store the sender initial balance
     let sender_initial_balance = wallet
@@ -82,7 +71,7 @@ fn wallet_transfer(
 
     // Execute a transfer
     let tx = wallet
-        .transfer(&mut rng, 0, &pk, &receiver, amount, 1_000_000_000, 2, nonce)
+        .transfer(&mut rng, 0, &receiver_pk, amount, 1_000_000_000, 2)
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
@@ -128,7 +117,7 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee = tx.inner.inner.fee();
+    let fee = tx.inner.inner.payload().fee();
     let fee = gas_spent * fee.gas_price;
 
     assert_eq!(

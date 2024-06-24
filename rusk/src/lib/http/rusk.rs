@@ -86,7 +86,7 @@ impl Rusk {
     }
 
     fn handle_preverify(&self, data: &[u8]) -> anyhow::Result<ResponseData> {
-        let tx = execution_core::Transaction::from_slice(data)
+        let tx = execution_core::transfer::Transaction::from_slice(data)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
         self.preverify(&tx.into())?;
         Ok(ResponseData::new(DataType::None))

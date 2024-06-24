@@ -19,7 +19,7 @@ use test_wallet::{self as wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
-use execution_core::{BlsPublicKey, BlsSecretKey};
+use execution_core::{transfer::ContractCall, BlsPublicKey, BlsSecretKey};
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, ExecuteResult};
@@ -67,7 +67,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         session
             .call::<_, ()>(
                 TRANSFER_CONTRACT,
-                "add_module_balance",
+                "add_contract_balance",
                 &(CHARLIE_CONTRACT_ID, CHARLIES_FUNDS),
                 u64::MAX,
             )
@@ -87,11 +87,6 @@ fn make_and_execute_transaction(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     method: impl AsRef<str>,
 ) -> EconomicMode {
-    // We will refund the transaction to ourselves.
-    let refund = wallet
-        .public_key(SENDER_INDEX)
-        .expect("Getting a public spend key should succeed");
-
     let initial_balance = wallet
         .get_balance(SENDER_INDEX)
         .expect("Getting initial balance should succeed")
@@ -104,17 +99,13 @@ fn make_and_execute_transaction(
 
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
+    let contract_call = ContractCall {
+        contract: CHARLIE_CONTRACT_ID.to_bytes(),
+        fn_name: String::from(method.as_ref()),
+        fn_args: Vec::new(),
+    };
     let tx = wallet
-        .execute(
-            &mut rng,
-            CHARLIE_CONTRACT_ID.to_bytes().into(),
-            String::from(method.as_ref()),
-            (),
-            SENDER_INDEX,
-            &refund,
-            GAS_LIMIT,
-            1,
-        )
+        .execute(&mut rng, contract_call, SENDER_INDEX, GAS_LIMIT, 1, 0)
         .expect("Making the transaction should succeed");
 
     let expected = ExecuteResult {

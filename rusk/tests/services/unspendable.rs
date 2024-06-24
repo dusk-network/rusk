@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
+use execution_core::transfer::ContractCall;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
@@ -44,30 +45,15 @@ fn make_transactions(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
 ) {
-    // We will refund the transaction to ourselves.
-    let refund_0 = wallet
-        .public_key(SENDER_INDEX_0)
-        .expect("Getting a public key should succeed");
-
     let initial_balance_0 = wallet
         .get_balance(SENDER_INDEX_0)
         .expect("Getting initial balance should succeed")
         .value;
 
-    // We will refund the transaction to ourselves.
-    let refund_1 = wallet
-        .public_key(SENDER_INDEX_1)
-        .expect("Getting a public key should succeed");
-
     let initial_balance_1 = wallet
         .get_balance(SENDER_INDEX_1)
         .expect("Getting initial balance should succeed")
         .value;
-
-    // We will refund the transaction to ourselves.
-    let refund_2 = wallet
-        .public_key(SENDER_INDEX_2)
-        .expect("Getting a public key should succeed");
 
     let initial_balance_2 = wallet
         .get_balance(SENDER_INDEX_2)
@@ -93,16 +79,19 @@ fn make_transactions(
     // The first transaction will be a `wallet.execute` to the transfer
     // contract, querying for the root of the tree. This will be given too
     // little gas to execute correctly and error, consuming all gas provided.
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT.to_bytes(),
+        fn_name: String::from("root"),
+        fn_args: Vec::new(),
+    };
     let tx_0 = wallet
         .execute(
             &mut rng,
-            TRANSFER_CONTRACT.to_bytes().into(),
-            String::from("root"),
-            (),
+            contract_call.clone(),
             SENDER_INDEX_0,
-            &refund_0,
             GAS_LIMIT_0,
             1,
+            0,
         )
         .expect("Making the transaction should succeed");
 
@@ -112,13 +101,11 @@ fn make_transactions(
     let tx_1 = wallet
         .execute(
             &mut rng,
-            TRANSFER_CONTRACT.to_bytes().into(),
-            String::from("root"),
-            (),
+            contract_call.clone(),
             SENDER_INDEX_1,
-            &refund_1,
             GAS_LIMIT_1,
             1,
+            0,
         )
         .expect("Making the transaction should succeed");
 
@@ -126,16 +113,7 @@ fn make_transactions(
     // transfer contract, querying for the root of the tree. This will be
     // tested for gas cost.
     let tx_2 = wallet
-        .execute(
-            &mut rng,
-            TRANSFER_CONTRACT.to_bytes().into(),
-            String::from("root"),
-            (),
-            SENDER_INDEX_2,
-            &refund_2,
-            GAS_LIMIT_2,
-            1,
-        )
+        .execute(&mut rng, contract_call, SENDER_INDEX_2, GAS_LIMIT_2, 1, 0)
         .expect("Making the transaction should succeed");
 
     let expected = ExecuteResult {
