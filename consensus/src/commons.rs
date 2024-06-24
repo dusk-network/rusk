@@ -113,7 +113,7 @@ pub enum ConsensusError {
     NotReady,
     MaxIterationReached,
     ChildTaskTerminated,
-    Canceled,
+    Canceled(u64),
     VoteAlreadyCollected,
 }
 
