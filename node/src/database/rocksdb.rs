@@ -443,13 +443,14 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
-            .filter(|v| v.len() == HASH_LEN + 1)
             .map(|h| {
                 let mut hash = [0u8; HASH_LEN];
                 hash.copy_from_slice(&h.as_slice()[0..HASH_LEN]);
-                let label = Label::from(h[HASH_LEN]);
-                (hash, label)
-            }))
+
+                let label_buff = h[HASH_LEN..].to_vec();
+                Label::read(&mut &label_buff[..]).map(|label| (hash, label))
+            })
+            .transpose()?)
     }
 }
 
@@ -909,7 +910,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Final,
+                        Label::Final(3),
                     )?;
                     Ok(())
                 })
@@ -956,7 +957,7 @@ mod tests {
                 txn.store_block(
                     b.header(),
                     &to_spent_txs(b.txs()),
-                    Label::Final,
+                    Label::Final(3),
                 )
                 .expect("block to be stored");
             });
@@ -985,7 +986,7 @@ mod tests {
                         txn.store_block(
                             b.header(),
                             &to_spent_txs(b.txs()),
-                            Label::Final,
+                            Label::Final(3),
                         )
                         .unwrap();
 
@@ -1139,7 +1140,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Final,
+                        Label::Final(3),
                     )?;
                     Ok(())
                 })
@@ -1173,7 +1174,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Attested,
+                        Label::Attested(3),
                     )?;
                     Ok(())
                 })
@@ -1203,7 +1204,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Attested,
+                        Label::Attested(3),
                     )?;
                     Ok(())
                 })
@@ -1216,7 +1217,7 @@ mod tests {
                     .expect("should not return error")
                     .expect("should find a block")
                     .1
-                    .eq(&Label::Attested));
+                    .eq(&Label::Attested(3)));
             });
         });
     }
@@ -1235,7 +1236,7 @@ mod tests {
                     ut.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Final,
+                        Label::Final(3),
                     )?;
                     Ok(())
                 })
