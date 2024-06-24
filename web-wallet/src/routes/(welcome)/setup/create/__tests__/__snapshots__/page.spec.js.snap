@@ -6,20 +6,15 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Backup
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -72,7 +67,6 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -90,7 +84,6 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <h3
           class="h4"
@@ -101,7 +94,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
       </header>
        
       <p
-        class="mnemonic-notice s-2OyiC0P-rJBT"
+        class="mnemonic-notice svelte-v9vyl3"
       >
         Please make sure to write your phrase down and save it in a secure location.
       </p>
@@ -170,11 +163,8 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
           sad
         </li>
       </ol>
-      <!--&lt;Words&gt;-->
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;MnemonicPhrase&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -193,7 +183,6 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -202,7 +191,6 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -225,29 +213,20 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -257,23 +236,17 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Backup
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -326,7 +299,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -344,7 +316,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       </header>
        
       <p
-        class="mnemonic-notice s-8Fq6NWTLQZs0"
+        class="mnemonic-notice svelte-1xuwtw2"
       >
         Ensure you have backed up the Mnemonic phrase.
       </p>
@@ -371,7 +343,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-button__text"
@@ -380,7 +351,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
             </span>
             
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <ol
@@ -447,7 +417,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
             _____
           </li>
         </ol>
-        <!--&lt;Words&gt;-->
          
         <div
           class="dusk-mnemonic__validate-actions-wrapper"
@@ -464,7 +433,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               grit
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -477,7 +445,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               wreck
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -490,7 +457,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               cart
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -503,7 +469,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               dad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -516,7 +481,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               rap
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -529,7 +493,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               sail
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -542,7 +505,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               robot
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -555,7 +517,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               combine
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -568,7 +529,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               noble
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -581,7 +541,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               slide
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -594,7 +553,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               sad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -607,17 +565,13 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
               farm
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
         </div>
       </div>
-      <!--&lt;Mnemonic&gt;-->
        
       
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;MnemonicValidate&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -636,7 +590,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -645,7 +598,6 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -669,26 +621,18 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -698,23 +642,17 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Backup
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -767,7 +705,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -785,7 +722,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       </header>
        
       <p
-        class="mnemonic-notice s-8Fq6NWTLQZs0"
+        class="mnemonic-notice svelte-1xuwtw2"
       >
         Ensure you have backed up the Mnemonic phrase.
       </p>
@@ -811,7 +748,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-button__text"
@@ -820,7 +756,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
             </span>
             
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <ol
@@ -887,7 +822,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
             farm
           </li>
         </ol>
-        <!--&lt;Words&gt;-->
          
         <div
           class="dusk-mnemonic__validate-actions-wrapper"
@@ -905,7 +839,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               grit
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -919,7 +852,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               wreck
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -933,7 +865,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               cart
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -947,7 +878,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               dad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -961,7 +891,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               rap
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -975,7 +904,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               sail
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -989,7 +917,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               robot
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1003,7 +930,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               combine
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1017,7 +943,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               noble
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1031,7 +956,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               slide
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1045,7 +969,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               sad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1059,14 +982,12 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
               farm
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
         </div>
       </div>
-      <!--&lt;Mnemonic&gt;-->
        
       <div
-        class="notice notice--error s-8Fq6NWTLQZs0"
+        class="notice notice--error svelte-1xuwtw2"
       >
         <svg
           class="dusk-icon dusk-icon--size--large"
@@ -1078,19 +999,14 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
-        <p
-          class="s-8Fq6NWTLQZs0"
-        >
+        <p>
           Mnemonic does not match.
         </p>
       </div>
       
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;MnemonicValidate&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -1109,7 +1025,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -1118,7 +1033,6 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -1142,26 +1056,18 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -1171,23 +1077,17 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Backup
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -1240,7 +1140,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -1258,7 +1157,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       </header>
        
       <p
-        class="mnemonic-notice s-8Fq6NWTLQZs0"
+        class="mnemonic-notice svelte-1xuwtw2"
       >
         Ensure you have backed up the Mnemonic phrase.
       </p>
@@ -1284,7 +1183,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-button__text"
@@ -1293,7 +1191,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
             </span>
             
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <ol
@@ -1360,7 +1257,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
             _____
           </li>
         </ol>
-        <!--&lt;Words&gt;-->
          
         <div
           class="dusk-mnemonic__validate-actions-wrapper"
@@ -1378,7 +1274,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               grit
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1392,7 +1287,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               wreck
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1406,7 +1300,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               cart
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1420,7 +1313,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               dad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1434,7 +1326,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               rap
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1448,7 +1339,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               sail
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1462,7 +1352,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               robot
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1476,7 +1365,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               combine
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1490,7 +1378,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               noble
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1504,7 +1391,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               slide
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1517,7 +1403,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               sad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1531,17 +1416,13 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
               farm
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
         </div>
       </div>
-      <!--&lt;Mnemonic&gt;-->
        
       
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;MnemonicValidate&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -1560,7 +1441,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -1569,7 +1449,6 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -1593,26 +1472,18 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -1622,32 +1493,23 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Welcome to
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Dusk
       </mark>
     </h2>
@@ -1700,7 +1562,6 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -1724,11 +1585,8 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
         src="/some-base-path/images/onboarding/all_set_illustration.svg"
         width="205"
       />
-      <!--&lt;AppImage&gt;-->
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;AllSet&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -1754,17 +1612,12 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -1774,26 +1627,19 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Password
       </mark>
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
       
         Setup
     </h2>
@@ -1846,7 +1692,6 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -1864,7 +1709,6 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <h3
           class="h4"
@@ -1879,15 +1723,13 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
           role="switch"
           tabindex="0"
         />
-        <!--&lt;Switch&gt;-->
       </header>
        
     </div>
     
-    <!--&lt;Card&gt;-->
      
     <div
-      class="notice s-3JrRpWchV-SQ"
+      class="notice"
     >
       <svg
         class="dusk-icon dusk-icon--size--large"
@@ -1899,18 +1741,14 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
-      <p
-        class="s-3JrRpWchV-SQ"
-      >
+      <p>
         Setting a password for your web wallet is optional. Doing so allows you the
     convenience of opening your wallet file using a password, but it weakens the
     overall security. Not using a password requires you to input the full
     mnemonic to open your wallet.
       </p>
     </div>
-    <!--&lt;PasswordSetup&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -1929,7 +1767,6 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -1938,7 +1775,6 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -1961,23 +1797,16 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -1987,26 +1816,19 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Password
       </mark>
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
       
         Setup
     </h2>
@@ -2059,7 +1881,6 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -2077,7 +1898,6 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <h3
           class="h4"
@@ -2092,12 +1912,9 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
           role="switch"
           tabindex="0"
         />
-        <!--&lt;Switch&gt;-->
       </header>
        
-      <p
-        class="s-3JrRpWchV-SQ"
-      >
+      <p>
         Please store your password safely.
       </p>
        
@@ -2108,10 +1925,9 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         type="password"
       />
       
-      <!--&lt;Textbox&gt;-->
        
       <div
-        class="confirm-password s-3JrRpWchV-SQ"
+        class="confirm-password"
       >
         <input
           autocomplete="new-password"
@@ -2120,20 +1936,18 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
           type="password"
         />
         
-        <!--&lt;Textbox&gt;-->
          
         <span
-          class="confirm-password--meta s-3JrRpWchV-SQ"
+          class="confirm-password--meta svelte-1itc1ku"
         >
           Password must be at least 8 characters
         </span>
       </div>
     </div>
     
-    <!--&lt;Card&gt;-->
      
     <div
-      class="notice s-3JrRpWchV-SQ"
+      class="notice"
     >
       <svg
         class="dusk-icon dusk-icon--size--large"
@@ -2145,18 +1959,14 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
-      <p
-        class="s-3JrRpWchV-SQ"
-      >
+      <p>
         Setting a password for your web wallet is optional. Doing so allows you the
     convenience of opening your wallet file using a password, but it weakens the
     overall security. Not using a password requires you to input the full
     mnemonic to open your wallet.
       </p>
     </div>
-    <!--&lt;PasswordSetup&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -2175,7 +1985,6 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -2184,7 +1993,6 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -2208,23 +2016,16 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -2234,30 +2035,22 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Swap ERC20
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
       
         to 
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Native Dusk
       </mark>
     </h2>
@@ -2310,7 +2103,6 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <p>
       The ERC20 token swap functionality is currently disabled and will be provided
@@ -2332,7 +2124,6 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -2341,8 +2132,6 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
-    <!--&lt;SwapNDUSK&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -2361,7 +2150,6 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -2370,7 +2158,6 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -2393,20 +2180,14 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -2416,23 +2197,17 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
     class="dusk-wizard dusk-wizard--full-height"
   >
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Backup
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -2485,7 +2260,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -2503,7 +2277,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       </header>
        
       <p
-        class="mnemonic-notice s-8Fq6NWTLQZs0"
+        class="mnemonic-notice svelte-1xuwtw2"
       >
         Ensure you have backed up the Mnemonic phrase.
       </p>
@@ -2529,7 +2303,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-button__text"
@@ -2538,7 +2311,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
             </span>
             
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <ol
@@ -2605,7 +2377,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
             sad
           </li>
         </ol>
-        <!--&lt;Words&gt;-->
          
         <div
           class="dusk-mnemonic__validate-actions-wrapper"
@@ -2623,7 +2394,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               grit
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2637,7 +2407,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               wreck
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2651,7 +2420,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               cart
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2665,7 +2433,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               dad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2679,7 +2446,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               rap
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2693,7 +2459,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               sail
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2707,7 +2472,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               robot
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2721,7 +2485,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               combine
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2735,7 +2498,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               noble
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2749,7 +2511,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               slide
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2763,7 +2524,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               sad
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -2777,17 +2537,13 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
               farm
             </span>
           </button>
-          <!--&lt;Button&gt;-->
           
         </div>
       </div>
-      <!--&lt;Mnemonic&gt;-->
        
       
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;MnemonicValidate&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -2806,7 +2562,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -2815,7 +2570,6 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -2838,26 +2592,18 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -2867,17 +2613,13 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
     class="dusk-wizard dusk-wizard--full-height"
   >
     <h2
-      class="h1 s-p4ikGGAJA5YG"
+      class="h1"
       slot="heading"
     >
       Backup
-      <br
-        class="s-p4ikGGAJA5YG"
-      />
+      <br />
        
-      <mark
-        class="s-p4ikGGAJA5YG"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -2930,7 +2672,6 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card mnemonic-presetup"
@@ -2957,7 +2698,6 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           tabindex="0"
           type="checkbox"
         />
-        <!--&lt;Checkbox&gt;-->
          
         <label
           class="dusk-agreement__label"
@@ -2966,7 +2706,6 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           I understand that without my seed phrase I cannot access my wallet and its assets.
         </label>
       </div>
-      <!--&lt;Agreement&gt;-->
        
       <div
         class="dusk-agreement"
@@ -2978,7 +2717,6 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           tabindex="0"
           type="checkbox"
         />
-        <!--&lt;Checkbox&gt;-->
          
         <label
           class="dusk-agreement__label"
@@ -2988,13 +2726,11 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       Only I have access to my recovery phrase
         </label>
       </div>
-      <!--&lt;Agreement&gt;-->
     </div>
     
-    <!--&lt;Card&gt;-->
      
     <div
-      class="notice s-mChuFgOMzAKC"
+      class="notice"
     >
       <svg
         class="dusk-icon dusk-icon--size--large"
@@ -3006,16 +2742,12 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
-      <p
-        class="s-mChuFgOMzAKC"
-      >
+      <p>
         To proceed, please check all the relevant boxes. Dusk will not save and
     cannot retrieve your passphrase.
       </p>
     </div>
-    <!--&lt;MnemonicPreSetup&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -3035,7 +2767,6 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-anchor-button__text"
@@ -3045,9 +2776,6 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
         
         
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AnchorButton&gt;-->
-      <!--&lt;AppAnchorButton&gt;-->
       
        
       <button
@@ -3071,43 +2799,31 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`Create > should render the Existing Wallet notice step of the Create flow if there is a userId saved in localStorage 1`] = `
 <div>
   <div
-    class="onboarding-wrapper s-p4ikGGAJA5YG"
+    class="onboarding-wrapper svelte-i0tbsw"
   >
-    <section
-      class="s-0jNtmKPqmF7T"
-    >
+    <section>
       <div
         class="dusk-card"
       >
@@ -3124,7 +2840,6 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
             class="h4"
@@ -3134,9 +2849,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
            
         </header>
          
-        <p
-          class="s-0jNtmKPqmF7T"
-        >
+        <p>
           Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
       wallet's seed phrase to prevent loss. Proceeding without a backup can lead
@@ -3144,7 +2857,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
         </p>
          
         <div
-          class="actions s-0jNtmKPqmF7T"
+          class="actions svelte-3n8m2w"
         >
           <a
             aria-disabled="false"
@@ -3158,9 +2871,6 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
             </span>
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
            
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
@@ -3172,27 +2882,21 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
               Proceed
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
       </div>
       
-      <!--&lt;Card&gt;-->
     </section>
-    <!--&lt;ExistingWalletNotice&gt;-->
   </div>
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`Create > should render the Terms of Service step of the Create flow if there is no userId saved in localStorage 1`] = `
 <div>
   <div
-    class="onboarding-wrapper s-p4ikGGAJA5YG"
+    class="onboarding-wrapper svelte-i0tbsw"
   >
-    <section
-      class="s-c41QPMu_i3CH"
-    >
+    <section>
       <div
         class="dusk-card"
       >
@@ -3208,9 +2912,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
            
         </header>
          
-        <p
-          class="s-c41QPMu_i3CH"
-        >
+        <p>
           Our 
           <a
             class="dusk-anchor"
@@ -3220,14 +2922,12 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
           >
             Terms & Privacy Policy
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            govern your use of our services, including data handling and user responsibilities.
       Your privacy and security are our top priorities.
         </p>
          
         <div
-          class="actions s-c41QPMu_i3CH"
+          class="actions svelte-3n8m2w"
         >
           <a
             aria-disabled="false"
@@ -3241,9 +2941,6 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
             </span>
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
            
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
@@ -3255,15 +2952,11 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
               Accept
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
       </div>
       
-      <!--&lt;Card&gt;-->
     </section>
-    <!--&lt;TermsOfService&gt;-->
   </div>
   
-  <!--&lt;+page&gt;-->
 </div>
 `;

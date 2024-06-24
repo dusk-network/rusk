@@ -3,11 +3,9 @@
 exports[`Restore > should render the Existing Wallet notice step of the Restore flow if there is a userId saved in localStorage 1`] = `
 <div>
   <div
-    class="onboarding-wrapper s-03q11ctojZzO"
+    class="onboarding-wrapper svelte-i0tbsw"
   >
-    <section
-      class="s-0jNtmKPqmF7T"
-    >
+    <section>
       <div
         class="dusk-card"
       >
@@ -24,7 +22,6 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
             class="h4"
@@ -34,9 +31,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
            
         </header>
          
-        <p
-          class="s-0jNtmKPqmF7T"
-        >
+        <p>
           Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
       wallet's seed phrase to prevent loss. Proceeding without a backup can lead
@@ -44,7 +39,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
         </p>
          
         <div
-          class="actions s-0jNtmKPqmF7T"
+          class="actions svelte-3n8m2w"
         >
           <a
             aria-disabled="false"
@@ -58,9 +53,6 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
             </span>
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
            
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
@@ -72,16 +64,12 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
               Proceed
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
       </div>
       
-      <!--&lt;Card&gt;-->
     </section>
-    <!--&lt;ExistingWalletNotice&gt;-->
   </div>
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
@@ -91,17 +79,13 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
     class="dusk-wizard dusk-wizard--full-height"
   >
     <h2
-      class="h1 s-03q11ctojZzO"
+      class="h1"
       slot="heading"
     >
       Enter
-      <br
-        class="s-03q11ctojZzO"
-      />
+      <br />
        
-      <mark
-        class="s-03q11ctojZzO"
-      >
+      <mark>
         Mnemonic Phrase
       </mark>
     </h2>
@@ -139,7 +123,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
         />
       </div>
     </div>
-    <!--&lt;Stepper&gt;-->
      
     <div
       class="dusk-card"
@@ -176,7 +159,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-button__text"
@@ -185,7 +167,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
             </span>
             
           </button>
-          <!--&lt;Button&gt;-->
            
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
@@ -202,7 +183,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-button__text"
@@ -211,7 +191,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
             </span>
             
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <ol
@@ -278,7 +257,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
             _____
           </li>
         </ol>
-        <!--&lt;Words&gt;-->
          
         <div
           class="dusk-mnemonic__authenticate-actions-wrapper"
@@ -290,16 +268,12 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
             type="text"
           />
           
-          <!--&lt;Textbox&gt;-->
            
           
         </div>
       </div>
-      <!--&lt;Mnemonic&gt;-->
     </div>
     
-    <!--&lt;Card&gt;-->
-    <!--&lt;MnemonicAuthenticate&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -319,7 +293,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-anchor-button__text"
@@ -329,9 +302,6 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
         
         
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AnchorButton&gt;-->
-      <!--&lt;AppAnchorButton&gt;-->
       
        
       <button
@@ -355,34 +325,25 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
   
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`Restore > should render the Terms of Service step of the Restore flow if there is no userId saved in localStorage 1`] = `
 <div>
   <div
-    class="onboarding-wrapper s-03q11ctojZzO"
+    class="onboarding-wrapper svelte-i0tbsw"
   >
-    <section
-      class="s-c41QPMu_i3CH"
-    >
+    <section>
       <div
         class="dusk-card"
       >
@@ -398,9 +359,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
            
         </header>
          
-        <p
-          class="s-c41QPMu_i3CH"
-        >
+        <p>
           Our 
           <a
             class="dusk-anchor"
@@ -410,14 +369,12 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
           >
             Terms & Privacy Policy
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
            govern your use of our services, including data handling and user responsibilities.
       Your privacy and security are our top priorities.
         </p>
          
         <div
-          class="actions s-c41QPMu_i3CH"
+          class="actions svelte-3n8m2w"
         >
           <a
             aria-disabled="false"
@@ -431,9 +388,6 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
             </span>
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
            
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
@@ -445,15 +399,11 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
               Accept
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
       </div>
       
-      <!--&lt;Card&gt;-->
     </section>
-    <!--&lt;TermsOfService&gt;-->
   </div>
   
-  <!--&lt;+page&gt;-->
 </div>
 `;

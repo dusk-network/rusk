@@ -20,7 +20,6 @@ exports[`Toast > should render and dismiss 2 Toasts 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </span>
      
     <span
@@ -46,7 +45,6 @@ exports[`Toast > should render and dismiss 2 Toasts 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </span>
      
     <span
@@ -79,7 +77,6 @@ exports[`Toast > should render and dismiss the Toast component with the correct 
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </span>
      
     <span

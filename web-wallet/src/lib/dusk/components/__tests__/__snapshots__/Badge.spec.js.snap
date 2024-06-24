@@ -7,7 +7,6 @@ exports[`Badge > should render the Badge component using the type "error" varian
   >
     Badge
   </span>
-  <!--&lt;Badge&gt;-->
 </div>
 `;
 
@@ -18,7 +17,6 @@ exports[`Badge > should render the Badge component using the type "neutral" as a
   >
     Badge
   </span>
-  <!--&lt;Badge&gt;-->
 </div>
 `;
 
@@ -29,7 +27,6 @@ exports[`Badge > should render the Badge component using the type "success" vari
   >
     Badge
   </span>
-  <!--&lt;Badge&gt;-->
 </div>
 `;
 
@@ -40,6 +37,5 @@ exports[`Badge > should render the Badge component using the type "warning" vari
   >
     Badge
   </span>
-  <!--&lt;Badge&gt;-->
 </div>
 `;

@@ -19,7 +19,6 @@ exports[`Card > renders the Card component with a heading 1`] = `
      
   </div>
   
-  <!--&lt;Card&gt;-->
 </div>
 `;
 
@@ -41,7 +40,6 @@ exports[`Card > renders the Card component with an icon when iconPath is provide
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <h3
         class="h4"
@@ -53,6 +51,5 @@ exports[`Card > renders the Card component with an icon when iconPath is provide
      
   </div>
   
-  <!--&lt;Card&gt;-->
 </div>
 `;

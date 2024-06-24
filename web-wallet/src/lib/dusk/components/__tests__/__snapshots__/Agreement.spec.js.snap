@@ -12,7 +12,6 @@ exports[`Agreement > renders the Agreement component 1`] = `
       tabindex="0"
       type="checkbox"
     />
-    <!--&lt;Checkbox&gt;-->
      
     <label
       class="dusk-agreement__label"
@@ -21,6 +20,5 @@ exports[`Agreement > renders the Agreement component 1`] = `
       I agree
     </label>
   </div>
-  <!--&lt;Agreement&gt;-->
 </div>
 `;

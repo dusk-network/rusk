@@ -3,20 +3,20 @@
 exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 <div>
   <section
-    class="dashboard s-Ck0voT_hIlXn"
+    class="dashboard svelte-45qdg5"
   >
     <span>
       some text
     </span>
      
     <footer
-      class="footer s-Ck0voT_hIlXn"
+      class="footer svelte-45qdg5"
     >
       <nav
-        class="footer__navigation s-Ck0voT_hIlXn"
+        class="footer__navigation svelte-45qdg5"
       >
         <div
-          class="footer__network-status s-Ck0voT_hIlXn"
+          class="footer__network-status svelte-45qdg5"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
@@ -31,14 +31,11 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <div
-            class="footer__network-message s-Ck0voT_hIlXn"
+            class="footer__network-message svelte-45qdg5"
           >
-            <span
-              class="s-Ck0voT_hIlXn"
-            >
+            <span>
               Dusk testnet
             </span>
              
@@ -46,7 +43,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         </div>
          
         <div
-          class="footer__actions s-Ck0voT_hIlXn"
+          class="footer__actions svelte-45qdg5"
         >
            
           <a
@@ -67,41 +64,35 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
         </div>
       </nav>
     </footer>
   </section>
-  <!--&lt;+layout&gt;-->
   
-  <!--&lt;SlotContent&gt;-->
 </div>
 `;
 
 exports[`Dashboard Layout > should render the dashboard layout in the error state 1`] = `
 <div>
   <section
-    class="dashboard s-Ck0voT_hIlXn"
+    class="dashboard svelte-45qdg5"
   >
     <span>
       some text
     </span>
      
     <footer
-      class="footer s-Ck0voT_hIlXn"
+      class="footer svelte-45qdg5"
     >
       <nav
-        class="footer__navigation s-Ck0voT_hIlXn"
+        class="footer__navigation svelte-45qdg5"
       >
         <div
-          class="footer__network-status s-Ck0voT_hIlXn"
+          class="footer__network-status svelte-45qdg5"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--error"
@@ -117,14 +108,11 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <div
-            class="footer__network-message s-Ck0voT_hIlXn"
+            class="footer__network-message svelte-45qdg5"
           >
-            <span
-              class="s-Ck0voT_hIlXn"
-            >
+            <span>
               Dusk testnet - Sync Failed
             </span>
              
@@ -132,7 +120,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         </div>
          
         <div
-          class="footer__actions s-Ck0voT_hIlXn"
+          class="footer__actions svelte-45qdg5"
         >
           <button
             aria-label="Retry synchronization"
@@ -151,11 +139,9 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             
           </button>
-          <!--&lt;Button&gt;-->
            
           <a
             aria-disabled="false"
@@ -175,41 +161,35 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
         </div>
       </nav>
     </footer>
   </section>
-  <!--&lt;+layout&gt;-->
   
-  <!--&lt;SlotContent&gt;-->
 </div>
 `;
 
 exports[`Dashboard Layout > should render the dashboard layout in the sync state 1`] = `
 <div>
   <section
-    class="dashboard s-Ck0voT_hIlXn"
+    class="dashboard svelte-45qdg5"
   >
     <span>
       some text
     </span>
      
     <footer
-      class="footer s-Ck0voT_hIlXn"
+      class="footer svelte-45qdg5"
     >
       <nav
-        class="footer__navigation s-Ck0voT_hIlXn"
+        class="footer__navigation svelte-45qdg5"
       >
         <div
-          class="footer__network-status s-Ck0voT_hIlXn"
+          class="footer__network-status svelte-45qdg5"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
@@ -224,14 +204,11 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <div
-            class="footer__network-message s-Ck0voT_hIlXn"
+            class="footer__network-message svelte-45qdg5"
           >
-            <span
-              class="s-Ck0voT_hIlXn"
-            >
+            <span>
               Syncing with Dusk testnet
             </span>
              
@@ -243,12 +220,11 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
                 class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
               />
             </div>
-            <!--&lt;ProgressBar&gt;-->
           </div>
         </div>
          
         <div
-          class="footer__actions s-Ck0voT_hIlXn"
+          class="footer__actions svelte-45qdg5"
         >
            
           <a
@@ -269,20 +245,14 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
         </div>
       </nav>
     </footer>
   </section>
-  <!--&lt;+layout&gt;-->
   
-  <!--&lt;SlotContent&gt;-->
 </div>
 `;

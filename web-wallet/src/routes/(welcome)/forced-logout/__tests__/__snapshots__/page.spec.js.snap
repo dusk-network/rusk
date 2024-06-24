@@ -3,7 +3,7 @@
 exports[`Forced logout page > should render the page alert the user about the forced logout on mount 1`] = `
 <div>
   <section
-    class="forced-logout s-1sbyBWavtBQ9"
+    class="forced-logout svelte-u7eq0k"
   >
     <div
       class="dusk-card"
@@ -21,7 +21,6 @@ exports[`Forced logout page > should render the page alert the user about the fo
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <h3
           class="h4"
@@ -32,21 +31,20 @@ exports[`Forced logout page > should render the page alert the user about the fo
       </header>
        
       <p
-        class="s-1sbyBWavtBQ9"
+        class="svelte-u7eq0k"
       >
         Another tab or window unlocked a different wallet and replaced the local
       cache.
       </p>
        
       <p
-        class="s-1sbyBWavtBQ9"
+        class="svelte-u7eq0k"
       >
         When you log in again with the mnemonic you used in this session, you will
       need to wait for a full sync.
       </p>
     </div>
     
-    <!--&lt;Card&gt;-->
      
     <a
       aria-disabled="false"
@@ -61,10 +59,6 @@ exports[`Forced logout page > should render the page alert the user about the fo
       </span>
       
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AnchorButton&gt;-->
-    <!--&lt;AppAnchorButton&gt;-->
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;

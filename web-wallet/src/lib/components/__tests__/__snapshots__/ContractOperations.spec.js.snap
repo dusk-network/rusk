@@ -2,16 +2,16 @@
 
 exports[`ContractOperations > should be able to render the component without items 1`] = `
 <menu
-  class="contract-operations s-MYVJhCZxEBFW"
+  class="contract-operations svelte-1v0rjcd"
 />
 `;
 
 exports[`ContractOperations > should render the \`ContractOperations\` component 1`] = `
 <menu
-  class="contract-operations s-MYVJhCZxEBFW"
+  class="contract-operations svelte-1v0rjcd"
 >
   <li
-    class="contract-operations__operation s-MYVJhCZxEBFW"
+    class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
@@ -27,7 +27,6 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -36,11 +35,10 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
      
   </li>
   <li
-    class="contract-operations__operation s-MYVJhCZxEBFW"
+    class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
@@ -56,7 +54,6 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -65,11 +62,10 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
      
   </li>
   <li
-    class="contract-operations__operation s-MYVJhCZxEBFW"
+    class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
@@ -86,7 +82,6 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -95,11 +90,10 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
      
   </li>
   <li
-    class="contract-operations__operation s-MYVJhCZxEBFW"
+    class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
@@ -115,7 +109,6 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -124,11 +117,10 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
      
   </li>
   <li
-    class="contract-operations__operation s-MYVJhCZxEBFW"
+    class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
@@ -144,7 +136,6 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -153,7 +144,6 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
      
   </li>
 </menu>
@@ -161,10 +151,10 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
 
 exports[`ContractOperations > should use a default icon if the operation is not on the known list 1`] = `
 <menu
-  class="contract-operations s-MYVJhCZxEBFW"
+  class="contract-operations svelte-1v0rjcd"
 >
   <li
-    class="contract-operations__operation s-MYVJhCZxEBFW"
+    class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
@@ -180,7 +170,6 @@ exports[`ContractOperations > should use a default icon if the operation is not 
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-button__text"
@@ -189,7 +178,6 @@ exports[`ContractOperations > should use a default icon if the operation is not 
       </span>
       
     </button>
-    <!--&lt;Button&gt;-->
      
   </li>
 </menu>
