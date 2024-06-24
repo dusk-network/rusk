@@ -56,14 +56,14 @@ describe("Block Details", () => {
       "true"
     );
 
-    rerender(baseProps);
+    await rerender(baseProps);
 
     expect(getBlockNavLink(container, "prev")).toHaveAttribute(
       "aria-disabled",
       "false"
     );
 
-    rerender(setPathIn(baseProps, "data.header.height", 0));
+    await rerender(setPathIn(baseProps, "data.header.height", 0));
 
     expect(getBlockNavLink(container, "prev")).toHaveAttribute(
       "aria-disabled",

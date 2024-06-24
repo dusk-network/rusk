@@ -25,7 +25,7 @@ describe("AppSource", () => {
       src: "/images/some-image.jpg",
     };
 
-    it("should render a source element forwarding all attributes but with the base path prepended to the `src` if it's an absolute URL", () => {
+    it("should render a source element forwarding all attributes but with the base path prepended to the `src` if it's an absolute URL", async () => {
       const { container, rerender } = render(AppSource, baseProps);
       const source = getSourceElementIn(container);
 
@@ -37,7 +37,7 @@ describe("AppSource", () => {
 
       expect(source).toHaveAttribute("src", `${base}${baseProps.src}`);
 
-      rerender({ ...baseProps, src: "/" });
+      await rerender({ ...baseProps, src: "/" });
 
       expect(getSourceElementIn(container)).toHaveAttribute("src", `${base}/`);
     });
@@ -58,7 +58,7 @@ describe("AppSource", () => {
   });
 
   describe("srcset attribute", () => {
-    it("should render a source element forwarding all attributes but with the base path prepended to absolute URLs in the `srcset`", () => {
+    it("should render a source element forwarding all attributes but with the base path prepended to absolute URLs in the `srcset`", async () => {
       const props = {
         ...commonProps,
         srcset: "/images/some-image.jpg 1.5x",
@@ -74,14 +74,14 @@ describe("AppSource", () => {
 
       expect(source).toHaveAttribute("srcset", `${base}${props.srcset}`);
 
-      rerender({ ...props, srcset: "/images/some-image.jpg" });
+      await rerender({ ...props, srcset: "/images/some-image.jpg" });
 
       expect(getSourceElementIn(container)).toHaveAttribute(
         "srcset",
         `${base}/images/some-image.jpg`
       );
 
-      rerender({ ...props, srcset: "/ 1.5x" });
+      await rerender({ ...props, srcset: "/ 1.5x" });
 
       expect(getSourceElementIn(container)).toHaveAttribute(
         "srcset",

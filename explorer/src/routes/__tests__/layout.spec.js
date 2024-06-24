@@ -24,7 +24,9 @@ describe("Main layout", () => {
 
   it("should change the overflow of document's body when the navbar toggle menu button is clicked", async () => {
     const { container } = renderWithSimpleContent(MainLayout, baseOptions);
-    const navbarToggleButton = container.querySelector(".dusk-navbar__toggle");
+    const navbarToggleButton = /** @type {HTMLButtonElement} */ (
+      container.querySelector(".dusk-navbar__toggle")
+    );
 
     await fireEvent.click(navbarToggleButton);
 
