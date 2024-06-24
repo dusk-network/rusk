@@ -11,7 +11,7 @@ use crate::{vm, Network};
 
 use crate::database::{Candidate, Ledger};
 use metrics::counter;
-use node_data::ledger::{to_str, Attestation, Block, Label};
+use node_data::ledger::{to_str, Attestation, Block};
 use node_data::message::payload::{
     GetBlocks, GetResource, Inv, RatificationResult, Vote,
 };
@@ -589,11 +589,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
         // Try accepting consecutive block
         if remote_height == local_header.height + 1 {
-            let label = acc.try_accept_block(remote_blk, true).await?;
+            let finalized = acc.try_accept_block(remote_blk, true).await?;
 
             // On first final block accepted while we're inSync, clear
             // blacklisted blocks
-            if let Label::Final = label {
+            if finalized {
                 self.blacklisted_blocks.write().await.clear();
             }
 
