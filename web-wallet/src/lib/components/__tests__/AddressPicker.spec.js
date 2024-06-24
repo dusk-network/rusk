@@ -29,7 +29,7 @@ describe("AddressPicker", () => {
   it("renders the AddressPicker component", () => {
     const { container } = render(AddressPicker, props);
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(container.firstElementChild).toMatchSnapshot();
   });
 
   it("copies the current address on Copy button click", async () => {

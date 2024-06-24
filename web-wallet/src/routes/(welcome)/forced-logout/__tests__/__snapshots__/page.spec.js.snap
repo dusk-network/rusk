@@ -1,64 +1,62 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Forced logout page > should render the page alert the user about the forced logout on mount 1`] = `
-<div>
-  <section
-    class="forced-logout svelte-u7eq0k"
+<section
+  class="forced-logout svelte-u7eq0k"
+>
+  <div
+    class="dusk-card"
   >
-    <div
-      class="dusk-card"
+    <header
+      class="dusk-card__header"
     >
-      <header
-        class="dusk-card__header"
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-          />
-        </svg>
-        
-         
-        <h3
-          class="h4"
-        >
-          You have been automatically logged out
-        </h3>
-         
-      </header>
-       
-      <p
-        class="svelte-u7eq0k"
-      >
-        Another tab or window unlocked a different wallet and replaced the local
-      cache.
-      </p>
-       
-      <p
-        class="svelte-u7eq0k"
-      >
-        When you log in again with the mnemonic you used in this session, you will
-      need to wait for a full sync.
-      </p>
-    </div>
-    
-     
-    <a
-      aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
-      data-sveltekit-replacestate="true"
-      href="/some-base-path/"
-    >
-      <span
-        class="dusk-anchor-button__text"
-      >
-        HOME
-      </span>
+        <path
+          d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+        />
+      </svg>
       
-    </a>
-  </section>
-</div>
+       
+      <h3
+        class="h4"
+      >
+        You have been automatically logged out
+      </h3>
+       
+    </header>
+     
+    <p
+      class="svelte-u7eq0k"
+    >
+      Another tab or window unlocked a different wallet and replaced the local
+      cache.
+    </p>
+     
+    <p
+      class="svelte-u7eq0k"
+    >
+      When you log in again with the mnemonic you used in this session, you will
+      need to wait for a full sync.
+    </p>
+  </div>
+  
+   
+  <a
+    aria-disabled="false"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
+    data-sveltekit-replacestate="true"
+    href="/some-base-path/"
+  >
+    <span
+      class="dusk-anchor-button__text"
+    >
+      HOME
+    </span>
+    
+  </a>
+</section>
 `;

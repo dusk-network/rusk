@@ -40,7 +40,7 @@ describe("Icon", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should pass additional class names and attributes to the rendered element", () => {
+  it("should pass additional class names and attributes to the rendered element", async () => {
     const props = {
       ...baseProps,
       className: "foo bar",
@@ -53,7 +53,7 @@ describe("Icon", () => {
     expect(icon).toHaveAttribute("data-baz", "baz");
     expect(icon).toMatchSnapshot();
 
-    rerender({ ...props, isInStack: true });
+    await rerender({ ...props, isInStack: true });
 
     const icon2 = container.firstChild;
 

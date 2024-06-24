@@ -254,129 +254,127 @@ exports[`Stake > should render the Stake component 1`] = `
 `;
 
 exports[`Stake > should render the Stake notice 1`] = `
-<div>
+<div
+  class="operation"
+>
   <div
-    class="operation"
+    class="dusk-wizard"
   >
-    <div
-      class="dusk-wizard"
+     
+     
+    <span
+      class="dusk-badge dusk-badge--variant-warning"
     >
-       
-       
-      <span
-        class="dusk-badge dusk-badge--variant-warning"
+      WARNING
+    </span>
+     
+    <div
+      class="dusk-card dusk-card--on-surface"
+    >
+      <header
+        class="dusk-card__header"
       >
-        WARNING
-      </span>
-       
-      <div
-        class="dusk-card dusk-card--on-surface"
-      >
-        <header
-          class="dusk-card__header"
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
         >
-          <svg
-            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-            />
-          </svg>
-          
-           
-          <h3
-            class="h4"
-          >
-            Only stake if you have a node set up!
-          </h3>
-           
-        </header>
-         
-        <p
-          class="staking-warning svelte-1i0y9qj"
-        >
-          I understand that I have set up a node properly, as described 
-          <a
-            class="dusk-anchor"
-            href="https://docs.dusk.network/getting-started/node-setup/overview"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            HERE
-          </a>
-          , and that I will lose funds if I have not done so correctly.
-        </p>
-         
-        <div
-          class="dusk-agreement staking-warning__agreement"
-        >
-          <input
-            class="dusk-checkbox"
-            id="dusk-checkbox-16"
-            name="staking-warning"
-            tabindex="0"
-            type="checkbox"
+          <path
+            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
           />
-           
-          <label
-            class="dusk-agreement__label"
-            for="dusk-checkbox-16"
-          >
-            Don't show this step again.
-          </label>
-        </div>
-      </div>
-      
-       
-      <div
-        class="dusk-wizard__step-navigation"
-      >
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
-          type="button"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
-            />
-          </svg>
-          
-           
-          <span
-            class="dusk-button__text"
-          >
-            Back
-          </span>
-          
-        </button>
+        </svg>
         
          
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal"
-          type="button"
+        <h3
+          class="h4"
         >
-          <span
-            class="dusk-button__text"
-          >
-            Agree
-          </span>
-        </button>
+          Only stake if you have a node set up!
+        </h3>
+         
+      </header>
+       
+      <p
+        class="staking-warning svelte-1i0y9qj"
+      >
+        I understand that I have set up a node properly, as described 
+        <a
+          class="dusk-anchor"
+          href="https://docs.dusk.network/getting-started/node-setup/overview"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          HERE
+        </a>
+        , and that I will lose funds if I have not done so correctly.
+      </p>
+       
+      <div
+        class="dusk-agreement staking-warning__agreement"
+      >
+        <input
+          class="dusk-checkbox"
+          id="dusk-checkbox-16"
+          name="staking-warning"
+          tabindex="0"
+          type="checkbox"
+        />
+         
+        <label
+          class="dusk-agreement__label"
+          for="dusk-checkbox-16"
+        >
+          Don't show this step again.
+        </label>
       </div>
-      
-      
-       
-      
-       
-      
-       
-      
     </div>
+    
+     
+    <div
+      class="dusk-wizard__step-navigation"
+    >
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+        type="button"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
+        
+         
+        <span
+          class="dusk-button__text"
+        >
+          Back
+        </span>
+        
+      </button>
+      
+       
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal"
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          Agree
+        </span>
+      </button>
+    </div>
+    
+    
+     
+    
+     
+    
+     
+    
   </div>
 </div>
 `;

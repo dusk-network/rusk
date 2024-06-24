@@ -39,7 +39,7 @@ describe("Suspense", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should add appropriate class names for gap variants", () => {
+  it("should add appropriate class names for gap variants", async () => {
     /** @type {import("svelte").ComponentProps<Suspense>} */
     const props = {
       ...baseProps,
@@ -49,7 +49,7 @@ describe("Suspense", () => {
 
     expect(container.firstChild).toHaveClass("dusk-suspense--small-gap");
 
-    rerender({ ...props, gap: "large" });
+    await rerender({ ...props, gap: "large" });
 
     expect(container.firstChild).toHaveClass("dusk-suspense--large-gap");
   });

@@ -1,8 +1,9 @@
 import { cleanup, render } from "@testing-library/svelte";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { base } from "$app/paths";
 
+import { resolveAfter } from "$lib/dusk/test-helpers";
 import { settingsStore } from "$lib/stores";
 import { transactions } from "$lib/mock-data";
 import { sortByHeightDesc } from "$lib/transactions";
@@ -22,8 +23,8 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 vi.useFakeTimers();
 
 describe("Transactions", () => {
-  const transactionsPromise = Promise.resolve(transactions);
-  const emptyTransactionsPromise = Promise.resolve([]);
+  const transactionsPromise = resolveAfter(1000, transactions);
+  const emptyTransactionsPromise = resolveAfter(1000, []);
   const blockExplorerBaseUrl =
     "https://explorer.dusk.network/transactions/transaction?id=";
   const highestTransactionID = sortByHeightDesc(transactions)[0].id;
@@ -43,20 +44,26 @@ describe("Transactions", () => {
     cleanup();
   });
 
-  it("renders loading indicator after the promise has resolved", async () => {
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
+  it("renders a loading indicator after a successful sync if the transaction promise isn't resolved yet", async () => {
     const props = {
       ...baseProps,
       isSyncing: true,
     };
-
     const { getByRole, getByText, rerender } = render(Transactions, {
       props: props,
     });
     const notice = getByText("Data will load after a successful sync.");
+
     expect(notice).toBeInTheDocument();
 
-    rerender({ ...baseProps });
+    await rerender({ ...baseProps });
+
     const spinner = getByRole("progressbar");
+
     expect(spinner).toBeInTheDocument();
   });
 
@@ -79,7 +86,7 @@ describe("Transactions", () => {
     const transactionType = getByText(transaction.tx_type.toUpperCase());
     const transactionFee = getByText(feeFormatter(transaction.fee));
 
-    expect(container).toMatchSnapshot();
+    expect(container.firstChild).toMatchSnapshot();
 
     expect(transactionAmount).toBeInTheDocument();
     expect(transactionBlockHeight).toBeInTheDocument();
@@ -97,7 +104,7 @@ describe("Transactions", () => {
 
     await vi.advanceTimersToNextTimerAsync();
 
-    expect(container).toMatchSnapshot();
+    expect(container.firstChild).toMatchSnapshot();
 
     const transactionHashes = getAllByText("Hash");
 
