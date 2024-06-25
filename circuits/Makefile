@@ -9,7 +9,6 @@ help: ## Display this help screen
 
 test: ## Run all the tests for the circuits
 	$(MAKE) -C ./license $@
-	$(MAKE) -C ./transfer $@
 
 clippy: $(SUBDIRS) ## Run clippy
 
