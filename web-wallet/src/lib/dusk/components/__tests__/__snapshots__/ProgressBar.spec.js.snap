@@ -11,7 +11,6 @@ exports[`ProgressBar > re-renders the Stepper component when the current percent
       style="width: 0%"
     />
   </div>
-  <!--&lt;ProgressBar&gt;-->
 </div>
 `;
 
@@ -26,7 +25,6 @@ exports[`ProgressBar > re-renders the Stepper component when the current percent
       style="width: 50%"
     />
   </div>
-  <!--&lt;ProgressBar&gt;-->
 </div>
 `;
 
@@ -40,7 +38,6 @@ exports[`ProgressBar > renders the ProgressBar component with no current percent
       class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
     />
   </div>
-  <!--&lt;ProgressBar&gt;-->
 </div>
 `;
 
@@ -55,6 +52,5 @@ exports[`ProgressBar > renders the Stepper component with current percentage set
       style="width: 0%"
     />
   </div>
-  <!--&lt;ProgressBar&gt;-->
 </div>
 `;

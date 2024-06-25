@@ -9,6 +9,5 @@ exports[`AppImage > should render an HTML image forwarding all attributes but wi
     src="/some-base-path/images/some-image.jpg"
     width="800"
   />
-  <!--&lt;AppImage&gt;-->
 </div>
 `;

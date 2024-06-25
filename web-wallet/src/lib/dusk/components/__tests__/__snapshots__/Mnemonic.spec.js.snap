@@ -24,7 +24,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the authenticate s
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -33,7 +32,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the authenticate s
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
     </div>
      
     <ol
@@ -100,7 +98,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the authenticate s
         _____
       </li>
     </ol>
-    <!--&lt;Words&gt;-->
      
     <div
       class="dusk-mnemonic__authenticate-actions-wrapper"
@@ -112,12 +109,10 @@ exports[`Mnemonic > should render the "Mnemonic" component in the authenticate s
         type="text"
       />
       
-      <!--&lt;Textbox&gt;-->
        
       
     </div>
   </div>
-  <!--&lt;Mnemonic&gt;-->
 </div>
 `;
 
@@ -145,7 +140,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -154,7 +148,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
     </div>
      
     <ol
@@ -221,7 +214,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
         _____
       </li>
     </ol>
-    <!--&lt;Words&gt;-->
      
     <div
       class="dusk-mnemonic__validate-actions-wrapper"
@@ -238,7 +230,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           auction
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -251,7 +242,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           tribe
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -264,7 +254,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           type
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -277,7 +266,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           torch
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -290,7 +278,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           domain
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -303,7 +290,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           auction
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -316,7 +302,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           lyrics
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -329,7 +314,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           mouse
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -342,7 +326,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           alert
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -355,7 +338,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           fabric
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -368,7 +350,6 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           snake
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -381,10 +362,8 @@ exports[`Mnemonic > should render the "Mnemonic" component in the validate state
           ticket
         </span>
       </button>
-      <!--&lt;Button&gt;-->
       
     </div>
   </div>
-  <!--&lt;Mnemonic&gt;-->
 </div>
 `;

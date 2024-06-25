@@ -2,25 +2,23 @@
 
 exports[`GasSettings > renders the GasSettings component closed 1`] = `
 <div
-  class="gas-settings s-qWT2RqqjhEXG"
+  class="gas-settings svelte-1daay07"
 >
   <dl
-    class="gas-settings__edit s-qWT2RqqjhEXG"
+    class="gas-settings__edit svelte-1daay07"
   >
     <div
-      class="gas-fee s-IvXTyNf8Mc_c"
+      class="gas-fee svelte-x1l5rc"
     >
-      <span
-        class="s-IvXTyNf8Mc_c"
-      >
+      <span>
         Max Gas Fee:
       </span>
        
       <div
-        class="gas-fee__amount s-IvXTyNf8Mc_c"
+        class="gas-fee__amount svelte-x1l5rc"
       >
         <span
-          class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+          class="gas-fee__amount-value svelte-x1l5rc"
         >
           0.020000000
         </span>
@@ -37,13 +35,9 @@ exports[`GasSettings > renders the GasSettings component closed 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </div>
     </div>
-    <!--&lt;GasFee&gt;-->
-    <dd
-      class="s-qWT2RqqjhEXG"
-    >
+    <dd>
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
         type="button"
@@ -54,7 +48,6 @@ exports[`GasSettings > renders the GasSettings component closed 1`] = `
           EDIT
         </span>
       </button>
-      <!--&lt;Button&gt;-->
     </dd>
   </dl>
    
@@ -63,25 +56,23 @@ exports[`GasSettings > renders the GasSettings component closed 1`] = `
 
 exports[`GasSettings > renders the GasSettings component opened 1`] = `
 <div
-  class="gas-settings s-qWT2RqqjhEXG"
+  class="gas-settings svelte-1daay07"
 >
   <dl
-    class="gas-settings__edit s-qWT2RqqjhEXG"
+    class="gas-settings__edit svelte-1daay07"
   >
     <div
-      class="gas-fee s-IvXTyNf8Mc_c"
+      class="gas-fee svelte-x1l5rc"
     >
-      <span
-        class="s-IvXTyNf8Mc_c"
-      >
+      <span>
         Max Gas Fee:
       </span>
        
       <div
-        class="gas-fee__amount s-IvXTyNf8Mc_c"
+        class="gas-fee__amount svelte-x1l5rc"
       >
         <span
-          class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+          class="gas-fee__amount-value svelte-x1l5rc"
         >
           0.020000000
         </span>
@@ -98,13 +89,9 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </div>
     </div>
-    <!--&lt;GasFee&gt;-->
-    <dd
-      class="s-qWT2RqqjhEXG"
-    >
+    <dd>
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
         type="button"
@@ -115,19 +102,18 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
           CLOSE
         </span>
       </button>
-      <!--&lt;Button&gt;-->
     </dd>
   </dl>
    
   <div
-    class="gas-settings s-qWT2RqqjhEXG"
+    class="gas-settings svelte-1daay07"
     style="animation: __svelte_276924520_0 400ms linear 0ms 1 both;"
   >
     <label
-      class="gas-control s-POS_LBjGgkOM"
+      class="gas-control svelte-14slcjg"
     >
       <span
-        class="gas-control__label s-POS_LBjGgkOM"
+        class="gas-control__label svelte-14slcjg"
       >
         Price: (lux)
       </span>
@@ -140,14 +126,13 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
         type="number"
       />
       
-      <!--&lt;Textbox&gt;-->
     </label>
      
     <label
-      class="gas-control s-POS_LBjGgkOM"
+      class="gas-control svelte-14slcjg"
     >
       <span
-        class="gas-control__label s-POS_LBjGgkOM"
+        class="gas-control__label svelte-14slcjg"
       >
         Gas Limit: (unit)
       </span>
@@ -160,9 +145,7 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
         type="number"
       />
       
-      <!--&lt;Textbox&gt;-->
     </label>
-    <!--&lt;GasControls&gt;-->
   </div>
 </div>
 `;

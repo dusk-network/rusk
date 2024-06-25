@@ -4,13 +4,13 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
 <body>
   <div>
     <article
-      class="transactions s-j8yKepzodVZ-"
+      class="transactions svelte-16t4rng"
     >
       <header
-        class="transactions__header s-j8yKepzodVZ-"
+        class="transactions__header svelte-16t4rng"
       >
         <h3
-          class="h4 s-j8yKepzodVZ-"
+          class="h4"
         >
           Transactions
         </h3>
@@ -27,28 +27,23 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
           </span>
           
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <div
         class="dusk-suspense transactions-list__container"
       >
         <dl
-          class="transactions-list s-j8yKepzodVZ-"
+          class="transactions-list"
         >
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Hash
           </dt>
           <dd
-            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+            class="transactions-list__datum transactions-list__datum--hash"
           >
-            <samp
-              class="s-j8yKepzodVZ-"
-            >
+            <samp>
               <a
                 class="dusk-anchor"
                 href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
@@ -57,45 +52,42 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               >
                 tg874534tddsghdtst54hdfh795h
               </a>
-              <!--&lt;Anchor&gt;-->
-              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Type
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             <span
               class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               STAKE
             </span>
-            <!--&lt;Badge&gt;-->
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Block
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             33,460
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Amount
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             +27,000.00
              
@@ -112,16 +104,15 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Fee
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             1,876.00
              
@@ -138,24 +129,21 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
         <dl
-          class="transactions-list s-j8yKepzodVZ-"
+          class="transactions-list"
         >
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Hash
           </dt>
           <dd
-            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+            class="transactions-list__datum transactions-list__datum--hash"
           >
-            <samp
-              class="s-j8yKepzodVZ-"
-            >
+            <samp>
               <a
                 class="dusk-anchor"
                 href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
@@ -164,45 +152,42 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               >
                 tg874534tddsghdtst54hdfh794h
               </a>
-              <!--&lt;Anchor&gt;-->
-              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Type
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             <span
               class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
-            <!--&lt;Badge&gt;-->
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Block
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             33,459
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Amount
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             -25,000.00
              
@@ -219,24 +204,21 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
         <dl
-          class="transactions-list s-j8yKepzodVZ-"
+          class="transactions-list"
         >
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Hash
           </dt>
           <dd
-            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+            class="transactions-list__datum transactions-list__datum--hash"
           >
-            <samp
-              class="s-j8yKepzodVZ-"
-            >
+            <samp>
               <a
                 class="dusk-anchor"
                 href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
@@ -245,45 +227,42 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               >
                 tg874534tddsghdtst54hdfh793h
               </a>
-              <!--&lt;Anchor&gt;-->
-              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Type
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             <span
               class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               TRANSFER
             </span>
-            <!--&lt;Badge&gt;-->
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Block
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             33,458
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Amount
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             +25,000.00
              
@@ -300,16 +279,13 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
         
         
       </div>
-      <!--&lt;Suspense&gt;-->
     </article>
-    <!--&lt;Transactions&gt;-->
   </div>
 </body>
 `;
@@ -318,13 +294,13 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
 <body>
   <div>
     <article
-      class="transactions s-j8yKepzodVZ-"
+      class="transactions svelte-16t4rng"
     >
       <header
-        class="transactions__header s-j8yKepzodVZ-"
+        class="transactions__header svelte-16t4rng"
       >
         <h3
-          class="h4 s-j8yKepzodVZ-"
+          class="h4"
         >
           Transactions
         </h3>
@@ -341,28 +317,23 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
           </span>
           
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <div
         class="dusk-suspense transactions-list__container"
       >
         <dl
-          class="transactions-list s-j8yKepzodVZ-"
+          class="transactions-list"
         >
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Hash
           </dt>
           <dd
-            class="transactions-list__datum transactions-list__datum--hash s-j8yKepzodVZ-"
+            class="transactions-list__datum transactions-list__datum--hash"
           >
-            <samp
-              class="s-j8yKepzodVZ-"
-            >
+            <samp>
               <a
                 class="dusk-anchor"
                 href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
@@ -371,45 +342,42 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
               >
                 tg874534tddsghdtst54hdfh795h
               </a>
-              <!--&lt;Anchor&gt;-->
-              <!--&lt;AppAnchor&gt;-->
             </samp>
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Type
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             <span
               class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
             >
               STAKE
             </span>
-            <!--&lt;Badge&gt;-->
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Block
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             33,460
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Amount
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             +27,000.00
              
@@ -426,16 +394,15 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
           <dt
-            class="transactions-list__term s-j8yKepzodVZ-"
+            class="transactions-list__term"
           >
             Fee
           </dt>
           <dd
-            class="transactions-list__datum s-j8yKepzodVZ-"
+            class="transactions-list__datum"
           >
             1,876.00
              
@@ -452,16 +419,13 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
         
         
       </div>
-      <!--&lt;Suspense&gt;-->
     </article>
-    <!--&lt;Transactions&gt;-->
   </div>
 </body>
 `;

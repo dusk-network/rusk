@@ -3,31 +3,25 @@
 exports[`Login > Mnemonic phrase workflow > should render the login page and show the field to enter the mnemonic phrase, if there is no login info stored 1`] = `
 <div>
   <section
-    class="login s-diEOsynXV9Ac"
+    class="login svelte-1h8yo9z"
   >
     <h2
-      class="h1 s-diEOsynXV9Ac"
+      class="h1"
     >
       Unleash 
-      <mark
-        class="s-diEOsynXV9Ac"
-      >
+      <mark>
         RWA
       </mark>
        and
-      <br
-        class="s-diEOsynXV9Ac"
-      />
+      <br />
        
-      <mark
-        class="s-diEOsynXV9Ac"
-      >
+      <mark>
         Decentralized Finance
       </mark>
     </h2>
      
     <div
-      class="login s-diEOsynXV9Ac"
+      class="login svelte-1h8yo9z"
     >
       <article
         class="dusk-card"
@@ -45,7 +39,6 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
             class="h4"
@@ -56,7 +49,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
         </header>
          
         <form
-          class="login__form s-diEOsynXV9Ac"
+          class="login__form svelte-1h8yo9z"
         >
           <input
             autocomplete="current-password"
@@ -67,7 +60,6 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
             type="password"
           />
           
-          <!--&lt;Textbox&gt;-->
            
            
           <button
@@ -80,16 +72,14 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
               Unlock Wallet
             </span>
           </button>
-          <!--&lt;Button&gt;-->
            
         </form>
       </article>
       
-      <!--&lt;Card&gt;-->
     </div>
      
     <footer
-      class="login-footer s-diEOsynXV9Ac"
+      class="login-footer svelte-1h8yo9z"
     >
       <a
         aria-disabled="false"
@@ -106,7 +96,6 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-anchor-button__text"
@@ -116,43 +105,33 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
         
         
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AnchorButton&gt;-->
-      <!--&lt;AppAnchorButton&gt;-->
     </footer>
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`Login > Password workflow > should show the password field and the link to restore the wallet if there is login info stored 1`] = `
 <div>
   <section
-    class="login s-diEOsynXV9Ac"
+    class="login svelte-1h8yo9z"
   >
     <h2
-      class="h1 s-diEOsynXV9Ac"
+      class="h1"
     >
       Unleash 
-      <mark
-        class="s-diEOsynXV9Ac"
-      >
+      <mark>
         RWA
       </mark>
        and
-      <br
-        class="s-diEOsynXV9Ac"
-      />
+      <br />
        
-      <mark
-        class="s-diEOsynXV9Ac"
-      >
+      <mark>
         Decentralized Finance
       </mark>
     </h2>
      
     <div
-      class="login s-diEOsynXV9Ac"
+      class="login svelte-1h8yo9z"
     >
       <article
         class="dusk-card"
@@ -170,7 +149,6 @@ exports[`Login > Password workflow > should show the password field and the link
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
             class="h4"
@@ -181,7 +159,7 @@ exports[`Login > Password workflow > should show the password field and the link
         </header>
          
         <form
-          class="login__form s-diEOsynXV9Ac"
+          class="login__form svelte-1h8yo9z"
         >
           <input
             autocomplete="current-password"
@@ -192,7 +170,6 @@ exports[`Login > Password workflow > should show the password field and the link
             type="password"
           />
           
-          <!--&lt;Textbox&gt;-->
            
            
           <button
@@ -205,7 +182,6 @@ exports[`Login > Password workflow > should show the password field and the link
               Unlock Wallet
             </span>
           </button>
-          <!--&lt;Button&gt;-->
            
           <a
             aria-disabled="false"
@@ -219,17 +195,13 @@ exports[`Login > Password workflow > should show the password field and the link
             </span>
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
         </form>
       </article>
       
-      <!--&lt;Card&gt;-->
     </div>
      
     <footer
-      class="login-footer s-diEOsynXV9Ac"
+      class="login-footer svelte-1h8yo9z"
     >
       <a
         aria-disabled="false"
@@ -246,7 +218,6 @@ exports[`Login > Password workflow > should show the password field and the link
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-anchor-button__text"
@@ -256,11 +227,7 @@ exports[`Login > Password workflow > should show the password field and the link
         
         
       </a>
-      <!--&lt;Anchor&gt;-->
-      <!--&lt;AnchorButton&gt;-->
-      <!--&lt;AppAnchorButton&gt;-->
     </footer>
   </section>
-  <!--&lt;+page&gt;-->
 </div>
 `;

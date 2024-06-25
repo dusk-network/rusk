@@ -3,33 +3,29 @@
 exports[`Settings > Resetting the wallet > should show an error if clearing local data fails 1`] = `
 <div>
   <section
-    class="settings s-EBshooXNO1eQ"
+    class="settings svelte-1kathp5"
   >
     <header
-      class="settings__header s-EBshooXNO1eQ"
+      class="settings__header svelte-1kathp5"
     >
-      <h2
-        class="s-EBshooXNO1eQ"
-      >
+      <h2>
         Settings
       </h2>
     </header>
      
     <div
-      class="settings__content s-EBshooXNO1eQ"
+      class="settings__content svelte-1kathp5"
     >
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header settings-group__header--network s-EBshooXNO1eQ"
+          class="settings-group__header settings-group__header--network svelte-1kathp5"
         >
           <div
-            class="settings-group__header s-EBshooXNO1eQ"
+            class="settings-group__header svelte-1kathp5"
           >
             <svg
               class="dusk-icon dusk-icon--size--normal"
@@ -41,10 +37,9 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <h3
-              class="h4 settings-group__heading s-EBshooXNO1eQ"
+              class="h4 settings-group__heading svelte-1kathp5"
             >
               Network
             </h3>
@@ -55,7 +50,6 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           >
             Online
           </span>
-          <!--&lt;Badge&gt;-->
         </header>
          
         <select
@@ -75,20 +69,16 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
              
           </option>
           
-          <!--&lt;Options&gt;-->
         </select>
-        <!--&lt;Select&gt;-->
       </article>
        
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header s-EBshooXNO1eQ"
+          class="settings-group__header svelte-1kathp5"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -100,23 +90,22 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
-            class="h4 settings-group__heading s-EBshooXNO1eQ"
+            class="h4 settings-group__heading svelte-1kathp5"
           >
             Gas
           </h3>
         </header>
          
         <div
-          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+          class="settings-group__multi-control-content svelte-1kathp5"
         >
           <label
-            class="gas-control s-POS_LBjGgkOM"
+            class="gas-control svelte-14slcjg"
           >
             <span
-              class="gas-control__label s-POS_LBjGgkOM"
+              class="gas-control__label svelte-14slcjg"
             >
               Price: (lux)
             </span>
@@ -129,14 +118,13 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
               type="number"
             />
             
-            <!--&lt;Textbox&gt;-->
           </label>
            
           <label
-            class="gas-control s-POS_LBjGgkOM"
+            class="gas-control svelte-14slcjg"
           >
             <span
-              class="gas-control__label s-POS_LBjGgkOM"
+              class="gas-control__label svelte-14slcjg"
             >
               Gas Limit: (unit)
             </span>
@@ -149,21 +137,17 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
               type="number"
             />
             
-            <!--&lt;Textbox&gt;-->
           </label>
-          <!--&lt;GasControls&gt;-->
         </div>
       </article>
        
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header s-EBshooXNO1eQ"
+          class="settings-group__header svelte-1kathp5"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -175,24 +159,21 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
-            class="h4 settings-group__heading s-EBshooXNO1eQ"
+            class="h4 settings-group__heading svelte-1kathp5"
           >
             Preferences
           </h3>
         </header>
          
         <div
-          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+          class="settings-group__multi-control-content svelte-1kathp5"
         >
           <label
-            class="settings-group__control settings-group__control--switch s-EBshooXNO1eQ"
+            class="settings-group__control settings-group__control--switch svelte-1kathp5"
           >
-            <span
-              class="s-EBshooXNO1eQ"
-            >
+            <span>
               Dark mode
             </span>
              
@@ -203,14 +184,13 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
               role="switch"
               tabindex="0"
             />
-            <!--&lt;Switch&gt;-->
           </label>
            
           <label
-            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+            class="settings-group__control settings-group__control--with-label svelte-1kathp5"
           >
             <span
-              class="s-EBshooXNO1eQ"
+              class="svelte-1kathp5"
             >
               Currency
             </span>
@@ -489,22 +469,18 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
                  
               </option>
               
-              <!--&lt;Options&gt;-->
             </select>
-            <!--&lt;Select&gt;-->
           </label>
         </div>
       </article>
        
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header s-EBshooXNO1eQ"
+          class="settings-group__header svelte-1kathp5"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -516,10 +492,9 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
-            class="h4 settings-group__heading s-EBshooXNO1eQ"
+            class="h4 settings-group__heading svelte-1kathp5"
           >
             Danger zone
           </h3>
@@ -544,7 +519,6 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           </pre>
         </details>
         
-        <!--&lt;ErrorDetails&gt;-->
          
         <button
           class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal settings-group__button--state--danger"
@@ -560,13 +534,12 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
             Reset Wallet
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </article>
     </div>
   </section>
    
   <div
-    class="settings-actions s-EBshooXNO1eQ"
+    class="settings-actions svelte-1kathp5"
   >
     <a
       aria-disabled="false"
@@ -583,7 +556,6 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-anchor-button__text"
@@ -593,9 +565,6 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
       
       
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AnchorButton&gt;-->
-    <!--&lt;AppAnchorButton&gt;-->
      
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -607,42 +576,36 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         Log out
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </div>
-  <!--&lt;+page&gt;-->
 </div>
 `;
 
 exports[`Settings > should render the settings page 1`] = `
 <div>
   <section
-    class="settings s-EBshooXNO1eQ"
+    class="settings svelte-1kathp5"
   >
     <header
-      class="settings__header s-EBshooXNO1eQ"
+      class="settings__header svelte-1kathp5"
     >
-      <h2
-        class="s-EBshooXNO1eQ"
-      >
+      <h2>
         Settings
       </h2>
     </header>
      
     <div
-      class="settings__content s-EBshooXNO1eQ"
+      class="settings__content svelte-1kathp5"
     >
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header settings-group__header--network s-EBshooXNO1eQ"
+          class="settings-group__header settings-group__header--network svelte-1kathp5"
         >
           <div
-            class="settings-group__header s-EBshooXNO1eQ"
+            class="settings-group__header svelte-1kathp5"
           >
             <svg
               class="dusk-icon dusk-icon--size--normal"
@@ -654,10 +617,9 @@ exports[`Settings > should render the settings page 1`] = `
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <h3
-              class="h4 settings-group__heading s-EBshooXNO1eQ"
+              class="h4 settings-group__heading svelte-1kathp5"
             >
               Network
             </h3>
@@ -668,7 +630,6 @@ exports[`Settings > should render the settings page 1`] = `
           >
             Online
           </span>
-          <!--&lt;Badge&gt;-->
         </header>
          
         <select
@@ -688,20 +649,16 @@ exports[`Settings > should render the settings page 1`] = `
              
           </option>
           
-          <!--&lt;Options&gt;-->
         </select>
-        <!--&lt;Select&gt;-->
       </article>
        
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header s-EBshooXNO1eQ"
+          class="settings-group__header svelte-1kathp5"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -713,23 +670,22 @@ exports[`Settings > should render the settings page 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
-            class="h4 settings-group__heading s-EBshooXNO1eQ"
+            class="h4 settings-group__heading svelte-1kathp5"
           >
             Gas
           </h3>
         </header>
          
         <div
-          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+          class="settings-group__multi-control-content svelte-1kathp5"
         >
           <label
-            class="gas-control s-POS_LBjGgkOM"
+            class="gas-control svelte-14slcjg"
           >
             <span
-              class="gas-control__label s-POS_LBjGgkOM"
+              class="gas-control__label svelte-14slcjg"
             >
               Price: (lux)
             </span>
@@ -742,14 +698,13 @@ exports[`Settings > should render the settings page 1`] = `
               type="number"
             />
             
-            <!--&lt;Textbox&gt;-->
           </label>
            
           <label
-            class="gas-control s-POS_LBjGgkOM"
+            class="gas-control svelte-14slcjg"
           >
             <span
-              class="gas-control__label s-POS_LBjGgkOM"
+              class="gas-control__label svelte-14slcjg"
             >
               Gas Limit: (unit)
             </span>
@@ -762,21 +717,17 @@ exports[`Settings > should render the settings page 1`] = `
               type="number"
             />
             
-            <!--&lt;Textbox&gt;-->
           </label>
-          <!--&lt;GasControls&gt;-->
         </div>
       </article>
        
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header s-EBshooXNO1eQ"
+          class="settings-group__header svelte-1kathp5"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -788,24 +739,21 @@ exports[`Settings > should render the settings page 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
-            class="h4 settings-group__heading s-EBshooXNO1eQ"
+            class="h4 settings-group__heading svelte-1kathp5"
           >
             Preferences
           </h3>
         </header>
          
         <div
-          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+          class="settings-group__multi-control-content svelte-1kathp5"
         >
           <label
-            class="settings-group__control settings-group__control--switch s-EBshooXNO1eQ"
+            class="settings-group__control settings-group__control--switch svelte-1kathp5"
           >
-            <span
-              class="s-EBshooXNO1eQ"
-            >
+            <span>
               Dark mode
             </span>
              
@@ -816,14 +764,13 @@ exports[`Settings > should render the settings page 1`] = `
               role="switch"
               tabindex="0"
             />
-            <!--&lt;Switch&gt;-->
           </label>
            
           <label
-            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+            class="settings-group__control settings-group__control--with-label svelte-1kathp5"
           >
             <span
-              class="s-EBshooXNO1eQ"
+              class="svelte-1kathp5"
             >
               Currency
             </span>
@@ -1102,22 +1049,18 @@ exports[`Settings > should render the settings page 1`] = `
                  
               </option>
               
-              <!--&lt;Options&gt;-->
             </select>
-            <!--&lt;Select&gt;-->
           </label>
         </div>
       </article>
        
-      <hr
-        class="s-EBshooXNO1eQ"
-      />
+      <hr />
        
       <article
-        class="settings-group s-EBshooXNO1eQ"
+        class="settings-group svelte-1kathp5"
       >
         <header
-          class="settings-group__header s-EBshooXNO1eQ"
+          class="settings-group__header svelte-1kathp5"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1129,17 +1072,15 @@ exports[`Settings > should render the settings page 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
-            class="h4 settings-group__heading s-EBshooXNO1eQ"
+            class="h4 settings-group__heading svelte-1kathp5"
           >
             Danger zone
           </h3>
         </header>
          
         
-        <!--&lt;ErrorDetails&gt;-->
          
         <button
           class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal settings-group__button--state--danger"
@@ -1155,13 +1096,12 @@ exports[`Settings > should render the settings page 1`] = `
             Reset Wallet
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </article>
     </div>
   </section>
    
   <div
-    class="settings-actions s-EBshooXNO1eQ"
+    class="settings-actions svelte-1kathp5"
   >
     <a
       aria-disabled="false"
@@ -1178,7 +1118,6 @@ exports[`Settings > should render the settings page 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-anchor-button__text"
@@ -1188,9 +1127,6 @@ exports[`Settings > should render the settings page 1`] = `
       
       
     </a>
-    <!--&lt;Anchor&gt;-->
-    <!--&lt;AnchorButton&gt;-->
-    <!--&lt;AppAnchorButton&gt;-->
      
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
@@ -1202,8 +1138,6 @@ exports[`Settings > should render the settings page 1`] = `
         Log out
       </span>
     </button>
-    <!--&lt;Button&gt;-->
   </div>
-  <!--&lt;+page&gt;-->
 </div>
 `;

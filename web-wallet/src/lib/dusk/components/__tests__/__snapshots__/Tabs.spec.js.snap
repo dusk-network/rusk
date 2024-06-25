@@ -21,11 +21,9 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
    
   <ul
     class="dusk-tabs-list"
@@ -48,7 +46,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-tab-label"
@@ -81,7 +78,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -101,7 +97,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-tab-label"
@@ -134,7 +129,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -154,7 +148,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-tab-label"
@@ -187,7 +180,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -207,7 +199,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-tab-label"
@@ -240,7 +231,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -260,7 +250,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       <span
         class="dusk-tab-label"
@@ -293,7 +282,6 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
   </ul>
@@ -314,11 +302,9 @@ exports[`Tabs > should be able to render tabs with icon and text 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;
 
@@ -343,11 +329,9 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
    
   <ul
     class="dusk-tabs-list"
@@ -370,7 +354,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       
        
@@ -393,7 +376,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -413,7 +395,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       
        
@@ -436,7 +417,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -456,7 +436,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       
        
@@ -479,7 +458,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -499,7 +477,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       
        
@@ -522,7 +499,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
     <li
@@ -542,7 +518,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
       
        
@@ -565,7 +540,6 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
        
     </li>
   </ul>
@@ -586,11 +560,9 @@ exports[`Tabs > should be able to render tabs with icons only 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;
 
@@ -616,11 +588,9 @@ exports[`Tabs > should pass additional class names and attributes to the root el
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
    
   <ul
     class="dusk-tabs-list"
@@ -784,11 +754,9 @@ exports[`Tabs > should pass additional class names and attributes to the root el
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;
 
@@ -813,11 +781,9 @@ exports[`Tabs > should render a "Tabs" component and reset its scroll status if 
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
    
   <ul
     class="dusk-tabs-list"
@@ -981,11 +947,9 @@ exports[`Tabs > should render a "Tabs" component and reset its scroll status if 
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;
 
@@ -1010,11 +974,9 @@ exports[`Tabs > should use the id as label if the tab hasn't one and is without 
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
    
   <ul
     class="dusk-tabs-list"
@@ -1178,10 +1140,8 @@ exports[`Tabs > should use the id as label if the tab hasn't one and is without 
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;

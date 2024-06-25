@@ -3,19 +3,17 @@
 exports[`GasFee > renders the GasFee component 1`] = `
 <div>
   <div
-    class="gas-fee s-IvXTyNf8Mc_c"
+    class="gas-fee svelte-x1l5rc"
   >
-    <span
-      class="s-IvXTyNf8Mc_c"
-    >
+    <span>
       Max Gas Fee:
     </span>
      
     <div
-      class="gas-fee__amount s-IvXTyNf8Mc_c"
+      class="gas-fee__amount svelte-x1l5rc"
     >
       <span
-        class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+        class="gas-fee__amount-value svelte-x1l5rc"
       >
         0.020000000
       </span>
@@ -32,9 +30,7 @@ exports[`GasFee > renders the GasFee component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </div>
   </div>
-  <!--&lt;GasFee&gt;-->
 </div>
 `;

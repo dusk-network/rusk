@@ -2,7 +2,7 @@
 
 exports[`Stake > should render the Stake component 1`] = `
 <div
-  class="operation s-DFOGCf36SJsY"
+  class="operation"
 >
   <div
     class="dusk-wizard"
@@ -11,20 +11,18 @@ exports[`Stake > should render the Stake component 1`] = `
      
      
     <dl
-      class="contract-statuses s-fYGIMZDSuGmT"
+      class="contract-statuses svelte-19157rx"
     >
       <dt
-        class="contract-statuses__label s-fYGIMZDSuGmT"
+        class="contract-statuses__label svelte-19157rx"
       >
         Spendable
          
       </dt>
       <dd
-        class="contract-statuses__value s-fYGIMZDSuGmT"
+        class="contract-statuses__value svelte-19157rx"
       >
-        <span
-          class="s-fYGIMZDSuGmT"
-        >
+        <span>
           1,000.000000000
         </span>
          
@@ -40,21 +38,18 @@ exports[`Stake > should render the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
       </dd>
       <dt
-        class="contract-statuses__label s-fYGIMZDSuGmT"
+        class="contract-statuses__label svelte-19157rx"
       >
         Total Locked
          
       </dt>
       <dd
-        class="contract-statuses__value s-fYGIMZDSuGmT"
+        class="contract-statuses__value svelte-19157rx"
       >
-        <span
-          class="s-fYGIMZDSuGmT"
-        >
+        <span>
           278.000000000
         </span>
          
@@ -70,21 +65,18 @@ exports[`Stake > should render the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
       </dd>
       <dt
-        class="contract-statuses__label s-fYGIMZDSuGmT"
+        class="contract-statuses__label svelte-19157rx"
       >
         Rewards
          
       </dt>
       <dd
-        class="contract-statuses__value s-fYGIMZDSuGmT"
+        class="contract-statuses__value svelte-19157rx"
       >
-        <span
-          class="s-fYGIMZDSuGmT"
-        >
+        <span>
           345.000000000
         </span>
          
@@ -100,18 +92,14 @@ exports[`Stake > should render the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
       </dd>
     </dl>
-    <!--&lt;ContractStatusesList&gt;-->
      
     <div
-      class="operation__amount operation__space-between s-DFOGCf36SJsY"
+      class="operation__amount operation__space-between svelte-1i0y9qj"
     >
-      <p
-        class="s-DFOGCf36SJsY"
-      >
+      <p>
         Enter amount:
       </p>
        
@@ -125,11 +113,10 @@ exports[`Stake > should render the Stake component 1`] = `
           USE MAX
         </span>
       </button>
-      <!--&lt;Button&gt;-->
     </div>
      
     <div
-      class="operation__amount operation__input s-DFOGCf36SJsY"
+      class="operation__amount operation__input svelte-1i0y9qj"
     >
       <input
         class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -140,7 +127,6 @@ exports[`Stake > should render the Stake component 1`] = `
         type="number"
       />
       
-      <!--&lt;Textbox&gt;-->
        
       <svg
         class="dusk-icon dusk-icon--size--normal"
@@ -154,29 +140,26 @@ exports[`Stake > should render the Stake component 1`] = `
         />
       </svg>
       
-      <!--&lt;Icon&gt;-->
     </div>
      
     <div
-      class="gas-settings s-qWT2RqqjhEXG"
+      class="gas-settings svelte-1daay07"
     >
       <dl
-        class="gas-settings__edit s-qWT2RqqjhEXG"
+        class="gas-settings__edit svelte-1daay07"
       >
         <div
-          class="gas-fee s-IvXTyNf8Mc_c"
+          class="gas-fee svelte-x1l5rc"
         >
-          <span
-            class="s-IvXTyNf8Mc_c"
-          >
+          <span>
             Max Gas Fee:
           </span>
            
           <div
-            class="gas-fee__amount s-IvXTyNf8Mc_c"
+            class="gas-fee__amount svelte-x1l5rc"
           >
             <span
-              class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+              class="gas-fee__amount-value svelte-x1l5rc"
             >
               0.020000000
             </span>
@@ -193,13 +176,9 @@ exports[`Stake > should render the Stake component 1`] = `
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
           </div>
         </div>
-        <!--&lt;GasFee&gt;-->
-        <dd
-          class="s-qWT2RqqjhEXG"
-        >
+        <dd>
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
             type="button"
@@ -210,12 +189,10 @@ exports[`Stake > should render the Stake component 1`] = `
               EDIT
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </dd>
       </dl>
        
     </div>
-    <!--&lt;GasSettings&gt;-->
      
     <div
       class="dusk-wizard__step-navigation"
@@ -234,7 +211,6 @@ exports[`Stake > should render the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -243,7 +219,6 @@ exports[`Stake > should render the Stake component 1`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -266,28 +241,22 @@ exports[`Stake > should render the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
 </div>
 `;
 
 exports[`Stake > should render the Stake notice 1`] = `
 <div>
   <div
-    class="operation s-DFOGCf36SJsY"
+    class="operation"
   >
     <div
       class="dusk-wizard"
@@ -299,7 +268,6 @@ exports[`Stake > should render the Stake notice 1`] = `
       >
         WARNING
       </span>
-      <!--&lt;Badge&gt;-->
        
       <div
         class="dusk-card dusk-card--on-surface"
@@ -317,7 +285,6 @@ exports[`Stake > should render the Stake notice 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <h3
             class="h4"
@@ -328,7 +295,7 @@ exports[`Stake > should render the Stake notice 1`] = `
         </header>
          
         <p
-          class="staking-warning s-DFOGCf36SJsY"
+          class="staking-warning svelte-1i0y9qj"
         >
           I understand that I have set up a node properly, as described 
           <a
@@ -339,8 +306,6 @@ exports[`Stake > should render the Stake notice 1`] = `
           >
             HERE
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AppAnchor&gt;-->
           , and that I will lose funds if I have not done so correctly.
         </p>
          
@@ -354,7 +319,6 @@ exports[`Stake > should render the Stake notice 1`] = `
             tabindex="0"
             type="checkbox"
           />
-          <!--&lt;Checkbox&gt;-->
            
           <label
             class="dusk-agreement__label"
@@ -363,10 +327,8 @@ exports[`Stake > should render the Stake notice 1`] = `
             Don't show this step again.
           </label>
         </div>
-        <!--&lt;Agreement&gt;-->
       </div>
       
-      <!--&lt;Card&gt;-->
        
       <div
         class="dusk-wizard__step-navigation"
@@ -385,7 +347,6 @@ exports[`Stake > should render the Stake notice 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-button__text"
@@ -394,7 +355,6 @@ exports[`Stake > should render the Stake notice 1`] = `
           </span>
           
         </button>
-        <!--&lt;Button&gt;-->
         
          
         <button
@@ -407,59 +367,49 @@ exports[`Stake > should render the Stake notice 1`] = `
             Agree
           </span>
         </button>
-        <!--&lt;Button&gt;-->
       </div>
       
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
     </div>
-    <!--&lt;Wizard&gt;-->
   </div>
-  <!--&lt;Stake&gt;-->
 </div>
 `;
 
 exports[`Stake > should render the review step of the Stake component 1`] = `
 <div
-  class="operation s-DFOGCf36SJsY"
+  class="operation"
 >
   <div
     class="dusk-wizard"
   >
      
     
-    <!--&lt;WizardStep&gt;-->
      
      
      
     <div
-      class="operation__stake s-DFOGCf36SJsY"
+      class="operation__stake svelte-1i0y9qj"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <dl
-        class="contract-statuses s-fYGIMZDSuGmT"
+        class="contract-statuses svelte-19157rx"
       >
         <dt
-          class="contract-statuses__label s-fYGIMZDSuGmT"
+          class="contract-statuses__label svelte-19157rx"
         >
           Spendable
            
         </dt>
         <dd
-          class="contract-statuses__value s-fYGIMZDSuGmT"
+          class="contract-statuses__value svelte-19157rx"
         >
-          <span
-            class="s-fYGIMZDSuGmT"
-          >
+          <span>
             1,000.000000000
           </span>
            
@@ -475,21 +425,18 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
         </dd>
         <dt
-          class="contract-statuses__label s-fYGIMZDSuGmT"
+          class="contract-statuses__label svelte-19157rx"
         >
           Total Locked
            
         </dt>
         <dd
-          class="contract-statuses__value s-fYGIMZDSuGmT"
+          class="contract-statuses__value svelte-19157rx"
         >
-          <span
-            class="s-fYGIMZDSuGmT"
-          >
+          <span>
             278.000000000
           </span>
            
@@ -505,21 +452,18 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
         </dd>
         <dt
-          class="contract-statuses__label s-fYGIMZDSuGmT"
+          class="contract-statuses__label svelte-19157rx"
         >
           Rewards
            
         </dt>
         <dd
-          class="contract-statuses__value s-fYGIMZDSuGmT"
+          class="contract-statuses__value svelte-19157rx"
         >
-          <span
-            class="s-fYGIMZDSuGmT"
-          >
+          <span>
             345.000000000
           </span>
            
@@ -535,24 +479,21 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
         </dd>
       </dl>
-      <!--&lt;ContractStatusesList&gt;-->
        
       <span
         class="dusk-badge dusk-badge--variant-warning"
       >
         REVIEW TRANSACTION
       </span>
-      <!--&lt;Badge&gt;-->
        
       <dl
-        class="stake-overview s-9iuFfX3q-D8R"
+        class="stake-overview svelte-1uhmq4r"
       >
         <dt
-          class="stake-overview__label s-9iuFfX3q-D8R"
+          class="stake-overview__label"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -564,21 +505,18 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
-          <span
-            class="s-9iuFfX3q-D8R"
-          >
+          <span>
             Amount
             :
           </span>
            
         </dt>
         <dd
-          class="stake-overview__value s-9iuFfX3q-D8R"
+          class="stake-overview__value svelte-1uhmq4r"
         >
           <span
-            class="s-9iuFfX3q-D8R"
+            class="svelte-1uhmq4r"
           >
             1,234.000000000
           </span>
@@ -595,25 +533,21 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
         </dd>
       </dl>
-      <!--&lt;StakeOverview&gt;-->
        
       <div
-        class="gas-fee s-IvXTyNf8Mc_c"
+        class="gas-fee svelte-x1l5rc"
       >
-        <span
-          class="s-IvXTyNf8Mc_c"
-        >
+        <span>
           Max Gas Fee:
         </span>
          
         <div
-          class="gas-fee__amount s-IvXTyNf8Mc_c"
+          class="gas-fee__amount svelte-x1l5rc"
         >
           <span
-            class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+            class="gas-fee__amount-value svelte-x1l5rc"
           >
             0.020000000
           </span>
@@ -630,10 +564,8 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
         </div>
       </div>
-      <!--&lt;GasFee&gt;-->
     </div>
      
     <div
@@ -653,7 +585,6 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -662,7 +593,6 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
       
        
       <button
@@ -679,7 +609,6 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         <span
           class="dusk-button__text"
@@ -688,15 +617,11 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
         </span>
         
       </button>
-      <!--&lt;Button&gt;-->
     </div>
     
     
-    <!--&lt;WizardStep&gt;-->
      
     
-    <!--&lt;WizardStep&gt;-->
   </div>
-  <!--&lt;Wizard&gt;-->
 </div>
 `;

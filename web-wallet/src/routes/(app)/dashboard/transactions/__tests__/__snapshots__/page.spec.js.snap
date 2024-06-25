@@ -3,10 +3,10 @@
 exports[`Dashboard > should render the transactions page 1`] = `
 <div>
   <div
-    class="transactions s-w5uHSYkypcPX"
+    class="transactions svelte-1dmjkox"
   >
     <h2
-      class="sr-only s-w5uHSYkypcPX"
+      class="sr-only"
     >
       Transactions
     </h2>
@@ -42,7 +42,6 @@ exports[`Dashboard > should render the transactions page 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
       </p>
        
       <p
@@ -65,18 +64,16 @@ exports[`Dashboard > should render the transactions page 1`] = `
       >
         
       </div>
-      <!--&lt;Tooltip&gt;-->
     </article>
-    <!--&lt;Balance&gt;-->
      
     <article
-      class="transactions s-j8yKepzodVZ-"
+      class="transactions svelte-16t4rng"
     >
       <header
-        class="transactions__header s-j8yKepzodVZ-"
+        class="transactions__header svelte-16t4rng"
       >
         <h3
-          class="h4 s-j8yKepzodVZ-"
+          class="h4"
         >
           Transactions
         </h3>
@@ -96,7 +93,6 @@ exports[`Dashboard > should render the transactions page 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-anchor-button__text"
@@ -106,9 +102,6 @@ exports[`Dashboard > should render the transactions page 1`] = `
           
           
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-        <!--&lt;AppAnchorButton&gt;-->
       </header>
        
       <div
@@ -133,13 +126,9 @@ exports[`Dashboard > should render the transactions page 1`] = `
           </pre>
         </details>
         
-        <!--&lt;ErrorDetails&gt;-->
          
       </div>
-      <!--&lt;Suspense&gt;-->
     </article>
-    <!--&lt;Transactions&gt;-->
   </div>
-  <!--&lt;+page&gt;-->
 </div>
 `;

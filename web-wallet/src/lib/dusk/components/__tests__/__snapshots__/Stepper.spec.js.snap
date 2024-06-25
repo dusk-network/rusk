@@ -30,7 +30,6 @@ exports[`Stepper > renders the Stepper component with a completed step 1`] = `
       />
     </div>
   </div>
-  <!--&lt;Stepper&gt;-->
 </div>
 `;
 
@@ -79,7 +78,6 @@ exports[`Stepper > renders the Stepper component with five steps 1`] = `
       />
     </div>
   </div>
-  <!--&lt;Stepper&gt;-->
 </div>
 `;
 
@@ -128,7 +126,6 @@ exports[`Stepper > renders the Stepper component with five steps, with the third
       />
     </div>
   </div>
-  <!--&lt;Stepper&gt;-->
 </div>
 `;
 
@@ -162,6 +159,5 @@ exports[`Stepper > renders the Stepper component with two steps 1`] = `
       />
     </div>
   </div>
-  <!--&lt;Stepper&gt;-->
 </div>
 `;

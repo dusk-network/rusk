@@ -27,7 +27,6 @@ exports[`Select > should accept a grouped object as \`options\` and create optio
        
     </option>
     
-    <!--&lt;Options&gt;-->
   </optgroup>
   <optgroup
     label="Group two"
@@ -45,7 +44,6 @@ exports[`Select > should accept a grouped object as \`options\` and create optio
        
     </option>
     
-    <!--&lt;Options&gt;-->
   </optgroup>
   
 </select>
@@ -81,7 +79,6 @@ exports[`Select > should accept an array of objects as options 1`] = `
      
   </option>
   
-  <!--&lt;Options&gt;-->
 </select>
 `;
 
@@ -117,7 +114,6 @@ exports[`Select > should accept an array of string as values of a grouped object
        
     </option>
     
-    <!--&lt;Options&gt;-->
   </optgroup>
   <optgroup
     label="Group two"
@@ -141,7 +137,6 @@ exports[`Select > should accept an array of string as values of a grouped object
        
     </option>
     
-    <!--&lt;Options&gt;-->
   </optgroup>
   
 </select>
@@ -176,7 +171,6 @@ exports[`Select > should accept an array of strings as \`options\` and use each 
      
   </option>
   
-  <!--&lt;Options&gt;-->
 </select>
 `;
 
@@ -216,7 +210,6 @@ exports[`Select > should accept an empty string as label and use it instead of f
      
   </option>
   
-  <!--&lt;Options&gt;-->
 </select>
 `;
 
@@ -250,7 +243,6 @@ exports[`Select > should pass additional class names and attributes to the rende
      
   </option>
   
-  <!--&lt;Options&gt;-->
 </select>
 `;
 
@@ -283,7 +275,6 @@ exports[`Select > should render the Select component 1`] = `
      
   </option>
   
-  <!--&lt;Options&gt;-->
 </select>
 `;
 
@@ -323,6 +314,5 @@ exports[`Select > should use the value as label if an object is missing it 1`] =
      
   </option>
   
-  <!--&lt;Options&gt;-->
 </select>
 `;

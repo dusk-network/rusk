@@ -10,8 +10,5 @@ exports[`AppAnchorButton > should render an \`AnchorButton\` with the base path 
   >
     
   </a>
-  <!--&lt;Anchor&gt;-->
-  <!--&lt;AnchorButton&gt;-->
-  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;

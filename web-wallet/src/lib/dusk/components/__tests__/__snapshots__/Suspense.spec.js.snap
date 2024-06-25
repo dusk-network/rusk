@@ -17,7 +17,6 @@ exports[`Suspense > should accept a custom message for the failure state 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     <details
       class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
@@ -38,9 +37,7 @@ exports[`Suspense > should accept a custom message for the failure state 1`] = `
       </pre>
     </details>
     
-    <!--&lt;ErrorDetails&gt;-->
   </div>
-  <!--&lt;ErrorAlert&gt;-->
    
 </div>
 `;
@@ -70,7 +67,6 @@ exports[`Suspense > should accept a custom message for the pending state 1`] = `
       />
     </g>
   </svg>
-  <!--&lt;Throbber&gt;-->
    
   <span
     class="dusk-suspense__pending-message"
@@ -105,7 +101,6 @@ exports[`Suspense > should be able to render the \`Suspense\` component in a pen
       />
     </g>
   </svg>
-  <!--&lt;Throbber&gt;-->
    
   <span
     class="dusk-suspense__pending-message"
@@ -132,7 +127,6 @@ exports[`Suspense > should be able to render the \`Suspense\` in a failure state
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     <details
       class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
@@ -153,9 +147,7 @@ exports[`Suspense > should be able to render the \`Suspense\` in a failure state
       </pre>
     </details>
     
-    <!--&lt;ErrorDetails&gt;-->
   </div>
-  <!--&lt;ErrorAlert&gt;-->
    
 </div>
 `;
@@ -183,7 +175,6 @@ exports[`Suspense > should be able to render the \`Suspense\` in a failure state
     </pre>
   </details>
   
-  <!--&lt;ErrorDetails&gt;-->
    
 </div>
 `;
@@ -221,7 +212,6 @@ exports[`Suspense > should pass additional class names and attributes to the ren
       />
     </g>
   </svg>
-  <!--&lt;Throbber&gt;-->
    
   <span
     class="dusk-suspense__pending-message"

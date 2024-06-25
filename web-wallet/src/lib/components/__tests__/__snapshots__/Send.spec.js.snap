@@ -3,35 +3,32 @@
 exports[`Send > Address step > should render the Send component Address step 1`] = `
 <div>
   <div
-    class="operation s-m9vn8aRVZTU1"
+    class="operation svelte-1y886qs"
   >
     <div
       class="dusk-wizard"
     >
       
-      <!--&lt;WizardStep&gt;-->
        
        
        
       <div
-        class="operation__send s-m9vn8aRVZTU1"
+        class="operation__send svelte-1y886qs"
         style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
       >
         <dl
-          class="contract-statuses s-fYGIMZDSuGmT"
+          class="contract-statuses svelte-19157rx"
         >
           <dt
-            class="contract-statuses__label s-fYGIMZDSuGmT"
+            class="contract-statuses__label svelte-19157rx"
           >
             Spendable
              
           </dt>
           <dd
-            class="contract-statuses__value s-fYGIMZDSuGmT"
+            class="contract-statuses__value svelte-19157rx"
           >
-            <span
-              class="s-fYGIMZDSuGmT"
-            >
+            <span>
               1,000.000000000
             </span>
              
@@ -47,18 +44,14 @@ exports[`Send > Address step > should render the Send component Address step 1`]
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
-        <!--&lt;ContractStatusesList&gt;-->
          
         <div
-          class="operation__send-amount operation__space-between s-m9vn8aRVZTU1"
+          class="operation__send-amount operation__space-between svelte-1y886qs"
         >
-          <p
-            class="s-m9vn8aRVZTU1"
-          >
+          <p>
             Enter address:
           </p>
            
@@ -73,7 +66,6 @@ exports[`Send > Address step > should render the Send component Address step 1`]
               SCAN QR
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <textarea
@@ -81,22 +73,20 @@ exports[`Send > Address step > should render the Send component Address step 1`]
 						operation__send-address--invalid"
         />
         
-        <!--&lt;Textbox&gt;-->
          
         <div
-          class="scan s--VhvQ6ibSubn"
+          class="scan svelte-1uf7z44"
         >
           <video
-            class="s--VhvQ6ibSubn"
+            class="svelte-1uf7z44"
           >
             <track
-              class="s--VhvQ6ibSubn"
               kind="captions"
             />
           </video>
            
           <div
-            class="scan__highlight s--VhvQ6ibSubn"
+            class="scan__highlight svelte-1uf7z44"
           />
            
           <button
@@ -109,9 +99,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
               CLOSE
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
-        <!--&lt;ScanQR&gt;-->
       </div>
        
       <div
@@ -131,7 +119,6 @@ exports[`Send > Address step > should render the Send component Address step 1`]
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-button__text"
@@ -140,7 +127,6 @@ exports[`Send > Address step > should render the Send component Address step 1`]
           </span>
           
         </button>
-        <!--&lt;Button&gt;-->
         
          
         <button
@@ -164,30 +150,23 @@ exports[`Send > Address step > should render the Send component Address step 1`]
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
         </button>
-        <!--&lt;Button&gt;-->
       </div>
       
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
     </div>
-    <!--&lt;Wizard&gt;-->
   </div>
-  <!--&lt;Send&gt;-->
 </div>
 `;
 
 exports[`Send > Amount step > should render the Send component Amount step 1`] = `
 <div>
   <div
-    class="operation s-m9vn8aRVZTU1"
+    class="operation svelte-1y886qs"
   >
     <div
       class="dusk-wizard"
@@ -195,23 +174,21 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
        
        
       <div
-        class="operation__send s-m9vn8aRVZTU1"
+        class="operation__send svelte-1y886qs"
       >
         <dl
-          class="contract-statuses s-fYGIMZDSuGmT"
+          class="contract-statuses svelte-19157rx"
         >
           <dt
-            class="contract-statuses__label s-fYGIMZDSuGmT"
+            class="contract-statuses__label svelte-19157rx"
           >
             Spendable
              
           </dt>
           <dd
-            class="contract-statuses__value s-fYGIMZDSuGmT"
+            class="contract-statuses__value svelte-19157rx"
           >
-            <span
-              class="s-fYGIMZDSuGmT"
-            >
+            <span>
               1,000.000000000
             </span>
              
@@ -227,18 +204,14 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
-        <!--&lt;ContractStatusesList&gt;-->
          
         <div
-          class="operation__send-amount operation__space-between s-m9vn8aRVZTU1"
+          class="operation__send-amount operation__space-between svelte-1y886qs"
         >
-          <p
-            class="s-m9vn8aRVZTU1"
-          >
+          <p>
             Enter amount:
           </p>
            
@@ -252,11 +225,10 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
               USE MAX
             </span>
           </button>
-          <!--&lt;Button&gt;-->
         </div>
          
         <div
-          class="operation__send-amount operation__input s-m9vn8aRVZTU1"
+          class="operation__send-amount operation__input svelte-1y886qs"
         >
           <input
             class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -267,7 +239,6 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
             type="number"
           />
           
-          <!--&lt;Textbox&gt;-->
            
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -281,29 +252,26 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
         </div>
          
         <div
-          class="gas-settings s-qWT2RqqjhEXG"
+          class="gas-settings svelte-1daay07"
         >
           <dl
-            class="gas-settings__edit s-qWT2RqqjhEXG"
+            class="gas-settings__edit svelte-1daay07"
           >
             <div
-              class="gas-fee s-IvXTyNf8Mc_c"
+              class="gas-fee svelte-x1l5rc"
             >
-              <span
-                class="s-IvXTyNf8Mc_c"
-              >
+              <span>
                 Max Gas Fee:
               </span>
                
               <div
-                class="gas-fee__amount s-IvXTyNf8Mc_c"
+                class="gas-fee__amount svelte-x1l5rc"
               >
                 <span
-                  class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+                  class="gas-fee__amount-value svelte-x1l5rc"
                 >
                   0.020000000
                 </span>
@@ -320,13 +288,9 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
                   />
                 </svg>
                 
-                <!--&lt;Icon&gt;-->
               </div>
             </div>
-            <!--&lt;GasFee&gt;-->
-            <dd
-              class="s-qWT2RqqjhEXG"
-            >
+            <dd>
               <button
                 class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
                 type="button"
@@ -337,12 +301,10 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
                   EDIT
                 </span>
               </button>
-              <!--&lt;Button&gt;-->
             </dd>
           </dl>
            
         </div>
-        <!--&lt;GasSettings&gt;-->
       </div>
        
       <div
@@ -362,7 +324,6 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-button__text"
@@ -371,7 +332,6 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
           </span>
           
         </button>
-        <!--&lt;Button&gt;-->
         
          
         <button
@@ -394,64 +354,52 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
         </button>
-        <!--&lt;Button&gt;-->
       </div>
       
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
     </div>
-    <!--&lt;Wizard&gt;-->
   </div>
-  <!--&lt;Send&gt;-->
 </div>
 `;
 
 exports[`Send > Review step > should render the Send component Review step 1`] = `
 <div>
   <div
-    class="operation s-m9vn8aRVZTU1"
+    class="operation svelte-1y886qs"
   >
     <div
       class="dusk-wizard"
     >
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
        
        
        
       <div
-        class="operation__send s-m9vn8aRVZTU1"
+        class="operation__send svelte-1y886qs"
         style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
       >
         <dl
-          class="contract-statuses s-fYGIMZDSuGmT"
+          class="contract-statuses svelte-19157rx"
         >
           <dt
-            class="contract-statuses__label s-fYGIMZDSuGmT"
+            class="contract-statuses__label svelte-19157rx"
           >
             Spendable
              
           </dt>
           <dd
-            class="contract-statuses__value s-fYGIMZDSuGmT"
+            class="contract-statuses__value svelte-19157rx"
           >
-            <span
-              class="s-fYGIMZDSuGmT"
-            >
+            <span>
               1,000.000000000
             </span>
              
@@ -467,24 +415,21 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
           </dd>
         </dl>
-        <!--&lt;ContractStatusesList&gt;-->
          
         <span
           class="dusk-badge dusk-badge--variant-warning operation__review-notice"
         >
           REVIEW TRANSACTION
         </span>
-        <!--&lt;Badge&gt;-->
          
         <dl
-          class="operation__review-transaction s-m9vn8aRVZTU1"
+          class="operation__review-transaction svelte-1y886qs"
         >
           <dt
-            class="review-transaction__label s-m9vn8aRVZTU1"
+            class="review-transaction__label svelte-1y886qs"
           >
             <svg
               class="dusk-icon dusk-icon--size--normal"
@@ -496,21 +441,16 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
-            <span
-              class="s-m9vn8aRVZTU1"
-            >
+            <span>
               Amount:
             </span>
              
           </dt>
           <dd
-            class="review-transaction__value operation__review-amount s-m9vn8aRVZTU1"
+            class="review-transaction__value operation__review-amount svelte-1y886qs"
           >
-            <span
-              class="s-m9vn8aRVZTU1"
-            >
+            <span>
               2,345.000000000
             </span>
              
@@ -526,15 +466,14 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
           </dd>
         </dl>
          
         <dl
-          class="operation__review-transaction s-m9vn8aRVZTU1"
+          class="operation__review-transaction svelte-1y886qs"
         >
           <dt
-            class="review-transaction__label s-m9vn8aRVZTU1"
+            class="review-transaction__label svelte-1y886qs"
           >
             <svg
               class="dusk-icon dusk-icon--size--normal"
@@ -546,40 +485,33 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
-            <span
-              class="s-m9vn8aRVZTU1"
-            >
+            <span>
               To:
             </span>
              
           </dt>
           <dd
-            class="operation__review-address s-m9vn8aRVZTU1"
+            class="operation__review-address svelte-1y886qs"
           >
-            <span
-              class="s-m9vn8aRVZTU1"
-            >
+            <span>
               47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM
             </span>
           </dd>
         </dl>
          
         <div
-          class="gas-fee s-IvXTyNf8Mc_c"
+          class="gas-fee svelte-x1l5rc"
         >
-          <span
-            class="s-IvXTyNf8Mc_c"
-          >
+          <span>
             Max Gas Fee:
           </span>
            
           <div
-            class="gas-fee__amount s-IvXTyNf8Mc_c"
+            class="gas-fee__amount svelte-x1l5rc"
           >
             <span
-              class="gas-fee__amount-value s-IvXTyNf8Mc_c"
+              class="gas-fee__amount-value svelte-x1l5rc"
             >
               0.020000000
             </span>
@@ -596,10 +528,8 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
           </div>
         </div>
-        <!--&lt;GasFee&gt;-->
       </div>
        
       <div
@@ -619,7 +549,6 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-button__text"
@@ -628,7 +557,6 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
           </span>
           
         </button>
-        <!--&lt;Button&gt;-->
         
          
         <button
@@ -645,7 +573,6 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-button__text"
@@ -654,17 +581,12 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
           </span>
           
         </button>
-        <!--&lt;Button&gt;-->
       </div>
       
       
-      <!--&lt;WizardStep&gt;-->
        
       
-      <!--&lt;WizardStep&gt;-->
     </div>
-    <!--&lt;Wizard&gt;-->
   </div>
-  <!--&lt;Send&gt;-->
 </div>
 `;

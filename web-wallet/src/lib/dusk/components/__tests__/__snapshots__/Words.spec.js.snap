@@ -21,7 +21,6 @@ exports[`Words > should render the "Words" component with the passed words 1`] =
       christmas
     </li>
   </ol>
-  <!--&lt;Words&gt;-->
 </div>
 `;
 
@@ -46,6 +45,5 @@ exports[`Words > should render the "Words" component with underscores for empty 
       _____
     </li>
   </ol>
-  <!--&lt;Words&gt;-->
 </div>
 `;

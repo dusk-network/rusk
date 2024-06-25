@@ -16,7 +16,6 @@ exports[`ErrorAlert > should pass additional class names and attributes to the r
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
    
   <details
     class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
@@ -37,7 +36,6 @@ exports[`ErrorAlert > should pass additional class names and attributes to the r
     </pre>
   </details>
   
-  <!--&lt;ErrorDetails&gt;-->
 </div>
 `;
 
@@ -55,7 +53,6 @@ exports[`ErrorAlert > should render the \`ErrorAlert\` component 1`] = `
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
    
   <details
     class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
@@ -76,6 +73,5 @@ exports[`ErrorAlert > should render the \`ErrorAlert\` component 1`] = `
     </pre>
   </details>
   
-  <!--&lt;ErrorDetails&gt;-->
 </div>
 `;

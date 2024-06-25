@@ -3,33 +3,29 @@
 exports[`Setup > should render the Setup page 1`] = `
 <div>
   <section
-    class="setup-content s-yhWmfXbY838u"
+    class="setup-content svelte-12gru0s"
   >
     <div
-      class="setup-content__wrapper s-yhWmfXbY838u"
+      class="setup-content__wrapper svelte-12gru0s"
     >
       <h2
-        class="h1 setup-heading s-yhWmfXbY838u"
+        class="h1 setup-heading svelte-12gru0s"
       >
         Unlocking the Future: 
-        <br
-          class="s-yhWmfXbY838u"
-        />
+        <br />
         
       Your 
-        <mark
-          class="s-yhWmfXbY838u"
-        >
+        <mark>
           DUSK
         </mark>
          Native Wallet
       </h2>
        
       <div
-        class="setup-content__options s-yhWmfXbY838u"
+        class="setup-content__options svelte-12gru0s"
       >
         <div
-          class="setup-content__options-group s-yhWmfXbY838u"
+          class="setup-content__options-group svelte-12gru0s"
         >
           <a
             aria-disabled="false"
@@ -46,7 +42,6 @@ exports[`Setup > should render the Setup page 1`] = `
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-anchor-button__text"
@@ -56,9 +51,6 @@ exports[`Setup > should render the Setup page 1`] = `
             
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
            
           <a
             aria-disabled="false"
@@ -75,7 +67,6 @@ exports[`Setup > should render the Setup page 1`] = `
               />
             </svg>
             
-            <!--&lt;Icon&gt;-->
              
             <span
               class="dusk-anchor-button__text"
@@ -85,17 +76,12 @@ exports[`Setup > should render the Setup page 1`] = `
             
             
           </a>
-          <!--&lt;Anchor&gt;-->
-          <!--&lt;AnchorButton&gt;-->
-          <!--&lt;AppAnchorButton&gt;-->
         </div>
          
         <css-doodle
-          class="animation s-KW_ES-0X66o4"
+          class="animation svelte-u23wmk"
         >
-          <style
-            class="s-KW_ES-0X66o4"
-          >
+          <style>
             --color: var(--home-box-color);
     --delay: 80s;
 
@@ -126,10 +112,9 @@ exports[`Setup > should render the Setup page 1`] = `
         transform: translateZ(18vmin) rotateZ(var(--deg));
         opacity: 0;
       }
-    } *{}
+    }
           </style>
         </css-doodle>
-        <!--&lt;Animation&gt;-->
          
         <a
           aria-disabled="false"
@@ -146,7 +131,6 @@ exports[`Setup > should render the Setup page 1`] = `
             />
           </svg>
           
-          <!--&lt;Icon&gt;-->
            
           <span
             class="dusk-anchor-button__text"
@@ -156,19 +140,14 @@ exports[`Setup > should render the Setup page 1`] = `
           
           
         </a>
-        <!--&lt;Anchor&gt;-->
-        <!--&lt;AnchorButton&gt;-->
-        <!--&lt;AppAnchorButton&gt;-->
       </div>
     </div>
   </section>
    
   <footer
-    class="setup-footer s-yhWmfXbY838u"
+    class="setup-footer svelte-12gru0s"
   >
-    <span
-      class="s-yhWmfXbY838u"
-    >
+    <span>
       Web Wallet v
       0.1.5
        (
@@ -176,6 +155,5 @@ exports[`Setup > should render the Setup page 1`] = `
       )
     </span>
   </footer>
-  <!--&lt;+page&gt;-->
 </div>
 `;

@@ -8,7 +8,6 @@ exports[`Checkbox > renders the Checkbox component 1`] = `
     name="test"
     type="checkbox"
   />
-  <!--&lt;Checkbox&gt;-->
 </div>
 `;
 
@@ -20,7 +19,6 @@ exports[`Checkbox > renders the Checkbox component in a checked state 1`] = `
     name="test"
     type="checkbox"
   />
-  <!--&lt;Checkbox&gt;-->
 </div>
 `;
 
@@ -33,7 +31,6 @@ exports[`Checkbox > renders the Checkbox component in a disabled state 1`] = `
     name="test"
     type="checkbox"
   />
-  <!--&lt;Checkbox&gt;-->
 </div>
 `;
 
@@ -46,6 +43,5 @@ exports[`Checkbox > renders the Checkbox component in a disabled, checked state 
     name="test"
     type="checkbox"
   />
-  <!--&lt;Checkbox&gt;-->
 </div>
 `;

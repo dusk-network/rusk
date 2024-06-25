@@ -28,11 +28,9 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         
       </button>
-      <!--&lt;Button&gt;-->
        
       <p
         class="address-picker__current-address"
@@ -55,14 +53,11 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
           />
         </svg>
         
-        <!--&lt;Icon&gt;-->
          
         
       </button>
-      <!--&lt;Button&gt;-->
     </div>
      
   </div>
-  <!--&lt;AddressPicker&gt;-->
 </div>
 `;

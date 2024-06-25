@@ -3,10 +3,10 @@
 exports[`GasControls > should render the \`GasControls\` component 1`] = `
 <body>
   <label
-    class="gas-control s-POS_LBjGgkOM"
+    class="gas-control svelte-14slcjg"
   >
     <span
-      class="gas-control__label s-POS_LBjGgkOM"
+      class="gas-control__label svelte-14slcjg"
     >
       Price: (lux)
     </span>
@@ -19,14 +19,13 @@ exports[`GasControls > should render the \`GasControls\` component 1`] = `
       type="number"
     />
     
-    <!--&lt;Textbox&gt;-->
   </label>
    
   <label
-    class="gas-control s-POS_LBjGgkOM"
+    class="gas-control svelte-14slcjg"
   >
     <span
-      class="gas-control__label s-POS_LBjGgkOM"
+      class="gas-control__label svelte-14slcjg"
     >
       Gas Limit: (unit)
     </span>
@@ -39,8 +38,6 @@ exports[`GasControls > should render the \`GasControls\` component 1`] = `
       type="number"
     />
     
-    <!--&lt;Textbox&gt;-->
   </label>
-  <!--&lt;GasControls&gt;-->
 </body>
 `;
