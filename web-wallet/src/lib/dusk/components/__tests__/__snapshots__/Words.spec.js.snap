@@ -1,49 +1,45 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Words > should render the "Words" component with the passed words 1`] = `
-<div>
-  <ol
-    class="dusk-words"
+<ol
+  class="dusk-words"
+>
+  <li
+    class="dusk-words__word"
   >
-    <li
-      class="dusk-words__word"
-    >
-      snow
-    </li>
-    <li
-      class="dusk-words__word"
-    >
-      winter
-    </li>
-    <li
-      class="dusk-words__word"
-    >
-      christmas
-    </li>
-  </ol>
-</div>
+    snow
+  </li>
+  <li
+    class="dusk-words__word"
+  >
+    winter
+  </li>
+  <li
+    class="dusk-words__word"
+  >
+    christmas
+  </li>
+</ol>
 `;
 
 exports[`Words > should render the "Words" component with underscores for empty string 1`] = `
-<div>
-  <ol
-    class="dusk-words"
+<ol
+  class="dusk-words"
+>
+  <li
+    class="dusk-words__word"
   >
-    <li
-      class="dusk-words__word"
-    >
-      _____
-    </li>
-    <li
-      class="dusk-words__word"
-    >
-      _____
-    </li>
-    <li
-      class="dusk-words__word"
-    >
-      _____
-    </li>
-  </ol>
-</div>
+    _____
+  </li>
+  <li
+    class="dusk-words__word"
+  >
+    _____
+  </li>
+  <li
+    class="dusk-words__word"
+  >
+    _____
+  </li>
+</ol>
 `;

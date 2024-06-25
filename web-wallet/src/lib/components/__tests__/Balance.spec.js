@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { act, cleanup, render } from "@testing-library/svelte";
+import { cleanup, render } from "@testing-library/svelte";
 import { skipIn } from "lamb";
 import { Balance } from "..";
 
@@ -25,24 +25,22 @@ describe("Balance", () => {
   });
 
   it("should update the Balance component when the props change", async () => {
-    const { component, container } = render(Balance, baseOptions);
+    const { container, rerender } = render(Balance, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
 
-    await act(() =>
-      component.$set({
-        fiatCurrency: "EUR",
-        fiatPrice: 20,
-        locale: "it",
-        tokenCurrency: "DUSK",
-        tokens: 4000000,
-      })
-    );
+    await rerender({
+      fiatCurrency: "EUR",
+      fiatPrice: 20,
+      locale: "it",
+      tokenCurrency: "DUSK",
+      tokens: 4000000,
+    });
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should pass additional class names and attributes to the rendered element", () => {
+  it("should pass additional class names and attributes to the rendered element", async () => {
     const props = {
       ...baseProps,
       className: "foo bar",
@@ -53,7 +51,7 @@ describe("Balance", () => {
     expect(container.firstChild).toHaveClass("foo bar");
     expect(container.firstChild).toHaveAttribute("id", "balance");
 
-    rerender({
+    await rerender({
       ...props,
       className: "qux",
       id: "new-balance",
