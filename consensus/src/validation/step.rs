@@ -105,9 +105,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
         // Call Verify State Transition to make sure transactions set is valid
         let vote =
-            match Self::call_vst(candidate, ru.prev_block_voters(), executor)
-                .await
-            {
+            match Self::call_vst(candidate, ru.att_voters(), executor).await {
                 Ok(_) => Vote::Valid(header.hash),
                 Err(err) => {
                     error!(event = "failed_vst_call", ?err);

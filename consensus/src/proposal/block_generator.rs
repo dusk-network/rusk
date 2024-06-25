@@ -51,7 +51,7 @@ impl<T: Operations> Generator<T> {
                 Seed::from(seed),
                 iteration,
                 failed_iterations,
-                ru.prev_block_voters(),
+                ru.att_voters(),
             )
             .await?;
 

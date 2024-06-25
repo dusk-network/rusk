@@ -35,8 +35,8 @@ pub struct RoundUpdate {
     seed: Seed,
     hash: [u8; 32],
     att: Attestation,
+    att_voters: Vec<VoterWithCredits>,
     timestamp: u64,
-    prev_block_voters: Vec<VoterWithCredits>,
 
     pub base_timeouts: TimeoutSet,
 }
@@ -47,7 +47,7 @@ impl RoundUpdate {
         secret_key: StakeSecretKey,
         tip_header: &Header,
         base_timeouts: TimeoutSet,
-        prev_block_voters: Vec<VoterWithCredits>,
+        att_voters: Vec<VoterWithCredits>,
     ) -> Self {
         let round = tip_header.height + 1;
         RoundUpdate {
@@ -59,7 +59,7 @@ impl RoundUpdate {
             seed: tip_header.seed,
             timestamp: tip_header.timestamp,
             base_timeouts,
-            prev_block_voters,
+            att_voters,
         }
     }
 
@@ -79,8 +79,8 @@ impl RoundUpdate {
         self.timestamp
     }
 
-    pub fn prev_block_voters(&self) -> &Vec<VoterWithCredits> {
-        &self.prev_block_voters
+    pub fn att_voters(&self) -> &Vec<VoterWithCredits> {
+        &self.att_voters
     }
 }
 
