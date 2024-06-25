@@ -14,8 +14,8 @@ use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
-use node_data::ledger::to_str;
 use node_data::ledger::Signature;
+use node_data::ledger::{to_str, Seed};
 use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
@@ -254,6 +254,25 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             candidate_block.height,
             &candidate_block.att,
             candidate_block.iteration,
+        )
+        .await?;
+
+        Ok(merge_committees(&v_committee, &r_committee))
+    }
+
+    /// Generates and returns voters
+    pub async fn get_voters(
+        tip_block: &'a ledger::Header,
+        provisioners: &Provisioners,
+        prev_block_seed: Seed,
+    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+        let (_, _, v_committee, r_committee) = verify_block_att(
+            tip_block.prev_block_hash,
+            prev_block_seed,
+            provisioners,
+            tip_block.height,
+            &tip_block.att,
+            tip_block.iteration,
         )
         .await?;
 

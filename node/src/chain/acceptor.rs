@@ -54,7 +54,7 @@ pub(crate) enum RevertTarget {
 /// attestation and transactions full verifications.
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
-    /// Most recently accepted block a.k.a blockchain tip
+    /// the tip
     tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
@@ -119,10 +119,10 @@ pub static DUSK_KEY: LazyLock<PublicKey> = LazyLock::new(|| {
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Initializes a new `Acceptor` struct,
     ///
-    /// The method loads the VM state, detects consistency issues between VM and
-    /// Ledger states, and may revert to the last known finalized state in
-    /// case of inconsistency.
-    /// Finally it spawns a new consensus [`Task`]
+    /// The method loads the VM state and verifies consistency between the VM
+    /// and Ledger states. If any inconsistencies are found, it reverts to the
+    /// last known finalized state. Finally, it initiates a new consensus
+    /// [Task].
     pub async fn init_consensus(
         keys_path: &str,
         tip: BlockWithLabel,
@@ -173,18 +173,37 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
+        let tip = self.tip.read().await.inner().clone();
 
-        // TODO: Read last block
-        let voters = vec![];
+        let tip_block_voters = self.get_voters(&provisioners_list, &tip).await;
 
         self.task.write().await.spawn(
-            self.tip.read().await.inner(),
+            &tip,
             provisioners_list,
             &self.db,
             &self.vm,
             base_timeouts,
-            voters,
+            tip_block_voters,
         );
+    }
+
+    async fn get_voters(
+        &self,
+        provisioners_list: &ContextProvisioners,
+        tip: &Block,
+    ) -> Vec<VoterWithCredits> {
+        if tip.header().height == 0 {
+            return vec![];
+        };
+
+        let prev_seed = self.get_prev_block_seed().await.expect("valid seed");
+        Validator::<DB>::get_voters(
+            tip.header(),
+            provisioners_list.current(),
+            prev_seed,
+        )
+        .await
+        .expect("valid voters")
     }
 
     // Re-route message to consensus task
@@ -712,28 +731,28 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Spawns consensus algorithm after aborting currently running one
     pub(crate) async fn restart_consensus(&mut self) {
         let mut task = self.task.write().await;
-        let tip = self.tip.read().await;
+        let tip = self.tip.read().await.inner().clone();
         let provisioners_list = self.provisioners_list.read().await.clone();
 
         task.abort_with_wait().await;
         info!(
             event = "restart consensus",
-            height = tip.inner().header().height,
-            iter = tip.inner().header().iteration,
-            hash = to_str(&tip.inner().header().hash),
+            height = tip.header().height,
+            iter = tip.header().iteration,
+            hash = to_str(&tip.header().hash),
         );
 
-        // TODO: Read last block
-        let voters = vec![];
+        let tip = self.tip.read().await.inner().clone();
+        let tip_block_voters = self.get_voters(&provisioners_list, &tip).await;
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
-            tip.inner(),
+            &tip,
             provisioners_list,
             &self.db,
             &self.vm,
             base_timeouts,
-            voters,
+            tip_block_voters,
         );
     }
 
@@ -837,6 +856,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .unwrap_or(MIN_STEP_TIMEOUT)
             .max(MIN_STEP_TIMEOUT)
             .min(MAX_STEP_TIMEOUT)
+    }
+
+    async fn get_prev_block_seed(&self) -> Result<Seed> {
+        let tip = self.tip.read().await;
+        let header = tip.inner().header();
+        if header.height == 0 {
+            return Ok(Seed::default());
+        }
+
+        self.db
+            .read()
+            .await
+            .view(|t| {
+                let res = t
+                    .fetch_block_header(&header.prev_block_hash)?
+                    .map(|(prev, _)| prev.seed);
+
+                anyhow::Ok::<Option<Seed>>(res)
+            })?
+            .ok_or_else(|| anyhow::anyhow!("could not retrieve seed"))
     }
 
     fn emit_metrics(
