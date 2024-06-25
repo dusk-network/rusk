@@ -22,7 +22,6 @@ use crate::license_types::{
 use crate::verifier_data_license_circuit;
 
 const DEPTH: usize = 17; // depth of the Merkle tree
-const ARITY: usize = 4; // arity of the Merkle tree
 
 #[derive(Debug, Clone)]
 pub struct RequestEntry {
@@ -40,7 +39,7 @@ pub struct LicenseEntry {
 pub struct LicenseContractState {
     pub sessions: Map<LicenseSessionId, LicenseSession>,
     pub licenses: Map<u64, LicenseEntry>,
-    pub tree: Tree<(), DEPTH, ARITY>,
+    pub tree: Tree<(), DEPTH>,
 }
 
 #[allow(dead_code)]
@@ -49,7 +48,7 @@ impl LicenseContractState {
         Self {
             sessions: Map::new(),
             licenses: Map::new(),
-            tree: Tree::<(), DEPTH, ARITY>::new(),
+            tree: Tree::<(), DEPTH>::new(),
         }
     }
 
@@ -97,7 +96,7 @@ impl LicenseContractState {
     pub fn get_merkle_opening(
         &mut self,
         position: u64,
-    ) -> Option<Opening<(), DEPTH, ARITY>> {
+    ) -> Option<Opening<(), DEPTH>> {
         self.tree.opening(position)
     }
 

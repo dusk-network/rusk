@@ -10,14 +10,15 @@ use std::ops::Range;
 use std::sync::mpsc;
 
 use dusk_plonk::prelude::*;
-use dusk_poseidon::sponge;
+use dusk_poseidon::{Domain, Hash};
 use ff::Field;
 use poseidon_merkle::Opening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rkyv::{check_archived_root, Deserialize, Infallible};
-use zk_citadel::license::{License, Request};
-use zk_citadel::utils::CitadelUtils;
+use zk_citadel::license::{
+    CitadelProverParameters, License, Request, SessionCookie,
+};
 
 use execution_core::{
     BlsScalar, JubJubAffine, PublicKey, SecretKey, StealthAddress, ViewKey,
@@ -44,7 +45,6 @@ const USER_ATTRIBUTES: u64 = 545072475273;
 
 static LABEL: &[u8] = b"dusk-network";
 const DEPTH: usize = 17; // depth of the Merkle tree
-const ARITY: usize = 4; // arity of the Merkle tree
 
 fn create_test_license<R: RngCore + CryptoRng>(
     attr: &JubJubScalar,
@@ -54,8 +54,8 @@ fn create_test_license<R: RngCore + CryptoRng>(
     k_lic: &JubJubAffine,
     rng: &mut R,
 ) -> License {
-    let request = Request::new(pk_lp, sa_user, k_lic, rng);
-    License::new(attr, sk_lp, &request, rng)
+    let request = Request::new(pk_lp, sa_user, k_lic, rng).unwrap();
+    License::new(attr, sk_lp, &request, rng).unwrap()
 }
 
 fn initialize() -> Session {
@@ -94,12 +94,12 @@ fn deserialise_license(v: &Vec<u8>) -> License {
 /// Finds owned license in a collection of licenses.
 /// It searches in a reverse order to return a newest license.
 fn find_owned_license(
-    sk_user: SecretKey,
+    sk_user: &SecretKey,
     licenses: &Vec<(u64, Vec<u8>)>,
 ) -> Option<(u64, License)> {
     for (pos, license) in licenses.iter().rev() {
         let license = deserialise_license(&license);
-        if ViewKey::from(&sk_user).owns(&license.lsa) {
+        if ViewKey::from(sk_user).owns(&license.lsa) {
             return Some((pos.clone(), license));
         }
     }
@@ -107,7 +107,6 @@ fn find_owned_license(
 }
 
 /// Creates the Citadel request object
-/// This function should be moved to CitadelUtils
 fn create_request<R: RngCore + CryptoRng>(
     sk_user: &SecretKey,
     pk_lp: &PublicKey,
@@ -115,11 +114,35 @@ fn create_request<R: RngCore + CryptoRng>(
 ) -> Request {
     let pk = PublicKey::from(sk_user);
     let lsa = pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
-    let lsk = sk_user.sk_r(&lsa);
+    let lsk = sk_user.gen_note_sk(&lsa);
     let k_lic = JubJubAffine::from(
-        GENERATOR_EXTENDED * sponge::truncated::hash(&[(*lsk.as_ref()).into()]),
+        GENERATOR_EXTENDED
+            * Hash::digest_truncated(Domain::Other, &[(*lsk.as_ref()).into()])
+                [0],
     );
-    Request::new(pk_lp, &lsa, &k_lic, rng)
+    Request::new(pk_lp, &lsa, &k_lic, rng).unwrap()
+}
+
+fn compute_citadel_parameters(
+    rng: &mut StdRng,
+    sk: &SecretKey,
+    pk_lp: &PublicKey,
+    lic: &License,
+    merkle_proof: Opening<(), DEPTH>,
+) -> (CitadelProverParameters<DEPTH>, SessionCookie) {
+    const CHALLENGE: u64 = 20221126u64;
+    let c = JubJubScalar::from(CHALLENGE);
+    let (cpp, sc) = CitadelProverParameters::compute_parameters(
+        sk,
+        lic,
+        pk_lp,
+        pk_lp,
+        &c,
+        rng,
+        merkle_proof,
+    )
+    .expect("Parameters computed correctly.");
+    (cpp, sc)
 }
 
 #[test]
@@ -147,8 +170,9 @@ fn license_issue_get_merkle() {
         .expect("Request should serialize correctly")
         .to_vec();
 
-    let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
-    let license_hash = sponge::hash(&[lpk.get_u(), lpk.get_v()]);
+    let lpk = JubJubAffine::from(license.lsa.note_pk().as_ref());
+    let license_hash =
+        Hash::digest(Domain::Other, &[lpk.get_u(), lpk.get_v()])[0];
 
     session
         .call::<(Vec<u8>, BlsScalar), ()>(
@@ -182,7 +206,7 @@ fn license_issue_get_merkle() {
         "Call to getting a license request should return some licenses"
     );
 
-    let owned_license = find_owned_license(sk_user, &pos_license_pairs);
+    let owned_license = find_owned_license(&sk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -190,7 +214,7 @@ fn license_issue_get_merkle() {
     let (pos, _) = owned_license.unwrap();
 
     let _merkle_opening = session
-        .call::<u64, Opening<(), DEPTH, ARITY>>(
+        .call::<u64, Opening<(), DEPTH>>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &pos,
@@ -216,7 +240,7 @@ fn multiple_licenses_issue_get_merkle() {
 
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
 
-    const NUM_LICENSES: usize = ARITY + 1;
+    const NUM_LICENSES: usize = 4 + 1;
     for _ in 0..NUM_LICENSES {
         let k_lic = JubJubAffine::from(
             GENERATOR_EXTENDED * JubJubScalar::random(&mut *rng),
@@ -227,8 +251,9 @@ fn multiple_licenses_issue_get_merkle() {
             .expect("Request should serialize correctly")
             .to_vec();
 
-        let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
-        let license_hash = sponge::hash(&[lpk.get_u(), lpk.get_v()]);
+        let lpk = JubJubAffine::from(license.lsa.note_pk().as_ref());
+        let license_hash =
+            Hash::digest(Domain::Other, &[lpk.get_u(), lpk.get_v()])[0];
         session
             .call::<(Vec<u8>, BlsScalar), ()>(
                 LICENSE_CONTRACT_ID,
@@ -263,7 +288,7 @@ fn multiple_licenses_issue_get_merkle() {
         "Call to getting license requests should return licenses"
     );
 
-    let owned_license = find_owned_license(sk_user, &pos_license_pairs);
+    let owned_license = find_owned_license(&sk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -271,7 +296,7 @@ fn multiple_licenses_issue_get_merkle() {
     let (pos, _) = owned_license.unwrap();
 
     let _merkle_opening = session
-        .call::<u64, Opening<(), DEPTH, ARITY>>(
+        .call::<u64, Opening<(), DEPTH>>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &pos,
@@ -325,14 +350,15 @@ fn use_license_get_session() {
 
     let request = create_request(&sk_user, &pk_lp, rng);
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
-    let license = License::new(&attr, &sk_lp, &request, rng);
+    let license = License::new(&attr, &sk_lp, &request, rng).unwrap();
 
     let license_blob = rkyv::to_bytes::<_, 4096>(&license)
         .expect("Request should serialize correctly")
         .to_vec();
 
-    let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
-    let license_hash = sponge::hash(&[lpk.get_u(), lpk.get_v()]);
+    let lpk = JubJubAffine::from(license.lsa.note_pk().as_ref());
+    let license_hash =
+        Hash::digest(Domain::Other, &[lpk.get_u(), lpk.get_v()])[0];
 
     session
         .call::<(Vec<u8>, BlsScalar), ()>(
@@ -366,7 +392,7 @@ fn use_license_get_session() {
         "Call to getting license requests should return licenses"
     );
 
-    let owned_license = find_owned_license(sk_user, &pos_license_pairs);
+    let owned_license = find_owned_license(&sk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -374,7 +400,7 @@ fn use_license_get_session() {
     let (pos, owned_license) = owned_license.unwrap();
 
     let merkle_opening = session
-        .call::<u64, Opening<(), DEPTH, ARITY>>(
+        .call::<u64, Opening<(), DEPTH>>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &pos,
@@ -383,10 +409,10 @@ fn use_license_get_session() {
         .expect("Querying the merkle opening should succeed")
         .data;
 
-    let (cpp, sc) = CitadelUtils::compute_citadel_parameters(
+    let (cpp, sc) = compute_citadel_parameters(
         rng,
-        sk_user,
-        pk_lp,
+        &sk_user,
+        &pk_lp,
         &owned_license,
         merkle_opening,
     );
