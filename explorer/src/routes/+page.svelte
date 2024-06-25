@@ -65,14 +65,14 @@
     .chain-info {
       display: flex;
       flex-wrap: wrap;
-      gap: 1.875rem;
+      gap: 1.25rem;
     }
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1780px) {
     .tables {
       flex-direction: row;
-      gap: 1.875rem;
+      gap: 1.25rem;
     }
 
     :global(.tables-layout) {
