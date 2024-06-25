@@ -27,10 +27,9 @@
   /** @type {number} */
   export let tokens;
 
-  const duskFormatter = createCurrencyFormatter(locale, tokenCurrency, 9);
-  const fiatFormatter = createCurrencyFormatter(locale, fiatCurrency, 2);
-
   $: classes = makeClassName(["dusk-balance", className]);
+  $: duskFormatter = createCurrencyFormatter(locale, tokenCurrency, 9);
+  $: fiatFormatter = createCurrencyFormatter(locale, fiatCurrency, 2);
 </script>
 
 <article {...$$restProps} class={classes}>

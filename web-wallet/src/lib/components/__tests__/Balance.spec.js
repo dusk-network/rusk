@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render } from "@testing-library/svelte";
+import { act, cleanup, render } from "@testing-library/svelte";
 import { skipIn } from "lamb";
 import { Balance } from "..";
 
@@ -24,18 +24,20 @@ describe("Balance", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should update the Balance component when the props change", () => {
-    const { container, rerender } = render(Balance, baseOptions);
+  it("should update the Balance component when the props change", async () => {
+    const { component, container } = render(Balance, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
 
-    rerender({
-      fiatCurrency: "EUR",
-      fiatPrice: 20,
-      locale: "it",
-      tokenCurrency: "DUSK",
-      tokens: 4000000,
-    });
+    await act(() =>
+      component.$set({
+        fiatCurrency: "EUR",
+        fiatPrice: 20,
+        locale: "it",
+        tokenCurrency: "DUSK",
+        tokens: 4000000,
+      })
+    );
 
     expect(container.firstChild).toMatchSnapshot();
   });
