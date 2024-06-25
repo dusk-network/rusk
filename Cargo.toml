@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "circuits/transfer",
     "circuits/license",
 
     # Test contracts
