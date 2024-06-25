@@ -5,13 +5,77 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_plonk::prelude::*;
-use license_circuits::{Error, LicenseCircuit, ARITY, DEPTH};
-use phoenix_core::{PublicKey, SecretKey};
+use dusk_poseidon::{Domain, Hash};
+use execution_core::{JubJubAffine, PublicKey, SecretKey, GENERATOR_EXTENDED};
+use ff::Field;
+use license_circuits::{Error, LicenseCircuit, DEPTH};
+use poseidon_merkle::{Item, Opening, Tree};
+use zk_citadel::license::{
+    CitadelProverParameters, License, Request, SessionCookie,
+};
 
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
 
-use zk_citadel::utils::CitadelUtils;
+fn compute_citadel_parameters(
+    rng: &mut StdRng,
+    sk: &SecretKey,
+    pk_lp: &PublicKey,
+    lic: &License,
+    merkle_proof: Opening<(), DEPTH>,
+) -> (CitadelProverParameters<DEPTH>, SessionCookie) {
+    const CHALLENGE: u64 = 20221126u64;
+    let c = JubJubScalar::from(CHALLENGE);
+    let (cpp, sc) = CitadelProverParameters::compute_parameters(
+        sk,
+        lic,
+        pk_lp,
+        pk_lp,
+        &c,
+        rng,
+        merkle_proof,
+    )
+    .expect("Parameters computed correctly.");
+    (cpp, sc)
+}
+
+fn compute_random_license<R: RngCore + CryptoRng, const DEPTH: usize>(
+    rng: &mut R,
+    sk: &SecretKey,
+    pk: PublicKey,
+    sk_lp: &SecretKey,
+    pk_lp: PublicKey,
+) -> (License, Opening<(), DEPTH>) {
+    const ATTRIBUTE_DATA: u64 = 112233445566778899u64;
+    // First, the user computes these values and requests a License
+    let lsa = pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let lsk = sk.gen_note_sk(&lsa);
+    let k_lic = JubJubAffine::from(
+        GENERATOR_EXTENDED
+            * Hash::digest_truncated(Domain::Other, &[(*lsk.as_ref()).into()])
+                [0],
+    );
+    let req = Request::new(&pk_lp, &lsa, &k_lic, rng).unwrap();
+
+    // Second, the LP computes these values and grants the License
+    let attr_data = JubJubScalar::from(ATTRIBUTE_DATA);
+    let lic = License::new(&attr_data, &sk_lp, &req, rng).unwrap();
+
+    let mut tree = Tree::<(), DEPTH>::new();
+    let lpk = JubJubAffine::from(lic.lsa.note_pk().as_ref());
+
+    let item = Item {
+        hash: Hash::digest(Domain::Other, &[lpk.get_u(), lpk.get_v()])[0],
+        data: (),
+    };
+
+    let pos = 0;
+    tree.insert(pos, item);
+
+    let merkle_proof = tree.opening(pos).expect("Tree was read successfully");
+
+    (lic, merkle_proof)
+}
 
 pub fn load_keys(name: impl AsRef<str>) -> Result<(Prover, Verifier), Error> {
     let circuit_profile = rusk_profile::Circuit::from_name(name.as_ref())
@@ -46,15 +110,10 @@ fn prove_verify_license_circuit() {
     let pk_lp = PublicKey::from(&sk_lp);
 
     let (lic, merkle_proof) =
-        CitadelUtils::compute_random_license::<StdRng, DEPTH, ARITY>(
-            rng, sk, pk, sk_lp, pk_lp,
-        );
+        compute_random_license::<StdRng, DEPTH>(rng, &sk, pk, &sk_lp, pk_lp);
 
-    let (cpp, sc) = CitadelUtils::compute_citadel_parameters::<
-        StdRng,
-        DEPTH,
-        ARITY,
-    >(rng, sk, pk_lp, &lic, merkle_proof);
+    let (cpp, sc) =
+        compute_citadel_parameters(rng, &sk, &pk_lp, &lic, merkle_proof);
 
     let circuit = LicenseCircuit::new(cpp, sc);
 
