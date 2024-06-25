@@ -1,13 +1,13 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Card > renders the Card component 1`] = `
-<div>
-  <div
-    class="dusk-card"
-  >
-     
-     
-  </div>
-  
+<div
+  class="dusk-card"
+>
+   
+  <span>
+    some text
+  </span>
+   
 </div>
 `;
