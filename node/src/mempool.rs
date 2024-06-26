@@ -156,8 +156,9 @@ impl MempoolSrv {
             // ensure nullifiers do not exist in the mempool
             for m_tx_id in view.get_txs_by_nullifiers(&nullifiers) {
                 if let Some(m_tx) = view.get_tx(m_tx_id)? {
-                    let fee = m_tx.inner.payload().fee();
-                    if fee.gas_price < fee.gas_price {
+                    if m_tx.inner.payload().fee().gas_price
+                        < tx.inner.payload().fee().gas_price
+                    {
                         view.delete_tx(m_tx_id)?;
                     } else {
                         return Err(

@@ -293,7 +293,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             txs.iter().filter(|t| t.err.is_none()).filter_map(|t| {
                 match &t.inner.inner.payload().contract_call {
                     Some(call)
-                        if (call.contract == STAKE_CONTRACT && (call.fn_name == STAKE || call.fn_name == UNSTAKE)) =>
+                        if (call.contract == STAKE_CONTRACT
+                            && (call.fn_name == STAKE
+                                || call.fn_name == UNSTAKE)) =>
                     {
                         Some((&call.fn_name, &call.fn_args))
                     }
