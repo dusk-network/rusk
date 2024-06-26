@@ -54,20 +54,20 @@ impl StakeState {
         }
     }
 
-    pub fn before_state_transition(&mut self) {
+    pub fn on_new_block(&mut self) {
         self.previous_block_state.clear()
     }
 
-    fn clear_prev_if_needed(&mut self) {
+    fn check_new_block(&mut self) {
         let current_height = rusk_abi::block_height();
         if current_height != self.previous_block_height {
             self.previous_block_height = current_height;
-            self.before_state_transition();
+            self.on_new_block();
         }
     }
 
     pub fn stake(&mut self, stake: Stake) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         if stake.value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
@@ -108,7 +108,7 @@ impl StakeState {
     }
 
     pub fn unstake(&mut self, unstake: Unstake) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         // remove the stake from a key and increment the signature counter
         let loaded_stake = self
@@ -255,7 +255,7 @@ impl StakeState {
     /// Rewards a `stake_pk` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
     pub fn reward(&mut self, stake_pk: &StakePublicKey, value: u64) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         let stake = self.load_or_create_stake_mut(stake_pk);
         stake.increase_reward(value);
@@ -284,7 +284,7 @@ impl StakeState {
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
     pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         let stake = self
             .get_stake_mut(stake_pk)
@@ -335,7 +335,7 @@ impl StakeState {
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
     pub fn hard_slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         let stake_info = self
             .get_stake_mut(stake_pk)

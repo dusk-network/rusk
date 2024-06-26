@@ -89,7 +89,7 @@ unsafe fn prev_state_changes(arg_len: u32) -> u32 {
 unsafe fn before_state_transition(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| {
         assert_external_caller();
-        STATE.before_state_transition()
+        STATE.on_new_block()
     })
 }
 
