@@ -222,7 +222,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let quorums = verify_block_att(
+                let (_, r_quorum, _, _) = verify_block_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
@@ -234,7 +234,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 // Ratification quorum is enough to consider the iteration
                 // failed
-                all_failed = all_failed && quorums.1.quorum_reached();
+                all_failed = all_failed && r_quorum.quorum_reached();
             } else {
                 all_failed = false;
             }
