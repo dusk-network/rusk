@@ -58,6 +58,7 @@ fn create_step_votes(
                 *sk,
                 tip_header,
                 HashMap::default(),
+                vec![],
             );
             let sig = match step {
                 StepName::Validation => {
