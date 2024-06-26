@@ -54,8 +54,10 @@ impl RuskNode {
 
 /// Calculates the value that the coinbase notes should contain.
 ///
-/// 90% of the total value goes to the generator (rounded up).
-/// 10% of the total value goes to the Dusk address (rounded down).
+/// 10% of the total reward goes to the Dusk address (rounded down).
+/// 90% of the total reward is the so-called Block reward (rounded up).
+/// 90% of the Block reward goes to the Block generator (rounded up).
+/// 10% of the Block reward goes to the all validators/voters of previous block.
 const fn coinbase_value(
     block_height: u64,
     dusk_spent: u64,
