@@ -3,10 +3,10 @@
 exports[`Main layout > should render the main layout 1`] = `
 <div>
   <main
-    class="app s-7IPF32Wcq3s8"
+    class="app svelte-3y7xzm"
   >
     <h1
-      class="sr-only s-7IPF32Wcq3s8"
+      class="sr-only"
     >
       Dusk Web Wallet
     </h1>
@@ -23,12 +23,9 @@ exports[`Main layout > should render the main layout 1`] = `
   >
     
   </div>
-  <!--&lt;Tooltip&gt;-->
    
   <ul
     class="dusk-toast"
   />
-  <!--&lt;Toast&gt;-->
-  <!--&lt;+layout&gt;-->
 </div>
 `;

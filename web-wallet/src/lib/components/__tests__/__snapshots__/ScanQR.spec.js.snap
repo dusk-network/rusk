@@ -2,19 +2,18 @@
 
 exports[`ScanQR > renders the ScanQR component 1`] = `
 <div
-  class="scan s--VhvQ6ibSubn"
+  class="scan svelte-1uf7z44"
 >
   <video
-    class="s--VhvQ6ibSubn"
+    class="svelte-1uf7z44"
   >
     <track
-      class="s--VhvQ6ibSubn"
       kind="captions"
     />
   </video>
    
   <div
-    class="scan__highlight s--VhvQ6ibSubn"
+    class="scan__highlight svelte-1uf7z44"
   />
    
   <button
@@ -27,6 +26,5 @@ exports[`ScanQR > renders the ScanQR component 1`] = `
       CLOSE
     </span>
   </button>
-  <!--&lt;Button&gt;-->
 </div>
 `;

@@ -43,6 +43,8 @@ html,
 body {
   width: 100%;
   height: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
 }
 
 html {
@@ -62,6 +64,10 @@ svg {
   fill: currentColor;
 }
 
+.explorer-badge {
+  min-width: 100px;
+}
+
 .mobile-hidden {
   display: block;
 }
@@ -74,7 +80,9 @@ svg {
   body {
     padding: 0 1.25rem;
   }
+}
 
+@media (max-width: 1024px) {
   .mobile-hidden {
     display: none;
   }
@@ -82,8 +90,4 @@ svg {
   .desktop-hidden {
     display: block;
   }
-}
-
-.explorer-badge {
-  min-width: 100px;
 }

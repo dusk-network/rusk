@@ -190,7 +190,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(merge_committees(&v_committee, &r_committee))
     }
 
-    /// Return true if there is a attestation for each failed iteration, and if
+    /// Return true if there is an attestation for each failed iteration, and if
     /// that attestation has a quorum in the ratification phase.
     ///
     /// If there are no failed iterations, it returns true
@@ -198,8 +198,10 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<bool> {
-        // Verify Failed iterations
-        let mut all_failed = true;
+        // Iteration is 0 based. Eg: having a candidate with iter=2 means we
+        // should expect 2 failed attestation for iter=0 and iter=1
+        let expected_failed_atts = candidate_block.iteration;
+        let mut actual_failed_atts = 0u8;
 
         for (iter, att) in candidate_block
             .failed_iterations
@@ -222,7 +224,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, r_quorum, _, _) = verify_block_att(
+                let (_, rat_quorum, _, _) = verify_block_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
@@ -232,14 +234,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 )
                 .await?;
 
-                // Ratification quorum is enough to consider the iteration
-                // failed
-                all_failed = all_failed && r_quorum.quorum_reached();
-            } else {
-                all_failed = false;
+                if rat_quorum.quorum_reached() {
+                    actual_failed_atts += 1;
+                }
             }
         }
 
+        let all_failed = actual_failed_atts == expected_failed_atts;
         Ok(all_failed)
     }
 

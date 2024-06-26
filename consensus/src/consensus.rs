@@ -98,13 +98,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         let result;
         tokio::select! {
             recv = &mut handle => {
-                result = recv.map_err(|_| ConsensusError::Canceled)?;
+                result = recv.map_err(|_| ConsensusError::Canceled(round))?;
                 if let Err(ref err) = result {
                     tracing::error!(event = "consensus failed", ?err);
                 }
             },
             _ = cancel_rx => {
-                result = Err(ConsensusError::Canceled);
+                result = Err(ConsensusError::Canceled(round));
                 tracing::debug!(event = "consensus canceled", round);
             }
         }

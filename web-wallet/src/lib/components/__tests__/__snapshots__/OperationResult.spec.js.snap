@@ -17,7 +17,6 @@ exports[`OperationResult > should accept a custom message for the failure state 
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     <details
       class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
@@ -38,9 +37,7 @@ exports[`OperationResult > should accept a custom message for the failure state 
       </pre>
     </details>
     
-    <!--&lt;ErrorDetails&gt;-->
   </div>
-  <!--&lt;ErrorAlert&gt;-->
    
   <a
     aria-disabled="false"
@@ -55,9 +52,6 @@ exports[`OperationResult > should accept a custom message for the failure state 
     </span>
     
   </a>
-  <!--&lt;Anchor&gt;-->
-  <!--&lt;AnchorButton&gt;-->
-  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;
 
@@ -86,7 +80,6 @@ exports[`OperationResult > should accept a custom message for the pending state 
       />
     </g>
   </svg>
-  <!--&lt;Throbber&gt;-->
    
   <span
     class="dusk-suspense__pending-message"
@@ -110,11 +103,8 @@ exports[`OperationResult > should accept a custom message for the successful sta
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
    
-  <span
-    class="s-iQe6V4SteEBR"
-  >
+  <span>
     Transaction completed
   </span>
    
@@ -131,9 +121,6 @@ exports[`OperationResult > should accept a custom message for the successful sta
     </span>
     
   </a>
-  <!--&lt;Anchor&gt;-->
-  <!--&lt;AnchorButton&gt;-->
-  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;
 
@@ -162,7 +149,6 @@ exports[`OperationResult > should be able to render the \`OperationResult\` comp
       />
     </g>
   </svg>
-  <!--&lt;Throbber&gt;-->
    
   <span
     class="dusk-suspense__pending-message"
@@ -189,7 +175,6 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
     <details
       class="dusk-error-details dusk-error-details__details dusk-error-alert__error-details"
@@ -210,9 +195,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
       </pre>
     </details>
     
-    <!--&lt;ErrorDetails&gt;-->
   </div>
-  <!--&lt;ErrorAlert&gt;-->
    
   <a
     aria-disabled="false"
@@ -227,9 +210,6 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
     </span>
     
   </a>
-  <!--&lt;Anchor&gt;-->
-  <!--&lt;AnchorButton&gt;-->
-  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;
 
@@ -247,11 +227,8 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
     />
   </svg>
   
-  <!--&lt;Icon&gt;-->
    
-  <span
-    class="s-iQe6V4SteEBR"
-  >
+  <span>
     Operation completed
   </span>
    
@@ -268,8 +245,5 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
     </span>
     
   </a>
-  <!--&lt;Anchor&gt;-->
-  <!--&lt;AnchorButton&gt;-->
-  <!--&lt;AppAnchorButton&gt;-->
 </div>
 `;

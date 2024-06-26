@@ -19,7 +19,7 @@ describe("Main layout", () => {
   it("should render the main layout", () => {
     const { container } = render(MainLayout);
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(container).toMatchSnapshot();
   });
 
   it('should add and remove the "dark" class name to the `html` element when the `darkMode` value changes in thesettings store', () => {

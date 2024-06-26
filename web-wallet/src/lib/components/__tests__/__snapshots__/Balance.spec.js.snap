@@ -32,7 +32,6 @@ exports[`Balance > renders the Balance component 1`] = `
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </p>
    
   <p
@@ -55,7 +54,6 @@ exports[`Balance > renders the Balance component 1`] = `
   >
     
   </div>
-  <!--&lt;Tooltip&gt;-->
 </article>
 `;
 
@@ -91,7 +89,6 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </p>
    
   <p
@@ -114,7 +111,6 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
   >
     
   </div>
-  <!--&lt;Tooltip&gt;-->
 </article>
 `;
 
@@ -150,7 +146,6 @@ exports[`Balance > should not display the fiat value if there are no tokens 1`] 
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </p>
    
   <p
@@ -173,7 +168,6 @@ exports[`Balance > should not display the fiat value if there are no tokens 1`] 
   >
     
   </div>
-  <!--&lt;Tooltip&gt;-->
 </article>
 `;
 
@@ -209,7 +203,6 @@ exports[`Balance > should update the Balance component when the props change 1`]
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </p>
    
   <p
@@ -232,7 +225,6 @@ exports[`Balance > should update the Balance component when the props change 1`]
   >
     
   </div>
-  <!--&lt;Tooltip&gt;-->
 </article>
 `;
 
@@ -268,7 +260,6 @@ exports[`Balance > should update the Balance component when the props change 2`]
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
   </p>
    
   <p
@@ -291,6 +282,5 @@ exports[`Balance > should update the Balance component when the props change 2`]
   >
     
   </div>
-  <!--&lt;Tooltip&gt;-->
 </article>
 `;

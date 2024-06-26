@@ -15,7 +15,7 @@ describe("AppImage", () => {
 
   afterEach(cleanup);
 
-  it("should render an HTML image forwarding all attributes but with the base path prepended to the `src` if it's an absolute URL", () => {
+  it("should render an HTML image forwarding all attributes but with the base path prepended to the `src` if it's an absolute URL", async () => {
     const { container, getByRole, rerender } = render(AppImage, baseProps);
     const imgA = getByRole("img");
 
@@ -26,7 +26,7 @@ describe("AppImage", () => {
     expect(imgA).toHaveAttribute("src", `${base}${baseProps.src}`);
     expect(imgA).toHaveAttribute("width", baseProps.width);
 
-    rerender({ ...baseProps, className: "baz", src: "/" });
+    await rerender({ ...baseProps, className: "baz", src: "/" });
 
     const imgB = getByRole("img");
 

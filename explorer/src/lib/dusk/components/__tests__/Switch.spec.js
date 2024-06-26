@@ -13,12 +13,12 @@ describe("Switch", () => {
 
   afterEach(cleanup);
 
-  it('should render the "Switch" component with a default tab index of `0`', () => {
+  it('should render the "Switch" component with a default tab index of `0`', async () => {
     const { container, rerender } = render(Switch, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
 
-    rerender({ ...baseProps, value: true });
+    await rerender({ ...baseProps, value: true });
 
     expect(container.firstChild).toMatchSnapshot();
   });
@@ -33,7 +33,7 @@ describe("Switch", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should render the component in a disabled status with a tabindex of `-1`", () => {
+  it("should render the component in a disabled status with a tabindex of `-1`", async () => {
     const props = {
       ...baseProps,
       disabled: true,
@@ -43,7 +43,7 @@ describe("Switch", () => {
 
     expect(container.firstChild).toMatchSnapshot();
 
-    rerender({ ...props, value: true });
+    await rerender({ ...props, value: true });
 
     expect(container.firstChild).toMatchSnapshot();
   });

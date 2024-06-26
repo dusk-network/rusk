@@ -47,7 +47,7 @@
   data={blocks}
   {error}
   {loading}
-  title="Blocks"
+  title="Blocks  - {displayedBlocks.length} Displayed Items"
   headerButtonDetails={{
     action: () => loadMoreItems(),
     disabled: isLoadMoreDisabled,

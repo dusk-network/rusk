@@ -21,13 +21,13 @@ describe("ProgressBar", () => {
   });
 
   it("re-renders the Stepper component when the current percentage property changes", async () => {
-    const { component, container } = render(ProgressBar, {
+    const { container, rerender } = render(ProgressBar, {
       props: { currentPercentage: 0 },
     });
 
     expect(container.firstChild).toMatchSnapshot();
 
-    await component.$set({ currentPercentage: 50 });
+    await rerender({ currentPercentage: 50 });
 
     expect(container.firstChild).toMatchSnapshot();
   });

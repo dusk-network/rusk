@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 import { mdiHome } from "@mdi/js";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 import { Tabs } from "..";
@@ -79,6 +79,7 @@ describe("Tabs", () => {
     scrollToSpy.mockRestore();
     scrollWidthSpy.mockRestore();
     ulClientWidthSpy.mockRestore();
+    vi.useRealTimers();
   });
 
   it('should render a "Tabs" component and reset its scroll status if no tab is selected', () => {
@@ -222,7 +223,25 @@ describe("Tabs", () => {
   });
 
   it("should show the scroll buttons when there isn't enough horizontal space and enable the appropriate ones", async () => {
-    const { container, rerender } = render(Tabs, baseOptions);
+    const originalObserver = ResizeObserver;
+
+    let callback;
+
+    /**
+     * We don't have a proper mock for the observer right now,
+     * so we use the proxy to memorize the callback received by the
+     * observer's constructor.
+     * This way we can call it at will, simulating updates.
+     */
+    global.ResizeObserver = new Proxy(originalObserver, {
+      construct(Target, args) {
+        callback = args[0];
+
+        return new Target(args[0]);
+      },
+    });
+
+    const { container } = render(Tabs, baseOptions);
     const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
 
     let leftBtn = getAsHTMLElement(
@@ -245,8 +264,7 @@ describe("Tabs", () => {
     expect(tabsList.scrollBy).toHaveBeenCalledTimes(1);
     expect(tabsList.scrollBy).toHaveBeenCalledWith(5, 0);
 
-    // @ts-ignore
-    tabsList.scrollBy.mockClear();
+    scrollBySpy.mockClear();
     rafSpy.mockClear();
 
     vi.advanceTimersToNextTimer();
@@ -261,7 +279,8 @@ describe("Tabs", () => {
 
     scrollLeftSpy.mockReturnValue(320);
 
-    rerender(baseOptions.props);
+    // we don't care for callback parameters right now
+    await act(callback);
 
     leftBtn = getAsHTMLElement(
       container,
@@ -285,6 +304,8 @@ describe("Tabs", () => {
     expect(rafSpy).toHaveBeenCalledTimes(1);
     expect(tabsList.scrollBy).toHaveBeenCalledTimes(1);
     expect(tabsList.scrollBy).toHaveBeenCalledWith(-5, 0);
+
+    global.ResizeObserver = originalObserver;
   });
 
   it("should ignore mouse down events if the primary button isn't the only one pressed", async () => {

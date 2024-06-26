@@ -1,49 +1,43 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`NavList > renders the NavList component 1`] = `
-<div>
-  <nav
-    class="dusk-nav-list"
-  >
-    
-    <a
-      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
-      href="https://dusk.network"
-    >
-      Dusk
-    </a>
-    
-    <a
-      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
-      href="https://explorer.dusk.network"
-    >
-      Explorer
-    </a>
-  </nav>
+<nav
+  class="dusk-nav-list"
+>
   
-</div>
+  <a
+    class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
+    href="https://dusk.network"
+  >
+    Dusk
+  </a>
+  
+  <a
+    class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
+    href="https://explorer.dusk.network"
+  >
+    Explorer
+  </a>
+</nav>
 `;
 
 exports[`NavList > should pass additional class names and attributes to the rendered element 1`] = `
-<div>
-  <nav
-    class="dusk-nav-list foo bar"
-  >
-    
-    <a
-      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
-      href="https://dusk.network"
-    >
-      Dusk
-    </a>
-    
-    <a
-      class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
-      href="https://explorer.dusk.network"
-    >
-      Explorer
-    </a>
-  </nav>
+<nav
+  class="dusk-nav-list foo bar"
+>
   
-</div>
+  <a
+    class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
+    href="https://dusk.network"
+  >
+    Dusk
+  </a>
+  
+  <a
+    class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
+    href="https://explorer.dusk.network"
+  >
+    Explorer
+  </a>
+</nav>
 `;

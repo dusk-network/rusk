@@ -24,12 +24,12 @@ describe("Balance", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should update the Balance component when the props change", () => {
+  it("should update the Balance component when the props change", async () => {
     const { container, rerender } = render(Balance, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
 
-    rerender({
+    await rerender({
       fiatCurrency: "EUR",
       fiatPrice: 20,
       locale: "it",
@@ -40,7 +40,7 @@ describe("Balance", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should pass additional class names and attributes to the rendered element", () => {
+  it("should pass additional class names and attributes to the rendered element", async () => {
     const props = {
       ...baseProps,
       className: "foo bar",
@@ -51,7 +51,7 @@ describe("Balance", () => {
     expect(container.firstChild).toHaveClass("foo bar");
     expect(container.firstChild).toHaveAttribute("id", "balance");
 
-    rerender({
+    await rerender({
       ...props,
       className: "qux",
       id: "new-balance",

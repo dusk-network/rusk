@@ -2,26 +2,24 @@
 
 exports[`ContractStatusesList > should be able to render the component without items 1`] = `
 <dl
-  class="contract-statuses s-fYGIMZDSuGmT"
+  class="contract-statuses svelte-19157rx"
 />
 `;
 
 exports[`ContractStatusesList > should render the \`ContractStatusesList\` component 1`] = `
 <dl
-  class="contract-statuses s-fYGIMZDSuGmT"
+  class="contract-statuses svelte-19157rx"
 >
   <dt
-    class="contract-statuses__label s-fYGIMZDSuGmT"
+    class="contract-statuses__label svelte-19157rx"
   >
     Spendable
      
   </dt>
   <dd
-    class="contract-statuses__value s-fYGIMZDSuGmT"
+    class="contract-statuses__value svelte-19157rx"
   >
-    <span
-      class="s-fYGIMZDSuGmT"
-    >
+    <span>
       99,899.999724165
     </span>
      
@@ -37,21 +35,18 @@ exports[`ContractStatusesList > should render the \`ContractStatusesList\` compo
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
   </dd>
   <dt
-    class="contract-statuses__label s-fYGIMZDSuGmT"
+    class="contract-statuses__label svelte-19157rx"
   >
     Total Locked
      
   </dt>
   <dd
-    class="contract-statuses__value s-fYGIMZDSuGmT"
+    class="contract-statuses__value svelte-19157rx"
   >
-    <span
-      class="s-fYGIMZDSuGmT"
-    >
+    <span>
       1,000.000000000
     </span>
      
@@ -67,21 +62,18 @@ exports[`ContractStatusesList > should render the \`ContractStatusesList\` compo
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
   </dd>
   <dt
-    class="contract-statuses__label s-fYGIMZDSuGmT"
+    class="contract-statuses__label svelte-19157rx"
   >
     Rewards
      
   </dt>
   <dd
-    class="contract-statuses__value s-fYGIMZDSuGmT"
+    class="contract-statuses__value svelte-19157rx"
   >
-    <span
-      class="s-fYGIMZDSuGmT"
-    >
+    <span>
       99,288.000000000
     </span>
      
@@ -97,7 +89,6 @@ exports[`ContractStatusesList > should render the \`ContractStatusesList\` compo
       />
     </svg>
     
-    <!--&lt;Icon&gt;-->
      
   </dd>
 </dl>
