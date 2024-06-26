@@ -6,7 +6,7 @@
 
 use std::io::{self, Read, Write};
 
-use execution_core::Transaction as PhoenixTransaction;
+use execution_core::transfer::Transaction as PhoenixTransaction;
 
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
@@ -74,8 +74,8 @@ impl Serializable for Transaction {
         let version = Self::read_u32_le(r)?;
         let tx_type = Self::read_u32_le(r)?;
 
-        let tx_payload = Self::read_var_le_bytes32(r)?;
-        let inner = PhoenixTransaction::from_slice(&tx_payload[..])
+        let phoenix_tx = Self::read_var_le_bytes32(r)?;
+        let inner = PhoenixTransaction::from_slice(&phoenix_tx[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         Ok(Self {
