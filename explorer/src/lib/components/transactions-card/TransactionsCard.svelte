@@ -59,13 +59,14 @@
   }}
 >
   <TransactionsTable
-    data={displayedTxns}
     className="transactions-card__table mobile-hidden"
+    data={displayedTxns}
+    mode="full"
   />
 
   <div class="transactions-card__list desktop-hidden">
     {#each displayedTxns as txn (txn)}
-      <TransactionsList data={txn} />
+      <TransactionsList data={txn} mode="full" />
     {/each}
   </div>
 </DataCard>
