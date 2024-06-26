@@ -10,18 +10,16 @@
 #![deny(clippy::all)]
 #![allow(clippy::result_large_err)]
 
-#[macro_use]
 extern crate alloc;
 
 mod imp;
 
 use alloc::vec::Vec;
-use bls12_381_bls::{PublicKey as StakePublicKey, SecretKey as StakeSecretKey};
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
-use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
-use dusk_plonk::prelude::Proof;
-use jubjub_schnorr::Signature;
-use phoenix_core::{Crossover, Fee, Note, SecretKey, ViewKey};
+use execution_core::{
+    stake::StakeData, transfer::Transaction, BlsPublicKey as StakePublicKey,
+    BlsScalar, BlsSecretKey as StakeSecretKey, Note, SecretKey, ViewKey,
+};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand_chacha::ChaCha12Rng;
 use rand_core::SeedableRng;
@@ -30,7 +28,6 @@ use sha2::{Digest, Sha256};
 pub use imp::*;
 pub use rusk_prover::UnprovenTransaction;
 
-pub use phoenix_core::transaction::*;
 pub use rusk_abi::POSEIDON_TREE_DEPTH;
 
 /// The maximum size of call data.
@@ -118,25 +115,6 @@ pub trait ProverClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<Transaction, Self::Error>;
-
-    /// Requests an STCT proof.
-    fn request_stct_proof(
-        &self,
-        fee: &Fee,
-        crossover: &Crossover,
-        value: u64,
-        blinder: JubJubScalar,
-        address: BlsScalar,
-        signature: Signature,
-    ) -> Result<Proof, Self::Error>;
-
-    /// Request a WFCT proof.
-    fn request_wfct_proof(
-        &self,
-        commitment: JubJubAffine,
-        value: u64,
-        blinder: JubJubScalar,
-    ) -> Result<Proof, Self::Error>;
 }
 
 /// Block height representation
@@ -156,8 +134,8 @@ pub trait StateClient {
         vk: &ViewKey,
     ) -> Result<Vec<EnrichedNote>, Self::Error>;
 
-    /// Fetch the current anchor of the state.
-    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
+    /// Fetch the current root of the state.
+    fn fetch_root(&self) -> Result<BlsScalar, Self::Error>;
 
     /// Asks the node to return the nullifiers that already exist from the given
     /// nullifiers.
@@ -170,7 +148,7 @@ pub trait StateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>, Self::Error>;
+    ) -> Result<PoseidonOpening<(), POSEIDON_TREE_DEPTH>, Self::Error>;
 
     /// Queries the node for the stake of a key. If the key has no stake, a
     /// `Default` stake info should be returned.

@@ -13,26 +13,21 @@ use core::convert::Infallible;
 use alloc::string::{FromUtf8Error, String};
 use alloc::vec::Vec;
 
-use bls12_381_bls::PublicKey as StakePublicKey;
-use dusk_bytes::{Error as BytesError, Serializable};
-use dusk_jubjub::{BlsScalar, JubJubScalar};
-use ff::Field;
-use phoenix_core::transaction::{stct_signature_message, Transaction};
-use phoenix_core::{
-    Crossover, Error as PhoenixError, Fee, Note, NoteType, Ownable, PublicKey,
-    SecretKey, ViewKey,
+use dusk_bytes::Error as BytesError;
+use execution_core::{
+    stake::{Stake, Unstake, Withdraw},
+    transfer::{ContractCall, Fee, Payload, Transaction},
+    BlsPublicKey as StakePublicKey, BlsScalar, JubJubScalar, Note,
+    PhoenixError, PublicKey, SchnorrSecretKey, SecretKey, TxSkeleton, ViewKey,
+    OUTPUT_NOTES,
 };
+use ff::Field;
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
-    AllocScratchError, AllocSerializer, CompositeSerializerError,
-    SharedSerializeMapError,
+    AllocScratchError, CompositeSerializerError, SharedSerializeMapError,
 };
 use rkyv::validation::validators::CheckDeserializeError;
-use rkyv::Serialize;
 use rusk_prover::{UnprovenTransaction, UnprovenTransactionInput};
-
-use execution_core::stake::{Stake, Unstake, Withdraw};
-use rusk_abi::{hash::Hasher, ContractId};
 
 const MAX_INPUT_NOTES: usize = 4;
 
@@ -209,7 +204,7 @@ where
     ) -> Result<PublicKey, Error<S, SC, PC>> {
         self.store
             .retrieve_sk(index)
-            .map(|sk| PublicKey::from(sk))
+            .map(|sk| PublicKey::from(&sk))
             .map_err(Error::from_store_err)
     }
 
@@ -263,97 +258,127 @@ where
     fn inputs_and_change_output<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
-        sender: &SecretKey,
-        refund: &PublicKey,
-        value: u64,
+        sender_sk: &SecretKey,
+        sender_pk: &PublicKey,
+        receiver_pk: &PublicKey,
+        transfer_value: u64,
+        max_fee: u64,
+        deposit: u64,
     ) -> Result<
         (
             Vec<(Note, u64, JubJubScalar)>,
-            Vec<(Note, u64, JubJubScalar)>,
+            [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
         ),
         Error<S, SC, PC>,
     > {
-        let notes = self.unspent_notes(sender)?;
+        let notes = self.unspent_notes(sender_sk)?;
         let mut notes_and_values = Vec::with_capacity(notes.len());
 
-        let sender_vk = ViewKey::from(sender);
+        let sender_vk = ViewKey::from(sender_sk);
 
         let mut accumulated_value = 0;
         for note in notes.into_iter() {
             let val = note.value(Some(&sender_vk))?;
-            let blinder = note.blinding_factor(Some(&sender_vk))?;
+            let value_blinder = note.value_blinder(Some(&sender_vk))?;
 
             accumulated_value += val;
-            notes_and_values.push((note, val, blinder));
+            notes_and_values.push((note, val, value_blinder));
         }
 
-        if accumulated_value < value {
+        if accumulated_value < transfer_value + max_fee {
             return Err(Error::NotEnoughBalance);
         }
 
-        let inputs = pick_notes(value, notes_and_values);
+        let inputs =
+            pick_notes(transfer_value + max_fee + deposit, notes_and_values);
 
         if inputs.is_empty() {
             return Err(Error::NoteCombinationProblem);
         }
 
-        let change = inputs.iter().map(|v| v.1).sum::<u64>() - value;
+        let (transfer_note, transfer_value_blinder, transfer_sender_blinder) =
+            generate_obfuscated_note(
+                rng,
+                sender_pk,
+                receiver_pk,
+                transfer_value,
+            );
 
-        let mut outputs = vec![];
-        if change > 0 {
-            let nonce = BlsScalar::random(&mut *rng);
-            let (change_note, change_blinder) =
-                generate_obfuscated_note(rng, refund, change, nonce);
+        let change = inputs.iter().map(|v| v.1).sum::<u64>()
+            - transfer_value
+            - max_fee
+            - deposit;
+        let change_sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+        let change_note = Note::transparent(
+            rng,
+            sender_pk,
+            sender_pk,
+            change,
+            change_sender_blinder,
+        );
 
-            outputs.push((change_note, change, change_blinder))
-        }
+        let outputs = [
+            (
+                transfer_note,
+                transfer_value,
+                transfer_value_blinder,
+                transfer_sender_blinder,
+            ),
+            (
+                change_note,
+                change,
+                JubJubScalar::zero(),
+                change_sender_blinder,
+            ),
+        ];
 
         Ok((inputs, outputs))
     }
 
     /// Execute a generic contract call
     #[allow(clippy::too_many_arguments)]
-    pub fn execute<Rng, C>(
+    pub fn execute<Rng>(
         &self,
         rng: &mut Rng,
-        contract_id: ContractId,
-        call_name: String,
-        call_data: C,
+        contract_call: ContractCall,
         sender_index: u64,
-        refund: &PublicKey,
         gas_limit: u64,
         gas_price: u64,
+        deposit: u64,
     ) -> Result<Transaction, Error<S, SC, PC>>
     where
         Rng: RngCore + CryptoRng,
-        C: Serialize<AllocSerializer<MAX_CALL_SIZE>>,
     {
-        let sender = self
+        let sender_sk = self
             .store
             .retrieve_sk(sender_index)
             .map_err(Error::from_store_err)?;
+        let sender_pk = PublicKey::from(&sender_sk);
 
         let (inputs, outputs) = self.inputs_and_change_output(
             rng,
-            &sender,
-            refund,
+            &sender_sk,
+            &sender_pk,
+            &sender_pk,
+            0,
             gas_limit * gas_price,
+            deposit,
         )?;
 
-        let fee = Fee::new(rng, gas_limit, gas_price, refund);
-
-        let call_data = rkyv::to_bytes(&call_data)?.to_vec();
-        let call = (contract_id, call_name, call_data);
+        let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
 
         let utx = new_unproven_tx(
             rng,
             &self.state,
-            &sender,
+            &sender_sk,
             inputs,
             outputs,
             fee,
-            None,
-            Some(call),
+            0,
+            Some(contract_call),
         )
         .map_err(Error::from_state_err)?;
 
@@ -368,41 +393,38 @@ where
         &self,
         rng: &mut Rng,
         sender_index: u64,
-        refund: &PublicKey,
-        receiver: &PublicKey,
+        receiver_pk: &PublicKey,
         value: u64,
         gas_limit: u64,
         gas_price: u64,
-        ref_id: BlsScalar,
     ) -> Result<Transaction, Error<S, SC, PC>> {
-        let sender = self
+        let sender_sk = self
             .store
             .retrieve_sk(sender_index)
             .map_err(Error::from_store_err)?;
+        let sender_pk = PublicKey::from(&sender_sk);
 
-        let (inputs, mut outputs) = self.inputs_and_change_output(
+        let deposit = 0;
+        let (inputs, outputs) = self.inputs_and_change_output(
             rng,
-            &sender,
-            refund,
-            value + gas_limit * gas_price,
+            &sender_sk,
+            &sender_pk,
+            receiver_pk,
+            value,
+            gas_limit * gas_price,
+            deposit,
         )?;
 
-        let (output_note, output_blinder) =
-            generate_obfuscated_note(rng, receiver, value, ref_id);
-
-        outputs.push((output_note, value, output_blinder));
-
-        let crossover = None;
-        let fee = Fee::new(rng, gas_limit, gas_price, refund);
+        let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
 
         let utx = new_unproven_tx(
             rng,
             &self.state,
-            &sender,
+            &sender_sk,
             inputs,
             outputs,
             fee,
-            crossover,
+            deposit,
             None,
         )
         .map_err(Error::from_state_err)?;
@@ -419,27 +441,31 @@ where
         rng: &mut Rng,
         sender_index: u64,
         staker_index: u64,
-        refund: &PublicKey,
         value: u64,
         gas_limit: u64,
         gas_price: u64,
     ) -> Result<Transaction, Error<S, SC, PC>> {
-        let sender = self
+        let sender_sk = self
             .store
             .retrieve_sk(sender_index)
             .map_err(Error::from_store_err)?;
+        let sender_pk = PublicKey::from(&sender_sk);
 
         let stake_sk = self
             .store
             .retrieve_stake_sk(staker_index)
             .map_err(Error::from_store_err)?;
         let stake_pk = StakePublicKey::from(&stake_sk);
+        let deposit = value;
 
         let (inputs, outputs) = self.inputs_and_change_output(
             rng,
-            &sender,
-            refund,
-            value + gas_limit * gas_price,
+            &sender_sk,
+            &sender_pk,
+            &sender_pk,
+            0,
+            gas_limit * gas_price,
+            deposit,
         )?;
 
         let stake = self
@@ -453,41 +479,7 @@ where
             });
         }
 
-        let blinder = JubJubScalar::random(&mut *rng);
-        let note = Note::obfuscated(rng, refund, value, blinder);
-        let (mut fee, crossover) = note
-            .try_into()
-            .expect("Obfuscated notes should always yield crossovers");
-
-        fee.gas_limit = gas_limit;
-        fee.gas_price = gas_price;
-
-        let contract_id = rusk_abi::STAKE_CONTRACT;
-        let address = rusk_abi::contract_to_scalar(&contract_id);
-
-        let contract_id = rusk_abi::contract_to_scalar(&contract_id);
-
-        let stct_message =
-            stct_signature_message(&crossover, value, contract_id);
-        let stct_message = dusk_poseidon::sponge::hash(&stct_message);
-
-        let nsk = sender.sk_r(fee.stealth_address());
-
-        let stct_signature = nsk.sign(rng, stct_message);
-
-        let spend_proof = self
-            .prover
-            .request_stct_proof(
-                &fee,
-                &crossover,
-                value,
-                blinder,
-                address,
-                stct_signature,
-            )
-            .map_err(Error::from_prover_err)?
-            .to_bytes()
-            .to_vec();
+        let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
 
         let msg = Stake::signature_message(stake.counter, value);
         let stake_sig = stake_sk.sign(&stake_pk, &msg);
@@ -496,22 +488,24 @@ where
             public_key: stake_pk,
             signature: stake_sig,
             value,
-            proof: spend_proof,
         };
 
-        let call_data = rkyv::to_bytes::<_, MAX_CALL_SIZE>(&stake)?.to_vec();
-        let call =
-            (rusk_abi::STAKE_CONTRACT, String::from(TX_STAKE), call_data);
+        let contract_call = ContractCall::new(
+            rusk_abi::STAKE_CONTRACT.to_bytes(),
+            TX_STAKE,
+            &stake,
+        )
+        .expect("call data should serialize");
 
         let utx = new_unproven_tx(
             rng,
             &self.state,
-            &sender,
+            &sender_sk,
             inputs,
             outputs,
             fee,
-            Some((crossover, value, blinder)),
-            Some(call),
+            value,
+            Some(contract_call),
         )
         .map_err(Error::from_state_err)?;
 
@@ -526,14 +520,14 @@ where
         rng: &mut Rng,
         sender_index: u64,
         staker_index: u64,
-        refund: &PublicKey,
         gas_limit: u64,
         gas_price: u64,
     ) -> Result<Transaction, Error<S, SC, PC>> {
-        let sender = self
+        let sender_sk = self
             .store
             .retrieve_sk(sender_index)
             .map_err(Error::from_store_err)?;
+        let sender_pk = PublicKey::from(&sender_sk);
 
         let stake_sk = self
             .store
@@ -543,9 +537,12 @@ where
 
         let (inputs, outputs) = self.inputs_and_change_output(
             rng,
-            &sender,
-            refund,
+            &sender_sk,
+            &sender_pk,
+            &sender_pk,
+            0,
             gas_limit * gas_price,
+            0,
         )?;
 
         let stake = self
@@ -557,64 +554,41 @@ where
             stake,
         })?;
 
-        let blinder = JubJubScalar::random(&mut *rng);
+        let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
+        let deposit = 0;
 
-        // Since we're not transferring value *to* the contract the crossover
-        // shouldn't contain a value. As such the note used to create it should
-        // be valueless as well.
-        let note = Note::obfuscated(rng, refund, 0, blinder);
-        let (mut fee, crossover) = note
-            .try_into()
-            .expect("Obfuscated notes should always yield crossovers");
+        let unstake_stealth_address = PublicKey::from(&sender_sk)
+            .gen_stealth_address(&JubJubScalar::random(&mut *rng));
 
-        fee.gas_limit = gas_limit;
-        fee.gas_price = gas_price;
-
-        let unstake_note =
-            Note::transparent(rng, &PublicKey::from(&sender), value);
-        let unstake_blinder = unstake_note
-            .blinding_factor(None)
-            .expect("Note is transparent so blinding factor is unencrypted");
-
-        let unstake_proof = self
-            .prover
-            .request_wfct_proof(
-                unstake_note.value_commitment().into(),
-                value,
-                unstake_blinder,
-            )
-            .map_err(Error::from_prover_err)?
-            .to_bytes()
-            .to_vec();
-
-        let unstake_note = unstake_note.to_bytes();
-        let signature_message =
-            Unstake::signature_message(stake.counter, unstake_note);
+        let signature_message = Unstake::signature_message(
+            stake.counter,
+            value,
+            unstake_stealth_address,
+        );
 
         let stake_sig = stake_sk.sign(&stake_pk, &signature_message);
 
         let unstake = Unstake {
             public_key: stake_pk,
             signature: stake_sig,
-            note: unstake_note.to_vec(),
-            proof: unstake_proof,
+            address: unstake_stealth_address,
         };
 
         let call_data = rkyv::to_bytes::<_, MAX_CALL_SIZE>(&unstake)?.to_vec();
-        let call = (
-            rusk_abi::STAKE_CONTRACT,
-            String::from(TX_UNSTAKE),
-            call_data,
-        );
+        let call = ContractCall {
+            contract: rusk_abi::STAKE_CONTRACT.to_bytes(),
+            fn_name: String::from(TX_UNSTAKE),
+            fn_args: call_data,
+        };
 
         let utx = new_unproven_tx(
             rng,
             &self.state,
-            &sender,
+            &sender_sk,
             inputs,
             outputs,
             fee,
-            Some((crossover, 0, blinder)),
+            deposit,
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -631,15 +605,14 @@ where
         rng: &mut Rng,
         sender_index: u64,
         staker_index: u64,
-        refund: &PublicKey,
         gas_limit: u64,
         gas_price: u64,
     ) -> Result<Transaction, Error<S, SC, PC>> {
-        let sender = self
+        let sender_sk = self
             .store
             .retrieve_sk(sender_index)
             .map_err(Error::from_store_err)?;
-        let sender_pk = PublicKey::from(sender);
+        let sender_pk = PublicKey::from(&sender_sk);
 
         let stake_sk = self
             .store
@@ -649,9 +622,12 @@ where
 
         let (inputs, outputs) = self.inputs_and_change_output(
             rng,
-            &sender,
-            refund,
+            &sender_sk,
+            &sender_pk,
+            &sender_pk,
+            0,
             gas_limit * gas_price,
+            0,
         )?;
 
         let stake = self
@@ -665,24 +641,12 @@ where
             });
         }
 
-        let withdraw_r = JubJubScalar::random(&mut *rng);
-        let address = sender_pk.gen_stealth_address(&withdraw_r);
+        let address =
+            sender_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
         let nonce = BlsScalar::random(&mut *rng);
 
         let msg = Withdraw::signature_message(stake.counter, address, nonce);
         let stake_sig = stake_sk.sign(&stake_pk, &msg);
-
-        // Since we're not transferring value *to* the contract the crossover
-        // shouldn't contain a value. As such the note used to created it should
-        // be valueless as well.
-        let blinder = JubJubScalar::random(&mut *rng);
-        let note = Note::obfuscated(rng, refund, 0, blinder);
-        let (mut fee, crossover) = note
-            .try_into()
-            .expect("Obfuscated notes should always yield crossovers");
-
-        fee.gas_limit = gas_limit;
-        fee.gas_price = gas_price;
 
         let withdraw = Withdraw {
             public_key: stake_pk,
@@ -690,19 +654,26 @@ where
             address,
             nonce,
         };
+
+        let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
+        let deposit = 0;
+
         let call_data = rkyv::to_bytes::<_, MAX_CALL_SIZE>(&withdraw)?.to_vec();
 
-        let contract_id = rusk_abi::STAKE_CONTRACT;
-        let call = (contract_id, String::from(TX_WITHDRAW), call_data);
+        let call = ContractCall {
+            contract: rusk_abi::STAKE_CONTRACT.to_bytes(),
+            fn_name: String::from(TX_WITHDRAW),
+            fn_args: call_data,
+        };
 
         let utx = new_unproven_tx(
             rng,
             &self.state,
-            &sender,
+            &sender_sk,
             inputs,
             outputs,
             fee,
-            Some((crossover, 0, blinder)),
+            deposit,
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -717,13 +688,13 @@ where
         &self,
         sk_index: u64,
     ) -> Result<BalanceInfo, Error<S, SC, PC>> {
-        let sender = self
+        let sender_sk = self
             .store
             .retrieve_sk(sk_index)
             .map_err(Error::from_store_err)?;
-        let vk = ViewKey::from(sender);
+        let vk = ViewKey::from(&sender_sk);
 
-        let notes = self.unspent_notes(&sender)?;
+        let notes = self.unspent_notes(&sender_sk)?;
         let mut values = Vec::with_capacity(notes.len());
 
         for note in notes.into_iter() {
@@ -764,16 +735,16 @@ where
 fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
     rng: &mut Rng,
     state: &SC,
-    sender: &SecretKey,
+    sender_sk: &SecretKey,
     inputs: Vec<(Note, u64, JubJubScalar)>,
-    outputs: Vec<(Note, u64, JubJubScalar)>,
+    outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
     fee: Fee,
-    crossover: Option<(Crossover, u64, JubJubScalar)>,
-    call: Option<(ContractId, String, Vec<u8>)>,
+    deposit: u64,
+    call: Option<ContractCall>,
 ) -> Result<UnprovenTransaction, SC::Error> {
     let nullifiers: Vec<BlsScalar> = inputs
         .iter()
-        .map(|(note, _, _)| note.gen_nullifier(sender))
+        .map(|(note, _, _)| note.gen_nullifier(sender_sk))
         .collect();
 
     let mut openings = Vec::with_capacity(inputs.len());
@@ -782,39 +753,47 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
         openings.push(opening);
     }
 
-    let anchor = state.fetch_anchor()?;
+    let root = state.fetch_root()?;
 
-    let hash_outputs: Vec<Note> = outputs.iter().map(|o| o.0).collect();
-    let hash_crossover = crossover.map(|c| c.0);
+    let tx_skeleton = TxSkeleton {
+        root,
+        nullifiers,
+        outputs: [outputs[0].0.clone(), outputs[1].0.clone()],
+        max_fee: fee.max_fee(),
+        deposit,
+    };
+    let has_deposit = deposit > 0;
 
-    let hash_call = call.clone().map(|c| (c.0.to_bytes(), c.1, c.2));
-    let hash_bytes = Transaction::hash_input_bytes_from_components(
-        &nullifiers,
-        &hash_outputs,
-        &anchor,
-        &fee,
-        &hash_crossover,
-        &hash_call,
-    );
-    let hash = Hasher::digest(hash_bytes);
+    let payload = Payload::new(tx_skeleton, fee, has_deposit, call);
+    let payload_hash = payload.hash();
 
     let inputs: Vec<UnprovenTransactionInput> = inputs
         .into_iter()
         .zip(openings.into_iter())
-        .map(|((note, value, blinder), opening)| {
+        .map(|((note, value, value_blinder), opening)| {
             UnprovenTransactionInput::new(
-                rng, sender, note, value, blinder, opening, hash,
+                rng,
+                sender_sk,
+                note,
+                value,
+                value_blinder,
+                opening,
+                payload_hash,
             )
         })
         .collect();
 
+    let schnorr_sk_a = SchnorrSecretKey::from(sender_sk.a());
+    let sig_a = schnorr_sk_a.sign(rng, payload_hash);
+    let schnorr_sk_b = SchnorrSecretKey::from(sender_sk.b());
+    let sig_b = schnorr_sk_b.sign(rng, payload_hash);
+
     Ok(UnprovenTransaction {
         inputs,
         outputs,
-        anchor,
-        fee,
-        crossover,
-        call,
+        payload,
+        sender_pk: PublicKey::from(sender_sk),
+        signatures: (sig_a, sig_b),
     })
 }
 
@@ -851,7 +830,7 @@ fn pick_notes(
     .map(|indices| {
         indices
             .into_iter()
-            .map(|index| notes_and_values[index])
+            .map(|index| notes_and_values[index].clone())
             .collect()
     })
     .unwrap_or_default()
@@ -898,22 +877,26 @@ fn pick_lexicographic<F: Fn(&[usize; MAX_INPUT_NOTES]) -> bool>(
 /// Generates an obfuscated note for the given public spend key.
 fn generate_obfuscated_note<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
-    pk: &PublicKey,
+    sender_pk: &PublicKey,
+    receiver_pk: &PublicKey,
     value: u64,
-    nonce: BlsScalar,
-) -> (Note, JubJubScalar) {
-    let r = JubJubScalar::random(&mut *rng);
-    let blinder = JubJubScalar::random(&mut *rng);
+) -> (Note, JubJubScalar, [JubJubScalar; 2]) {
+    let value_blinder = JubJubScalar::random(&mut *rng);
+    let sender_blinder = [
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
+    ];
 
     (
-        Note::deterministic(
-            NoteType::Obfuscated,
-            &r,
-            nonce,
-            pk,
+        Note::obfuscated(
+            rng,
+            sender_pk,
+            receiver_pk,
             value,
-            blinder,
+            value_blinder,
+            sender_blinder,
         ),
-        blinder,
+        value_blinder,
+        sender_blinder,
     )
 }
