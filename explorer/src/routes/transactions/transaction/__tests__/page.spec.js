@@ -1,13 +1,8 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 
+import { resolveAfter } from "$lib/dusk/promise";
 import { duskAPI } from "$lib/services";
-import { transformTransaction } from "$lib/chain-info";
-import {
-  apiMarketData,
-  gqlTransaction,
-  gqlTransactionDetails,
-} from "$lib/mock-data";
 
 import TransactionDetails from "../+page.svelte";
 
@@ -17,35 +12,47 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-describe("Transaction Details", () => {
+const marketDataSettleTime = vi.hoisted(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));
 
-  const getTransactionSpy = vi
-    .spyOn(duskAPI, "getTransaction")
-    .mockResolvedValue(transformTransaction(gqlTransaction.tx));
-  const getPayloadSpy = vi
-    .spyOn(duskAPI, "getTransactionDetails")
-    .mockResolvedValue(gqlTransactionDetails.tx.raw);
-  const getMarketDataSpy = vi
-    .spyOn(duskAPI, "getMarketData")
-    .mockResolvedValue({
-      currentPrice: apiMarketData.market_data.current_price,
-      marketCap: apiMarketData.market_data.market_cap,
-    });
+  return 100;
+});
+vi.mock("$lib/services", async (importOriginal) => {
+  /** @type {import("$lib/services")} */
+  const original = await importOriginal();
+  const { transformTransaction } = await import("$lib/chain-info");
+  const { apiMarketData, gqlTransaction, gqlTransactionDetails } = await import(
+    "$lib/mock-data"
+  );
+  const { current_price: currentPrice, market_cap: marketCap } =
+    apiMarketData.market_data;
 
+  return {
+    ...original,
+    duskAPI: {
+      ...original.duskAPI,
+      getMarketData: () =>
+        resolveAfter(marketDataSettleTime, { currentPrice, marketCap }),
+      getTransaction: vi
+        .fn()
+        .mockResolvedValue(transformTransaction(gqlTransaction.tx)),
+      getTransactionDetails: vi
+        .fn()
+        .mockResolvedValue(gqlTransactionDetails.tx.raw),
+    },
+  };
+});
+
+describe("Transaction Details", () => {
   afterEach(() => {
     cleanup();
-    getTransactionSpy.mockClear();
-    getPayloadSpy.mockClear();
-    getMarketDataSpy.mockClear();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
     vi.useRealTimers();
-    getTransactionSpy.mockRestore();
-    getPayloadSpy.mockRestore();
-    getMarketDataSpy.mockRestore();
+    vi.doUnmock("$lib/services");
   });
 
   it("should render the Transaction details page and query the necessary info", async () => {
@@ -53,11 +60,10 @@ describe("Transaction Details", () => {
 
     expect(container.firstChild).toMatchSnapshot();
 
-    expect(getTransactionSpy).toHaveBeenCalledTimes(1);
-    expect(getPayloadSpy).toHaveBeenCalledTimes(1);
-    expect(getMarketDataSpy).toHaveBeenCalledTimes(1);
+    expect(duskAPI.getTransaction).toHaveBeenCalledTimes(1);
+    expect(duskAPI.getTransactionDetails).toHaveBeenCalledTimes(1);
 
-    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(marketDataSettleTime);
 
     // snapshot with received data from APIs
     expect(container.firstChild).toMatchSnapshot();
