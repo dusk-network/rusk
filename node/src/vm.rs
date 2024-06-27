@@ -38,7 +38,11 @@ pub trait VMExecution: Send + Sync + 'static {
         voters: &[VoterWithCredits],
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
-    fn finalize_state(&self, commit: [u8; 32]) -> anyhow::Result<()>;
+    fn finalize_state(
+        &self,
+        commit: [u8; 32],
+        to_delete: Vec<[u8; 32]>,
+    ) -> anyhow::Result<()>;
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
 

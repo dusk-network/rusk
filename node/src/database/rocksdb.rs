@@ -303,15 +303,24 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 self.put_cf(cf, tx.inner.id(), d)?;
             }
         }
-
-        // CF: HEIGHT -> (BLOCK_HASH, BLOCK_LABEL)
-        let mut buf = vec![];
-        buf.write_all(&header.hash[..])?;
-        label.write(&mut buf)?;
-
-        self.put_cf(self.ledger_height_cf, header.height.to_le_bytes(), buf)?;
+        self.store_block_label(header.height, &header.hash, label)?;
 
         Ok(self.get_size())
+    }
+
+    fn store_block_label(
+        &self,
+        height: u64,
+        hash: &[u8; 32],
+        label: Label,
+    ) -> Result<()> {
+        // CF: HEIGHT -> (BLOCK_HASH, BLOCK_LABEL)
+        let mut buf = vec![];
+        buf.write_all(hash)?;
+        label.write(&mut buf)?;
+
+        self.put_cf(self.ledger_height_cf, height.to_le_bytes(), buf)?;
+        Ok(())
     }
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()> {
@@ -429,13 +438,19 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn fetch_block_label_by_height(
         &self,
         height: u64,
-    ) -> Result<Option<Label>> {
-        const LEN: usize = 32 + 1;
+    ) -> Result<Option<([u8; 32], Label)>> {
+        const HASH_LEN: usize = 32;
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
-            .filter(|v| v.len() == LEN)
-            .map(|h| Label::from(h[LEN - 1])))
+            .map(|h| {
+                let mut hash = [0u8; HASH_LEN];
+                hash.copy_from_slice(&h.as_slice()[0..HASH_LEN]);
+
+                let label_buff = h[HASH_LEN..].to_vec();
+                Label::read(&mut &label_buff[..]).map(|label| (hash, label))
+            })
+            .transpose()?)
     }
 }
 
@@ -895,7 +910,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Final,
+                        Label::Final(3),
                     )?;
                     Ok(())
                 })
@@ -942,7 +957,7 @@ mod tests {
                 txn.store_block(
                     b.header(),
                     &to_spent_txs(b.txs()),
-                    Label::Final,
+                    Label::Final(3),
                 )
                 .expect("block to be stored");
             });
@@ -971,7 +986,7 @@ mod tests {
                         txn.store_block(
                             b.header(),
                             &to_spent_txs(b.txs()),
-                            Label::Final,
+                            Label::Final(3),
                         )
                         .unwrap();
 
@@ -1125,7 +1140,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Final,
+                        Label::Final(3),
                     )?;
                     Ok(())
                 })
@@ -1159,7 +1174,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Attested,
+                        Label::Attested(3),
                     )?;
                     Ok(())
                 })
@@ -1189,7 +1204,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Attested,
+                        Label::Attested(3),
                     )?;
                     Ok(())
                 })
@@ -1201,7 +1216,8 @@ mod tests {
                     .fetch_block_label_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
-                    .eq(&Label::Attested));
+                    .1
+                    .eq(&Label::Attested(3)));
             });
         });
     }
@@ -1220,7 +1236,7 @@ mod tests {
                     ut.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
-                        Label::Final,
+                        Label::Final(3),
                     )?;
                     Ok(())
                 })

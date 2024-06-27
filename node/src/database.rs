@@ -80,8 +80,17 @@ pub trait Ledger {
 
     fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
 
-    fn fetch_block_label_by_height(&self, height: u64)
-        -> Result<Option<Label>>;
+    fn fetch_block_label_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<([u8; 32], Label)>>;
+
+    fn store_block_label(
+        &self,
+        height: u64,
+        hash: &[u8; 32],
+        label: Label,
+    ) -> Result<()>;
 }
 
 pub trait Candidate {

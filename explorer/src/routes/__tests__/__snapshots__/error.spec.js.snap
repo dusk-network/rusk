@@ -3,16 +3,24 @@
 exports[`Error page > should be able to render the error page even without an error 1`] = `
 <body>
   <section
-    class="error-message svelte-1wuvb8w"
+    class="error-message svelte-xa69t0"
   >
-    <h2>
-      Error - 
-      200
-    </h2>
-     
-    <p>
-      
-    </p>
+    <div
+      class="dusk-card error-message__card"
+    >
+       
+      <p
+        class="error-message__card-content"
+      >
+        Error 
+        200
+        <br />
+         
+        
+      </p>
+       
+    </div>
+    
   </section>
 </body>
 `;
@@ -20,16 +28,24 @@ exports[`Error page > should be able to render the error page even without an er
 exports[`Error page > should render the error page 1`] = `
 <body>
   <section
-    class="error-message svelte-1wuvb8w"
+    class="error-message svelte-xa69t0"
   >
-    <h2>
-      Error - 
-      500
-    </h2>
-     
-    <p>
-      some error message
-    </p>
+    <div
+      class="dusk-card error-message__card"
+    >
+       
+      <p
+        class="error-message__card-content"
+      >
+        Error 
+        500
+        <br />
+         
+        some error message
+      </p>
+       
+    </div>
+    
   </section>
 </body>
 `;

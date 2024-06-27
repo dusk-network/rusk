@@ -244,9 +244,10 @@ impl Block {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Label {
-    Accepted,
-    Attested,
-    Final,
+    Accepted(u64),
+    Attested(u64),
+    Confirmed(u64),
+    Final(u64),
 }
 
 /// Immutable view of a labelled block that is/(should be) persisted
@@ -267,7 +268,7 @@ impl BlockWithLabel {
         self.label
     }
     pub fn is_final(&self) -> bool {
-        self.label() == Label::Final || self.blk.header().height == 0
+        matches!(self.label(), Label::Final(_)) || self.blk.header().height == 0
     }
 }
 

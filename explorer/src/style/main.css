@@ -55,9 +55,16 @@ html {
   letter-spacing: 0.06125rem;
 }
 
-main {
+#app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+#app-container > main {
+  flex: 1;
   padding: 1.25rem 0;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 svg {

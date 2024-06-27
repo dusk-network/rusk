@@ -58,15 +58,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// * `disable_winner_att_check` - disables the check of the winning
     /// attestation
     ///
-    /// Returns true if there is a attestation for each failed iteration, and if
-    /// that attestation has a quorum in the ratification phase.
-    ///
-    /// If there are no failed iterations, it returns true
+    /// Returns the number of Previous Non-Attested Iterations (PNI)
     pub async fn execute_checks(
         &self,
         candidate_block: &'_ ledger::Header,
         disable_winner_att_check: bool,
-    ) -> anyhow::Result<(bool, Vec<VoterWithCredits>, Vec<VoterWithCredits>)>
+    ) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)>
     {
         self.verify_basic_fields(candidate_block).await?;
         let prev_block_voters =
@@ -190,18 +187,15 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(merge_committees(&v_committee, &r_committee))
     }
 
-    /// Return true if there is an attestation for each failed iteration, and if
-    /// that attestation has a quorum in the ratification phase.
+    /// Return the number of failed iterations that have no quorum in the
+    /// ratification phase
     ///
-    /// If there are no failed iterations, it returns true
+    /// We refer to this number as Previous Non-Attested Iterations, or PNI
     pub async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<bool> {
-        // Iteration is 0 based. Eg: having a candidate with iter=2 means we
-        // should expect 2 failed attestation for iter=0 and iter=1
-        let expected_failed_atts = candidate_block.iteration;
-        let mut actual_failed_atts = 0u8;
+    ) -> anyhow::Result<u8> {
+        let mut failed_atts = 0u8;
 
         for (iter, att) in candidate_block
             .failed_iterations
@@ -235,13 +229,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 .await?;
 
                 if rat_quorum.quorum_reached() {
-                    actual_failed_atts += 1;
+                    failed_atts += 1;
                 }
             }
         }
 
-        let all_failed = actual_failed_atts == expected_failed_atts;
-        Ok(all_failed)
+        Ok(candidate_block.iteration - failed_atts)
     }
 
     pub async fn verify_winning_att(

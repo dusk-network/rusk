@@ -8,9 +8,7 @@ use crate::database::{self, Candidate, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::{ConsensusError, TimeoutSet};
-use dusk_consensus::config::{
-    CONSENSUS_ROLLING_FINALITY_THRESHOLD, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
-};
+use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
 use node_data::ledger::{
@@ -24,6 +22,7 @@ use execution_core::stake::Unstake;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
+use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -42,6 +41,8 @@ const CANDIDATES_DELETION_OFFSET: u64 = 10;
 /// The offset to the current blockchain tip to consider a message as valid
 /// future message.
 const OFFSET_FUTURE_MSGS: u64 = 5;
+
+pub type RollingFinalityResult = ([u8; 32], BTreeMap<u64, [u8; 32]>);
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -420,11 +421,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
     }
 
+    /// Return true if the accepted blocks triggered a rolling finality
     pub(crate) async fn try_accept_block(
         &mut self,
         blk: &Block,
         enable_consensus: bool,
-    ) -> anyhow::Result<Label> {
+    ) -> anyhow::Result<bool> {
         let mut task = self.task.write().await;
 
         let mut tip = self.tip.write().await;
@@ -434,75 +436,43 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let (attested, prev_block_voters, tip_block_voters) =
-            verify_block_header(
-                self.db.clone(),
-                &tip.inner().header().clone(),
-                &provisioners_list,
-                blk.header(),
-            )
-            .await?;
+        let (pni, prev_block_voters, tip_block_voters) = verify_block_header(
+            self.db.clone(),
+            &tip.inner().header().clone(),
+            &provisioners_list,
+            blk.header(),
+        )
+        .await?;
 
         // Elapsed time header verification
         histogram!("dusk_block_header_elapsed")
             .record(header_verification_start.elapsed());
-
-        // Final from rolling
-        let mut ffr = false;
-
-        // Define new block label
-        let label = match (attested, tip.is_final()) {
-            (true, true) => Label::Final,
-            (false, _) => Label::Accepted,
-            (true, _) => {
-                let current = blk.header().height;
-                let target = current
-                    .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
-                    .unwrap_or_default();
-                self.db.read().await.view(|t| {
-                    for h in (target..current).rev() {
-                        match t.fetch_block_label_by_height(h)? {
-                            None => panic!(
-                                "Cannot find block label for height: {h}"
-                            ),
-                            Some(Label::Final) => {
-                                warn!("Found Attested block following a Final one");
-                                break;
-                            }
-                            Some(Label::Accepted) => return Ok(Label::Attested),
-                            Some(Label::Attested) => {} // just continue scan
-                        };
-                    }
-                    ffr = true;
-                    anyhow::Ok(Label::Final)
-                })?
-            }
-        };
-
-        let blk = BlockWithLabel::new_with_label(blk.clone(), label);
-        let header = blk.inner().header();
 
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
         let mut block_size_on_disk = 0;
         let mut slashed_count: usize = 0;
         // Persist block in consistency with the VM state update
-        {
+        let (label, finalized) = {
+            let header = blk.header();
+
             let vm = self.vm.write().await;
-            let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) =
-                    vm.accept(blk.inner(), &prev_block_voters[..])?;
+            let (txs, rolling_result) = self.db.read().await.update(|db| {
+                let (txs, verification_output) = vm.accept(blk, &prev_block_voters[..])?;
 
                 est_elapsed_time = start.elapsed();
 
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_hash, verification_output.event_hash);
 
-                // Store block with updated transactions with Error and GasSpent
-                block_size_on_disk =
-                    t.store_block(header, &txs, blk.label())?;
+                let rolling_results =
+                    self.rolling_finality::<DB>(pni, blk, db)?;
 
-                Ok(txs)
+                let label = rolling_results.0;
+                // Store block with updated transactions with Error and GasSpent
+                block_size_on_disk = db.store_block(header, &txs, label)?;
+
+                Ok((txs, rolling_results))
             })?;
 
             self.log_missing_iterations(
@@ -518,28 +488,33 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 slashed_count += 1;
             }
 
-            let selective_update = Self::selective_update(
-                blk.inner(),
-                &txs,
-                &vm,
-                &mut provisioners_list,
-            );
+            let selective_update =
+                Self::selective_update(blk, &txs, &vm, &mut provisioners_list);
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
-                let state_hash = blk.inner().header().state_hash;
+                let state_hash = blk.header().state_hash;
                 let new_prov = vm.get_provisioners(state_hash)?;
                 provisioners_list.update_and_swap(new_prov)
             }
 
+            let (label, final_results) = rolling_result;
             // Update tip
-            *tip = blk;
+            *tip = BlockWithLabel::new_with_label(blk.clone(), label);
 
-            if tip.is_final() {
-                vm.finalize_state(tip.inner().header().state_hash)?;
+            let finalized = final_results.is_some();
+
+            if let Some((prev_final_state, mut new_finals)) = final_results {
+                let (_, new_final_state) =
+                    new_finals.pop_last().expect("new_finals to be not empty");
+                let states_to_forget = new_finals
+                    .into_values()
+                    .chain([prev_final_state])
+                    .collect::<Vec<_>>();
+                vm.finalize_state(new_final_state, states_to_forget)?;
             }
 
-            anyhow::Ok(())
+            anyhow::Ok((label, finalized))
         }?;
 
         // Abort consensus.
@@ -614,8 +589,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             block_time,
             generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
-            label = format!("{:?}", label),
-            ffr
+            ?label
         );
 
         // Restart Consensus.
@@ -631,7 +605,137 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             );
         }
 
-        Ok(label)
+        Ok(finalized)
+    }
+
+    /// Perform the rolling finality checks, updating the database with new
+    /// labels if required
+    ///
+    /// Returns
+    /// - Current accepted block label
+    /// - Previous last finalized state root
+    /// - List of the new finalized state root
+    fn rolling_finality<D: database::DB>(
+        &self,
+        pni: u8,
+        blk: &Block,
+        db: &D::P<'_>,
+    ) -> Result<(Label, Option<RollingFinalityResult>)> {
+        let confirmed_after = match pni {
+            0 => 1u64,
+            n => 2 * n as u64,
+        };
+        let block_label = if pni == 0 {
+            Label::Attested(confirmed_after)
+        } else {
+            return Ok((Label::Accepted(confirmed_after), None));
+        };
+        let mut finalized_blocks = BTreeMap::new();
+
+        let current_height = blk.header().height;
+        let mut labels = BTreeMap::new();
+
+        // Retrieve latest blocks up to the Last Finalized Block
+        let mut lfb_hash = None;
+        for height in (0..current_height).rev() {
+            let (hash, label) = db.fetch_block_label_by_height(height)?.ok_or(
+                anyhow!("Cannot find block label for height {height}"),
+            )?;
+            if let Label::Final(_) = label {
+                lfb_hash = Some(hash);
+                break;
+            }
+            labels.insert(height, (hash, label));
+        }
+        let lfb_hash =
+            lfb_hash.expect("Unable to find last finalized block hash");
+        let lfb_state_root = db
+            .fetch_block_header(&lfb_hash)?
+            .ok_or(anyhow!(
+                "Cannot get header for last finalized block hash {}",
+                to_str(&lfb_hash)
+            ))?
+            .0
+            .state_hash;
+
+        // A block is considered stable when is either Confirmed or Attested
+        // We start with `stable_count=1` because we are sure to be processing
+        // an Attested block
+        let mut stable_count = 1;
+
+        // Iterate from TIP to LFB to set Label::Confirmed
+        for (&height, (hash, label)) in labels.iter_mut().rev() {
+            match label {
+                Label::Accepted(ref confirmed_after)
+                | Label::Attested(ref confirmed_after) => {
+                    if &stable_count >= confirmed_after {
+                        info!(
+                            event = "block confirmed",
+                            src = "rolling_finality",
+                            current_height,
+                            height,
+                            confirmed_after,
+                            hash = to_str(hash),
+                            ?label,
+                        );
+                        *label = Label::Confirmed(current_height - height);
+                        db.store_block_label(height, hash, *label)?;
+                        stable_count += 1;
+                    } else {
+                        break;
+                    }
+                }
+                Label::Confirmed(_) => {
+                    stable_count += 1;
+                    continue;
+                }
+                Label::Final(_) => {
+                    warn!("Found a final block during rolling finality scan. This should be a bug");
+                    break;
+                }
+            }
+        }
+
+        // Iterate from LFB to tip to set Label::Final
+        for (height, (hash, mut label)) in labels.into_iter() {
+            match label {
+                Label::Final(_) => {
+                    warn!("Found a final block during rolling finality. This should be a bug")
+                }
+                Label::Accepted(_) | Label::Attested(_) => break,
+                Label::Confirmed(_) => {
+                    let finalized_after = current_height - height;
+                    label = Label::Final(finalized_after);
+                    db.store_block_label(height, &hash, label)?;
+
+                    let state_hash = db
+                        .fetch_block_header(&hash)?
+                        .map(|(h, _)| h.state_hash)
+                        .ok_or(anyhow!(
+                            "Cannot get header for hash {}",
+                            to_str(&hash)
+                        ))?;
+                    info!(
+                        event = "block finalized",
+                        src = "rolling_finality",
+                        current_height,
+                        height,
+                        finalized_after,
+                        hash = to_str(&hash),
+                        state_root = to_str(&state_hash),
+                    );
+                    finalized_blocks.insert(height, state_hash);
+                }
+            }
+        }
+
+        let finalized_result = if finalized_blocks.is_empty() {
+            None
+        } else {
+            Some((lfb_state_root, finalized_blocks))
+        };
+
+        Ok((block_label, finalized_result))
     }
 
     /// Implements the algorithm of full revert to any of supported targets.
@@ -673,7 +777,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
-        let (blk, label) = self.db.read().await.update(|t| {
+        let (blk, (_, label)) = self.db.read().await.update(|t| {
             let mut height = curr_height;
             while height != 0 {
                 let b = Ledger::fetch_block_by_height(t, height)?
@@ -780,10 +884,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let prev_height = tip.inner().header().height - 1;
 
             for height in (0..prev_height).rev() {
-                if let Ok(Some(Label::Final)) =
+                if let Ok(Some((hash, Label::Final(_)))) =
                     v.fetch_block_label_by_height(height)
                 {
-                    if let Some(blk) = v.fetch_block_by_height(height)? {
+                    if let Some(blk) = v.fetch_block(&hash)? {
                         return Ok(blk);
                     } else {
                         return Err(anyhow::anyhow!(
@@ -918,16 +1022,13 @@ async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
 /// Performs full verification of block header against prev_block header where
 /// prev_block is usually the blockchain tip
 ///
-/// Returns true if there is a attestation for each failed iteration, and if
-/// that attestation has a quorum in the ratification phase.
-///
-/// If there are no failed iterations, it returns true
+/// Returns the number of Previous Non-Attested Iterations (PNI).
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<(bool, Vec<VoterWithCredits>, Vec<VoterWithCredits>)> {
+) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)> {
     let validator = Validator::new(db, prev_header, provisioners);
     validator.execute_checks(header, false).await
 }
