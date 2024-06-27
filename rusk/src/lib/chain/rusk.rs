@@ -251,11 +251,15 @@ impl Rusk {
         Ok((spent_txs, verification_output))
     }
 
-    pub fn finalize_state(&self, commit: [u8; 32]) -> Result<()> {
+    pub fn finalize_state(
+        &self,
+        commit: [u8; 32],
+        to_delete: Vec<[u8; 32]>,
+    ) -> Result<()> {
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
 
-        self.set_base_and_delete(commit);
+        self.set_base_and_delete(commit, to_delete);
         Ok(())
     }
 
@@ -370,23 +374,19 @@ impl Rusk {
         tip.current = commit;
     }
 
-    pub(crate) fn set_base_and_delete(&self, commit: [u8; 32]) {
-        let mut tip = self.tip.write();
+    pub(crate) fn set_base_and_delete(
+        &self,
+        base: [u8; 32],
+        to_delete: Vec<[u8; 32]>,
+    ) {
+        self.tip.write().base = base;
 
-        tip.current = commit;
-        tip.base = commit;
-
-        // We will delete all commits except the new commit.
-        let mut commits_to_delete = self.vm.commits();
-        commits_to_delete.retain(|c| c != &commit);
-
-        // Delete all commits except the new commit.
         // Deleting commits is blocking, meaning it will wait until any process
         // using the commit is done. This includes any queries that are
         // currently executing.
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
-        task::spawn(delete_commits(self.vm.clone(), commits_to_delete));
+        task::spawn(delete_commits(self.vm.clone(), to_delete));
     }
 }
 

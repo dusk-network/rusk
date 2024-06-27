@@ -300,21 +300,26 @@ impl Serializable for IterationsInfo {
     }
 }
 
-impl From<u8> for Label {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => Label::Accepted,
-            1 => Label::Attested,
-            2 => Label::Final,
-            _ => panic!("Invalid u8 value for Label"),
-        }
-    }
-}
-
 impl Serializable for Label {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        let byte: u8 = (*self) as u8;
-        w.write_all(&byte.to_le_bytes())?;
+        match self {
+            Label::Accepted(v) => {
+                w.write_all(&0u8.to_le_bytes())?;
+                w.write_all(&v.to_le_bytes())?;
+            }
+            Label::Attested(v) => {
+                w.write_all(&1u8.to_le_bytes())?;
+                w.write_all(&v.to_le_bytes())?;
+            }
+            Label::Confirmed(v) => {
+                w.write_all(&2u8.to_le_bytes())?;
+                w.write_all(&v.to_le_bytes())?;
+            }
+            Label::Final(v) => {
+                w.write_all(&3u8.to_le_bytes())?;
+                w.write_all(&v.to_le_bytes())?;
+            }
+        }
 
         Ok(())
     }
@@ -324,7 +329,18 @@ impl Serializable for Label {
         Self: Sized,
     {
         let label = Self::read_u8(r)?;
-        Ok(label.into())
+        let label = match label {
+            0 => Label::Accepted(Self::read_u64_le(r)?),
+            1 => Label::Attested(Self::read_u64_le(r)?),
+            2 => Label::Confirmed(Self::read_u64_le(r)?),
+            3 => Label::Final(Self::read_u64_le(r)?),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid label",
+            ))?,
+        };
+
+        Ok(label)
     }
 }
 
