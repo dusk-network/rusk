@@ -458,7 +458,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let vm = self.vm.write().await;
             let (txs, rolling_result) = self.db.read().await.update(|db| {
-                let (txs, verification_output) = vm.accept(blk, &prev_block_voters[..])?;
+                let (txs, verification_output) =
+                    vm.accept(blk, &prev_block_voters[..])?;
 
                 est_elapsed_time = start.elapsed();
 

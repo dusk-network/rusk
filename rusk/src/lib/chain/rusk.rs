@@ -571,6 +571,12 @@ fn reward_slash_and_update_root(
 
     let mut events = r.events;
 
+    debug!(
+        event = "Dusk rewarded",
+        voter = to_bs58(&DUSK_KEY),
+        reward = dusk_value
+    );
+
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
@@ -579,9 +585,9 @@ fn reward_slash_and_update_root(
     )?;
     events.extend(r.events);
 
-    info!(
+    debug!(
         event = "generator rewarded",
-        voter = ?bs58::encode(&generator.to_bytes()).into_string(),
+        voter = to_bs58(generator),
         reward = generator_reward
     );
 
@@ -596,9 +602,10 @@ fn reward_slash_and_update_root(
             )?;
             events.extend(r.events);
 
-            info!(
-                event = "voter rewarded",
-                voter = ?bs58::encode(&to_voter.to_bytes()).into_string(),
+            debug!(
+                event = "validator of prev block rewarded",
+                voter = to_bs58(to_voter),
+                credits = *credits,
                 reward = voter_reward
             )
         }
@@ -625,4 +632,10 @@ fn reward_slash_and_update_root(
     events.extend(r.events);
 
     Ok(events)
+}
+
+fn to_bs58(pk: &StakePublicKey) -> String {
+    let mut pk = bs58::encode(&pk.to_bytes()).into_string();
+    pk.truncate(16);
+    pk
 }
