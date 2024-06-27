@@ -222,18 +222,20 @@ fn make_and_execute_transaction_deploy(
         ContractId::from_bytes(bytes)
     };
 
-    let tx = wallet
+    let mut tx = wallet
         .execute(
             &mut rng,
             DEPLOYMENT_MARKER,
             String::from("8ebcaed21b0dd87eb7ca0b1cc1cd3e2e3df85a737037f475f9f7c65176f9ad3f"), // todo: pass the proper owner
-            bytecode.as_ref().to_vec(),
+            bytecode.as_ref().to_vec(),// this will be overwritten
             SENDER_INDEX,
             &refund,
             gas_limit,
             GAS_PRICE,
         )
         .expect("Making the transaction should succeed");
+
+    tx.call.as_mut().unwrap().2 = bytecode.as_ref().to_vec();
 
     let expected = ExecuteResult {
         discarded: 0,

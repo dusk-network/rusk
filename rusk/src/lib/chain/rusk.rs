@@ -506,6 +506,7 @@ fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    println!("XXexecute");
     const DEPLOYMENT_MARKER: ContractId = {
         let mut bytes = [0u8; 32];
         bytes[0] = 0xAA;
@@ -516,9 +517,10 @@ fn execute(
     //     bytes[0] = 0xBB;
     //     ContractId::from_bytes(bytes)
     // };
+    let mut tx = tx.clone();
     if let Some((contract_id, owner, bytecode)) = &tx.call {
         if contract_id == DEPLOYMENT_MARKER.as_bytes() {
-            println!("deploying contract");
+            println!("deploying contract with bytecode len={}", bytecode.as_slice().len());
             let owner_bytes = hex::decode(owner).expect("owner decoding should succeed");
             let contract_data = ContractData::builder()
                 .owner(owner_bytes);
@@ -529,6 +531,7 @@ fn execute(
                 tx.fee.gas_limit,
             );
             println!("deployment result={:?}", result);
+            tx.call = None;
         }
     }
 
@@ -537,7 +540,7 @@ fn execute(
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
-        tx,
+        &tx,
         tx.fee.gas_limit,
     )?;
 
