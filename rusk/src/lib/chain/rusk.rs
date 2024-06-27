@@ -23,10 +23,7 @@ use execution_core::{
 use node::database::DBViewer;
 use node_data::ledger::{SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
-use rusk_abi::{
-    CallReceipt, ContractError, ContractId, Error as PiecrustError, Event,
-    Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
-};
+use rusk_abi::{CallReceipt, ContractData, ContractError, ContractId, Error as PiecrustError, Event, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
@@ -509,6 +506,32 @@ fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    const DEPLOYMENT_MARKER: ContractId = {
+        let mut bytes = [0u8; 32];
+        bytes[0] = 0xAA;
+        ContractId::from_bytes(bytes)
+    };
+    // const BOGUS_CONTRACT_ID: ContractId = {
+    //     let mut bytes = [0u8; 32];
+    //     bytes[0] = 0xBB;
+    //     ContractId::from_bytes(bytes)
+    // };
+    if let Some((contract_id, owner, bytecode)) = &tx.call {
+        if contract_id == DEPLOYMENT_MARKER.as_bytes() {
+            println!("deploying contract");
+            let owner_bytes = hex::decode(owner).expect("owner decoding should succeed");
+            let contract_data = ContractData::builder()
+                .owner(owner_bytes);
+                // .contract_id(BOGUS_CONTRACT_ID); // if we don't give the id, hash of bytecode will be used as id
+            let result = session.deploy(
+                bytecode.as_slice(),
+                contract_data,
+                tx.fee.gas_limit,
+            );
+            println!("deployment result={:?}", result);
+        }
+    }
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
