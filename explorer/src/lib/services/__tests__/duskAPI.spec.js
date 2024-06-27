@@ -215,9 +215,7 @@ describe("duskAPI", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
       new URL(
-        getAPIExpectedURL("quote")
-          .toString()
-          .replace(/(\?).+$/, "$1")
+        "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       ),
       apiGetOptions
     );
@@ -388,19 +386,19 @@ describe("duskAPI", () => {
   });
 
   it("should be able to make the correct request whether the endpoint in env vars ends with a trailing slash or not", () => {
-    const expectedURL = new URL("http://example.com/quote?");
+    const expectedURL = new URL(`http://example.com/locations?node=${node}`);
 
     fetchSpy
-      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData))
-      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData));
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations))
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations));
 
     vi.stubEnv(endpointEnvName, "http://example.com");
 
-    duskAPI.getMarketData();
+    duskAPI.getNodeLocations(node);
 
     vi.stubEnv(endpointEnvName, "http://example.com/");
 
-    duskAPI.getMarketData();
+    duskAPI.getNodeLocations(node);
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy).toHaveBeenNthCalledWith(1, expectedURL, apiGetOptions);

@@ -191,12 +191,23 @@ const duskAPI = {
 
   /** @returns {Promise<MarketData>} */
   getMarketData() {
-    return apiGet("quote")
+    /* eslint-disable camelcase */
+
+    return apiGet("https://api.coingecko.com/api/v3/coins/dusk-network", {
+      community_data: false,
+      developer_data: false,
+      localization: false,
+      market_data: true,
+      sparkline: false,
+      tickers: false,
+    })
       .then(getKey("market_data"))
       .then((data) => ({
         currentPrice: data.current_price,
         marketCap: data.market_cap,
       }));
+
+    /* eslint-enable camelcase */
   },
 
   /**
