@@ -33,6 +33,7 @@ use tokio::sync::broadcast;
 
 use super::{coinbase_value, emission_amount, Rusk, RuskTip};
 use crate::http::RuesEvent;
+use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
@@ -557,10 +558,11 @@ fn reward_slash_and_update_root(
         coinbase_value(block_height, dusk_spent);
 
     let credits = voters.iter().map(|(_, credits)| credits).sum();
-    let credit_reward = match credits {
-        0 => 0,
-        _ => voters_reward / credits as u64,
-    };
+    if credits == 0 && block_height > 1 {
+        return Err(InvalidCreditsCount(block_height, 0));
+    }
+
+    let credit_reward = voters_reward / 64 * 2;
 
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
