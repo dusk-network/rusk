@@ -12,6 +12,7 @@ use dusk_bytes::Serializable;
 use execution_core::{
     stake::{
         next_epoch, Stake, StakeData, StakingEvent, Unstake, Withdraw, EPOCH,
+        STAKE_WARNINGS,
     },
     transfer::Mint,
     StakePublicKey,
@@ -258,6 +259,8 @@ impl StakeState {
         self.check_new_block();
 
         let stake = self.load_or_create_stake_mut(stake_pk);
+        // Reset faults counter
+        stake.faults = 0;
         stake.increase_reward(value);
         rusk_abi::emit(
             "reward",
@@ -283,19 +286,39 @@ impl StakeState {
     /// If the reward is less than the `to_slash` amount, then the reward is
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
-    pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
+    pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: Option<u64>) {
         self.check_new_block();
 
         let stake = self
             .get_stake_mut(stake_pk)
             .expect("The stake to slash should exist");
 
+        if stake.amount().is_none() {
+            // stake.amount can be None if the provisioner unstake in the same
+            // block
+            return;
+        }
+
         let prev_value = Some(stake.clone());
 
-        let to_slash = min(to_slash, stake.reward);
+        stake.faults = stake.faults.saturating_add(1);
+        let effective_faults =
+            stake.faults.saturating_sub(STAKE_WARNINGS) as u64;
+
+        let (stake_amount, _) = stake.amount.as_mut().expect("stake_to_exists");
+
+        // Slash the provided amount or calculate the percentage according to
+        // effective faults
+        let to_slash =
+            to_slash.unwrap_or(*stake_amount / 100 * effective_faults * 10);
+        let to_slash = min(to_slash, *stake_amount);
 
         if to_slash > 0 {
-            stake.reward -= to_slash;
+            // Move the slash amount from stake to reward and deduct contract
+            // balance
+            *stake_amount -= to_slash;
+            stake.increase_reward(to_slash);
+            Self::deduct_contract_balance(to_slash);
 
             rusk_abi::emit(
                 "slash",
@@ -306,11 +329,16 @@ impl StakeState {
             );
         }
 
-        if stake.reward == 0 {
+        // Shift eligibility (aka stake suspension) only if warnings are
+        // saturated
+        if effective_faults > 0 {
             // stake.amount can be None if the provisioner unstake in the same
             // block
             if let Some((_, eligibility)) = stake.amount.as_mut() {
-                *eligibility = next_epoch(rusk_abi::block_height()) + EPOCH;
+                // The stake is suspended for the rest of the current epoch plus
+                // effective_faults epochs
+                let to_shift = effective_faults * EPOCH;
+                *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
                 rusk_abi::emit(
                     "shifted",
                     StakingEvent {
@@ -320,9 +348,6 @@ impl StakeState {
                 );
             }
         }
-
-        // Update the total slashed amount
-        self.slashed_amount += to_slash;
 
         let key = stake_pk.to_bytes();
         self.previous_block_state
