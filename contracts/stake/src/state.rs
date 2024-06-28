@@ -32,7 +32,7 @@ use crate::*;
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
     stakes: BTreeMap<[u8; StakePublicKey::SIZE], (StakeData, StakePublicKey)>,
-    slashed_amount: u64,
+    burnt_amount: u64,
     previous_block_state: BTreeMap<
         [u8; StakePublicKey::SIZE],
         (Option<StakeData>, StakePublicKey),
@@ -49,7 +49,7 @@ impl StakeState {
     pub const fn new() -> Self {
         Self {
             stakes: BTreeMap::new(),
-            slashed_amount: 0u64,
+            burnt_amount: 0u64,
             previous_block_state: BTreeMap::new(),
             previous_block_height: 0,
         }
@@ -271,9 +271,9 @@ impl StakeState {
         );
     }
 
-    /// Total amount slashed from the genesis
-    pub fn slashed_amount(&self) -> u64 {
-        self.slashed_amount
+    /// Total amount burned since the genesis
+    pub fn burnt_amount(&self) -> u64 {
+        self.burnt_amount
     }
 
     /// Version of the stake contract
@@ -386,8 +386,8 @@ impl StakeState {
 
         Self::deduct_contract_balance(to_slash);
 
-        // Update the total slashed amount
-        self.slashed_amount += to_slash;
+        // Update the total burnt amount
+        self.burnt_amount += to_slash;
 
         rusk_abi::emit(
             "hard_slash",
@@ -402,9 +402,9 @@ impl StakeState {
             .or_insert((prev_value, *stake_pk));
     }
 
-    /// Sets the slashed amount
-    pub fn set_slashed_amount(&mut self, slashed_amount: u64) {
-        self.slashed_amount = slashed_amount;
+    /// Sets the burnt amount
+    pub fn set_burnt_amount(&mut self, burnt_amount: u64) {
+        self.burnt_amount = burnt_amount;
     }
 
     /// Feeds the host with the stakes.
