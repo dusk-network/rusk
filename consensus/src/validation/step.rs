@@ -22,7 +22,7 @@ use tracing::{debug, error, info, Instrument};
 
 pub struct ValidationStep<T> {
     handler: Arc<Mutex<handler::ValidationHandler>>,
-    executor: Arc<Mutex<T>>,
+    executor: Arc<T>,
 }
 
 impl<T: Operations + 'static> ValidationStep<T> {
@@ -33,7 +33,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         ru: RoundUpdate,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
-        executor: Arc<Mutex<T>>,
+        executor: Arc<T>,
     ) {
         let hash = to_str(
             &candidate
@@ -63,7 +63,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         ru: &RoundUpdate,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
-        executor: Arc<Mutex<T>>,
+        executor: Arc<T>,
     ) {
         if candidate.is_none() {
             Self::cast_vote(
@@ -81,39 +81,40 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
         // Verify candidate header (all fields except the winning attestation)
         // NB: Winning attestation is produced only on reaching consensus
-        if let Err(err) = executor
-            .lock()
-            .await
-            .verify_block_header(header, true)
-            .await
-        {
-            error!(event = "invalid_header", ?err, ?header);
-            // We should not vote Invalid if the candidate is not signed by the
-            // block producer.
-            // However, this is already verified in the Candidate message
-            // verification, so it's safe to vote invalid here
-            Self::cast_vote(
-                Vote::Invalid(header.hash),
-                ru,
-                iteration,
-                outbound,
-                inbound,
-            )
-            .await;
-            return;
-        };
+        match executor.verify_block_header(header, true).await {
+            Ok((_, voters, _)) => {
+                // Call Verify State Transition to make sure transactions set is
+                // valid
 
-        // Call Verify State Transition to make sure transactions set is valid
-        let vote =
-            match Self::call_vst(candidate, ru.att_voters(), executor).await {
-                Ok(_) => Vote::Valid(header.hash),
-                Err(err) => {
-                    error!(event = "failed_vst_call", ?err);
-                    Vote::Invalid(header.hash)
-                }
-            };
+                // Voters here is the list of provisioners that validated the
+                // Tip of the current Block generator
+                let vote =
+                    match Self::call_vst(candidate, &voters, &executor).await {
+                        Ok(_) => Vote::Valid(header.hash),
+                        Err(err) => {
+                            error!(event = "failed_vst_call", ?err);
+                            Vote::Invalid(header.hash)
+                        }
+                    };
 
-        Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
+                Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
+            }
+            Err(err) => {
+                error!(event = "invalid_header", ?err, ?header);
+                // We should not vote Invalid if the candidate is not signed by
+                // the block producer.
+                // However, this is already verified in the Candidate message
+                // verification, so it's safe to vote invalid here
+                Self::cast_vote(
+                    Vote::Invalid(header.hash),
+                    ru,
+                    iteration,
+                    outbound,
+                    inbound,
+                )
+                .await;
+            }
+        }
     }
 
     async fn cast_vote(
@@ -142,14 +143,9 @@ impl<T: Operations + 'static> ValidationStep<T> {
     async fn call_vst(
         candidate: &Block,
         voters: &[VoterWithCredits],
-        executor: Arc<Mutex<T>>,
+        executor: &Arc<T>,
     ) -> anyhow::Result<()> {
-        match executor
-            .lock()
-            .await
-            .verify_state_transition(candidate, voters)
-            .await
-        {
+        match executor.verify_state_transition(candidate, voters).await {
             Ok(output) => {
                 // Ensure the `event_hash` and `state_root` returned
                 // from the VST call are the
@@ -203,7 +199,7 @@ pub fn build_validation_payload(
 
 impl<T: Operations + 'static> ValidationStep<T> {
     pub(crate) fn new(
-        executor: Arc<Mutex<T>>,
+        executor: Arc<T>,
         handler: Arc<Mutex<handler::ValidationHandler>>,
     ) -> Self {
         Self { handler, executor }

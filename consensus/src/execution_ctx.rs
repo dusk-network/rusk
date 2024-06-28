@@ -50,7 +50,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     step: StepName,
     step_start_time: Option<Instant>,
 
-    pub client: Arc<Mutex<T>>,
+    pub client: Arc<T>,
 
     pub sv_registry: SafeAttestationInfoRegistry,
     quorum_sender: QuorumMsgSender,
@@ -68,7 +68,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         round_update: RoundUpdate,
         iteration: u8,
         step: StepName,
-        client: Arc<Mutex<T>>,
+        client: Arc<T>,
         sv_registry: SafeAttestationInfoRegistry,
         quorum_sender: QuorumMsgSender,
     ) -> Self {
@@ -191,7 +191,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
-                RatificationStep::<T, DB>::try_vote(
+                RatificationStep::<DB>::try_vote(
                     &self.round_update,
                     msg_iteration,
                     validation,
@@ -456,8 +456,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
         let _ = self
             .client
-            .lock()
-            .await
             .add_step_elapsed_time(
                 self.round_update.round,
                 self.step_name(),

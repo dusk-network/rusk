@@ -31,7 +31,7 @@ where
 
 impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     pub fn new(
-        executor: Arc<Mutex<T>>,
+        executor: Arc<T>,
         _db: Arc<Mutex<D>>,
         handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     ) -> Self {

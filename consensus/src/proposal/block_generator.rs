@@ -19,15 +19,14 @@ use node_data::message::payload::Candidate;
 use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
 use std::sync::Arc;
 use std::time::Instant;
-use tokio::sync::Mutex;
 use tracing::{debug, info};
 
 pub struct Generator<T: Operations> {
-    executor: Arc<Mutex<T>>,
+    executor: Arc<T>,
 }
 
 impl<T: Operations> Generator<T> {
-    pub fn new(executor: Arc<Mutex<T>>) -> Self {
+    pub fn new(executor: Arc<T>) -> Self {
         Self { executor }
     }
 
@@ -101,12 +100,8 @@ impl<T: Operations> Generator<T> {
             voters_pubkey: voters.to_owned(),
         };
 
-        let result = self
-            .executor
-            .lock()
-            .await
-            .execute_state_transition(call_params)
-            .await?;
+        let result =
+            self.executor.execute_state_transition(call_params).await?;
 
         let tx_hashes: Vec<_> =
             result.txs.iter().map(|t| t.inner.hash()).collect();

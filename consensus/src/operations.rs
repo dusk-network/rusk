@@ -60,7 +60,7 @@ pub trait Operations: Send + Sync {
         &self,
         candidate_header: &Header,
         disable_winning_att_check: bool,
-    ) -> Result<(), Error>;
+    ) -> Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>), Error>;
 
     async fn verify_state_transition(
         &self,
