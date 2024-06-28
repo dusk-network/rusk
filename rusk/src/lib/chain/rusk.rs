@@ -557,7 +557,7 @@ fn reward_slash_and_update_root(
     let (dusk_value, generator_reward, voters_reward) =
         coinbase_value(block_height, dusk_spent);
 
-    let credits = voters.iter().map(|(_, credits)| credits).sum();
+    let credits: usize = voters.iter().map(|(_, credits)| credits).sum();
     if credits == 0 && block_height > 1 {
         return Err(InvalidCreditsCount(block_height, 0));
     }

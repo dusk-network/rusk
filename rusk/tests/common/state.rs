@@ -96,12 +96,15 @@ pub fn generator_procedure(
         )));
     }
 
+    let dummy_voters_pubkey =
+        missed_generators.iter().map(|pk| (pk.clone(), 1)).collect();
+
     let call_params = CallParams {
         round,
         block_gas_limit,
         generator_pubkey,
         missed_generators,
-        voters_pubkey: vec![],
+        voters_pubkey: dummy_voters_pubkey,
     };
 
     let (transfer_txs, discarded, execute_output) =

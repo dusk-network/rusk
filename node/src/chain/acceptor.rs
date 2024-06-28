@@ -55,7 +55,7 @@ pub(crate) enum RevertTarget {
 /// attestation and transactions full verifications.
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
-    /// the tip
+    /// the Tip
     tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
@@ -177,7 +177,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let tip = self.tip.read().await.inner().clone();
 
         let tip_block_voters =
-            self.get_voters(provisioners_list.prev(), &tip).await;
+            self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         self.task.write().await.spawn(
             &tip,
@@ -189,7 +189,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         );
     }
 
-    async fn get_voters(
+    async fn get_att_voters(
         &self,
         provisioners_list: &Provisioners,
         tip: &Block,
@@ -845,7 +845,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         );
 
         let tip_block_voters =
-            self.get_voters(provisioners_list.prev(), &tip).await;
+            self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
