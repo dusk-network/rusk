@@ -11,7 +11,12 @@ exports[`Search Notification > renders the Search Notification component with a 
     <span
       class="search-notification__header-text"
     >
-      Error
+      The search string you entered is: 
+      <span
+        class="search-notification__content-query"
+      >
+        some query text
+      </span>
     </span>
      
     <button
@@ -32,34 +37,13 @@ exports[`Search Notification > renders the Search Notification component with a 
     </button>
   </header>
    
-  <div
+  <span
     class="search-notification__content"
   >
-    <code>
-      HTTP Request failed - failed
-    </code>
-     
-    <span
-      class="search-notification__content-text"
-    >
-      The search string you entered is: 
-      <span
-        class="search-notification__content-query"
-      >
-        some query text
-      </span>
-    </span>
-  </div>
+    HTTP Request failed - failed
+  </span>
+  
    
-  <div
-    slot="footer"
-  >
-    <span
-      class="search-notification__footer-text"
-    >
-      If you think there is a problem with this result, please contact us.
-    </span>
-  </div>
 </div>
 `;
 
@@ -74,7 +58,12 @@ exports[`Search Notification > renders the Search Notification component with th
     <span
       class="search-notification__header-text"
     >
-      No results found
+      The search string you entered is: 
+      <span
+        class="search-notification__content-query"
+      >
+        some query text
+      </span>
     </span>
      
     <button
@@ -95,30 +84,7 @@ exports[`Search Notification > renders the Search Notification component with th
     </button>
   </header>
    
-  <div
-    class="search-notification__content"
-  >
-     
-    <span
-      class="search-notification__content-text"
-    >
-      The search string you entered is: 
-      <span
-        class="search-notification__content-query"
-      >
-        some query text
-      </span>
-    </span>
-  </div>
+  
    
-  <div
-    slot="footer"
-  >
-    <span
-      class="search-notification__footer-text"
-    >
-      If you think there is a problem with this result, please contact us.
-    </span>
-  </div>
 </div>
 `;
