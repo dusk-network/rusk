@@ -93,12 +93,12 @@ impl Task {
             self.main_inbound.clone(),
             self.outbound.clone(),
             self.future_msg.clone(),
-            Arc::new(Mutex::new(Executor::new(
+            Arc::new(Executor::new(
                 db,
                 vm,
                 tip.header().clone(),
                 provisioners_list, // TODO: Avoid cloning
-            ))),
+            )),
             Arc::new(Mutex::new(CandidateDB::new(db.clone()))),
         );
 
@@ -247,7 +247,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         candidate_header: &Header,
         disable_winning_att_check: bool,
-    ) -> Result<(), Error> {
+    ) -> Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>), Error> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
@@ -260,9 +260,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             .map_err(|err| {
                 error!("failed to verify header {}", err);
                 Error::Failed
-            })?;
-
-        Ok(())
+            })
     }
 
     async fn verify_state_transition(

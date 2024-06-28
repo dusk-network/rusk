@@ -176,7 +176,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let base_timeouts = self.adjust_round_base_timeouts().await;
         let tip = self.tip.read().await.inner().clone();
 
-        let tip_block_voters = self.get_voters(&provisioners_list, &tip).await;
+        let tip_block_voters =
+            self.get_voters(provisioners_list.prev(), &tip).await;
 
         self.task.write().await.spawn(
             &tip,
@@ -190,7 +191,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     async fn get_voters(
         &self,
-        provisioners_list: &ContextProvisioners,
+        provisioners_list: &Provisioners,
         tip: &Block,
     ) -> Vec<VoterWithCredits> {
         if tip.header().height == 0 {
@@ -198,13 +199,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         };
 
         let prev_seed = self.get_prev_block_seed().await.expect("valid seed");
-        Validator::<DB>::get_voters(
-            tip.header(),
-            provisioners_list.current(),
-            prev_seed,
-        )
-        .await
-        .expect("valid voters")
+        Validator::<DB>::get_voters(tip.header(), provisioners_list, prev_seed)
+            .await
+            .expect("valid voters")
     }
 
     // Re-route message to consensus task
@@ -847,8 +844,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&tip.header().hash),
         );
 
-        let tip = self.tip.read().await.inner().clone();
-        let tip_block_voters = self.get_voters(&provisioners_list, &tip).await;
+        let tip_block_voters =
+            self.get_voters(provisioners_list.prev(), &tip).await;
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
