@@ -359,14 +359,7 @@ impl StakeState {
         // Update the staked amount
         stake.0 -= to_slash;
 
-        // Update the contract balance to reflect the change in the amount
-        // withdrawable from the contract
-        let _: bool = rusk_abi::call(
-            TRANSFER_CONTRACT,
-            "sub_contract_balance",
-            &(STAKE_CONTRACT, to_slash),
-        )
-        .expect("Subtracting balance should succeed");
+        Self::deduct_contract_balance(to_slash);
 
         // Update the total slashed amount
         self.slashed_amount += to_slash;
@@ -394,6 +387,17 @@ impl StakeState {
         for (stake_data, stake_pk) in self.stakes.values() {
             rusk_abi::feed((*stake_pk, stake_data.clone()));
         }
+    }
+
+    fn deduct_contract_balance(amount: u64) {
+        // Update the module balance to reflect the change in the amount
+        // withdrawable from the contract
+        let _: () = rusk_abi::call(
+            TRANSFER_CONTRACT,
+            "sub_contract_balance",
+            &(STAKE_CONTRACT, amount),
+        )
+        .expect("Subtracting balance should succeed");
     }
 
     /// Feeds the host with previous state of the changed provisioners.
