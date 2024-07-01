@@ -29,7 +29,7 @@ use rusk_abi::{
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
-use super::{coinbase_value, emission_amount, Rusk, RuskTip};
+use super::{coinbase_value, Rusk, RuskTip};
 use crate::http::RuesEvent;
 use crate::{Error, Result};
 
@@ -550,13 +550,11 @@ fn reward_slash_and_update_root(
     )?;
     events.extend(r.events);
 
-    let slash_amount = emission_amount(block_height);
-
     for to_slash in slashing {
         let r = session.call::<_, ()>(
             STAKE_CONTRACT,
             "slash",
-            &(*to_slash, slash_amount),
+            &(*to_slash, None::<u64>),
             u64::MAX,
         )?;
         events.extend(r.events);
