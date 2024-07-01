@@ -25,8 +25,8 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
-const GAS_LIMIT_0: u64 = 7_000_000;
-const GAS_LIMIT_1: u64 = 200_000_000;
+const GAS_LIMIT_0: u64 = 100_000_000;
+const GAS_LIMIT_1: u64 = 300_000_000;
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
