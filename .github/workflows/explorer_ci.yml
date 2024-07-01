@@ -10,6 +10,10 @@ on:
 jobs:
   # JOB to run change detection
   changes:
+    # Set up matrix for Node versions
+    strategy:
+      matrix:
+        version: [20.x, 22.x]
     runs-on: ubuntu-latest
     # Required permissions
     permissions:
@@ -31,16 +35,16 @@ jobs:
     if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
-    name: Node 20.x
+    name: Node ${{ matrix.version }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setting up Node 20.x
+      - name: Setting up Node ${{ matrix.version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: ${{ matrix.version }}
           scope: "@dusk-network"
 
       - name: Installing dev dependencies
