@@ -287,7 +287,7 @@ impl TransferState {
         }
 
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
-            let is_deploy: bool = fn_args.len() > 30000;
+            let is_deploy: bool = fn_args.len() > 13000;
             if !is_deploy {
                 let contract_id = ContractId::from_bytes(contract_id);
                 self.gas_price = Some(

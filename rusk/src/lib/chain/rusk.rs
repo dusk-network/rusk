@@ -522,7 +522,8 @@ fn execute(
     )?;
     println!("spend_and_execute receipt={:?}", receipt);
     if let Some((contract_id, owner, bytecode)) = &tx.call {
-        let is_deploy: bool = bytecode.len() > 30000;
+        let is_deploy: bool = bytecode.len() > 13000;
+        println!("bytecode len={} is_deploy={}", bytecode.len(), is_deploy);
         if is_deploy {
             println!(
                 "deploying contract with bytecode len={}",

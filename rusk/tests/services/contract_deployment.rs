@@ -32,17 +32,18 @@ const GAS_PRICE: u64 = 2;
 const POINT_LIMIT: u64 = 0x10000000;
 const SENDER_INDEX: u64 = 0;
 
-const CHARLIE_CONTRACT_ID: ContractId = {
-    let mut bytes = [0u8; 32];
-    bytes[0] = 0xFC;
-    ContractId::from_bytes(bytes)
-};
 const ALICE_CONTRACT_ID: ContractId = {
     let mut bytes = [0u8; 32];
     bytes[0] = 0xFA;
     ContractId::from_bytes(bytes)
 };
 const ALICE_OWNER: [u8; 32] = [0; 32];
+
+const BOB_CONTRACT_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFB;
+    ContractId::from_bytes(bytes)
+};
 
 struct DBMock;
 
@@ -160,6 +161,8 @@ fn make_and_execute_transaction_deploy(
 /// We deploy a contract
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy() {
+    const ECHO_VALUE: u64 = 775;
+
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
@@ -180,8 +183,8 @@ pub async fn contract_deploy() {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    let charlie_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
 
     let path = tmp.into_path();
@@ -193,7 +196,7 @@ pub async fn contract_deploy() {
     let mut session = rusk_abi::new_session(&vm, commit, 0)
         .expect("Session creation should succeed");
     let result =
-        session.call::<_, u64>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
+        session.call::<_, u64>(BOB_CONTRACT_ID, "echo", &ECHO_VALUE, u64::MAX);
     assert!(result.is_err());
     match result.err() {
         Some(ContractDoesNotExist(_)) => (),
@@ -210,8 +213,8 @@ pub async fn contract_deploy() {
     make_and_execute_transaction_deploy(
         &rusk,
         &wallet,
-        charlie_bytecode,
-        &CHARLIE_CONTRACT_ID,
+        bob_bytecode,
+        &BOB_CONTRACT_ID,
         GAS_LIMIT,
     );
     println!(
@@ -230,7 +233,8 @@ pub async fn contract_deploy() {
     let mut session = rusk_abi::new_session(&vm, commit, 0)
         .expect("Session creation should succeed");
     let result =
-        session.call::<_, u64>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
+        session.call::<_, u64>(BOB_CONTRACT_ID, "echo", &ECHO_VALUE, u64::MAX);
+    println!("result={:?}", result);
     assert!(result.is_ok());
-    assert_eq!(result.unwrap().data, 775);
+    assert_eq!(result.unwrap().data, ECHO_VALUE);
 }
