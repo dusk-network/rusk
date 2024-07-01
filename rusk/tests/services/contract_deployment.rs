@@ -61,9 +61,6 @@ impl DBViewer for DBMock {
     }
 }
 
-// this method also checks if calling Charlie's contract method "ping" results
-// in ContractDoesNotExist error
-// todo: parameterize this and possibly rename
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let dir = dir.as_ref();
 
@@ -84,15 +81,6 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
                 POINT_LIMIT,
             )
             .expect("Deploying the alice contract should succeed");
-
-        // make sure contract does not exist and calling one of its methods
-        // fails
-        let result =
-            session.call::<_, ()>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
-        match result.err() {
-            Some(ContractDoesNotExist(_)) => (),
-            _ => assert!(false),
-        }
     })
     .expect("Deploying initial state should succeed");
 
@@ -126,12 +114,6 @@ fn make_and_execute_transaction_deploy(
     );
 
     let mut rng = StdRng::seed_from_u64(0xcafe);
-
-    // const DEPLOYMENT_MARKER: ContractId = {
-    //     let mut bytes = [0u8; 32];
-    //     bytes[0] = 0xAA;
-    //     ContractId::from_bytes(bytes)
-    // };
 
     let tx = wallet
         .execute_deploy(
@@ -171,7 +153,6 @@ fn make_and_execute_transaction_deploy(
         .next()
         .expect("There should be one spent transactions");
 
-    println!("tx err={:?}", tx.err);
     assert!(tx.err.is_none(), "Transaction should succeed");
     (tx.economic_mode, after_balance)
 }
@@ -203,6 +184,23 @@ pub async fn contract_deploy() {
         "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
     );
 
+    let path = tmp.into_path();
+    // make sure contract does not exist by calling one of its methods
+    // and asserting that it fails with "contact does not exist" error
+    let commit = rusk.state_root();
+    let vm =
+        rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
+    let mut session = rusk_abi::new_session(&vm, commit, 0)
+        .expect("Session creation should succeed");
+    let result =
+        session.call::<_, u64>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
+    assert!(result.is_err());
+    match result.err() {
+        Some(ContractDoesNotExist(_)) => (),
+        _ => assert!(false),
+    }
+
+    println!("before balance={}", wallet.get_balance(0).expect("Getting wallet's balance should succeed").value);
     make_and_execute_transaction_deploy(
         &rusk,
         &wallet,
@@ -210,17 +208,17 @@ pub async fn contract_deploy() {
         &CHARLIE_CONTRACT_ID,
         GAS_LIMIT,
     );
+    println!("after balance={}", wallet.get_balance(0).expect("Getting wallet's balance should succeed").value);
 
-    // make sure contract does exist now and calling it succeeds
-
+    // make sure contract does exist now by calling one of its methods and
+    // asserting that it succeeds
     let commit = rusk.state_root();
     let vm =
-        rusk_abi::new_vm(tmp.into_path()).expect("VM creation should succeed");
+        rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
     let mut session = rusk_abi::new_session(&vm, commit, 0)
         .expect("Session creation should succeed");
     let result =
         session.call::<_, u64>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
-    println!("res={:?}", result);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().data, 775);
 }
