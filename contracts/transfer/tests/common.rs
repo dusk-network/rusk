@@ -13,9 +13,7 @@ use execution_core::{
     value_commitment, BlsScalar, JubJubScalar, Note, PublicKey,
     SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
 };
-use rusk_abi::{
-    ContractError, ContractId, EconomicMode, Error, Session, TRANSFER_CONTRACT,
-};
+use rusk_abi::{ContractError, ContractId, Error, Session, TRANSFER_CONTRACT};
 
 use dusk_bytes::Serializable;
 use dusk_plonk::prelude::*;
@@ -27,20 +25,6 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 const POINT_LIMIT: u64 = 0x10_000_000;
-
-pub struct ExecutionResult {
-    pub gas_spent: u64,
-    pub economic_mode: EconomicMode,
-}
-
-impl ExecutionResult {
-    pub const fn new(gas_spent: u64, economic_mode: EconomicMode) -> Self {
-        Self {
-            gas_spent,
-            economic_mode,
-        }
-    }
-}
 
 pub fn leaves_from_height(
     session: &mut Session,
@@ -147,16 +131,13 @@ pub fn prover_verifier(input_notes: usize) -> (Prover, Verifier) {
 }
 
 /// Executes a transaction.
-/// Returns result containing gas spent and economic mode.
-pub fn execute(
-    session: &mut Session,
-    tx: Transaction,
-) -> Result<ExecutionResult, Error> {
+/// Returns result containing gas spent.
+pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
-        u64::MAX,
+        tx.payload().fee().gas_limit,
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -164,32 +145,18 @@ pub fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    let contract_id = tx
-        .payload()
-        .contract_call
-        .clone()
-        .map(|call| ContractId::from_bytes(call.contract));
-
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(
-                tx.payload().fee,
-                receipt.gas_spent,
-                receipt.economic_mode.clone(),
-                contract_id,
-            ),
+            &(tx.payload().fee, receipt.gas_spent),
             u64::MAX,
         )
         .expect("Refunding must succeed");
 
     receipt.events.extend(refund_receipt.events);
 
-    Ok(ExecutionResult::new(
-        receipt.gas_spent,
-        receipt.economic_mode,
-    ))
+    Ok(receipt.gas_spent)
 }
 
 /// Returns vector of notes owned by a given view key.
