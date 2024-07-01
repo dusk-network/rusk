@@ -213,6 +213,14 @@ pub async fn contract_deploy() {
 
     // make sure contract does exist now and calling it succeeds
 
-    // let mut session =
-    //     rusk_abi::new_session(&vm, old_commit_id, GENESIS_BLOCK_HEIGHT)?;
+    let commit = rusk.state_root();
+    let vm =
+        rusk_abi::new_vm(tmp.into_path()).expect("VM creation should succeed");
+    let mut session = rusk_abi::new_session(&vm, commit, 0)
+        .expect("Session creation should succeed");
+    let result =
+        session.call::<_, u64>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
+    println!("res={:?}", result);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().data, 775);
 }
