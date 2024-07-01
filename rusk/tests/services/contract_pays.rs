@@ -87,17 +87,17 @@ fn initial_state<P: AsRef<Path>>(dir: P, charlies_funds: u64) -> Result<Rusk> {
         let charlie_owner_ssk = SecretKey::random(&mut rng);
         let charlie_owner_psk = PublicKey::from(&charlie_owner_ssk);
 
-        // session
-        //     .deploy(
-        //         charlie_bytecode,
-        //         ContractData::builder()
-        //             .owner(charlie_owner_psk.to_bytes())
-        //             .contract_id(CHARLIE_CONTRACT_ID)
-        //             .free_limit(CHARLIE_FREE_LIMIT)
-        //             .free_price_hint(CHARLIE_FREE_PRICE_HINT),
-        //         POINT_LIMIT,
-        //     )
-        //     .expect("Deploying the charlie contract should succeed");
+        session
+            .deploy(
+                charlie_bytecode,
+                ContractData::builder()
+                    .owner(charlie_owner_psk.to_bytes())
+                    .contract_id(CHARLIE_CONTRACT_ID)
+                    .free_limit(CHARLIE_FREE_LIMIT)
+                    .free_price_hint(CHARLIE_FREE_PRICE_HINT),
+                POINT_LIMIT,
+            )
+            .expect("Deploying the charlie contract should succeed");
 
         session
             .call::<_, ()>(
@@ -189,79 +189,6 @@ fn make_and_execute_transaction(
         .next()
         .expect("There should be one spent transactions");
 
-    assert!(tx.err.is_none(), "Transaction should succeed");
-    (tx.economic_mode, after_balance)
-}
-
-fn make_and_execute_transaction_deploy(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
-    bytecode: impl AsRef<[u8]>,
-    contract_id: &ContractId,
-    gas_limit: u64,
-) -> (EconomicMode, u64) {
-    // We will refund the transaction to ourselves.
-    let refund = wallet
-        .public_key(SENDER_INDEX)
-        .expect("Getting a public spend key should succeed");
-
-    let initial_balance = wallet
-        .get_balance(SENDER_INDEX)
-        .expect("Getting initial balance should succeed")
-        .value;
-
-    assert_eq!(
-        initial_balance, WALLET_BALANCE,
-        "The sender should have the given initial balance"
-    );
-
-    let mut rng = StdRng::seed_from_u64(0xcafe);
-
-    // const DEPLOYMENT_MARKER: ContractId = {
-    //     let mut bytes = [0u8; 32];
-    //     bytes[0] = 0xAA;
-    //     ContractId::from_bytes(bytes)
-    // };
-
-    let tx = wallet
-        .execute_deploy(
-            &mut rng,
-            *contract_id,
-            String::from("8ebcaed21b0dd87eb7ca0b1cc1cd3e2e3df85a737037f475f9f7c65176f9ad3f"), // todo: pass the proper owner
-            bytecode.as_ref().to_vec(),
-            SENDER_INDEX,
-            &refund,
-            gas_limit,
-            GAS_PRICE,
-        )
-        .expect("Making transaction should succeed");
-
-    let expected = ExecuteResult {
-        discarded: 0,
-        executed: 1,
-    };
-
-    let spent_transactions = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        Some(expected),
-    )
-    .expect("generator procedure should succeed");
-
-    let after_balance = wallet
-        .get_balance(SENDER_INDEX)
-        .expect("Getting initial balance should succeed")
-        .value;
-
-    let mut spent_transactions = spent_transactions.into_iter();
-    let tx = spent_transactions
-        .next()
-        .expect("There should be one spent transactions");
-
-    println!("tx err={:?}", tx.err);
     assert!(tx.err.is_none(), "Transaction should succeed");
     (tx.economic_mode, after_balance)
 }
@@ -518,42 +445,5 @@ pub async fn free_tx_calls_not_paying_contract() {
         &ALICE_CONTRACT_ID,
         "ping",
         true, // should discard the transaction
-    );
-}
-
-/// We deploy a contract
-#[tokio::test(flavor = "multi_thread")]
-pub async fn contract_deploy() {
-    logger();
-
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, CHARLIES_BALANCE)
-        .expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let charlie_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
-    );
-
-    make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        charlie_bytecode,
-        &CHARLIE_CONTRACT_ID,
-        GAS_LIMIT,
     );
 }

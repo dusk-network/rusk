@@ -1,0 +1,212 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::{Arc, RwLock};
+
+use node::database::DBViewer;
+use rand::prelude::*;
+use rand::rngs::StdRng;
+use rusk::{Result, Rusk};
+use rusk_abi::{ContractData, ContractId, EconomicMode};
+use rusk_recovery_tools::state;
+use tempfile::tempdir;
+use test_wallet::{self as wallet};
+use tokio::sync::broadcast;
+use tracing::info;
+
+use crate::common::logger;
+use crate::common::state::{generator_procedure, ExecuteResult};
+use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+
+const BLOCK_HEIGHT: u64 = 1;
+const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+const WALLET_BALANCE: u64 = 10_000_000_000;
+const GAS_LIMIT: u64 = 200_000_000;
+const GAS_PRICE: u64 = 2;
+const POINT_LIMIT: u64 = 0x10000000;
+const SENDER_INDEX: u64 = 0;
+
+const CHARLIE_CONTRACT_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFC;
+    ContractId::from_bytes(bytes)
+};
+const ALICE_CONTRACT_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFA;
+    ContractId::from_bytes(bytes)
+};
+const ALICE_OWNER: [u8; 32] = [0; 32];
+
+struct DBMock;
+
+const TOP_HEIGHT: u64 = 2;
+const BLOCK_HASH: [u8; 32] = [3u8; 32];
+
+impl DBViewer for DBMock {
+    fn fetch_block_hash(
+        &self,
+        _block_height: u64,
+    ) -> Result<Option<[u8; 32]>, anyhow::Error> {
+        Ok(Some(BLOCK_HASH))
+    }
+    fn fetch_tip_height(&self) -> anyhow::Result<u64, anyhow::Error> {
+        Ok(TOP_HEIGHT)
+    }
+}
+
+fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+    let snapshot = toml::from_str(include_str!("../config/contract_pays.toml"))
+        .expect("Cannot deserialize config");
+
+    let dir = dir.as_ref();
+
+    let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
+        let alice_bytecode = include_bytes!(
+            "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+        );
+
+        session
+            .deploy(
+                alice_bytecode,
+                ContractData::builder()
+                    .owner(ALICE_OWNER)
+                    .contract_id(ALICE_CONTRACT_ID),
+                POINT_LIMIT,
+            )
+            .expect("Deploying the alice contract should succeed");
+    })
+    .expect("Deploying initial state should succeed");
+
+    let (sender, _) = broadcast::channel(10);
+
+    let rusk = Rusk::new(dir, None, u64::MAX, sender, DBMock {})
+        .expect("Instantiating rusk should succeed");
+    Ok(rusk)
+}
+
+fn make_and_execute_transaction_deploy(
+    rusk: &Rusk,
+    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    bytecode: impl AsRef<[u8]>,
+    contract_id: &ContractId,
+    gas_limit: u64,
+) -> (EconomicMode, u64) {
+    // We will refund the transaction to ourselves.
+    let refund = wallet
+        .public_key(SENDER_INDEX)
+        .expect("Getting a public spend key should succeed");
+
+    let initial_balance = wallet
+        .get_balance(SENDER_INDEX)
+        .expect("Getting initial balance should succeed")
+        .value;
+
+    assert_eq!(
+        initial_balance, WALLET_BALANCE,
+        "The sender should have the given initial balance"
+    );
+
+    let mut rng = StdRng::seed_from_u64(0xcafe);
+
+    // const DEPLOYMENT_MARKER: ContractId = {
+    //     let mut bytes = [0u8; 32];
+    //     bytes[0] = 0xAA;
+    //     ContractId::from_bytes(bytes)
+    // };
+
+    let tx = wallet
+        .execute_deploy(
+            &mut rng,
+            *contract_id,
+            String::from("8ebcaed21b0dd87eb7ca0b1cc1cd3e2e3df85a737037f475f9f7c65176f9ad3f"), // todo: pass the proper owner
+            bytecode.as_ref().to_vec(),
+            SENDER_INDEX,
+            &refund,
+            gas_limit,
+            GAS_PRICE,
+        )
+        .expect("Making transaction should succeed");
+
+    let expected = ExecuteResult {
+        discarded: 0,
+        executed: 1,
+    };
+
+    let spent_transactions = generator_procedure(
+        rusk,
+        &[tx],
+        BLOCK_HEIGHT,
+        BLOCK_GAS_LIMIT,
+        vec![],
+        Some(expected),
+    )
+    .expect("generator procedure should succeed");
+
+    let after_balance = wallet
+        .get_balance(SENDER_INDEX)
+        .expect("Getting initial balance should succeed")
+        .value;
+
+    let mut spent_transactions = spent_transactions.into_iter();
+    let tx = spent_transactions
+        .next()
+        .expect("There should be one spent transactions");
+
+    println!("tx err={:?}", tx.err);
+    assert!(tx.err.is_none(), "Transaction should succeed");
+    (tx.economic_mode, after_balance)
+}
+
+/// We deploy a contract
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy() {
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp).expect("Initializing should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let charlie_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
+    );
+
+    // make sure contract does not exist yet and calling it fails
+    // let result = session
+    //     .call::<_, ()>(
+    //         CHARLIE_CONTRACT_ID,
+    //         "ping",
+    //         &(),
+    //         u64::MAX,
+    //     );
+    // assert!(true); // result is failure
+
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        charlie_bytecode,
+        &CHARLIE_CONTRACT_ID,
+        GAS_LIMIT,
+    );
+
+    // make sure contract does exist now and calling it succeeds
+}
