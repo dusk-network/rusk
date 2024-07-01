@@ -12,6 +12,7 @@ use node::database::DBViewer;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
+use rusk_abi::Error::ContractDoesNotExist;
 use rusk_abi::{ContractData, ContractId, EconomicMode};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
@@ -60,11 +61,14 @@ impl DBViewer for DBMock {
     }
 }
 
+// this method also checks if calling Charlie's contract method "ping" results
+// in ContractDoesNotExist error
+// todo: parameterize this and possibly rename
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+    let dir = dir.as_ref();
+
     let snapshot = toml::from_str(include_str!("../config/contract_pays.toml"))
         .expect("Cannot deserialize config");
-
-    let dir = dir.as_ref();
 
     let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
         let alice_bytecode = include_bytes!(
@@ -80,6 +84,15 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
                 POINT_LIMIT,
             )
             .expect("Deploying the alice contract should succeed");
+
+        // make sure contract does not exist and calling one of its methods
+        // fails
+        let result =
+            session.call::<_, ()>(CHARLIE_CONTRACT_ID, "ping", &(), u64::MAX);
+        match result.err() {
+            Some(ContractDoesNotExist(_)) => (),
+            _ => assert!(false),
+        }
     })
     .expect("Deploying initial state should succeed");
 
@@ -190,16 +203,6 @@ pub async fn contract_deploy() {
         "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
     );
 
-    // make sure contract does not exist yet and calling it fails
-    // let result = session
-    //     .call::<_, ()>(
-    //         CHARLIE_CONTRACT_ID,
-    //         "ping",
-    //         &(),
-    //         u64::MAX,
-    //     );
-    // assert!(true); // result is failure
-
     make_and_execute_transaction_deploy(
         &rusk,
         &wallet,
@@ -209,4 +212,7 @@ pub async fn contract_deploy() {
     );
 
     // make sure contract does exist now and calling it succeeds
+
+    // let mut session =
+    //     rusk_abi::new_session(&vm, old_commit_id, GENESIS_BLOCK_HEIGHT)?;
 }
