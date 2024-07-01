@@ -200,7 +200,13 @@ pub async fn contract_deploy() {
         _ => assert!(false),
     }
 
-    println!("before balance={}", wallet.get_balance(0).expect("Getting wallet's balance should succeed").value);
+    println!(
+        "before balance={}",
+        wallet
+            .get_balance(0)
+            .expect("Getting wallet's balance should succeed")
+            .value
+    );
     make_and_execute_transaction_deploy(
         &rusk,
         &wallet,
@@ -208,7 +214,13 @@ pub async fn contract_deploy() {
         &CHARLIE_CONTRACT_ID,
         GAS_LIMIT,
     );
-    println!("after balance={}", wallet.get_balance(0).expect("Getting wallet's balance should succeed").value);
+    println!(
+        "after balance={}",
+        wallet
+            .get_balance(0)
+            .expect("Getting wallet's balance should succeed")
+            .value
+    );
 
     // make sure contract does exist now by calling one of its methods and
     // asserting that it succeeds

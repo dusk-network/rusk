@@ -512,6 +512,15 @@ fn execute(
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     println!("XXexecute");
 
+    // Spend the inputs and execute the call. If this errors the transaction is
+    // unspendable.
+    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+        TRANSFER_CONTRACT,
+        "spend_and_execute",
+        tx,
+        tx.fee.gas_limit,
+    )?;
+    println!("spend_and_execute receipt={:?}", receipt);
     if let Some((contract_id, owner, bytecode)) = &tx.call {
         let is_deploy: bool = bytecode.len() > 30000;
         if is_deploy {
@@ -532,16 +541,6 @@ fn execute(
             println!("deployment result={:?}", result);
         }
     }
-
-    // Spend the inputs and execute the call. If this errors the transaction is
-    // unspendable.
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        tx,
-        tx.fee.gas_limit,
-    )?;
-    println!("spend_and_execute receipt={:?}", receipt);
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
