@@ -287,26 +287,32 @@ impl TransferState {
         }
 
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
-            let contract_id = ContractId::from_bytes(contract_id);
-            self.gas_price =
-                Some(self.effective_gas_price(tx.fee.gas_price, &contract_id));
-            result = rusk_abi::call_raw_with_limit(
-                contract_id,
-                &fn_name,
-                &fn_args,
-                Self::effective_gas_limit(tx.fee.gas_price, &contract_id),
-            );
-            self.gas_price = None;
-            if let Ok(RawResult {
-                data: _,
-                economic_mode,
-            }) = result.clone()
-            {
-                match economic_mode {
-                    EconomicMode::Allowance(allowance) if allowance != 0 => {
-                        rusk_abi::set_allowance(allowance)
+            let is_deploy: bool = fn_args.len() > 30000;
+            if !is_deploy {
+                let contract_id = ContractId::from_bytes(contract_id);
+                self.gas_price = Some(
+                    self.effective_gas_price(tx.fee.gas_price, &contract_id),
+                );
+                result = rusk_abi::call_raw_with_limit(
+                    contract_id,
+                    &fn_name,
+                    &fn_args,
+                    Self::effective_gas_limit(tx.fee.gas_price, &contract_id),
+                );
+                self.gas_price = None;
+                if let Ok(RawResult {
+                    data: _,
+                    economic_mode,
+                }) = result.clone()
+                {
+                    match economic_mode {
+                        EconomicMode::Allowance(allowance)
+                            if allowance != 0 =>
+                        {
+                            rusk_abi::set_allowance(allowance)
+                        }
+                        _ => (),
                     }
-                    _ => (),
                 }
             }
         }

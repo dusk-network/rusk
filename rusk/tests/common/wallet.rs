@@ -146,7 +146,7 @@ impl wallet::ProverClient for TestProverClient {
     ) -> Result<PhoenixTransaction, Self::Error> {
         let utx_bytes = &utx.to_var_bytes()[..];
         let proof = self.prover.prove_execute(utx_bytes)?;
-        info!("UTX: {}", hex::encode(utx_bytes));
+        // info!("UTX: {}", hex::encode(utx_bytes));
         let proof = Proof::from_slice(&proof).map_err(Error::Serialization)?;
         let tx = utx.clone().prove(proof);
 

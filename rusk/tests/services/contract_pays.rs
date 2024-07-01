@@ -87,17 +87,17 @@ fn initial_state<P: AsRef<Path>>(dir: P, charlies_funds: u64) -> Result<Rusk> {
         let charlie_owner_ssk = SecretKey::random(&mut rng);
         let charlie_owner_psk = PublicKey::from(&charlie_owner_ssk);
 
-        session
-            .deploy(
-                charlie_bytecode,
-                ContractData::builder()
-                    .owner(charlie_owner_psk.to_bytes())
-                    .contract_id(CHARLIE_CONTRACT_ID)
-                    .free_limit(CHARLIE_FREE_LIMIT)
-                    .free_price_hint(CHARLIE_FREE_PRICE_HINT),
-                POINT_LIMIT,
-            )
-            .expect("Deploying the charlie contract should succeed");
+        // session
+        //     .deploy(
+        //         charlie_bytecode,
+        //         ContractData::builder()
+        //             .owner(charlie_owner_psk.to_bytes())
+        //             .contract_id(CHARLIE_CONTRACT_ID)
+        //             .free_limit(CHARLIE_FREE_LIMIT)
+        //             .free_price_hint(CHARLIE_FREE_PRICE_HINT),
+        //         POINT_LIMIT,
+        //     )
+        //     .expect("Deploying the charlie contract should succeed");
 
         session
             .call::<_, ()>(
@@ -197,6 +197,7 @@ fn make_and_execute_transaction_deploy(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     bytecode: impl AsRef<[u8]>,
+    contract_id: &ContractId,
     gas_limit: u64,
 ) -> (EconomicMode, u64) {
     // We will refund the transaction to ourselves.
@@ -216,26 +217,24 @@ fn make_and_execute_transaction_deploy(
 
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
-    const DEPLOYMENT_MARKER: ContractId = {
-        let mut bytes = [0u8; 32];
-        bytes[0] = 0xAA;
-        ContractId::from_bytes(bytes)
-    };
+    // const DEPLOYMENT_MARKER: ContractId = {
+    //     let mut bytes = [0u8; 32];
+    //     bytes[0] = 0xAA;
+    //     ContractId::from_bytes(bytes)
+    // };
 
-    let mut tx = wallet
-        .execute(
+    let tx = wallet
+        .execute_deploy(
             &mut rng,
-            DEPLOYMENT_MARKER,
+            *contract_id,
             String::from("8ebcaed21b0dd87eb7ca0b1cc1cd3e2e3df85a737037f475f9f7c65176f9ad3f"), // todo: pass the proper owner
-            bytecode.as_ref().to_vec(),// this will be overwritten
+            bytecode.as_ref().to_vec(),
             SENDER_INDEX,
             &refund,
             gas_limit,
             GAS_PRICE,
         )
-        .expect("Making the transaction should succeed");
-
-    tx.call.as_mut().unwrap().2 = bytecode.as_ref().to_vec();
+        .expect("Making transaction should succeed");
 
     let expected = ExecuteResult {
         discarded: 0,
@@ -262,6 +261,7 @@ fn make_and_execute_transaction_deploy(
         .next()
         .expect("There should be one spent transactions");
 
+    println!("tx err={:?}", tx.err);
     assert!(tx.err.is_none(), "Transaction should succeed");
     (tx.economic_mode, after_balance)
 }
@@ -553,6 +553,7 @@ pub async fn contract_deploy() {
         &rusk,
         &wallet,
         charlie_bytecode,
+        &CHARLIE_CONTRACT_ID,
         GAS_LIMIT,
     );
 }

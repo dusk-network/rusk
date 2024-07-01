@@ -17,8 +17,8 @@ dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 
-piecrust-uplink = { version = "0.13" }
-piecrust = { version = "0.20", optional = true }
+piecrust-uplink = { version = "0.13", features = ["debug"] }
+piecrust = { version = "0.20", optional = true, features = ["debug"] }
 
 execution-core = { version = "0.1.0", path = "../execution-core" }
 
@@ -34,7 +34,7 @@ ff = { version = "0.13", default-features = false }
 
 [features]
 # By default, we include the contract writing features.
-default = ["abi", "dlmalloc"]
+default = ["abi", "dlmalloc", "debug"]
 
 # These are the features available for when one wishes to use `rusk-abi` as a
 # contract.

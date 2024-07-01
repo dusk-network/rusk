@@ -362,6 +362,56 @@ where
             .map_err(Error::from_prover_err)
     }
 
+    /// Execute a generic contract call
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_deploy<Rng>(
+        &self,
+        rng: &mut Rng,
+        contract_id: ContractId,
+        call_name: String,
+        call_data: impl AsRef<[u8]>,
+        sender_index: u64,
+        refund: &PublicKey,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC, PC>>
+    where
+        Rng: RngCore + CryptoRng,
+    {
+        let sender = self
+            .store
+            .retrieve_sk(sender_index)
+            .map_err(Error::from_store_err)?;
+
+        let (inputs, outputs) = self.inputs_and_change_output(
+            rng,
+            &sender,
+            refund,
+            gas_limit * gas_price,
+        )?;
+
+        let fee = Fee::new(rng, gas_limit, gas_price, refund);
+
+        let call_data = call_data.as_ref().to_vec();
+        let call = (contract_id, call_name, call_data);
+
+        let utx = new_unproven_tx(
+            rng,
+            &self.state,
+            &sender,
+            inputs,
+            outputs,
+            fee,
+            None,
+            Some(call),
+        )
+        .map_err(Error::from_state_err)?;
+
+        self.prover
+            .compute_proof_and_propagate(&utx)
+            .map_err(Error::from_prover_err)
+    }
+
     /// Transfer Dusk from one key to another.
     #[allow(clippy::too_many_arguments)]
     pub fn transfer<Rng: RngCore + CryptoRng>(
