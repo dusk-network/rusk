@@ -93,32 +93,6 @@ impl Serializable<{ StealthAddress::SIZE + u64::SIZE + BlsPublicKey::SIZE }>
     }
 }
 
-/// Events
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub enum EconomicResult {
-    /// Contract's allowance has been successfully applied, contract will pay
-    /// for gas.
-    AllowanceApplied,
-    /// Contract's allowance was not sufficient as it was smaller than the
-    /// actual cost of the call.
-    AllowanceNotSufficient,
-    /// Contract's balance was not sufficient to pay for the call.
-    BalanceNotSufficient,
-}
-
-/// Event emitted after economic operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct EconomicEvent {
-    /// Module id which is relevant to the event.
-    pub contract: ContractId,
-    /// Value of the relevant operation.
-    pub value: u64,
-    /// Result of the relevant operation.
-    pub result: EconomicResult,
-}
-
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
