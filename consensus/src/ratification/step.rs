@@ -21,15 +21,12 @@ use tokio::sync::Mutex;
 
 use tracing::{error, info, Instrument};
 
-pub struct RatificationStep<T, DB> {
+pub struct RatificationStep<DB> {
     handler: Arc<Mutex<handler::RatificationHandler>>,
-
-    _executor: Arc<Mutex<T>>,
-
     marker: PhantomData<DB>,
 }
 
-impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
+impl<DB: Database> RatificationStep<DB> {
     pub async fn try_vote(
         ru: &RoundUpdate,
         iteration: u8,
@@ -77,14 +74,12 @@ pub fn build_ratification_payload(
     ratification
 }
 
-impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
+impl<DB: Database> RatificationStep<DB> {
     pub(crate) fn new(
-        executor: Arc<Mutex<T>>,
         handler: Arc<Mutex<handler::RatificationHandler>>,
     ) -> Self {
         Self {
             handler,
-            _executor: executor,
             marker: PhantomData,
         }
     }
@@ -119,7 +114,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         )
     }
 
-    pub async fn run(
+    pub async fn run<T: Operations + 'static>(
         &mut self,
         mut ctx: ExecutionCtx<'_, DB, T>,
     ) -> Result<Message, ConsensusError> {

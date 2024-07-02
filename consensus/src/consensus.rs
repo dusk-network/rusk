@@ -38,7 +38,7 @@ pub struct Consensus<T: Operations, D: Database> {
     future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
 
     /// Reference to the executor of any EST-related call
-    executor: Arc<Mutex<T>>,
+    executor: Arc<T>,
 
     // Database
     db: Arc<Mutex<D>>,
@@ -58,7 +58,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
-        executor: Arc<Mutex<T>>,
+        executor: Arc<T>,
         db: Arc<Mutex<D>>,
     ) -> Self {
         Self {
@@ -169,7 +169,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     validation_handler.clone(),
                 )),
                 Phase::Ratification(ratification::step::RatificationStep::new(
-                    executor.clone(),
                     ratification_handler.clone(),
                 )),
             ];

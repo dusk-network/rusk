@@ -74,7 +74,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
-) -> Result<QuorumResult, StepSigError> {
+) -> Result<(QuorumResult, Committee), StepSigError> {
     let round = header.round;
     let iteration = header.iteration;
 
@@ -94,7 +94,8 @@ pub async fn verify_step_votes(
     let set = committees_set.read().await;
     let committee = set.get(&cfg).expect("committee to be created");
 
-    verify_votes(header, step, vote, sv, committee)
+    let quorum_result = verify_votes(header, step, vote, sv, committee)?;
+    Ok((quorum_result, committee.clone()))
 }
 
 #[derive(Default)]

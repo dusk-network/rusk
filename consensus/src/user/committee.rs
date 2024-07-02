@@ -73,6 +73,10 @@ impl Committee {
         self.members.get(pubkey_bls).copied()
     }
 
+    pub fn members(&self) -> &BTreeMap<PublicKey, usize> {
+        &self.members
+    }
+
     // get_occurrences returns values in a vec
     pub fn get_occurrences(&self) -> Vec<usize> {
         self.members.values().copied().collect()
@@ -145,6 +149,7 @@ impl fmt::Display for &Committee {
 }
 
 /// Implements a cache of generated committees so that they can be reused.
+#[derive(Clone)]
 pub struct CommitteeSet<'p> {
     committees: HashMap<sortition::Config, Committee>,
     provisioners: &'p Provisioners,

@@ -52,6 +52,8 @@ pub enum Error {
     Other(Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits
     CommitNotFound([u8; 32]),
+    /// Invalid credits count
+    InvalidCreditsCount(u64, usize),
 }
 
 impl std::error::Error for Error {}
@@ -146,6 +148,13 @@ impl fmt::Display for Error {
             }
             Error::CommitNotFound(commit_id) => {
                 write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
+            }
+            Error::InvalidCreditsCount(height, credits) => {
+                write!(
+                    f,
+                    "Invalid credits count, height = {}, credits = {}",
+                    height, credits
+                )
             }
         }
     }

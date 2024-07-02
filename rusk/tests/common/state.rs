@@ -105,6 +105,7 @@ pub fn generator_procedure(
         block_gas_limit,
         generator_pubkey,
         missed_generators,
+        voters_pubkey: None,
     };
 
     let (transfer_txs, discarded, execute_output) =
@@ -134,10 +135,10 @@ pub fn generator_procedure(
     )
     .expect("valid block");
 
-    let verify_output = rusk.verify_state_transition(&block)?;
+    let verify_output = rusk.verify_state_transition(&block, None)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output) = rusk.accept(&block)?;
+    let (accept_txs, accept_output) = rusk.accept(&block, None)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
