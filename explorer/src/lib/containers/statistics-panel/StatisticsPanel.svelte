@@ -20,7 +20,7 @@
     createPollingDataStore,
   } from "$lib/dusk/svelte-stores";
   import { onNetworkChange } from "$lib/lifecyles";
-  import { appStore } from "$lib/stores";
+  import { appStore, marketDataStore } from "$lib/stores";
 
   import "./StatisticsPanel.css";
 
@@ -35,14 +35,12 @@
   };
 
   const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
-  const marketDataStore = createDataStore(duskAPI.getMarketData);
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
     $appStore.fetchInterval
   );
 
   onNetworkChange((network) => {
-    marketDataStore.getData();
     nodeLocationsStore.reset();
     nodeLocationsStore.getData(network);
     pollingStatsDataStore.reset();

@@ -39,7 +39,7 @@
   /** @type {String | null} */
   export let payload;
 
-  /** @type {MarketData}*/ //Can also be null
+  /** @type {MarketData | null} */
   export let market;
 
   const formatter = createValueFormatter("en");
@@ -141,7 +141,7 @@
       <svelte:fragment slot="term">transaction fee</svelte:fragment>
       <svelte:fragment slot="definition">
         <DataGuard data={market?.currentPrice.usd}>
-          {`${feeFormatter(luxToDusk(data.feepaid))} DUSK (${currencyFormatter(luxToDusk(data.feepaid) * market.currentPrice.usd)})`}
+          {`${feeFormatter(luxToDusk(data.feepaid))} DUSK (${currencyFormatter(luxToDusk(data.feepaid) * /** @type {number} */ (market?.currentPrice.usd))})`}
         </DataGuard>
       </svelte:fragment>
     </ListItem>
@@ -151,7 +151,7 @@
       <svelte:fragment slot="term">gas price</svelte:fragment>
       <svelte:fragment slot="definition">
         <DataGuard data={market?.currentPrice.usd}>
-          {`${feeFormatter(luxToDusk(data.gasprice))} DUSK (${currencyFormatter(luxToDusk(data.gasprice) * market.currentPrice.usd)})`}
+          {`${feeFormatter(luxToDusk(data.gasprice))} DUSK (${currencyFormatter(luxToDusk(data.gasprice) * /** @type {number} */ (market?.currentPrice.usd))})`}
         </DataGuard>
       </svelte:fragment>
     </ListItem>

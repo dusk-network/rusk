@@ -17,6 +17,7 @@ describe("appStore", () => {
       blocksListEntries: Number(env.VITE_BLOCKS_LIST_ENTRIES),
       chainInfoEntries: Number(env.VITE_CHAIN_INFO_ENTRIES),
       fetchInterval: Number(env.VITE_REFETCH_INTERVAL),
+      marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
       networks: expectedNetworks,
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),

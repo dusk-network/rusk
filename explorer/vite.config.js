@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => {
         VITE_CHAIN_INFO_ENTRIES: env.VITE_CHAIN_INFO_ENTRIES,
         VITE_DUSK_DEVNET_NODE: env.VITE_DUSK_DEVNET_NODE,
         VITE_DUSK_TESTNET_NODE: env.VITE_DUSK_TESTNET_NODE,
+        VITE_MARKET_DATA_REFETCH_INTERVAL:
+          env.VITE_MARKET_DATA_REFETCH_INTERVAL,
         VITE_REFETCH_INTERVAL: env.VITE_REFETCH_INTERVAL,
         VITE_TRANSACTIONS_LIST_ENTRIES: env.VITE_TRANSACTIONS_LIST_ENTRIES,
       },
@@ -50,6 +52,7 @@ export default defineConfig(({ mode }) => {
         VITE_CHAIN_INFO_ENTRIES: "15",
         VITE_DUSK_DEVNET_NODE: "devnet.nodes.dusk.network",
         VITE_DUSK_TESTNET_NODE: "nodes.dusk.network",
+        VITE_MARKET_DATA_REFETCH_INTERVAL: "120000",
         VITE_REFETCH_INTERVAL: "1000",
         VITE_TRANSACTIONS_LIST_ENTRIES: "100",
       },

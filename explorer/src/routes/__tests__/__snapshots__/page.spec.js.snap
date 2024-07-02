@@ -1029,9 +1029,8 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
+            0.368
+            
             
           </div>
            
@@ -1058,9 +1057,8 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
+            168M
+            
             
           </div>
            
