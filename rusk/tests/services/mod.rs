@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod contract_deployment;
 pub mod gas_behavior;
 pub mod multi_transfer;
 pub mod stake;

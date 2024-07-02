@@ -1,0 +1,225 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::{Arc, RwLock};
+
+use execution_core::transfer::ContractDeploy;
+use rand::prelude::*;
+use rand::rngs::StdRng;
+use rusk::{Result, Rusk};
+use rusk_abi::Error::ContractDoesNotExist;
+use rusk_abi::{ContractData, ContractId};
+use rusk_recovery_tools::state;
+use tempfile::tempdir;
+use test_wallet::{self as wallet};
+use tokio::sync::broadcast;
+use tracing::info;
+
+use crate::common::logger;
+use crate::common::state::{generator_procedure, ExecuteResult};
+use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+
+const BLOCK_HEIGHT: u64 = 1;
+const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+const WALLET_BALANCE: u64 = 10_000_000_000;
+const GAS_LIMIT: u64 = 200_000_000;
+const GAS_PRICE: u64 = 2;
+const POINT_LIMIT: u64 = 0x10000000;
+const SENDER_INDEX: u64 = 0;
+
+const ALICE_CONTRACT_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFA;
+    ContractId::from_bytes(bytes)
+};
+const ALICE_OWNER: [u8; 32] = [0; 32];
+
+const BOB_CONTRACT_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFB;
+    ContractId::from_bytes(bytes)
+};
+
+const BOB_OWNER: [u8; 32] = [1; 32];
+
+fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+    let dir = dir.as_ref();
+
+    let snapshot = toml::from_str(include_str!("../config/contract_pays.toml"))
+        .expect("Cannot deserialize config");
+
+    let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
+        let alice_bytecode = include_bytes!(
+            "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+        );
+
+        session
+            .deploy(
+                alice_bytecode,
+                ContractData::builder()
+                    .owner(ALICE_OWNER)
+                    .contract_id(ALICE_CONTRACT_ID),
+                POINT_LIMIT,
+            )
+            .expect("Deploying the alice contract should succeed");
+    })
+    .expect("Deploying initial state should succeed");
+
+    let (sender, _) = broadcast::channel(10);
+
+    let rusk = Rusk::new(dir, None, u64::MAX, sender)
+        .expect("Instantiating rusk should succeed");
+    Ok(rusk)
+}
+
+fn make_and_execute_transaction_deploy(
+    rusk: &Rusk,
+    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    bytecode: impl AsRef<[u8]>,
+    contract_id: &ContractId,
+    gas_limit: u64,
+) -> u64 {
+    let initial_balance = wallet
+        .get_balance(SENDER_INDEX)
+        .expect("Getting initial balance should succeed")
+        .value;
+
+    assert_eq!(
+        initial_balance, WALLET_BALANCE,
+        "The sender should have the given initial balance"
+    );
+
+    let mut rng = StdRng::seed_from_u64(0xcafe);
+
+    let constructor_args = Some(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+
+    let tx = wallet
+        .execute_deploy(
+            &mut rng,
+            ContractDeploy {
+                contract_id: Some(contract_id.to_bytes()),
+                bytecode: bytecode.as_ref().to_vec(),
+                owner: BOB_OWNER.to_vec(),
+                constructor_args,
+            },
+            SENDER_INDEX,
+            gas_limit,
+            GAS_PRICE,
+            0u64,
+        )
+        .expect("Making transaction should succeed");
+
+    let expected = ExecuteResult {
+        discarded: 0,
+        executed: 1,
+    };
+
+    let spent_transactions = generator_procedure(
+        rusk,
+        &[tx],
+        BLOCK_HEIGHT,
+        BLOCK_GAS_LIMIT,
+        vec![],
+        Some(expected),
+    )
+    .expect("generator procedure should succeed");
+
+    let after_balance = wallet
+        .get_balance(SENDER_INDEX)
+        .expect("Getting initial balance should succeed")
+        .value;
+
+    let mut spent_transactions = spent_transactions.into_iter();
+    let tx = spent_transactions
+        .next()
+        .expect("There should be one spent transactions");
+
+    assert!(tx.err.is_none(), "Transaction should succeed");
+    after_balance
+}
+
+/// We deploy a contract
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy() {
+    const ECHO_VALUE: u64 = 775;
+
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp).expect("Initializing should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    );
+
+    let path = tmp.into_path();
+    // make sure contract does not exist by calling one of its methods
+    // and asserting that it fails with "contact does not exist" error
+    let commit = rusk.state_root();
+    let vm =
+        rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
+    let mut session = rusk_abi::new_session(&vm, commit, 0)
+        .expect("Session creation should succeed");
+    let result =
+        session.call::<_, u64>(BOB_CONTRACT_ID, "echo", &ECHO_VALUE, u64::MAX);
+    assert!(result.is_err());
+    match result.err() {
+        Some(ContractDoesNotExist(_)) => (),
+        _ => assert!(false),
+    }
+
+    println!(
+        "before balance={}",
+        wallet
+            .get_balance(0)
+            .expect("Getting wallet's balance should succeed")
+            .value
+    );
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        bob_bytecode,
+        &BOB_CONTRACT_ID,
+        GAS_LIMIT,
+    );
+    println!(
+        "after balance={}",
+        wallet
+            .get_balance(0)
+            .expect("Getting wallet's balance should succeed")
+            .value
+    );
+
+    // make sure contract does exist now by calling one of its methods and
+    // asserting that it succeeds
+    let commit = rusk.state_root();
+    let vm =
+        rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
+    let mut session = rusk_abi::new_session(&vm, commit, 0)
+        .expect("Session creation should succeed");
+    let result =
+        session.call::<_, u64>(BOB_CONTRACT_ID, "echo", &ECHO_VALUE, u64::MAX);
+    println!("result={:?}", result);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().data, ECHO_VALUE);
+}
