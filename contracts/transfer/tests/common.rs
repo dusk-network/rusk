@@ -146,12 +146,6 @@ pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    let contract_id = tx
-        .payload()
-        .contract_call()
-        .clone()
-        .map(|call| ContractId::from_bytes(call.contract));
-
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
