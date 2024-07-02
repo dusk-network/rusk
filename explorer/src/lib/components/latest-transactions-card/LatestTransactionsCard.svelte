@@ -43,11 +43,14 @@
       }
     : undefined}
 >
-  <TransactionsTable data={txns} className="mobile-hidden" />
-
+  <TransactionsTable
+    className="mobile-hidden"
+    data={txns}
+    mode={isOnHomeScreen ? "compact" : "full"}
+  />
   <div class="desktop-hidden">
     {#each txns as txn (txn)}
-      <TransactionsList data={txn} />
+      <TransactionsList data={txn} mode={isOnHomeScreen ? "compact" : "full"} />
     {/each}
   </div>
 </DataCard>

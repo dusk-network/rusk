@@ -14,7 +14,11 @@ describe("Transactions List", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));
 
-  const baseProps = { data: transformTransaction(gqlTransaction.tx) };
+  /** @type {import("svelte").ComponentProps<TransactionsList>} */
+  const baseProps = {
+    data: transformTransaction(gqlTransaction.tx),
+    mode: "full",
+  };
 
   afterEach(cleanup);
 
@@ -22,8 +26,19 @@ describe("Transactions List", () => {
     vi.useRealTimers();
   });
 
-  it("renders the Transactions List component", () => {
+  it('should render the `TransactionsList` component in "full" mode', () => {
     const { container } = render(TransactionsList, baseProps);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('should render the `TransactionsList` component in "compact" mode', () => {
+    /** @type {import("svelte").ComponentProps<TransactionsList>} */
+    const props = {
+      ...baseProps,
+      mode: "compact",
+    };
+    const { container } = render(TransactionsList, { ...baseProps, ...props });
 
     expect(container.firstChild).toMatchSnapshot();
   });

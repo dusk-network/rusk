@@ -46,37 +46,37 @@
 </section>
 
 <style lang="postcss">
-  .chain-info {
-    grid-template-columns: 1fr;
-  }
-
-  .tables {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    margin-top: 1.25rem;
-  }
-
-  :global(.tables-layout) {
-    width: 100%;
-  }
-
-  @media (min-width: 768px) {
+  :global {
     .chain-info {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.25rem;
+      grid-template-columns: 1fr;
     }
-  }
 
-  @media (min-width: 1780px) {
     .tables {
-      flex-direction: row;
+      display: flex;
       gap: 1.25rem;
+      margin-top: 1.25rem;
     }
 
-    :global(.tables-layout) {
+    .tables-layout {
       width: 50%;
+    }
+
+    @media (min-width: 48rem) {
+      .chain-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+      }
+    }
+
+    @media (max-width: 86.2rem) {
+      .tables {
+        flex-direction: column;
+      }
+
+      .tables-layout {
+        width: 100%;
+      }
     }
   }
 </style>

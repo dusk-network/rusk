@@ -18,8 +18,10 @@ describe("Transactions Table", () => {
     10
   );
 
+  /** @type {import("svelte").ComponentProps<TransactionsTable>} */
   const baseProps = {
     data: data,
+    mode: "full",
   };
   const baseOptions = {
     props: baseProps,
@@ -32,8 +34,23 @@ describe("Transactions Table", () => {
     vi.useRealTimers();
   });
 
-  it("should render the `TransactionsTable` component", () => {
+  it('should render the `TransactionsTable` component in "full" mode', () => {
     const { container } = render(TransactionsTable, baseOptions);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('should render the `TransactionsTable` component in "compact" mode', () => {
+    /** @type {import("svelte").ComponentProps<TransactionsTable>} */
+    const props = { ...baseProps, mode: "compact" };
+    const { container } = render(TransactionsTable, { ...baseOptions, props });
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("should pass additional class names to the rendered element", () => {
+    const props = { ...baseProps, className: "foo bar" };
+    const { container } = render(TransactionsTable, { ...baseOptions, props });
 
     expect(container.firstChild).toMatchSnapshot();
   });

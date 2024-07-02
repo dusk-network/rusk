@@ -1,6 +1,170 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Transactions List > renders the Transactions List component 1`] = `
+exports[`Transactions List > should render the \`TransactionsList\` component in "compact" mode 1`] = `
+<dl
+  class="detail-list"
+>
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal detail-list__help"
+      data-tooltip-id="main-tooltip"
+      data-tooltip-place="top"
+      data-tooltip-text="The ID of the transaction"
+      data-tooltip-type="info"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+      />
+    </svg>
+    
+     
+    ID
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    <a
+      class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
+      href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+    >
+      4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04
+    </a>
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal detail-list__help"
+      data-tooltip-id="main-tooltip"
+      data-tooltip-place="top"
+      data-tooltip-text="Time elapsed since the transaction was created"
+      data-tooltip-type="info"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+      />
+    </svg>
+    
+     
+    relative time
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    <time
+      class="transaction-details__list-timestamp"
+      datetime="2024-04-16T06:39:09.000Z"
+      slot="definition"
+    >
+      last month
+    </time>
+  </dd>
+   
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal detail-list__help"
+      data-tooltip-id="main-tooltip"
+      data-tooltip-place="top"
+      data-tooltip-text="The transaction fee amount"
+      data-tooltip-type="info"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+      />
+    </svg>
+    
+     
+    Fee
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    0.000290766
+     DUSK
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal detail-list__help"
+      data-tooltip-id="main-tooltip"
+      data-tooltip-place="top"
+      data-tooltip-text="The transaction status"
+      data-tooltip-type="info"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+      />
+    </svg>
+    
+     
+    Status
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    <span
+      class="dusk-badge dusk-badge--variant-success explorer-badge"
+    >
+      success
+    </span>
+    
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <svg
+      class="dusk-icon dusk-icon--size--normal detail-list__help"
+      data-tooltip-id="main-tooltip"
+      data-tooltip-place="top"
+      data-tooltip-text="The transaction type"
+      data-tooltip-type="info"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+      />
+    </svg>
+    
+     
+    Type
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    <span
+      class="dusk-badge dusk-badge--variant-neutral explorer-badge"
+    >
+      transfer
+    </span>
+    
+  </dd>
+</dl>
+`;
+
+exports[`Transactions List > should render the \`TransactionsList\` component in "full" mode 1`] = `
 <dl
   class="detail-list"
 >
