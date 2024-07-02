@@ -55,7 +55,7 @@ pub(crate) enum RevertTarget {
 /// attestation and transactions full verifications.
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
-    /// the Tip
+    /// The tip
     tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
@@ -456,7 +456,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let vm = self.vm.write().await;
             let (txs, rolling_result) = self.db.read().await.update(|db| {
                 let (txs, verification_output) =
-                    vm.accept(blk, &prev_block_voters[..])?;
+                    vm.accept(blk, Some(&prev_block_voters[..]))?;
 
                 est_elapsed_time = start.elapsed();
 

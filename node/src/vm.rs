@@ -29,13 +29,13 @@ pub trait VMExecution: Send + Sync + 'static {
     fn verify_state_transition(
         &self,
         blk: &Block,
-        voters: &[VoterWithCredits],
+        voters: Option<&[VoterWithCredits]>,
     ) -> anyhow::Result<VerificationOutput>;
 
     fn accept(
         &self,
         blk: &Block,
-        voters: &[VoterWithCredits],
+        voters: Option<&[VoterWithCredits]>,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
     fn finalize_state(

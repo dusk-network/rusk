@@ -272,10 +272,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         let vm = self.vm.read().await;
 
-        Ok(vm.verify_state_transition(blk, voters).map_err(|err| {
-            error!("failed to call VST {}", err);
-            Error::Failed
-        })?)
+        Ok(vm
+            .verify_state_transition(blk, Some(voters))
+            .map_err(|err| {
+                error!("failed to call VST {}", err);
+                Error::Failed
+            })?)
     }
 
     async fn execute_state_transition(
