@@ -22,8 +22,7 @@ use execution_core::{
     SecretKey, Sender, TxSkeleton, ViewKey,
 };
 use rusk_abi::{
-    CallReceipt, ContractError, ContractId, EconomicMode, Error, Session,
-    TRANSFER_CONTRACT,
+    CallReceipt, ContractError, ContractId, Error, Session, TRANSFER_CONTRACT,
 };
 
 const POINT_LIMIT: u64 = 0x100000000;
@@ -147,12 +146,7 @@ pub fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(
-                tx.payload().fee,
-                receipt.gas_spent,
-                EconomicMode::None,
-                None::<ContractId>,
-            ),
+            &(tx.payload().fee, receipt.gas_spent),
             u64::MAX,
         )
         .expect("Refunding must succeed");

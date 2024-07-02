@@ -162,11 +162,10 @@ fn transfer() {
         contract_call,
     );
 
-    let execution_result =
-        execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_1_2 : {} gas", execution_result.gas_spent);
+    println!("EXECUTE_1_2 : {} gas", gas_spent);
 
     let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
@@ -238,11 +237,10 @@ fn alice_ping() {
         contract_call,
     );
 
-    let execution_result =
-        execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_PING: {} gas", execution_result.gas_spent);
+    println!("EXECUTE_PING: {} gas", gas_spent);
 
     let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
@@ -302,11 +300,11 @@ fn deposit_and_withdraw() {
         contract_call,
     );
 
-    let execution_result =
+    let gas_spent =
         execute(session, tx.clone()).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_DEPOSIT: {} gas", execution_result.gas_spent);
+    println!("EXECUTE_DEPOSIT: {} gas", gas_spent);
 
     let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
@@ -386,11 +384,10 @@ fn deposit_and_withdraw() {
         contract_call,
     );
 
-    let execution_result =
-        execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_WITHDRAW: {} gas", execution_result.gas_spent);
+    println!("EXECUTE_WITHDRAW: {} gas", gas_spent);
 
     let alice_balance = contract_balance(session, ALICE_ID)
         .expect("Querying the contract balance should succeed");

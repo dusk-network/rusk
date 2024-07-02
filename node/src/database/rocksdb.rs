@@ -892,7 +892,6 @@ mod tests {
 
     use fake::{Fake, Faker};
     use node_data::ledger::Transaction;
-    use rusk_abi::EconomicMode;
 
     #[test]
     fn test_store_block() {
@@ -1120,7 +1119,6 @@ mod tests {
                 inner: t.clone(),
                 block_height: 0,
                 gas_spent: 0,
-                economic_mode: EconomicMode::None,
                 err: None,
             })
             .collect()

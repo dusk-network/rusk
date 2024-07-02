@@ -23,8 +23,8 @@ use execution_core::{
 use node_data::ledger::{SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
 use rusk_abi::{
-    CallReceipt, ContractError, ContractId, Error as PiecrustError, Event,
-    Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
+    CallReceipt, ContractError, Error as PiecrustError, Event, Session,
+    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -150,7 +150,6 @@ impl Rusk {
                     spent_txs.push(SpentTransaction {
                         inner: unspent_tx,
                         gas_spent,
-                        economic_mode: receipt.economic_mode,
                         block_height,
                         err,
                     });
@@ -439,7 +438,6 @@ fn accept(
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),
             gas_spent,
-            economic_mode: receipt.economic_mode,
             block_height,
             // We're currently ignoring the result of successful calls
             err: receipt.data.err().map(|e| format!("{e}")),
@@ -500,12 +498,6 @@ fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    let contract_id = tx
-        .payload()
-        .contract_call
-        .clone()
-        .map(|call| ContractId::from_bytes(call.contract));
-
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
     // such, the call to `Result::expect` is warranted.
@@ -513,12 +505,7 @@ fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(
-                tx.payload().fee,
-                receipt.gas_spent,
-                receipt.economic_mode.clone(),
-                contract_id,
-            ),
+            &(tx.payload().fee, receipt.gas_spent),
             u64::MAX,
         )
         .expect("Refunding must succeed");
