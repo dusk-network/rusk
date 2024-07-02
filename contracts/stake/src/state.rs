@@ -293,9 +293,8 @@ impl StakeState {
             .get_stake_mut(stake_pk)
             .expect("The stake to slash should exist");
 
+        // Stake can have no amount if provisioner unstake in the same block
         if stake.amount().is_none() {
-            // stake.amount can be None if the provisioner unstake in the same
-            // block
             return;
         }
 
@@ -305,7 +304,24 @@ impl StakeState {
         let effective_faults =
             stake.faults.saturating_sub(STAKE_WARNINGS) as u64;
 
-        let (stake_amount, _) = stake.amount.as_mut().expect("stake_to_exists");
+        let (stake_amount, eligibility) =
+            stake.amount.as_mut().expect("stake_to_exists");
+
+        // Shift eligibility (aka stake suspension) only if warnings are
+        // saturated
+        if effective_faults > 0 {
+            // The stake is suspended for the rest of the current epoch plus
+            // effective_faults epochs
+            let to_shift = effective_faults * EPOCH;
+            *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
+            rusk_abi::emit(
+                "shifted",
+                StakingEvent {
+                    public_key: *stake_pk,
+                    value: *eligibility,
+                },
+            );
+        }
 
         // Slash the provided amount or calculate the percentage according to
         // effective faults
@@ -327,26 +343,6 @@ impl StakeState {
                     value: to_slash,
                 },
             );
-        }
-
-        // Shift eligibility (aka stake suspension) only if warnings are
-        // saturated
-        if effective_faults > 0 {
-            // stake.amount can be None if the provisioner unstake in the same
-            // block
-            if let Some((_, eligibility)) = stake.amount.as_mut() {
-                // The stake is suspended for the rest of the current epoch plus
-                // effective_faults epochs
-                let to_shift = effective_faults * EPOCH;
-                *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
-                rusk_abi::emit(
-                    "shifted",
-                    StakingEvent {
-                        public_key: *stake_pk,
-                        value: *eligibility,
-                    },
-                );
-            }
         }
 
         let key = stake_pk.to_bytes();
