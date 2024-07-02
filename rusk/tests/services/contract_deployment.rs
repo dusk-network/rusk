@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::transfer::ContractDeploy;
+use execution_core::transfer::{CallOrDeploy, ContractDeploy};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
@@ -99,14 +99,14 @@ fn make_and_execute_transaction_deploy(
     let constructor_args = Some(vec![0, 1, 2, 3, 4, 5, 6, 7]);
 
     let tx = wallet
-        .execute_deploy(
+        .execute(
             &mut rng,
-            ContractDeploy {
+            CallOrDeploy::Deploy(ContractDeploy {
                 contract_id: Some(contract_id.to_bytes()),
                 bytecode: bytecode.as_ref().to_vec(),
                 owner: BOB_OWNER.to_vec(),
                 constructor_args,
-            },
+            }),
             SENDER_INDEX,
             gas_limit,
             GAS_PRICE,

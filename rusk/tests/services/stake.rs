@@ -7,6 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
+use execution_core::transfer::CallOrDeploy;
 use execution_core::{transfer::ContractCall, StakePublicKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -200,7 +201,14 @@ fn wallet_reward(
     )
     .expect("calldata should serialize");
     let tx = wallet
-        .execute(&mut rng, contract_call, 0, GAS_LIMIT, 1, 0)
+        .execute(
+            &mut rng,
+            CallOrDeploy::Call(contract_call),
+            0,
+            GAS_LIMIT,
+            1,
+            0,
+        )
         .expect("Failed to create a reward transaction");
     let executed_txs = generator_procedure(
         rusk,
