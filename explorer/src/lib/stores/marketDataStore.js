@@ -43,9 +43,19 @@ const marketDataStore = derived(
   initialState
 );
 
+function isDataStale() {
+  const { error, isLoading, lastUpdate } = get(marketDataStore);
+
+  return (
+    !!lastUpdate &&
+    (error !== null || (!isLoading && Date.now() > +lastUpdate + fetchInterval))
+  );
+}
+
 pollingDataStore.start();
 
 /** @type {MarketDataStore} */
 export default {
+  isDataStale,
   subscribe: marketDataStore.subscribe,
 };
