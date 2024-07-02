@@ -14,7 +14,6 @@
   export let hideBackButton = false;
 
   let offsetHeight = 0;
-  let receiveAddressHeight = 0;
   let buttonHeight = 0;
 
   const COLUMN_COUNT = 2;
@@ -24,21 +23,14 @@
   const dispatch = createEventDispatcher();
 
   $: qrWidth =
-    offsetHeight -
-    receiveAddressHeight -
-    buttonHeight -
-    COLUMN_COUNT * COLUMN_WIDTH -
-    BOTTOM_PADDING;
+    offsetHeight - buttonHeight - COLUMN_COUNT * COLUMN_WIDTH - BOTTOM_PADDING;
 </script>
 
 <div class="receive" bind:offsetHeight>
   <figure class="receive__address-qr-figure">
     <QrCode value={address} className="receive__qr" width={qrWidth} />
 
-    <figcaption
-      class="receive__address"
-      bind:offsetHeight={receiveAddressHeight}
-    >
+    <figcaption class="receive__address">
       <samp>{address}</samp>
     </figcaption>
   </figure>
@@ -80,6 +72,7 @@
     left: 0;
     z-index: 3;
     height: 100%;
+    overflow: auto;
 
     &__address-qr-figure {
       display: flex;
