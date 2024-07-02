@@ -22,7 +22,7 @@ use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
 
-const POINT_LIMIT: u64 = 0x700000;
+const POINT_LIMIT: u64 = 0xc00000;
 
 #[test]
 fn hash_host() {

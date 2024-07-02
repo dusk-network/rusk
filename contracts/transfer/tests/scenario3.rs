@@ -8,7 +8,7 @@ pub mod common;
 
 use crate::common::utils::*;
 
-use dusk_bytes::Serializable;
+use dusk_bytes::{ParseHexStr, Serializable};
 use execution_core::{
     stake::Stake, BlsPublicKey, BlsSecretKey, BlsSignature, Fee, JubJubScalar,
     Note, Ownable, PublicKey, SecretKey, Transaction, GENERATOR_NUMS_EXTENDED,
@@ -19,7 +19,8 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 use rkyv::{Archive, Deserialize, Serialize};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{
-    ContractData, ContractId, EconomicMode, Session, TRANSFER_CONTRACT, VM,
+    ContractData, ContractId, EconomicMode, Error, Session, TRANSFER_CONTRACT,
+    VM,
 };
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
@@ -27,6 +28,7 @@ use transfer_circuits::{
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
+const SUBSIDY_VALUE: u64 = GENESIS_VALUE / 2;
 const POINT_LIMIT: u64 = 0x10_000_000;
 
 const CHARLIE_CONTRACT_ID: ContractId = {
@@ -34,6 +36,14 @@ const CHARLIE_CONTRACT_ID: ContractId = {
     bytes[0] = 0xFC;
     ContractId::from_bytes(bytes)
 };
+const ALICE_CONTRACT_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFA;
+    ContractId::from_bytes(bytes)
+};
+
+const CHARLIE_FREE_LIMIT: u64 = 20_000_000;
+const CHARLIE_FREE_PRICE_HINT: (u64, u64) = (200, 1);
 
 const OWNER: [u8; 32] = [0; 32];
 
@@ -60,6 +70,9 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     let transfer_bytecode = include_bytes!(
         "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
+    let alice_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+    );
     let charlie_bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
     );
@@ -82,11 +95,23 @@ fn instantiate<Rng: RngCore + CryptoRng>(
                 charlie_bytecode,
                 ContractData::builder()
                     .owner(charlie_owner.to_bytes())
-                    .contract_id(CHARLIE_CONTRACT_ID),
+                    .contract_id(CHARLIE_CONTRACT_ID)
+                    .free_limit(CHARLIE_FREE_LIMIT)
+                    .free_price_hint(CHARLIE_FREE_PRICE_HINT),
                 POINT_LIMIT,
             )
             .expect("Deploying the charlie contract should succeed");
     }
+
+    session
+        .deploy(
+            alice_bytecode,
+            ContractData::builder()
+                .owner(OWNER)
+                .contract_id(ALICE_CONTRACT_ID),
+            POINT_LIMIT,
+        )
+        .expect("Deploying the alice contract should succeed");
 
     if let Some(psk) = psk {
         let genesis_note = Note::transparent(rng, &psk, GENESIS_VALUE);
@@ -275,9 +300,8 @@ fn subsidize_contract<R: RngCore + CryptoRng>(
 fn instantiate_and_subsidize_contract(
     vm: &mut VM,
     contract_id: ContractId,
+    subsidy_value: u64,
 ) -> (Session, SecretKey) {
-    const SUBSIDY_VALUE: u64 = GENESIS_VALUE / 2;
-
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let subsidizer_ssk = SecretKey::random(rng); // money giver to subsidize the sponsor
@@ -314,13 +338,13 @@ fn instantiate_and_subsidize_contract(
         subsidizer_psk,
         subsidizer_ssk,
         note,
-        SUBSIDY_VALUE,
+        subsidy_value,
     );
 
     assert_eq!(
         module_balance(&mut session, contract_id)
             .expect("Module balance should succeed"),
-        SUBSIDY_VALUE
+        subsidy_value
     );
 
     println!("contract has been subsidized with amount={SUBSIDY_VALUE}");
@@ -328,17 +352,17 @@ fn instantiate_and_subsidize_contract(
     (session, test_sponsor_ssk)
 }
 
-/// Creates and executes a transaction
-/// which calls a given method of a given contract.
-/// The transaction will contain input and output notes.
-/// The contract is expected to have funds in its wallet.
+/// Creates and executes a transaction which calls a given method
+/// of a given contract. The transaction will contain input and
+/// output notes. The contract will pay for all the gas costs
+/// so that the call will effectively be free for the caller.
 fn call_contract_method_with_deposit(
     mut session: &mut Session,
     contract_id: ContractId,
     method: impl AsRef<str>,
     sponsor_ssk: SecretKey,
     gas_price: u64,
-) -> (ExecutionResult, u64, u64) {
+) -> Result<(ExecutionResult, u64, u64), Error> {
     const SPONSORING_NOTE_VALUE: u64 = 100_000_000_000;
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
@@ -412,7 +436,6 @@ fn call_contract_method_with_deposit(
     let sk_r = sponsor_ssk.sk_r(note.stealth_address());
     let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
 
-    // The transaction hash must be computed before signing
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
@@ -464,8 +487,7 @@ fn call_contract_method_with_deposit(
         method.as_ref(),
         contract_id.to_bytes()[0]
     );
-    let execution_result =
-        execute(session, tx).expect("Executing TX should succeed");
+    let execution_result = execute(session, tx)?;
     update_root(session).expect("Updating the root should succeed");
 
     println!(
@@ -488,17 +510,102 @@ fn call_contract_method_with_deposit(
         balance_after
     );
 
-    (execution_result, balance_before, balance_after)
+    Ok((execution_result, balance_before, balance_after))
+}
+
+/// Creates and executes a transaction which calls a given method
+/// of a given contract. The transaction won't contain any notes
+/// and all gas costs will be paid by the called contract.
+/// The contract is expected to have funds in its wallet yet the
+/// caller does not need to have a wallet at all - it is a free
+/// call for the caller, except for the provided PoW.
+fn call_contract_method_no_deposit(
+    mut session: &mut Session,
+    contract_id: ContractId,
+    method: impl AsRef<str>,
+) -> Result<(ExecutionResult, u64, u64), Error> {
+    // make sure the sponsoring contract is properly subsidized (has funds)
+    let balance_before = module_balance(&mut session, contract_id)
+        .expect("Module balance should succeed");
+    println!(
+        "current balance of contract '{:X?}' is {}",
+        contract_id.to_bytes()[0],
+        balance_before
+    );
+
+    // we just need any psk, it won't be used as there won't be any refund
+    const DUMMY_PSK: &str = "8ebcaed21b0dd87eb7ca0b1cc1cd3e2e3df85a737037f475f9f7c65176f9ad3f8ebcaed21b0dd87eb7ca0b1cc1cd3e2e3df85a737037f475f9f7c65176f9ad3f";
+    let dummy_refund_psk: PublicKey = PublicKey::from_hex_str(DUMMY_PSK)
+        .expect("public key creation should succeed");
+
+    let mut rng = StdRng::seed_from_u64(0xcafe);
+
+    // note: gas price zero means that this is will be a free call
+    // we use dummy psk until we change the format of the Fee struct
+    // to accommodate for the free calls
+    let fee = Fee::new(&mut rng, POINT_LIMIT, 0, &dummy_refund_psk);
+
+    let call = Some((
+        contract_id.to_bytes(),
+        String::from(method.as_ref()),
+        vec![],
+    ));
+
+    let anchor =
+        root(session).expect("Getting the anchor should be successful");
+
+    let tx = Transaction {
+        anchor,
+        nullifiers: vec![],
+        outputs: vec![],
+        fee,
+        crossover: None,
+        proof: vec![],
+        call,
+    };
+
+    println!(
+        "executing method '{}' - contract '{:X?}' is paying",
+        method.as_ref(),
+        contract_id.to_bytes()[0]
+    );
+    let execution_result = execute(session, tx)?;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!(
+        "gas spent for the execution of method '{}' is {}",
+        method.as_ref(),
+        execution_result.gas_spent
+    );
+
+    let balance_after = module_balance(&mut session, contract_id)
+        .expect("Module balance should succeed");
+
+    println!(
+        "contract's '{:X?}' balance before the call: {}",
+        contract_id.as_bytes()[0],
+        balance_before
+    );
+    println!(
+        "contract's '{:X?}' balance after the call: {}",
+        contract_id.as_bytes()[0],
+        balance_after
+    );
+
+    Ok((execution_result, balance_before, balance_after))
 }
 
 #[test]
-fn contract_pays_for_call_with_deposit() {
+fn contract_pays_with_deposit() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let (mut session, sponsor_ssk) =
-        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (mut session, sponsor_ssk) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
     let (execution_result, balance_before, balance_after) =
         call_contract_method_with_deposit(
             &mut session,
@@ -506,7 +613,8 @@ fn contract_pays_for_call_with_deposit() {
             "pay",
             sponsor_ssk,
             GAS_PRICE,
-        );
+        )
+        .expect("Contract call should succeed");
     assert!(balance_after < balance_before);
     let balance_delta = balance_before - balance_after;
     if let EconomicMode::Allowance(allowance) = execution_result.economic_mode {
@@ -518,33 +626,133 @@ fn contract_pays_for_call_with_deposit() {
 }
 
 #[test]
-fn contract_pays_not_enough_allowance() {
-    const GAS_PRICE: u64 = 2;
+fn contract_pays_no_deposit() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let (mut session, sponsor_ssk) =
-        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (mut session, _) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
     let (execution_result, balance_before, balance_after) =
-        call_contract_method_with_deposit(
+        call_contract_method_no_deposit(
             &mut session,
             CHARLIE_CONTRACT_ID,
-            "pay_and_fail",
-            sponsor_ssk,
-            GAS_PRICE,
-        );
-    assert_eq!(balance_after, balance_before);
-    assert!(execution_result.gas_spent > 0);
+            "pay",
+        )
+        .expect("Contract call should succeed");
+    assert!(balance_after < balance_before);
+    let balance_delta = balance_before - balance_after;
+    if let EconomicMode::Allowance(allowance) = execution_result.economic_mode {
+        println!("balance_delta={} allowance={}", balance_delta, allowance);
+        assert!(
+            allowance
+                >= (balance_delta * CHARLIE_FREE_PRICE_HINT.1
+                    / CHARLIE_FREE_PRICE_HINT.0) /* we need to convert
+                                                  * balance delta, which is
+                                                  * in Dusk,
+                                                  * into gas points, here we assume that during test
+                                                  * the average gas price is
+                                                  * 1 */
+        )
+    } else {
+        assert!(false);
+    }
+    assert!(balance_delta >= execution_result.gas_spent);
 }
 
 #[test]
-fn contract_does_not_pay_indirectly() {
+fn contract_pays_not_enough_allowance_with_deposit() {
     const GAS_PRICE: u64 = 2;
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let (mut session, sponsor_ssk) =
-        instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
+    let (mut session, sponsor_ssk) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
+    let result = call_contract_method_with_deposit(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "pay_and_fail",
+        sponsor_ssk,
+        GAS_PRICE,
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn contract_pays_not_enough_allowance_no_deposit() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, _) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
+    let result = call_contract_method_no_deposit(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "pay_and_fail",
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn contract_pays_not_enough_balance_with_deposit() {
+    const INSUFFICIENT_SUBSIDY: u64 = 1000;
+    const GAS_PRICE: u64 = 2;
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, sponsor_ssk) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        INSUFFICIENT_SUBSIDY,
+    );
+    let result = call_contract_method_with_deposit(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "pay",
+        sponsor_ssk,
+        GAS_PRICE,
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn contract_pays_not_enough_balance_no_deposit() {
+    const INSUFFICIENT_SUBSIDY: u64 = 1000;
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, _) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        INSUFFICIENT_SUBSIDY,
+    );
+    let result = call_contract_method_no_deposit(
+        &mut session,
+        CHARLIE_CONTRACT_ID,
+        "pay",
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn contract_does_not_pay_indirectly_with_deposit() {
+    const GAS_PRICE: u64 = 2;
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, sponsor_ssk) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
     let (execution_result, balance_before, balance_after) =
         call_contract_method_with_deposit(
             &mut session,
@@ -552,7 +760,47 @@ fn contract_does_not_pay_indirectly() {
             "pay_indirectly_and_fail",
             sponsor_ssk,
             GAS_PRICE,
-        );
+        )
+        .expect("Contract call should succeed");
     assert_eq!(balance_after, balance_before);
     assert_eq!(execution_result.economic_mode, EconomicMode::None);
+}
+
+#[test]
+fn contract_does_not_pay_indirectly_no_deposit() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, _) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
+    let (execution_result, balance_before, balance_after) =
+        call_contract_method_no_deposit(
+            &mut session,
+            CHARLIE_CONTRACT_ID,
+            "pay_indirectly_and_fail",
+        )
+        .expect("Contract call should succeed");
+    assert_eq!(balance_after, balance_before);
+    assert_eq!(execution_result.economic_mode, EconomicMode::None);
+}
+
+#[test]
+fn free_tx_calls_not_paying_contract() {
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let (mut session, _) = instantiate_and_subsidize_contract(
+        vm,
+        CHARLIE_CONTRACT_ID,
+        SUBSIDY_VALUE,
+    );
+    let result = call_contract_method_no_deposit(
+        &mut session,
+        ALICE_CONTRACT_ID,
+        "ping",
+    );
+    assert!(result.is_err())
 }

@@ -10,6 +10,7 @@
 
 extern crate alloc;
 
+mod avg_price;
 mod circuits;
 mod error;
 mod state;

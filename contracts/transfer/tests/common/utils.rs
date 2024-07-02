@@ -20,6 +20,7 @@ use execution_core::{
 
 const POINT_LIMIT: u64 = 0x10_000_000;
 
+#[derive(Debug)]
 pub struct ExecutionResult {
     pub gas_spent: u64,
     pub economic_mode: EconomicMode,
@@ -149,19 +150,17 @@ pub fn execute(
         .clone()
         .map(|(module_id, _, _)| ContractId::from_bytes(module_id));
 
-    let refund_receipt = session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &(
-                tx.fee,
-                receipt.gas_spent,
-                receipt.economic_mode.clone(),
-                contract_id,
-            ),
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
+    let refund_receipt = session.call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "refund",
+        &(
+            tx.fee,
+            receipt.gas_spent,
+            receipt.economic_mode.clone(),
+            contract_id,
+        ),
+        u64::MAX,
+    )?;
 
     receipt.events.extend(refund_receipt.events);
 

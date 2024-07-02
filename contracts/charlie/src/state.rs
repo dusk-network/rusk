@@ -29,6 +29,7 @@ pub struct Subsidy {
 }
 
 const SUBSIDY_MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
+const PING_RETURN: u64 = 775;
 
 /// Return the digest to be signed in the `subsidize` function of a contract.
 #[must_use]
@@ -50,9 +51,14 @@ impl Charlie {
             .expect("Obtaining gas price should succeed")
     }
 
+    /// ping
+    pub fn ping(&mut self) -> u64 {
+        PING_RETURN
+    }
+
     /// calling this method will be paid by the contract
     pub fn pay(&mut self) {
-        const ALLOWANCE: u64 = 40_000_000;
+        const ALLOWANCE: u64 = 60_000_000;
         let allowance = ALLOWANCE / Self::gas_price();
         // this call is paid for by the contract, up to 'allowance'
         rusk_abi::set_allowance(allowance);
@@ -63,7 +69,7 @@ impl Charlie {
     /// the execution cost, transaction will fail
     /// and contract balance won't be affected
     pub fn pay_and_fail(&mut self) {
-        const ALLOWANCE: u64 = 8_000_000;
+        const ALLOWANCE: u64 = 80_000;
         let allowance = ALLOWANCE / Self::gas_price();
         // this call is paid for by the contract, up to 'allowance'
         rusk_abi::set_allowance(allowance);

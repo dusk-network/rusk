@@ -9,7 +9,10 @@
 #[cfg(feature = "node")]
 pub mod chain;
 mod error;
+#[cfg(feature = "node")]
+pub mod free_tx_verifier;
 pub mod http;
+pub mod pow_verifier;
 pub mod verifier;
 mod version;
 

@@ -8,6 +8,8 @@
 
 mod args;
 mod config;
+#[cfg(feature = "node")]
+mod db_view;
 #[cfg(feature = "ephemeral")]
 mod ephemeral;
 
@@ -34,6 +36,8 @@ use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
 use crate::config::Config;
+#[cfg(feature = "node")]
+use crate::db_view::DBView;
 
 // Number of workers should be at least `ACCUMULATOR_WORKERS_AMOUNT` from
 // `dusk_consensus::config`.
@@ -103,11 +107,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
 
+        #[cfg(feature = "ephemeral")]
+        let db_path = tempdir.as_ref().map_or_else(
+            || config.chain.db_path(),
+            |t| std::path::Path::to_path_buf(t.path()),
+        );
+
+        #[cfg(not(feature = "ephemeral"))]
+        let db_path = config.chain.db_path();
+
+        let db = rocksdb::Backend::create_or_open(
+            db_path,
+            config.chain.db_options(),
+        );
+
         let rusk = Rusk::new(
             state_dir,
             config.chain.generation_timeout(),
             config.http.feeder_call_gas,
             _event_sender,
+            DBView::new(db.clone()),
         )?;
 
         info!("Rusk VM loaded");
@@ -126,19 +145,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(TelemetrySrv::new(config.telemetry.listen_addr())),
         ];
 
-        #[cfg(feature = "ephemeral")]
-        let db_path = tempdir.as_ref().map_or_else(
-            || config.chain.db_path(),
-            |t| std::path::Path::to_path_buf(t.path()),
-        );
-
-        #[cfg(not(feature = "ephemeral"))]
-        let db_path = config.chain.db_path();
-
-        let db = rocksdb::Backend::create_or_open(
-            db_path,
-            config.chain.db_options(),
-        );
         let net = Kadcast::new(config.clone().kadcast.into())?;
 
         let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
