@@ -23,7 +23,7 @@ use execution_core::{
     SecretKey, Sender, TxSkeleton, ViewKey,
 };
 use rusk_abi::{
-    CallReceipt, ContractError, ContractId, Error, Session, TRANSFER_CONTRACT,
+    CallReceipt, ContractError, Error, Session, TRANSFER_CONTRACT,
 };
 
 const POINT_LIMIT: u64 = 0x100000000;
