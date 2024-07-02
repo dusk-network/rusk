@@ -14,7 +14,7 @@ use alloc::string::{FromUtf8Error, String};
 use alloc::vec::Vec;
 
 use dusk_bytes::Error as BytesError;
-use execution_core::transfer::{CallOrDeploy, ContractDeploy};
+use execution_core::transfer::CallOrDeploy;
 use execution_core::{
     stake::{Stake, Unstake, Withdraw},
     transfer::{ContractCall, Fee, Payload, Transaction},
@@ -344,7 +344,7 @@ where
     pub fn execute<Rng>(
         &self,
         rng: &mut Rng,
-        contract_call: ContractCall,
+        call_or_deploy: CallOrDeploy,
         sender_index: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -379,56 +379,7 @@ where
             outputs,
             fee,
             0,
-            Some(CallOrDeploy::Call(contract_call)),
-        )
-        .map_err(Error::from_state_err)?;
-
-        self.prover
-            .compute_proof_and_propagate(&utx)
-            .map_err(Error::from_prover_err)
-    }
-
-    /// Execute contract deployment
-    #[allow(clippy::too_many_arguments)]
-    pub fn execute_deploy<Rng>(
-        &self,
-        rng: &mut Rng,
-        contract_deploy: ContractDeploy,
-        sender_index: u64,
-        gas_limit: u64,
-        gas_price: u64,
-        deposit: u64,
-    ) -> Result<Transaction, Error<S, SC, PC>>
-    where
-        Rng: RngCore + CryptoRng,
-    {
-        let sender_sk = self
-            .store
-            .retrieve_sk(sender_index)
-            .map_err(Error::from_store_err)?;
-        let sender_pk = PublicKey::from(&sender_sk);
-
-        let (inputs, outputs) = self.inputs_and_change_output(
-            rng,
-            &sender_sk,
-            &sender_pk,
-            &sender_pk,
-            0,
-            gas_limit * gas_price,
-            deposit,
-        )?;
-
-        let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
-
-        let utx = new_unproven_tx(
-            rng,
-            &self.state,
-            &sender_sk,
-            inputs,
-            outputs,
-            fee,
-            0,
-            Some(CallOrDeploy::Deploy(contract_deploy)),
+            Some(call_or_deploy),
         )
         .map_err(Error::from_state_err)?;
 
