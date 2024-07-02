@@ -386,7 +386,6 @@ mod tests {
         };
 
         let fee = Fee::new(&mut rng, &sender_pk, 4242, 42);
-        let has_deposit = true;
         let call = ContractCall::new(
             [10; 32],
             "some method",
@@ -397,7 +396,6 @@ mod tests {
         let payload = Payload {
             tx_skeleton,
             fee,
-            deposit: has_deposit,
             contract_call: Some(call),
         };
 
