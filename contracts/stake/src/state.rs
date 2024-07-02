@@ -315,7 +315,7 @@ impl StakeState {
             let to_shift = effective_faults * EPOCH;
             *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
             rusk_abi::emit(
-                "shifted",
+                "suspended",
                 StakingEvent {
                     public_key: *stake_pk,
                     value: *eligibility,

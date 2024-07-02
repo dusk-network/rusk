@@ -87,7 +87,7 @@ fn reward_slash() -> Result<(), Error> {
     // 10% of current amount
     let slash_amount = stake_amount / 10;
     assert_event(&receipt.events, "slash", &stake_pk, slash_amount);
-    assert_event(&receipt.events, "shifted", &stake_pk, 4320);
+    assert_event(&receipt.events, "suspended", &stake_pk, 4320);
 
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -100,7 +100,7 @@ fn reward_slash() -> Result<(), Error> {
     // 20% of current amount
     let slash_amount = stake_amount / 100 * 20;
     assert_event(&receipt.events, "slash", &stake_pk, slash_amount);
-    assert_event(&receipt.events, "shifted", &stake_pk, 6480);
+    assert_event(&receipt.events, "suspended", &stake_pk, 6480);
 
     Ok(())
 }
