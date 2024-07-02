@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::Path;
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{Arc, RwLock};
 
-use execution_core::{PublicKey, SecretKey, StakePublicKey};
+use execution_core::{transfer::ContractCall, StakePublicKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::chain::MINIMUM_STAKE;
@@ -43,16 +43,6 @@ fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-static SK: LazyLock<SecretKey> = LazyLock::new(|| {
-    info!("Generating SecretKey");
-    TestStore.retrieve_sk(0).expect("Should not fail in test")
-});
-
-// static STAKE_SK: LazyLock<StakeSecretKey> = LazyLock::new(|| {
-//     info!("Generating StakeSecretKey");
-//     TestStore.retrieve_stake_sk(0).expect("Should not fail in test")
-// });
-
 /// Stakes an amount Dusk and produces a block with this single transaction,
 /// checking the stake is set successfully. It then proceeds to withdraw the
 /// stake and checking it is correctly withdrawn.
@@ -61,9 +51,6 @@ fn wallet_stake(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     value: u64,
 ) {
-    // Sender pk
-    let pk = PublicKey::from(LazyLock::force(&SK));
-
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     wallet
@@ -82,7 +69,7 @@ fn wallet_stake(
     );
 
     let tx = wallet
-        .stake(&mut rng, 0, 2, &pk, value, GAS_LIMIT, 1)
+        .stake(&mut rng, 0, 2, value, GAS_LIMIT, 1)
         .expect("Failed to create a stake transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -113,7 +100,7 @@ fn wallet_stake(
         .expect("stake amount to be found");
 
     let tx = wallet
-        .unstake(&mut rng, 0, 0, &pk, GAS_LIMIT, 1)
+        .unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
         .expect("Failed to unstake");
     let spent_txs = generator_procedure(
         rusk,
@@ -131,7 +118,7 @@ fn wallet_stake(
     assert_eq!(stake.amount, None);
 
     let tx = wallet
-        .withdraw(&mut rng, 0, 1, &pk, GAS_LIMIT, 1)
+        .withdraw(&mut rng, 0, 1, GAS_LIMIT, 1)
         .expect("failed to withdraw reward");
     generator_procedure(
         rusk,
@@ -197,9 +184,6 @@ fn wallet_reward(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
 ) {
-    // Sender pk
-    let pk = PublicKey::from(LazyLock::force(&SK));
-
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     let stake_sk = wallet.store().retrieve_stake_sk(2).unwrap();
@@ -209,17 +193,14 @@ fn wallet_reward(
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 
+    let contract_call = ContractCall::new(
+        STAKE_CONTRACT.to_bytes(),
+        "reward",
+        &reward_calldata,
+    )
+    .expect("calldata should serialize");
     let tx = wallet
-        .execute(
-            &mut rng,
-            rusk_abi::STAKE_CONTRACT.to_bytes().into(),
-            String::from("reward"),
-            reward_calldata,
-            0,
-            &pk,
-            GAS_LIMIT,
-            1,
-        )
+        .execute(&mut rng, contract_call, 0, GAS_LIMIT, 1, 0)
         .expect("Failed to create a reward transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -302,8 +283,8 @@ pub async fn slash() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    let module_balance = rusk
-        .module_balance(STAKE_CONTRACT)
+    let contract_balance = rusk
+        .contract_balance(STAKE_CONTRACT)
         .expect("balance to exists");
     let to_slash = wallet.stake_public_key(0).unwrap();
     let stake = wallet.get_stake(0).unwrap();
@@ -329,9 +310,9 @@ pub async fn slash() -> Result<()> {
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
     assert_eq!(after_slash.amount, Some((dusk(20.0), 4320)));
-    let new_balance = rusk.module_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, module_balance);
-    let module_balance = new_balance;
+    let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
+    assert_eq!(new_balance, contract_balance);
+    let contract_balance = new_balance;
 
     generator_procedure(
         &rusk,
@@ -352,9 +333,9 @@ pub async fn slash() -> Result<()> {
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
     assert_eq!(after_slash.amount, Some((dusk(20.0), 4320)));
-    let new_balance = rusk.module_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, module_balance);
-    let module_balance = new_balance;
+    let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
+    assert_eq!(new_balance, contract_balance);
+    let contract_balance = new_balance;
 
     generator_procedure(
         &rusk,
@@ -375,8 +356,8 @@ pub async fn slash() -> Result<()> {
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, 0);
     assert_eq!(after_slash.amount, Some((dusk(20.0), 12960)));
-    let new_balance = rusk.module_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, module_balance);
+    let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
+    assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
         &rusk,

@@ -13,7 +13,7 @@ use execution_core::{
     stake::{
         next_epoch, Stake, StakeData, StakingEvent, Unstake, Withdraw, EPOCH,
     },
-    transfer::{Mint, Stct, WfctRaw},
+    transfer::Mint,
     StakePublicKey,
 };
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
@@ -90,16 +90,8 @@ impl StakeState {
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let transfer_module = TRANSFER_CONTRACT;
-
-        let stct = Stct {
-            module: rusk_abi::self_id().to_bytes(),
-            value: stake.value,
-            proof: stake.proof,
-        };
-
-        let _: bool = rusk_abi::call(transfer_module, "stct", &stct)
-            .expect("Sending note to contract should succeed");
+        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &stake.value)
+            .expect("Depositing funds into contract should succeed");
 
         rusk_abi::emit(
             "stake",
@@ -132,7 +124,8 @@ impl StakeState {
 
         // verify signature
         let digest =
-            Unstake::signature_message(counter, unstake.note.as_slice());
+            Unstake::signature_message(counter, value, unstake.address)
+                .to_vec();
 
         if !rusk_abi::verify_bls(digest, unstake.public_key, unstake.signature)
         {
@@ -140,17 +133,16 @@ impl StakeState {
         }
         // make call to transfer contract to withdraw a note from this contract
         // containing the value of the stake
-        let transfer_module = TRANSFER_CONTRACT;
-        let _: bool = rusk_abi::call(
-            transfer_module,
-            "wfct_raw",
-            &WfctRaw {
-                value,
-                note: unstake.note,
-                proof: unstake.proof,
-            },
-        )
-        .expect("Withdrawing note from contract should be successful");
+        let withdraw_data = Mint {
+            value,
+            address: unstake.address,
+            sender: unstake.public_key,
+        };
+        let _: () =
+            rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw_data)
+                .expect(
+                "Withdrawing the balance from contract should be successful",
+            );
 
         rusk_abi::emit(
             "unstake",
@@ -200,14 +192,14 @@ impl StakeState {
 
         // make call to transfer contract to mint the reward to the given
         // address
-        let transfer_module = TRANSFER_CONTRACT;
+        let transfer_contract = TRANSFER_CONTRACT;
         let _: bool = rusk_abi::call(
-            transfer_module,
+            transfer_contract,
             "mint",
             &Mint {
                 address: withdraw.address,
                 value: reward,
-                nonce: withdraw.nonce,
+                sender: withdraw.public_key,
             },
         )
         .expect("Minting a reward note should succeed");
@@ -367,11 +359,11 @@ impl StakeState {
         // Update the staked amount
         stake.0 -= to_slash;
 
-        // Update the module balance to reflect the change in the amount
+        // Update the contract balance to reflect the change in the amount
         // withdrawable from the contract
         let _: bool = rusk_abi::call(
             TRANSFER_CONTRACT,
-            "sub_module_balance",
+            "sub_contract_balance",
             &(STAKE_CONTRACT, to_slash),
         )
         .expect("Subtracting balance should succeed");

@@ -291,11 +291,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // hit the chain.
         let stake_calls =
             txs.iter().filter(|t| t.err.is_none()).filter_map(|t| {
-                match &t.inner.inner.call {
-                    Some((STAKE_CONTRACT, fn_name, data))
-                        if (fn_name == STAKE || fn_name == UNSTAKE) =>
+                match &t.inner.inner.payload().contract_call {
+                    Some(call)
+                        if (call.contract == STAKE_CONTRACT
+                            && (call.fn_name == STAKE
+                                || call.fn_name == UNSTAKE)) =>
                     {
-                        Some((fn_name, data))
+                        Some((&call.fn_name, &call.fn_args))
                     }
                     _ => None,
                 }

@@ -13,7 +13,9 @@ use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_consensus::operations::CallParams;
-use execution_core::{StakePublicKey, Transaction as PhoenixTransaction};
+use execution_core::{
+    transfer::Transaction as PhoenixTransaction, StakePublicKey,
+};
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{Attestation, Block, Header, IterationsInfo, SpentTransaction},
@@ -51,6 +53,7 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     Ok(rusk)
 }
 
+#[allow(dead_code)]
 pub struct ExecuteResult {
     pub executed: usize,
     pub discarded: usize,
@@ -60,6 +63,7 @@ pub struct ExecuteResult {
 /// including all specified transactions, checking the outputs are as
 /// expected. If not `expected` is specified, all txs must be included in the
 /// block
+#[allow(dead_code)]
 pub fn generator_procedure(
     rusk: &Rusk,
     txs: &[PhoenixTransaction],

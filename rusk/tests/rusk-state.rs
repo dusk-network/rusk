@@ -14,7 +14,7 @@ use std::path::Path;
 use std::sync::{mpsc, Arc, RwLock};
 
 use execution_core::{
-    transfer::TreeLeaf, BlsScalar, Note, PublicKey, SecretKey,
+    transfer::TreeLeaf, JubJubScalar, Note, PublicKey, SecretKey,
 };
 use ff::Field;
 use parking_lot::RwLockWriteGuard;
@@ -59,10 +59,22 @@ where
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let sk = SecretKey::random(&mut rng);
-    let pk = PublicKey::from(&sk);
+    let sender_sk = SecretKey::random(&mut rng);
+    let sender_pk = PublicKey::from(&sender_sk);
+    let receiver_pk = PublicKey::from(&SecretKey::random(&mut rng));
 
-    let note = Note::transparent(&mut rng, &pk, INITIAL_BALANCE);
+    let sender_blinder = [
+        JubJubScalar::random(&mut rng),
+        JubJubScalar::random(&mut rng),
+    ];
+
+    let note = Note::transparent(
+        &mut rng,
+        &sender_pk,
+        &receiver_pk,
+        INITIAL_BALANCE,
+        sender_blinder,
+    );
 
     rusk.with_tip(|mut tip, vm| {
         let current_commit = tip.current;
@@ -195,21 +207,16 @@ async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
 
         let receiver_index = (sender_index + 1) % N_ADDRESSES as u64;
         let receiver = wallet.public_key(receiver_index).unwrap();
-        let refund = wallet.public_key(sender_index).unwrap();
-
-        let ref_id = BlsScalar::random(&mut rng);
 
         tasks.push(task::spawn_blocking(move || {
             wallet
                 .transfer(
                     &mut rng,
                     sender_index,
-                    &refund,
                     &receiver,
                     TRANSFER_VALUE,
                     GAS_LIMIT,
                     LUX,
-                    ref_id,
                 )
                 .expect("Making a transfer TX should succeed")
         }));

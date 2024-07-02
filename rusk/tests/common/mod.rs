@@ -11,6 +11,7 @@ pub mod wallet;
 
 use tracing_subscriber::EnvFilter;
 
+#[allow(dead_code)]
 pub fn logger() {
     // Can't use `with_default_env` since we want to have a default
     // directive, and *then* apply the environment variable on top of it,

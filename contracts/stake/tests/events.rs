@@ -83,7 +83,7 @@ fn stake_hard_slash() -> Result<(), Error> {
 
     session.call::<_, ()>(
         TRANSFER_CONTRACT,
-        "add_module_balance",
+        "add_contract_balance",
         &(STAKE_CONTRACT, balance),
         u64::MAX,
     )?;

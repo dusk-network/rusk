@@ -169,7 +169,7 @@ impl Cluster<PublicKey> {
         match pks.split_first() {
             Some((first, rest)) => {
                 let mut apk = StakeAggPublicKey::from(first);
-                apk.aggregate(rest);
+                apk.aggregate(rest)?;
                 Ok(apk)
             }
             None => Err(StepSigError::EmptyApk),

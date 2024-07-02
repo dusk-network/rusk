@@ -82,9 +82,10 @@ impl Query {
                             let tx_contract =
                                 t.0.inner
                                     .inner
-                                    .call
+                                    .payload()
+                                    .contract_call()
                                     .as_ref()
-                                    .map(|(c, ..)| *c)
+                                    .map(|c| c.contract)
                                     .unwrap_or(
                                         rusk_abi::TRANSFER_CONTRACT.to_bytes(),
                                     );

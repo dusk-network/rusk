@@ -12,7 +12,7 @@ check: wasm ## Run the Rust check on the project features
 	@cargo check --target wasm32-unknown-unknown
 	@cargo check
 
-test: wasm ## Perform the contract tests defined in the host module
+test: wasm ## Perform the contract tests defined in the host contract
 	@cargo test --release
 
 wasm: ## Generate the optimized WASM for the contract given

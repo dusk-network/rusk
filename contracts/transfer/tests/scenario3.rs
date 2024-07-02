@@ -6,12 +6,14 @@
 
 pub mod common;
 
-use crate::common::utils::*;
+use crate::common::{
+    contract_balance, create_transaction, execute, update_root, ExecutionResult,
+};
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    stake::Stake, BlsPublicKey, BlsSecretKey, BlsSignature, Fee, JubJubScalar,
-    Note, Ownable, PublicKey, SecretKey, Transaction, GENERATOR_NUMS_EXTENDED,
+    stake::Stake, transfer::ContractCall, BlsPublicKey, BlsSecretKey,
+    BlsSignature, JubJubScalar, Note, PublicKey, SecretKey,
 };
 use ff::Field;
 use rand::rngs::StdRng;
@@ -20,10 +22,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{
     ContractData, ContractId, EconomicMode, Session, TRANSFER_CONTRACT, VM,
-};
-use transfer_circuits::{
-    CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
-    SendToContractTransparentCircuit,
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
@@ -47,14 +45,12 @@ pub struct Subsidy {
     pub signature: BlsSignature,
     /// Value of the subsidy.
     pub value: u64,
-    /// Proof of the `STCT` circuit.
-    pub proof: Vec<u8>,
 }
 
 fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
-    psk: Option<PublicKey>,
+    pk: Option<PublicKey>,
     charlie_owner: Option<PublicKey>,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
@@ -88,8 +84,13 @@ fn instantiate<Rng: RngCore + CryptoRng>(
             .expect("Deploying the charlie contract should succeed");
     }
 
-    if let Some(psk) = psk {
-        let genesis_note = Note::transparent(rng, &psk, GENESIS_VALUE);
+    if let Some(pk) = pk {
+        let sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+        let genesis_note =
+            Note::transparent(rng, &pk, &pk, GENESIS_VALUE, sender_blinder);
 
         // push genesis note to the contract
         session
@@ -115,156 +116,55 @@ fn instantiate<Rng: RngCore + CryptoRng>(
 /// Expects transparent note which will fund the subsidy and a subsidy value
 /// which is smaller or equal to the value of the note.
 /// Returns the gas spent on the operation.
-fn subsidize_contract<R: RngCore + CryptoRng>(
-    rng: &mut R,
+fn subsidize_contract(
     mut session: &mut Session,
     contract_id: ContractId,
     subsidy_keeper_pk: BlsPublicKey,
     subsidy_keeper_sk: BlsSecretKey,
-    subsidizer_psk: PublicKey,
-    subsidizer_ssk: SecretKey,
-    input_note: Note,
+    subsidizer_sk: &SecretKey,
+    input_note_pos: u64,
     subsidy_value: u64,
 ) -> ExecutionResult {
-    let input_note_value = input_note
-        .value(None)
-        .expect("The value should be transparent");
-    let input_blinder = input_note
-        .blinding_factor(None)
-        .expect("The blinder should be transparent");
-    let input_nullifier = input_note.gen_nullifier(&subsidizer_ssk);
-
+    let receiver_pk = PublicKey::from(subsidizer_sk);
     let gas_limit = dusk(1.0);
     let gas_price = LUX;
+    let input_pos = [input_note_pos];
+    let transfer_value = 0;
+    let is_obfuscated = false;
+    let deposit = subsidy_value;
 
-    assert!(subsidy_value <= input_note_value);
-    let crossover_blinder = JubJubScalar::random(&mut *rng);
-
-    let (mut fee, crossover) = Note::obfuscated(
-        rng,
-        &subsidizer_psk,
-        subsidy_value,
-        crossover_blinder,
-    )
-    .try_into()
-    .expect("Getting a fee and a crossover should succeed");
-
-    fee.gas_limit = gas_limit;
-    fee.gas_price = gas_price;
-
-    let change_value = input_note_value - subsidy_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(&mut *rng);
-    let change_note =
-        Note::obfuscated(rng, &subsidizer_psk, change_value, change_blinder);
-
-    let stct_address = rusk_abi::contract_to_scalar(&CHARLIE_CONTRACT_ID);
-    let stct_signature = SendToContractTransparentCircuit::sign(
-        rng,
-        &subsidizer_ssk,
-        &fee,
-        &crossover,
-        subsidy_value,
-        &stct_address,
+    let sig = subsidy_keeper_sk.sign(
+        &subsidy_keeper_pk,
+        &Stake::signature_message(0, subsidy_value),
     );
-
-    let stct_circuit = SendToContractTransparentCircuit::new(
-        &fee,
-        &crossover,
-        subsidy_value,
-        crossover_blinder,
-        stct_address,
-        stct_signature,
-    );
-
-    let (prover, _) = prover_verifier("SendToContractTransparentCircuit");
-    let (stct_proof, _) = prover
-        .prove(rng, &stct_circuit)
-        .expect("Proving STCT circuit should succeed");
-
-    let stake_digest = Stake::signature_message(0, subsidy_value);
-    let sig = subsidy_keeper_sk.sign(&subsidy_keeper_pk, &stake_digest);
 
     let subsidy = Subsidy {
         public_key: subsidy_keeper_pk,
         signature: sig,
         value: subsidy_value,
-        proof: stct_proof.to_bytes().to_vec(),
     };
-    let subsidy_bytes = rkyv::to_bytes::<_, 4096>(&subsidy)
+    let subsidy_bytes = rkyv::to_bytes::<_, 1024>(&subsidy)
         .expect("Subsidy should be correctly serialized")
         .to_vec();
 
-    let call = Some((
-        contract_id.to_bytes(),
-        String::from("subsidize"),
-        subsidy_bytes,
-    ));
+    let contract_call = Some(ContractCall {
+        contract: contract_id.to_bytes(),
+        fn_name: String::from("subsidize"),
+        fn_args: subsidy_bytes,
+    });
 
-    let mut execute_circuit = ExecuteCircuitOneTwo::new();
-
-    execute_circuit.set_fee_crossover(
-        &fee,
-        &crossover,
-        subsidy_value,
-        crossover_blinder,
+    let tx = create_transaction(
+        session,
+        subsidizer_sk,
+        &receiver_pk,
+        gas_limit,
+        gas_price,
+        input_pos,
+        transfer_value,
+        is_obfuscated,
+        deposit,
+        contract_call,
     );
-
-    execute_circuit
-        .add_output_with_data(change_note, change_value, change_blinder)
-        .expect("Appending output should succeed");
-
-    let input_opening = opening(&mut session, *input_note.pos())
-        .expect("Querying the opening for the given position should succeed")
-        .expect("An opening should exist for a note in the tree");
-
-    let sk_r = subsidizer_ssk.sk_r(input_note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
-
-    let anchor =
-        root(&mut session).expect("Getting the anchor should be successful");
-
-    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
-        &[input_nullifier],
-        &[change_note],
-        &anchor,
-        &fee,
-        &Some(crossover),
-        &call,
-    );
-    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
-
-    execute_circuit.set_tx_hash(tx_hash);
-
-    let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &subsidizer_ssk, &input_note, tx_hash);
-    let circuit_input = CircuitInput::new(
-        input_opening,
-        input_note,
-        pk_r_p.into(),
-        input_note_value,
-        input_blinder,
-        input_nullifier,
-        circuit_input_signature,
-    );
-
-    execute_circuit
-        .add_input(circuit_input)
-        .expect("Appending input should succeed");
-
-    let (prover_key, _) = prover_verifier("ExecuteCircuitOneTwo");
-    let (execute_proof, _) = prover_key
-        .prove(rng, &execute_circuit)
-        .expect("Proving should be successful");
-
-    let tx = Transaction {
-        anchor,
-        nullifiers: vec![input_nullifier],
-        outputs: vec![change_note],
-        fee,
-        crossover: Some(crossover),
-        proof: execute_proof.to_bytes().to_vec(),
-        call,
-    };
 
     let execution_result =
         execute(&mut session, tx).expect("Executing TX should succeed");
@@ -280,52 +180,43 @@ fn instantiate_and_subsidize_contract(
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let subsidizer_ssk = SecretKey::random(rng); // money giver to subsidize the sponsor
-    let subsidizer_psk = PublicKey::from(&subsidizer_ssk);
+    let subsidizer_sk = SecretKey::random(rng); // money giver to subsidize the sponsor
+    let subsidizer_pk = PublicKey::from(&subsidizer_sk);
 
-    let test_sponsor_ssk = SecretKey::random(rng);
-    let test_sponsor_psk = PublicKey::from(&test_sponsor_ssk); // sponsor is Charlie's owner
+    let charlie_owner_sk = SecretKey::random(rng);
+    let charlie_owner_pk = PublicKey::from(&charlie_owner_sk); // sponsor is Charlie's owner
 
     let subsidy_keeper_sk = BlsSecretKey::random(rng);
     let subsidy_keeper_pk = BlsPublicKey::from(&subsidy_keeper_sk);
 
     let mut session =
-        instantiate(rng, vm, Some(subsidizer_psk), Some(test_sponsor_psk));
-
-    let leaves = leaves_from_height(&mut session, 0)
-        .expect("Getting leaves in the given range should succeed");
-
-    assert_eq!(leaves.len(), 1, "There should be one note in the state");
-
-    let note = leaves[0].note;
+        instantiate(rng, vm, Some(subsidizer_pk), Some(charlie_owner_pk));
 
     assert_eq!(
-        module_balance(&mut session, contract_id)
-            .expect("Module balance should succeed"),
+        contract_balance(&mut session, contract_id)
+            .expect("Contract balance should succeed"),
         0u64
     );
 
     subsidize_contract(
-        rng,
         &mut session,
         contract_id,
         subsidy_keeper_pk,
         subsidy_keeper_sk,
-        subsidizer_psk,
-        subsidizer_ssk,
-        note,
+        &subsidizer_sk,
+        0,
         SUBSIDY_VALUE,
     );
 
     assert_eq!(
-        module_balance(&mut session, contract_id)
-            .expect("Module balance should succeed"),
+        contract_balance(&mut session, contract_id)
+            .expect("Contract balance should succeed"),
         SUBSIDY_VALUE
     );
 
     println!("contract has been subsidized with amount={SUBSIDY_VALUE}");
 
-    (session, test_sponsor_ssk)
+    (session, charlie_owner_sk)
 }
 
 /// Creates and executes a transaction
@@ -336,17 +227,17 @@ fn call_contract_method_with_deposit(
     mut session: &mut Session,
     contract_id: ContractId,
     method: impl AsRef<str>,
-    sponsor_ssk: SecretKey,
+    sponsor_sk: &SecretKey,
     gas_price: u64,
 ) -> (ExecutionResult, u64, u64) {
     const SPONSORING_NOTE_VALUE: u64 = 100_000_000_000;
-
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
-    let test_sponsor_psk = PublicKey::from(&sponsor_ssk); // sponsor is Charlie's owner
+    let receiver_pk = PublicKey::from(sponsor_sk);
+    let sender_pk = PublicKey::from(&SecretKey::random(rng));
 
     // make sure the sponsoring contract is properly subsidized (has funds)
-    let balance_before = module_balance(&mut session, contract_id)
-        .expect("Module balance should succeed");
+    let balance_before = contract_balance(&mut session, contract_id)
+        .expect("Contract balance should succeed");
     println!(
         "current balance of contract '{:X?}' is {}",
         contract_id.to_bytes()[0],
@@ -354,7 +245,17 @@ fn call_contract_method_with_deposit(
     );
     assert!(balance_before > 0);
 
-    let note = Note::transparent(rng, &test_sponsor_psk, SPONSORING_NOTE_VALUE);
+    let sender_blinder = [
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
+    ];
+    let note = Note::transparent(
+        rng,
+        &sender_pk,
+        &receiver_pk,
+        SPONSORING_NOTE_VALUE,
+        sender_blinder,
+    );
 
     let note = session
         .call::<_, Note>(
@@ -363,101 +264,34 @@ fn call_contract_method_with_deposit(
             &(0u64, note),
             POINT_LIMIT,
         )
-        .expect("Pushing genesis note should succeed")
+        .expect("Pushing new note should succeed")
         .data;
-
     update_root(&mut session).expect("Updating the root should succeed");
 
-    let input_value =
-        note.value(None).expect("The value should be transparent");
-    println!(
-        "sponsoring note has been obtained, note value={}",
-        input_value
+    let gas_limit = POINT_LIMIT;
+    let input_pos = [*note.pos()];
+    let transfer_value = 0;
+    let is_obfuscated = false;
+    let deposit = 0;
+
+    let contract_call = Some(ContractCall {
+        contract: contract_id.to_bytes(),
+        fn_name: String::from(method.as_ref()),
+        fn_args: vec![],
+    });
+
+    let tx = create_transaction(
+        session,
+        sponsor_sk,
+        &receiver_pk,
+        gas_limit,
+        gas_price,
+        input_pos,
+        transfer_value,
+        is_obfuscated,
+        deposit,
+        contract_call,
     );
-    let input_blinder = note
-        .blinding_factor(None)
-        .expect("The blinder should be transparent");
-
-    let input_nullifier = note.gen_nullifier(&sponsor_ssk);
-
-    let fee = Fee::new(rng, POINT_LIMIT, gas_price, &test_sponsor_psk);
-
-    // The change note should have the value of the input note, minus what is
-    // maximally spent.
-    let change_value = input_value - gas_price * POINT_LIMIT;
-    let change_blinder = JubJubScalar::random(&mut *rng);
-    println!("prepared change note with change value={}", change_value);
-    let change_note =
-        Note::obfuscated(rng, &test_sponsor_psk, change_value, change_blinder);
-
-    let call = Some((
-        contract_id.to_bytes(),
-        String::from(method.as_ref()),
-        vec![],
-    ));
-
-    // Compose the circuit. In this case we're using one input and one output.
-    let mut circuit = ExecuteCircuitOneTwo::new();
-
-    circuit.set_fee(&fee);
-    circuit
-        .add_output_with_data(change_note, change_value, change_blinder)
-        .expect("appending input or output should succeed");
-
-    let opening = opening(session, *note.pos())
-        .expect("Querying the opening for the given position should succeed")
-        .expect("An opening should exist for a note in the tree");
-
-    // Generate pk_r_p
-    let sk_r = sponsor_ssk.sk_r(note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
-
-    // The transaction hash must be computed before signing
-    let anchor =
-        root(session).expect("Getting the anchor should be successful");
-
-    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
-        &[input_nullifier],
-        &[change_note],
-        &anchor,
-        &fee,
-        &None,
-        &call,
-    );
-    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
-
-    circuit.set_tx_hash(tx_hash);
-
-    let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &sponsor_ssk, &note, tx_hash);
-    let circuit_input = CircuitInput::new(
-        opening,
-        note,
-        pk_r_p.into(),
-        input_value,
-        input_blinder,
-        input_nullifier,
-        circuit_input_signature,
-    );
-
-    circuit
-        .add_input(circuit_input)
-        .expect("appending input or output should succeed");
-
-    let (prover, _) = prover_verifier("ExecuteCircuitOneTwo");
-    let (proof, _) = prover
-        .prove(rng, &circuit)
-        .expect("creating a proof should succeed");
-
-    let tx = Transaction {
-        anchor,
-        nullifiers: vec![input_nullifier],
-        outputs: vec![change_note],
-        fee,
-        crossover: None,
-        proof: proof.to_bytes().to_vec(),
-        call,
-    };
 
     println!(
         "executing method '{}' - contract '{:X?}' is paying",
@@ -474,8 +308,8 @@ fn call_contract_method_with_deposit(
         execution_result.gas_spent
     );
 
-    let balance_after = module_balance(&mut session, contract_id)
-        .expect("Module balance should succeed");
+    let balance_after = contract_balance(&mut session, contract_id)
+        .expect("Contract balance should succeed");
 
     println!(
         "contract's '{:X?}' balance before the call: {}",
@@ -497,14 +331,14 @@ fn contract_pays_for_call_with_deposit() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let (mut session, sponsor_ssk) =
+    let (mut session, sponsor_sk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
     let (execution_result, balance_before, balance_after) =
         call_contract_method_with_deposit(
             &mut session,
             CHARLIE_CONTRACT_ID,
             "pay",
-            sponsor_ssk,
+            &sponsor_sk,
             GAS_PRICE,
         );
     assert!(balance_after < balance_before);
@@ -523,14 +357,14 @@ fn contract_pays_not_enough_allowance() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let (mut session, sponsor_ssk) =
+    let (mut session, sponsor_sk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
     let (execution_result, balance_before, balance_after) =
         call_contract_method_with_deposit(
             &mut session,
             CHARLIE_CONTRACT_ID,
             "pay_and_fail",
-            sponsor_ssk,
+            &sponsor_sk,
             GAS_PRICE,
         );
     assert_eq!(balance_after, balance_before);
@@ -543,14 +377,14 @@ fn contract_does_not_pay_indirectly() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let (mut session, sponsor_ssk) =
+    let (mut session, sponsor_sk) =
         instantiate_and_subsidize_contract(vm, CHARLIE_CONTRACT_ID);
     let (execution_result, balance_before, balance_after) =
         call_contract_method_with_deposit(
             &mut session,
             CHARLIE_CONTRACT_ID,
             "pay_indirectly_and_fail",
-            sponsor_ssk,
+            &sponsor_sk,
             GAS_PRICE,
         );
     assert_eq!(balance_after, balance_before);

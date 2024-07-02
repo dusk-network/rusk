@@ -39,8 +39,7 @@ rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 dirs = "4"
 
-dusk-poseidon = "0.33"
-poseidon-merkle = { version = "0.5", features = ["rkyv-impl", "size_32"] }
+poseidon-merkle = { version = "0.6", features = ["rkyv-impl", "size_32"] }
 sha3 = "0.10"
 dusk-plonk = "0.19"
 dusk-bytes = "0.1"
@@ -59,7 +58,6 @@ rustls-pemfile = "2"
 async-trait = "0.1"
 
 execution-core = { version = "0.1.0", path = "../execution-core" }
-transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
 rusk-prover = { version = "0.3", path = "../rusk-prover", optional = true }

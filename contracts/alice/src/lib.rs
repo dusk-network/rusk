@@ -10,19 +10,19 @@
 extern crate alloc;
 
 mod state;
-use state::Alice;
 
 #[cfg(target_family = "wasm")]
 #[path = ""]
 mod wasm {
     use super::*;
+    use state::Alice;
 
     use rusk_abi::{ContractId, PaymentInfo};
 
     #[no_mangle]
     static SELF_ID: ContractId = ContractId::uninitialized();
 
-    static mut STATE: Alice = Alice;
+    static mut STATE: Alice = state::Alice;
 
     #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
@@ -35,8 +35,8 @@ mod wasm {
     }
 
     #[no_mangle]
-    unsafe fn withdraw_to_contract(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw_to_contract(arg))
+    unsafe fn deposit(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
     }
 
     const PAYMENT_INFO: PaymentInfo = PaymentInfo::Any(None);
