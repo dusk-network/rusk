@@ -20,7 +20,16 @@ impl Bob {
 }
 
 impl Bob {
+    pub fn init(&mut self, n: u64) {
+        rusk_abi::debug!("Bob: init {}", n);
+    }
+
     pub fn ping(&mut self) {
-        rusk_abi::debug!("Bob ping");
+        rusk_abi::debug!("Bob: ping");
+    }
+
+    pub fn echo(&mut self, n: u64) -> u64 {
+        rusk_abi::debug!("Bob: echo {}", n);
+        n
     }
 }
