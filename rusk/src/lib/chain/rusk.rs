@@ -95,7 +95,7 @@ impl Rusk {
         let block_gas_limit = params.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let missed_generators = &params.missed_generators[..];
-        let voters = &params.voters_pubkey[..];
+        let voters = params.voters_pubkey.as_ref().map(|voters| &voters[..]);
 
         let mut session = self.session(block_height, None)?;
 
@@ -199,7 +199,7 @@ impl Rusk {
         generator: &StakePublicKey,
         txs: &[Transaction],
         missed_generators: &[StakePublicKey],
-        voters: &[VoterWithCredits],
+        voters: Option<&[VoterWithCredits]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -229,7 +229,7 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[StakePublicKey],
-        voters: &[VoterWithCredits],
+        voters: Option<&[VoterWithCredits]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -415,7 +415,7 @@ fn accept(
     generator: &StakePublicKey,
     txs: &[Transaction],
     missed_generators: &[StakePublicKey],
-    voters: &[VoterWithCredits],
+    voters: Option<&[VoterWithCredits]>,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -552,14 +552,16 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &StakePublicKey,
     slashing: &[StakePublicKey],
-    voters: &[(StakePublicKey, usize)],
+    voters: Option<&[(StakePublicKey, usize)]>,
 ) -> Result<Vec<Event>> {
     let (dusk_value, generator_reward, voters_reward) =
         coinbase_value(block_height, dusk_spent);
 
-    let credits: usize = voters.iter().map(|(_, credits)| credits).sum();
-    if credits == 0 && block_height > 1 {
-        return Err(InvalidCreditsCount(block_height, 0));
+    if let Some(voters) = voters {
+        let credits: usize = voters.iter().map(|(_, credits)| credits).sum();
+        if credits == 0 && block_height > 1 {
+            return Err(InvalidCreditsCount(block_height, 0));
+        }
     }
 
     let credit_reward = voters_reward / 64 * 2;
@@ -593,24 +595,22 @@ fn reward_slash_and_update_root(
         reward = generator_reward
     );
 
-    if credit_reward > 0 {
-        for (to_voter, credits) in voters {
-            let voter_reward = *credits as u64 * credit_reward;
-            let r = session.call::<_, ()>(
-                STAKE_CONTRACT,
-                "reward",
-                &(*to_voter, voter_reward),
-                u64::MAX,
-            )?;
-            events.extend(r.events);
+    for (to_voter, credits) in voters.unwrap_or_default() {
+        let voter_reward = *credits as u64 * credit_reward;
+        let r = session.call::<_, ()>(
+            STAKE_CONTRACT,
+            "reward",
+            &(*to_voter, voter_reward),
+            u64::MAX,
+        )?;
+        events.extend(r.events);
 
-            debug!(
-                event = "validator of prev block rewarded",
-                voter = to_bs58(to_voter),
-                credits = *credits,
-                reward = voter_reward
-            )
-        }
+        debug!(
+            event = "validator of prev block rewarded",
+            voter = to_bs58(to_voter),
+            credits = *credits,
+            reward = voter_reward
+        )
     }
 
     let slash_amount = emission_amount(block_height);
