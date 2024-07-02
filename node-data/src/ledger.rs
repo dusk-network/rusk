@@ -527,8 +527,7 @@ pub mod faker {
         let contract_call =
             ContractCall::new([21; 32], "some_method", &()).unwrap();
 
-        let payload =
-            Payload::new(tx_skeleton, fee, false, Some(contract_call));
+        let payload = Payload::new(tx_skeleton, fee, Some(contract_call));
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
         PhoenixTransaction::new(payload, proof).into()
