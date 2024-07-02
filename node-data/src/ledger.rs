@@ -418,7 +418,7 @@ pub fn to_str<const N: usize>(bytes: &[u8; N]) -> String {
 pub mod faker {
     use super::*;
     use crate::bls::PublicKeyBytes;
-    use execution_core::transfer::{ContractCall, Fee, Payload};
+    use execution_core::transfer::{CallOrDeploy, ContractCall, Fee, Payload};
     use execution_core::{
         BlsScalar, JubJubScalar, Note, PublicKey, SecretKey, TxSkeleton,
     };
@@ -527,8 +527,12 @@ pub mod faker {
         let contract_call =
             ContractCall::new([21; 32], "some_method", &()).unwrap();
 
-        let payload =
-            Payload::new(tx_skeleton, fee, false, Some(contract_call));
+        let payload = Payload::new(
+            tx_skeleton,
+            fee,
+            false,
+            Some(CallOrDeploy::Call(contract_call)),
+        );
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
         PhoenixTransaction::new(payload, proof).into()

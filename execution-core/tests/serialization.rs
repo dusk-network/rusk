@@ -7,7 +7,9 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{Error, Serializable};
 use dusk_jubjub::JubJubScalar;
-use execution_core::transfer::{ContractCall, Fee, Payload, Transaction};
+use execution_core::transfer::{
+    CallOrDeploy, ContractCall, Fee, Payload, Transaction,
+};
 use execution_core::{Note, PublicKey, SecretKey, TxSkeleton};
 use ff::Field;
 use rand::rngs::StdRng;
@@ -71,7 +73,8 @@ fn transaction_from_to_bytes() -> Result<(), Error> {
     };
 
     // build the payload
-    let payload = Payload::new(tx_skeleton, fee, true, Some(call));
+    let payload =
+        Payload::new(tx_skeleton, fee, true, Some(CallOrDeploy::Call(call)));
 
     // set a random proof
     let proof = [42; 42].to_vec();
