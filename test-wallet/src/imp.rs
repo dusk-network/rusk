@@ -762,9 +762,8 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
         max_fee: fee.max_fee(),
         deposit,
     };
-    let has_deposit = deposit > 0;
 
-    let payload = Payload::new(tx_skeleton, fee, has_deposit, call);
+    let payload = Payload::new(tx_skeleton, fee, call);
     let payload_hash = payload.hash();
 
     let inputs: Vec<UnprovenTransactionInput> = inputs
