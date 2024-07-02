@@ -14,6 +14,8 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::transfer::CallOrDeploy::{Call, Deploy};
+use crate::transfer::{CallOrDeploy, ContractDeploy};
 use crate::{
     transfer::{ContractCall, Fee},
     BlsScalar, JubJubAffine, Sender, TxSkeleton,
@@ -29,8 +31,8 @@ pub struct Payload {
     pub fee: Fee,
     /// `true` if the transaction is a contract deposit.
     pub deposit: bool,
-    /// Data to do a contract call.
-    pub contract_call: Option<ContractCall>,
+    /// Data to do a contract call or deployment.
+    pub call_or_deploy: Option<CallOrDeploy>,
 }
 
 impl PartialEq for Payload {
@@ -54,7 +56,7 @@ impl Payload {
             tx_skeleton,
             fee,
             deposit,
-            contract_call,
+            call_or_deploy: (contract_call.map(|c| CallOrDeploy::Call(c))),
         }
     }
 
@@ -78,8 +80,19 @@ impl Payload {
 
     /// Return the contract-call data.
     #[must_use]
-    pub fn contract_call(&self) -> &Option<ContractCall> {
-        &self.contract_call
+    pub fn contract_call(&self) -> Option<&ContractCall> {
+        match self.call_or_deploy.as_ref() {
+            Some(Call(call)) => Some(call),
+            _ => None,
+        }
+    }
+
+    /// Return the contract-deploy data.
+    pub fn contract_deploy(&self) -> Option<&ContractDeploy> {
+        match self.call_or_deploy.as_ref() {
+            Some(Deploy(deploy)) => Some(deploy),
+            _ => None,
+        }
     }
 
     /// Serialize the `Payload` into a variable length byte buffer.
@@ -99,7 +112,7 @@ impl Payload {
         bytes.push(u8::from(self.deposit));
 
         // serialize the contract-call
-        match self.contract_call {
+        match self.contract_call() {
             Some(ref call) => {
                 bytes.push(1);
                 bytes.extend(call.to_var_bytes());
@@ -151,7 +164,7 @@ impl Payload {
             tx_skeleton,
             fee,
             deposit,
-            contract_call,
+            call_or_deploy: (contract_call.map(|c| CallOrDeploy::Call(c))),
         })
     }
 
@@ -165,11 +178,13 @@ impl Payload {
 
         bytes.push(u8::from(self.deposit));
 
-        if let Some(call) = &self.contract_call {
+        if let Some(CallOrDeploy::Call(call)) = &self.call_or_deploy {
             bytes.extend(call.contract);
             bytes.extend(call.fn_name.as_bytes());
             bytes.extend(&call.fn_args);
         }
+
+        // todo: take care of CallOrDeploy::Deploy
 
         bytes
     }

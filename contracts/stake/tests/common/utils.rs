@@ -14,6 +14,7 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
+use execution_core::transfer::CallOrDeploy;
 use execution_core::{
     transfer::{
         ContractCall, Fee, Payload, Transaction, TreeLeaf, TRANSFER_TREE_DEPTH,
@@ -278,7 +279,7 @@ pub fn create_transaction<const I: usize>(
             0 => false,
             _ => true,
         },
-        contract_call,
+        call_or_deploy: (contract_call.map(|c| CallOrDeploy::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();

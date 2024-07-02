@@ -93,6 +93,56 @@ impl Serializable<{ StealthAddress::SIZE + u64::SIZE + BlsPublicKey::SIZE }>
     }
 }
 
+/// Events
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum EconomicResult {
+    /// Contract's allowance has been successfully applied, contract will pay
+    /// for gas.
+    AllowanceApplied,
+    /// Contract's allowance was not sufficient as it was smaller than the
+    /// actual cost of the call.
+    AllowanceNotSufficient,
+    /// Contract's balance was not sufficient to pay for the call.
+    BalanceNotSufficient,
+}
+
+/// Event emitted after economic operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct EconomicEvent {
+    /// Module id which is relevant to the event.
+    pub contract: ContractId,
+    /// Value of the relevant operation.
+    pub value: u64,
+    /// Result of the relevant operation.
+    pub result: EconomicResult,
+}
+
+/// Data for either contract call or contract deployment.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum CallOrDeploy {
+    /// Data for a contract call.
+    Call(ContractCall),
+    /// Data for a contract deployment.
+    Deploy(ContractDeploy),
+}
+
+/// Data for performing a contract deployment
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ContractDeploy {
+    /// The optional ID of the contract to be deployed.
+    pub contract_id: Option<ContractId>,
+    /// Bytecode of the contract to be deployed.
+    pub bytecode: Vec<u8>,
+    /// Owner of the contract to be deployed.
+    pub owner: Vec<u8>,
+    /// Constructor arguments of the deployed contract.
+    pub constructor_args: Option<Vec<u8>>,
+}
+
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]

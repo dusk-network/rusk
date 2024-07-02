@@ -336,6 +336,7 @@ impl UnprovenTransaction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use execution_core::transfer::CallOrDeploy;
     use execution_core::{
         transfer::{ContractCall, Fee},
         SchnorrSecretKey, TxSkeleton,
@@ -398,7 +399,7 @@ mod tests {
             tx_skeleton,
             fee,
             deposit: has_deposit,
-            contract_call: Some(call),
+            call_or_deploy: Some(CallOrDeploy::Call(call)),
         };
 
         let sender_blinder_1 =

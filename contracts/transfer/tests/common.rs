@@ -21,6 +21,7 @@ use ff::Field;
 use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use poseidon_merkle::Opening as PoseidonOpening;
 
+use execution_core::transfer::CallOrDeploy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -144,6 +145,12 @@ pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
     if receipt.data.is_err() {
         receipt.gas_spent = receipt.gas_limit;
     }
+
+    let contract_id = tx
+        .payload()
+        .contract_call()
+        .clone()
+        .map(|call| ContractId::from_bytes(call.contract));
 
     let refund_receipt = session
         .call::<_, ()>(
@@ -291,7 +298,7 @@ pub fn create_transaction<const I: usize>(
             0 => false,
             _ => true,
         },
-        contract_call,
+        call_or_deploy: (contract_call.map(|c| CallOrDeploy::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();
