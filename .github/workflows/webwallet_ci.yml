@@ -27,24 +27,20 @@ jobs:
               - 'web-wallet/**'
               - '.github/workflows/webwallet_ci.yml'
   lint-test:
-    # Set up matrix for Node versions
-    strategy:
-      matrix:
-        version: [20.x, 22.x]
     needs: changes
     if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
-    name: Node ${{ matrix.version }}
+    name: Node 20.x
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setting up Node ${{ matrix.version }}
+      - name: Setting up Node 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.version }}
+          node-version: 20.x
           scope: "@dusk-network"
 
       - name: Installing dev dependencies
