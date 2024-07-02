@@ -189,8 +189,8 @@ impl TransferState {
         self.tree
             .extend_notes(block_height, tx_skeleton.outputs.clone());
 
-        // place the contract deposit on the state
-        if tx.payload().deposit {
+        // if present, place the contract deposit on the state
+        if tx.payload().tx_skeleton().deposit > 0 {
             let contract = match tx.payload().contract_call() {
                 Some(call) => ContractId::from_bytes(call.contract),
                 None => {

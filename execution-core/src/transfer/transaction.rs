@@ -27,8 +27,6 @@ pub struct Payload {
     pub tx_skeleton: TxSkeleton,
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
-    /// `true` if the transaction is a contract deposit.
-    pub deposit: bool,
     /// Data to do a contract call.
     pub contract_call: Option<ContractCall>,
 }
@@ -47,13 +45,11 @@ impl Payload {
     pub fn new(
         tx_skeleton: TxSkeleton,
         fee: Fee,
-        deposit: bool,
         contract_call: Option<ContractCall>,
     ) -> Self {
         Self {
             tx_skeleton,
             fee,
-            deposit,
             contract_call,
         }
     }
@@ -68,12 +64,6 @@ impl Payload {
     #[must_use]
     pub fn fee(&self) -> &Fee {
         &self.fee
-    }
-
-    /// Return true if the transaction is a deposit of funds into a contract.
-    #[must_use]
-    pub fn deposit(&self) -> bool {
-        self.deposit
     }
 
     /// Return the contract-call data.
@@ -94,9 +84,6 @@ impl Payload {
 
         // serialize the fee
         bytes.extend(self.fee.to_bytes());
-
-        // serialize the deposit
-        bytes.push(u8::from(self.deposit));
 
         // serialize the contract-call
         match self.contract_call {
@@ -129,15 +116,6 @@ impl Payload {
         // deserialize fee
         let fee = Fee::from_reader(&mut buf)?;
 
-        // deserialize deposit data
-        let deposit = match u8::from_reader(&mut buf)? {
-            0 => false,
-            1 => true,
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
-
         // deserialize contract-call data
         let contract_call = match u8::from_reader(&mut buf)? {
             0 => None,
@@ -150,7 +128,6 @@ impl Payload {
         Ok(Self {
             tx_skeleton,
             fee,
-            deposit,
             contract_call,
         })
     }
@@ -162,8 +139,6 @@ impl Payload {
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
         let mut bytes = self.tx_skeleton.to_hash_input_bytes();
-
-        bytes.push(u8::from(self.deposit));
 
         if let Some(call) = &self.contract_call {
             bytes.extend(call.contract);
