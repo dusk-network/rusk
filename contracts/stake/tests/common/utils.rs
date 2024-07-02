@@ -21,9 +21,7 @@ use execution_core::{
     value_commitment, JubJubScalar, Note, PublicKey, SchnorrSecretKey,
     SecretKey, Sender, TxSkeleton, ViewKey,
 };
-use rusk_abi::{
-    CallReceipt, ContractError, ContractId, Error, Session, TRANSFER_CONTRACT,
-};
+use rusk_abi::{CallReceipt, ContractError, Error, Session, TRANSFER_CONTRACT};
 
 const POINT_LIMIT: u64 = 0x100000000;
 
@@ -274,10 +272,6 @@ pub fn create_transaction<const I: usize>(
     let tx_payload = Payload {
         tx_skeleton,
         fee,
-        deposit: match deposit {
-            0 => false,
-            _ => true,
-        },
         contract_call,
     };
 
