@@ -60,6 +60,36 @@ impl Payload {
         }
     }
 
+    /// Create a new `Payload` with deploy.
+    pub fn new_deploy(
+        tx_skeleton: TxSkeleton,
+        fee: Fee,
+        deposit: bool,
+        contract_deploy: Option<ContractDeploy>,
+    ) -> Self {
+        Self {
+            tx_skeleton,
+            fee,
+            deposit,
+            call_or_deploy: (contract_deploy.map(|c| CallOrDeploy::Deploy(c))),
+        }
+    }
+
+    /// Create a new `Payload` with deploy.
+    pub fn new_call_or_deploy(
+        tx_skeleton: TxSkeleton,
+        fee: Fee,
+        deposit: bool,
+        call_or_deploy: Option<CallOrDeploy>,
+    ) -> Self {
+        Self {
+            tx_skeleton,
+            fee,
+            deposit,
+            call_or_deploy,
+        }
+    }
+
     /// Return the tx-skeleton.
     #[must_use]
     pub fn tx_skeleton(&self) -> &TxSkeleton {
