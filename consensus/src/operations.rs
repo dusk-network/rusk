@@ -27,7 +27,7 @@ pub struct CallParams {
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
     pub missed_generators: Vec<StakePublicKey>,
-    pub voters_pubkey: Vec<VoterWithCredits>,
+    pub voters_pubkey: Option<Vec<VoterWithCredits>>,
 }
 
 #[derive(Default)]

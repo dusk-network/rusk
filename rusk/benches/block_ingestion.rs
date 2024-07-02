@@ -105,7 +105,7 @@ pub fn accept_benchmark(c: &mut Criterion) {
                             txs,
                             None,
                             &[],
-                            &[],
+                            None,
                         )
                         .expect("Accepting transactions should succeed");
 

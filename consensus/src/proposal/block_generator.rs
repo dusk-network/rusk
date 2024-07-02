@@ -97,7 +97,7 @@ impl<T: Operations> Generator<T> {
             block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             generator_pubkey: ru.pubkey_bls.clone(),
             missed_generators,
-            voters_pubkey: voters.to_owned(),
+            voters_pubkey: Some(voters.to_owned()),
         };
 
         let result =
