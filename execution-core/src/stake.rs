@@ -19,6 +19,9 @@ use crate::{
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
 
+/// Number of warnings before being penalized
+pub const STAKE_WARNINGS: u8 = 1;
+
 /// Calculate the block height at which the next epoch takes effect.
 #[must_use]
 pub const fn next_epoch(block_height: BlockHeight) -> u64 {
@@ -161,6 +164,8 @@ pub struct StakeData {
     pub reward: u64,
     /// The signature counter to prevent replay.
     pub counter: u64,
+    /// Faults
+    pub faults: u8,
 }
 
 impl StakeData {
@@ -193,6 +198,7 @@ impl StakeData {
             amount,
             reward,
             counter: 0,
+            faults: 0,
         }
     }
 

@@ -62,8 +62,8 @@ unsafe fn get_stake(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn slashed_amount(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.slashed_amount())
+unsafe fn burnt_amount(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.burnt_amount())
 }
 
 #[no_mangle]
@@ -89,7 +89,7 @@ unsafe fn prev_state_changes(arg_len: u32) -> u32 {
 unsafe fn before_state_transition(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| {
         assert_external_caller();
-        STATE.before_state_transition()
+        STATE.on_new_block()
     })
 }
 
@@ -126,10 +126,10 @@ unsafe fn hard_slash(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn set_slashed_amount(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |slashed_amount| {
+unsafe fn set_burnt_amount(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |burnt_amount| {
         assert_external_caller();
-        STATE.set_slashed_amount(slashed_amount)
+        STATE.set_burnt_amount(burnt_amount)
     })
 }
 

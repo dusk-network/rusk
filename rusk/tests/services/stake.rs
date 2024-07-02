@@ -300,6 +300,15 @@ pub async fn slash() -> Result<()> {
         None,
     )
     .expect("to work");
+    generator_procedure(
+        &rusk,
+        &[],
+        BLOCK_HEIGHT,
+        BLOCK_GAS_LIMIT,
+        vec![to_slash],
+        None,
+    )
+    .expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
@@ -307,11 +316,19 @@ pub async fn slash() -> Result<()> {
     assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(prev.amount, Some((dusk(20.0), 0)));
 
+    let (prev_stake, _) = prev.amount.unwrap();
+    let slashed_amount = prev_stake / 10;
+
     let after_slash = wallet.get_stake(0).unwrap();
-    assert_eq!(after_slash.reward, 0);
-    assert_eq!(after_slash.amount, Some((dusk(20.0), 4320)));
+    assert_eq!(after_slash.reward, dusk(5.0));
+    assert_eq!(after_slash.reward, prev.reward + slashed_amount);
+    assert_eq!(
+        after_slash.amount,
+        Some((prev_stake - slashed_amount, 4320))
+    );
+    assert_eq!(after_slash.amount, Some((dusk(18.0), 4320)));
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, contract_balance);
+    assert_eq!(new_balance, contract_balance - slashed_amount);
     let contract_balance = new_balance;
 
     generator_procedure(
@@ -327,14 +344,24 @@ pub async fn slash() -> Result<()> {
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, 0);
-    assert_eq!(prev.amount, Some((dusk(20.0), 4320)));
+    assert_eq!(prev.reward, dusk(5.0));
+    assert_eq!(prev.amount, Some((dusk(18.0), 4320)));
+
+    let (prev_stake, _) = prev.amount.unwrap();
+    // 20% slash
+    let slashed_amount = prev_stake / 10 * 2;
 
     let after_slash = wallet.get_stake(0).unwrap();
-    assert_eq!(after_slash.reward, 0);
-    assert_eq!(after_slash.amount, Some((dusk(20.0), 4320)));
+    assert_eq!(after_slash.reward, dusk(8.6));
+    assert_eq!(after_slash.reward, prev.reward + slashed_amount);
+    assert_eq!(
+        after_slash.amount,
+        Some((prev_stake - slashed_amount, 6480))
+    );
+    assert_eq!(after_slash.amount, Some((dusk(14.4), 6480)));
+
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, contract_balance);
+    assert_eq!(new_balance, contract_balance - slashed_amount);
     let contract_balance = new_balance;
 
     generator_procedure(
@@ -350,14 +377,17 @@ pub async fn slash() -> Result<()> {
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, 0);
-    assert_eq!(prev.amount, Some((dusk(20.0), 4320)));
+    assert_eq!(prev.reward, dusk(8.6));
+    assert_eq!(prev.amount, Some((dusk(14.4), 6480)));
 
+    let (prev_stake, _) = prev.amount.unwrap();
+    // 30% slash
+    let slashed_amount = prev_stake / 10 * 3;
     let after_slash = wallet.get_stake(0).unwrap();
-    assert_eq!(after_slash.reward, 0);
-    assert_eq!(after_slash.amount, Some((dusk(20.0), 12960)));
+    assert_eq!(after_slash.reward, dusk(12.92));
+    assert_eq!(after_slash.amount, Some((dusk(10.08), 17280)));
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, contract_balance);
+    assert_eq!(new_balance, contract_balance - slashed_amount);
 
     generator_procedure(
         &rusk,
@@ -373,8 +403,8 @@ pub async fn slash() -> Result<()> {
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, 0);
-    assert_eq!(prev.amount, Some((dusk(20.0), 4320)));
+    assert_eq!(prev.reward, dusk(8.6));
+    assert_eq!(prev.amount, Some((dusk(14.4), 6480)));
 
     generator_procedure(&rusk, &[], 9001, BLOCK_GAS_LIMIT, vec![], None)
         .expect("To work properly");

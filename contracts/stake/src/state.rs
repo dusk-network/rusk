@@ -12,6 +12,7 @@ use dusk_bytes::Serializable;
 use execution_core::{
     stake::{
         next_epoch, Stake, StakeData, StakingEvent, Unstake, Withdraw, EPOCH,
+        STAKE_WARNINGS,
     },
     transfer::Mint,
     StakePublicKey,
@@ -31,7 +32,7 @@ use crate::*;
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
     stakes: BTreeMap<[u8; StakePublicKey::SIZE], (StakeData, StakePublicKey)>,
-    slashed_amount: u64,
+    burnt_amount: u64,
     previous_block_state: BTreeMap<
         [u8; StakePublicKey::SIZE],
         (Option<StakeData>, StakePublicKey),
@@ -48,26 +49,26 @@ impl StakeState {
     pub const fn new() -> Self {
         Self {
             stakes: BTreeMap::new(),
-            slashed_amount: 0u64,
+            burnt_amount: 0u64,
             previous_block_state: BTreeMap::new(),
             previous_block_height: 0,
         }
     }
 
-    pub fn before_state_transition(&mut self) {
+    pub fn on_new_block(&mut self) {
         self.previous_block_state.clear()
     }
 
-    fn clear_prev_if_needed(&mut self) {
+    fn check_new_block(&mut self) {
         let current_height = rusk_abi::block_height();
         if current_height != self.previous_block_height {
             self.previous_block_height = current_height;
-            self.before_state_transition();
+            self.on_new_block();
         }
     }
 
     pub fn stake(&mut self, stake: Stake) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         if stake.value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
@@ -108,7 +109,7 @@ impl StakeState {
     }
 
     pub fn unstake(&mut self, unstake: Unstake) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         // remove the stake from a key and increment the signature counter
         let loaded_stake = self
@@ -255,9 +256,11 @@ impl StakeState {
     /// Rewards a `stake_pk` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
     pub fn reward(&mut self, stake_pk: &StakePublicKey, value: u64) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         let stake = self.load_or_create_stake_mut(stake_pk);
+        // Reset faults counter
+        stake.faults = 0;
         stake.increase_reward(value);
         rusk_abi::emit(
             "reward",
@@ -268,9 +271,9 @@ impl StakeState {
         );
     }
 
-    /// Total amount slashed from the genesis
-    pub fn slashed_amount(&self) -> u64 {
-        self.slashed_amount
+    /// Total amount burned since the genesis
+    pub fn burnt_amount(&self) -> u64 {
+        self.burnt_amount
     }
 
     /// Version of the stake contract
@@ -283,19 +286,55 @@ impl StakeState {
     /// If the reward is less than the `to_slash` amount, then the reward is
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
-    pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
-        self.clear_prev_if_needed();
+    pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: Option<u64>) {
+        self.check_new_block();
 
         let stake = self
             .get_stake_mut(stake_pk)
             .expect("The stake to slash should exist");
 
+        // Stake can have no amount if provisioner unstake in the same block
+        if stake.amount().is_none() {
+            return;
+        }
+
         let prev_value = Some(stake.clone());
 
-        let to_slash = min(to_slash, stake.reward);
+        stake.faults = stake.faults.saturating_add(1);
+        let effective_faults =
+            stake.faults.saturating_sub(STAKE_WARNINGS) as u64;
+
+        let (stake_amount, eligibility) =
+            stake.amount.as_mut().expect("stake_to_exists");
+
+        // Shift eligibility (aka stake suspension) only if warnings are
+        // saturated
+        if effective_faults > 0 {
+            // The stake is suspended for the rest of the current epoch plus
+            // effective_faults epochs
+            let to_shift = effective_faults * EPOCH;
+            *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
+            rusk_abi::emit(
+                "suspended",
+                StakingEvent {
+                    public_key: *stake_pk,
+                    value: *eligibility,
+                },
+            );
+        }
+
+        // Slash the provided amount or calculate the percentage according to
+        // effective faults
+        let to_slash =
+            to_slash.unwrap_or(*stake_amount / 100 * effective_faults * 10);
+        let to_slash = min(to_slash, *stake_amount);
 
         if to_slash > 0 {
-            stake.reward -= to_slash;
+            // Move the slash amount from stake to reward and deduct contract
+            // balance
+            *stake_amount -= to_slash;
+            stake.increase_reward(to_slash);
+            Self::deduct_contract_balance(to_slash);
 
             rusk_abi::emit(
                 "slash",
@@ -305,24 +344,6 @@ impl StakeState {
                 },
             );
         }
-
-        if stake.reward == 0 {
-            // stake.amount can be None if the provisioner unstake in the same
-            // block
-            if let Some((_, eligibility)) = stake.amount.as_mut() {
-                *eligibility = next_epoch(rusk_abi::block_height()) + EPOCH;
-                rusk_abi::emit(
-                    "shifted",
-                    StakingEvent {
-                        public_key: *stake_pk,
-                        value: *eligibility,
-                    },
-                );
-            }
-        }
-
-        // Update the total slashed amount
-        self.slashed_amount += to_slash;
 
         let key = stake_pk.to_bytes();
         self.previous_block_state
@@ -335,7 +356,7 @@ impl StakeState {
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
     pub fn hard_slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
-        self.clear_prev_if_needed();
+        self.check_new_block();
 
         let stake_info = self
             .get_stake_mut(stake_pk)
@@ -359,17 +380,10 @@ impl StakeState {
         // Update the staked amount
         stake.0 -= to_slash;
 
-        // Update the contract balance to reflect the change in the amount
-        // withdrawable from the contract
-        let _: bool = rusk_abi::call(
-            TRANSFER_CONTRACT,
-            "sub_contract_balance",
-            &(STAKE_CONTRACT, to_slash),
-        )
-        .expect("Subtracting balance should succeed");
+        Self::deduct_contract_balance(to_slash);
 
-        // Update the total slashed amount
-        self.slashed_amount += to_slash;
+        // Update the total burnt amount
+        self.burnt_amount += to_slash;
 
         rusk_abi::emit(
             "hard_slash",
@@ -384,9 +398,9 @@ impl StakeState {
             .or_insert((prev_value, *stake_pk));
     }
 
-    /// Sets the slashed amount
-    pub fn set_slashed_amount(&mut self, slashed_amount: u64) {
-        self.slashed_amount = slashed_amount;
+    /// Sets the burnt amount
+    pub fn set_burnt_amount(&mut self, burnt_amount: u64) {
+        self.burnt_amount = burnt_amount;
     }
 
     /// Feeds the host with the stakes.
@@ -394,6 +408,17 @@ impl StakeState {
         for (stake_data, stake_pk) in self.stakes.values() {
             rusk_abi::feed((*stake_pk, stake_data.clone()));
         }
+    }
+
+    fn deduct_contract_balance(amount: u64) {
+        // Update the module balance to reflect the change in the amount
+        // withdrawable from the contract
+        let _: () = rusk_abi::call(
+            TRANSFER_CONTRACT,
+            "sub_contract_balance",
+            &(STAKE_CONTRACT, amount),
+        )
+        .expect("Subtracting balance should succeed");
     }
 
     /// Feeds the host with previous state of the changed provisioners.
