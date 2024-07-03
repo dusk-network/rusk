@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
+use crate::operations::VoterWithCredits;
 use execution_core::{BlsSigError, StakeSecretKey};
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
@@ -34,6 +35,7 @@ pub struct RoundUpdate {
     seed: Seed,
     hash: [u8; 32],
     att: Attestation,
+    att_voters: Vec<VoterWithCredits>,
     timestamp: u64,
 
     pub base_timeouts: TimeoutSet,
@@ -45,6 +47,7 @@ impl RoundUpdate {
         secret_key: StakeSecretKey,
         tip_header: &Header,
         base_timeouts: TimeoutSet,
+        att_voters: Vec<VoterWithCredits>,
     ) -> Self {
         let round = tip_header.height + 1;
         RoundUpdate {
@@ -56,6 +59,7 @@ impl RoundUpdate {
             seed: tip_header.seed,
             timestamp: tip_header.timestamp,
             base_timeouts,
+            att_voters,
         }
     }
 
@@ -73,6 +77,10 @@ impl RoundUpdate {
 
     pub fn timestamp(&self) -> u64 {
         self.timestamp
+    }
+
+    pub fn att_voters(&self) -> &Vec<VoterWithCredits> {
+        &self.att_voters
     }
 }
 

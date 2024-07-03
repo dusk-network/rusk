@@ -28,7 +28,7 @@ macro_rules! await_phase {
 pub enum Phase<T: Operations, D: Database> {
     Proposal(proposal::step::ProposalStep<T, D>),
     Validation(validation::step::ValidationStep<T>),
-    Ratification(ratification::step::RatificationStep<T, D>),
+    Ratification(ratification::step::RatificationStep<D>),
 }
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {

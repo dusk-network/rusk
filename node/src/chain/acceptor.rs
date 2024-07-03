@@ -17,6 +17,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use dusk_consensus::operations::VoterWithCredits;
 use execution_core::stake::Unstake;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
@@ -54,7 +55,7 @@ pub(crate) enum RevertTarget {
 /// attestation and transactions full verifications.
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
-    /// Most recently accepted block a.k.a blockchain tip
+    /// The tip
     tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
@@ -119,10 +120,10 @@ pub static DUSK_KEY: LazyLock<PublicKey> = LazyLock::new(|| {
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Initializes a new `Acceptor` struct,
     ///
-    /// The method loads the VM state, detects consistency issues between VM and
-    /// Ledger states, and may revert to the last known finalized state in
-    /// case of inconsistency.
-    /// Finally it spawns a new consensus [`Task`]
+    /// The method loads the VM state and verifies consistency between the VM
+    /// and Ledger states. If any inconsistencies are found, it reverts to the
+    /// last known finalized state. Finally, it initiates a new consensus
+    /// [Task].
     pub async fn init_consensus(
         keys_path: &str,
         tip: BlockWithLabel,
@@ -173,14 +174,34 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
+        let tip = self.tip.read().await.inner().clone();
+
+        let tip_block_voters =
+            self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         self.task.write().await.spawn(
-            self.tip.read().await.inner(),
+            &tip,
             provisioners_list,
             &self.db,
             &self.vm,
             base_timeouts,
+            tip_block_voters,
         );
+    }
+
+    async fn get_att_voters(
+        &self,
+        provisioners_list: &Provisioners,
+        tip: &Block,
+    ) -> Vec<VoterWithCredits> {
+        if tip.header().height == 0 {
+            return vec![];
+        };
+
+        let prev_seed = self.get_prev_block_seed().await.expect("valid seed");
+        Validator::<DB>::get_voters(tip.header(), provisioners_list, prev_seed)
+            .await
+            .expect("valid voters")
     }
 
     // Re-route message to consensus task
@@ -414,7 +435,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let pni = verify_block_header(
+        let (pni, prev_block_voters, tip_block_voters) = verify_block_header(
             self.db.clone(),
             &tip.inner().header().clone(),
             &provisioners_list,
@@ -436,7 +457,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let vm = self.vm.write().await;
             let (txs, rolling_result) = self.db.read().await.update(|db| {
-                let (txs, verification_output) = vm.accept(blk)?;
+                let (txs, verification_output) =
+                    vm.accept(blk, Some(&prev_block_voters[..]))?;
 
                 est_elapsed_time = start.elapsed();
 
@@ -579,6 +601,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.db,
                 &self.vm,
                 base_timeouts,
+                tip_block_voters,
             );
         }
 
@@ -812,24 +835,28 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Spawns consensus algorithm after aborting currently running one
     pub(crate) async fn restart_consensus(&mut self) {
         let mut task = self.task.write().await;
-        let tip = self.tip.read().await;
+        let tip = self.tip.read().await.inner().clone();
         let provisioners_list = self.provisioners_list.read().await.clone();
 
         task.abort_with_wait().await;
         info!(
             event = "restart consensus",
-            height = tip.inner().header().height,
-            iter = tip.inner().header().iteration,
-            hash = to_str(&tip.inner().header().hash),
+            height = tip.header().height,
+            iter = tip.header().iteration,
+            hash = to_str(&tip.header().hash),
         );
+
+        let tip_block_voters =
+            self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
-            tip.inner(),
+            &tip,
             provisioners_list,
             &self.db,
             &self.vm,
             base_timeouts,
+            tip_block_voters,
         );
     }
 
@@ -935,6 +962,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .min(MAX_STEP_TIMEOUT)
     }
 
+    async fn get_prev_block_seed(&self) -> Result<Seed> {
+        let tip = self.tip.read().await;
+        let header = tip.inner().header();
+        if header.height == 0 {
+            return Ok(Seed::default());
+        }
+
+        self.db
+            .read()
+            .await
+            .view(|t| {
+                let res = t
+                    .fetch_block_header(&header.prev_block_hash)?
+                    .map(|(prev, _)| prev.seed);
+
+                anyhow::Ok::<Option<Seed>>(res)
+            })?
+            .ok_or_else(|| anyhow::anyhow!("could not retrieve seed"))
+    }
+
     fn emit_metrics(
         blk: &Block,
         block_label: &Label,
@@ -981,7 +1028,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<u8> {
+) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)> {
     let validator = Validator::new(db, prev_header, provisioners);
     validator.execute_checks(header, false).await
 }

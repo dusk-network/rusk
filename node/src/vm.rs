@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_consensus::operations::VoterWithCredits;
 use dusk_consensus::{
     operations::{CallParams, VerificationOutput},
     user::{provisioners::Provisioners, stake::Stake},
@@ -28,11 +29,13 @@ pub trait VMExecution: Send + Sync + 'static {
     fn verify_state_transition(
         &self,
         blk: &Block,
+        voters: Option<&[VoterWithCredits]>,
     ) -> anyhow::Result<VerificationOutput>;
 
     fn accept(
         &self,
         blk: &Block,
+        voters: Option<&[VoterWithCredits]>,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
     fn finalize_state(

@@ -249,6 +249,7 @@ mod tests {
                 secret_key,
                 &tip_header,
                 HashMap::new(),
+                vec![],
             );
 
             let msg = crate::build_validation_payload(

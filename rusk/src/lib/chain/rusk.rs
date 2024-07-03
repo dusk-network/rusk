@@ -14,8 +14,10 @@ use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
-use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{CallParams, VerificationOutput};
+use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_consensus::operations::{
+    CallParams, VerificationOutput, VoterWithCredits,
+};
 use execution_core::{
     stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
     StakePublicKey,
@@ -31,6 +33,7 @@ use tokio::sync::broadcast;
 
 use super::{coinbase_value, Rusk, RuskTip};
 use crate::http::RuesEvent;
+use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
@@ -92,6 +95,7 @@ impl Rusk {
         let block_gas_limit = params.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let missed_generators = &params.missed_generators[..];
+        let voters = params.voters_pubkey.as_ref().map(|voters| &voters[..]);
 
         let mut session = self.session(block_height, None)?;
 
@@ -169,6 +173,7 @@ impl Rusk {
             dusk_spent,
             generator,
             missed_generators,
+            voters,
         )?;
         update_hasher(&mut event_hasher, &coinbase_events);
 
@@ -193,6 +198,7 @@ impl Rusk {
         generator: &StakePublicKey,
         txs: &[Transaction],
         missed_generators: &[StakePublicKey],
+        voters: Option<&[VoterWithCredits]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -203,6 +209,7 @@ impl Rusk {
             generator,
             txs,
             missed_generators,
+            voters,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -221,6 +228,7 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         missed_generators: &[StakePublicKey],
+        voters: Option<&[VoterWithCredits]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -231,6 +239,7 @@ impl Rusk {
             &generator,
             &txs[..],
             missed_generators,
+            voters,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -405,6 +414,7 @@ fn accept(
     generator: &StakePublicKey,
     txs: &[Transaction],
     missed_generators: &[StakePublicKey],
+    voters: Option<&[VoterWithCredits]>,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -450,6 +460,7 @@ fn accept(
         dusk_spent,
         generator,
         missed_generators,
+        voters,
     )?;
 
     update_hasher(&mut event_hasher, &coinbase_events);
@@ -529,9 +540,19 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &StakePublicKey,
     slashing: &[StakePublicKey],
+    voters: Option<&[(StakePublicKey, usize)]>,
 ) -> Result<Vec<Event>> {
-    let (dusk_value, generator_value) =
+    let (dusk_value, generator_reward, voters_reward) =
         coinbase_value(block_height, dusk_spent);
+
+    if let Some(voters) = voters {
+        let credits: usize = voters.iter().map(|(_, credits)| credits).sum();
+        if credits == 0 && block_height > 1 {
+            return Err(InvalidCreditsCount(block_height, 0));
+        }
+    }
+
+    let credit_reward = voters_reward / 64 * 2;
 
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -542,13 +563,43 @@ fn reward_slash_and_update_root(
 
     let mut events = r.events;
 
+    debug!(
+        event = "Dusk rewarded",
+        voter = to_bs58(&DUSK_KEY),
+        reward = dusk_value
+    );
+
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
-        &(*generator, generator_value),
+        &(*generator, generator_reward),
         u64::MAX,
     )?;
     events.extend(r.events);
+
+    debug!(
+        event = "generator rewarded",
+        voter = to_bs58(generator),
+        reward = generator_reward
+    );
+
+    for (to_voter, credits) in voters.unwrap_or_default() {
+        let voter_reward = *credits as u64 * credit_reward;
+        let r = session.call::<_, ()>(
+            STAKE_CONTRACT,
+            "reward",
+            &(*to_voter, voter_reward),
+            u64::MAX,
+        )?;
+        events.extend(r.events);
+
+        debug!(
+            event = "validator of prev block rewarded",
+            voter = to_bs58(to_voter),
+            credits = *credits,
+            reward = voter_reward
+        )
+    }
 
     for to_slash in slashing {
         let r = session.call::<_, ()>(
@@ -569,4 +620,10 @@ fn reward_slash_and_update_root(
     events.extend(r.events);
 
     Ok(events)
+}
+
+fn to_bs58(pk: &StakePublicKey) -> String {
+    let mut pk = bs58::encode(&pk.to_bytes()).into_string();
+    pk.truncate(16);
+    pk
 }

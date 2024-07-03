@@ -9,12 +9,13 @@ use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::MINIMUM_BLOCK_TIME;
+use dusk_consensus::operations::VoterWithCredits;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
-use dusk_consensus::user::committee::CommitteeSet;
+use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
-use node_data::ledger::to_str;
 use node_data::ledger::Signature;
+use node_data::ledger::{to_str, Seed};
 use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
@@ -62,15 +63,20 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'_ ledger::Header,
         disable_winner_att_check: bool,
-    ) -> anyhow::Result<u8> {
+    ) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)>
+    {
         self.verify_basic_fields(candidate_block).await?;
-        self.verify_prev_block_cert(candidate_block).await?;
+        let prev_block_voters =
+            self.verify_prev_block_cert(candidate_block).await?;
 
+        let mut candidate_block_voters = vec![];
         if !disable_winner_att_check {
-            self.verify_winning_att(candidate_block).await?;
+            candidate_block_voters =
+                self.verify_success_att(candidate_block).await?;
         }
 
-        self.verify_failed_iterations(candidate_block).await
+        let pni = self.verify_failed_iterations(candidate_block).await?;
+        Ok((pni, prev_block_voters, candidate_block_voters))
     }
 
     /// Verifies any non-attestation field
@@ -156,9 +162,9 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<VoterWithCredits>> {
         if self.prev_header.height == 0 {
-            return Ok(());
+            return Ok(vec![]);
         }
 
         let prev_block_seed = self.db.read().await.view(|v| {
@@ -169,7 +175,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
-        verify_block_att(
+        let (_, _, voters) = verify_block_att(
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
@@ -179,7 +185,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         )
         .await?;
 
-        Ok(())
+        Ok(voters)
     }
 
     /// Return the number of failed iterations that have no quorum in the
@@ -213,7 +219,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, rat_quorum) = verify_block_att(
+                let (_, rat_quorum, _) = verify_block_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
@@ -232,11 +238,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(candidate_block.iteration - failed_atts)
     }
 
-    pub async fn verify_winning_att(
+    pub async fn verify_success_att(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<()> {
-        verify_block_att(
+    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+        let (_, _, voters) = verify_block_att(
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
@@ -246,7 +252,29 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         )
         .await?;
 
-        Ok(())
+        Ok(voters)
+    }
+
+    /// Extracts voters list of a block.
+    ///
+    /// Returns a list of voters with their credits for both ratification and
+    /// validation step
+    pub async fn get_voters(
+        blk: &'a ledger::Header,
+        provisioners: &Provisioners,
+        prev_block_seed: Seed,
+    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+        let (_, _, voters) = verify_block_att(
+            blk.prev_block_hash,
+            prev_block_seed,
+            provisioners,
+            blk.height,
+            &blk.att,
+            blk.iteration,
+        )
+        .await?;
+
+        Ok(voters)
     }
 }
 
@@ -257,7 +285,7 @@ pub async fn verify_block_att(
     round: u64,
     att: &ledger::Attestation,
     iteration: u8,
-) -> anyhow::Result<(QuorumResult, QuorumResult)> {
+) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<VoterWithCredits>)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
@@ -267,6 +295,9 @@ pub async fn verify_block_att(
         round,
         prev_block_hash,
     };
+    let v_committee;
+    let r_committee;
+
     let vote = att.result.vote();
     // Verify validation
     match verifiers::verify_step_votes(
@@ -279,8 +310,9 @@ pub async fn verify_block_att(
     )
     .await
     {
-        Ok(validation_quorum_result) => {
+        Ok((validation_quorum_result, committee)) => {
             result.0 = validation_quorum_result;
+            v_committee = committee;
         }
         Err(e) => {
             return Err(anyhow!(
@@ -306,8 +338,9 @@ pub async fn verify_block_att(
     )
     .await
     {
-        Ok(ratification_quorum_result) => {
+        Ok((ratification_quorum_result, committee)) => {
             result.1 = ratification_quorum_result;
+            r_committee = committee;
         }
         Err(e) => {
             return Err(anyhow!(
@@ -322,5 +355,21 @@ pub async fn verify_block_att(
         }
     }
 
-    Ok(result)
+    let voters = merge_committees(&v_committee, &r_committee);
+    Ok((result.0, result.1, voters))
+}
+
+/// Merges two committees into a vector
+fn merge_committees(a: &Committee, b: &Committee) -> Vec<VoterWithCredits> {
+    let mut members = a.members().clone();
+    for (key, value) in b.members() {
+        // Keeps track of the number of occurrences for each member.
+        let counter = members.entry(key.clone()).or_insert(0);
+        *counter += *value;
+    }
+
+    members
+        .into_iter()
+        .map(|(key, credits)| (*key.inner(), credits))
+        .collect()
 }
