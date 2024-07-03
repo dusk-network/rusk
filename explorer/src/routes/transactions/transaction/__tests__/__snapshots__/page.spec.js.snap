@@ -19,11 +19,14 @@ exports[`Transaction Details > should render the Transaction details page and qu
        
     </header>
      
-    <p
-      class="data-card__loading-notice"
+    <div
+      class="dusk-progress-bar data-card__progress-bar"
+      role="progressbar"
     >
-      Loading...
-    </p>
+      <div
+        class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
+      />
+    </div>
     
      
   </div>

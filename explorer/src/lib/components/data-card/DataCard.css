@@ -21,3 +21,12 @@
   font-size: 1.125rem;
   line-height: 32.2px;
 }
+
+.data-card__progress-bar.dusk-progress-bar {
+  background-color: transparent;
+  height: 0.125rem;
+}
+
+.data-card__progress-bar .dusk-progress-bar__filler {
+  background-color: var(--primary-color);
+}
