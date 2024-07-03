@@ -13,19 +13,15 @@ mod error;
 pub use error::Error;
 
 pub const DEPTH: usize = 17; // depth of the n-ary Merkle tree
-pub const ARITY: usize = 4; // arity of the Merkle tree
 
 #[derive(Default, Debug)]
 pub struct LicenseCircuit {
-    lpp: CitadelProverParameters<DEPTH, ARITY>,
+    lpp: CitadelProverParameters<DEPTH>,
     sc: SessionCookie,
 }
 
 impl LicenseCircuit {
-    pub fn new(
-        lpp: CitadelProverParameters<DEPTH, ARITY>,
-        sc: SessionCookie,
-    ) -> Self {
+    pub fn new(lpp: CitadelProverParameters<DEPTH>, sc: SessionCookie) -> Self {
         Self { lpp, sc }
     }
 }

@@ -17,7 +17,8 @@ use tracing::info;
 use url::Url;
 
 use execution_core::{
-    stake::StakeData, transfer::Mint, BlsScalar, JubJubScalar, PublicKey,
+    stake::StakeData, transfer::Mint, BlsPublicKey, BlsSecretKey, JubJubScalar,
+    PublicKey,
 };
 use rusk_abi::{ContractData, ContractId, Session, VM};
 use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
@@ -66,11 +67,11 @@ fn generate_transfer_state(
         balance.notes.iter().for_each(|&amount| {
             let r = JubJubScalar::random(&mut rng);
             let address = balance.address().gen_stealth_address(&r);
-            let nonce = BlsScalar::random(&mut rng);
+            let sender = BlsPublicKey::from(&BlsSecretKey::random(&mut rng));
             let mint = Mint {
                 address,
                 value: amount,
-                nonce,
+                sender,
             };
             session
                 .call::<Mint, bool>(TRANSFER_CONTRACT, "mint", &mint, u64::MAX)
@@ -99,6 +100,7 @@ fn generate_stake_state(
             amount,
             reward: staker.reward.unwrap_or_default(),
             counter: 0,
+            faults: 0,
         };
         session
             .call::<_, ()>(
@@ -116,7 +118,7 @@ fn generate_stake_state(
         session
             .call::<_, ()>(
                 TRANSFER_CONTRACT,
-                "add_module_balance",
+                "add_contract_balance",
                 &(m, stake_balance),
                 u64::MAX,
             )
@@ -179,7 +181,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
-            "add_module_balance",
+            "add_contract_balance",
             &(STAKE_CONTRACT, 0u64),
             u64::MAX,
         )

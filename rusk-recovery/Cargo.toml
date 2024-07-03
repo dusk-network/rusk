@@ -25,7 +25,7 @@ flate2 = "1"
 tar = "0.4"
 cargo_toml = "0.15"
 
-transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
+phoenix-circuits = "0.2.1-rc"
 license-circuits = { version = "0.1", path = "../circuits/license" }
 
 rusk-profile = { version = "0.6", path = "../rusk-profile" }

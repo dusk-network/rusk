@@ -7,11 +7,9 @@
 use super::*;
 
 use execution_core::transfer::TRANSFER_TREE_DEPTH;
+use execution_core::{value_commitment, Sender};
+use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use rand::{CryptoRng, RngCore};
-use transfer_circuits::{
-    ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
-    ExecuteCircuitTwoTwo,
-};
 
 use crate::prover::fetch_prover;
 use crate::UnprovenTransaction;
@@ -28,51 +26,91 @@ pub static EXEC_3_2_PROVER: Lazy<PlonkProver> =
 pub static EXEC_4_2_PROVER: Lazy<PlonkProver> =
     Lazy::new(|| fetch_prover("ExecuteCircuitFourTwo"));
 
-fn fill_circuit<const I: usize>(
-    circuit: &mut ExecuteCircuit<I, (), TRANSFER_TREE_DEPTH, 4>,
+fn create_circuit<const I: usize>(
     utx: &UnprovenTransaction,
-) -> Result<(), ProverError> {
-    for input in utx.inputs() {
-        let cis = CircuitInputSignature::from(input.signature());
-        let cinput = CircuitInput::new(
-            *input.opening(),
-            *input.note(),
-            input.note_pk_prime().into(),
-            input.value(),
-            input.blinding_factor(),
-            input.nullifier(),
-            cis,
-        );
+) -> Result<TxCircuit<TRANSFER_TREE_DEPTH, I>, ProverError> {
+    // Create the `TxInputNote`
+    let mut tx_input_notes = Vec::with_capacity(utx.inputs().len());
+    utx.inputs.iter().for_each(|input| {
+        tx_input_notes.push(TxInputNote {
+            merkle_opening: input.opening,
+            note: input.note.clone(),
+            note_pk_p: input.npk_prime.into(),
+            value: input.value,
+            value_blinder: input.value_blinder,
+            nullifier: input.nullifier,
+            signature: input.sig,
+        });
+    });
+    let tx_input_notes: [TxInputNote<TRANSFER_TREE_DEPTH>; I] = tx_input_notes
+        .try_into()
+        .expect("the numbers of input-notes should be as expected");
 
-        circuit.add_input(cinput).map_err(|_| {
-            ProverError::from(format!(
-                "Too many inputs: given {}, expected {}.",
-                utx.inputs().len(),
-                I
-            ))
-        })?;
-    }
-
-    for (note, value, blinder) in utx.outputs() {
-        circuit
-            .add_output_with_data(*note, *value, *blinder)
-            .map_err(|_| {
-                ProverError::from(format!(
-                    "Too many outputs: given {}, expected 2.",
-                    utx.outputs().len(),
-                ))
-            })?;
-    }
-
-    circuit.set_tx_hash(utx.hash());
-
-    match utx.crossover() {
-        Some((crossover, value, blinder)) => {
-            circuit.set_fee_crossover(utx.fee(), crossover, *value, *blinder)
+    // Create the `TxOutputNotes`
+    let (
+        transfer_note,
+        transfer_value,
+        transfer_value_blinder,
+        transfer_sender_blinder,
+    ) = &utx.outputs[0];
+    let transfer_value_commitment =
+        value_commitment(*transfer_value, *transfer_value_blinder);
+    let transfer_note_sender_enc = match transfer_note.sender() {
+        Sender::Encryption(enc) => enc,
+        Sender::ContractInfo(_) => {
+            panic!("The sender needs to be an encryption")
         }
-        None => circuit.set_fee(utx.fee()),
-    }
-    Ok(())
+    };
+
+    let (
+        change_note,
+        change_value,
+        change_value_blinder,
+        change_sender_blinder,
+    ) = &utx.outputs[1];
+    let change_value_commitment =
+        value_commitment(*change_value, *change_value_blinder);
+    let change_note_sender_enc = match change_note.sender() {
+        Sender::Encryption(enc) => enc,
+        Sender::ContractInfo(_) => {
+            panic!("The sender needs to be an encryption")
+        }
+    };
+    let tx_output_notes = [
+        TxOutputNote::new(
+            *transfer_value,
+            transfer_value_commitment,
+            *transfer_value_blinder,
+            JubJubAffine::from(
+                transfer_note.stealth_address().note_pk().as_ref(),
+            ),
+            *transfer_note_sender_enc,
+        ),
+        TxOutputNote::new(
+            *change_value,
+            change_value_commitment,
+            *change_value_blinder,
+            JubJubAffine::from(
+                change_note.stealth_address().note_pk().as_ref(),
+            ),
+            *change_note_sender_enc,
+        ),
+    ];
+
+    // Build the circuit
+    let circuit: TxCircuit<TRANSFER_TREE_DEPTH, I> = TxCircuit::new(
+        tx_input_notes,
+        tx_output_notes,
+        utx.payload_hash(),
+        utx.payload.tx_skeleton.root,
+        utx.payload.tx_skeleton.deposit,
+        utx.payload.fee.max_fee(),
+        utx.sender_pk,
+        utx.signatures,
+        [*transfer_sender_blinder, *change_sender_blinder],
+    );
+
+    Ok(circuit)
 }
 
 impl LocalProver {
@@ -110,9 +148,7 @@ fn local_prove_exec_1_2<R>(
 where
     R: RngCore + CryptoRng,
 {
-    const I: usize = 1;
-    let mut circuit = ExecuteCircuitOneTwo::new();
-    fill_circuit::<I>(&mut circuit, utx)?;
+    let circuit = create_circuit::<1>(utx)?;
 
     let (proof, _) = EXEC_1_2_PROVER.prove(rng, &circuit).map_err(|e| {
         ProverError::with_context("Failed proving the circuit", e)
@@ -127,9 +163,7 @@ fn local_prove_exec_2_2<R>(
 where
     R: RngCore + CryptoRng,
 {
-    const I: usize = 2;
-    let mut circuit = ExecuteCircuitTwoTwo::new();
-    fill_circuit::<I>(&mut circuit, utx)?;
+    let circuit = create_circuit::<2>(utx)?;
 
     let (proof, _) = EXEC_2_2_PROVER.prove(rng, &circuit).map_err(|e| {
         ProverError::with_context("Failed proving the circuit", e)
@@ -144,9 +178,7 @@ fn local_prove_exec_3_2<R>(
 where
     R: RngCore + CryptoRng,
 {
-    const I: usize = 3;
-    let mut circuit = ExecuteCircuitThreeTwo::new();
-    fill_circuit::<I>(&mut circuit, utx)?;
+    let circuit = create_circuit::<3>(utx)?;
 
     let (proof, _) = EXEC_3_2_PROVER.prove(rng, &circuit).map_err(|e| {
         ProverError::with_context("Failed proving the circuit", e)
@@ -161,9 +193,7 @@ fn local_prove_exec_4_2<R>(
 where
     R: RngCore + CryptoRng,
 {
-    const I: usize = 4;
-    let mut circuit = ExecuteCircuitFourTwo::new();
-    fill_circuit::<I>(&mut circuit, utx)?;
+    let circuit = create_circuit::<4>(utx)?;
 
     let (proof, _) = EXEC_4_2_PROVER.prove(rng, &circuit).map_err(|e| {
         ProverError::with_context("Failed proving the circuit", e)

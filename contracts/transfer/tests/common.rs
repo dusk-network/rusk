@@ -6,24 +6,25 @@
 
 use std::sync::mpsc;
 
+use execution_core::{
+    transfer::{
+        ContractCall, Fee, Payload, Transaction, TreeLeaf, TRANSFER_TREE_DEPTH,
+    },
+    value_commitment, BlsScalar, JubJubScalar, Note, PublicKey,
+    SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
+};
+use rusk_abi::{ContractError, ContractId, Error, Session, TRANSFER_CONTRACT};
+
 use dusk_bytes::Serializable;
 use dusk_plonk::prelude::*;
 use ff::Field;
 use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use poseidon_merkle::Opening as PoseidonOpening;
+
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use execution_core::{
-    transfer::{
-        ContractCall, Fee, Payload, Transaction, TreeLeaf, TRANSFER_TREE_DEPTH,
-    },
-    value_commitment, JubJubScalar, Note, PublicKey, SchnorrSecretKey,
-    SecretKey, Sender, TxSkeleton, ViewKey,
-};
-use rusk_abi::{CallReceipt, ContractError, Error, Session, TRANSFER_CONTRACT};
-
-const POINT_LIMIT: u64 = 0x100000000;
+const POINT_LIMIT: u64 = 0x10_000_000;
 
 pub fn leaves_from_height(
     session: &mut Session,
@@ -35,7 +36,7 @@ pub fn leaves_from_height(
         TRANSFER_CONTRACT,
         "leaves_from_height",
         &height,
-        u64::MAX,
+        POINT_LIMIT,
         feeder,
     )?;
 
@@ -65,6 +66,12 @@ pub fn leaves_from_pos(
         .collect())
 }
 
+pub fn num_notes(session: &mut Session) -> Result<u64, Error> {
+    session
+        .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
+        .map(|r| r.data)
+}
+
 pub fn update_root(session: &mut Session) -> Result<(), Error> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
@@ -74,6 +81,20 @@ pub fn update_root(session: &mut Session) -> Result<(), Error> {
 pub fn root(session: &mut Session) -> Result<BlsScalar, Error> {
     session
         .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
+        .map(|r| r.data)
+}
+
+pub fn contract_balance(
+    session: &mut Session,
+    contract: ContractId,
+) -> Result<u64, Error> {
+    session
+        .call(
+            TRANSFER_CONTRACT,
+            "contract_balance",
+            &contract,
+            POINT_LIMIT,
+        )
         .map(|r| r.data)
 }
 
@@ -109,27 +130,14 @@ pub fn prover_verifier(input_notes: usize) -> (Prover, Verifier) {
     (prover, verifier)
 }
 
-pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
-    vk: ViewKey,
-    iter: I,
-) -> Vec<Note> {
-    iter.into_iter()
-        .filter(|note| vk.owns(note.stealth_address()))
-        .collect()
-}
-
-/// Executes a transaction, returning the call receipt
-pub fn execute(
-    session: &mut Session,
-    tx: Transaction,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
-    // Spend the inputs and execute the call. If this errors the transaction is
-    // unspendable.
+/// Executes a transaction.
+/// Returns result containing gas spent.
+pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
-        tx.payload().fee.gas_limit,
+        tx.payload().fee().gas_limit,
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -137,9 +145,6 @@ pub fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
@@ -151,7 +156,17 @@ pub fn execute(
 
     receipt.events.extend(refund_receipt.events);
 
-    Ok(receipt)
+    Ok(receipt.gas_spent)
+}
+
+/// Returns vector of notes owned by a given view key.
+pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
+    vk: ViewKey,
+    iter: I,
+) -> Vec<Note> {
+    iter.into_iter()
+        .filter(|note| vk.owns(note.stealth_address()))
+        .collect()
 }
 
 /// Generate a TxCircuit given the sender secret-key, receiver public-key, the
@@ -301,7 +316,6 @@ pub fn create_transaction<const I: usize>(
             );
         });
 
-    // let sender_enc_transfer_note =
     // Create the `TxOutputNotes`
     let transfer_value_commitment =
         value_commitment(transfer_value, transfer_value_blinder);

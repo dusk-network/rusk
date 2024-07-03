@@ -586,7 +586,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
         // Add Secondary indexes //
         // Nullifiers
-        for n in tx.inner.nullifiers().iter() {
+        for n in tx.inner.payload().tx_skeleton().nullifiers().iter() {
             let key = n.to_bytes();
             self.put_cf(self.nullifiers_cf, key, hash)?;
         }
@@ -626,7 +626,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
             // Delete Secondary indexes
             // Delete Nullifiers
-            for n in tx.inner.nullifiers().iter() {
+            for n in tx.inner.payload().tx_skeleton().nullifiers().iter() {
                 let key = n.to_bytes();
                 self.inner.delete_cf(self.nullifiers_cf, key)?;
             }
@@ -892,7 +892,6 @@ mod tests {
 
     use fake::{Fake, Faker};
     use node_data::ledger::Transaction;
-    use rusk_abi::EconomicMode;
 
     #[test]
     fn test_store_block() {
@@ -1120,7 +1119,6 @@ mod tests {
                 inner: t.clone(),
                 block_height: 0,
                 gas_spent: 0,
-                economic_mode: EconomicMode::None,
                 err: None,
             })
             .collect()

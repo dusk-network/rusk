@@ -6,27 +6,21 @@
 
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::io::Write;
 use std::sync::{Arc, RwLock};
 
 use crate::common::block::Block as BlockAwait;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_plonk::prelude::Proof;
-use execution_core::transfer::TRANSFER_TREE_DEPTH;
-use execution_core::{
-    BlsPublicKey, BlsScalar, Crossover, Fee, JubJubAffine, JubJubScalar, Note,
-    NoteSignature, ViewKey,
+use execution_core::transfer::{
+    Transaction as PhoenixTransaction, TRANSFER_TREE_DEPTH,
 };
+use execution_core::{BlsPublicKey, BlsScalar, Note, ViewKey};
 use futures::StreamExt;
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
-use rusk_prover::prover::{A, STCT_INPUT_LEN, WFCT_INPUT_LEN};
 use rusk_prover::{LocalProver, Prover};
-use test_wallet::{
-    self as wallet, StakeInfo, Store, Transaction as PhoenixTransaction,
-    UnprovenTransaction,
-};
+use test_wallet::{self as wallet, StakeInfo, Store, UnprovenTransaction};
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -90,8 +84,8 @@ impl wallet::StateClient for TestStateClient {
         Ok(vk_cache.notes)
     }
 
-    /// Fetch the current anchor of the state.
-    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
+    /// Fetch the current root of the state.
+    fn fetch_root(&self) -> Result<BlsScalar, Self::Error> {
         self.rusk.tree_root()
     }
 
@@ -106,7 +100,7 @@ impl wallet::StateClient for TestStateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>, Self::Error> {
+    ) -> Result<PoseidonOpening<(), TRANSFER_TREE_DEPTH>, Self::Error> {
         self.rusk
             .tree_opening(*note.pos())?
             .ok_or(Error::OpeningPositionNotFound(*note.pos()))
@@ -148,52 +142,11 @@ impl wallet::ProverClient for TestProverClient {
         let proof = self.prover.prove_execute(utx_bytes)?;
         info!("UTX: {}", hex::encode(utx_bytes));
         let proof = Proof::from_slice(&proof).map_err(Error::Serialization)?;
-        let tx = utx.clone().prove(proof);
+        let tx = utx.clone().gen_transaction(proof);
 
         //Propagate is not required yet
 
         Ok(tx)
-    }
-    /// Requests an STCT proof.
-    fn request_stct_proof(
-        &self,
-        fee: &Fee,
-        crossover: &Crossover,
-        value: u64,
-        blinder: JubJubScalar,
-        address: BlsScalar,
-        signature: NoteSignature,
-    ) -> Result<Proof, Self::Error> {
-        let mut buf = [0u8; STCT_INPUT_LEN];
-        let mut writer = &mut buf[..];
-
-        writer.write_all(&fee.to_bytes())?;
-        writer.write_all(&crossover.to_bytes())?;
-        writer.write_all(&value.to_bytes())?;
-        writer.write_all(&blinder.to_bytes())?;
-        writer.write_all(&address.to_bytes())?;
-        writer.write_all(&signature.to_bytes())?;
-
-        let proof = self.prover.prove_stct(&buf)?;
-        Proof::from_slice(&proof[..]).map_err(Error::Serialization)
-    }
-
-    /// Request a WFCT proof.
-    fn request_wfct_proof(
-        &self,
-        commitment: JubJubAffine,
-        value: u64,
-        blinder: JubJubScalar,
-    ) -> Result<Proof, Self::Error> {
-        let mut buf = [0u8; WFCT_INPUT_LEN];
-        let mut writer = &mut buf[..];
-
-        writer.write_all(&commitment.to_bytes())?;
-        writer.write_all(&value.to_bytes())?;
-        writer.write_all(&blinder.to_bytes())?;
-
-        let proof = self.prover.prove_wfct(&buf)?;
-        Proof::from_slice(&proof[..]).map_err(Error::Serialization)
     }
 }
 
@@ -205,8 +158,8 @@ pub struct DummyCacheItem {
 
 impl DummyCacheItem {
     fn add(&mut self, note: Note, block_height: u64) {
-        if !self.notes.contains(&(note, block_height)) {
-            self.notes.push((note, block_height));
+        if !self.notes.contains(&(note.clone(), block_height)) {
+            self.notes.push((note.clone(), block_height));
             self.last_height = block_height;
         }
     }

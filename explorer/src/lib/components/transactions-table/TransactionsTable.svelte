@@ -25,6 +25,9 @@
   /** @type {Transaction[]}*/
   export let data;
 
+  /** @type {"compact" | "full"} */
+  export let mode;
+
   const HASH_CHARS_LENGTH = 10;
 
   const numberFormatter = createValueFormatter("en");
@@ -36,7 +39,9 @@
   <TableHead>
     <TableRow>
       <TableCell type="th">ID</TableCell>
-      <TableCell type="th">Gas</TableCell>
+      {#if mode === "full"}
+        <TableCell type="th">Gas</TableCell>
+      {/if}
       <TableCell type="th">Fee (DUSK)</TableCell>
       <TableCell type="th">Status</TableCell>
       <TableCell type="th">Type</TableCell>
@@ -55,12 +60,14 @@
             >{getRelativeTimeString(transaction.date, "long")}</small
           >
         </TableCell>
-        <TableCell>
-          <b class="transaction__fee-price-label">PRICE:</b>
-          {numberFormatter(transaction.gasprice)}<br />
-          <b class="transaction__fee-limit-label">LIMIT:</b>
-          {numberFormatter(transaction.gaslimit)}
-        </TableCell>
+        {#if mode === "full"}
+          <TableCell>
+            <b class="transaction__fee-price-label">PRICE:</b>
+            {numberFormatter(transaction.gasprice)}<br />
+            <b class="transaction__fee-limit-label">LIMIT:</b>
+            {numberFormatter(transaction.gaslimit)}
+          </TableCell>
+        {/if}
         <TableCell>{numberFormatter(luxToDusk(transaction.feepaid))}</TableCell>
         <TableCell>
           <Badge

@@ -106,7 +106,7 @@ impl VMExecution for Rusk {
         info!("Received preverify request");
         let tx = &tx.inner;
         let existing_nullifiers = self
-            .existing_nullifiers(&tx.nullifiers)
+            .existing_nullifiers(&tx.payload().tx_skeleton().nullifiers)
             .map_err(|e| anyhow::anyhow!("Cannot check nullifiers: {e}"))?;
 
         if !existing_nullifiers.is_empty() {

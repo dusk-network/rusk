@@ -25,6 +25,7 @@ contracts: ## Execute the test for all contracts
 
 test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk-abi/ $@
+	$(MAKE) -C ./execution-core/ $@
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) state
 	$(MAKE) -j1 -C ./contracts $@

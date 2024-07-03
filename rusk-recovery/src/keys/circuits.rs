@@ -10,24 +10,21 @@ use cargo_toml::{Dependency, Manifest};
 use dusk_plonk::prelude::Circuit;
 use tracing::info;
 
+use execution_core::transfer::TRANSFER_TREE_DEPTH;
+
 use license_circuits::LicenseCircuit;
-use transfer_circuits::{
-    ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
-    ExecuteCircuitTwoTwo, SendToContractTransparentCircuit,
-    WithdrawFromTransparentCircuit,
-};
+use phoenix_circuits::transaction::TxCircuit;
+
+type ExecuteCircuitOneTwo = TxCircuit<TRANSFER_TREE_DEPTH, 1>;
+type ExecuteCircuitTwoTwo = TxCircuit<TRANSFER_TREE_DEPTH, 2>;
+type ExecuteCircuitThreeTwo = TxCircuit<TRANSFER_TREE_DEPTH, 3>;
+type ExecuteCircuitFourTwo = TxCircuit<TRANSFER_TREE_DEPTH, 4>;
 
 use rusk_profile::{Circuit as CircuitProfile, Theme};
 
 pub fn cache_all() -> io::Result<()> {
     // cache the circuit description, this only updates the circuit description
     // if the new circuit is different from a previously cached version
-    cache::<WithdrawFromTransparentCircuit>(Some(String::from(
-        "WithdrawFromTransparentCircuit",
-    )))?;
-    cache::<SendToContractTransparentCircuit>(Some(String::from(
-        "SendToContractTransparentCircuit",
-    )))?;
     cache::<ExecuteCircuitOneTwo>(Some(String::from("ExecuteCircuitOneTwo")))?;
     cache::<ExecuteCircuitTwoTwo>(Some(String::from("ExecuteCircuitTwoTwo")))?;
     cache::<ExecuteCircuitThreeTwo>(Some(String::from(

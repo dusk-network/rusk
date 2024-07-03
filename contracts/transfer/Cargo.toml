@@ -9,8 +9,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 execution-core = { version = "0.1.0", path = "../../execution-core" }
 dusk-bytes = "0.1"
-dusk-poseidon = { version = "0.33", default-features = false, features = ["alloc"] }
-poseidon-merkle = { version = "0.5", features = ["rkyv-impl"] }
+poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
 dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 ringbuffer = "0.15"
@@ -22,7 +21,7 @@ rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi" }
 [dev-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
-transfer-circuits = { version = "0.5", path = "../../circuits/transfer" }
+phoenix-circuits = "0.2.1-rc"
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 hex = "0.4"

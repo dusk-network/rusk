@@ -15,10 +15,8 @@ use execution_core::{
     BlsScalar, Note,
 };
 
-use crate::state::A;
-
 pub struct Tree {
-    tree: PoseidonTree<(), TRANSFER_TREE_DEPTH, A>,
+    tree: PoseidonTree<(), TRANSFER_TREE_DEPTH>,
     // Since `dusk-merkle` does not include data blocks with the tree, we do it
     // here.
     leaves: Vec<TreeLeaf>,
@@ -57,8 +55,11 @@ impl Tree {
         notes: I,
     ) {
         for note in notes {
-            let leaf = TreeLeaf { block_height, note };
-            self.push(leaf);
+            // skip transparent notes with a value of 0
+            if !note.value(None).is_ok_and(|value| value == 0) {
+                let leaf = TreeLeaf { block_height, note };
+                self.push(leaf);
+            }
         }
     }
 
@@ -95,7 +96,7 @@ impl Tree {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>> {
+    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>> {
         self.tree.opening(pos)
     }
 

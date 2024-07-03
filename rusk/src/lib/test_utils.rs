@@ -18,14 +18,10 @@ use tracing::{error, info};
 
 use execution_core::stake::StakeData;
 use execution_core::transfer::{TreeLeaf, TRANSFER_TREE_DEPTH};
-use execution_core::{
-    BlsPublicKey, BlsScalar, Message, Note, PublicKey, ViewKey,
-};
+use execution_core::{BlsPublicKey, BlsScalar, Note, ViewKey};
 use parking_lot::RwLockWriteGuard;
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
-
-const A: usize = 4;
 
 pub type StoredNote = (Note, u64);
 
@@ -63,22 +59,13 @@ impl Rusk {
     pub fn tree_opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>>> {
+    ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>> {
         self.query(TRANSFER_CONTRACT, "opening", &pos)
     }
 
-    /// Returns the "transparent" balance of the given module.
-    pub fn module_balance(&self, contract: ContractId) -> Result<u64> {
-        self.query(TRANSFER_CONTRACT, "module_balance", &contract)
-    }
-
-    /// Returns the message mapped to the given module and public key.
-    pub fn module_message(
-        &self,
-        contract: ContractId,
-        pk: PublicKey,
-    ) -> Result<Option<Message>> {
-        self.query(TRANSFER_CONTRACT, "message", &(contract, pk))
+    /// Returns the "transparent" balance of the given contract.
+    pub fn contract_balance(&self, contract: ContractId) -> Result<u64> {
+        self.query(TRANSFER_CONTRACT, "contract_balance", &contract)
     }
 
     /// Returns data about the stake of the given key.
@@ -122,7 +109,7 @@ impl Rusk {
                     .expect("The contract should always return valid leaves");
                 match &vk {
                     Some(vk) => vk
-                        .owns(&leaf.note)
+                        .owns(leaf.note.stealth_address())
                         .then_some((leaf.note, leaf.block_height)),
                     None => Some((leaf.note, leaf.block_height)),
                 }

@@ -2,9 +2,9 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
+import { resolveAfter } from "$lib/dusk/promise";
 import { duskAPI } from "$lib/services";
-import { transformBlock, transformTransaction } from "$lib/chain-info";
-import { gqlLatestChainInfo } from "$lib/mock-data";
+
 import { appStore } from "$lib/stores";
 
 import HomePage from "../+page.svelte";
@@ -15,26 +15,47 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-describe("home page", () => {
+const marketDataSettleTime = vi.hoisted(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 30));
 
+  return 100;
+});
+vi.mock("$lib/services", async (importOriginal) => {
+  /** @type {import("$lib/services")} */
+  const original = await importOriginal();
+  const { transformBlock, transformTransaction } = await import(
+    "$lib/chain-info"
+  );
+  const { apiMarketData, gqlLatestChainInfo } = await import("$lib/mock-data");
+  const { current_price: currentPrice, market_cap: marketCap } =
+    apiMarketData.market_data;
+
+  return {
+    ...original,
+    duskAPI: {
+      ...original.duskAPI,
+      getLatestChainInfo: vi.fn().mockResolvedValue({
+        blocks: gqlLatestChainInfo.blocks.map(transformBlock),
+        transactions: gqlLatestChainInfo.transactions.map(transformTransaction),
+      }),
+      getMarketData: () =>
+        resolveAfter(marketDataSettleTime, { currentPrice, marketCap }),
+    },
+  };
+});
+
+describe("home page", () => {
   const { chainInfoEntries, fetchInterval, network } = get(appStore);
-  const getLatestChainInfoSpy = vi
-    .spyOn(duskAPI, "getLatestChainInfo")
-    .mockResolvedValue({
-      blocks: gqlLatestChainInfo.blocks.map(transformBlock),
-      transactions: gqlLatestChainInfo.transactions.map(transformTransaction),
-    });
 
   afterEach(() => {
     cleanup();
-    getLatestChainInfoSpy.mockClear();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
-    getLatestChainInfoSpy.mockRestore();
     vi.useRealTimers();
+    vi.doUnmock("$lib/services");
   });
 
   it("should render the home page, start polling for the latest chain info and stop the polling when the component is destroyed", async () => {
@@ -42,22 +63,22 @@ describe("home page", () => {
 
     // snapshost in loading state
     expect(container.firstChild).toMatchSnapshot();
-    expect(getLatestChainInfoSpy).toHaveBeenCalledTimes(1);
-    expect(getLatestChainInfoSpy).toHaveBeenNthCalledWith(
+    expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(1);
+    expect(duskAPI.getLatestChainInfo).toHaveBeenNthCalledWith(
       1,
       network,
       chainInfoEntries
     );
 
-    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(marketDataSettleTime);
 
     // snapshot with received data from GraphQL
     expect(container.firstChild).toMatchSnapshot();
 
-    await vi.advanceTimersByTimeAsync(fetchInterval - 1);
+    await vi.advanceTimersByTimeAsync(fetchInterval - marketDataSettleTime);
 
-    expect(getLatestChainInfoSpy).toHaveBeenCalledTimes(2);
-    expect(getLatestChainInfoSpy).toHaveBeenNthCalledWith(
+    expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(2);
+    expect(duskAPI.getLatestChainInfo).toHaveBeenNthCalledWith(
       2,
       network,
       chainInfoEntries
@@ -65,8 +86,8 @@ describe("home page", () => {
 
     await vi.advanceTimersByTimeAsync(fetchInterval);
 
-    expect(getLatestChainInfoSpy).toHaveBeenCalledTimes(3);
-    expect(getLatestChainInfoSpy).toHaveBeenNthCalledWith(
+    expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(3);
+    expect(duskAPI.getLatestChainInfo).toHaveBeenNthCalledWith(
       3,
       network,
       chainInfoEntries
@@ -76,6 +97,6 @@ describe("home page", () => {
 
     await vi.advanceTimersByTimeAsync(fetchInterval * 10);
 
-    expect(getLatestChainInfoSpy).toHaveBeenCalledTimes(3);
+    expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(3);
   });
 });

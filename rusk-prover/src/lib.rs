@@ -27,6 +27,4 @@ pub type ProverResult = Result<Vec<u8>, ProverError>;
 
 pub trait Prover {
     fn prove_execute(&self, utx_bytes: &[u8]) -> ProverResult;
-    fn prove_stct(&self, circuit_inputs: &[u8]) -> ProverResult;
-    fn prove_wfct(&self, circuit_inputs: &[u8]) -> ProverResult;
 }

@@ -9,6 +9,8 @@
   /** @type {String}*/
   let value;
 
+  const errorMessage = "It looks like there is an issue with your input.";
+
   const dispatch = createEventDispatcher();
 
   function resetField() {
@@ -36,7 +38,7 @@
             default:
               dispatch("invalid", {
                 query: value,
-                res: data,
+                res: new Error(errorMessage),
               });
               resetField();
           }
@@ -48,7 +50,7 @@
     } else {
       dispatch("invalid", {
         query: value,
-        res: new Error("Invalid query value"),
+        res: new Error(errorMessage),
       });
       resetField();
     }

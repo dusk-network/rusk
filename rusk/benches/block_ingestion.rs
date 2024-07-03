@@ -18,7 +18,7 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
 use execution_core::{
-    StakePublicKey, StakeSecretKey, Transaction as PhoenixTransaction,
+    transfer::Transaction as PhoenixTransaction, StakePublicKey, StakeSecretKey,
 };
 use node_data::ledger::Transaction;
 use rand::prelude::StdRng;

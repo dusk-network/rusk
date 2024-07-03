@@ -10,9 +10,7 @@ use execution_core::PhoenixError;
 #[derive(Debug, Clone)]
 pub enum Error {
     Phoenix(PhoenixError),
-    CrossoverNotFound,
     NotEnoughBalance,
-    ProofVerification,
 }
 
 impl From<PhoenixError> for Error {

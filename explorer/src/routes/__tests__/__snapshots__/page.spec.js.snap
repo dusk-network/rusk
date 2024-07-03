@@ -2,7 +2,7 @@
 
 exports[`home page > should render the home page, start polling for the latest chain info and stop the polling when the component is destroyed 1`] = `
 <section
-  class="chain-info svelte-1ayc05m"
+  class="chain-info"
 >
   <div
     class="statistics-panel"
@@ -1001,7 +1001,7 @@ exports[`home page > should render the home page, start polling for the latest c
 
 exports[`home page > should render the home page, start polling for the latest chain info and stop the polling when the component is destroyed 2`] = `
 <section
-  class="chain-info svelte-1ayc05m"
+  class="chain-info"
 >
   <div
     class="statistics-panel"
@@ -1029,9 +1029,8 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
+            0.368
+            
             
           </div>
            
@@ -1058,9 +1057,8 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
+            168M
+            
             
           </div>
            

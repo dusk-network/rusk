@@ -17,6 +17,9 @@
   /** @type {Transaction}*/
   export let data;
 
+  /** @type {"compact" | "full"} */
+  export let mode;
+
   /** @type {number} */
   let screenWidth = window.innerWidth;
 
@@ -63,21 +66,23 @@
     </time>
   </ListItem>
 
-  <!-- GAS PRICE -->
-  <ListItem tooltipText="The transaction gas price in lux">
-    <svelte:fragment slot="term">Gas Price</svelte:fragment>
-    <svelte:fragment slot="definition">
-      {formatter(data.gasprice)}
-    </svelte:fragment>
-  </ListItem>
+  {#if mode === "full"}
+    <!-- GAS PRICE -->
+    <ListItem tooltipText="The transaction gas price in lux">
+      <svelte:fragment slot="term">Gas Price</svelte:fragment>
+      <svelte:fragment slot="definition">
+        {formatter(data.gasprice)}
+      </svelte:fragment>
+    </ListItem>
 
-  <!-- GAS LIMIT -->
-  <ListItem tooltipText="The transaction gas limit in lux">
-    <svelte:fragment slot="term">Gas Limit</svelte:fragment>
-    <svelte:fragment slot="definition">
-      {formatter(data.gaslimit)}
-    </svelte:fragment>
-  </ListItem>
+    <!-- GAS LIMIT -->
+    <ListItem tooltipText="The transaction gas limit in lux">
+      <svelte:fragment slot="term">Gas Limit</svelte:fragment>
+      <svelte:fragment slot="definition">
+        {formatter(data.gaslimit)}
+      </svelte:fragment>
+    </ListItem>
+  {/if}
 
   <!-- TX FEE -->
   <ListItem tooltipText="The transaction fee amount">

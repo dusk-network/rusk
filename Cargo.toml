@@ -1,12 +1,10 @@
 [workspace]
 members = [
-    "circuits/transfer",
     "circuits/license",
 
     # Test contracts
     "contracts/alice",
     "contracts/bob",
-    "contracts/charlie",
     "contracts/host_fn",
 
     # Genesis contracts

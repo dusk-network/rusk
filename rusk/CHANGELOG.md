@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove economic protocol handling
 - Remove allowlist [#1257]
 - Remove STCO and WFCO [#1675]
 

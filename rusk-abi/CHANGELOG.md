@@ -14,12 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update `piecrust` to `0.21`
+- Update `piecrust-uplink` to `0.14`
 - Change dependencies declarations enforce bytecheck [#1371]
-- Update `piecrust` from `0.15` to `0.16`
-- Update `piecrust-uplink` from `0.10` to `0.11`
 - Update dusk dependencies [#1609]
-- Update `piecrust` from `0.18` to `0.19` [#1630]
-- Update `piecrust-uplink` from `0.11` to `0.12` [#1630]
 
 ## [0.11.0] - 2023-10-12
 

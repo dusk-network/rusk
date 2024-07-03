@@ -55,7 +55,7 @@ fn create_step_votes(
             let vote = vote.clone();
             let ru = RoundUpdate::new(
                 pk.clone(),
-                *sk,
+                sk.clone(),
                 tip_header,
                 HashMap::default(),
                 vec![],

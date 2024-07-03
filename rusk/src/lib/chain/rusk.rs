@@ -19,19 +19,19 @@ use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
 };
 use execution_core::{
-    stake::StakeData, BlsScalar, StakePublicKey,
-    Transaction as PhoenixTransaction,
+    stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
+    StakePublicKey,
 };
 use node_data::ledger::{SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
 use rusk_abi::{
-    CallReceipt, ContractError, ContractId, Error as PiecrustError, Event,
-    Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
+    CallReceipt, ContractError, Error as PiecrustError, Event, Session,
+    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
-use super::{coinbase_value, emission_amount, Rusk, RuskTip};
+use super::{coinbase_value, Rusk, RuskTip};
 use crate::http::RuesEvent;
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
@@ -116,7 +116,7 @@ impl Rusk {
                 }
             }
             let tx_id = hex::encode(unspent_tx.id());
-            if unspent_tx.inner.fee().gas_limit > block_gas_left {
+            if unspent_tx.inner.payload().fee().gas_limit > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
             }
@@ -149,12 +149,11 @@ impl Rusk {
                     update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
-                    let gas_price = unspent_tx.inner.fee.gas_price;
+                    let gas_price = unspent_tx.inner.payload().fee.gas_price;
                     dusk_spent += gas_spent * gas_price;
                     spent_txs.push(SpentTransaction {
                         inner: unspent_tx,
                         gas_spent,
-                        economic_mode: receipt.economic_mode,
                         block_height,
                         err,
                     });
@@ -441,7 +440,7 @@ fn accept(
 
         let gas_spent = receipt.gas_spent;
 
-        dusk_spent += gas_spent * tx.fee.gas_price;
+        dusk_spent += gas_spent * tx.payload().fee.gas_price;
         block_gas_left = block_gas_left
             .checked_sub(gas_spent)
             .ok_or(Error::OutOfGas)?;
@@ -449,7 +448,6 @@ fn accept(
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),
             gas_spent,
-            economic_mode: receipt.economic_mode,
             block_height,
             // We're currently ignoring the result of successful calls
             err: receipt.data.err().map(|e| format!("{e}")),
@@ -503,18 +501,13 @@ fn execute(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         tx,
-        tx.fee.gas_limit,
+        tx.payload().fee.gas_limit,
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
         receipt.gas_spent = receipt.gas_limit;
     }
-
-    let contract_id = tx
-        .call
-        .clone()
-        .map(|(module_id, _, _)| ContractId::from_bytes(module_id));
 
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
@@ -523,12 +516,7 @@ fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(
-                tx.fee,
-                receipt.gas_spent,
-                receipt.economic_mode.clone(),
-                contract_id,
-            ),
+            &(tx.payload().fee, receipt.gas_spent),
             u64::MAX,
         )
         .expect("Refunding must succeed");
@@ -614,12 +602,11 @@ fn reward_slash_and_update_root(
     }
 
     let slash_amount = emission_amount(block_height);
-
     for to_slash in slashing {
         let r = session.call::<_, ()>(
             STAKE_CONTRACT,
             "slash",
-            &(*to_slash, slash_amount),
+            &(*to_slash, None::<u64>),
             u64::MAX,
         )?;
         events.extend(r.events);

@@ -241,42 +241,42 @@ impl Transaction<'_> {
 
     pub async fn json(&self) -> String {
         use dusk_bytes::Serializable;
-        use execution_core::Ownable;
         use serde::Serialize;
         use serde_json::{json, Map, Value};
 
         let tx = &self.0.inner;
 
         let mut map = Map::new();
-        map.insert("anchor".into(), json!(hex::encode(tx.anchor.to_bytes())));
+        map.insert(
+            "root".into(),
+            json!(hex::encode(tx.payload().tx_skeleton().root.to_bytes())),
+        );
         let nullifiers: Vec<_> = tx
+            .payload()
+            .tx_skeleton()
             .nullifiers()
             .iter()
             .map(|n| hex::encode(n.to_bytes()))
             .collect();
         map.insert("nullifier".into(), json!(nullifiers));
         map.insert(
-            "crossover".into(),
-            json!(tx.crossover.map(|m| hex::encode(m.to_bytes()))),
+            "deposit".into(),
+            json!(hex::encode(tx.payload().tx_skeleton().deposit.to_bytes())),
         );
         let notes: Vec<_> = tx
+            .payload()
+            .tx_skeleton()
             .outputs()
             .iter()
             .map(|n| {
                 let mut map = Map::new();
-                map.insert("note_type".into(), json!(n.note() as u8));
+                map.insert("note_type".into(), json!(n.note_type() as u8));
                 map.insert(
                     "value_commitment".into(),
-                    json!(n
-                        .value_commitment()
-                        .to_hash_inputs()
-                        .iter()
-                        .map(|c| hex::encode(c.to_bytes()))
-                        .collect::<Vec<_>>()),
-                );
-                map.insert(
-                    "nonce".into(),
-                    json!(hex::encode(n.nonce().to_bytes())),
+                    json!([
+                        hex::encode(n.value_commitment().get_u().to_bytes()),
+                        hex::encode(n.value_commitment().get_v().to_bytes())
+                    ]),
                 );
                 map.insert(
                     "stealth_address".into(),
@@ -284,12 +284,16 @@ impl Transaction<'_> {
                         .into_string()),
                 );
                 map.insert(
-                    "encrypted_data".into(),
+                    "value_enc".into(),
                     json!(n
-                        .cipher()
+                        .value_enc()
                         .iter()
                         .map(|c| hex::encode(c.to_bytes()))
                         .collect::<Vec<_>>()),
+                );
+                map.insert(
+                    "sender".into(),
+                    json!(hex::encode(n.sender().to_bytes())),
                 );
                 map
             })
@@ -297,23 +301,28 @@ impl Transaction<'_> {
         map.insert("notes".into(), json!(notes));
 
         let mut fee = Map::new();
-        fee.insert("gas_limit".into(), json!(tx.fee().gas_limit));
-        fee.insert("gas_price".into(), json!(tx.fee().gas_price));
+        fee.insert("gas_limit".into(), json!(tx.payload().fee().gas_limit));
+        fee.insert("gas_price".into(), json!(tx.payload().fee().gas_price));
         fee.insert(
             "stealth_address".into(),
-            json!(bs58::encode(tx.fee().stealth_address().to_bytes())
-                .into_string()),
+            json!(bs58::encode(
+                tx.payload().fee().stealth_address().to_bytes()
+            )
+            .into_string()),
+        );
+        fee.insert(
+            "sender".into(),
+            json!(hex::encode(tx.payload().fee().sender().to_bytes())),
         );
         map.insert("fee".into(), json!(fee));
 
-        let mut call_data = tx.call().map(|(contract_id, fn_name, data)| {
-            let call = Map::new();
-            fee.insert("contract_id".into(), json!(hex::encode(contract_id)));
-            fee.insert("fn_name".into(), json!(fn_name));
-            fee.insert("data".into(), json!(hex::encode(data)));
-            call
-        });
-        map.insert("call".into(), json!(call_data));
+        if let Some(c) = tx.payload().contract_call() {
+            let mut call = Map::new();
+            call.insert("contract".into(), json!(hex::encode(c.contract)));
+            call.insert("fn_name".into(), json!(&c.fn_name));
+            call.insert("fn_args".into(), json!(hex::encode(&c.fn_args)));
+            map.insert("call".into(), json!(call));
+        }
 
         json!(map).to_string()
     }
@@ -323,29 +332,30 @@ impl Transaction<'_> {
     }
 
     pub async fn gas_limit(&self) -> u64 {
-        self.0.inner.fee().gas_limit
+        self.0.inner.payload().fee().gas_limit
     }
 
     pub async fn gas_price(&self) -> u64 {
-        self.0.inner.fee().gas_price
+        self.0.inner.payload().fee().gas_price
     }
 
     pub async fn call_data(&self) -> Option<CallData> {
         self.0
             .inner
-            .call
+            .payload()
+            .contract_call()
             .as_ref()
-            .map(|(contract_id, fn_name, data)| CallData {
-                contract_id: hex::encode(contract_id),
-                fn_name: fn_name.into(),
-                data: hex::encode(data),
+            .map(|call| CallData {
+                contract: hex::encode(call.contract),
+                fn_name: call.fn_name.clone(),
+                fn_args: hex::encode(&call.fn_args),
             })
     }
 }
 
 #[derive(SimpleObject)]
 pub struct CallData {
-    contract_id: String,
+    contract: String,
     fn_name: String,
-    data: String,
+    fn_args: String,
 }
