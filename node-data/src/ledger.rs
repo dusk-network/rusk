@@ -42,3 +42,8 @@ pub fn to_str<const N: usize>(bytes: &[u8; N]) -> String {
 
     first.to_owned() + "..." + second
 }
+
+#[cfg(any(feature = "faker", test))]
+pub mod faker {
+    pub use super::transaction::faker::gen_dummy_tx;
+}
