@@ -175,7 +175,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
-        let (_, _, v_committee, r_committee) = verify_block_att(
+        let (_, _, voters) = verify_block_att(
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
@@ -185,7 +185,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         )
         .await?;
 
-        Ok(merge_committees(&v_committee, &r_committee))
+        Ok(voters)
     }
 
     /// Return the number of failed iterations that have no quorum in the
@@ -219,7 +219,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, rat_quorum, _, _) = verify_block_att(
+                let (_, rat_quorum, _) = verify_block_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
@@ -242,7 +242,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, v_committee, r_committee) = verify_block_att(
+        let (_, _, voters) = verify_block_att(
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
@@ -252,7 +252,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         )
         .await?;
 
-        Ok(merge_committees(&v_committee, &r_committee))
+        Ok(voters)
     }
 
     /// Extracts voters list of a block.
@@ -264,7 +264,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         provisioners: &Provisioners,
         prev_block_seed: Seed,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, v_committee, r_committee) = verify_block_att(
+        let (_, _, voters) = verify_block_att(
             blk.prev_block_hash,
             prev_block_seed,
             provisioners,
@@ -274,7 +274,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         )
         .await?;
 
-        Ok(merge_committees(&v_committee, &r_committee))
+        Ok(voters)
     }
 }
 
@@ -285,7 +285,7 @@ pub async fn verify_block_att(
     round: u64,
     att: &ledger::Attestation,
     iteration: u8,
-) -> anyhow::Result<(QuorumResult, QuorumResult, Committee, Committee)> {
+) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<VoterWithCredits>)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
@@ -355,7 +355,8 @@ pub async fn verify_block_att(
         }
     }
 
-    Ok((result.0, result.1, v_committee, r_committee))
+    let voters = merge_committees(&v_committee, &r_committee);
+    Ok((result.0, result.1, voters))
 }
 
 /// Merges two committees into a vector
