@@ -763,7 +763,11 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
         deposit,
     };
 
-    let payload = Payload::new(tx_skeleton, fee, call);
+    let payload = Payload {
+        tx_skeleton,
+        fee,
+        contract_call: call,
+    };
     let payload_hash = payload.hash();
 
     let inputs: Vec<UnprovenTransactionInput> = inputs

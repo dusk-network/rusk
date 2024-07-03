@@ -45,7 +45,7 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
 
     // Maybe we want to handle internal serialization error too, currently
     // they map to `false`.
-    Ok(rusk_abi::verify_proof(vd.to_vec(), tx.proof().clone(), pi))
+    Ok(rusk_abi::verify_proof(vd.to_vec(), tx.proof().to_vec(), pi))
 }
 
 fn fetch_verifier(circuit_name: &str) -> Vec<u8> {

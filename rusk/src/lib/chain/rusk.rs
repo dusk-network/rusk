@@ -112,7 +112,7 @@ impl Rusk {
                 }
             }
             let tx_id = hex::encode(unspent_tx.id());
-            if unspent_tx.inner.payload().fee().gas_limit > block_gas_left {
+            if unspent_tx.inner.payload().fee.gas_limit > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
             }

@@ -122,14 +122,14 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee_0 = txs[0].payload().fee();
+    let fee_0 = txs[0].payload().fee;
     let fee_0 = fee_0.gas_limit * fee_0.gas_price;
 
     let final_balance_1 = wallet
         .get_balance(1)
         .expect("Failed to get the balance")
         .value;
-    let fee_1 = txs[1].payload().fee();
+    let fee_1 = txs[1].payload().fee;
     let fee_1 = fee_1.gas_limit * fee_1.gas_price;
 
     assert!(

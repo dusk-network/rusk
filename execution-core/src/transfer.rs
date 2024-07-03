@@ -173,12 +173,14 @@ impl ContractCall {
 #[derive(Debug, Clone, Copy, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Fee {
-    /// The gas limit set for the fee
+    /// Gas limit set for a phoenix transaction
     pub gas_limit: u64,
-    /// the gas price set for the fee
+    /// Gas price set for a phoenix transaction
     pub gas_price: u64,
-    pub(crate) stealth_address: StealthAddress,
-    pub(crate) sender: Sender,
+    /// Address to send the remainder note
+    pub stealth_address: StealthAddress,
+    /// Sender to use for the remainder
+    pub sender: Sender,
 }
 
 impl PartialEq for Fee {
@@ -199,6 +201,7 @@ impl Fee {
         gas_price: u64,
     ) -> Self {
         let r = JubJubScalar::random(&mut *rng);
+
         let sender_blinder = [
             JubJubScalar::random(&mut *rng),
             JubJubScalar::random(&mut *rng),
@@ -228,18 +231,6 @@ impl Fee {
         }
     }
 
-    /// Return the [`StealthAddress`] to which return the unspend fee to.
-    #[must_use]
-    pub fn stealth_address(&self) -> &StealthAddress {
-        &self.stealth_address
-    }
-
-    /// Return the [`Sender`] of the unspend fee note.
-    #[must_use]
-    pub fn sender(&self) -> &Sender {
-        &self.sender
-    }
-
     /// Calculate the max-fee.
     #[must_use]
     pub fn max_fee(&self) -> u64 {
@@ -249,7 +240,7 @@ impl Fee {
     /// Return a hash represented by `H(gas_limit, gas_price, H([note_pk]))`
     #[must_use]
     pub fn hash(&self) -> BlsScalar {
-        let npk = self.stealth_address().note_pk().as_ref().to_hash_inputs();
+        let npk = self.stealth_address.note_pk().as_ref().to_hash_inputs();
 
         let hash_inputs = [
             BlsScalar::from(self.gas_limit),

@@ -71,7 +71,11 @@ fn transaction_from_to_bytes() -> Result<(), Error> {
     };
 
     // build the payload
-    let payload = Payload::new(tx_skeleton, fee, Some(call));
+    let payload = Payload {
+        tx_skeleton,
+        fee,
+        contract_call: Some(call),
+    };
 
     // set a random proof
     let proof = [42; 42].to_vec();

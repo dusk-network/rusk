@@ -83,7 +83,7 @@ impl Query {
                                 t.0.inner
                                     .inner
                                     .payload()
-                                    .contract_call()
+                                    .contract_call
                                     .as_ref()
                                     .map(|c| c.contract)
                                     .unwrap_or(
