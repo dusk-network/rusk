@@ -44,6 +44,7 @@ fn reward_slash() -> Result<(), Error> {
         amount: Some((stake_amount, 0)),
         counter: 0,
         faults: 0,
+        hard_faults: 0,
     };
 
     session.call::<_, ()>(
@@ -129,6 +130,7 @@ fn stake_hard_slash() -> Result<(), Error> {
         amount: Some((balance, block_height)),
         counter: 0,
         faults: 0,
+        hard_faults: 0,
     };
 
     session.call::<_, ()>(
