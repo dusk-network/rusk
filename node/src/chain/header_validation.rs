@@ -74,8 +74,8 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             tip_block_voters = self.verify_winning_att(candidate_block).await?;
         }
 
-        let res = self.verify_failed_iterations(candidate_block).await?;
-        Ok((res, prev_block_voters, tip_block_voters))
+        let pni = self.verify_failed_iterations(candidate_block).await?;
+        Ok((pni, prev_block_voters, tip_block_voters))
     }
 
     /// Verifies any non-attestation field
@@ -174,7 +174,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
-        let (_, _, v_committee, r_committee) = verify_block_att(
+        let (_, _, v_committee, r_committee) = verify_success_att(
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
@@ -218,7 +218,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, rat_quorum, _, _) = verify_block_att(
+                let (_, rat_quorum, _, _) = verify_success_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
@@ -241,7 +241,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, v_committee, r_committee) = verify_block_att(
+        let (_, _, v_committee, r_committee) = verify_success_att(
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
@@ -254,19 +254,22 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(merge_committees(&v_committee, &r_committee))
     }
 
-    /// Generates and returns voters
+    /// Extracts voters list of a block.
+    ///
+    /// Returns a list of voters with their credits for both ratification and
+    /// validation step
     pub async fn get_voters(
-        tip_block: &'a ledger::Header,
+        blk: &'a ledger::Header,
         provisioners: &Provisioners,
         prev_block_seed: Seed,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, v_committee, r_committee) = verify_block_att(
-            tip_block.prev_block_hash,
+        let (_, _, v_committee, r_committee) = verify_success_att(
+            blk.prev_block_hash,
             prev_block_seed,
             provisioners,
-            tip_block.height,
-            &tip_block.att,
-            tip_block.iteration,
+            blk.height,
+            &blk.att,
+            blk.iteration,
         )
         .await?;
 
@@ -274,7 +277,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     }
 }
 
-pub async fn verify_block_att(
+pub async fn verify_success_att(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,

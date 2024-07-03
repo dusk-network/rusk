@@ -601,7 +601,6 @@ fn reward_slash_and_update_root(
         )
     }
 
-    let slash_amount = emission_amount(block_height);
     for to_slash in slashing {
         let r = session.call::<_, ()>(
             STAKE_CONTRACT,
