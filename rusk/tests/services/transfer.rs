@@ -117,7 +117,7 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee = tx.inner.inner.payload().fee();
+    let fee = tx.inner.inner.payload().fee;
     let fee = gas_spent * fee.gas_price;
 
     assert_eq!(
