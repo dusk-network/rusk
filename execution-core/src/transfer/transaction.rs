@@ -40,38 +40,6 @@ impl PartialEq for Payload {
 impl Eq for Payload {}
 
 impl Payload {
-    /// Create a new `Payload`.
-    #[must_use]
-    pub fn new(
-        tx_skeleton: TxSkeleton,
-        fee: Fee,
-        contract_call: Option<ContractCall>,
-    ) -> Self {
-        Self {
-            tx_skeleton,
-            fee,
-            contract_call,
-        }
-    }
-
-    /// Return the tx-skeleton.
-    #[must_use]
-    pub fn tx_skeleton(&self) -> &TxSkeleton {
-        &self.tx_skeleton
-    }
-
-    /// Return the fee.
-    #[must_use]
-    pub fn fee(&self) -> &Fee {
-        &self.fee
-    }
-
-    /// Return the contract-call data.
-    #[must_use]
-    pub fn contract_call(&self) -> &Option<ContractCall> {
-        &self.contract_call
-    }
-
     /// Serialize the `Payload` into a variable length byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
@@ -174,30 +142,24 @@ impl PartialEq for Transaction {
 impl Eq for Transaction {}
 
 impl Transaction {
-    /// Create a new `Transaction`.
+    /// Create a new transaction.
     #[must_use]
-    pub fn new(payload: Payload, proof: Vec<u8>) -> Self {
-        Self { payload, proof }
+    pub fn new(payload: Payload, proof: impl Into<Vec<u8>>) -> Self {
+        Self {
+            payload,
+            proof: proof.into(),
+        }
     }
 
-    /// Return the `Payload` of the `Transaction`.
+    /// The payload of the transaction.
     #[must_use]
     pub fn payload(&self) -> &Payload {
         &self.payload
     }
 
-    /// Return the tx-payload hash.
-    /// The `payload_hash` is signed in the proof of the `Transaction`. This
-    /// means that if the value of the `payload_hash` changes *after* the
-    /// proof was created, the `Transaction` will not be executable.
+    /// The proof of the transaction.
     #[must_use]
-    pub fn payload_hash(&self) -> BlsScalar {
-        self.payload().hash()
-    }
-
-    /// Return the serialized zk-proof of the `Transaction`.
-    #[must_use]
-    pub fn proof(&self) -> &Vec<u8> {
+    pub fn proof(&self) -> &[u8] {
         &self.proof
     }
 
@@ -272,7 +234,7 @@ impl Transaction {
     /// [`Sender::Encryption`].
     #[must_use]
     pub fn public_inputs(&self) -> Vec<BlsScalar> {
-        let tx_skeleton = self.payload().tx_skeleton();
+        let tx_skeleton = &self.payload.tx_skeleton;
 
         // retrieve the number of input and output notes
         let input_len = tx_skeleton.nullifiers.len();
@@ -293,7 +255,7 @@ impl Transaction {
             + 2 * 4 * output_len;
         // build the public input vector
         let mut pis = Vec::<BlsScalar>::with_capacity(size);
-        pis.push(self.payload_hash());
+        pis.push(self.payload.hash());
         pis.push(tx_skeleton.root);
         pis.extend(tx_skeleton.nullifiers().iter());
         tx_skeleton.outputs().iter().for_each(|note| {
