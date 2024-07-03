@@ -101,6 +101,7 @@ fn generate_stake_state(
             reward: staker.reward.unwrap_or_default(),
             counter: 0,
             faults: 0,
+            hard_faults: 0,
         };
         session
             .call::<_, ()>(
