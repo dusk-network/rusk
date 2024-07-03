@@ -84,3 +84,24 @@ impl BlockWithLabel {
         matches!(self.label(), Label::Final(_)) || self.blk.header().height == 0
     }
 }
+
+#[cfg(any(feature = "faker", test))]
+pub mod faker {
+    use super::*;
+    use rand::Rng;
+    use transaction::faker::gen_dummy_tx;
+
+    impl<T> Dummy<T> for Block {
+        /// Creates a block with 3 transactions and random header.
+        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
+            let txs = vec![
+                gen_dummy_tx(rng.gen()),
+                gen_dummy_tx(rng.gen()),
+                gen_dummy_tx(rng.gen()),
+            ];
+            let header: Header = Faker.fake();
+
+            Block::new(header, txs).expect("valid hash")
+        }
+    }
+}

@@ -154,21 +154,6 @@ pub mod faker {
     use super::*;
     use crate::bls::PublicKeyBytes;
     use rand::Rng;
-    use transaction::faker::gen_dummy_tx;
-
-    impl<T> Dummy<T> for Block {
-        /// Creates a block with 3 transactions and random header.
-        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
-            let txs = vec![
-                gen_dummy_tx(rng.gen()),
-                gen_dummy_tx(rng.gen()),
-                gen_dummy_tx(rng.gen()),
-            ];
-            let header: Header = Faker.fake();
-
-            Block::new(header, txs).expect("valid hash")
-        }
-    }
 
     impl<T> Dummy<T> for PublicKeyBytes {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
