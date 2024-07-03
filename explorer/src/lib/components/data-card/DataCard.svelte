@@ -2,7 +2,7 @@
 
 <script>
   import { DataAlert } from "$lib/components";
-  import { Button, Card } from "$lib/dusk/components";
+  import { Button, Card, ProgressBar } from "$lib/dusk/components";
   import { makeClassName } from "$lib/dusk/string";
 
   import "./DataCard.css";
@@ -43,7 +43,7 @@
     {/if}
   </header>
   {#if loading && !data}
-    <p class="data-card__loading-notice">Loading...</p>
+    <ProgressBar className="data-card__progress-bar" />
   {:else if error || hasEmptyData}
     <DataAlert on:retry {error} />
   {:else if data}
