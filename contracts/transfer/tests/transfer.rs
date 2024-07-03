@@ -313,7 +313,7 @@ fn deposit_and_withdraw() {
         transfer_value
             + tx.payload().tx_skeleton.deposit
             + tx.payload().tx_skeleton.max_fee
-            + tx.payload().tx_skeleton().outputs[1]
+            + tx.payload().tx_skeleton.outputs[1]
                 .value(Some(&ViewKey::from(&sender_sk)))
                 .unwrap()
     );

@@ -164,7 +164,7 @@ impl TransferState {
         &mut self,
         tx: Transaction,
     ) -> Result<Vec<u8>, ContractError> {
-        let tx_skeleton = tx.payload().tx_skeleton();
+        let tx_skeleton = &tx.payload().tx_skeleton;
 
         // panic if the root is invalid
         if !self.root_exists(&tx_skeleton.root) {
@@ -190,8 +190,8 @@ impl TransferState {
             .extend_notes(block_height, tx_skeleton.outputs.clone());
 
         // if present, place the contract deposit on the state
-        if tx.payload().tx_skeleton().deposit > 0 {
-            let contract = match tx.payload().contract_call() {
+        if tx.payload().tx_skeleton.deposit > 0 {
+            let contract = match &tx.payload().contract_call {
                 Some(call) => ContractId::from_bytes(call.contract),
                 None => {
                     panic!("There needs to be a contract call when depositing funds");
@@ -202,7 +202,7 @@ impl TransferState {
 
         // perform contract call if present
         let mut result = Ok(Vec::new());
-        if let Some(call) = tx.payload().contract_call() {
+        if let Some(call) = &tx.payload().contract_call {
             result = rusk_abi::call_raw(
                 ContractId::from_bytes(call.contract),
                 &call.fn_name,
@@ -368,7 +368,7 @@ fn verify_tx_proof(tx: &Transaction) -> bool {
         .to_vec();
 
     // verify the proof
-    rusk_abi::verify_proof(vd, tx.proof().clone(), pis)
+    rusk_abi::verify_proof(vd, tx.proof().to_vec(), pis)
 }
 
 #[cfg(test)]

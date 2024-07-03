@@ -137,7 +137,7 @@ pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
-        tx.payload().fee().gas_limit,
+        tx.payload().fee.gas_limit,
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -359,9 +359,9 @@ pub fn create_transaction<const I: usize>(
             .expect("The input notes should be the correct ammount"),
         tx_output_notes,
         payload_hash,
-        tx_payload.tx_skeleton().root,
-        tx_payload.tx_skeleton().deposit,
-        tx_payload.tx_skeleton().max_fee,
+        tx_payload.tx_skeleton.root,
+        tx_payload.tx_skeleton.deposit,
+        tx_payload.tx_skeleton.max_fee,
         sender_pk,
         (sig_a, sig_b),
         [transfer_sender_blinder, change_sender_blinder],
@@ -374,5 +374,5 @@ pub fn create_transaction<const I: usize>(
         .expect("creating a proof should succeed");
 
     // build the transaction from the payload and proof
-    Transaction::new(tx_payload, proof.to_bytes().into())
+    Transaction::new(tx_payload, proof.to_bytes())
 }
