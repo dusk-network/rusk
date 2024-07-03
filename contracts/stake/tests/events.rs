@@ -121,13 +121,15 @@ fn stake_hard_slash() -> Result<(), Error> {
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
-    let balance = dusk(14.0);
+    let stake_amount = dusk(100.0);
     let hard_slash_amount = dusk(5.0);
+    let severity = 2;
+    let reward_amount = dusk(10.0);
     let block_height = 0;
 
     let stake_data = StakeData {
         reward: 0,
-        amount: Some((balance, block_height)),
+        amount: Some((stake_amount, block_height)),
         counter: 0,
         faults: 0,
         hard_faults: 0,
@@ -136,7 +138,7 @@ fn stake_hard_slash() -> Result<(), Error> {
     session.call::<_, ()>(
         TRANSFER_CONTRACT,
         "add_contract_balance",
-        &(STAKE_CONTRACT, balance),
+        &(STAKE_CONTRACT, stake_amount),
         u64::MAX,
     )?;
 
@@ -147,13 +149,57 @@ fn stake_hard_slash() -> Result<(), Error> {
         u64::MAX,
     )?;
 
+    let mut cur_balance = stake_amount;
+    // Simple hard fault (slash 10%)
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
         "hard_slash",
-        &(stake_pk, hard_slash_amount),
+        &(stake_pk, None::<u64>, None::<u8>),
+        u64::MAX,
+    )?;
+    let expected_slash = stake_amount / 100 * 10;
+    assert_event(&receipt.events, "hard_slash", &stake_pk, expected_slash);
+    cur_balance -= expected_slash;
+
+    // Severe hard fault (slash 30%)
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "hard_slash",
+        &(stake_pk, None::<u64>, Some(severity as u8)),
+        u64::MAX,
+    )?;
+    let expected_slash = cur_balance / 100 * (1 + severity) * 10;
+    assert_event(&receipt.events, "hard_slash", &stake_pk, expected_slash);
+    cur_balance -= expected_slash;
+
+    // Direct slash (slash hard_slash_amount)
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "hard_slash",
+        &(stake_pk, Some(hard_slash_amount), None::<u8>),
         u64::MAX,
     )?;
     assert_event(&receipt.events, "hard_slash", &stake_pk, hard_slash_amount);
+    cur_balance -= hard_slash_amount;
+
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "reward",
+        &(stake_pk, reward_amount),
+        u64::MAX,
+    )?;
+    assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
+
+    // Simple hard fault post-reward (slash 10%)
+    // Rewards should reset 'hard_faults'
+    let receipt = session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "hard_slash",
+        &(stake_pk, None::<u64>, None::<u8>),
+        u64::MAX,
+    )?;
+    let expected_slash = cur_balance / 100 * 10;
+    assert_event(&receipt.events, "hard_slash", &stake_pk, expected_slash);
 
     Ok(())
 }

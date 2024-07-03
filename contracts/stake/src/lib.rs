@@ -119,9 +119,9 @@ unsafe fn slash(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn hard_slash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pk, value)| {
+    rusk_abi::wrap_call(arg_len, |(pk, value, severity)| {
         assert_external_caller();
-        STATE.hard_slash(&pk, value);
+        STATE.hard_slash(&pk, value, severity);
     })
 }
 
