@@ -12,7 +12,10 @@ type AppStoreContent = {
   transactionsListEntries: number;
 };
 
-type MarketDataStore = import("svelte/store").Readable<MarketDataStoreContent>;
+type MarketDataStore =
+  import("svelte/store").Readable<MarketDataStoreContent> & {
+    isDataStale: () => boolean;
+  };
 
 type MarketDataStoreContent = {
   data: MarketData | null;

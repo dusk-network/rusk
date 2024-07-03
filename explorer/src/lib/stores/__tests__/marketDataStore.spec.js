@@ -15,6 +15,16 @@ const { fakeMarketDataA, settleTime } = vi.hoisted(() => ({
   settleTime: 1000,
 }));
 
+vi.mock("svelte/store", async (importOriginal) => {
+  /** @type {import("svelte/store")} */
+  const original = await importOriginal();
+
+  return {
+    ...original,
+    get: vi.fn((store) => original.get(store)),
+  };
+});
+
 vi.mock("$lib/services", async (importOriginal) => ({
   .../** @type {import("$lib/services")} */ (await importOriginal()),
   duskAPI: {
@@ -26,22 +36,26 @@ describe("marketDataStore", async () => {
   const { marketDataFetchInterval } = get(appStore);
   const fakeMarketDataB = { data: "B" };
 
+  /** @type {MarketDataStore} */
+  let marketDataStore;
+
   vi.useFakeTimers();
 
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllTimers();
     vi.mocked(duskAPI.getMarketData).mockClear();
+
+    marketDataStore = (await import("../marketDataStore")).default;
   });
 
   afterAll(() => {
     vi.doUnmock("$lib/services");
+    vi.doUnmock("svelte/store");
     vi.useRealTimers();
   });
 
   it("should start polling for market data and update the `lastUpdate` property when data changes", async () => {
-    const marketDataStore = (await import("../marketDataStore")).default;
-
     /**
      * This is the result for the second call as the first one
      * starts with the import and isn't resolved yet
@@ -96,7 +110,6 @@ describe("marketDataStore", async () => {
   });
 
   it("should not reset its data and continue polling after an error, without resetting it as well", async () => {
-    const marketDataStore = (await import("../marketDataStore")).default;
     const error = new Error("Some error message");
 
     /**
@@ -147,6 +160,74 @@ describe("marketDataStore", async () => {
       error: null,
       isLoading: false,
       lastUpdate: new Date(),
+    });
+  });
+
+  describe("Stale data checks", () => {
+    const startingStore = {
+      data: null,
+      error: null,
+      isLoading: false,
+      lastUpdate: null,
+    };
+    const storeWithData = {
+      ...startingStore,
+      data: fakeMarketDataA,
+      lastUpdate: new Date(),
+    };
+
+    it("should not consider data as stale if there's no data", () => {
+      vi.mocked(get).mockReturnValueOnce(startingStore);
+
+      expect(marketDataStore.isDataStale()).toBe(false);
+    });
+
+    it("should not consider data as stale if the store is loading and there is no error, even if the last update exceeds the fetch interval", () => {
+      vi.mocked(get)
+        .mockReturnValueOnce({ ...startingStore, isLoading: true })
+        .mockReturnValueOnce({ ...storeWithData, isLoading: true })
+        .mockReturnValueOnce({
+          ...storeWithData,
+          isLoading: true,
+          lastUpdate: new Date(Date.now() - marketDataFetchInterval - 1),
+        });
+
+      expect(marketDataStore.isDataStale()).toBe(false);
+      expect(marketDataStore.isDataStale()).toBe(false);
+      expect(marketDataStore.isDataStale()).toBe(false);
+    });
+
+    it("should consider data as stale if there's an error and data, even if the store is loading", () => {
+      const storeWithError = {
+        ...storeWithData,
+        error: new Error("some error"),
+      };
+
+      vi.mocked(get)
+        .mockReturnValueOnce(storeWithError)
+        .mockReturnValueOnce({ ...storeWithError, isLoading: true })
+        .mockReturnValueOnce({ ...storeWithError, lastUpdate: null })
+        .mockReturnValueOnce({ ...storeWithError, error: null });
+
+      expect(marketDataStore.isDataStale()).toBe(true);
+      expect(marketDataStore.isDataStale()).toBe(true);
+      expect(marketDataStore.isDataStale()).toBe(false);
+      expect(marketDataStore.isDataStale()).toBe(false);
+    });
+
+    it("should consider data as stale if the last update exceeds the fetch interval", () => {
+      vi.mocked(get)
+        .mockReturnValueOnce({
+          ...storeWithData,
+          lastUpdate: new Date(Date.now() - marketDataFetchInterval - 1),
+        })
+        .mockReturnValueOnce({
+          ...storeWithData,
+          lastUpdate: new Date(Date.now() - marketDataFetchInterval),
+        });
+
+      expect(marketDataStore.isDataStale()).toBe(true);
+      expect(marketDataStore.isDataStale()).toBe(false);
     });
   });
 });
