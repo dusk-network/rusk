@@ -60,13 +60,13 @@ impl Transaction {
     }
 
     pub fn gas_price(&self) -> u64 {
-        self.inner.payload().fee().gas_price
+        self.inner.payload().fee.gas_price
     }
     pub fn to_nullifiers(&self) -> Vec<[u8; 32]> {
         self.inner
             .payload()
-            .tx_skeleton()
-            .nullifiers()
+            .tx_skeleton
+            .nullifiers
             .iter()
             .map(|n| n.to_bytes())
             .collect()
@@ -150,7 +150,11 @@ pub mod faker {
         let contract_call =
             ContractCall::new([21; 32], "some_method", &()).unwrap();
 
-        let payload = Payload::new(tx_skeleton, fee, Some(contract_call));
+        let payload = Payload {
+            tx_skeleton,
+            fee,
+            contract_call: Some(contract_call),
+        };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
         PhoenixTransaction::new(payload, proof).into()
