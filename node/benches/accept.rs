@@ -156,7 +156,7 @@ pub fn verify_block_att(c: &mut Criterion) {
                 ),
                 move |b| {
                     b.to_async(FuturesExecutor).iter(|| async {
-                        chain::verify_success_att(
+                        chain::verify_block_att(
                             [0u8; 32],
                             tip_header.seed,
                             &provisioners,

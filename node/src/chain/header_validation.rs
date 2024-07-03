@@ -69,13 +69,14 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         let prev_block_voters =
             self.verify_prev_block_cert(candidate_block).await?;
 
-        let mut tip_block_voters = vec![];
+        let mut candidate_block_voters = vec![];
         if !disable_winner_att_check {
-            tip_block_voters = self.verify_winning_att(candidate_block).await?;
+            candidate_block_voters =
+                self.verify_success_att(candidate_block).await?;
         }
 
         let pni = self.verify_failed_iterations(candidate_block).await?;
-        Ok((pni, prev_block_voters, tip_block_voters))
+        Ok((pni, prev_block_voters, candidate_block_voters))
     }
 
     /// Verifies any non-attestation field
@@ -174,7 +175,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
-        let (_, _, v_committee, r_committee) = verify_success_att(
+        let (_, _, v_committee, r_committee) = verify_block_att(
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
@@ -218,7 +219,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, rat_quorum, _, _) = verify_success_att(
+                let (_, rat_quorum, _, _) = verify_block_att(
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
@@ -237,11 +238,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(candidate_block.iteration - failed_atts)
     }
 
-    pub async fn verify_winning_att(
+    pub async fn verify_success_att(
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, v_committee, r_committee) = verify_success_att(
+        let (_, _, v_committee, r_committee) = verify_block_att(
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
@@ -263,7 +264,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         provisioners: &Provisioners,
         prev_block_seed: Seed,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, v_committee, r_committee) = verify_success_att(
+        let (_, _, v_committee, r_committee) = verify_block_att(
             blk.prev_block_hash,
             prev_block_seed,
             provisioners,
@@ -277,7 +278,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     }
 }
 
-pub async fn verify_success_att(
+pub async fn verify_block_att(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
