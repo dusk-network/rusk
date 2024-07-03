@@ -287,10 +287,6 @@ pub fn create_transaction<const I: usize>(
     let tx_payload = Payload {
         tx_skeleton,
         fee,
-        deposit: match deposit {
-            0 => false,
-            _ => true,
-        },
         contract_call,
     };
 
