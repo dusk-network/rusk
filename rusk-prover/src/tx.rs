@@ -168,7 +168,7 @@ pub struct UnprovenTransaction {
 impl UnprovenTransaction {
     /// Consumes self and a proof to generate a transaction.
     pub fn gen_transaction(self, proof: Proof) -> Transaction {
-        Transaction::new(self.payload, proof.to_bytes().to_vec())
+        Transaction::new(self.payload, proof.to_bytes())
     }
 
     /// Serialize the transaction to a variable length byte buffer.
@@ -329,7 +329,7 @@ impl UnprovenTransaction {
 
     /// Returns the payload-hash of the transaction.
     pub fn payload_hash(&self) -> BlsScalar {
-        self.payload().hash()
+        self.payload.hash()
     }
 }
 
