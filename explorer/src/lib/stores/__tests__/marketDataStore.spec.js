@@ -163,6 +163,112 @@ describe("marketDataStore", async () => {
     });
   });
 
+  it("should not restart the polling if the cause of the error is a `Response` with a 429 status", async () => {
+    const error = new Error("Some error message");
+
+    error.cause = new Response("", { status: 429 });
+
+    /**
+     * This is the result for the second call as the first one
+     * starts with the import and isn't resolved yet
+     */
+    vi.mocked(duskAPI.getMarketData).mockImplementationOnce(() =>
+      rejectAfter(settleTime, error)
+    );
+
+    await vi.advanceTimersByTimeAsync(settleTime);
+
+    const storeA = {
+      data: fakeMarketDataA,
+      error: null,
+      isLoading: false,
+      lastUpdate: new Date(),
+    };
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(1);
+    expect(get(marketDataStore)).toStrictEqual(storeA);
+
+    await vi.advanceTimersByTimeAsync(marketDataFetchInterval + settleTime);
+
+    const storeB = {
+      ...storeA,
+      error,
+      isLoading: false,
+    };
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
+    expect(get(marketDataStore)).toStrictEqual(storeB);
+
+    await vi.advanceTimersByTimeAsync(marketDataFetchInterval * 10);
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
+    expect(get(marketDataStore)).toStrictEqual(storeB);
+  });
+
+  it("should restart the polling as usual if the cause of the error is a `Response` with a different status", async () => {
+    /**
+     * We make a subscription to avoid checking again the
+     * status of the store for every step as we already
+     * tested it before.
+     */
+    const unubscribe = marketDataStore.subscribe(() => {});
+    const error = new Error("Some error message");
+
+    error.cause = new Response("", { status: 500 });
+
+    /**
+     * These are the results for the second and third call
+     * as the first one starts with the import and isn't resolved yet
+     */
+    vi.mocked(duskAPI.getMarketData)
+      .mockImplementationOnce(() => rejectAfter(settleTime, error))
+      .mockImplementationOnce(() => resolveAfter(settleTime, fakeMarketDataB));
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(settleTime + marketDataFetchInterval);
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(settleTime);
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(3);
+
+    unubscribe();
+  });
+
+  it("should restart the polling as usual if the cause of the error is anything else", async () => {
+    /**
+     * We make a subscription to avoid checking again the
+     * status of the store for every step as we already
+     * tested it before.
+     */
+    const unubscribe = marketDataStore.subscribe(() => {});
+    const error = new Error("Some error message");
+
+    error.cause = new Error("some other error");
+
+    /**
+     * These are the results for the second and third call
+     * as the first one starts with the import and isn't resolved yet
+     */
+    vi.mocked(duskAPI.getMarketData)
+      .mockImplementationOnce(() => rejectAfter(settleTime, error))
+      .mockImplementationOnce(() => resolveAfter(settleTime, fakeMarketDataB));
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(settleTime + marketDataFetchInterval);
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(settleTime);
+
+    expect(duskAPI.getMarketData).toHaveBeenCalledTimes(3);
+
+    unubscribe();
+  });
+
   describe("Stale data checks", () => {
     const startingStore = {
       data: null,
