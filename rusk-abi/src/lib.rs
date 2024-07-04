@@ -66,9 +66,7 @@ const fn reserved(b: u8) -> ContractId {
 /// Generate a [`ContractId`] address from the given slice of bytes, that is
 /// also a valid [`BlsScalar`]
 pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
-    let mut hasher = Hasher::new();
-    hasher.update(bytes);
-    ContractId::from_bytes(hasher.output())
+    ContractId::from_bytes(Hasher::digest(bytes).into())
 }
 
 /// Converts a `ContractId` to a `BlsScalar`
