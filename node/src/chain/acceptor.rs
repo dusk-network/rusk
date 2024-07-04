@@ -470,7 +470,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 let label = rolling_results.0;
                 // Store block with updated transactions with Error and GasSpent
-                block_size_on_disk = db.store_block(header, &txs, label)?;
+                block_size_on_disk =
+                    db.store_block(header, &txs, blk.faults(), label)?;
 
                 Ok((txs, rolling_results))
             })?;

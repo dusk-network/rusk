@@ -16,6 +16,7 @@ pub(crate) fn generate_state(state_hash: [u8; 32]) -> Block {
             ..Default::default()
         },
         vec![],
+        vec![],
     )
     .expect("block should be valid")
 }

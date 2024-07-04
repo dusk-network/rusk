@@ -8,7 +8,7 @@ use super::{Candidate, DatabaseOptions, Ledger, Metadata, Persist, DB};
 use anyhow::Result;
 use std::cell::RefCell;
 
-use node_data::ledger::{self, Label, SpentTransaction};
+use node_data::ledger::{self, Fault, Label, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -32,6 +32,7 @@ use tracing::info;
 
 const CF_LEDGER_HEADER: &str = "cf_ledger_header";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
+const CF_LEDGER_FAULTS: &str = "cf_ledger_faults";
 const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_CANDIDATES_HEIGHT: &str = "cf_candidates_height";
@@ -72,6 +73,11 @@ impl Backend {
             .rocksdb
             .cf_handle(CF_LEDGER_TXS)
             .expect("CF_LEDGER_TXS column family must exist");
+
+        let ledger_faults_cf = self
+            .rocksdb
+            .cf_handle(CF_LEDGER_FAULTS)
+            .expect("CF_LEDGER_FAULTS column family must exist");
 
         let candidates_cf = self
             .rocksdb
@@ -116,6 +122,7 @@ impl Backend {
             candidates_height_cf,
             ledger_cf,
             ledger_txs_cf,
+            ledger_faults_cf,
             mempool_cf,
             nullifiers_cf,
             fees_cf,
@@ -179,6 +186,10 @@ impl DB for Backend {
                 blocks_cf_opts.clone(),
             ),
             ColumnFamilyDescriptor::new(CF_LEDGER_TXS, blocks_cf_opts.clone()),
+            ColumnFamilyDescriptor::new(
+                CF_LEDGER_FAULTS,
+                blocks_cf_opts.clone(),
+            ),
             ColumnFamilyDescriptor::new(
                 CF_LEDGER_HEIGHT,
                 blocks_cf_opts.clone(),
@@ -249,6 +260,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 
     // Ledger column families
     ledger_cf: &'db ColumnFamily,
+    ledger_faults_cf: &'db ColumnFamily,
     ledger_txs_cf: &'db ColumnFamily,
     ledger_height_cf: &'db ColumnFamily,
 
@@ -267,6 +279,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         &self,
         header: &ledger::Header,
         txs: &[SpentTransaction],
+        faults: &[Fault],
         label: Label,
     ) -> Result<usize> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
@@ -282,6 +295,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                     .iter()
                     .map(|t| t.inner.id())
                     .collect::<Vec<[u8; 32]>>(),
+
+                faults_ids: faults.iter().map(|f| f.hash()).collect::<Vec<_>>(),
             }
             .write(&mut buf)?;
 
@@ -303,9 +318,49 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 self.put_cf(cf, tx.inner.id(), d)?;
             }
         }
+
+        // COLUMN FAMILY: CF_LEDGER_FAULTS
+        {
+            let cf = self.ledger_faults_cf;
+
+            // store all block faults
+            for f in faults {
+                let mut d = vec![];
+                f.write(&mut d)?;
+                self.put_cf(cf, f.hash(), d)?;
+            }
+        }
         self.store_block_label(header.height, &header.hash, label)?;
 
         Ok(self.get_size())
+    }
+
+    fn fetch_faults(&self, start_height: u64) -> Result<Vec<Fault>> {
+        let mut faults = vec![];
+        let mut hash = self
+            .op_read(MD_HASH_KEY)?
+            .ok_or(anyhow::anyhow!("Cannot read tip"))?;
+
+        loop {
+            let block = self.fetch_block(&hash)?.ok_or(anyhow::anyhow!(
+                "Cannot read block {}",
+                hex::encode(&hash)
+            ))?;
+
+            let block_height = block.header().height;
+
+            if block_height >= start_height {
+                hash = block.header().prev_block_hash.to_vec();
+                faults.extend(block.into_faults());
+            } else {
+                break;
+            }
+
+            if block_height == 0 {
+                break;
+            }
+        }
+        Ok(faults)
     }
 
     fn store_block_label(
@@ -331,6 +386,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         for tx in b.txs() {
             self.inner.delete_cf(self.ledger_txs_cf, tx.id())?;
+        }
+        for f in b.faults() {
+            self.inner.delete_cf(self.ledger_faults_cf, f.hash())?;
         }
 
         self.inner.delete_cf(self.ledger_cf, b.header().hash)?;
@@ -364,8 +422,23 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                     txs.push(tx.inner);
                 }
 
+                // Retrieve all faults ID with single call
+                let faults_buffer = self.snapshot.multi_get_cf(
+                    record
+                        .faults_ids
+                        .iter()
+                        .map(|id| (self.ledger_faults_cf, id))
+                        .collect::<Vec<(&ColumnFamily, &[u8; 32])>>(),
+                );
+                let mut faults = vec![];
+                for buf in faults_buffer {
+                    let buf = buf?.unwrap();
+                    let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+                    faults.push(fault);
+                }
+
                 Ok(Some(
-                    ledger::Block::new(record.header, txs)
+                    ledger::Block::new(record.header, txs, faults)
                         .expect("block should be valid"),
                 ))
             }
@@ -839,6 +912,7 @@ fn deserialize_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
 struct HeaderRecord {
     header: ledger::Header,
     transactions_ids: Vec<[u8; 32]>,
+    faults_ids: Vec<[u8; 32]>,
 }
 
 impl node_data::Serializable for HeaderRecord {
@@ -853,6 +927,15 @@ impl node_data::Serializable for HeaderRecord {
         // Write transactions hashes
         for tx_id in &self.transactions_ids {
             w.write_all(tx_id)?;
+        }
+
+        // Write faults count
+        let len = self.faults_ids.len() as u32;
+        w.write_all(&len.to_le_bytes())?;
+
+        // Write faults hashes
+        for f_id in &self.faults_ids {
+            w.write_all(f_id)?;
         }
 
         Ok(())
@@ -877,9 +960,22 @@ impl node_data::Serializable for HeaderRecord {
             transactions_ids.push(tx_id);
         }
 
+        // Read faults count
+        let len = Self::read_u32_le(r)?;
+
+        // Read faults hashes
+        let mut faults_ids = vec![];
+        for _ in 0..len {
+            let mut f_id = [0u8; 32];
+            r.read_exact(&mut f_id[..])?;
+
+            faults_ids.push(f_id);
+        }
+
         Ok(Self {
             header,
             transactions_ids,
+            faults_ids,
         })
     }
 }
@@ -909,6 +1005,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
+                        b.faults(),
                         Label::Final(3),
                     )?;
                     Ok(())
@@ -927,6 +1024,15 @@ mod tests {
                 // well.
                 for pos in 0..b.txs().len() {
                     assert_eq!(db_blk.txs()[pos].id(), b.txs()[pos].id());
+                }
+
+                // Assert all faults are fully fetched from ledger as
+                // well.
+                for pos in 0..b.faults().len() {
+                    assert_eq!(
+                        db_blk.faults()[pos].hash(),
+                        b.faults()[pos].hash()
+                    );
                 }
             });
 
@@ -956,6 +1062,7 @@ mod tests {
                 txn.store_block(
                     b.header(),
                     &to_spent_txs(b.txs()),
+                    b.faults(),
                     Label::Final(3),
                 )
                 .expect("block to be stored");
@@ -985,6 +1092,7 @@ mod tests {
                         txn.store_block(
                             b.header(),
                             &to_spent_txs(b.txs()),
+                            b.faults(),
                             Label::Final(3),
                         )
                         .unwrap();
@@ -1138,6 +1246,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
+                        b.faults(),
                         Label::Final(3),
                     )?;
                     Ok(())
@@ -1172,6 +1281,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
+                        b.faults(),
                         Label::Attested(3),
                     )?;
                     Ok(())
@@ -1202,6 +1312,7 @@ mod tests {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
+                        b.faults(),
                         Label::Attested(3),
                     )?;
                     Ok(())
@@ -1234,6 +1345,7 @@ mod tests {
                     ut.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
+                        b.faults(),
                         Label::Final(3),
                     )?;
                     Ok(())
