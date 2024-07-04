@@ -30,6 +30,12 @@ impl Serializable for Block {
             t.write(w)?;
         }
 
+        let faults_len = self.faults().len() as u32;
+        w.write_all(&faults_len.to_le_bytes())?;
+
+        for f in self.faults().iter() {
+            f.write(w)?;
+        }
         Ok(())
     }
 
@@ -46,7 +52,14 @@ impl Serializable for Block {
             .map(|_| Transaction::read(r))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Block::new(header, txs)
+        // Read faults count
+        let faults_len = Self::read_u32_le(r)?;
+
+        let faults = (0..faults_len)
+            .map(|_| Fault::read(r))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Block::new(header, txs, faults)
     }
 }
 

@@ -1338,6 +1338,7 @@ mod tests {
             event_hash: [5; 32],
             hash: [6; 32],
             txroot: [7; 32],
+            faultroot: [8; 32],
             att: Attestation {
                 validation: ledger::StepVotes::new([6; 48], 22222222),
                 ratification: ledger::StepVotes::new([7; 48], 3333333),
@@ -1352,8 +1353,8 @@ mod tests {
             failed_iterations: Default::default(),
         };
 
-        let sample_block =
-            ledger::Block::new(header, vec![]).expect("should be valid block");
+        let sample_block = ledger::Block::new(header, vec![], vec![])
+            .expect("should be valid block");
 
         let sign_info = SignInfo {
             signer: bls::PublicKey::from_sk_seed_u64(3),
