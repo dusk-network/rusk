@@ -92,7 +92,7 @@ impl Aggregator {
         // An committee member is allowed to vote only once per a single
         // step. Its vote has a weight value depending on how many times it
         // has been extracted in the sortition for this step.
-        let weight = cluster.set_weight(signer, weight);
+        let weight = cluster.add(signer, weight);
         debug_assert!(weight.is_some());
 
         let total = cluster.total_occurrences();

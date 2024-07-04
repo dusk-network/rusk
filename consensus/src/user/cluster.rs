@@ -24,7 +24,7 @@ where
     }
 
     /// Adds key with specified weight. Weight per key can be set only once.
-    pub fn set_weight(&mut self, key: &T, weight: usize) -> Option<usize> {
+    pub fn add(&mut self, key: &T, weight: usize) -> Option<usize> {
         if weight == 0 {
             return None;
         }
@@ -54,12 +54,12 @@ mod tests {
     pub fn test_set_weight() {
         let mut a = Cluster::new();
 
-        a.set_weight(&'a', 3);
-        a.set_weight(&'b', 0);
-        a.set_weight(&'b', 11);
+        a.add(&'a', 3);
+        a.add(&'b', 0);
+        a.add(&'b', 11);
         assert_eq!(a.total_occurrences(), 14);
 
-        let res = a.set_weight(&'b', 1);
+        let res = a.add(&'b', 1);
         assert!(res.is_none());
         assert_eq!(a.total_occurrences(), 14);
     }
