@@ -10,7 +10,7 @@ use execution_core::transfer::Transaction as PhoenixTransaction;
 
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
-    Attestation, Block, Header, IterationsInfo, Label, SpentTransaction,
+    Attestation, Block, Fault, Header, IterationsInfo, Label, SpentTransaction,
     StepVotes, Transaction,
 };
 use crate::message::payload::{
@@ -466,5 +466,10 @@ mod tests {
     #[test]
     fn test_encoding_ratification_result() {
         assert_serializable::<RatificationResult>();
+    }
+
+    #[test]
+    fn test_encoding_faul() {
+        assert_serializable::<Fault>();
     }
 }

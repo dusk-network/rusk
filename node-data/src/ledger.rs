@@ -13,6 +13,9 @@ pub use block::{Block, BlockWithLabel, Hash, Label};
 mod transaction;
 pub use transaction::{SpentTransaction, Transaction};
 
+mod faults;
+pub use faults::Fault;
+
 mod attestation;
 pub use attestation::{
     Attestation, IterationInfo, IterationsInfo, Signature, StepVotes,
