@@ -37,17 +37,6 @@ where
         Some(weight)
     }
 
-    /// Adds key with zero weight.
-    pub fn add(&mut self, key: &T) -> Option<usize> {
-        if self.0.contains_key(key) {
-            // already updated
-            return None;
-        }
-
-        self.0.insert(key.clone(), 0);
-        Some(0)
-    }
-
     pub fn iter(&self) -> Iter<T, usize> {
         self.0.iter()
     }
