@@ -47,17 +47,12 @@ impl TransferState {
 
     /// Mint a new phoenix note.
     ///
-    /// This can only be called by the transfer- and stake-contracts.
-    /// If called by the `stake-contract`, this method will increase the total
-    /// amount of circulating dusk. This happens when the reward for staking
-    /// and participating in the consensus is withdrawn.
-    /// If called by the transfer-contract itself, it is important to make sure
-    /// that the minted value is subtracted from a contracts balance before
-    /// creating a phoenix-note.
-    pub fn mint(&mut self, mint: Mint) -> bool {
-        // why return bool?
+    /// This can only be called by the stake-contracts. The method will increase
+    /// the total amount of circulating dusk. This happens when the reward for
+    /// staking and participating in the consensus is withdrawn.
+    pub fn mint(&mut self, mint: Mint) {
         let caller = rusk_abi::caller();
-        if caller != STAKE_CONTRACT && !rusk_abi::caller().is_uninitialized() {
+        if caller != STAKE_CONTRACT {
             panic!("Can only be called by the stake contract!")
         }
         let sender = SenderAccount {
@@ -68,8 +63,6 @@ impl TransferState {
         let note = Note::transparent_stealth(mint.address, mint.value, sender);
 
         self.push_note_current_height(note);
-
-        true
     }
 
     /// Withdraw from a contract's balance into a phoenix-note.
@@ -213,12 +206,15 @@ impl TransferState {
     }
 
     /// Refund the previously performed transaction, taking into account the
-    /// given gas spent. The notes produced will be refunded to the address
-    /// present in the fee structure.
+    /// given gas spent and a potential deposit that hasn't been picked up by
+    /// the contract. The note produced will be refunded to the address present
+    /// in the fee structure.
     ///
     /// This function guarantees that it will not panic.
     pub fn refund(&mut self, fee: Fee, gas_spent: u64) {
-        let remainder_note = fee.gen_remainder_note(gas_spent);
+        let deposit = self.deposit.map(|(_, d)| d);
+
+        let remainder_note = fee.gen_remainder_note(gas_spent, deposit);
 
         let remainder_value = remainder_note
             .value(None)
