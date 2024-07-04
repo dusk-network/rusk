@@ -84,7 +84,7 @@ fn create_step_votes(
                 _ => unreachable!(),
             };
             signatures.push(StakeSignature::from_bytes(sig.inner()).unwrap());
-            cluster.set_weight(pk, weight);
+            cluster.add(pk, weight);
         }
     }
 
