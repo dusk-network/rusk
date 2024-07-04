@@ -542,14 +542,21 @@ fn reward_slash_and_update_root(
     slashing: &[StakePublicKey],
     voters: Option<&[(StakePublicKey, usize)]>,
 ) -> Result<Vec<Event>> {
-    let (dusk_value, generator_reward, voters_reward) =
-        coinbase_value(block_height, dusk_spent);
+    let (
+        dusk_value,
+        generator_fixed_reward,
+        generator_extra_reward,
+        voters_reward,
+    ) = coinbase_value(block_height, dusk_spent);
 
-    if let Some(voters) = voters {
-        let credits: usize = voters.iter().map(|(_, credits)| credits).sum();
-        if credits == 0 && block_height > 1 {
-            return Err(InvalidCreditsCount(block_height, 0));
-        }
+    let credits = voters
+        .unwrap_or_default()
+        .iter()
+        .map(|(_, credits)| *credits as u64)
+        .sum::<u64>();
+
+    if voters.is_some() && credits == 0 && block_height > 1 {
+        return Err(InvalidCreditsCount(block_height, 0));
     }
 
     let credit_reward = voters_reward / 64 * 2;
@@ -569,6 +576,11 @@ fn reward_slash_and_update_root(
         reward = dusk_value
     );
 
+    let reward_per_quota = generator_extra_reward / (21 * 2);
+    let generator_curr_extra_reward =
+        credits.saturating_sub(43 * 2) * reward_per_quota;
+
+    let generator_reward = generator_fixed_reward + generator_curr_extra_reward;
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
@@ -580,7 +592,9 @@ fn reward_slash_and_update_root(
     debug!(
         event = "generator rewarded",
         voter = to_bs58(generator),
-        reward = generator_reward
+        total_reward = generator_reward,
+        extra_reward = generator_curr_extra_reward,
+        credits,
     );
 
     for (to_voter, credits) in voters.unwrap_or_default() {
