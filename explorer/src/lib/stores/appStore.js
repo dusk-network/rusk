@@ -10,10 +10,9 @@ const networks = [
 const initialState = {
   blocksListEntries: Number(import.meta.env.VITE_BLOCKS_LIST_ENTRIES),
   chainInfoEntries: Number(import.meta.env.VITE_CHAIN_INFO_ENTRIES),
-  fetchInterval: Number(import.meta.env.VITE_REFETCH_INTERVAL),
-  marketDataFetchInterval: Number(
-    import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL
-  ),
+  fetchInterval: Number(import.meta.env.VITE_REFETCH_INTERVAL) || 1000,
+  marketDataFetchInterval:
+    Number(import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL) || 120000,
   network: networks[0].value,
   networks,
   transactionsListEntries: Number(
