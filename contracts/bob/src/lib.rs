@@ -23,8 +23,23 @@ mod wasm {
     static mut STATE: Bob = Bob::new();
 
     #[no_mangle]
+    unsafe fn init(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |n| STATE.init(n))
+    }
+
+    #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |()| STATE.ping())
+    }
+
+    #[no_mangle]
+    unsafe fn echo(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |n| STATE.echo(n))
+    }
+
+    #[no_mangle]
+    unsafe fn value(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |()| STATE.value())
     }
 
     const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);
