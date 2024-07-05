@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update `piecrust` to `0.21`
-- Update `piecrust-uplink` to `0.14`
+- Update `piecrust` to `0.22`
+- Update `piecrust-uplink` to `0.15`
 - Change dependencies declarations enforce bytecheck [#1371]
 - Update dusk dependencies [#1609]
 
