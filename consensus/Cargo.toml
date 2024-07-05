@@ -42,3 +42,4 @@ aes = "0.7"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 base64 = "0.13"
+node-data = { version = "0.1", path = "../node-data", features = ["faker"]}
