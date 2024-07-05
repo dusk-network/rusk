@@ -8,11 +8,11 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
 use execution_core::{BlsSigError, BlsSignature};
-use node_data::bls::PublicKey;
+use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::SignInfo;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use thiserror::Error;
 use tracing::{debug, error};
@@ -21,14 +21,18 @@ use tracing::{debug, error};
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
 #[derive(Default)]
-pub struct Aggregator(
-    BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
-);
+pub struct Aggregator {
+    votes: BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
+
+    uniqueness: BTreeMap<u16, HashMap<PublicKeyBytes, Vote>>,
+}
 
 #[derive(Debug, Error)]
 pub enum AggregatorError {
     #[error("Vote already aggregated")]
     DuplicatedVote,
+    #[error("Vote conflicted with previous one")]
+    ConflictingVote(Vote),
     #[error("Vote from member not in the committee")]
     NotCommitteeMember,
     #[error("Invalid signature to aggregate {0}")]
@@ -50,7 +54,7 @@ impl Aggregator {
     ) -> bool {
         let signer = &sign_info.signer;
 
-        self.0
+        self.votes
             .get(&(msg_step, *vote))
             .map_or(false, |(_, cluster)| cluster.contains_key(signer))
     }
@@ -72,7 +76,8 @@ impl Aggregator {
             .votes_for(signer)
             .ok_or(AggregatorError::NotCommitteeMember)?;
 
-        let (aggr_sign, cluster) = self.0.entry((msg_step, *vote)).or_default();
+        let (aggr_sign, cluster) =
+            self.votes.entry((msg_step, *vote)).or_default();
 
         // Each committee has 64 slots.
         //
@@ -85,6 +90,15 @@ impl Aggregator {
         if cluster.contains_key(signer) {
             return Err(AggregatorError::DuplicatedVote);
         }
+
+        // Check if the provisioner voted to a different result
+        let voters_list = self.uniqueness.entry(msg_step).or_default();
+        match voters_list.get(signer.bytes()) {
+            None => voters_list.insert(*signer.bytes(), *vote),
+            Some(prev_vote) => {
+                return Err(AggregatorError::ConflictingVote(*prev_vote))
+            }
+        };
 
         // Aggregate Signatures
         aggr_sign.add(signature)?;
@@ -139,7 +153,7 @@ impl Aggregator {
 
 impl fmt::Display for Aggregator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for (hash, value) in self.0.iter() {
+        for (hash, value) in self.votes.iter() {
             writeln!(
                 f,
                 "hash: {:?} total: {}",
@@ -192,7 +206,7 @@ mod tests {
 
     impl Aggregator {
         pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
-            if let Some(value) = self.0.get(&(step, vote)) {
+            if let Some(value) = self.votes.get(&(step, vote)) {
                 return Some(value.1.total_occurrences());
             }
             None
