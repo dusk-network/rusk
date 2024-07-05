@@ -1,5 +1,4 @@
 import { derived, get } from "svelte/store";
-import { getPathIn } from "lamb";
 
 import { createPollingDataStore } from "$lib/dusk/svelte-stores";
 import { duskAPI } from "$lib/services";
@@ -23,11 +22,7 @@ const marketDataStore = derived(
   ($pollingDataStore, set) => {
     const current = get(marketDataStore);
     const isDataChanged = $pollingDataStore.data !== current.data;
-    const isErrorChanged = $pollingDataStore.error !== current.error;
     const hasNewData = $pollingDataStore.data && isDataChanged;
-    const isRecoverableError =
-      $pollingDataStore.error &&
-      getPathIn($pollingDataStore, "error.cause.status") !== 429;
 
     set({
       data: $pollingDataStore.data ?? current.data,
@@ -39,10 +34,6 @@ const marketDataStore = derived(
           ? current.lastUpdate
           : null,
     });
-
-    if (isErrorChanged && isRecoverableError) {
-      pollingDataStore.start();
-    }
   },
   initialState
 );
