@@ -51,7 +51,7 @@
   data={txns}
   {error}
   {loading}
-  title="Transactions  - {displayedTxns.length} Displayed Items"
+  title="Transactions — {displayedTxns.length} Displayed Items"
   headerButtonDetails={{
     action: () => loadMoreItems(),
     disabled: isLoadMoreDisabled,

@@ -11,7 +11,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
     <h1
       class="data-card__header-title"
     >
-      Blocks  - 10 Displayed Items
+      Blocks — 10 Displayed Items
     </h1>
      
     <button
@@ -2627,7 +2627,7 @@ exports[`Blocks Card > should disable the \`Show More\` button is the card is in
     <h1
       class="data-card__header-title"
     >
-      Blocks  - 0 Displayed Items
+      Blocks — 0 Displayed Items
     </h1>
      
     <button
@@ -2667,7 +2667,7 @@ exports[`Blocks Card > should render the \`BlocksCard\` component 1`] = `
     <h1
       class="data-card__header-title"
     >
-      Blocks  - 0 Displayed Items
+      Blocks — 0 Displayed Items
     </h1>
      
     <button
