@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 use dusk_bytes::Error as BytesError;
 use execution_core::{
     stake::{Stake, Unstake, Withdraw},
-    transfer::{ContractCall, Fee, Payload, Transaction},
+    transfer::{CallOrDeploy, ContractCall, Fee, Payload, Transaction},
     BlsPublicKey as StakePublicKey, BlsScalar, JubJubScalar, Note,
     PhoenixError, PublicKey, SchnorrSecretKey, SecretKey, TxSkeleton, ViewKey,
     OUTPUT_NOTES,
@@ -343,7 +343,7 @@ where
     pub fn execute<Rng>(
         &self,
         rng: &mut Rng,
-        contract_call: ContractCall,
+        call_or_deploy: CallOrDeploy,
         sender_index: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -378,7 +378,7 @@ where
             outputs,
             fee,
             0,
-            Some(contract_call),
+            Some(call_or_deploy),
         )
         .map_err(Error::from_state_err)?;
 
@@ -505,7 +505,7 @@ where
             outputs,
             fee,
             value,
-            Some(contract_call),
+            Some(CallOrDeploy::Call(contract_call)),
         )
         .map_err(Error::from_state_err)?;
 
@@ -589,7 +589,7 @@ where
             outputs,
             fee,
             deposit,
-            Some(call),
+            Some(CallOrDeploy::Call(call)),
         )
         .map_err(Error::from_state_err)?;
 
@@ -674,7 +674,7 @@ where
             outputs,
             fee,
             deposit,
-            Some(call),
+            Some(CallOrDeploy::Call(call)),
         )
         .map_err(Error::from_state_err)?;
 
@@ -740,7 +740,7 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
     outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
     fee: Fee,
     deposit: u64,
-    call: Option<ContractCall>,
+    call_or_deploy: Option<CallOrDeploy>,
 ) -> Result<UnprovenTransaction, SC::Error> {
     let nullifiers: Vec<BlsScalar> = inputs
         .iter()
@@ -766,7 +766,7 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
     let payload = Payload {
         tx_skeleton,
         fee,
-        contract_call: call,
+        call_or_deploy,
     };
     let payload_hash = payload.hash();
 
