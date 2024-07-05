@@ -4,8 +4,9 @@
   import { mdiArrowLeft, mdiKeyOutline } from "@mdi/js";
   import { validateMnemonic } from "bip39";
 
-  import { Button, Card, Textbox } from "$lib/dusk/components";
+  import { Button, Textbox } from "$lib/dusk/components";
   import { AppAnchorButton } from "$lib/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
   import { goto } from "$lib/navigation";
   import {
     mnemonicPhraseResetStore,
@@ -91,7 +92,12 @@
     <mark>Decentralized Finance</mark>
   </h2>
   <div class="login">
-    <Card tag="article" iconPath={mdiKeyOutline} heading={modeLabel}>
+    <IconHeadingCard
+      tag="article"
+      gap="medium"
+      heading={modeLabel}
+      iconPath={mdiKeyOutline}
+    >
       <form
         class="login__form"
         on:submit|preventDefault={handleUnlockWalletSubmit}
@@ -117,7 +123,7 @@
           />
         {/if}
       </form>
-    </Card>
+    </IconHeadingCard>
   </div>
   <footer class="login-footer">
     <AppAnchorButton

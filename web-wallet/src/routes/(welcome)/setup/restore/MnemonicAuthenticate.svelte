@@ -1,8 +1,11 @@
 <script>
-  import { Card, Mnemonic } from "$lib/dusk/components";
-  import { toast } from "$lib/dusk/components/Toast/store";
   import { validateMnemonic, wordlists } from "bip39";
   import { mdiAlertOutline } from "@mdi/js";
+
+  import { Mnemonic } from "$lib/dusk/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
+
+  import { toast } from "$lib/dusk/components/Toast/store";
 
   /** @type {boolean} */
   export let isValid = false;
@@ -25,6 +28,6 @@
   }
 </script>
 
-<Card heading="Enter your Mnemonic Phrase">
+<IconHeadingCard gap="medium" heading="Enter your Mnemonic Phrase">
   <Mnemonic bind:enteredMnemonicPhrase {wordLimit} type="authenticate" />
-</Card>
+</IconHeadingCard>

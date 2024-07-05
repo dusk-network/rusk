@@ -6,28 +6,32 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
 >
   <section>
     <div
-      class="dusk-card"
+      class="dusk-card dusk-card--gap-default"
     >
       <header
         class="dusk-card__header"
+        slot="header"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="dusk-card__header-title"
         >
-          <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-          />
-        </svg>
-        
-         
-        <h3
-          class="h4"
-        >
-          Existing Wallet Detected
-        </h3>
-         
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            />
+          </svg>
+          
+           
+          <h3
+            class="h4"
+          >
+            Existing Wallet Detected
+          </h3>
+        </div>
       </header>
        
       <p>
@@ -64,6 +68,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
           </span>
         </button>
       </div>
+       
     </div>
     
   </section>
@@ -121,18 +126,22 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-medium"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        Enter your Mnemonic Phrase
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          Enter your Mnemonic Phrase
+        </h3>
+      </div>
     </header>
      
     <div
@@ -268,6 +277,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
         
       </div>
     </div>
+     
   </div>
   
    
@@ -338,18 +348,22 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
 >
   <section>
     <div
-      class="dusk-card"
+      class="dusk-card dusk-card--gap-default"
     >
       <header
         class="dusk-card__header"
+        slot="header"
       >
-         
-        <h3
-          class="h4"
+        <div
+          class="dusk-card__header-title"
         >
-          Terms & Privacy Policy
-        </h3>
-         
+           
+          <h3
+            class="h4"
+          >
+            Terms & Privacy Policy
+          </h3>
+        </div>
       </header>
        
       <p>
@@ -393,6 +407,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
           </span>
         </button>
       </div>
+       
     </div>
     
   </section>

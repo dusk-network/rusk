@@ -1,5 +1,6 @@
 <script>
-  import { Card, Icon, Textbox } from "$lib/dusk/components";
+  import { Icon, Textbox } from "$lib/dusk/components";
+  import { ToggleableCard } from "$lib/containers/Cards";
   import { mdiAlertOutline, mdiKeyOutline } from "@mdi/js";
 
   /** @type {string} */
@@ -26,7 +27,7 @@
   }
 </script>
 
-<Card hasToggle bind:isToggled iconPath={mdiKeyOutline} heading="Password">
+<ToggleableCard heading="Password" iconPath={mdiKeyOutline} bind:isToggled>
   <p>Please store your password safely.</p>
   <Textbox
     className="password-input"
@@ -54,7 +55,7 @@
       >
     {/if}
   </div>
-</Card>
+</ToggleableCard>
 
 <div class="notice">
   <Icon path={mdiAlertOutline} size="large" />

@@ -269,28 +269,32 @@ exports[`Stake > should render the Stake notice 1`] = `
     </span>
      
     <div
-      class="dusk-card dusk-card--on-surface"
+      class="dusk-card dusk-card--gap-default dusk-card--on-surface"
     >
       <header
         class="dusk-card__header"
+        slot="header"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="dusk-card__header-title"
         >
-          <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-          />
-        </svg>
-        
-         
-        <h3
-          class="h4"
-        >
-          Only stake if you have a node set up!
-        </h3>
-         
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            />
+          </svg>
+          
+           
+          <h3
+            class="h4"
+          >
+            Only stake if you have a node set up!
+          </h3>
+        </div>
       </header>
        
       <p
@@ -326,6 +330,7 @@ exports[`Stake > should render the Stake notice 1`] = `
           Don't show this step again.
         </label>
       </div>
+       
     </div>
     
      

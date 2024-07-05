@@ -68,32 +68,36 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-      <svg
-        class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-        role="graphics-symbol"
-        viewBox="0 0 24 24"
+      <div
+        class="dusk-card__header-title"
       >
-        <path
-          d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-        />
-      </svg>
-      
-       
-      <h3
-        class="h4"
-      >
-        Keep this SAFE
-      </h3>
-       
+        <svg
+          class="dusk-icon dusk-icon--size--normal"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4"
+        >
+          Keep this SAFE
+        </h3>
+      </div>
     </header>
      
     <p
-      class="mnemonic-notice svelte-v9vyl3"
+      class="mnemonic-card__notice svelte-1g52dt5"
     >
       Please make sure to write your phrase down and save it in a secure location.
     </p>
@@ -162,6 +166,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
         sad
       </li>
     </ol>
+     
   </div>
   
    
@@ -297,22 +302,26 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        Verification
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          Verification
+        </h3>
+      </div>
     </header>
      
     <p
-      class="mnemonic-notice svelte-1xuwtw2"
+      class="mnemonic-notice svelte-omhov1"
     >
       Ensure you have backed up the Mnemonic phrase.
     </p>
@@ -566,6 +575,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
     </div>
      
     
+     
   </div>
   
    
@@ -700,22 +710,26 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        Verification
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          Verification
+        </h3>
+      </div>
     </header>
      
     <p
-      class="mnemonic-notice svelte-1xuwtw2"
+      class="mnemonic-notice svelte-omhov1"
     >
       Ensure you have backed up the Mnemonic phrase.
     </p>
@@ -980,7 +994,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
     </div>
      
     <div
-      class="notice notice--error svelte-1xuwtw2"
+      class="notice notice--error"
     >
       <svg
         class="dusk-icon dusk-icon--size--large"
@@ -998,6 +1012,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       </p>
     </div>
     
+     
   </div>
   
    
@@ -1132,22 +1147,26 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        Verification
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          Verification
+        </h3>
+      </div>
     </header>
      
     <p
-      class="mnemonic-notice svelte-1xuwtw2"
+      class="mnemonic-notice svelte-omhov1"
     >
       Ensure you have backed up the Mnemonic phrase.
     </p>
@@ -1411,6 +1430,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
     </div>
      
     
+     
   </div>
   
    
@@ -1551,18 +1571,22 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-medium"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        You are all set!
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          You are all set!
+        </h3>
+      </div>
     </header>
      
     <img
@@ -1572,6 +1596,7 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
       src="/some-base-path/images/onboarding/all_set_illustration.svg"
       width="205"
     />
+     
   </div>
   
    
@@ -1678,27 +1703,32 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
-      class="dusk-card__header dusk-card__header--toggle-off"
+      class="dusk-card__header"
+      slot="header"
     >
-      <svg
-        class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-        role="graphics-symbol"
-        viewBox="0 0 24 24"
+      <div
+        class="dusk-card__header-title"
       >
-        <path
-          d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
-        />
-      </svg>
-      
-       
-      <h3
-        class="h4"
-      >
-        Password
-      </h3>
+        <svg
+          class="dusk-icon dusk-icon--size--normal"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4"
+        >
+          Password
+        </h3>
+      </div>
        
       <div
         aria-checked="false"
@@ -1708,6 +1738,8 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
         tabindex="0"
       />
     </header>
+     
+    
      
   </div>
   
@@ -1864,27 +1896,32 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-      <svg
-        class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-        role="graphics-symbol"
-        viewBox="0 0 24 24"
+      <div
+        class="dusk-card__header-title"
       >
-        <path
-          d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
-        />
-      </svg>
-      
-       
-      <h3
-        class="h4"
-      >
-        Password
-      </h3>
+        <svg
+          class="dusk-icon dusk-icon--size--normal"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4"
+        >
+          Password
+        </h3>
+      </div>
        
       <div
         aria-checked="true"
@@ -1924,6 +1961,8 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         Password must be at least 8 characters
       </span>
     </div>
+    
+     
   </div>
   
    
@@ -2237,22 +2276,26 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
   </div>
    
   <div
-    class="dusk-card"
+    class="dusk-card dusk-card--gap-default"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        Verification
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          Verification
+        </h3>
+      </div>
     </header>
      
     <p
-      class="mnemonic-notice svelte-1xuwtw2"
+      class="mnemonic-notice svelte-omhov1"
     >
       Ensure you have backed up the Mnemonic phrase.
     </p>
@@ -2517,6 +2560,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
     </div>
      
     
+     
   </div>
   
    
@@ -2646,18 +2690,22 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
   </div>
    
   <div
-    class="dusk-card mnemonic-presetup"
+    class="dusk-card dusk-card--gap-medium"
   >
     <header
       class="dusk-card__header"
+      slot="header"
     >
-       
-      <h3
-        class="h4"
+      <div
+        class="dusk-card__header-title"
       >
-        Securely store your seed phrase!
-      </h3>
-       
+         
+        <h3
+          class="h4"
+        >
+          Securely store your seed phrase!
+        </h3>
+      </div>
     </header>
      
     <div
@@ -2695,9 +2743,10 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
         for="dusk-checkbox-16"
       >
         I understand that securing my recovery phrase is my own responsibility.
-      Only I have access to my recovery phrase
+        Only I have access to my recovery phrase
       </label>
     </div>
+     
   </div>
   
    
@@ -2794,28 +2843,32 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
 >
   <section>
     <div
-      class="dusk-card"
+      class="dusk-card dusk-card--gap-default"
     >
       <header
         class="dusk-card__header"
+        slot="header"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal dusk-card__icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="dusk-card__header-title"
         >
-          <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-          />
-        </svg>
-        
-         
-        <h3
-          class="h4"
-        >
-          Existing Wallet Detected
-        </h3>
-         
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            />
+          </svg>
+          
+           
+          <h3
+            class="h4"
+          >
+            Existing Wallet Detected
+          </h3>
+        </div>
       </header>
        
       <p>
@@ -2852,6 +2905,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
           </span>
         </button>
       </div>
+       
     </div>
     
   </section>
@@ -2864,18 +2918,22 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
 >
   <section>
     <div
-      class="dusk-card"
+      class="dusk-card dusk-card--gap-default"
     >
       <header
         class="dusk-card__header"
+        slot="header"
       >
-         
-        <h3
-          class="h4"
+        <div
+          class="dusk-card__header-title"
         >
-          Terms & Privacy Policy
-        </h3>
-         
+           
+          <h3
+            class="h4"
+          >
+            Terms & Privacy Policy
+          </h3>
+        </div>
       </header>
        
       <p>
@@ -2919,6 +2977,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
           </span>
         </button>
       </div>
+       
     </div>
     
   </section>

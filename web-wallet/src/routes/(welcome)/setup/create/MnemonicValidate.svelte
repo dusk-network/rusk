@@ -1,7 +1,8 @@
 <script>
-  import { Card, Icon, Mnemonic } from "$lib/dusk/components";
+  import { Icon, Mnemonic } from "$lib/dusk/components";
   import { arraysEqual, shuffleArray } from "$lib/dusk/array";
   import { mdiAlertOutline } from "@mdi/js";
+  import { IconHeadingCard } from "$lib/containers/Cards";
 
   /** @type {boolean} */
   export let isValid = false;
@@ -18,7 +19,7 @@
   $: isValid = arraysEqual(enteredMnemonicPhrase, mnemonicPhrase);
 </script>
 
-<Card heading="Verification">
+<IconHeadingCard heading="Verification">
   <p class="mnemonic-notice">Ensure you have backed up the Mnemonic phrase.</p>
   <Mnemonic
     bind:enteredMnemonicPhrase
@@ -31,14 +32,10 @@
       <p>Mnemonic does not match.</p>
     </div>
   {/if}
-</Card>
+</IconHeadingCard>
 
 <style>
   .mnemonic-notice {
-    margin-bottom: var(--default-gap);
-  }
-
-  .notice {
-    margin-top: var(--default-gap);
+    margin-bottom: var(--small-gap);
   }
 </style>
