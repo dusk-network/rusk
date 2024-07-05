@@ -11,7 +11,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if the card
     <h1
       class="data-card__header-title"
     >
-      Transactions  - 0 Displayed Items
+      Transactions — 0 Displayed Items
     </h1>
      
     <button
@@ -51,7 +51,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
     <h1
       class="data-card__header-title"
     >
-      Transactions  - 10 Displayed Items
+      Transactions — 10 Displayed Items
     </h1>
      
     <button
@@ -3034,7 +3034,7 @@ exports[`Transactions Card > should render the \`TransactionsCard\` component 1`
     <h1
       class="data-card__header-title"
     >
-      Transactions  - 0 Displayed Items
+      Transactions — 0 Displayed Items
     </h1>
      
     <button

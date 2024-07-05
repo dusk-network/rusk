@@ -14,7 +14,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       <h1
         class="data-card__header-title"
       >
-        Blocks  - 0 Displayed Items
+        Blocks — 0 Displayed Items
       </h1>
        
       <button
@@ -59,7 +59,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       <h1
         class="data-card__header-title"
       >
-        Blocks  - 15 Displayed Items
+        Blocks — 15 Displayed Items
       </h1>
        
       <button
