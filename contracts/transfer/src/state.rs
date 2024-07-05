@@ -191,7 +191,7 @@ impl TransferState {
 
         // if present, place the contract deposit on the state
         if tx.payload().tx_skeleton.deposit > 0 {
-            let contract = match &tx.payload().contract_call {
+            let contract = match &tx.payload().contract_call() {
                 Some(call) => ContractId::from_bytes(call.contract),
                 None => {
                     panic!("There needs to be a contract call when depositing funds");
@@ -202,7 +202,7 @@ impl TransferState {
 
         // perform contract call if present
         let mut result = Ok(Vec::new());
-        if let Some(call) = &tx.payload().contract_call {
+        if let Some(call) = &tx.payload().contract_call() {
             result = rusk_abi::call_raw(
                 ContractId::from_bytes(call.contract),
                 &call.fn_name,
