@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 
-import { appStore } from "..";
-
 describe("appStore", () => {
-  it("should be a readable store holding the information needed throughout the whole application", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it("should be a readable store holding the information needed throughout the whole application", async () => {
+    const { appStore } = await import("..");
     const { env } = import.meta;
     const expectedNetworks = [
       { label: "Testnet", value: env.VITE_DUSK_TESTNET_NODE },
@@ -24,7 +27,22 @@ describe("appStore", () => {
     });
   });
 
-  it("should expose a service method to set the selected network", () => {
+  it("should use default values for the fetch intervals if the env vars are missing", async () => {
+    vi.stubEnv("VITE_REFETCH_INTERVAL", "");
+    vi.stubEnv("VITE_MARKET_DATA_REFETCH_INTERVAL", "");
+
+    const { appStore } = await import("..");
+    const { fetchInterval, marketDataFetchInterval } = get(appStore);
+
+    expect(fetchInterval).toBe(1000);
+    expect(marketDataFetchInterval).toBe(120000);
+
+    vi.unstubAllEnvs();
+  });
+
+  it("should expose a service method to set the selected network", async () => {
+    const { appStore } = await import("..");
+
     appStore.setNetwork("some-network");
 
     expect(get(appStore).network).toBe("some-network");
