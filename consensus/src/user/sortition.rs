@@ -20,9 +20,9 @@ use crate::config::{
 pub struct Config {
     seed: Seed,
     round: u64,
-    step: u16,
+    pub step: u16,
     committee_credits: usize,
-    exclusion: Option<PublicKeyBytes>,
+    exclusion: Vec<PublicKeyBytes>,
 }
 
 impl Config {
@@ -31,7 +31,7 @@ impl Config {
         round: u64,
         iteration: u8,
         step: StepName,
-        exclusion: Option<PublicKeyBytes>,
+        exclusion: Vec<PublicKeyBytes>,
     ) -> Config {
         let committee_credits = match step {
             StepName::Proposal => PROPOSAL_COMMITTEE_CREDITS,
@@ -60,8 +60,8 @@ impl Config {
         self.round
     }
 
-    pub fn exclusion(&self) -> Option<&PublicKeyBytes> {
-        self.exclusion.as_ref()
+    pub fn exclusion(&self) -> &Vec<PublicKeyBytes> {
+        &self.exclusion
     }
 }
 

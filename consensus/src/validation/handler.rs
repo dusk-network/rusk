@@ -130,7 +130,7 @@ impl MsgHandler for ValidationHandler {
             sv,
             StepName::Validation,
             quorum_reached,
-            committee.excluded().expect("Generator to be excluded"),
+            &committee.excluded()[0], // TODO:
         );
 
         if quorum_reached {
@@ -182,7 +182,7 @@ impl MsgHandler for ValidationHandler {
                         sv,
                         StepName::Validation,
                         quorum_reached,
-                        committee.excluded().expect("Generator to be excluded"),
+                        &committee.excluded()[0], // TODO:
                     )
                 {
                     return Ok(HandleMsgOutput::Ready(quorum_msg));

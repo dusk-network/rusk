@@ -19,7 +19,7 @@ pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
     super_majority: usize,
     majority: usize,
-    excluded: Option<PublicKeyBytes>,
+    excluded: Vec<PublicKeyBytes>,
 }
 
 impl Committee {
@@ -50,7 +50,7 @@ impl Committee {
             members: BTreeMap::new(),
             super_majority,
             majority,
-            excluded: cfg.exclusion().copied(),
+            excluded: cfg.exclusion().clone(),
         };
 
         for member_key in extracted {
@@ -60,8 +60,8 @@ impl Committee {
         committee
     }
 
-    pub fn excluded(&self) -> Option<&PublicKeyBytes> {
-        self.excluded.as_ref()
+    pub fn excluded(&self) -> &Vec<PublicKeyBytes> {
+        &self.excluded
     }
 
     /// Returns true if `pubkey_bls` is a member of the generated committee.

@@ -78,14 +78,25 @@ pub async fn verify_step_votes(
     let round = header.round;
     let iteration = header.iteration;
 
+    let mut exclusion_list = vec![];
     let generator = committees_set
         .read()
         .await
         .provisioners()
         .get_generator(iteration, seed, round);
 
+    exclusion_list.push(generator);
+
+    let next_generator = committees_set
+        .read()
+        .await
+        .provisioners()
+        .get_generator(iteration + 1, seed, round);
+
+    exclusion_list.push(next_generator);
+
     let cfg =
-        sortition::Config::new(seed, round, iteration, step, Some(generator));
+        sortition::Config::new(seed, round, iteration, step, exclusion_list);
 
     if committees_set.read().await.get(&cfg).is_none() {
         let _ = committees_set.write().await.get_or_create(&cfg);

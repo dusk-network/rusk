@@ -105,8 +105,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         committee.is_member(&self.round_update.pubkey_bls)
     }
 
-    pub(crate) fn save_committee(&mut self, committee: Committee) {
-        self.iter_ctx.committees.insert(self.step(), committee);
+    pub(crate) fn save_committee(&mut self, step: u16, committee: Committee) {
+        self.iter_ctx.committees.insert(step, committee);
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
@@ -435,7 +435,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub fn get_sortition_config(
         &self,
-        exclusion: Option<PublicKeyBytes>,
+        exclusion: Vec<PublicKeyBytes>,
     ) -> sortition::Config {
         sortition::Config::new(
             self.round_update.seed(),
