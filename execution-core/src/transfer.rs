@@ -93,6 +93,30 @@ impl Serializable<{ StealthAddress::SIZE + u64::SIZE + BlsPublicKey::SIZE }>
     }
 }
 
+/// Data for either contract call or contract deployment.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum CallOrDeploy {
+    /// Data for a contract call.
+    Call(ContractCall),
+    /// Data for a contract deployment.
+    Deploy(ContractDeploy),
+}
+
+/// Data for performing a contract deployment
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ContractDeploy {
+    /// The optional ID of the contract to be deployed.
+    pub contract_id: Option<ContractId>,
+    /// Bytecode of the contract to be deployed.
+    pub bytecode: Vec<u8>,
+    /// Owner of the contract to be deployed.
+    pub owner: Vec<u8>,
+    /// Constructor arguments of the deployed contract.
+    pub constructor_args: Option<Vec<u8>>,
+}
+
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -107,6 +131,90 @@ pub struct ContractCall {
 
 // The size of the argument buffer in bytes as specified by piecrust-uplink
 const ARGBUF_LEN: usize = 64 * 1024;
+
+impl ContractDeploy {
+    /// Serialize a `ContractDeploy` into a variable length byte buffer.
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        match self.contract_id {
+            Some(contract_id) => {
+                bytes.push(1);
+                bytes.extend(contract_id);
+            }
+            None => bytes.push(0),
+        }
+
+        bytes.extend((self.bytecode.len() as u64).to_bytes());
+        bytes.extend(&self.bytecode);
+
+        bytes.extend((self.owner.len() as u64).to_bytes());
+        bytes.extend(&self.owner);
+
+        match &self.constructor_args {
+            Some(constructor_args) => {
+                bytes.push(1);
+                bytes.extend((constructor_args.len() as u64).to_bytes());
+                bytes.extend(constructor_args);
+            }
+            None => bytes.push(0),
+        }
+
+        bytes
+    }
+
+    /// Deserialize a `ContractDeploy` from a byte buffer.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not canonical.
+    pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
+        let mut buf = buf;
+        let (offset, contract_id) = match u8::from_reader(&mut buf)? {
+            0 => (0, None),
+            1 => {
+                let mut contract = [0u8; 32];
+                contract.copy_from_slice(&buf[..32]);
+                (32, Some(contract))
+            }
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+        let mut buf = &buf[offset..];
+
+        let bytecode_len = usize::try_from(u64::from_reader(&mut buf)?)
+            .map_err(|_| BytesError::InvalidData)?;
+        let bytecode = buf[..bytecode_len].into();
+        buf = &buf[bytecode_len..];
+
+        let owner_len = usize::try_from(u64::from_reader(&mut buf)?)
+            .map_err(|_| BytesError::InvalidData)?;
+        let owner = buf[..owner_len].into();
+        buf = &buf[owner_len..];
+
+        let constructor_args = match u8::from_reader(&mut buf)? {
+            0 => None,
+            1 => {
+                let constructor_args_len =
+                    usize::try_from(u64::from_reader(&mut buf)?)
+                        .map_err(|_| BytesError::InvalidData)?;
+                let constructor_args = buf[..constructor_args_len].into();
+                Some(constructor_args)
+            }
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+
+        Ok(Self {
+            contract_id,
+            bytecode,
+            owner,
+            constructor_args,
+        })
+    }
+}
 
 impl ContractCall {
     /// Creates a new contract call.
