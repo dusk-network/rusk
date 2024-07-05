@@ -12,7 +12,7 @@
   /** @type {string} */
   export let errorMessage = "Error";
 
-  /** @type {SuspenceErrorVariant} */
+  /** @type {SuspenseErrorVariant} */
   export let errorVariant = "alert";
 
   /** @type {GapSize} */

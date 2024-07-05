@@ -165,7 +165,7 @@ describe("Transactions", () => {
     expect(emptyState).toBeInTheDocument();
   });
 
-  it('displays the "View all transactions" CTA if limit is supplied', async () => {
+  it('displays the "All transactions" CTA if limit is supplied', async () => {
     const props = {
       ...baseProps,
       items: emptyTransactionsPromise,
@@ -173,12 +173,12 @@ describe("Transactions", () => {
     };
 
     const { getByRole } = render(Transactions, props);
-    const viewAllTransactionAnchor = getByRole("link", {
-      name: "View all transactions",
+    const allTransactionAnchor = getByRole("link", {
+      name: "All transactions",
     });
 
-    expect(viewAllTransactionAnchor).toBeInTheDocument();
-    expect(viewAllTransactionAnchor).toHaveAttribute(
+    expect(allTransactionAnchor).toBeInTheDocument();
+    expect(allTransactionAnchor).toHaveAttribute(
       "href",
       `${base}/dashboard/transactions`
     );
@@ -191,13 +191,10 @@ describe("Transactions", () => {
     };
 
     const { getByRole } = render(Transactions, props);
-    const viewAllTransactionAnchor = getByRole("link", { name: "Back" });
+    const backAnchor = getByRole("link", { name: "Back" });
 
-    expect(viewAllTransactionAnchor).toBeInTheDocument();
-    expect(viewAllTransactionAnchor).toHaveAttribute(
-      "href",
-      `${base}/dashboard`
-    );
+    expect(backAnchor).toBeInTheDocument();
+    expect(backAnchor).toHaveAttribute("href", `${base}/dashboard`);
   });
 
   it("handles error state when items are rejected", async () => {

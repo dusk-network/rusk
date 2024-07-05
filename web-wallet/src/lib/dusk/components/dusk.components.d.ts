@@ -34,7 +34,7 @@ type SelectOption = {
   value: string;
 };
 
-type SuspenceErrorVariant = "alert" | "details";
+type SuspenseErrorVariant = "alert" | "details";
 
 type TabItem = {
   icon?: IconProp;

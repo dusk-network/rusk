@@ -3,7 +3,6 @@
   import { mdiArrowLeft, mdiContain } from "@mdi/js";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { logo } from "$lib/dusk/icons";
   import { Badge, Icon, Suspense, Throbber } from "$lib/dusk/components";
   import {
     createFeeFormatter,
@@ -61,8 +60,8 @@
       <AppAnchorButton
         className="transactions__footer-button"
         href="/dashboard/transactions"
-        text="View all transactions"
-        variant="tertiary"
+        text="All transactions"
+        variant="primary"
       />
     {:else}
       <AppAnchorButton
@@ -81,11 +80,13 @@
     waitFor={items}
   >
     <svelte:fragment slot="pending-content">
-      {#if !isSyncing && !syncError}
-        <Throbber />
-      {:else}
-        <p>Data will load after a successful sync.</p>
-      {/if}
+      <div class="transactions-list__loading-container">
+        {#if !isSyncing && !syncError}
+          <Throbber />
+        {:else}
+          <p>Data will load after a successful sync.</p>
+        {/if}
+      </div>
     </svelte:fragment>
     <svelte:fragment slot="success-content" let:result={transactions}>
       {#if transactions.length}
@@ -122,25 +123,13 @@
             <dt class="transactions-list__term">Amount</dt>
             <dd class="transactions-list__datum">
               {transferFormatter(transaction.amount)}
-              <Icon
-                className="transactions-list__icon"
-                path={logo}
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="DUSK"
-                data-tooltip-place="top"
-              />
+              <span class="transactions-list__ticker">Dusk</span>
             </dd>
             {#if transaction.direction === "Out"}
               <dt class="transactions-list__term">Fee</dt>
               <dd class="transactions-list__datum">
                 {feeFormatter(transaction.fee)}
-                <Icon
-                  className="transactions-list__icon"
-                  path={logo}
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-text="DUSK"
-                  data-tooltip-place="top"
-                />
+                <span class="transactions-list__ticker">Dusk</span>
               </dd>
             {/if}
           </dl>
@@ -162,28 +151,31 @@
     display: flex;
     flex-direction: column;
     gap: var(--default-gap);
-    padding: 1.375em 1em;
+    padding-top: 1.375em;
 
     &__header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      gap: 0.625rem;
+      flex-wrap: wrap;
+
       & :global(h3) {
         line-height: 150%;
-        margin-bottom: 0.625em;
       }
-    }
-
-    :global(.transactions__footer-button) {
-      width: 100%;
     }
   }
 
   :global {
-    .transactions-list__container {
-      margin: 1em 0;
-    }
-
     .transactions-list {
       display: grid;
       grid-template-columns: max-content auto;
+
+      &__loading-container {
+        margin: 1em auto;
+      }
 
       &__term {
         background-color: var(--background-color-alt);
@@ -191,6 +183,10 @@
         line-height: 130%;
         text-transform: capitalize;
         padding: 0.3125em 0.625em 0.3125em 1.375em;
+      }
+
+      &__ticker {
+        text-transform: uppercase;
       }
 
       &__datum {
@@ -219,7 +215,6 @@
         flex-direction: column;
         align-items: center;
         gap: 0.5em;
-        margin-bottom: 1em;
       }
 
       &__badge {

@@ -333,10 +333,10 @@ exports[`Dashboard > should render a card when there is an error getting transac
   </article>
    
   <article
-    class="transactions svelte-16t4rng"
+    class="transactions svelte-13w6rnl"
   >
     <header
-      class="transactions__header svelte-16t4rng"
+      class="transactions__header svelte-13w6rnl"
     >
       <h3
         class="h4"
@@ -346,13 +346,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
           class="dusk-anchor-button__text"
         >
-          View all transactions
+          All transactions
         </span>
         
       </a>
@@ -719,10 +719,10 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
   </article>
    
   <article
-    class="transactions svelte-16t4rng"
+    class="transactions svelte-13w6rnl"
   >
     <header
-      class="transactions__header svelte-16t4rng"
+      class="transactions__header svelte-13w6rnl"
     >
       <h3
         class="h4"
@@ -732,13 +732,13 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
           class="dusk-anchor-button__text"
         >
-          View all transactions
+          All transactions
         </span>
         
       </a>
@@ -747,28 +747,31 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
     <div
       class="dusk-suspense transactions-list__container"
     >
-      <svg
-        class="dusk-throbber"
-        height="64px"
-        role="progressbar"
-        viewBox="0 0 128 128"
-        width="64px"
+      <div
+        class="transactions-list__loading-container"
       >
-        <g>
-          <path
-            d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
-          />
-          <animatetransform
-            attributeName="transform"
-            dur="1800ms"
-            from="0 64 64"
-            repeatCount="indefinite"
-            to="360 64 64"
-            type="rotate"
-          />
-        </g>
-      </svg>
-      
+        <svg
+          class="dusk-throbber"
+          height="64px"
+          role="progressbar"
+          viewBox="0 0 128 128"
+          width="64px"
+        >
+          <g>
+            <path
+              d="M75.4 126.63a11.43 11.43 0 0 1-2.1-22.65 40.9 40.9 0 0 0 30.5-30.6 11.4 11.4 0 1 1 22.27 4.87h.02a63.77 63.77 0 0 1-47.8 48.05v-.02a11.38 11.38 0 0 1-2.93.37z"
+            />
+            <animatetransform
+              attributeName="transform"
+              dur="1800ms"
+              from="0 64 64"
+              repeatCount="indefinite"
+              to="360 64 64"
+              type="rotate"
+            />
+          </g>
+        </svg>
+      </div>
     </div>
   </article>
 </div>
@@ -1107,10 +1110,10 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
   </article>
    
   <article
-    class="transactions svelte-16t4rng"
+    class="transactions svelte-13w6rnl"
   >
     <header
-      class="transactions__header svelte-16t4rng"
+      class="transactions__header svelte-13w6rnl"
     >
       <h3
         class="h4"
@@ -1120,13 +1123,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
           class="dusk-anchor-button__text"
         >
-          View all transactions
+          All transactions
         </span>
         
       </a>
@@ -1194,19 +1197,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           +27,000.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
         <dt
@@ -1219,19 +1214,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           1,876.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
       </dl>
@@ -1294,19 +1281,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           -25,000.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
       </dl>
@@ -1369,19 +1348,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           +25,000.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
       </dl>
@@ -1444,19 +1415,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           -25,000.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
         <dt
@@ -1469,19 +1432,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           1,876.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
       </dl>
@@ -1544,19 +1499,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           -25,000.00
            
-          <svg
-            class="dusk-icon dusk-icon--size--normal transactions-list__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <span
+            class="transactions-list__ticker"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+            Dusk
+          </span>
            
         </dd>
       </dl>
