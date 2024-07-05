@@ -509,6 +509,16 @@ fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
+    if let Some(deploy) = tx.payload().contract_deploy() {
+        session.deploy_raw(
+            deploy.contract_id.map(|id| id.into()),
+            deploy.bytecode.as_slice(),
+            deploy.constructor_args.clone(),
+            deploy.owner.clone(),
+            tx.payload().fee.gas_limit,
+        )?;
+    }
+
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
     // such, the call to `Result::expect` is warranted.
