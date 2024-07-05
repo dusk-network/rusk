@@ -166,6 +166,8 @@ pub struct StakeData {
     pub counter: u64,
     /// Faults
     pub faults: u8,
+    /// Hard Faults
+    pub hard_faults: u8,
 }
 
 impl StakeData {
@@ -199,6 +201,7 @@ impl StakeData {
             reward,
             counter: 0,
             faults: 0,
+            hard_faults: 0,
         }
     }
 

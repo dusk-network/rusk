@@ -259,8 +259,9 @@ impl StakeState {
         self.check_new_block();
 
         let stake = self.load_or_create_stake_mut(stake_pk);
-        // Reset faults counter
+        // Reset faults counters
         stake.faults = 0;
+        stake.hard_faults = 0;
         stake.increase_reward(value);
         rusk_abi::emit(
             "reward",
@@ -355,43 +356,67 @@ impl StakeState {
     ///
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
-    pub fn hard_slash(&mut self, stake_pk: &StakePublicKey, to_slash: u64) {
+    pub fn hard_slash(
+        &mut self,
+        stake_pk: &StakePublicKey,
+        to_slash: Option<u64>,
+        severity: Option<u8>,
+    ) {
         self.check_new_block();
 
-        let stake_info = self
+        let stake = self
             .get_stake_mut(stake_pk)
             .expect("The stake to slash should exist");
 
-        let prev_value = Some(stake_info.clone());
-
-        let stake = stake_info.amount.as_mut();
-        // This can happen if the provisioner unstake in the same block
-        if stake.is_none() {
+        // Stake can have no amount if provisioner unstake in the same block
+        if stake.amount().is_none() {
             return;
         }
 
-        let stake = stake.expect("The stake amount to slash should exist");
+        let prev_value = Some(stake.clone());
 
-        let to_slash = min(to_slash, stake.0);
-        if to_slash == 0 {
-            return;
-        }
+        let (stake_amount, eligibility) =
+            stake.amount.as_mut().expect("stake_to_exists");
 
-        // Update the staked amount
-        stake.0 -= to_slash;
+        let severity = severity.unwrap_or(1);
+        stake.hard_faults = stake.hard_faults.saturating_add(severity);
+        let hard_faults = stake.hard_faults as u64;
 
-        Self::deduct_contract_balance(to_slash);
-
-        // Update the total burnt amount
-        self.burnt_amount += to_slash;
-
+        // The stake is shifted (aka suspended) for the rest of the current
+        // epoch plus hard_faults epochs
+        let to_shift = hard_faults * EPOCH;
+        *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
         rusk_abi::emit(
-            "hard_slash",
+            "suspended",
             StakingEvent {
                 public_key: *stake_pk,
-                value: to_slash,
+                value: *eligibility,
             },
         );
+
+        // Slash the provided amount or calculate the percentage according to
+        // hard faults
+        let to_slash =
+            to_slash.unwrap_or(*stake_amount / 100 * hard_faults * 10);
+        let to_slash = min(to_slash, *stake_amount);
+
+        if to_slash > 0 {
+            // Update the staked amount
+            *stake_amount -= to_slash;
+            Self::deduct_contract_balance(to_slash);
+
+            // Update the total burnt amount
+            self.burnt_amount += to_slash;
+
+            rusk_abi::emit(
+                "hard_slash",
+                StakingEvent {
+                    public_key: *stake_pk,
+                    value: to_slash,
+                },
+            );
+        }
+
         let key = stake_pk.to_bytes();
         self.previous_block_state
             .entry(key)
