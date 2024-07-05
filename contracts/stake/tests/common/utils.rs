@@ -16,7 +16,8 @@ use rand::SeedableRng;
 
 use execution_core::{
     transfer::{
-        ContractCall, Fee, Payload, Transaction, TreeLeaf, TRANSFER_TREE_DEPTH,
+        CallOrDeploy, ContractCall, Fee, Payload, Transaction, TreeLeaf,
+        TRANSFER_TREE_DEPTH,
     },
     value_commitment, JubJubScalar, Note, PublicKey, SchnorrSecretKey,
     SecretKey, Sender, TxSkeleton, ViewKey,
@@ -272,7 +273,7 @@ pub fn create_transaction<const I: usize>(
     let tx_payload = Payload {
         tx_skeleton,
         fee,
-        contract_call,
+        call_or_deploy: (contract_call.map(|c| CallOrDeploy::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();
