@@ -1,5 +1,7 @@
 .data-card {
-  padding: 1rem 0;
+  --header-lateral-padding: 1.125rem;
+  --card-padding: 1rem;
+  padding: var(--card-padding) 0 0;
 }
 
 .data-card__loading-notice {
@@ -12,7 +14,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.625rem;
-  padding: 0 1.125rem 1rem;
+  padding: 0 var(--header-lateral-padding) 1rem;
 }
 
 .data-card__header-title {
@@ -21,9 +23,15 @@
   line-height: 32.2px;
 }
 
+.data-card__content {
+  padding-bottom: var(--card-padding);
+}
+
 .data-card__progress-bar.dusk-progress-bar {
   background-color: transparent;
   height: 0.125rem;
+  width: calc(100% - calc(2 * var(--header-lateral-padding)));
+  margin: 0 auto;
 }
 
 .data-card__progress-bar .dusk-progress-bar__filler {

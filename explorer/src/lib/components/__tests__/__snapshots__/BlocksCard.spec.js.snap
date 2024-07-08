@@ -28,2588 +28,2592 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
   </header>
    
   <div
-    class="table-container blocks-table blocks-card__table mobile-hidden"
+    class="data-card__content"
   >
-    <table
-      class="table"
+    <div
+      class="table-container blocks-table blocks-card__table mobile-hidden"
     >
-      <thead
-        class="table__head"
+      <table
+        class="table"
       >
-        <tr
-          class="table__row"
+        <thead
+          class="table__head"
         >
-          <th
-            class="table__header-cell"
+          <tr
+            class="table__row"
           >
-            Block
-          </th>
-          
-           
-          <th
-            class="table__header-cell"
-          >
-            Fee (Dusk)
-          </th>
-          
-           
-          <th
-            class="table__header-cell"
-          >
-            Txn(s)
-          </th>
-          
-           
-          <th
-            class="table__header-cell"
-          >
-            Rewards (Dusk)
-          </th>
-          
-        </tr>
-      </thead>
-       
-      <tbody
-        class="table__body"
-      >
-        
-        <tr
-          class="table__row"
+            <th
+              class="table__header-cell"
+            >
+              Block
+            </th>
+            
+             
+            <th
+              class="table__header-cell"
+            >
+              Fee (Dusk)
+            </th>
+            
+             
+            <th
+              class="table__header-cell"
+            >
+              Txn(s)
+            </th>
+            
+             
+            <th
+              class="table__header-cell"
+            >
+              Rewards (Dusk)
+            </th>
+            
+          </tr>
+        </thead>
+         
+        <tbody
+          class="table__body"
         >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=3d43be31a8cb5d3f61b4e8391800a01033d650b11c4c874210dbaa3c118474a6"
-            >
-              1,365,454
-            </a>
-             
-            <small
-              class="block__time"
-            >
-              yesterday
-            </small>
-          </td>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            <b
-              class="block__fee-avg-label"
+            <td
+              class="table__data-cell"
             >
-              AVG:
-            </b>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=3d43be31a8cb5d3f61b4e8391800a01033d650b11c4c874210dbaa3c118474a6"
+              >
+                1,365,454
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            0
-            <br />
-             
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-          </td>
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
+             
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=2bc290511be774ec9c04e6c0ceb2469798242b997422c542a7d6b0b6f3368414"
-            >
-              1,365,453
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=2bc290511be774ec9c04e6c0ceb2469798242b997422c542a7d6b0b6f3368414"
+              >
+                1,365,453
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=02f38d2e2a986cf77a70e8fe4f333ef9c5e075987891f3f526c8a57590800178"
-            >
-              1,365,452
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=02f38d2e2a986cf77a70e8fe4f333ef9c5e075987891f3f526c8a57590800178"
+              >
+                1,365,452
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=c79e31ce8e6133ebfb0d85649a12167769ddc83420550faebc536e613d74d676"
-            >
-              1,365,451
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=c79e31ce8e6133ebfb0d85649a12167769ddc83420550faebc536e613d74d676"
+              >
+                1,365,451
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=22ffe1b159e1b33b06d566b3ce3119af6f4bec4d2a3f6916560fe3cb30fcc1ef"
-            >
-              1,365,450
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=22ffe1b159e1b33b06d566b3ce3119af6f4bec4d2a3f6916560fe3cb30fcc1ef"
+              >
+                1,365,450
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=79c2d3213df80f8113d1ca16c49b1818fb5c31d1437e0a447719491a9c1b5f85"
-            >
-              1,365,449
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=79c2d3213df80f8113d1ca16c49b1818fb5c31d1437e0a447719491a9c1b5f85"
+              >
+                1,365,449
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=fb3e82e43b141409156f935afc69ccb09a59a72a10258401b539123981db571c"
-            >
-              1,365,448
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=fb3e82e43b141409156f935afc69ccb09a59a72a10258401b539123981db571c"
+              >
+                1,365,448
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=4b402a917bf42561096a9224e6451b77b8cbdc50272013442eccb5fcc542ef12"
-            >
-              1,365,447
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=4b402a917bf42561096a9224e6451b77b8cbdc50272013442eccb5fcc542ef12"
+              >
+                1,365,447
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=38d069620a7cbad7cadb10ecc797b1344284b6324ac85f5e126226a08d47398a"
-            >
-              1,365,446
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=38d069620a7cbad7cadb10ecc797b1344284b6324ac85f5e126226a08d47398a"
+              >
+                1,365,446
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
+            <td
+              class="table__data-cell"
+            >
+              0
+            </td>
+            
              
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
              
-            0
-          </td>
+          </tr>
           
-           
-          <td
-            class="table__data-cell"
+          <tr
+            class="table__row"
           >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
-          
-           
-        </tr>
-        
-        <tr
-          class="table__row"
-        >
-          <td
-            class="table__data-cell"
-          >
-            <a
-              class="dusk-anchor dusk-anchor--on-surface block__link"
-              href="/some-base-path/blocks/block?id=14c7d9f5e44d599a167d82a449d73daf54e32bf002c6cd5893de5f904024922a"
-            >
-              1,365,445
-            </a>
+              <a
+                class="dusk-anchor dusk-anchor--on-surface block__link"
+                href="/some-base-path/blocks/block?id=14c7d9f5e44d599a167d82a449d73daf54e32bf002c6cd5893de5f904024922a"
+              >
+                1,365,445
+              </a>
+               
+              <small
+                class="block__time"
+              >
+                yesterday
+              </small>
+            </td>
+            
              
-            <small
-              class="block__time"
+            <td
+              class="table__data-cell"
             >
-              yesterday
-            </small>
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <b
-              class="block__fee-avg-label"
-            >
-              AVG:
-            </b>
+              <b
+                class="block__fee-avg-label"
+              >
+                AVG:
+              </b>
+               
+              0
+              <br />
+               
+              <b
+                class="block__fee-total-label"
+              >
+                TOTAL:
+              </b>
+               
+              0
+            </td>
+            
              
-            0
-            <br />
-             
-            <b
-              class="block__fee-total-label"
+            <td
+              class="table__data-cell"
             >
-              TOTAL:
-            </b>
+              0
+            </td>
+            
              
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            0
-          </td>
-          
-           
-          <td
-            class="table__data-cell"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
+            <td
+              class="table__data-cell"
             >
-              16
-            </span>
-          </td>
+              <span
+                class="dusk-badge dusk-badge--variant-alt"
+              >
+                16
+              </span>
+            </td>
+            
+             
+          </tr>
           
-           
-        </tr>
-        
-      </tbody>
-    </table>
-  </div>
-   
-  <div
-    class="blocks-card__list desktop-hidden"
-  >
-    
-    <dl
-      class="detail-list"
+        </tbody>
+      </table>
+    </div>
+     
+    <div
+      class="blocks-card__list desktop-hidden"
     >
-      <dt
-        class="details-list__term details-list__term--table"
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=3d43be31a8cb5d3f61b4e8391800a01033d650b11c4c874210dbaa3c118474a6"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          1,365,454
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=3d43be31a8cb5d3f61b4e8391800a01033d650b11c4c874210dbaa3c118474a6"
+          >
+            1,365,454
+          </a>
+        </dd>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:54.000Z"
-          slot="definition"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:54.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=2bc290511be774ec9c04e6c0ceb2469798242b997422c542a7d6b0b6f3368414"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,453
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:51.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=2bc290511be774ec9c04e6c0ceb2469798242b997422c542a7d6b0b6f3368414"
+          >
+            1,365,453
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:51.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=02f38d2e2a986cf77a70e8fe4f333ef9c5e075987891f3f526c8a57590800178"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,452
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:47.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=02f38d2e2a986cf77a70e8fe4f333ef9c5e075987891f3f526c8a57590800178"
+          >
+            1,365,452
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:47.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=c79e31ce8e6133ebfb0d85649a12167769ddc83420550faebc536e613d74d676"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,451
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:45.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=c79e31ce8e6133ebfb0d85649a12167769ddc83420550faebc536e613d74d676"
+          >
+            1,365,451
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:45.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=22ffe1b159e1b33b06d566b3ce3119af6f4bec4d2a3f6916560fe3cb30fcc1ef"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,450
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:42.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=22ffe1b159e1b33b06d566b3ce3119af6f4bec4d2a3f6916560fe3cb30fcc1ef"
+          >
+            1,365,450
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:42.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=79c2d3213df80f8113d1ca16c49b1818fb5c31d1437e0a447719491a9c1b5f85"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,449
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:39.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=79c2d3213df80f8113d1ca16c49b1818fb5c31d1437e0a447719491a9c1b5f85"
+          >
+            1,365,449
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:39.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=fb3e82e43b141409156f935afc69ccb09a59a72a10258401b539123981db571c"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,448
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:35.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=fb3e82e43b141409156f935afc69ccb09a59a72a10258401b539123981db571c"
+          >
+            1,365,448
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:35.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=4b402a917bf42561096a9224e6451b77b8cbdc50272013442eccb5fcc542ef12"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,447
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:32.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=4b402a917bf42561096a9224e6451b77b8cbdc50272013442eccb5fcc542ef12"
+          >
+            1,365,447
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:32.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=38d069620a7cbad7cadb10ecc797b1344284b6324ac85f5e126226a08d47398a"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,446
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:29.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=38d069620a7cbad7cadb10ecc797b1344284b6324ac85f5e126226a08d47398a"
+          >
+            1,365,446
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:29.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
-    
-    <dl
-      class="detail-list"
-    >
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          0
+        </dd>
          
-        block
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <a
-          class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
-          href="/some-base-path/blocks/block?id=14c7d9f5e44d599a167d82a449d73daf54e32bf002c6cd5893de5f904024922a"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          1,365,445
-        </a>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Time elapsed since the block was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
          
-        relative time
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <time
-          class="block-details__list-timestamp"
-          datetime="2024-05-28T14:26:24.000Z"
-          slot="definition"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          yesterday
-        </time>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+      
+      <dl
+        class="detail-list"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block
+        </dt>
          
-        average fee paid
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-         DUSK
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas used generating the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <a
+            class="dusk-anchor dusk-anchor--on-surface block-details__list-link"
+            href="/some-base-path/blocks/block?id=14c7d9f5e44d599a167d82a449d73daf54e32bf002c6cd5893de5f904024922a"
+          >
+            1,365,445
+          </a>
+        </dd>
          
-        gas used
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <div
-          class="dusk-progress-bar blocks-list__gas-used"
-          role="progressbar"
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Time elapsed since the block was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          relative time
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <time
+            class="block-details__list-timestamp"
+            datetime="2024-05-28T14:26:24.000Z"
+            slot="definition"
+          >
+            yesterday
+          </time>
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The average fee paid for the transactions within the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          average fee paid
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          0
+           DUSK
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas used generating the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas used
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
           <div
-            class="dusk-progress-bar__filler"
-            style="width: 0%"
-          />
-        </div>
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The number of transactions included in the block"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+            class="dusk-progress-bar blocks-list__gas-used"
+            role="progressbar"
+          >
+            <div
+              class="dusk-progress-bar__filler"
+              style="width: 0%"
+            />
+          </div>
+        </dd>
          
-        txn(s)
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        0
-      </dd>
-       
-      <dt
-        class="details-list__term details-list__term--table"
-      >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The reward allocated to the block generator"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="details-list__term details-list__term--table"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The number of transactions included in the block"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          txn(s)
+        </dt>
          
-        rewards
-      </dt>
-       
-      <dd
-        class="details-list__definition details-list__definition--table"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-alt"
+        <dd
+          class="details-list__definition details-list__definition--table"
         >
-          16 DUSK
-        </span>
-      </dd>
-    </dl>
+          0
+        </dd>
+         
+        <dt
+          class="details-list__term details-list__term--table"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The reward allocated to the block generator"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          rewards
+        </dt>
+         
+        <dd
+          class="details-list__definition details-list__definition--table"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-alt"
+          >
+            16 DUSK
+          </span>
+        </dd>
+      </dl>
+    </div>
   </div>
   
    
