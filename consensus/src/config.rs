@@ -16,7 +16,12 @@ pub const MAJORITY_THRESHOLD: f64 = 0.5;
 /// Total credits of steps committees
 pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
 pub const VALIDATION_COMMITTEE_CREDITS: usize = 64;
+pub const VALIDATION_COMMITTEE_QUORUM: f64 =
+    VALIDATION_COMMITTEE_CREDITS as f64 * SUPERMAJORITY_THRESHOLD;
+
 pub const RATIFICATION_COMMITTEE_CREDITS: usize = 64;
+pub const RATIFICATION_COMMITTEE_QUORUM: f64 =
+    RATIFICATION_COMMITTEE_CREDITS as f64 * SUPERMAJORITY_THRESHOLD;
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
 
@@ -29,3 +34,34 @@ pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
 pub const MINIMUM_BLOCK_TIME: u64 = 10;
+
+/// Returns delta between full quorum and super_majority
+pub fn validation_extra() -> usize {
+    VALIDATION_COMMITTEE_CREDITS - validation_committee_quorum()
+}
+
+pub fn ratification_extra() -> usize {
+    RATIFICATION_COMMITTEE_CREDITS - ratification_committee_quorum()
+}
+
+/// Returns ceil of RATIFICATION_COMMITTEE_QUORUM
+pub fn ratification_committee_quorum() -> usize {
+    RATIFICATION_COMMITTEE_QUORUM.ceil() as usize
+}
+
+/// Returns ceil of VALIDATION_COMMITTEE_QUORUM
+pub fn validation_committee_quorum() -> usize {
+    VALIDATION_COMMITTEE_QUORUM.ceil() as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_quorum_consts() {
+        assert_eq!(validation_committee_quorum(), 43);
+        assert_eq!(ratification_committee_quorum(), 43);
+        assert_eq!(validation_extra(), 21);
+        assert_eq!(ratification_extra(), 21);
+    }
+}
