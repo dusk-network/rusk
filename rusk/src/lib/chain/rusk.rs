@@ -15,6 +15,10 @@ use tokio::task;
 use tracing::{debug, info, warn};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_consensus::config::{
+    ratification_committee_quorum, ratification_extra,
+    validation_committee_quorum, validation_extra,
+};
 use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
 };
@@ -576,9 +580,8 @@ fn reward_slash_and_update_root(
         reward = dusk_value
     );
 
-    let reward_per_quota = generator_extra_reward / (21 * 2);
     let generator_curr_extra_reward =
-        credits.saturating_sub(43 * 2) * reward_per_quota;
+        calc_generator_extra_reward(generator_extra_reward, credits);
 
     let generator_reward = generator_fixed_reward + generator_curr_extra_reward;
     let r = session.call::<_, ()>(
@@ -634,6 +637,18 @@ fn reward_slash_and_update_root(
     events.extend(r.events);
 
     Ok(events)
+}
+
+/// Calculates current extra reward for Block generator.
+fn calc_generator_extra_reward(
+    generator_extra_reward: Dusk,
+    credits: u64,
+) -> u64 {
+    let reward_per_quota = generator_extra_reward
+        / (validation_extra() + ratification_extra()) as u64;
+
+    let sum = ratification_committee_quorum() + validation_committee_quorum();
+    credits.saturating_sub(sum as u64) * reward_per_quota
 }
 
 fn to_bs58(pk: &StakePublicKey) -> String {

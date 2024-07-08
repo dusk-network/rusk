@@ -63,16 +63,15 @@ const fn coinbase_value(
     block_height: u64,
     dusk_spent: u64,
 ) -> (Dusk, Dusk, Dusk, Dusk) {
-    let value = emission_amount(block_height) + dusk_spent;
-
-    let one_tenth_reward = value / 10;
+    let reward_value = emission_amount(block_height) + dusk_spent;
+    let one_tenth_reward = reward_value / 10;
 
     let dusk_value = one_tenth_reward;
     let voters_value = one_tenth_reward;
     let generator_extra_value = one_tenth_reward;
 
     let generator_fixed_value =
-        value - dusk_value - voters_value - generator_extra_value;
+        reward_value - dusk_value - voters_value - generator_extra_value;
 
     (
         dusk_value,
