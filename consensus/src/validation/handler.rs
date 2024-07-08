@@ -9,6 +9,7 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Block, StepVotes};
 use node_data::StepName;
 use tracing::{info, warn};
@@ -94,6 +95,7 @@ impl MsgHandler for ValidationHandler {
         msg: Message,
         _ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
@@ -130,7 +132,7 @@ impl MsgHandler for ValidationHandler {
             sv,
             StepName::Validation,
             quorum_reached,
-            &committee.excluded()[0], // TODO:
+            &generator.expect("There must be a valid generator"),
         );
 
         if quorum_reached {

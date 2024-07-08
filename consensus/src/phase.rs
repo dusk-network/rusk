@@ -79,7 +79,6 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
                             "Next Proposal committee to be already generated",
                         );
 
-                    // TODO: Check for single-provisioner network setup
                     exclusion_list.push(next_generator);
                 }
 

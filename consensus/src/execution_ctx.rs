@@ -276,6 +276,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
+
+        let generator = self.get_curr_generator();
+
         // Check if message is valid in the context of current step
         let valid = phase.lock().await.is_valid(
             &msg,
@@ -335,7 +338,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let collected = phase
             .lock()
             .await
-            .collect(msg, &self.round_update, committee)
+            .collect(msg, &self.round_update, committee, generator)
             .await;
 
         match collected {
@@ -380,6 +383,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
+
+        let generator = self.get_curr_generator();
+
         if let Some(messages) = self
             .future_msgs
             .lock()
@@ -421,7 +427,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     if let Ok(HandleMsgOutput::Ready(msg)) = phase
                         .lock()
                         .await
-                        .collect(msg, &self.round_update, committee)
+                        .collect(msg, &self.round_update, committee, generator)
                         .await
                     {
                         return Some(msg);
@@ -462,5 +468,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 elapsed,
             )
             .await;
+    }
+
+    pub(crate) fn get_curr_generator(&self) -> Option<PublicKeyBytes> {
+        self.iter_ctx.get_generator(self.iteration)
     }
 }

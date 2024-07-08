@@ -44,6 +44,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         msg: Message,
         _ru: &RoundUpdate,
         _committee: &Committee,
+        _generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
         let p = Self::unwrap_msg(&msg)?;

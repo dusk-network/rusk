@@ -110,7 +110,7 @@ mod tests {
             round: u64,
             step: u16,
             committee_credits: usize,
-            exclusion: Option<PublicKeyBytes>,
+            exclusion: Vec<PublicKeyBytes>,
         ) -> Config {
             Self {
                 seed,
@@ -132,7 +132,7 @@ mod tests {
 
         assert_eq!(
             create_sortition_hash(
-                &Config::raw(Seed::from([3; 48]), 10, 3, 0, None),
+                &Config::raw(Seed::from([3; 48]), 10, 3, 0, vec![]),
                 1
             )[..],
             hash[..],
@@ -148,7 +148,7 @@ mod tests {
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
-                &Config::raw(Seed::from(seed), 10, 3, 0, None),
+                &Config::raw(Seed::from(seed), 10, 3, 0, vec![]),
                 1,
             );
 
@@ -166,7 +166,7 @@ mod tests {
         let committee_credits = 64;
 
         // Execute sortition with specific config
-        let cfg = Config::raw(Seed::default(), 1, 1, 64, None);
+        let cfg = Config::raw(Seed::default(), 1, 1, 64, vec![]);
 
         let committee = Committee::new(&p, &cfg);
 
@@ -190,7 +190,7 @@ mod tests {
             7777,
             8,
             committee_credits,
-            None,
+            vec![],
         );
 
         let committee = Committee::new(&p, &cfg);
@@ -212,7 +212,7 @@ mod tests {
         let relative_step = 2;
         let step = iteration as u16 * 3 + relative_step;
 
-        let cfg = Config::raw(seed, round, step, committee_credits, None);
+        let cfg = Config::raw(seed, round, step, committee_credits, vec![]);
         let generator = p.get_generator(iteration, seed, round);
         let committee = Committee::new(&p, &cfg);
 
@@ -228,7 +228,7 @@ mod tests {
 
         // Run the same extraction, with the generator excluded
         let cfg =
-            Config::raw(seed, round, step, committee_credits, Some(generator));
+            Config::raw(seed, round, step, committee_credits, vec![generator]);
         let committee = Committee::new(&p, &cfg);
 
         assert!(
@@ -249,7 +249,7 @@ mod tests {
     fn test_quorum() {
         let p = generate_provisioners(5);
 
-        let cfg = Config::raw(Seed::default(), 7777, 8, 64, None);
+        let cfg = Config::raw(Seed::default(), 7777, 8, 64, vec![]);
 
         let c = Committee::new(&p, &cfg);
         assert_eq!(c.super_majority_quorum(), 43);
@@ -259,7 +259,7 @@ mod tests {
     fn test_intersect() {
         let p = generate_provisioners(10);
 
-        let cfg = Config::raw(Seed::default(), 1, 3, 200, None);
+        let cfg = Config::raw(Seed::default(), 1, 3, 200, vec![]);
         // println!("{:#?}", p);
 
         let c = Committee::new(&p, &cfg);
