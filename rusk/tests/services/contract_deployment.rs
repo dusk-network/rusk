@@ -8,10 +8,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use execution_core::bytecode::Bytecode;
 use execution_core::transfer::{CallOrDeploy, ContractDeploy};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
+use rusk_abi::hash::Hasher;
 use rusk_abi::Error::ContractDoesNotExist;
 use rusk_abi::{ContractData, ContractId};
 use rusk_recovery_tools::state;
@@ -97,6 +99,12 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
     Ok(rusk)
 }
 
+fn bytecode_hash(bytes: impl AsRef<[u8]>) -> [u8; 32] {
+    let mut hasher = Hasher::new();
+    hasher.update(bytes.as_ref());
+    hasher.finalize().to_bytes()
+}
+
 fn make_and_execute_transaction_deploy(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
@@ -125,7 +133,10 @@ fn make_and_execute_transaction_deploy(
             &mut rng,
             CallOrDeploy::Deploy(ContractDeploy {
                 contract_id: Some(contract_id.to_bytes()),
-                bytecode: bytecode.as_ref().to_vec(),
+                bytecode: Bytecode {
+                    hash: bytecode_hash(bytecode.as_ref()),
+                    bytes: bytecode.as_ref().to_vec(),
+                },
                 owner: BOB_OWNER.to_vec(),
                 constructor_args,
             }),

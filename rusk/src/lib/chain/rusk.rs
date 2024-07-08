@@ -18,6 +18,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
 };
+use execution_core::transfer::CallOrDeploy;
 use execution_core::{
     stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
     StakePublicKey,
@@ -480,6 +481,17 @@ fn accept(
     ))
 }
 
+fn strip_off_bytecode(tx: &PhoenixTransaction) -> Option<PhoenixTransaction> {
+    let _ = tx.payload().contract_deploy()?;
+    let mut tx_clone = tx.clone();
+    if let Some(CallOrDeploy::Deploy(deploy)) =
+        &mut tx_clone.payload.call_or_deploy
+    {
+        deploy.bytecode.bytes.clear();
+    }
+    Some(tx_clone)
+}
+
 /// Executes a transaction, returning the receipt of the call and the gas spent.
 /// The following steps are performed:
 ///
@@ -495,12 +507,13 @@ fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    let tx_stripped = strip_off_bytecode(tx);
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
-        tx,
+        tx_stripped.as_ref().unwrap_or(tx),
         tx.payload().fee.gas_limit,
     )?;
 
@@ -512,7 +525,7 @@ fn execute(
     if let Some(deploy) = tx.payload().contract_deploy() {
         session.deploy_raw(
             deploy.contract_id.map(|id| id.into()),
-            deploy.bytecode.as_slice(),
+            deploy.bytecode.bytes.as_slice(),
             deploy.constructor_args.clone(),
             deploy.owner.clone(),
             tx.payload().fee.gas_limit,
