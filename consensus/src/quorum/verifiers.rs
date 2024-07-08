@@ -15,6 +15,7 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
 
+use crate::config::CONSENSUS_MAX_ITER;
 use dusk_bytes::Serializable as BytesSerializable;
 use execution_core::{StakeAggPublicKey, StakeSignature};
 use tokio::sync::RwLock;
@@ -87,13 +88,15 @@ pub async fn verify_step_votes(
 
     exclusion_list.push(generator);
 
-    let next_generator = committees_set
-        .read()
-        .await
-        .provisioners()
-        .get_generator(iteration + 1, seed, round);
+    if iteration < CONSENSUS_MAX_ITER {
+        let next_generator = committees_set
+            .read()
+            .await
+            .provisioners()
+            .get_generator(iteration + 1, seed, round);
 
-    exclusion_list.push(next_generator);
+        exclusion_list.push(next_generator);
+    }
 
     let cfg =
         sortition::Config::new(seed, round, iteration, step, exclusion_list);

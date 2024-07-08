@@ -61,6 +61,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         _msg: Message,
         _ru: &RoundUpdate,
         _committee: &Committee,
+        _generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Pending)
     }

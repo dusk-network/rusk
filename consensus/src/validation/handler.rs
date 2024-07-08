@@ -159,6 +159,7 @@ impl MsgHandler for ValidationHandler {
         msg: Message,
         _ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
@@ -184,7 +185,7 @@ impl MsgHandler for ValidationHandler {
                         sv,
                         StepName::Validation,
                         quorum_reached,
-                        &committee.excluded()[0], // TODO:
+                        &generator.expect("There must be a valid generator"),
                     )
                 {
                     return Ok(HandleMsgOutput::Ready(quorum_msg));

@@ -94,6 +94,7 @@ pub trait MsgHandler {
         msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
