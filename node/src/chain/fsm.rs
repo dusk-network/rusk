@@ -17,7 +17,6 @@ use node_data::message::payload::{
 };
 
 use node_data::message::{payload, Message, Metadata};
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
@@ -150,19 +149,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     /// A block event could originate from either local consensus execution, a
     /// wire Block message (topics::Block), or a wire Quorum message
     /// (topics::Quorum).
+    ///
+    /// If the block is accepted, it returns the block itself
     pub async fn on_block_event(
         &mut self,
-        blk: &Block,
+        blk: Block,
         metadata: Option<Metadata>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<Block>> {
+        let block_hash = &blk.header().hash;
+
         // Filter out blocks that have already been marked as
         // blacklisted upon successful fallback execution.
-        if self
-            .blacklisted_blocks
-            .read()
-            .await
-            .contains(&blk.header().hash)
-        {
+        if self.blacklisted_blocks.read().await.contains(block_hash) {
             info!(
                 event = "block discarded",
                 reason = "blacklisted",
@@ -170,10 +168,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 height = blk.header().height,
                 iter = blk.header().iteration,
             );
-            return Ok(());
+            // block discarded, should we clean up attestation cache (if any)?
+            return Ok(None);
         }
 
-        if let Some(blk) = self.attach_att_if_needed(blk).as_ref() {
+        let blk = self.attach_att_if_needed(blk);
+        if let Some(blk) = blk.as_ref() {
             match &mut self.curr {
                 State::InSync(ref mut curr) => {
                     if let Some((b, peer_addr)) =
@@ -212,13 +212,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             }
         }
 
-        // Clean up attestation cache
-        let now = Instant::now();
-        self.attestations_cache
-            .retain(|_, (_, expiry)| *expiry > now);
-        self.attestations_cache.remove(&blk.header().hash);
-
-        Ok(())
+        // FIXME: The block should return only if accepted. The current issue is
+        // that the impl of State::on_block_event don't return always the
+        // accepted block, so we can't rely on them
+        Ok(blk)
     }
 
     async fn flood_request_block(&mut self, hash: [u8; 32], att: Attestation) {
@@ -244,11 +241,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     /// The winner block is built from the quorum attestation and candidate
     /// block. If the candidate is not found in local storage then the
     /// block/candidate is requested from the network.
+    ///
+    /// It returns the corresponding winner block if it gets accepted
     pub(crate) async fn on_quorum_msg(
         &mut self,
         quorum: &payload::Quorum,
         msg: &Message,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<Block>> {
         let res = match quorum.att.result {
             RatificationResult::Success(Vote::Valid(hash)) => {
                 let local_header = self.acc.read().await.tip_header().await;
@@ -316,10 +315,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             );
 
             block.set_attestation(quorum.att);
-            self.on_block_event(&block, msg.metadata.clone()).await?;
+            if let Some(block) =
+                self.on_block_event(block, msg.metadata.clone()).await?
+            {
+                return Ok(Some(block));
+            }
         }
 
-        Ok(())
+        Ok(None)
     }
 
     pub(crate) async fn on_heartbeat_event(&mut self) -> anyhow::Result<()> {
@@ -357,27 +360,35 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     }
 
     /// Try to attach the attestation to a block that misses it
-    fn attach_att_if_needed<'a>(
-        &self,
-        blk: &'a Block,
-    ) -> Option<Cow<'a, Block>> {
-        if blk.header().att == Attestation::default() {
+    ///
+    /// Return None if it's not able to attach the attestation
+    fn attach_att_if_needed(&mut self, mut blk: Block) -> Option<Block> {
+        let block_hash = blk.header().hash;
+
+        let block_with_att = if blk.header().att == Attestation::default() {
             // The default att means the block was retrieved from Candidate
             // CF thus missing the attestation. If so, we try to set the valid
             // attestation from the cache attestations.
             if let Some((att, _)) =
                 self.attestations_cache.get(&blk.header().hash)
             {
-                let mut blk = blk.clone();
                 blk.set_attestation(*att);
-                Some(Cow::Owned(blk))
+                Some(blk)
             } else {
                 error!("att not found for {}", hex::encode(blk.header().hash));
                 None
             }
         } else {
-            Some(Cow::Borrowed(blk))
-        }
+            Some(blk)
+        };
+
+        // Clean up attestation cache
+        let now = Instant::now();
+        self.attestations_cache
+            .retain(|_, (_, expiry)| *expiry > now);
+        self.attestations_cache.remove(&block_hash);
+
+        block_with_att
     }
 }
 
