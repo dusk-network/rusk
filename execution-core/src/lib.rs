@@ -13,6 +13,7 @@
 /// Block height type alias
 pub type BlockHeight = u64;
 
+pub mod bytecode;
 pub mod stake;
 pub mod transfer;
 

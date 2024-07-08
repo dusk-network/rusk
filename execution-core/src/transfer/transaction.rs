@@ -139,7 +139,7 @@ impl Payload {
             if let Some(contract_id) = &deploy.contract_id {
                 bytes.extend(contract_id);
             }
-            bytes.extend(&deploy.bytecode);
+            bytes.extend(&deploy.bytecode.to_hash_input_bytes());
             bytes.extend(&deploy.owner);
             if let Some(constructor_args) = &deploy.constructor_args {
                 bytes.extend(constructor_args);
@@ -161,8 +161,10 @@ impl Payload {
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Transaction {
-    payload: Payload,
-    proof: Vec<u8>,
+    /// Payload
+    pub payload: Payload,
+    /// Proof
+    pub proof: Vec<u8>,
 }
 
 impl PartialEq for Transaction {

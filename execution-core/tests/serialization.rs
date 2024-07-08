@@ -7,6 +7,7 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{Error, Serializable};
 use dusk_jubjub::JubJubScalar;
+use execution_core::bytecode::Bytecode;
 use execution_core::transfer::{
     CallOrDeploy, ContractCall, ContractDeploy, Fee, Payload, Transaction,
 };
@@ -95,13 +96,27 @@ fn transaction_serialization_call() -> Result<(), Error> {
     Ok(())
 }
 
+fn strip_off_bytecode(tx: &Transaction) -> Transaction {
+    let mut tx_clone = tx.clone();
+    match &mut tx_clone.payload.call_or_deploy {
+        Some(CallOrDeploy::Deploy(deploy)) => {
+            deploy.bytecode.bytes.clear();
+        }
+        _ => (),
+    }
+    tx_clone
+}
+
 #[test]
 fn transaction_serialization_deploy() -> Result<(), Error> {
     let (tx_skeleton, fee, _) = build_skeleton_fee_deposit();
 
     // build the contract-deploy
     let contract = [42; 32];
-    let bytecode = vec![1, 2, 3, 4, 5];
+    let bytecode = Bytecode {
+        hash: [1u8; 32],
+        bytes: vec![1, 2, 3, 4, 5],
+    };
     let owner = [1; 32];
     let constructor_args = vec![5];
     let deploy = ContractDeploy {
@@ -121,8 +136,14 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     // set a random proof
     let proof = [42; 42].to_vec();
 
-    let transaction = Transaction::new(payload, proof);
+    // bytecode not stripped off
+    let transaction = Transaction::new(payload.clone(), proof.clone());
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+    assert_eq!(transaction, deserialized);
 
+    // bytecode stripped off
+    let transaction = strip_off_bytecode(&Transaction::new(payload, proof));
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
     assert_eq!(transaction, deserialized);

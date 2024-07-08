@@ -29,6 +29,7 @@ use crate::{
 };
 
 mod transaction;
+use crate::bytecode::Bytecode;
 pub use transaction::{Payload, Transaction};
 
 /// Unique ID to identify a contract.
@@ -110,7 +111,7 @@ pub struct ContractDeploy {
     /// The optional ID of the contract to be deployed.
     pub contract_id: Option<ContractId>,
     /// Bytecode of the contract to be deployed.
-    pub bytecode: Vec<u8>,
+    pub bytecode: Bytecode,
     /// Owner of the contract to be deployed.
     pub owner: Vec<u8>,
     /// Constructor arguments of the deployed contract.
@@ -146,8 +147,7 @@ impl ContractDeploy {
             None => bytes.push(0),
         }
 
-        bytes.extend((self.bytecode.len() as u64).to_bytes());
-        bytes.extend(&self.bytecode);
+        bytes.extend(&self.bytecode.to_var_bytes());
 
         bytes.extend((self.owner.len() as u64).to_bytes());
         bytes.extend(&self.owner);
@@ -183,9 +183,7 @@ impl ContractDeploy {
         };
         let mut buf = &buf[offset..];
 
-        let bytecode_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        let bytecode = buf[..bytecode_len].into();
+        let (bytecode, bytecode_len) = Bytecode::from_buf(buf)?;
         buf = &buf[bytecode_len..];
 
         let owner_len = usize::try_from(u64::from_reader(&mut buf)?)
