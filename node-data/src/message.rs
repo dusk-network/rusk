@@ -103,8 +103,6 @@ impl Serializable for Message {
             Payload::Quorum(p) => p.write(w),
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
-            Payload::GetCandidate(p) => p.write(w),
-            Payload::CandidateResp(p) => p.write(w),
             Payload::GetMempool(p) => p.write(w),
             Payload::GetInv(p) => p.write(w),
             Payload::GetBlocks(p) => p.write(w),
@@ -134,12 +132,6 @@ impl Serializable for Message {
             Topics::Block => Message::new_block(ledger::Block::read(r)?),
             Topics::Tx => {
                 Message::new_transaction(ledger::Transaction::read(r)?)
-            }
-            Topics::GetCandidateResp => Message::new_get_candidate_resp(
-                payload::GetCandidateResp::read(r)?,
-            ),
-            Topics::GetCandidate => {
-                Message::new_get_candidate(payload::GetCandidate::read(r)?)
             }
             Topics::GetResource => {
                 Message::new_get_resource(payload::GetResource::read(r)?)
@@ -209,24 +201,6 @@ impl Message {
         Self {
             topic: Topics::Block,
             payload: Payload::Block(Box::new(payload)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetCandidate message
-    pub fn new_get_candidate(p: payload::GetCandidate) -> Message {
-        Self {
-            topic: Topics::GetCandidate,
-            payload: Payload::GetCandidate(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetCandidateResp message
-    pub fn new_get_candidate_resp(p: payload::GetCandidateResp) -> Message {
-        Self {
-            topic: Topics::GetCandidateResp,
-            payload: Payload::CandidateResp(Box::new(p)),
             ..Default::default()
         }
     }
@@ -371,12 +345,10 @@ pub enum Payload {
 
     Block(Box<ledger::Block>),
     Transaction(Box<ledger::Transaction>),
-    GetCandidate(payload::GetCandidate),
     GetMempool(payload::GetMempool),
     GetInv(payload::Inv),
     GetBlocks(payload::GetBlocks),
     GetResource(payload::GetResource),
-    CandidateResp(Box<payload::GetCandidateResp>),
 
     // Internal messages payload
     /// Result message passed from Validation step to Ratification step
@@ -1087,14 +1059,12 @@ pub enum Topics {
     GetBlocks = 9,
     GetMempool = 13, // NB: This is aliased as Mempool in the golang impl
     GetInv = 14,     // NB: This is aliased as Inv in the golang impl
-    GetCandidate = 46,
 
     // Fire-and-forget messaging
     Tx = 10,
     Block = 11,
 
     // Consensus main loop topics
-    GetCandidateResp = 15,
     Candidate = 16,
     Validation = 17,
     Ratification = 18,
@@ -1126,8 +1096,6 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Block);
         map_topic!(v, Topics::GetMempool);
         map_topic!(v, Topics::GetInv);
-        map_topic!(v, Topics::GetCandidateResp);
-        map_topic!(v, Topics::GetCandidate);
         map_topic!(v, Topics::Candidate);
         map_topic!(v, Topics::Validation);
         map_topic!(v, Topics::Ratification);
