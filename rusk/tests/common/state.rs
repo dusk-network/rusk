@@ -132,6 +132,7 @@ pub fn generator_procedure(
             ..Default::default()
         },
         txs,
+        vec![],
     )
     .expect("valid block");
 

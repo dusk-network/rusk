@@ -11,6 +11,8 @@ pub mod message;
 
 use std::io::{self, Read, Write};
 
+use ledger::Hash;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {
     Proposal = 0,
@@ -72,5 +74,18 @@ pub trait Serializable {
         r.read_exact(&mut buf)?;
 
         Ok(buf)
+    }
+}
+
+impl Serializable for Hash {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&self[..])
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        Self::read_bytes(r)
     }
 }

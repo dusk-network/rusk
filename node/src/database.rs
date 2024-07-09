@@ -10,7 +10,7 @@ use std::path::Path;
 pub mod rocksdb;
 
 use anyhow::Result;
-use node_data::ledger;
+use node_data::ledger::{self, Fault};
 use node_data::ledger::{Label, SpentTransaction};
 use serde::{Deserialize, Serialize};
 
@@ -52,6 +52,7 @@ pub trait Ledger {
         &self,
         header: &ledger::Header,
         txs: &[SpentTransaction],
+        faults: &[Fault],
         label: Label,
     ) -> Result<usize>;
 
@@ -91,6 +92,8 @@ pub trait Ledger {
         hash: &[u8; 32],
         label: Label,
     ) -> Result<()>;
+
+    fn fetch_faults(&self, start_height: u64) -> Result<Vec<Fault>>;
 }
 
 pub trait Candidate {

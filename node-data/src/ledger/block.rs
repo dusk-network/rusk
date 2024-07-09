@@ -12,6 +12,7 @@ pub type Hash = [u8; 32];
 pub struct Block {
     header: Header,
     txs: Vec<Transaction>,
+    faults: Vec<Fault>,
 }
 
 impl PartialEq<Self> for Block {
@@ -24,8 +25,16 @@ impl Eq for Block {}
 
 impl Block {
     /// Creates a new block and calculates block hash, if missing.
-    pub fn new(header: Header, txs: Vec<Transaction>) -> io::Result<Self> {
-        let mut b = Block { header, txs };
+    pub fn new(
+        header: Header,
+        txs: Vec<Transaction>,
+        faults: Vec<Fault>,
+    ) -> io::Result<Self> {
+        let mut b = Block {
+            header,
+            txs,
+            faults,
+        };
         b.calculate_hash()?;
         Ok(b)
     }
@@ -48,6 +57,13 @@ impl Block {
     }
     pub fn txs(&self) -> &Vec<Transaction> {
         &self.txs
+    }
+    pub fn faults(&self) -> &Vec<Fault> {
+        &self.faults
+    }
+
+    pub fn into_faults(self) -> Vec<Fault> {
+        self.faults
     }
 
     pub fn set_attestation(&mut self, att: Attestation) {
@@ -100,8 +116,9 @@ pub mod faker {
                 gen_dummy_tx(rng.gen()),
             ];
             let header: Header = Faker.fake();
+            let faults = vec![Faker.fake(), Faker.fake(), Faker.fake()];
 
-            Block::new(header, txs).expect("valid hash")
+            Block::new(header, txs, faults).expect("valid hash")
         }
     }
 }

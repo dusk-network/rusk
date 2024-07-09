@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::aggregator::Aggregator;
+use crate::aggregator::{Aggregator, StepVote};
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
@@ -31,10 +31,17 @@ fn final_result(
 }
 
 pub struct ValidationHandler {
-    pub(crate) aggr: Aggregator,
+    pub(crate) aggr: Aggregator<Validation>,
     pub(crate) candidate: Option<Block>,
     sv_registry: SafeAttestationInfoRegistry,
     curr_iteration: u8,
+}
+
+// Implement the required trait to use Aggregator
+impl StepVote for Validation {
+    fn vote(&self) -> &Vote {
+        &self.vote
+    }
 }
 
 impl ValidationHandler {
@@ -71,11 +78,7 @@ impl MsgHandler for ValidationHandler {
     ) -> Result<(), ConsensusError> {
         match &msg.payload {
             Payload::Validation(p) => {
-                if self.aggr.is_vote_collected(
-                    p.sign_info(),
-                    &p.vote,
-                    p.get_step(),
-                ) {
+                if self.aggr.is_vote_collected(p) {
                     return Err(ConsensusError::VoteAlreadyCollected);
                 }
 
@@ -109,10 +112,8 @@ impl MsgHandler for ValidationHandler {
             return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
-        let (sv, quorum_reached) = self
-            .aggr
-            .collect_vote(committee, p.sign_info(), &p.vote, p.get_step())
-            .map_err(|error| {
+        let (sv, quorum_reached) =
+            self.aggr.collect_vote(committee, &p).map_err(|error| {
                 warn!(
                     event = "Cannot collect vote",
                     ?error,
@@ -166,12 +167,7 @@ impl MsgHandler for ValidationHandler {
         }
 
         // Collect vote, if msg payload is validation type
-        let collect_vote = self.aggr.collect_vote(
-            committee,
-            p.sign_info(),
-            &p.vote,
-            p.get_step(),
-        );
+        let collect_vote = self.aggr.collect_vote(committee, &p);
 
         match collect_vote {
             Ok((sv, quorum_reached)) => {

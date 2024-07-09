@@ -20,6 +20,7 @@ pub struct Header {
     pub event_hash: Hash,
     pub generator_bls_pubkey: PublicKeyBytes,
     pub txroot: Hash,
+    pub faultroot: Hash,
     pub gas_limit: u64,
     pub iteration: u8,
     pub prev_block_cert: Attestation,
@@ -50,6 +51,8 @@ impl std::fmt::Debug for Header {
             .field("gas_limit", &self.gas_limit)
             .field("hash", &to_str(&self.hash))
             .field("att", &self.att)
+            .field("tx_root", &to_str(&self.txroot))
+            .field("fault_root", &to_str(&self.faultroot))
             .finish()
     }
 }
@@ -71,6 +74,7 @@ impl Header {
         w.write_all(&self.event_hash)?;
         w.write_all(self.generator_bls_pubkey.inner())?;
         w.write_all(&self.txroot)?;
+        w.write_all(&self.faultroot)?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
         w.write_all(&self.iteration.to_le_bytes())?;
         self.prev_block_cert.write(w)?;
@@ -90,6 +94,7 @@ impl Header {
         let event_hash = Self::read_bytes(r)?;
         let generator_bls_pubkey = Self::read_bytes(r)?;
         let txroot = Self::read_bytes(r)?;
+        let faultroot = Self::read_bytes(r)?;
         let gas_limit = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
 
@@ -108,6 +113,7 @@ impl Header {
             state_hash,
             event_hash,
             txroot,
+            faultroot,
             hash: [0; 32],
             att: Default::default(),
             prev_block_cert,

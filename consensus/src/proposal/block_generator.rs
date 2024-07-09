@@ -6,7 +6,9 @@
 
 use crate::commons::{get_current_timestamp, RoundUpdate};
 use crate::operations::{CallParams, Operations, VoterWithCredits};
-use node_data::ledger::{to_str, Attestation, Block, IterationsInfo, Seed};
+use node_data::ledger::{
+    to_str, Attestation, Block, Fault, IterationsInfo, Seed,
+};
 use std::cmp::max;
 
 use crate::config;
@@ -107,6 +109,10 @@ impl<T: Operations> Generator<T> {
             result.txs.iter().map(|t| t.inner.hash()).collect();
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
         let txroot = merkle_root(&tx_hashes[..]);
+
+        let faults = Vec::<Fault>::new();
+        let faults_hashes: Vec<_> = faults.iter().map(|f| f.hash()).collect();
+        let faultroot = merkle_root(&faults_hashes);
         let timestamp =
             max(ru.timestamp() + MINIMUM_BLOCK_TIME, get_current_timestamp());
 
@@ -125,10 +131,11 @@ impl<T: Operations> Generator<T> {
             att: Attestation::default(),
             prev_block_cert: *ru.att(),
             txroot,
+            faultroot,
             iteration,
             failed_iterations,
         };
 
-        Ok(Block::new(blk_header, txs).expect("block should be valid"))
+        Ok(Block::new(blk_header, txs, faults).expect("block should be valid"))
     }
 }

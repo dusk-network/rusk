@@ -124,7 +124,7 @@ impl Committee {
         let mut a = Cluster::new();
         for (pos, (member_pk, weight)) in self.members.iter().enumerate() {
             if ((bitset >> pos) & 1) != 0 {
-                a.set_weight(member_pk, *weight);
+                a.add(member_pk, *weight);
             }
         }
         a

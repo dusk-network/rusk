@@ -8,49 +8,67 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
 use execution_core::{BlsSigError, BlsSignature};
-use node_data::bls::PublicKey;
+use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
-use node_data::message::SignInfo;
-use std::collections::BTreeMap;
+use node_data::message::StepMessage;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use thiserror::Error;
 use tracing::{debug, error};
 
-/// Aggregator collects votes per a block hash by aggregating signatures of
-/// voters.StepVotes Mapping of a block hash to both an aggregated signatures
-/// and a cluster of bls voters.
-#[derive(Default)]
-pub struct Aggregator(
-    BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
-);
+/// Aggregator collects votes for Validation and Ratification steps by
+/// mapping step numbers and [StepVote] to both an aggregated signature and a
+/// cluster of voters.
+///
+/// It ensures that no multiple votes for same voter are collected.
+pub struct Aggregator<V> {
+    // Map between (step, vote) and (signature, voters)
+    votes: BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
+
+    // Map each step to the set of voters. We do this to ensure only one vote
+    // per voter is cast
+    uniqueness: BTreeMap<u16, HashMap<PublicKeyBytes, V>>,
+}
+
+impl<V> Default for Aggregator<V> {
+    fn default() -> Self {
+        Self {
+            votes: BTreeMap::default(),
+            uniqueness: BTreeMap::default(),
+        }
+    }
+}
 
 #[derive(Debug, Error)]
-pub enum AggregatorError {
+pub enum AggregatorError<V> {
     #[error("Vote already aggregated")]
     DuplicatedVote,
+    #[error("Vote conflicted with previous one")]
+    ConflictingVote(V),
     #[error("Vote from member not in the committee")]
     NotCommitteeMember,
     #[error("Invalid signature to aggregate {0}")]
     InvalidSignature(BlsSigError),
 }
 
-impl From<BlsSigError> for AggregatorError {
+impl<V> From<BlsSigError> for AggregatorError<V> {
     fn from(value: BlsSigError) -> Self {
         Self::InvalidSignature(value)
     }
 }
 
-impl Aggregator {
-    pub fn is_vote_collected(
-        &self,
-        sign_info: &SignInfo,
-        vote: &Vote,
-        msg_step: u16,
-    ) -> bool {
-        let signer = &sign_info.signer;
+pub trait StepVote: Clone + StepMessage {
+    fn vote(&self) -> &Vote;
+}
 
-        self.0
+impl<V: StepVote> Aggregator<V> {
+    pub fn is_vote_collected(&self, v: &V) -> bool {
+        let signer = &v.sign_info().signer;
+        let msg_step = v.get_step();
+        let vote = v.vote();
+
+        self.votes
             .get(&(msg_step, *vote))
             .map_or(false, |(_, cluster)| cluster.contains_key(signer))
     }
@@ -58,10 +76,12 @@ impl Aggregator {
     pub fn collect_vote(
         &mut self,
         committee: &Committee,
-        sign_info: &SignInfo,
-        vote: &Vote,
-        msg_step: u16,
-    ) -> Result<(StepVotes, bool), AggregatorError> {
+        v: &V,
+    ) -> Result<(StepVotes, bool), AggregatorError<V>> {
+        let sign_info = v.sign_info();
+        let msg_step = v.get_step();
+        let vote = v.vote();
+
         let signature = sign_info.signature.inner();
         let signer = &sign_info.signer;
 
@@ -72,7 +92,8 @@ impl Aggregator {
             .votes_for(signer)
             .ok_or(AggregatorError::NotCommitteeMember)?;
 
-        let (aggr_sign, cluster) = self.0.entry((msg_step, *vote)).or_default();
+        let (aggr_sign, cluster) =
+            self.votes.entry((msg_step, *vote)).or_default();
 
         // Each committee has 64 slots.
         //
@@ -86,13 +107,22 @@ impl Aggregator {
             return Err(AggregatorError::DuplicatedVote);
         }
 
+        // Check if the provisioner voted for a different result
+        let voters_list = self.uniqueness.entry(msg_step).or_default();
+        match voters_list.get(signer.bytes()) {
+            None => voters_list.insert(*signer.bytes(), v.clone()),
+            Some(prev_vote) => {
+                return Err(AggregatorError::ConflictingVote(prev_vote.clone()))
+            }
+        };
+
         // Aggregate Signatures
         aggr_sign.add(signature)?;
 
         // An committee member is allowed to vote only once per a single
         // step. Its vote has a weight value depending on how many times it
         // has been extracted in the sortition for this step.
-        let weight = cluster.set_weight(signer, weight);
+        let weight = cluster.add(signer, weight);
         debug_assert!(weight.is_some());
 
         let total = cluster.total_occurrences();
@@ -137,9 +167,9 @@ impl Aggregator {
     }
 }
 
-impl fmt::Display for Aggregator {
+impl<V> fmt::Display for Aggregator<V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for (hash, value) in self.0.iter() {
+        for (hash, value) in self.votes.iter() {
             writeln!(
                 f,
                 "hash: {:?} total: {}",
@@ -187,12 +217,11 @@ mod tests {
     use execution_core::{StakePublicKey, StakeSecretKey};
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
-    use node_data::message::StepMessage;
     use std::collections::HashMap;
 
-    impl Aggregator {
+    impl<V> Aggregator<V> {
         pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
-            if let Some(value) = self.0.get(&(step, vote)) {
+            if let Some(value) = self.votes.get(&(step, vote)) {
                 return Some(value.1.total_occurrences());
             }
             None
@@ -297,16 +326,12 @@ mod tests {
             let (vote, msg) =
                 input.get(expected_members[i]).expect("invalid index");
 
-            let sign_info = msg.sign_info();
-            let step = msg.get_step();
-
             let vote = vote.clone();
             // Last member's vote should reach the quorum
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
-                let (sv, quorum_reached) = a
-                    .collect_vote(&c, sign_info, &vote, step)
-                    .expect("failed to reach quorum");
+                let (sv, quorum_reached) =
+                    a.collect_vote(&c, msg).expect("failed to reach quorum");
 
                 assert!(quorum_reached, "quorum should be reached");
 
@@ -321,19 +346,31 @@ mod tests {
             }
 
             // Check collected votes
-            let (_, quorum_reached) =
-                a.collect_vote(&c, sign_info, &vote, step).unwrap();
+            let (_, quorum_reached) = a.collect_vote(&c, msg).unwrap();
 
             assert!(!quorum_reached, "quorum should not be reached yet");
 
             collected_votes += expected_votes[i];
-            assert_eq!(a.get_total(step, vote.clone()), Some(collected_votes));
+            assert_eq!(
+                a.get_total(msg.get_step(), msg.vote),
+                Some(collected_votes)
+            );
 
-            // Ensure a duplicated vote is discarded
             if i == 0 {
-                match a.collect_vote(&c, sign_info, &vote, step) {
+                // Ensure a duplicated vote is discarded
+                match a.collect_vote(&c, msg) {
                     Err(AggregatorError::DuplicatedVote) => {}
                     _ => panic!("Vote should be discarded"),
+                }
+
+                // Ensure a conflicting vote is discarded
+                let mut wrong_msg = msg.clone();
+                wrong_msg.vote = Vote::Invalid(block_hash);
+                match a.collect_vote(&c, &wrong_msg) {
+                    Err(AggregatorError::ConflictingVote(m)) => {
+                        assert_eq!(&m, msg)
+                    }
+                    _ => panic!("Vote should be discarded as conflicting"),
                 }
             }
         }
