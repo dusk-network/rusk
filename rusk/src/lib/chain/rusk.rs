@@ -650,6 +650,14 @@ fn try_deploy(
     tx_id: impl AsRef<str>,
 ) -> Result<()> {
     if let Some(deploy) = tx.payload().contract_deploy() {
+        let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
+        if hash != deploy.bytecode.hash {
+            info!(
+                "Tx {} caused deployment bytecode hash error",
+                tx_id.as_ref()
+            );
+            return Err(Error::Vm(rusk_abi::Error::ValidationError));
+        }
         let result = session.deploy_raw(
             None,
             deploy.bytecode.bytes.as_slice(),
