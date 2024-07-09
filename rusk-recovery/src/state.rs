@@ -17,8 +17,8 @@ use tracing::info;
 use url::Url;
 
 use execution_core::{
-    stake::StakeData, transfer::Mint, BlsPublicKey, BlsSecretKey, JubJubScalar,
-    PublicKey,
+    stake::StakeData, transfer::SenderAccount, BlsPublicKey, BlsSecretKey,
+    JubJubScalar, Note, PublicKey,
 };
 use rusk_abi::{ContractData, ContractId, Session, VM};
 use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
@@ -67,14 +67,18 @@ fn generate_transfer_state(
         balance.notes.iter().for_each(|&amount| {
             let r = JubJubScalar::random(&mut rng);
             let address = balance.address().gen_stealth_address(&r);
-            let sender = BlsPublicKey::from(&BlsSecretKey::random(&mut rng));
-            let mint = Mint {
-                address,
-                value: amount,
-                sender,
+            let sender = SenderAccount {
+                contract: STAKE_CONTRACT.to_bytes(),
+                account: BlsPublicKey::from(&BlsSecretKey::random(&mut rng)),
             };
+            let note = Note::transparent_stealth(address, amount, sender);
             session
-                .call::<Mint, bool>(TRANSFER_CONTRACT, "mint", &mint, u64::MAX)
+                .call::<(u64, Note), ()>(
+                    TRANSFER_CONTRACT,
+                    "push_note",
+                    &(GENESIS_BLOCK_HEIGHT, note),
+                    u64::MAX,
+                )
                 .expect("Minting should succeed");
         });
     });

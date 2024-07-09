@@ -57,8 +57,7 @@ impl Tree {
         for note in notes {
             // skip transparent notes with a value of 0
             if !note.value(None).is_ok_and(|value| value == 0) {
-                let leaf = TreeLeaf { block_height, note };
-                self.push(leaf);
+                self.push(TreeLeaf { block_height, note });
             }
         }
     }

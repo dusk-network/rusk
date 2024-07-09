@@ -251,19 +251,26 @@ impl Fee {
         Hash::digest(Domain::Other, &hash_inputs)[0]
     }
 
-    /// Generates a remainder from the fee and the given gas consumed
+    /// Generates a remainder from the fee and the given gas consumed.
+    ///
+    /// If there is a deposit, it means that the deposit hasn't been picked up
+    /// by the contract. In this case, it is added to the remainder note.
     #[must_use]
-    pub fn gen_remainder_note(&self, gas_consumed: u64) -> Note {
-        // Consuming more gas than the limit provided should never
-        // occur, and it's not responsability of the `Fee` to check that.
-        // Here defensively ensure it's not panicking, capping the gas
-        // consumed to the gas limit.
+    pub fn gen_remainder_note(
+        &self,
+        gas_consumed: u64,
+        deposit: Option<u64>,
+    ) -> Note {
+        // Consuming more gas than the limit provided should never occur, and
+        // it's not the responsibility of the `Fee` to check that.
+        // Here defensively ensure it's not panicking, capping the gas consumed
+        // to the gas limit.
         let gas_consumed = cmp::min(gas_consumed, self.gas_limit);
         let gas_changes = (self.gas_limit - gas_consumed) * self.gas_price;
 
         Note::transparent_stealth(
             self.stealth_address,
-            gas_changes,
+            gas_changes + deposit.unwrap_or_default(),
             self.sender,
         )
     }
