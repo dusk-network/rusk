@@ -213,8 +213,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
 
         // FIXME: The block should return only if accepted. The current issue is
-        // that the impl of State::on_block_event don't return always the
+        // that the impl of State::on_block_event doesn't return always the
         // accepted block, so we can't rely on them
+        //
+        // Due to this issue, we reset the outer timeout even if we are not
+        // accepting the received block
         Ok(blk)
     }
 
@@ -248,6 +251,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         quorum: &payload::Quorum,
         msg: &Message,
     ) -> anyhow::Result<Option<Block>> {
+        // FIXME: We should return the whole outcome for this quorum
+        // Basically we need to inform the upper layer if the received quorum is
+        // valid (even if it's a FailedQuorum)
+        // This will be usefull in order to:
+        // - Reset the idle timer if the current iteration reached a quorum
+        // - Move to next iteration if the quorum is a Failed one
+        // - Remove the FIXME in fsm::on_block_event
         let res = match quorum.att.result {
             RatificationResult::Success(Vote::Valid(hash)) => {
                 let local_header = self.acc.read().await.tip_header().await;
@@ -431,6 +441,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     /// performed when exiting the state
     async fn on_exiting(&mut self) {}
 
+    /// Return Some if there is the need to switch to OutOfSync mode.
+    /// This way the sync-up procedure to download all missing blocks from the
+    /// main chain will be triggered
     async fn on_block_event(
         &mut self,
         remote_blk: &Block,
@@ -763,6 +776,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.clear();
     }
 
+    /// Return true if a transit back to InSync mode is needed
     pub async fn on_block_event(
         &mut self,
         blk: &Block,
