@@ -131,8 +131,9 @@ impl Rusk {
 
                     if gas_spent > block_gas_left || deploy_result.is_err() {
                         // If the transaction went over the block gas limit we
-                        // re-execute all spent transactions. We don't discard the
-                        // transaction, since it is technically valid.
+                        // re-execute all spent transactions. We don't discard
+                        // the transaction, since it is
+                        // technically valid.
                         if gas_spent > block_gas_left {
                             warn!("This is not supposed to happen with conservative tx inclusion");
                         }
@@ -650,7 +651,7 @@ fn try_deploy(
 ) -> Result<()> {
     if let Some(deploy) = tx.payload().contract_deploy() {
         let result = session.deploy_raw(
-            deploy.contract_id.map(|id| id.into()),
+            None,
             deploy.bytecode.bytes.as_slice(),
             deploy.constructor_args.clone(),
             deploy.owner.clone(),

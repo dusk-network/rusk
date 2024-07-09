@@ -13,7 +13,6 @@ use execution_core::transfer::{CallOrDeploy, ContractDeploy};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use rusk_abi::hash::Hasher;
 use rusk_abi::Error::ContractDoesNotExist;
 use rusk_abi::{ContractData, ContractId};
 use rusk_recovery_tools::state;
@@ -40,12 +39,6 @@ const ALICE_CONTRACT_ID: ContractId = {
     ContractId::from_bytes(bytes)
 };
 const ALICE_OWNER: [u8; 32] = [0; 32];
-
-const BOB_CONTRACT_ID: ContractId = {
-    let mut bytes = [0u8; 32];
-    bytes[0] = 0xFB;
-    ContractId::from_bytes(bytes)
-};
 
 const BOB_OWNER: [u8; 32] = [1; 32];
 
@@ -83,7 +76,6 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                     bob_bytecode,
                     ContractData::builder()
                         .owner(BOB_OWNER)
-                        .contract_id(BOB_CONTRACT_ID)
                         .constructor_arg(&BOB_INIT_VALUE),
                     POINT_LIMIT,
                 )
@@ -99,17 +91,15 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
     Ok(rusk)
 }
 
-fn bytecode_hash(bytes: impl AsRef<[u8]>) -> [u8; 32] {
-    let mut hasher = Hasher::new();
-    hasher.update(bytes.as_ref());
-    hasher.finalize().to_bytes()
+fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
+    let hash = blake3::hash(bytecode.as_ref());
+    ContractId::from_bytes(hash.into())
 }
 
 fn make_and_execute_transaction_deploy(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     bytecode: impl AsRef<[u8]>,
-    contract_id: &ContractId,
     gas_limit: u64,
     init_value: u8,
     should_err: bool,
@@ -128,13 +118,13 @@ fn make_and_execute_transaction_deploy(
 
     let constructor_args = Some(vec![init_value]);
 
+    let hash = bytecode_hash(bytecode.as_ref()).to_bytes();
     let tx = wallet
         .execute(
             &mut rng,
             CallOrDeploy::Deploy(ContractDeploy {
-                contract_id: Some(contract_id.to_bytes()),
                 bytecode: Bytecode {
-                    hash: bytecode_hash(bytecode.as_ref()),
+                    hash,
                     bytes: bytecode.as_ref().to_vec(),
                 },
                 owner: BOB_OWNER.to_vec(),
@@ -178,41 +168,41 @@ fn make_and_execute_transaction_deploy(
     }
 }
 
-fn assert_bob_contract_is_not_deployed(path: &PathBuf, rusk: &Rusk) {
+fn assert_bob_contract_is_not_deployed(
+    path: &PathBuf,
+    rusk: &Rusk,
+    contract_id: &ContractId,
+) {
     let commit = rusk.state_root();
     let vm =
         rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
     let mut session = rusk_abi::new_session(&vm, commit, 0)
         .expect("Session creation should succeed");
-    let result = session.call::<_, u64>(
-        BOB_CONTRACT_ID,
-        "echo",
-        &BOB_ECHO_VALUE,
-        u64::MAX,
-    );
+    let result =
+        session.call::<_, u64>(*contract_id, "echo", &BOB_ECHO_VALUE, u64::MAX);
     match result.err() {
         Some(ContractDoesNotExist(_)) => (),
         _ => assert!(false),
     }
 }
 
-fn assert_bob_contract_is_deployed(path: &PathBuf, rusk: &Rusk) {
+fn assert_bob_contract_is_deployed(
+    path: &PathBuf,
+    rusk: &Rusk,
+    contract_id: &ContractId,
+) {
     let commit = rusk.state_root();
     let vm =
         rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
     let mut session = rusk_abi::new_session(&vm, commit, 0)
         .expect("Session creation should succeed");
-    let result = session.call::<_, u64>(
-        BOB_CONTRACT_ID,
-        "echo",
-        &BOB_ECHO_VALUE,
-        u64::MAX,
-    );
+    let result =
+        session.call::<_, u64>(*contract_id, "echo", &BOB_ECHO_VALUE, u64::MAX);
     assert_eq!(
         result.expect("Echo call should succeed").data,
         BOB_ECHO_VALUE
     );
-    let result = session.call::<_, u8>(BOB_CONTRACT_ID, "value", &(), u64::MAX);
+    let result = session.call::<_, u8>(*contract_id, "value", &(), u64::MAX);
     assert_eq!(
         result.expect("Value call should succeed").data,
         BOB_INIT_VALUE
@@ -245,9 +235,10 @@ pub async fn contract_deploy() {
     let bob_bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
+    let contract_id = bytecode_hash(bob_bytecode.as_ref());
 
     let path = tmp.into_path();
-    assert_bob_contract_is_not_deployed(&path, &rusk);
+    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
     let before_balance = wallet
         .get_balance(0)
         .expect("Getting wallet's balance should succeed")
@@ -256,7 +247,6 @@ pub async fn contract_deploy() {
         &rusk,
         &wallet,
         bob_bytecode,
-        &BOB_CONTRACT_ID,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
@@ -265,7 +255,7 @@ pub async fn contract_deploy() {
         .get_balance(0)
         .expect("Getting wallet's balance should succeed")
         .value;
-    assert_bob_contract_is_deployed(&path, &rusk);
+    assert_bob_contract_is_deployed(&path, &rusk, &contract_id);
     println!("total cost={}", before_balance - after_balance);
 }
 
@@ -295,9 +285,10 @@ pub async fn contract_already_deployed() {
     let bob_bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
+    let contract_id = bytecode_hash(bob_bytecode.as_ref());
 
     let path = tmp.into_path();
-    assert_bob_contract_is_deployed(&path, &rusk);
+    assert_bob_contract_is_deployed(&path, &rusk, &contract_id);
     let before_balance = wallet
         .get_balance(0)
         .expect("Getting wallet's balance should succeed")
@@ -306,7 +297,6 @@ pub async fn contract_already_deployed() {
         &rusk,
         &wallet,
         bob_bytecode,
-        &BOB_CONTRACT_ID,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
@@ -344,11 +334,13 @@ pub async fn contract_deploy_corrupted_bytecode() {
     let bob_bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
+    let contract_id = bytecode_hash(bob_bytecode.as_ref());
+
     // let's corrupt the bytecode
     let bob_bytecode = &bob_bytecode[4..];
 
     let path = tmp.into_path();
-    assert_bob_contract_is_not_deployed(&path, &rusk);
+    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
     let before_balance = wallet
         .get_balance(0)
         .expect("Getting wallet's balance should succeed")
@@ -357,7 +349,6 @@ pub async fn contract_deploy_corrupted_bytecode() {
         &rusk,
         &wallet,
         bob_bytecode,
-        &BOB_CONTRACT_ID,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
