@@ -112,7 +112,7 @@ fn make_and_execute_transaction_deploy(
     contract_id: &ContractId,
     gas_limit: u64,
     init_value: u8,
-    should_discard: bool,
+    should_err: bool,
 ) {
     let initial_balance = wallet
         .get_balance(SENDER_INDEX)
@@ -147,9 +147,9 @@ fn make_and_execute_transaction_deploy(
         )
         .expect("Making transaction should succeed");
 
-    let expected = if should_discard {
+    let expected = if should_err {
         ExecuteResult {
-            discarded: 1,
+            discarded: 0,
             executed: 0,
         }
     } else {
@@ -167,9 +167,7 @@ fn make_and_execute_transaction_deploy(
         vec![],
         Some(expected),
     );
-    if should_discard {
-        assert!(result.is_err())
-    } else {
+    if !should_err {
         let spent_transactions =
             result.expect("generator procedure should succeed");
         let mut spent_transactions = spent_transactions.into_iter();
@@ -300,6 +298,10 @@ pub async fn contract_already_deployed() {
 
     let path = tmp.into_path();
     assert_bob_contract_is_deployed(&path, &rusk);
+    let before_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
     make_and_execute_transaction_deploy(
         &rusk,
         &wallet,
@@ -309,4 +311,60 @@ pub async fn contract_already_deployed() {
         BOB_INIT_VALUE,
         true,
     );
+    let after_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    println!("total cost={}", before_balance - after_balance);
+}
+
+/// We deploy a contract with a corrupted bytecode
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy_corrupted_bytecode() {
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    );
+    // let's corrupt the bytecode
+    let bob_bytecode = &bob_bytecode[4..];
+
+    let path = tmp.into_path();
+    assert_bob_contract_is_not_deployed(&path, &rusk);
+    let before_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        bob_bytecode,
+        &BOB_CONTRACT_ID,
+        GAS_LIMIT,
+        BOB_INIT_VALUE,
+        true,
+    );
+    let after_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    println!("total cost={}", before_balance - after_balance);
 }

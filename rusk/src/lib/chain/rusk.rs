@@ -126,11 +126,16 @@ impl Rusk {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
-                    // If the transaction went over the block gas limit we
-                    // re-execute all spent transactions. We don't discard the
-                    // transaction, since it is technically valid.
-                    if gas_spent > block_gas_left {
-                        warn!("This is not supposed to happen with conservative tx inclusion");
+                    let deploy_result =
+                        try_deploy(&mut session, &unspent_tx.inner, &tx_id);
+
+                    if gas_spent > block_gas_left || deploy_result.is_err() {
+                        // If the transaction went over the block gas limit we
+                        // re-execute all spent transactions. We don't discard the
+                        // transaction, since it is technically valid.
+                        if gas_spent > block_gas_left {
+                            warn!("This is not supposed to happen with conservative tx inclusion");
+                        }
                         session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
@@ -434,7 +439,10 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
+        let tx_id = hex::encode(unspent_tx.id());
         let receipt = execute(&mut session, tx)?;
+
+        let _ = try_deploy(&mut session, &unspent_tx.inner, &tx_id);
 
         update_hasher(&mut event_hasher, &receipt.events);
         events.extend(receipt.events);
@@ -520,16 +528,6 @@ fn execute(
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
         receipt.gas_spent = receipt.gas_limit;
-    }
-
-    if let Some(deploy) = tx.payload().contract_deploy() {
-        session.deploy_raw(
-            deploy.contract_id.map(|id| id.into()),
-            deploy.bytecode.bytes.as_slice(),
-            deploy.constructor_args.clone(),
-            deploy.owner.clone(),
-            tx.payload().fee.gas_limit,
-        )?;
     }
 
     // Refund the appropriate amount to the transaction. This call is guaranteed
@@ -643,6 +641,27 @@ fn reward_slash_and_update_root(
     events.extend(r.events);
 
     Ok(events)
+}
+
+fn try_deploy(
+    session: &mut Session,
+    tx: &PhoenixTransaction,
+    tx_id: impl AsRef<str>,
+) -> Result<()> {
+    if let Some(deploy) = tx.payload().contract_deploy() {
+        let result = session.deploy_raw(
+            deploy.contract_id.map(|id| id.into()),
+            deploy.bytecode.bytes.as_slice(),
+            deploy.constructor_args.clone(),
+            deploy.owner.clone(),
+            tx.payload().fee.gas_limit,
+        );
+        if let Some(err) = result.err() {
+            info!("Tx {} caused deployment error {err:?}", tx_id.as_ref());
+            return Err(err.into());
+        }
+    };
+    Ok(())
 }
 
 fn to_bs58(pk: &StakePublicKey) -> String {
