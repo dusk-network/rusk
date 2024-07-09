@@ -1,8 +1,16 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { get } from "svelte/store";
 
 import { rejectAfter, resolveAfter } from "$lib/dusk/promise";
-import { duskAPI } from "$lib/services";
+import { duskAPI, marketDataStorage } from "$lib/services";
 
 /**
  * We don't import from "..", because we don't want
@@ -45,6 +53,8 @@ describe("marketDataStore", async () => {
     vi.resetModules();
     vi.clearAllTimers();
     vi.mocked(duskAPI.getMarketData).mockClear();
+
+    await marketDataStorage.clear();
 
     marketDataStore = (await import("../marketDataStore")).default;
   });
@@ -219,6 +229,136 @@ describe("marketDataStore", async () => {
 
       expect(marketDataStore.isDataStale()).toBe(true);
       expect(marketDataStore.isDataStale()).toBe(false);
+    });
+  });
+
+  describe("Handling local storage", () => {
+    beforeEach(() => {
+      vi.resetModules();
+      vi.clearAllTimers();
+    });
+
+    afterEach(() => {
+      marketDataStorage.clear();
+    });
+
+    it("should use data in local storage to initialize the store if present", async () => {
+      const storedData = {
+        data: "C",
+        lastUpdate: new Date(2024, 1, 15),
+      };
+
+      // @ts-expect-error we don't care to pass the correct type
+      marketDataStorage.set(storedData);
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      expect(get(marketDataStore)).toStrictEqual({
+        error: null,
+        isLoading: true,
+        ...storedData,
+      });
+    });
+
+    it("should ignore errors while retrieving local storage data and initialize the store as usual", async () => {
+      const getDataSpy = vi
+        .spyOn(marketDataStorage, "get")
+        .mockRejectedValue(new Error("some erro"));
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      expect(getDataSpy).toHaveBeenCalledTimes(1);
+      expect(get(marketDataStore)).toStrictEqual({
+        data: null,
+        error: null,
+        isLoading: true,
+        lastUpdate: null,
+      });
+
+      getDataSpy.mockRestore();
+    });
+
+    it("should save the received data in local storage if the request has new data", async () => {
+      const setDataSpy = vi.spyOn(marketDataStorage, "set");
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      await vi.advanceTimersByTimeAsync(settleTime);
+
+      const expectedStorage = {
+        data: fakeMarketDataA,
+        lastUpdate: new Date(),
+      };
+      const expectedStore = {
+        ...expectedStorage,
+        error: null,
+        isLoading: false,
+      };
+
+      expect(get(marketDataStore)).toStrictEqual(expectedStore);
+
+      await expect(marketDataStorage.get()).resolves.toStrictEqual(
+        expectedStorage
+      );
+
+      await vi.advanceTimersByTimeAsync(marketDataFetchInterval + settleTime);
+
+      expect(setDataSpy).toHaveBeenCalledTimes(1);
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(3);
+      expect(get(marketDataStore)).toStrictEqual(expectedStore);
+      await expect(marketDataStorage.get()).resolves.toStrictEqual(
+        expectedStorage
+      );
+
+      setDataSpy.mockRestore();
+    });
+
+    it("should leave the local storage as it is if the market data request ends with an error", async () => {
+      const error = new Error("some error");
+
+      vi.mocked(duskAPI.getMarketData).mockImplementationOnce(() =>
+        rejectAfter(settleTime, error)
+      );
+
+      const setDataSpy = vi.spyOn(marketDataStorage, "set");
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      await vi.advanceTimersByTimeAsync(settleTime);
+
+      expect(setDataSpy).not.toHaveBeenCalled();
+      expect(get(marketDataStore)).toStrictEqual({
+        data: null,
+        error,
+        isLoading: false,
+        lastUpdate: null,
+      });
+
+      await expect(marketDataStorage.get()).resolves.toBeNull();
+
+      setDataSpy.mockRestore();
+    });
+
+    it("should ignore errors while writing to the storage and continue polling as usual", async () => {
+      const setDataSpy = vi
+        .spyOn(marketDataStorage, "set")
+        .mockRejectedValue(new Error("some error"));
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      await vi.advanceTimersByTimeAsync(settleTime);
+
+      expect(setDataSpy).not.toHaveBeenCalled();
+      expect(get(marketDataStore)).toStrictEqual({
+        data: fakeMarketDataA,
+        error: null,
+        isLoading: false,
+        lastUpdate: new Date(),
+      });
+
+      await expect(marketDataStorage.get()).resolves.toBeNull();
+
+      setDataSpy.mockRestore();
     });
   });
 });
