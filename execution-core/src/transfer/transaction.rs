@@ -136,9 +136,6 @@ impl Payload {
             bytes.extend(call.fn_name.as_bytes());
             bytes.extend(&call.fn_args);
         } else if let Some(deploy) = self.contract_deploy() {
-            if let Some(contract_id) = &deploy.contract_id {
-                bytes.extend(contract_id);
-            }
             bytes.extend(&deploy.bytecode.to_hash_input_bytes());
             bytes.extend(&deploy.owner);
             if let Some(constructor_args) = &deploy.constructor_args {

@@ -112,7 +112,6 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     let (tx_skeleton, fee, _) = build_skeleton_fee_deposit();
 
     // build the contract-deploy
-    let contract = [42; 32];
     let bytecode = Bytecode {
         hash: [1u8; 32],
         bytes: vec![1, 2, 3, 4, 5],
@@ -120,7 +119,6 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     let owner = [1; 32];
     let constructor_args = vec![5];
     let deploy = ContractDeploy {
-        contract_id: Some(contract),
         bytecode,
         owner: owner.to_vec(),
         constructor_args: Some(constructor_args),

@@ -108,8 +108,6 @@ pub enum CallOrDeploy {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct ContractDeploy {
-    /// The optional ID of the contract to be deployed.
-    pub contract_id: Option<ContractId>,
     /// Bytecode of the contract to be deployed.
     pub bytecode: Bytecode,
     /// Owner of the contract to be deployed.
@@ -139,14 +137,6 @@ impl ContractDeploy {
     pub fn to_var_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        match self.contract_id {
-            Some(contract_id) => {
-                bytes.push(1);
-                bytes.extend(contract_id);
-            }
-            None => bytes.push(0),
-        }
-
         bytes.extend(&self.bytecode.to_var_bytes());
 
         bytes.extend((self.owner.len() as u64).to_bytes());
@@ -170,18 +160,6 @@ impl ContractDeploy {
     /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
-        let (offset, contract_id) = match u8::from_reader(&mut buf)? {
-            0 => (0, None),
-            1 => {
-                let mut contract = [0u8; 32];
-                contract.copy_from_slice(&buf[..32]);
-                (32, Some(contract))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
-        let mut buf = &buf[offset..];
 
         let (bytecode, bytecode_len) = Bytecode::from_buf(buf)?;
         buf = &buf[bytecode_len..];
@@ -206,7 +184,6 @@ impl ContractDeploy {
         };
 
         Ok(Self {
-            contract_id,
             bytecode,
             owner,
             constructor_args,
