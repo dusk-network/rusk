@@ -47,6 +47,8 @@
   {:else if error || hasEmptyData}
     <DataAlert on:retry {error} />
   {:else if data}
-    <slot />
+    <div class="data-card__content">
+      <slot />
+    </div>
   {/if}
 </Card>
