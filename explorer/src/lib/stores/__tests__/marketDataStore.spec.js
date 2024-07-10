@@ -236,6 +236,7 @@ describe("marketDataStore", async () => {
     beforeEach(() => {
       vi.resetModules();
       vi.clearAllTimers();
+      vi.mocked(duskAPI.getMarketData).mockClear();
     });
 
     afterEach(() => {
@@ -278,6 +279,52 @@ describe("marketDataStore", async () => {
       getDataSpy.mockRestore();
     });
 
+    it("should start the polling as usual if there's data stored, but it's stale", async () => {
+      const storedData = {
+        data: "D",
+        lastUpdate: new Date(Date.now() - marketDataFetchInterval - 1),
+      };
+
+      // @ts-expect-error we don't care to pass the correct type
+      marketDataStorage.set(storedData);
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(settleTime + marketDataFetchInterval);
+
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
+    });
+
+    it("should delay the polling if there's data stored and it's not stale", async () => {
+      const offset = Math.floor(marketDataFetchInterval / 2);
+      const expectedDelay = marketDataFetchInterval - offset;
+      const storedData = {
+        data: "D",
+        lastUpdate: new Date(Date.now() - marketDataFetchInterval + offset),
+      };
+
+      // @ts-expect-error we don't care to pass the correct type
+      marketDataStorage.set(storedData);
+
+      marketDataStore = (await import("../marketDataStore")).default;
+
+      expect(duskAPI.getMarketData).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(expectedDelay - 1);
+
+      expect(duskAPI.getMarketData).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(marketDataFetchInterval + settleTime);
+
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
+    });
+
     it("should save the received data in local storage if the request has new data", async () => {
       const setDataSpy = vi.spyOn(marketDataStorage, "set");
 
@@ -304,7 +351,7 @@ describe("marketDataStore", async () => {
       await vi.advanceTimersByTimeAsync(marketDataFetchInterval + settleTime);
 
       expect(setDataSpy).toHaveBeenCalledTimes(1);
-      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(3);
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
       expect(get(marketDataStore)).toStrictEqual(expectedStore);
       await expect(marketDataStorage.get()).resolves.toStrictEqual(
         expectedStorage
