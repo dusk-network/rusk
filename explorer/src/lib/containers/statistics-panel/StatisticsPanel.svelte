@@ -37,7 +37,7 @@
   const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
-    $appStore.fetchInterval
+    $appStore.statsFetchInterval
   );
 
   onNetworkChange((network) => {

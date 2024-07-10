@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
         VITE_MARKET_DATA_REFETCH_INTERVAL:
           env.VITE_MARKET_DATA_REFETCH_INTERVAL,
         VITE_REFETCH_INTERVAL: env.VITE_REFETCH_INTERVAL,
+        VITE_STATS_REFETCH_INTERVAL: env.VITE_STATS_REFETCH_INTERVAL,
         VITE_TRANSACTIONS_LIST_ENTRIES: env.VITE_TRANSACTIONS_LIST_ENTRIES,
       },
     },
@@ -57,6 +58,7 @@ export default defineConfig(({ mode }) => {
         VITE_DUSK_TESTNET_NODE: "nodes.dusk.network",
         VITE_MARKET_DATA_REFETCH_INTERVAL: "120000",
         VITE_REFETCH_INTERVAL: "1000",
+        VITE_STATS_REFETCH_INTERVAL: "1000",
         VITE_TRANSACTIONS_LIST_ENTRIES: "100",
       },
       environment: "jsdom",

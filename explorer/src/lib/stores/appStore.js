@@ -15,6 +15,8 @@ const initialState = {
     Number(import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL) || 120000,
   network: networks[0].value,
   networks,
+  statsFetchInterval:
+    Number(import.meta.env.VITE_STATS_REFETCH_INTERVAL) || 1000,
   transactionsListEntries: Number(
     import.meta.env.VITE_TRANSACTIONS_LIST_ENTRIES
   ),
