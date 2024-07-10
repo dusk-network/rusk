@@ -9,8 +9,9 @@
 extern crate alloc;
 use alloc::vec::Vec;
 use bytecheck::CheckBytes;
-use dusk_bytes::Error as BytesError;
+use core::mem;
 use dusk_bytes::Error::InvalidData;
+use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -35,6 +36,8 @@ impl Bytecode {
     pub fn to_var_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
         bytes.extend(self.hash);
+        bytes.extend((self.bytes.len() as u64).to_bytes());
+        bytes.extend(&self.bytes);
         bytes
     }
 
@@ -46,14 +49,13 @@ impl Bytecode {
         if buf.len() < 32 {
             return Err(InvalidData);
         }
+        let mut buf = buf;
         let mut hash = [0u8; 32];
         hash.copy_from_slice(&buf[..32]);
-        Ok((
-            Self {
-                hash,
-                bytes: Vec::new(),
-            },
-            32,
-        ))
+        buf = &buf[32..];
+        let bytes_len = usize::try_from(u64::from_reader(&mut buf)?)
+            .map_err(|_| BytesError::InvalidData)?;
+        let bytes = buf[..bytes_len].into();
+        Ok((Self { hash, bytes }, 32 + bytes_len + mem::size_of::<u64>()))
     }
 }
