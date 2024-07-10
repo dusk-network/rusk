@@ -9,6 +9,7 @@ type AppStoreContent = {
   marketDataFetchInterval: number;
   network: string;
   networks: NetworkOption[];
+  statsFetchInterval: number;
   transactionsListEntries: number;
 };
 

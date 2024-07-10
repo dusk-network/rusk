@@ -23,6 +23,7 @@ describe("appStore", () => {
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
       networks: expectedNetworks,
+      statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
     });
   });
@@ -30,12 +31,15 @@ describe("appStore", () => {
   it("should use default values for the fetch intervals if the env vars are missing", async () => {
     vi.stubEnv("VITE_REFETCH_INTERVAL", "");
     vi.stubEnv("VITE_MARKET_DATA_REFETCH_INTERVAL", "");
+    vi.stubEnv("VITE_STATS_REFETCH_INTERVAL", "");
 
     const { appStore } = await import("..");
-    const { fetchInterval, marketDataFetchInterval } = get(appStore);
+    const { fetchInterval, marketDataFetchInterval, statsFetchInterval } =
+      get(appStore);
 
     expect(fetchInterval).toBe(1000);
     expect(marketDataFetchInterval).toBe(120000);
+    expect(statsFetchInterval).toBe(1000);
 
     vi.unstubAllEnvs();
   });
