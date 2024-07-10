@@ -106,7 +106,7 @@ impl Serializable for Message {
             Payload::GetCandidate(p) => p.write(w),
             Payload::CandidateResp(p) => p.write(w),
             Payload::GetMempool(p) => p.write(w),
-            Payload::GetInv(p) => p.write(w),
+            Payload::Inv(p) => p.write(w),
             Payload::GetBlocks(p) => p.write(w),
             Payload::GetResource(p) => p.write(w),
             Payload::Ratification(p) => p.write(w),
@@ -150,7 +150,7 @@ impl Serializable for Message {
             Topics::GetMempool => {
                 Message::new_get_mempool(payload::GetMempool::read(r)?)
             }
-            Topics::GetInv => Message::new_inv(payload::Inv::read(r)?),
+            Topics::Inv => Message::new_inv(payload::Inv::read(r)?),
             Topics::Unknown => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -234,8 +234,8 @@ impl Message {
     /// Creates topics.Inv (inventory) message
     pub fn new_inv(p: payload::Inv) -> Message {
         Self {
-            topic: Topics::GetInv,
-            payload: Payload::GetInv(p),
+            topic: Topics::Inv,
+            payload: Payload::Inv(p),
             ..Default::default()
         }
     }
@@ -373,7 +373,7 @@ pub enum Payload {
     Transaction(Box<ledger::Transaction>),
     GetCandidate(payload::GetCandidate),
     GetMempool(payload::GetMempool),
-    GetInv(payload::Inv),
+    Inv(payload::Inv),
     GetBlocks(payload::GetBlocks),
     GetResource(payload::GetResource),
     CandidateResp(Box<payload::GetCandidateResp>),
@@ -1086,7 +1086,7 @@ pub enum Topics {
     GetResource = 8,
     GetBlocks = 9,
     GetMempool = 13, // NB: This is aliased as Mempool in the golang impl
-    GetInv = 14,     // NB: This is aliased as Inv in the golang impl
+    Inv = 14,
     GetCandidate = 46,
 
     // Fire-and-forget messaging
@@ -1125,7 +1125,7 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Tx);
         map_topic!(v, Topics::Block);
         map_topic!(v, Topics::GetMempool);
-        map_topic!(v, Topics::GetInv);
+        map_topic!(v, Topics::Inv);
         map_topic!(v, Topics::GetCandidateResp);
         map_topic!(v, Topics::GetCandidate);
         map_topic!(v, Topics::Candidate);
