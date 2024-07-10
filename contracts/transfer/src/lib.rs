@@ -12,6 +12,7 @@ extern crate alloc;
 
 mod error;
 mod state;
+mod transitory;
 mod tree;
 mod verifier_data;
 
@@ -48,8 +49,13 @@ unsafe fn root(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
+unsafe fn account(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |key| STATE.account(&key))
+}
+
+#[no_mangle]
 unsafe fn contract_balance(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |contract| STATE.balance(&contract))
+    rusk_abi::wrap_call(arg_len, |contract| STATE.contract_balance(&contract))
 }
 
 #[no_mangle]
@@ -93,9 +99,9 @@ unsafe fn spend_and_execute(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn refund(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(fee, gas_spent)| {
+    rusk_abi::wrap_call(arg_len, |gas_spent| {
         assert_external_caller();
-        STATE.refund(fee, gas_spent)
+        STATE.refund(gas_spent)
     })
 }
 
@@ -116,10 +122,26 @@ unsafe fn update_root(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
+unsafe fn add_account_balance(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(key, value)| {
+        assert_external_caller();
+        STATE.add_account_balance(&key, value)
+    })
+}
+
+#[no_mangle]
+unsafe fn sub_account_balance(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(key, value)| {
+        assert_external_caller();
+        STATE.sub_account_balance(&key, value)
+    })
+}
+
+#[no_mangle]
 unsafe fn add_contract_balance(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(module, value)| {
         assert_external_caller();
-        STATE.add_balance(module, value)
+        STATE.add_contract_balance(module, value)
     })
 }
 
@@ -130,7 +152,7 @@ unsafe fn sub_contract_balance(arg_len: u32) -> u32 {
             panic!("Can only be called by the stake contract!")
         }
         STATE
-            .sub_balance(&module, value)
+            .sub_contract_balance(&module, value)
             .expect("Cannot subtract balance")
     })
 }
