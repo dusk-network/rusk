@@ -18,6 +18,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_committee_quorum, ratification_extra,
     validation_committee_quorum, validation_extra,
+    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
@@ -644,6 +645,13 @@ fn calc_generator_extra_reward(
     generator_extra_reward: Dusk,
     credits: u64,
 ) -> u64 {
+    if credits
+        == (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
+            as u64
+    {
+        return generator_extra_reward;
+    }
+
     let reward_per_quota = generator_extra_reward
         / (validation_extra() + ratification_extra()) as u64;
 
