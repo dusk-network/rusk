@@ -9,9 +9,9 @@
 #![no_std]
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 
-/// Block height type alias
-pub type BlockHeight = u64;
+extern crate alloc;
 
 pub mod bytecode;
 pub mod reader;
@@ -31,19 +31,11 @@ pub use bls12_381_bls::{
     Signature as BlsSignature, APK as BlsAggPublicKey,
 };
 
-/// Secret key associated to a stake.
-pub type StakeSecretKey = BlsSecretKey;
-/// Public key associated to a stake.
-pub type StakePublicKey = BlsPublicKey;
-/// Signature associated with a stake.
-pub type StakeSignature = BlsSignature;
-/// Aggregated public key for multisignatures
-pub type StakeAggPublicKey = BlsAggPublicKey;
-
 pub use jubjub_schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
     Signature as SchnorrSignature, SignatureDouble as SchnorrSignatureDouble,
 };
+
 /// Secret key associated with a note.
 pub type NoteSecretKey = SchnorrSecretKey;
 /// Public key associated with a note.

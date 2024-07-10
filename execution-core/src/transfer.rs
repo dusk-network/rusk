@@ -7,7 +7,6 @@
 //! Types related to Dusk's transfer contract that are shared across the
 //! network.
 
-extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -24,12 +23,15 @@ use rkyv::{
 };
 
 use crate::{
-    BlsPublicKey, BlsScalar, JubJubAffine, JubJubScalar, Note, PublicKey,
-    Sender, StealthAddress,
+    BlsPublicKey, BlsScalar, BlsSecretKey, BlsSignature, JubJubScalar, Note,
+    PublicKey, SchnorrSecretKey, SchnorrSignature, Sender, StealthAddress,
 };
 
 mod transaction;
-pub use transaction::{Payload, Transaction};
+pub use transaction::{
+    MoonlightPayload, MoonlightTransaction, PhoenixPayload, PhoenixTransaction,
+    Transaction,
+};
 
 use crate::bytecode::Bytecode;
 use crate::reader::{read_arr, read_str, read_vec};
@@ -50,49 +52,247 @@ pub struct TreeLeaf {
     pub note: Note,
 }
 
-/// Data to mint a new phoenix-note with a given value to a stealth address.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+/// A Moonlight account's information.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct Mint {
-    /// The address to mint to.
-    pub address: StealthAddress,
-    /// The value to mint to the address.
-    pub value: u64,
-    /// The account that sent the `mint` request.
-    pub sender: BlsPublicKey,
+pub struct AccountData {
+    /// Number used for replay protection.
+    pub nonce: u64,
+    /// Account balance.
+    pub balance: u64,
 }
 
-impl Serializable<{ StealthAddress::SIZE + u64::SIZE + BlsPublicKey::SIZE }>
-    for Mint
-{
-    type Error = BytesError;
+/// Withdrawal information, proving the intent of a user to withdraw from a
+/// contract.
+///
+/// This structure is meant to be passed to a contract by a caller. The contract
+/// is then responsible for calling `withdraw` in the transfer contract to
+/// settle it, if it wants to allow the withdrawal.
+///
+/// e.g. the stake contract uses it as a call argument for the `unstake`
+/// function
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Withdraw {
+    contract: ContractId,
+    value: u64,
+    receiver: WithdrawReceiver,
+    token: WithdrawReplayToken,
+    signature: WithdrawSignature,
+}
 
-    /// Converts a Fee into it's byte representation
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut buf = [0u8; Self::SIZE];
+impl Withdraw {
+    /// Create a new contract withdrawal.
+    ///
+    /// # Panics
+    /// When the receiver does not match the secret key passed.
+    #[must_use]
+    pub fn new<'a, R: RngCore + CryptoRng>(
+        rng: &mut R,
+        sk: impl Into<WithdrawSecretKey<'a>>,
+        contract: ContractId,
+        value: u64,
+        receiver: WithdrawReceiver,
+        token: WithdrawReplayToken,
+    ) -> Self {
+        let mut withdraw = Self {
+            contract,
+            value,
+            receiver,
+            token,
+            signature: WithdrawSignature::Moonlight(BlsSignature::default()),
+        };
 
-        buf[..StealthAddress::SIZE].copy_from_slice(&self.address.to_bytes());
-        let mut start = StealthAddress::SIZE;
-        buf[start..start + u64::SIZE].copy_from_slice(&self.value.to_bytes());
-        start += u64::SIZE;
-        buf[start..start + BlsPublicKey::SIZE]
-            .copy_from_slice(&self.sender.to_bytes());
-        buf
+        let sk = sk.into();
+
+        match (&sk, &receiver) {
+            (WithdrawSecretKey::Phoenix(_), WithdrawReceiver::Moonlight(_)) => {
+                panic!("Moonlight receiver with phoenix signer");
+            }
+            (WithdrawSecretKey::Moonlight(_), WithdrawReceiver::Phoenix(_)) => {
+                panic!("Phoenix receiver with moonlight signer");
+            }
+            _ => {}
+        }
+
+        let msg = withdraw.signature_message();
+
+        match sk {
+            WithdrawSecretKey::Phoenix(sk) => {
+                let digest = BlsScalar::hash_to_scalar(&msg);
+                let signature = sk.sign(rng, digest);
+                withdraw.signature = signature.into();
+            }
+            WithdrawSecretKey::Moonlight(sk) => {
+                let pk = BlsPublicKey::from(sk);
+                let signature = sk.sign(&pk, &msg);
+                withdraw.signature = signature.into();
+            }
+        }
+
+        withdraw
     }
 
-    /// Attempts to convert a byte representation of a fee into a `Fee`,
-    /// failing if the input is invalid
-    fn from_bytes(bytes: &[u8; Self::SIZE]) -> Result<Self, Self::Error> {
-        let mut buf = &bytes[..];
-        let address = StealthAddress::from_reader(&mut buf)?;
-        let value = u64::from_reader(&mut buf)?;
-        let sender = BlsPublicKey::from_reader(&mut buf)?;
+    /// The contract to withraw from.
+    #[must_use]
+    pub fn contract(&self) -> &ContractId {
+        &self.contract
+    }
 
-        Ok(Mint {
-            address,
-            value,
-            sender,
-        })
+    /// The amount to withdraw.
+    #[must_use]
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    /// The receiver of the value.
+    #[must_use]
+    pub fn receiver(&self) -> &WithdrawReceiver {
+        &self.receiver
+    }
+
+    /// The unique token to prevent replay.
+    #[must_use]
+    pub fn token(&self) -> &WithdrawReplayToken {
+        &self.token
+    }
+
+    /// Signature of the withdrawal.
+    #[must_use]
+    pub fn signature(&self) -> &WithdrawSignature {
+        &self.signature
+    }
+
+    /// Return the message that is used as the input to the signature.
+    ///
+    /// This message is *not* the one that is meant to be signed on making a
+    /// withdrawal. Instead it is meant to be used by structures wrapping
+    /// withdrawals to offer additional functionality.
+    ///
+    /// To see the signature used to sign a withdrawal, see
+    /// [`WithdrawPayload::signature_message`].
+    #[must_use]
+    pub fn signature_message(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        bytes.extend(self.contract);
+        bytes.extend(self.value.to_bytes());
+
+        match self.receiver {
+            WithdrawReceiver::Phoenix(address) => {
+                bytes.extend(address.to_bytes());
+            }
+            WithdrawReceiver::Moonlight(account) => {
+                bytes.extend(account.to_bytes());
+            }
+        }
+
+        match &self.token {
+            WithdrawReplayToken::Phoenix(nullifiers) => {
+                for n in nullifiers {
+                    bytes.extend(n.to_bytes());
+                }
+            }
+            WithdrawReplayToken::Moonlight(nonce) => {
+                bytes.extend(nonce.to_bytes());
+            }
+        }
+
+        bytes
+    }
+
+    /// Returns the message that should be "mixed in" as input for a signature
+    /// of an item that wraps a [`Withdraw`].
+    ///
+    /// One example of this is [`stake::Withdraw`].
+    #[must_use]
+    pub fn wrapped_signature_message(&self) -> Vec<u8> {
+        let mut bytes = self.signature_message();
+        bytes.extend(self.signature.to_var_bytes());
+        bytes
+    }
+}
+
+/// The receiver of the [`Withdraw`] value.
+#[derive(Debug, Clone, Copy, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum WithdrawReceiver {
+    /// The stealth address to withdraw to, when the withdrawal is into Phoenix
+    /// notes.
+    Phoenix(StealthAddress),
+    /// The account to withdraw to, when the withdrawal is to a Moonlight
+    /// account.
+    Moonlight(BlsPublicKey),
+}
+
+/// The token used for replay protection in a [`Withdraw`]. This is the same as
+/// the encapsulating transaction's fields.
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum WithdrawReplayToken {
+    /// The nullifiers of the encapsulating Phoenix transaction, when the
+    /// transaction is paid for using Phoenix notes.
+    Phoenix(Vec<BlsScalar>),
+    /// The nonce of the encapsulating Moonlight transaction, when the
+    /// transaction is paid for using a Moonlight account.
+    Moonlight(u64),
+}
+
+/// The secret key used for signing a [`Withdraw`].
+///
+/// When the withdrawal is into Phoenix notes, a [`SchnorrSecretKey`] should be
+/// used. When the withdrawal is into a Moonlight account an
+/// [`BlsSecretKey`] should be used.
+#[derive(Debug, Clone, PartialEq)]
+pub enum WithdrawSecretKey<'a> {
+    /// The secret key used to sign a withdrawal into Phoenix notes.
+    Phoenix(&'a SchnorrSecretKey),
+    /// The secret key used to sign a withdrawal into a Moonlight account.
+    Moonlight(&'a BlsSecretKey),
+}
+
+impl<'a> From<&'a SchnorrSecretKey> for WithdrawSecretKey<'a> {
+    fn from(sk: &'a SchnorrSecretKey) -> Self {
+        Self::Phoenix(sk)
+    }
+}
+
+impl<'a> From<&'a BlsSecretKey> for WithdrawSecretKey<'a> {
+    fn from(sk: &'a BlsSecretKey) -> Self {
+        Self::Moonlight(sk)
+    }
+}
+
+/// The signature used for a [`Withdraw`].
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum WithdrawSignature {
+    /// A transaction withdrawing to Phoenix must sign using their
+    /// [`SecretKey`].
+    Phoenix(SchnorrSignature),
+    /// A transaction withdrawing to Moonlight - must sign using their
+    /// [`BlsSecretKey`].
+    Moonlight(BlsSignature),
+}
+
+impl WithdrawSignature {
+    fn to_var_bytes(&self) -> Vec<u8> {
+        match self {
+            WithdrawSignature::Phoenix(sig) => sig.to_bytes().to_vec(),
+            WithdrawSignature::Moonlight(sig) => sig.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl From<SchnorrSignature> for WithdrawSignature {
+    fn from(sig: SchnorrSignature) -> Self {
+        Self::Phoenix(sig)
+    }
+}
+
+impl From<BlsSignature> for WithdrawSignature {
+    fn from(sig: BlsSignature) -> Self {
+        Self::Moonlight(sig)
     }
 }
 
@@ -104,6 +304,18 @@ pub enum ContractExec {
     Call(ContractCall),
     /// Data for a contract deployment.
     Deploy(ContractDeploy),
+}
+
+impl From<ContractCall> for ContractExec {
+    fn from(c: ContractCall) -> Self {
+        ContractExec::Call(c)
+    }
+}
+
+impl From<ContractDeploy> for ContractExec {
+    fn from(d: ContractDeploy) -> Self {
+        ContractExec::Deploy(d)
+    }
 }
 
 /// Data for performing a contract deployment
@@ -218,7 +430,7 @@ impl ContractCall {
     /// Deserialize a `ContractCall` from a byte buffer.
     ///
     /// # Errors
-    /// Errors when the bytes are not cannonical.
+    /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
@@ -383,26 +595,5 @@ impl Serializable<SIZE> for Fee {
             stealth_address,
             sender,
         })
-    }
-}
-
-/// Additional data used to identify the origin of a [`Note`] when the
-/// [`Sender`] is a `Contract`.
-#[derive(Debug, Clone, Copy, Archive, Serialize, Deserialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct SenderAccount {
-    /// The unique identifier of a contract.
-    pub contract: ContractId,
-    /// The unique identifier of the account on that contract.
-    pub account: BlsPublicKey,
-}
-
-impl From<SenderAccount> for Sender {
-    fn from(sender: SenderAccount) -> Self {
-        let mut contract_info = [0u8; 4 * JubJubAffine::SIZE];
-        contract_info[0..32].copy_from_slice(&sender.contract[..]);
-        contract_info[32..].copy_from_slice(&sender.account.to_bytes());
-
-        Sender::ContractInfo(contract_info)
     }
 }

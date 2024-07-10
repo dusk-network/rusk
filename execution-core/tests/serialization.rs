@@ -5,36 +5,42 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::{Error, Serializable};
+use dusk_bytes::Error;
 use dusk_jubjub::JubJubScalar;
 use execution_core::bytecode::Bytecode;
 use execution_core::transfer::{
-    ContractCall, ContractDeploy, ContractExec, Fee, Payload, Transaction,
+    ContractCall, ContractDeploy, ContractExec, Fee, Transaction,
 };
-use execution_core::{Note, PublicKey, SecretKey, TxSkeleton};
+use execution_core::transfer::{
+    MoonlightPayload, MoonlightTransaction, PhoenixPayload, PhoenixTransaction,
+};
+use execution_core::{
+    BlsPublicKey, BlsSecretKey, Note, PublicKey, SecretKey, TxSkeleton,
+};
 use ff::Field;
 use rand::rngs::StdRng;
-use rand::{RngCore, SeedableRng};
+use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
-fn build_skeleton_fee_deposit() -> (TxSkeleton, Fee, u64) {
-    let mut rng = StdRng::seed_from_u64(42);
-
+fn new_phoenix_tx<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    exec: Option<ContractExec>,
+) -> Transaction {
     // set the general parameters
-    let sender_pk = PublicKey::from(&SecretKey::random(&mut rng));
-    let receiver_pk = PublicKey::from(&SecretKey::random(&mut rng));
+    let sender_pk = PublicKey::from(&SecretKey::random(rng));
+    let receiver_pk = PublicKey::from(&SecretKey::random(rng));
 
     let gas_limit = 500;
     let gas_price = 42;
 
     // build the tx-skeleton
     let value = 25;
-    let value_blinder = JubJubScalar::random(&mut rng);
+    let value_blinder = JubJubScalar::random(&mut *rng);
     let sender_blinder = [
-        JubJubScalar::random(&mut rng),
-        JubJubScalar::random(&mut rng),
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
     ];
     let note = Note::obfuscated(
-        &mut rng,
+        rng,
         &sender_pk,
         &receiver_pk,
         value,
@@ -62,85 +68,197 @@ fn build_skeleton_fee_deposit() -> (TxSkeleton, Fee, u64) {
     };
 
     // build the fee
-    let fee = Fee::new(&mut rng, &sender_pk, gas_limit, gas_price);
-    (tx_skeleton, fee, deposit)
+    let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
+
+    // build the payload
+    let payload = PhoenixPayload {
+        tx_skeleton,
+        fee,
+        exec,
+    };
+
+    // set a random proof
+    let proof = [42; 42].to_vec();
+
+    PhoenixTransaction::new(payload, proof).into()
+}
+
+fn new_moonlight_tx<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    exec: Option<ContractExec>,
+) -> Transaction {
+    let sk = BlsSecretKey::random(rng);
+    let pk = BlsPublicKey::from(&sk);
+
+    let payload = MoonlightPayload {
+        from: pk,
+        to: None,
+        value: rng.gen(),
+        deposit: rng.gen(),
+        gas_limit: rng.gen(),
+        gas_price: rng.gen(),
+        nonce: rng.gen(),
+        exec,
+    };
+
+    let msg = payload.to_hash_input_bytes();
+    let signature = sk.sign(&pk, &msg);
+
+    MoonlightTransaction::new(payload, signature).into()
 }
 
 #[test]
-fn transaction_serialization_call() -> Result<(), Error> {
-    let (tx_skeleton, fee, deposit) = build_skeleton_fee_deposit();
+fn phoenix() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
 
-    // build the contract-call
-    let contract = [42; 32];
+    let transaction = new_phoenix_tx(&mut rng, None);
+
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
+    assert_eq!(transaction, deserialized);
+
+    Ok(())
+}
+
+#[test]
+fn phoenix_with_call() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    // build the contract call
+    let mut contract = [0; 32];
+    rng.fill_bytes(&mut contract);
+
+    let mut fn_args = vec![0; 100];
+    rng.fill_bytes(&mut fn_args);
+
     let call = ContractCall {
         contract,
         fn_name: String::from("deposit"),
-        fn_args: deposit.to_bytes().to_vec(),
+        fn_args,
     };
 
-    // build the payload
-    let payload = Payload {
-        tx_skeleton,
-        fee,
-        contract_exec: Some(ContractExec::Call(call)),
-    };
-
-    // set a random proof
-    let proof = [42; 42].to_vec();
-
-    let transaction = Transaction::new(payload, proof);
+    let transaction = new_phoenix_tx(&mut rng, Some(ContractExec::Call(call)));
 
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
     assert_eq!(transaction, deserialized);
+
     Ok(())
 }
 
 #[test]
-fn transaction_serialization_deploy() -> Result<(), Error> {
-    let (tx_skeleton, fee, _) = build_skeleton_fee_deposit();
+fn phoenix_with_deploy() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
 
-    // build the contract-deploy
-    let bytecode = Bytecode {
-        hash: [1u8; 32],
-        bytes: vec![1, 2, 3, 4, 5],
-    };
-    let owner = [1; 32];
-    let constructor_args = vec![5];
+    // build a contract deployment
+    let mut hash = [0; 32];
+    rng.fill_bytes(&mut hash);
+    let mut bytes = vec![0; 100];
+    rng.fill_bytes(&mut bytes);
+    let bytecode = Bytecode { hash, bytes };
+
+    let mut owner = [0; 32].to_vec();
+    rng.fill_bytes(&mut owner);
+
+    let mut constructor_args = vec![0; 20];
+    rng.fill_bytes(&mut constructor_args);
+
     let deploy = ContractDeploy {
         bytecode,
-        owner: owner.to_vec(),
+        owner,
         constructor_args: Some(constructor_args),
     };
 
-    // build the payload
-    let payload = Payload {
-        tx_skeleton,
-        fee,
-        contract_exec: Some(ContractExec::Deploy(deploy)),
-    };
+    let transaction =
+        new_phoenix_tx(&mut rng, Some(ContractExec::Deploy(deploy)));
 
-    // set a random proof
-    let proof = [42; 42].to_vec();
-
-    // bytecode not stripped off
-    let transaction = Transaction::new(payload.clone(), proof.clone());
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
     assert_eq!(transaction, deserialized);
 
-    // bytecode stripped off
-    let transaction = Transaction::new(payload, proof)
-        .strip_off_bytecode()
-        .expect("transaction contains deployment data");
-    let transaction_bytes = transaction.to_var_bytes();
-    let deserialized = Transaction::from_slice(&transaction_bytes)?;
-    assert_eq!(transaction, deserialized);
     Ok(())
 }
 
 #[test]
-fn transaction_deserialization_failing() -> Result<(), Error> {
+fn moonlight() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let transaction = new_moonlight_tx(&mut rng, None);
+
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
+    assert_eq!(transaction, deserialized);
+
+    Ok(())
+}
+
+#[test]
+fn moonlight_with_call() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    // build the contract call
+    let mut contract = [0; 32];
+    rng.fill_bytes(&mut contract);
+
+    let mut fn_args = vec![0; 100];
+    rng.fill_bytes(&mut fn_args);
+
+    let call = ContractCall {
+        contract,
+        fn_name: String::from("deposit"),
+        fn_args,
+    };
+
+    let transaction =
+        new_moonlight_tx(&mut rng, Some(ContractExec::Call(call)));
+
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
+    assert_eq!(transaction, deserialized);
+
+    Ok(())
+}
+
+#[test]
+fn moonlight_with_deploy() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let mut hash = [0; 32];
+    rng.fill_bytes(&mut hash);
+    let mut bytes = vec![0; 100];
+    rng.fill_bytes(&mut bytes);
+    let bytecode = Bytecode { hash, bytes };
+
+    let mut owner = [0; 32].to_vec();
+    rng.fill_bytes(&mut owner);
+
+    let mut constructor_args = vec![0; 20];
+    rng.fill_bytes(&mut constructor_args);
+
+    let deploy = ContractDeploy {
+        bytecode,
+        owner,
+        constructor_args: Some(constructor_args),
+    };
+
+    let transaction =
+        new_moonlight_tx(&mut rng, Some(ContractExec::Deploy(deploy)));
+
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
+    assert_eq!(transaction, deserialized);
+
+    Ok(())
+}
+
+#[test]
+fn nonsense_bytes_fails() -> Result<(), Error> {
     let mut data = [0u8; 2 ^ 16];
     for exp in 3..16 {
         rand::thread_rng().fill_bytes(&mut data[..2 ^ exp]);
