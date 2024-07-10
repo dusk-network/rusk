@@ -63,7 +63,14 @@ function isDataStale() {
   );
 }
 
-pollingDataStore.start();
+if (!initialState.lastUpdate || isDataStale()) {
+  pollingDataStore.start();
+} else {
+  setTimeout(
+    pollingDataStore.start,
+    +initialState.lastUpdate + fetchInterval - Date.now()
+  );
+}
 
 /** @type {MarketDataStore} */
 export default {
