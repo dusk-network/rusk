@@ -133,7 +133,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Component should either process it or re-route it to the next upper layer
                 recv =  self.inbound.recv() => {
                     let msg = recv?;
-                    match &msg.payload {
+                    match msg.payload {
                         Payload::Block(blk) => {
                            info!(
                                 event = "block received",
@@ -146,10 +146,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             // Handle a block that originates from a network peer.
                             // By disabling block broadcast, a block may be received from a peer
                             // only after explicit request (on demand).
-                            if let Err(e) = fsm.on_block_event(blk, msg.metadata).await  {
-                                 error!(event = "fsm::on_event failed", src = "wire", err = format!("{}",e));
-                            } else {
-                                timeout = Self::next_timeout();
+                            match fsm.on_block_event(*blk, msg.metadata).await {
+                                Ok(None) => {}
+                                Ok(Some(_)) => {
+                                    timeout = Self::next_timeout();
+                                }
+                                Err(err) => {
+                                    error!(event = "fsm::on_event failed", src = "wire", err = ?err);
+                                }
                             }
                         }
 
@@ -162,14 +166,20 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 warn!("msg discarded: {e}");
                             }
                         },
-                        Payload::Quorum(payload) => {
+                        Payload::Quorum(ref payload) => {
                             let acc = self.acceptor.as_ref().expect("initialize is called");
                             if let Err(e) = acc.read().await.reroute_msg(msg.clone()).await {
                                 warn!("msg discarded: {e}");
                             }
-
-                            if let Err(err) = fsm.on_quorum_msg(payload, &msg).await {
-                                warn!(event = "quorum msg", ?err);
+                            match fsm.on_quorum_msg(payload, &msg).await {
+                                Ok(None) => {}
+                                Ok(Some(_)) => {
+                                    // block accepted, timeout reset
+                                    timeout = Self::next_timeout();
+                                }
+                                Err(err) => {
+                                    warn!(event = "quorum msg", ?err);
+                                }
                             };
                         }
                         _ => warn!("invalid inbound message"),
@@ -183,9 +193,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     // If the associated candidate block already exists,
                     // the winner block will be compiled and redirected to the Acceptor.
                     if let Payload::Quorum(quorum) = &msg.payload {
-                        if let Err(err) = fsm.on_quorum_msg(quorum, &msg).await {
-                            warn!(event = "handle quorum msg from internal consensus failed", ?err);
-                        }
+                        match fsm.on_quorum_msg(quorum, &msg).await {
+                            Ok(None) => {}
+                            Ok(Some(_)) => {
+                                // block accepted, timeout reset
+                                timeout = Self::next_timeout();
+                            }
+                            Err(err) => {
+                                warn!(event = "handle quorum msg from internal consensus failed", ?err);
+                            }
+                        };
                     }
 
                     if let Err(e) = network.read().await.broadcast(&msg).await {
