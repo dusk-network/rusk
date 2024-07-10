@@ -216,7 +216,7 @@ impl Provisioners {
             round,
             iteration,
             StepName::Proposal,
-            None,
+            vec![],
         );
         let committee_keys = Committee::new(self, &cfg);
 
@@ -238,17 +238,18 @@ impl<'a> CommitteeGenerator<'a> {
     fn from_provisioners(
         provisioners: &'a Provisioners,
         round: u64,
-        exclusion: Option<&PublicKeyBytes>,
+        exclusion: &Vec<PublicKeyBytes>,
     ) -> Self {
         let eligibles = provisioners
             .eligibles(round)
             .map(|(p, stake)| (p, stake.clone()));
 
-        let members = match exclusion {
-            None => BTreeMap::from_iter(eligibles),
-            Some(excluded) => {
-                let eligibles =
-                    eligibles.filter(|(p, _)| p.bytes() != excluded);
+        let members = match exclusion.len() {
+            0 => BTreeMap::from_iter(eligibles),
+            _ => {
+                let eligibles = eligibles.filter(|(p, _)| {
+                    !exclusion.iter().any(|excluded| excluded == p.bytes())
+                });
                 BTreeMap::from_iter(eligibles)
             }
         };

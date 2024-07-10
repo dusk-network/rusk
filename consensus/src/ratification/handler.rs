@@ -8,6 +8,7 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Attestation;
 use node_data::{ledger, StepName};
 use tracing::{error, warn};
@@ -71,6 +72,7 @@ impl MsgHandler for RatificationHandler {
         msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
         let iteration = p.header().iteration;
@@ -104,7 +106,7 @@ impl MsgHandler for RatificationHandler {
             sv,
             StepName::Ratification,
             quorum_reached,
-            committee.excluded().expect("Generator to be excluded"),
+            &generator.expect("There must be a valid generator"),
         );
 
         if quorum_reached {
@@ -126,6 +128,7 @@ impl MsgHandler for RatificationHandler {
         msg: Message,
         _ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
@@ -142,7 +145,7 @@ impl MsgHandler for RatificationHandler {
                         sv,
                         StepName::Ratification,
                         quorum_reached,
-                        committee.excluded().expect("Generator to be excluded"),
+                        &generator.expect("There must be a valid generator"),
                     )
                 {
                     return Ok(HandleMsgOutput::Ready(quorum_msg));

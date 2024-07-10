@@ -57,6 +57,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
+
         if ctx.am_member(committee) {
             let iteration =
                 cmp::min(config::RELAX_ITERATION_THRESHOLD, ctx.iteration);
@@ -84,7 +85,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .handler
                     .lock()
                     .await
-                    .collect(msg, &ctx.round_update, committee)
+                    .collect(msg, &ctx.round_update, committee, None)
                     .await
                 {
                     Ok(HandleMsgOutput::Ready(msg)) => return Ok(msg),

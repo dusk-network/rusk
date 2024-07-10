@@ -105,8 +105,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         committee.is_member(&self.round_update.pubkey_bls)
     }
 
-    pub(crate) fn save_committee(&mut self, committee: Committee) {
-        self.iter_ctx.committees.insert(self.step(), committee);
+    pub(crate) fn save_committee(&mut self, step: u16, committee: Committee) {
+        self.iter_ctx.committees.insert(step, committee);
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
@@ -276,6 +276,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
+
+        let generator = self.get_curr_generator();
+
         // Check if message is valid in the context of current step
         let valid = phase.lock().await.is_valid(
             &msg,
@@ -335,7 +338,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let collected = phase
             .lock()
             .await
-            .collect(msg, &self.round_update, committee)
+            .collect(msg, &self.round_update, committee, generator)
             .await;
 
         match collected {
@@ -380,6 +383,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
+
+        let generator = self.get_curr_generator();
+
         if let Some(messages) = self
             .future_msgs
             .lock()
@@ -421,7 +427,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     if let Ok(HandleMsgOutput::Ready(msg)) = phase
                         .lock()
                         .await
-                        .collect(msg, &self.round_update, committee)
+                        .collect(msg, &self.round_update, committee, generator)
                         .await
                     {
                         return Some(msg);
@@ -435,7 +441,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub fn get_sortition_config(
         &self,
-        exclusion: Option<PublicKeyBytes>,
+        exclusion: Vec<PublicKeyBytes>,
     ) -> sortition::Config {
         sortition::Config::new(
             self.round_update.seed(),
@@ -462,5 +468,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 elapsed,
             )
             .await;
+    }
+
+    pub(crate) fn get_curr_generator(&self) -> Option<PublicKeyBytes> {
+        self.iter_ctx.get_generator(self.iteration)
     }
 }
