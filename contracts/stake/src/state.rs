@@ -11,11 +11,10 @@ use dusk_bytes::Serializable;
 
 use execution_core::{
     stake::{
-        next_epoch, Stake, StakeData, StakingEvent, Unstake, Withdraw, EPOCH,
+        next_epoch, Stake, StakeAmount, StakeData, StakeEvent, Withdraw, EPOCH,
         STAKE_WARNINGS,
     },
-    transfer::Mint,
-    StakePublicKey,
+    BlsPublicKey,
 };
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 
@@ -31,12 +30,10 @@ use crate::*;
 /// valid stake.
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
-    stakes: BTreeMap<[u8; StakePublicKey::SIZE], (StakeData, StakePublicKey)>,
+    stakes: BTreeMap<[u8; BlsPublicKey::SIZE], (StakeData, BlsPublicKey)>,
     burnt_amount: u64,
-    previous_block_state: BTreeMap<
-        [u8; StakePublicKey::SIZE],
-        (Option<StakeData>, StakePublicKey),
-    >,
+    previous_block_state:
+        BTreeMap<[u8; BlsPublicKey::SIZE], (Option<StakeData>, BlsPublicKey)>,
     // This is needed just to keep track of blocks to automatically clear the
     // prev_block_state. Future implementations will rely on
     // `before_state_transition` to handle that
@@ -70,166 +67,174 @@ impl StakeState {
     pub fn stake(&mut self, stake: Stake) {
         self.check_new_block();
 
-        if stake.value < MINIMUM_STAKE {
+        let value = stake.value();
+        let account = *stake.account();
+        let nonce = stake.nonce();
+        let signature = *stake.signature();
+
+        let loaded_stake = self.load_or_create_stake_mut(&account);
+
+        // ensure the stake is at least the minimum and that there isn't an
+        // amount staked already
+        if value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
 
-        // allot a stake to the given key and increment the signature counter
-        let loaded_stake = self.load_or_create_stake_mut(&stake.public_key);
+        if loaded_stake.amount.is_some() {
+            panic!("Can't stake twice for the same key");
+        }
 
-        let counter = loaded_stake.counter();
+        // check signature and nonce used are correct
+        if nonce <= loaded_stake.nonce {
+            panic!("Replayed nonce");
+        }
 
-        loaded_stake.increment_counter();
-        loaded_stake.insert_amount(stake.value, rusk_abi::block_height());
-
-        // verify the signature is over the correct digest
-        let digest = Stake::signature_message(counter, stake.value).to_vec();
-
-        if !rusk_abi::verify_bls(digest, stake.public_key, stake.signature) {
+        let digest = stake.signature_message().to_vec();
+        if !rusk_abi::verify_bls(digest, account, signature) {
             panic!("Invalid signature!");
         }
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &stake.value)
-            .expect("Depositing funds into contract should succeed");
+        let _: () =
+            rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
+                .expect("Depositing funds into contract should succeed");
+
+        // update the state accordingly
+        loaded_stake.nonce = nonce;
+        loaded_stake.amount =
+            Some(StakeAmount::new(value, rusk_abi::block_height()));
 
         rusk_abi::emit(
             "stake",
-            StakingEvent {
-                public_key: stake.public_key,
-                value: stake.value,
+            StakeEvent {
+                account,
+                value,
+                receiver: None,
             },
         );
 
-        let key = stake.public_key.to_bytes();
+        let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((None, stake.public_key));
+            .or_insert((None, account));
     }
 
-    pub fn unstake(&mut self, unstake: Unstake) {
+    pub fn unstake(&mut self, unstake: Withdraw) {
         self.check_new_block();
 
-        // remove the stake from a key and increment the signature counter
+        let transfer_withdraw = unstake.transfer_withdraw();
+        let account = *unstake.account();
+        let value = transfer_withdraw.value();
+        let signature = *unstake.signature();
+
         let loaded_stake = self
-            .get_stake_mut(&unstake.public_key)
+            .get_stake_mut(&account)
             .expect("A stake should exist in the map to be unstaked!");
+        let prev_stake = Some(*loaded_stake);
 
-        let prev_value = Some(loaded_stake.clone());
+        // ensure there is a value staked, and that the withdrawal is exactly
+        // the same amount
+        let staked_value = loaded_stake
+            .amount
+            .expect("There must be an amount to unstake")
+            .value;
 
-        let counter = loaded_stake.counter();
+        if value != staked_value {
+            panic!("Value withdrawn different from staked amount");
+        }
 
-        let (value, _) = loaded_stake.remove_amount();
-        loaded_stake.increment_counter();
-
-        // verify signature
-        let digest =
-            Unstake::signature_message(counter, value, unstake.address)
-                .to_vec();
-
-        if !rusk_abi::verify_bls(digest, unstake.public_key, unstake.signature)
-        {
+        // check signature is correct
+        let digest = unstake.signature_message().to_vec();
+        if !rusk_abi::verify_bls(digest, account, signature) {
             panic!("Invalid signature!");
         }
-        // make call to transfer contract to withdraw a note from this contract
-        // containing the value of the stake
-        let withdraw_data = Mint {
-            value,
-            address: unstake.address,
-            sender: unstake.public_key,
-        };
+
+        // make call to the transfer contract to withdraw funds from this
+        // contract into the receiver specified by the withdrawal.
         let _: () =
-            rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw_data)
-                .expect(
-                "Withdrawing the balance from contract should be successful",
-            );
+            rusk_abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
+                .expect("Withdrawing stake should succeed");
+
+        // update the state accordingly
+        loaded_stake.amount = None;
 
         rusk_abi::emit(
             "unstake",
-            StakingEvent {
-                public_key: unstake.public_key,
-                value,
+            StakeEvent {
+                account,
+                value: staked_value,
+                receiver: Some(*transfer_withdraw.receiver()),
             },
         );
 
-        let key = unstake.public_key.to_bytes();
+        let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_value, unstake.public_key));
+            .or_insert((prev_stake, account));
     }
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {
-        // deplete the stake from a key and increment the signature counter
+        let transfer_withdraw = withdraw.transfer_withdraw();
+        let account = *withdraw.account();
+        let value = transfer_withdraw.value();
+        let signature = *withdraw.signature();
+
         let loaded_stake = self
-            .get_stake_mut(&withdraw.public_key)
-            .expect("A stake should exist in the map to be withdrawn!");
+            .get_stake_mut(&account)
+            .expect("A stake should exist in the map to be unstaked!");
 
-        let counter = loaded_stake.counter();
-        let reward = loaded_stake.reward();
-
-        if reward == 0 {
-            panic!("Nothing to withdraw!");
+        // ensure there is a non-zero reward, and that the withdrawal is exactly
+        // the same amount
+        if loaded_stake.reward == 0 {
+            panic!("There is no reward available to withdraw");
         }
 
-        loaded_stake.deplete_reward();
-        loaded_stake.increment_counter();
+        if value != loaded_stake.reward {
+            panic!("Value withdrawn different from available reward");
+        }
 
-        // verify signature
-        let digest = Withdraw::signature_message(
-            counter,
-            withdraw.address,
-            withdraw.nonce,
-        )
-        .to_vec();
-
-        if !rusk_abi::verify_bls(
-            digest,
-            withdraw.public_key,
-            withdraw.signature,
-        ) {
+        // check signature is correct
+        let digest = withdraw.signature_message().to_vec();
+        if !rusk_abi::verify_bls(digest, account, signature) {
             panic!("Invalid signature!");
         }
 
-        // make call to transfer contract to mint the reward to the given
-        // address
-        let transfer_contract = TRANSFER_CONTRACT;
-        let _: bool = rusk_abi::call(
-            transfer_contract,
-            "mint",
-            &Mint {
-                address: withdraw.address,
-                value: reward,
-                sender: withdraw.public_key,
-            },
-        )
-        .expect("Minting a reward note should succeed");
+        // make call to the transfer contract to withdraw funds from this
+        // contract into the receiver specified by the withdrawal.
+        let _: () =
+            rusk_abi::call(TRANSFER_CONTRACT, "mint", transfer_withdraw)
+                .expect("Withdrawing reward should succeed");
+
+        // update the state accordingly
+        loaded_stake.reward = 0;
 
         rusk_abi::emit(
             "withdraw",
-            StakingEvent {
-                public_key: withdraw.public_key,
-                value: reward,
+            StakeEvent {
+                account,
+                value,
+                receiver: Some(*transfer_withdraw.receiver()),
             },
         );
     }
 
     /// Gets a reference to a stake.
-    pub fn get_stake(&self, key: &StakePublicKey) -> Option<&StakeData> {
+    pub fn get_stake(&self, key: &BlsPublicKey) -> Option<&StakeData> {
         self.stakes.get(&key.to_bytes()).map(|(s, _)| s)
     }
 
     /// Gets a mutable reference to a stake.
     pub fn get_stake_mut(
         &mut self,
-        key: &StakePublicKey,
+        key: &BlsPublicKey,
     ) -> Option<&mut StakeData> {
         self.stakes.get_mut(&key.to_bytes()).map(|(s, _)| s)
     }
 
-    /// Pushes the given `stake` onto the state for a given `stake_pk`.
-    pub fn insert_stake(&mut self, stake_pk: StakePublicKey, stake: StakeData) {
-        self.stakes.insert(stake_pk.to_bytes(), (stake, stake_pk));
+    /// Pushes the given `stake` onto the state for a given `account`.
+    pub fn insert_stake(&mut self, account: BlsPublicKey, stake: StakeData) {
+        self.stakes.insert(account.to_bytes(), (stake, account));
     }
 
     /// Gets a mutable reference to the stake of a given key. If said stake
@@ -237,37 +242,41 @@ impl StakeState {
     /// returned.
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
-        stake_pk: &StakePublicKey,
+        account: &BlsPublicKey,
     ) -> &mut StakeData {
-        let is_missing = self.stakes.get(&stake_pk.to_bytes()).is_none();
+        let is_missing = self.stakes.get(&account.to_bytes()).is_none();
 
         if is_missing {
-            let stake = StakeData::default();
-            self.stakes.insert(stake_pk.to_bytes(), (stake, *stake_pk));
+            let stake = StakeData::EMPTY;
+            self.stakes.insert(account.to_bytes(), (stake, *account));
         }
 
         // SAFETY: unwrap is ok since we're sure we inserted an element
         self.stakes
-            .get_mut(&stake_pk.to_bytes())
+            .get_mut(&account.to_bytes())
             .map(|(s, _)| s)
             .unwrap()
     }
 
-    /// Rewards a `stake_pk` with the given `value`. If a stake does not exist
+    /// Rewards a `account` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
-    pub fn reward(&mut self, stake_pk: &StakePublicKey, value: u64) {
+    pub fn reward(&mut self, account: &BlsPublicKey, value: u64) {
         self.check_new_block();
 
-        let stake = self.load_or_create_stake_mut(stake_pk);
+        let stake = self.load_or_create_stake_mut(account);
+
         // Reset faults counters
         stake.faults = 0;
         stake.hard_faults = 0;
-        stake.increase_reward(value);
+
+        stake.reward += value;
+
         rusk_abi::emit(
             "reward",
-            StakingEvent {
-                public_key: *stake_pk,
+            StakeEvent {
+                account: *account,
                 value,
+                receiver: None,
             },
         );
     }
@@ -282,31 +291,29 @@ impl StakeState {
         STAKE_CONTRACT_VERSION
     }
 
-    /// Slash the given `to_slash` amount from a `stake_pk` reward
+    /// Slash the given `to_slash` amount from an `account`'s reward
     ///
     /// If the reward is less than the `to_slash` amount, then the reward is
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
-    pub fn slash(&mut self, stake_pk: &StakePublicKey, to_slash: Option<u64>) {
+    pub fn slash(&mut self, account: &BlsPublicKey, to_slash: Option<u64>) {
         self.check_new_block();
 
         let stake = self
-            .get_stake_mut(stake_pk)
+            .get_stake_mut(account)
             .expect("The stake to slash should exist");
+        let prev_stake = Some(*stake);
 
         // Stake can have no amount if provisioner unstake in the same block
-        if stake.amount().is_none() {
+        if stake.amount.is_none() {
             return;
         }
-
-        let prev_value = Some(stake.clone());
 
         stake.faults = stake.faults.saturating_add(1);
         let effective_faults =
             stake.faults.saturating_sub(STAKE_WARNINGS) as u64;
 
-        let (stake_amount, eligibility) =
-            stake.amount.as_mut().expect("stake_to_exists");
+        let stake_amount = stake.amount.as_mut().expect("stake_to_exists");
 
         // Shift eligibility (aka stake suspension) only if warnings are
         // saturated
@@ -314,69 +321,74 @@ impl StakeState {
             // The stake is suspended for the rest of the current epoch plus
             // effective_faults epochs
             let to_shift = effective_faults * EPOCH;
-            *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
+
+            stake_amount.eligibility =
+                next_epoch(rusk_abi::block_height()) + to_shift;
+
             rusk_abi::emit(
                 "suspended",
-                StakingEvent {
-                    public_key: *stake_pk,
-                    value: *eligibility,
+                StakeEvent {
+                    account: *account,
+                    value: stake_amount.eligibility,
+                    receiver: None,
                 },
             );
         }
 
         // Slash the provided amount or calculate the percentage according to
         // effective faults
-        let to_slash =
-            to_slash.unwrap_or(*stake_amount / 100 * effective_faults * 10);
-        let to_slash = min(to_slash, *stake_amount);
+        let to_slash = to_slash
+            .unwrap_or(stake_amount.value / 100 * effective_faults * 10);
+        let to_slash = min(to_slash, stake_amount.value);
 
         if to_slash > 0 {
             // Move the slash amount from stake to reward and deduct contract
             // balance
-            *stake_amount -= to_slash;
-            stake.increase_reward(to_slash);
+            stake_amount.value -= to_slash;
+            stake.reward += to_slash;
+
             Self::deduct_contract_balance(to_slash);
 
             rusk_abi::emit(
                 "slash",
-                StakingEvent {
-                    public_key: *stake_pk,
+                StakeEvent {
+                    account: *account,
                     value: to_slash,
+                    receiver: None,
                 },
             );
         }
 
-        let key = stake_pk.to_bytes();
+        let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_value, *stake_pk));
+            .or_insert((prev_stake, *account));
     }
 
-    /// Slash the given `to_slash` amount from a `stake_pk` stake
+    /// Slash the given `to_slash` amount from an `account`'s stake.
     ///
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
     pub fn hard_slash(
         &mut self,
-        stake_pk: &StakePublicKey,
+        account: &BlsPublicKey,
         to_slash: Option<u64>,
         severity: Option<u8>,
     ) {
         self.check_new_block();
 
         let stake = self
-            .get_stake_mut(stake_pk)
+            .get_stake_mut(account)
             .expect("The stake to slash should exist");
 
         // Stake can have no amount if provisioner unstake in the same block
-        if stake.amount().is_none() {
+        if stake.amount.is_none() {
             return;
         }
 
-        let prev_value = Some(stake.clone());
+        let prev_stake = Some(*stake);
 
-        let (stake_amount, eligibility) =
-            stake.amount.as_mut().expect("stake_to_exists");
+        let stake_amount = stake.amount.as_mut().expect("stake_to_exists");
 
         let severity = severity.unwrap_or(1);
         stake.hard_faults = stake.hard_faults.saturating_add(severity);
@@ -385,24 +397,27 @@ impl StakeState {
         // The stake is shifted (aka suspended) for the rest of the current
         // epoch plus hard_faults epochs
         let to_shift = hard_faults * EPOCH;
-        *eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
+        stake_amount.eligibility =
+            next_epoch(rusk_abi::block_height()) + to_shift;
+
         rusk_abi::emit(
             "suspended",
-            StakingEvent {
-                public_key: *stake_pk,
-                value: *eligibility,
+            StakeEvent {
+                account: *account,
+                value: stake_amount.eligibility,
+                receiver: None,
             },
         );
 
         // Slash the provided amount or calculate the percentage according to
         // hard faults
         let to_slash =
-            to_slash.unwrap_or(*stake_amount / 100 * hard_faults * 10);
-        let to_slash = min(to_slash, *stake_amount);
+            to_slash.unwrap_or(stake_amount.value / 100 * hard_faults * 10);
+        let to_slash = min(to_slash, stake_amount.value);
 
         if to_slash > 0 {
             // Update the staked amount
-            *stake_amount -= to_slash;
+            stake_amount.value -= to_slash;
             Self::deduct_contract_balance(to_slash);
 
             // Update the total burnt amount
@@ -410,17 +425,18 @@ impl StakeState {
 
             rusk_abi::emit(
                 "hard_slash",
-                StakingEvent {
-                    public_key: *stake_pk,
+                StakeEvent {
+                    account: *account,
                     value: to_slash,
+                    receiver: None,
                 },
             );
         }
 
-        let key = stake_pk.to_bytes();
+        let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_value, *stake_pk));
+            .or_insert((prev_stake, *account));
     }
 
     /// Sets the burnt amount
@@ -430,8 +446,8 @@ impl StakeState {
 
     /// Feeds the host with the stakes.
     pub fn stakes(&self) {
-        for (stake_data, stake_pk) in self.stakes.values() {
-            rusk_abi::feed((*stake_pk, stake_data.clone()));
+        for (stake_data, account) in self.stakes.values() {
+            rusk_abi::feed((*account, *stake_data));
         }
     }
 
@@ -448,8 +464,8 @@ impl StakeState {
 
     /// Feeds the host with previous state of the changed provisioners.
     pub fn prev_state_changes(&self) {
-        for (stake_data, stake_pk) in self.previous_block_state.values() {
-            rusk_abi::feed((*stake_pk, stake_data.clone()));
+        for (stake_data, account) in self.previous_block_state.values() {
+            rusk_abi::feed((*account, *stake_data));
         }
     }
 }

@@ -18,7 +18,6 @@ use state::StakeState;
 /// The minimum amount of Dusk one can stake.
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
-use execution_core::StakePublicKey;
 use rusk_abi::{ContractId, PaymentInfo};
 
 #[no_mangle]
@@ -56,9 +55,7 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn get_stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk: StakePublicKey| {
-        STATE.get_stake(&pk).cloned()
-    })
+    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake(&pk).cloned())
 }
 
 #[no_mangle]

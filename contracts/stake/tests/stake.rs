@@ -10,10 +10,10 @@ use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use execution_core::stake::{Stake, StakeData, Unstake, Withdraw};
 use execution_core::{
-    transfer::ContractCall, BlsScalar, JubJubScalar, PublicKey, SecretKey,
-    StakePublicKey, StakeSecretKey, ViewKey,
+    stake::{Stake, StakeData, Withdraw as StakeWithdraw},
+    transfer::{ContractCall, Withdraw, WithdrawReceiver, WithdrawReplayToken},
+    BlsPublicKey, BlsSecretKey, JubJubScalar, PublicKey, SecretKey, ViewKey,
 };
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::STAKE_CONTRACT;
@@ -39,14 +39,14 @@ fn stake_withdraw_unstake() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let sender_sk = SecretKey::random(rng);
-    let sender_vk = ViewKey::from(&sender_sk);
-    let sender_pk = PublicKey::from(&sender_sk);
+    let phoenix_sender_sk = SecretKey::random(rng);
+    let phoenix_sender_vk = ViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PublicKey::from(&phoenix_sender_sk);
 
-    let stake_sk = StakeSecretKey::random(rng);
-    let stake_pk = StakePublicKey::from(&stake_sk);
+    let stake_sk = BlsSecretKey::random(rng);
+    let stake_pk = BlsPublicKey::from(&stake_sk);
 
-    let mut session = instantiate(rng, vm, &sender_pk, GENESIS_VALUE);
+    let mut session = instantiate(rng, vm, &phoenix_sender_pk, GENESIS_VALUE);
 
     let leaves = leaves_from_height(&mut session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -56,7 +56,7 @@ fn stake_withdraw_unstake() {
     // ------
     // Stake
 
-    let receiver_pk = sender_pk;
+    let phoenix_receiver_pk = phoenix_sender_pk;
     let gas_limit = DEPOSIT_FEE;
     let gas_price = LUX;
     let transfer_value = 0;
@@ -65,13 +65,7 @@ fn stake_withdraw_unstake() {
     let deposit = INITIAL_STAKE;
 
     // Fashion a Stake struct
-    let stake_digest = Stake::signature_message(0, deposit);
-    let stake_sig = stake_sk.sign(&stake_pk, &stake_digest);
-    let stake = Stake {
-        public_key: stake_pk,
-        signature: stake_sig,
-        value: deposit,
-    };
+    let stake = Stake::new(&stake_sk, deposit, 1);
     let stake_bytes = rkyv::to_bytes::<_, 1024>(&stake)
         .expect("Should serialize Stake correctly")
         .to_vec();
@@ -83,8 +77,8 @@ fn stake_withdraw_unstake() {
 
     let tx = create_transaction(
         &mut session,
-        &sender_sk,
-        &receiver_pk,
+        &phoenix_sender_sk,
+        &phoenix_receiver_pk,
         gas_limit,
         gas_price,
         [input_note_pos],
@@ -109,14 +103,17 @@ fn stake_withdraw_unstake() {
         .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
         .expect("Getting the stake should succeed")
         .data;
-    let stake_data = stake_data.expect("The stake should exist");
+    let stake_data =
+        stake_data.expect("There should be a stake for the given key");
 
-    let (amount, _) =
-        stake_data.amount.expect("There should be an amount staked");
+    let amount = stake_data.amount.expect("There should be an amount staked");
 
-    assert_eq!(amount, deposit, "Staked amount should match sent amount");
+    assert_eq!(
+        amount.value, deposit,
+        "Staked amount should match sent amount"
+    );
     assert_eq!(stake_data.reward, 0, "Initial reward should be zero");
-    assert_eq!(stake_data.counter, 1, "Counter should increment once");
+    assert_eq!(stake_data.nonce, 1, "Nonce should be set to stake value");
 
     // ------
     // Add a reward to the staked key
@@ -138,17 +135,20 @@ fn stake_withdraw_unstake() {
         .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
         .expect("Getting the stake should succeed")
         .data;
-    let stake_data = stake_data.expect("The stake should exist");
+    let stake_data =
+        stake_data.expect("There should be a stake for the given key");
 
-    let (amount, _) =
-        stake_data.amount.expect("There should be an amount staked");
+    let amount = stake_data.amount.expect("There should be an amount staked");
 
-    assert_eq!(amount, deposit, "Staked amount should match sent amount");
+    assert_eq!(
+        amount.value, deposit,
+        "Staked amount should match sent amount"
+    );
     assert_eq!(
         stake_data.reward, REWARD_AMOUNT,
         "Reward should be set to specified amount"
     );
-    assert_eq!(stake_data.counter, 1, "Counter should increment once");
+    assert_eq!(stake_data.nonce, 1, "Nonce should remain the same");
 
     // ------
     // Start withdrawing the reward just given to our key
@@ -157,7 +157,7 @@ fn stake_withdraw_unstake() {
         .expect("Getting the notes should succeed");
 
     let input_notes = filter_notes_owned_by(
-        sender_vk,
+        phoenix_sender_vk,
         leaves.into_iter().map(|leaf| leaf.note),
     );
 
@@ -167,7 +167,7 @@ fn stake_withdraw_unstake() {
         "All new notes should be owned by our view key"
     );
 
-    let receiver_pk = sender_pk;
+    let receiver_pk = phoenix_sender_pk;
     let gas_limit = WITHDRAW_FEE;
     let gas_price = LUX;
     let input_positions = [*input_notes[0].pos(), *input_notes[1].pos()];
@@ -176,21 +176,23 @@ fn stake_withdraw_unstake() {
     let deposit = 0;
 
     // Fashion a `Withdraw` struct instance
-    let withdraw_address_r = JubJubScalar::random(&mut *rng);
-    let withdraw_address = sender_pk.gen_stealth_address(&withdraw_address_r);
-    let withdraw_nonce = BlsScalar::random(&mut *rng);
-    let withdraw_digest = Withdraw::signature_message(
-        stake_data.counter,
-        withdraw_address,
-        withdraw_nonce,
+    let address =
+        phoenix_sender_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let note_sk = phoenix_sender_sk.gen_note_sk(&address);
+
+    let withdraw = Withdraw::new(
+        rng,
+        &note_sk,
+        STAKE_CONTRACT.to_bytes(),
+        REWARD_AMOUNT,
+        WithdrawReceiver::Phoenix(address),
+        WithdrawReplayToken::Phoenix(vec![
+            input_notes[0].gen_nullifier(&phoenix_sender_sk),
+            input_notes[1].gen_nullifier(&phoenix_sender_sk),
+        ]),
     );
-    let withdraw_signature = stake_sk.sign(&stake_pk, &withdraw_digest);
-    let withdraw = Withdraw {
-        public_key: stake_pk,
-        signature: withdraw_signature,
-        address: withdraw_address,
-        nonce: withdraw_nonce,
-    };
+    let withdraw = StakeWithdraw::new(&stake_sk, withdraw);
+
     let withdraw_bytes = rkyv::to_bytes::<_, 2048>(&withdraw)
         .expect("Serializing Withdraw should succeed")
         .to_vec();
@@ -203,7 +205,7 @@ fn stake_withdraw_unstake() {
 
     let tx = create_transaction(
         &mut session,
-        &sender_sk,
+        &phoenix_sender_sk,
         &receiver_pk,
         gas_limit,
         gas_price,
@@ -235,17 +237,17 @@ fn stake_withdraw_unstake() {
         .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
         .expect("Getting the stake should succeed")
         .data;
-    let stake_data = stake_data.expect("The stake should exist");
+    let stake_data =
+        stake_data.expect("There should be a stake for the given key");
 
-    let (amount, _) =
-        stake_data.amount.expect("There should be an amount staked");
+    let amount = stake_data.amount.expect("There should be an amount staked");
 
     assert_eq!(
-        amount, INITIAL_STAKE,
+        amount.value, INITIAL_STAKE,
         "Staked amount shouldn't have changed"
     );
     assert_eq!(stake_data.reward, 0, "Reward should be set to zero");
-    assert_eq!(stake_data.counter, 2, "Counter should increment once");
+    assert_eq!(stake_data.nonce, 1, "Nonce should remain the same");
 
     // ------
     // Start unstaking the previously staked amount
@@ -260,7 +262,7 @@ fn stake_withdraw_unstake() {
     );
 
     let input_notes = filter_notes_owned_by(
-        sender_vk,
+        phoenix_sender_vk,
         leaves.into_iter().map(|leaf| leaf.note),
     );
 
@@ -270,7 +272,7 @@ fn stake_withdraw_unstake() {
         "All new notes should be owned by our view key"
     );
 
-    let receiver_pk = sender_pk;
+    let receiver_pk = phoenix_sender_pk;
     let gas_limit = WITHDRAW_TRANSFER_FEE;
     let gas_price = LUX;
     let input_positions = [
@@ -283,18 +285,25 @@ fn stake_withdraw_unstake() {
     let deposit = 0;
 
     // Fashion an `Unstake` struct instance
-    let value = stake_data.amount.expect("There should be a stake").0;
     let address =
-        receiver_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
-    let unstake_digest =
-        Unstake::signature_message(stake_data.counter, value, address);
-    let unstake_sig = stake_sk.sign(&stake_pk, unstake_digest.as_slice());
+        phoenix_sender_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let note_sk = phoenix_sender_sk.gen_note_sk(&address);
 
-    let unstake = Unstake {
-        public_key: stake_pk,
-        signature: unstake_sig,
-        address,
-    };
+    let withdraw = Withdraw::new(
+        rng,
+        &note_sk,
+        STAKE_CONTRACT.to_bytes(),
+        INITIAL_STAKE,
+        WithdrawReceiver::Phoenix(address),
+        WithdrawReplayToken::Phoenix(vec![
+            input_notes[0].gen_nullifier(&phoenix_sender_sk),
+            input_notes[1].gen_nullifier(&phoenix_sender_sk),
+            input_notes[2].gen_nullifier(&phoenix_sender_sk),
+        ]),
+    );
+
+    let unstake = StakeWithdraw::new(&stake_sk, withdraw);
+
     let unstake_bytes = rkyv::to_bytes::<_, 2048>(&unstake)
         .expect("Serializing Unstake should succeed")
         .to_vec();
@@ -307,7 +316,7 @@ fn stake_withdraw_unstake() {
 
     let tx = create_transaction(
         &mut session,
-        &sender_sk,
+        &phoenix_sender_sk,
         &receiver_pk,
         gas_limit,
         gas_price,

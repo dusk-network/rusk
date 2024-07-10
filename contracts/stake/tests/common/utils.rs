@@ -16,7 +16,7 @@ use rand::SeedableRng;
 
 use execution_core::{
     transfer::{
-        ContractCall, ContractExec, Fee, Payload, Transaction, TreeLeaf,
+        ContractCall, ContractExec, Fee, PhoenixPayload, Transaction, TreeLeaf,
         TRANSFER_TREE_DEPTH,
     },
     value_commitment, JubJubScalar, Note, PublicKey, SchnorrSecretKey,
@@ -122,15 +122,17 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 /// Executes a transaction, returning the call receipt
 pub fn execute(
     session: &mut Session,
-    tx: Transaction,
+    tx: impl Into<Transaction>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+    let tx = tx.into();
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
-        tx.payload().fee.gas_limit,
+        tx.gas_limit(),
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -145,7 +147,7 @@ pub fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.payload().fee, receipt.gas_spent),
+            &receipt.gas_spent,
             u64::MAX,
         )
         .expect("Refunding must succeed");
@@ -270,10 +272,10 @@ pub fn create_transaction<const I: usize>(
         deposit,
     };
 
-    let tx_payload = Payload {
+    let tx_payload = PhoenixPayload {
         tx_skeleton,
         fee,
-        contract_exec: (contract_call.map(|c| ContractExec::Call(c))),
+        exec: (contract_call.map(|c| ContractExec::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();
@@ -361,5 +363,5 @@ pub fn create_transaction<const I: usize>(
         .expect("creating a proof should succeed");
 
     // build the transaction from the payload and proof
-    Transaction::new(tx_payload, proof.to_bytes())
+    Transaction::phoenix(tx_payload, proof.to_bytes())
 }

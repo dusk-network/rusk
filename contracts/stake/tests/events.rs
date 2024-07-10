@@ -10,7 +10,8 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use execution_core::{
-    stake::StakeData, PublicKey, SecretKey, StakePublicKey, StakeSecretKey,
+    stake::{StakeAmount, StakeData},
+    BlsPublicKey, BlsSecretKey, PublicKey, SecretKey,
 };
 use rusk_abi::dusk::dusk;
 use rusk_abi::{Error, STAKE_CONTRACT, TRANSFER_CONTRACT};
@@ -30,8 +31,8 @@ fn reward_slash() -> Result<(), Error> {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let stake_sk = StakeSecretKey::random(rng);
-    let stake_pk = StakePublicKey::from(&stake_sk);
+    let stake_sk = BlsSecretKey::random(rng);
+    let stake_pk = BlsPublicKey::from(&stake_sk);
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -41,8 +42,11 @@ fn reward_slash() -> Result<(), Error> {
 
     let stake_data = StakeData {
         reward: 0,
-        amount: Some((stake_amount, 0)),
-        counter: 0,
+        amount: Some(StakeAmount {
+            value: stake_amount,
+            eligibility: 0,
+        }),
+        nonce: 0,
         faults: 0,
         hard_faults: 0,
     };
@@ -116,8 +120,8 @@ fn stake_hard_slash() -> Result<(), Error> {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let stake_sk = StakeSecretKey::random(rng);
-    let stake_pk = StakePublicKey::from(&stake_sk);
+    let stake_sk = BlsSecretKey::random(rng);
+    let stake_pk = BlsPublicKey::from(&stake_sk);
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -129,8 +133,11 @@ fn stake_hard_slash() -> Result<(), Error> {
 
     let stake_data = StakeData {
         reward: 0,
-        amount: Some((stake_amount, block_height)),
-        counter: 0,
+        amount: Some(StakeAmount {
+            value: stake_amount,
+            eligibility: block_height,
+        }),
+        nonce: 0,
         faults: 0,
         hard_faults: 0,
     };

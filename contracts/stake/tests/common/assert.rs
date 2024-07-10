@@ -7,13 +7,13 @@
 use dusk_bytes::Serializable;
 use rkyv::{check_archived_root, Deserialize, Infallible};
 
-use execution_core::{stake::StakingEvent, StakePublicKey};
+use execution_core::{stake::StakeEvent, BlsPublicKey};
 use rusk_abi::Event;
 
 pub fn assert_event<S>(
     events: &Vec<Event>,
     topic: S,
-    should_pk: &StakePublicKey,
+    should_pk: &BlsPublicKey,
     should_amount: u64,
 ) where
     S: AsRef<str>,
@@ -27,14 +27,11 @@ pub fn assert_event<S>(
                 topic.as_ref()
             ));
     let staking_event_data =
-        check_archived_root::<StakingEvent>(event.data.as_slice())
+        check_archived_root::<StakeEvent>(event.data.as_slice())
             .expect("Stake event data should deserialize correctly");
-    let staking_event_data: StakingEvent = staking_event_data
+    let staking_event_data: StakeEvent = staking_event_data
         .deserialize(&mut Infallible)
         .expect("Infallible");
     assert_eq!(staking_event_data.value, should_amount);
-    assert_eq!(
-        staking_event_data.public_key.to_bytes(),
-        should_pk.to_bytes()
-    );
+    assert_eq!(staking_event_data.account.to_bytes(), should_pk.to_bytes());
 }
