@@ -28,7 +28,6 @@ const TOPICS: &[u8] = &[
     Topics::GetMempool as u8,
     Topics::GetInv as u8,
     Topics::GetResource as u8,
-    Topics::GetCandidate as u8,
 ];
 
 struct Response {
@@ -198,11 +197,6 @@ impl DataBrokerSrv {
         let this_peer = *network.read().await.public_addr();
 
         match &msg.payload {
-            // Handle GetCandidate requests
-            Payload::GetCandidate(m) => {
-                let msg = Self::handle_get_candidate(db, m).await?;
-                Ok(Response::new_from_msg(msg, recv_peer))
-            }
             // Handle GetBlocks requests
             Payload::GetBlocks(m) => {
                 let msg = Self::handle_get_blocks(db, m, conf.max_inv_entries)
@@ -255,29 +249,6 @@ impl DataBrokerSrv {
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
         }
-    }
-
-    /// Handles GetCandidate requests.
-    ///
-    /// Message flow: GetCandidate -> CandidateResp
-    async fn handle_get_candidate<DB: database::DB>(
-        db: &Arc<RwLock<DB>>,
-        m: &payload::GetCandidate,
-    ) -> Result<Message> {
-        let res = db
-            .read()
-            .await
-            .view(|t| t.fetch_candidate_block(&m.hash))
-            .map_err(|e| {
-                anyhow::anyhow!("could not fetch candidate block: {:?}", e)
-            })?;
-
-        let block =
-            res.ok_or_else(|| anyhow::anyhow!("could not find candidate"))?;
-
-        Ok(Message::new_get_candidate_resp(payload::GetCandidateResp {
-            candidate: block,
-        }))
     }
 
     /// Handles GetMempool requests.

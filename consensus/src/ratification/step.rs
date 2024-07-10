@@ -122,6 +122,8 @@ impl<DB: Database> RatificationStep<DB> {
             .get_current_committee()
             .expect("committee to be created before run");
 
+        let generator = ctx.get_curr_generator();
+
         if ctx.am_member(committee) {
             let mut handler = self.handler.lock().await;
             let vote = handler.validation_result().vote();
@@ -137,7 +139,7 @@ impl<DB: Database> RatificationStep<DB> {
 
             // Collect my own vote
             let res = handler
-                .collect(vote_msg, &ctx.round_update, committee)
+                .collect(vote_msg, &ctx.round_update, committee, generator)
                 .await?;
             if let HandleMsgOutput::Ready(m) = res {
                 return Ok(m);

@@ -8,6 +8,7 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::iteration_ctx::RoundCommittees;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
+use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Status};
 use node_data::StepName;
 use tracing::{debug, trace};
@@ -83,6 +84,7 @@ pub trait MsgHandler {
         msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
     /// collect allows each Phase to process a verified message from a former
@@ -92,6 +94,7 @@ pub trait MsgHandler {
         msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
+        generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
