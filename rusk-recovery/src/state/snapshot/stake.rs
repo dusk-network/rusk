@@ -7,21 +7,21 @@
 use dusk_bytes::Serializable;
 use serde_derive::{Deserialize, Serialize};
 
-use execution_core::StakePublicKey;
+use execution_core::BlsPublicKey;
 use rusk_abi::dusk::Dusk;
 
 use super::wrapper::Wrapper;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct GenesisStake {
-    pub(crate) address: Wrapper<StakePublicKey, { StakePublicKey::SIZE }>,
+    pub(crate) address: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
     pub amount: Dusk,
     pub eligibility: Option<u64>,
     pub reward: Option<Dusk>,
 }
 
 impl GenesisStake {
-    pub fn address(&self) -> &StakePublicKey {
+    pub fn address(&self) -> &BlsPublicKey {
         &self.address
     }
 }

@@ -7,7 +7,7 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use execution_core::PublicKey;
+use execution_core::{BlsPublicKey, PublicKey};
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
@@ -19,15 +19,27 @@ pub use stake::GenesisStake;
 use wrapper::Wrapper;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
-pub struct Balance {
+pub struct PhoenixBalance {
     address: Wrapper<PublicKey, { PublicKey::SIZE }>,
     pub seed: Option<u64>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub notes: Vec<Dusk>,
 }
 
-impl Balance {
+impl PhoenixBalance {
     pub fn address(&self) -> &PublicKey {
+        &self.address
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq)]
+pub struct MoonlightAccount {
+    address: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
+    pub balance: Dusk,
+}
+
+impl MoonlightAccount {
+    pub fn address(&self) -> &BlsPublicKey {
         &self.address
     }
 }
@@ -39,7 +51,9 @@ pub struct Snapshot {
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
-    balance: Vec<Balance>,
+    phoenix_balance: Vec<PhoenixBalance>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
+    moonlight_account: Vec<MoonlightAccount>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     stake: Vec<GenesisStake>,
 }
@@ -55,9 +69,16 @@ impl Debug for Snapshot {
 }
 
 impl Snapshot {
-    /// Returns an iterator of the transfers included in this snapshot
-    pub fn transfers(&self) -> impl Iterator<Item = &Balance> {
-        self.balance.iter()
+    /// Returns an iterator over the phoenix balances included in this snapshot
+    pub fn phoenix_balances(&self) -> impl Iterator<Item = &PhoenixBalance> {
+        self.phoenix_balance.iter()
+    }
+
+    /// Returns an iterator of the moonlight accounts included in this snapshot
+    pub fn moonlight_accounts(
+        &self,
+    ) -> impl Iterator<Item = &MoonlightAccount> {
+        self.moonlight_account.iter()
     }
 
     /// Returns an iterator of the stakes included in this snapshot.
@@ -96,7 +117,7 @@ mod tests {
         let testnet = testnet_from_file()?;
 
         testnet
-            .balance
+            .phoenix_balance
             .iter()
             .find(|b| b.address().eq(&*state::FAUCET_KEY))
             .expect("Testnet must have faucet configured");

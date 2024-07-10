@@ -14,7 +14,7 @@ base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip"
 # and an optional seed (used during notes creation)
 # 
 # If no `seed` is configured, a random one is used.
-[[balance]]
+[[phoenix_balance]]
 address = 'dQgpVd2XwtXfVhDBdKX5rnXqyRkYsJgZ5wq826wdn6atfKnaNyptTogEko2u2ZWhW5sGADhR4YMKztqrFJphuMz'
 seed = 0xcafe
 notes = [
@@ -23,9 +23,18 @@ notes = [
     245_123_000_423
 ]
 
-[[balance]]
+[[phoenix_balance]]
 address = '5i9RZjT87TLa1BtWXRRoFy3FoMzFHiXT3GWasHdUaxuo3YapUKYeXXiY1yuAeKng2hmxxaYsGNhKhjyrE9KYTSE7'
 notes = [1_000_000_000_000]
+
+
+# Accounts to be included in the genesis contract
+#
+# Each balance consists of an address (a BLS PublicKey in base58 format)
+# and a balance.
+[[moonlight_account]]
+address = 'qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3'
+balance = 1_000_000_000
 
 # Stakes to be included in the stake contract
 #
