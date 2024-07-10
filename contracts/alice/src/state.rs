@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::transfer::Mint;
+use execution_core::transfer::Withdraw;
 use rusk_abi::TRANSFER_CONTRACT;
 
 /// Alice contract.
@@ -16,8 +16,8 @@ impl Alice {
         // no-op
     }
 
-    pub fn withdraw(&mut self, mint: Mint) {
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &mint)
+    pub fn withdraw(&mut self, withdraw: Withdraw) {
+        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
             .expect("Transparent withdrawal transaction should succeed");
     }
 
