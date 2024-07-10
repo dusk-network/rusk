@@ -14,7 +14,10 @@ use dusk_consensus::operations::{
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
-use execution_core::{stake::StakeData, StakePublicKey};
+use execution_core::{
+    stake::StakeData, transfer::Transaction as ProtocolTransaction,
+    BlsPublicKey,
+};
 use node::vm::VMExecution;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
@@ -47,7 +50,7 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator = StakePublicKey::from_slice(&generator.0)
+        let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let slashing = Slash::from_block(blk)?;
@@ -73,7 +76,7 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator = StakePublicKey::from_slice(&generator.0)
+        let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let slashing = Slash::from_block(blk)?;
@@ -109,18 +112,64 @@ impl VMExecution for Rusk {
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
         info!("Received preverify request");
         let tx = &tx.inner;
-        let existing_nullifiers = self
-            .existing_nullifiers(&tx.payload().tx_skeleton.nullifiers)
-            .map_err(|e| anyhow::anyhow!("Cannot check nullifiers: {e}"))?;
 
-        if !existing_nullifiers.is_empty() {
-            let err = crate::Error::RepeatingNullifiers(existing_nullifiers);
-            return Err(anyhow::anyhow!("Invalid tx: {err}"));
-        }
-        match crate::verifier::verify_proof(tx) {
-            Ok(true) => Ok(()),
-            Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
-            Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),
+        match tx {
+            ProtocolTransaction::Phoenix(tx) => {
+                let payload = tx.payload();
+
+                let existing_nullifiers = self
+                    .existing_nullifiers(&payload.tx_skeleton.nullifiers)
+                    .map_err(|e| {
+                        anyhow::anyhow!("Cannot check nullifiers: {e}")
+                    })?;
+
+                if !existing_nullifiers.is_empty() {
+                    let err =
+                        crate::Error::RepeatingNullifiers(existing_nullifiers);
+                    return Err(anyhow::anyhow!("Invalid tx: {err}"));
+                }
+
+                match crate::verifier::verify_proof(tx) {
+                    Ok(true) => Ok(()),
+                    Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
+                    Err(e) => {
+                        Err(anyhow::anyhow!("Cannot verify the proof: {e}"))
+                    }
+                }
+            }
+            ProtocolTransaction::Moonlight(tx) => {
+                let payload = tx.payload();
+
+                let account_data =
+                    self.account(&payload.from).map_err(|e| {
+                        anyhow::anyhow!("Cannot check account: {e}")
+                    })?;
+
+                let max_value = payload.value
+                    + payload.deposit
+                    + payload.gas_limit * payload.gas_price;
+                if max_value > account_data.balance {
+                    return Err(anyhow::anyhow!(
+                        "Value spent larger than account holds"
+                    ));
+                }
+
+                if payload.nonce <= account_data.nonce {
+                    let err = crate::Error::RepeatingNonce(
+                        payload.from.into(),
+                        payload.nonce,
+                    );
+                    return Err(anyhow::anyhow!("Invalid tx: {err}"));
+                }
+
+                match crate::verifier::verify_signature(tx) {
+                    Ok(true) => Ok(()),
+                    Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
+                    Err(e) => {
+                        Err(anyhow::anyhow!("Cannot verify the signature: {e}"))
+                    }
+                }
+            }
         }
     }
 
@@ -140,15 +189,12 @@ impl VMExecution for Rusk {
 
     fn get_provisioner(
         &self,
-        pk: &StakePublicKey,
+        pk: &BlsPublicKey,
     ) -> anyhow::Result<Option<Stake>> {
         let stake = self
             .provisioner(pk)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioner {e}"))?
-            .map(|stake| {
-                let (value, eligibility) = stake.amount.unwrap_or_default();
-                Stake::new(value, stake.reward, eligibility, stake.counter)
-            });
+            .map(Self::to_stake);
         Ok(stake)
     }
 
@@ -218,7 +264,11 @@ impl Rusk {
     }
 
     fn to_stake(stake: StakeData) -> Stake {
-        let (value, eligibility) = stake.amount.unwrap_or_default();
-        Stake::new(value, stake.reward, eligibility, stake.counter)
+        let stake_amount = stake.amount.unwrap_or_default();
+
+        let value = stake_amount.value;
+        let eligibility = stake_amount.eligibility;
+
+        Stake::new(value, stake.reward, eligibility, stake.nonce)
     }
 }

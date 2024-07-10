@@ -26,8 +26,9 @@ use dusk_consensus::operations::{
 use execution_core::bytecode::Bytecode;
 use execution_core::transfer::ContractDeploy;
 use execution_core::{
-    stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
-    StakePublicKey,
+    stake::StakeData,
+    transfer::{AccountData, Transaction as ProtocolTransaction},
+    BlsPublicKey, BlsScalar,
 };
 use node_data::ledger::{Slash, SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
@@ -44,9 +45,9 @@ use crate::http::RuesEvent;
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
 
-pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
+pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");
-    StakePublicKey::from_slice(dusk_cpk_bytes)
+    BlsPublicKey::from_slice(dusk_cpk_bytes)
         .expect("Dusk consensus public key to be valid")
 });
 
@@ -129,7 +130,7 @@ impl Rusk {
                 }
             }
             let tx_id = hex::encode(unspent_tx.id());
-            if unspent_tx.inner.payload().fee.gas_limit > block_gas_left {
+            if unspent_tx.inner.gas_limit() > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
                 continue;
             }
@@ -169,7 +170,7 @@ impl Rusk {
                     update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
-                    let gas_price = unspent_tx.inner.payload().fee.gas_price;
+                    let gas_price = unspent_tx.inner.gas_price();
                     dusk_spent += gas_spent * gas_price;
                     spent_txs.push(SpentTransaction {
                         inner: unspent_tx,
@@ -215,7 +216,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: &StakePublicKey,
+        generator: &BlsPublicKey,
         txs: &[Transaction],
         slashing: Vec<Slash>,
         voters: Option<&[VoterWithCredits]>,
@@ -245,7 +246,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: StakePublicKey,
+        generator: BlsPublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         slashing: Vec<Slash>,
@@ -332,14 +333,19 @@ impl Rusk {
     pub fn provisioners(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<impl Iterator<Item = (StakePublicKey, StakeData)>> {
+    ) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(StakePublicKey, StakeData)>(&bytes).expect(
+            rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
                 "The contract should only return (pk, stake_data) tuples",
             )
         }))
+    }
+
+    /// Returns an account's information.
+    pub fn account(&self, pk: &BlsPublicKey) -> Result<AccountData> {
+        self.query(TRANSFER_CONTRACT, "account", pk)
     }
 
     /// Fetches the previous state data for stake changes in the contract.
@@ -356,12 +362,12 @@ impl Rusk {
     /// # Returns
     ///
     /// Returns a Result containing an iterator over tuples. Each tuple consists
-    /// of a `StakePublicKey` and an optional `StakeData`, representing the
+    /// of a `BlsPublicKey` and an optional `StakeData`, representing the
     /// state data before the last changes in the stake contract.
     pub fn last_provisioners_change(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<Vec<(StakePublicKey, Option<StakeData>)>> {
+    ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
             STAKE_CONTRACT,
@@ -371,16 +377,13 @@ impl Rusk {
             base_commit,
         )?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(StakePublicKey, Option<StakeData>)>(&bytes).expect(
+            rkyv::from_bytes::<(BlsPublicKey, Option<StakeData>)>(&bytes).expect(
                 "The contract should only return (pk, Option<stake_data>) tuples",
             )
         }).collect())
     }
 
-    pub fn provisioner(
-        &self,
-        pk: &StakePublicKey,
-    ) -> Result<Option<StakeData>> {
+    pub fn provisioner(&self, pk: &BlsPublicKey) -> Result<Option<StakeData>> {
         self.query(STAKE_CONTRACT, "get_stake", pk)
     }
 
@@ -433,7 +436,7 @@ fn accept(
     session: Session,
     block_height: u64,
     block_gas_limit: u64,
-    generator: &StakePublicKey,
+    generator: &BlsPublicKey,
     txs: &[Transaction],
     slashing: Vec<Slash>,
     voters: Option<&[VoterWithCredits]>,
@@ -463,7 +466,7 @@ fn accept(
 
         let gas_spent = receipt.gas_spent;
 
-        dusk_spent += gas_spent * tx.payload().fee.gas_price;
+        dusk_spent += gas_spent * tx.gas_price();
         block_gas_left = block_gas_left
             .checked_sub(gas_spent)
             .ok_or(Error::OutOfGas)?;
@@ -588,15 +591,15 @@ fn contract_deploy(
 /// failed to fit the block.
 fn execute(
     session: &mut Session,
-    tx: &PhoenixTransaction,
+    tx: &ProtocolTransaction,
     gas_per_deploy_byte: Option<u64>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
-    if let Some(deploy) = tx.payload().contract_deploy() {
+    if let Some(deploy) = tx.deploy() {
         let deploy_charge =
             bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
-        if tx.payload().fee.gas_limit < deploy_charge {
+        if tx.gas_limit() < deploy_charge {
             return Err(PiecrustError::Panic(
                 "not enough gas to deploy".into(),
             ));
@@ -610,16 +613,16 @@ fn execute(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         tx_stripped.as_ref().unwrap_or(tx),
-        tx.payload().fee.gas_limit,
+        tx.gas_limit(),
     )?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
-    if let Some(deploy) = tx.payload().contract_deploy() {
+    if let Some(deploy) = tx.deploy() {
         if receipt.data.is_ok() {
             contract_deploy(
                 session,
                 deploy,
-                tx.payload().fee.gas_limit,
+                tx.gas_limit(),
                 gas_per_deploy_byte,
                 &mut receipt,
             );
@@ -638,7 +641,7 @@ fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.payload().fee, receipt.gas_spent),
+            &receipt.gas_spent,
             u64::MAX,
         )
         .expect("Refunding must succeed");
@@ -660,9 +663,9 @@ fn reward_slash_and_update_root(
     session: &mut Session,
     block_height: u64,
     dusk_spent: Dusk,
-    generator: &StakePublicKey,
+    generator: &BlsPublicKey,
     slashing: Vec<Slash>,
-    voters: Option<&[(StakePublicKey, usize)]>,
+    voters: Option<&[(BlsPublicKey, usize)]>,
 ) -> Result<Vec<Event>> {
     let (
         dusk_value,
@@ -768,7 +771,7 @@ fn calc_generator_extra_reward(
     credits.saturating_sub(sum as u64) * reward_per_quota
 }
 
-fn to_bs58(pk: &StakePublicKey) -> String {
+fn to_bs58(pk: &BlsPublicKey) -> String {
     let mut pk = bs58::encode(&pk.to_bytes()).into_string();
     pk.truncate(16);
     pk

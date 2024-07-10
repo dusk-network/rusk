@@ -204,7 +204,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 
         let task = tokio::task::spawn_blocking(move || {
             wallet
-                .transfer(
+                .phoenix_transfer(
                     &mut rng,
                     sender_index,
                     &receiver,

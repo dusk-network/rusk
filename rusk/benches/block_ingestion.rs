@@ -18,7 +18,7 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
 use execution_core::{
-    transfer::Transaction as PhoenixTransaction, StakePublicKey, StakeSecretKey,
+    transfer::Transaction as ProtocolTransaction, BlsPublicKey, BlsSecretKey,
 };
 use node_data::ledger::Transaction;
 use rand::prelude::StdRng;
@@ -37,7 +37,7 @@ fn load_txs() -> Vec<Transaction> {
     for line in BufReader::new(TXS_BYTES).lines() {
         let line = line.unwrap();
         let tx_bytes = hex::decode(line).unwrap();
-        let tx = PhoenixTransaction::from_slice(&tx_bytes).unwrap();
+        let tx = ProtocolTransaction::from_slice(&tx_bytes).unwrap();
         txs.push(Transaction {
             version: 1,
             r#type: 0,
@@ -46,12 +46,21 @@ fn load_txs() -> Vec<Transaction> {
     }
 
     for tx in txs.iter() {
-        match rusk::verifier::verify_proof(&tx.inner) {
-            Ok(true) => Ok(()),
-            Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
-            Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),
+        match &tx.inner {
+            ProtocolTransaction::Phoenix(tx) => {
+                match rusk::verifier::verify_proof(tx) {
+                    Ok(true) => Ok(()),
+                    Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
+                    Err(e) => {
+                        Err(anyhow::anyhow!("Cannot verify the proof: {e}"))
+                    }
+                }
+                .unwrap()
+            }
+            ProtocolTransaction::Moonlight(_) => {
+                panic!("All transactions must be phoenix")
+            }
         }
-        .unwrap()
     }
 
     txs
@@ -80,8 +89,8 @@ pub fn accept_benchmark(c: &mut Criterion) {
 
         let generator = {
             let mut rng = StdRng::seed_from_u64(0xbeef);
-            let sk = StakeSecretKey::random(&mut rng);
-            StakePublicKey::from(&sk)
+            let sk = BlsSecretKey::random(&mut rng);
+            BlsPublicKey::from(&sk)
         };
 
         const BLOCK_HEIGHT: u64 = 1;

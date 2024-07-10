@@ -13,9 +13,7 @@ use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_consensus::operations::CallParams;
-use execution_core::{
-    transfer::Transaction as PhoenixTransaction, StakePublicKey,
-};
+use execution_core::{transfer::Transaction, BlsPublicKey};
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{
@@ -68,10 +66,10 @@ pub struct ExecuteResult {
 #[allow(dead_code)]
 pub fn generator_procedure(
     rusk: &Rusk,
-    txs: &[PhoenixTransaction],
+    txs: &[Transaction],
     block_height: u64,
     block_gas_limit: u64,
-    missed_generators: Vec<StakePublicKey>,
+    missed_generators: Vec<BlsPublicKey>,
     expected: Option<ExecuteResult>,
 ) -> anyhow::Result<Vec<SpentTransaction>> {
     let expected = expected.unwrap_or(ExecuteResult {
@@ -84,7 +82,7 @@ pub fn generator_procedure(
         rusk.preverify(tx)?;
     }
 
-    let generator = StakePublicKey::from(LazyLock::force(&STAKE_SK));
+    let generator = BlsPublicKey::from(LazyLock::force(&STAKE_SK));
     let generator_pubkey = node_data::bls::PublicKey::new(generator);
     let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;

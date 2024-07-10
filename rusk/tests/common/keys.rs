@@ -10,12 +10,12 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use tracing::info;
 
-use execution_core::StakeSecretKey;
+use execution_core::BlsSecretKey;
 
 #[allow(dead_code)]
-pub static STAKE_SK: LazyLock<StakeSecretKey> = LazyLock::new(|| {
-    info!("Generating StakeSecretKey");
+pub static STAKE_SK: LazyLock<BlsSecretKey> = LazyLock::new(|| {
+    info!("Generating BlsSecretKey");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    StakeSecretKey::random(&mut rng)
+    BlsSecretKey::random(&mut rng)
 });

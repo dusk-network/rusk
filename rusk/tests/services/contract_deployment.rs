@@ -113,7 +113,7 @@ fn make_and_execute_transaction_deploy(
 
     let hash = bytecode_hash(bytecode.as_ref()).to_bytes();
     let tx = wallet
-        .execute(
+        .phoenix_execute(
             &mut rng,
             ContractExec::Deploy(ContractDeploy {
                 bytecode: Bytecode {

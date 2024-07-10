@@ -9,7 +9,7 @@
 use crate::error::Error;
 use crate::Result;
 
-use execution_core::transfer::Transaction;
+use execution_core::transfer::{MoonlightTransaction, PhoenixTransaction};
 use rusk_profile::Circuit as CircuitProfile;
 
 use std::sync::LazyLock;
@@ -26,7 +26,8 @@ pub static VD_EXEC_3_2: LazyLock<Vec<u8>> =
 pub static VD_EXEC_4_2: LazyLock<Vec<u8>> =
     LazyLock::new(|| fetch_verifier("ExecuteCircuitFourTwo"));
 
-pub fn verify_proof(tx: &Transaction) -> Result<bool> {
+/// Verifies the proof of the incoming transaction.
+pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
     let pi: Vec<rusk_abi::PublicInput> =
         tx.public_inputs().iter().map(|pi| pi.into()).collect();
 
@@ -43,9 +44,20 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
         }
     };
 
-    // Maybe we want to handle internal serialization error too, currently
-    // they map to `false`.
+    // Maybe we want to handle internal serialization error too,
+    // currently they map to `false`.
     Ok(rusk_abi::verify_proof(vd.to_vec(), tx.proof().to_vec(), pi))
+}
+
+/// Verifies the signature of the incoming transaction.
+pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
+    let payload = tx.payload();
+    let signature = tx.signature();
+
+    let digest = payload.to_hash_input_bytes();
+    let is_valid = rusk_abi::verify_bls(digest, payload.from, *signature);
+
+    Ok(is_valid)
 }
 
 fn fetch_verifier(circuit_name: &str) -> Vec<u8> {

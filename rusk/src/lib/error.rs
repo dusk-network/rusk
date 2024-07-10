@@ -6,8 +6,9 @@
 
 use std::{fmt, io};
 
+use dusk_bytes::Serializable;
 use execution_core::BlsScalar;
-use execution_core::PhoenixError;
+use execution_core::{BlsPublicKey, PhoenixError};
 use rusk_abi::dusk::Dusk;
 
 #[derive(Debug)]
@@ -22,6 +23,8 @@ pub enum Error {
     OutOfGas,
     /// Repeated nullifier in transaction verification
     RepeatingNullifiers(Vec<BlsScalar>),
+    /// Repeating a nonce that has already been used
+    RepeatingNonce(Box<BlsPublicKey>, u64),
     /// Wrong inputs and/or outputs in the transaction verification
     InvalidCircuitArguments(usize, usize),
     /// Failed to build a Rusk instance
@@ -131,6 +134,11 @@ impl fmt::Display for Error {
             Error::OutOfGas => write!(f, "Out of gas"),
             Error::RepeatingNullifiers(n) => {
                 write!(f, "Nullifiers repeat: {n:?}")
+            }
+            Error::RepeatingNonce(account, nonce) => {
+                let encoded_account =
+                    bs58::encode(&account.to_bytes()).into_string();
+                write!(f, "Nonce repeat: {encoded_account} {nonce}")
             }
             Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")

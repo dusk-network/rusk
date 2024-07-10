@@ -12,15 +12,16 @@ use crate::common::block::Block as BlockAwait;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_plonk::prelude::Proof;
-use execution_core::transfer::{
-    Transaction as PhoenixTransaction, TRANSFER_TREE_DEPTH,
+use execution_core::{
+    stake::StakeData,
+    transfer::{AccountData, Transaction, TRANSFER_TREE_DEPTH},
+    BlsPublicKey, BlsScalar, Note, ViewKey,
 };
-use execution_core::{BlsPublicKey, BlsScalar, Note, ViewKey};
 use futures::StreamExt;
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
 use rusk_prover::{LocalProver, Prover};
-use test_wallet::{self as wallet, StakeInfo, Store, UnprovenTransaction};
+use test_wallet::{self as wallet, Store, UnprovenTransaction};
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -106,17 +107,17 @@ impl wallet::StateClient for TestStateClient {
             .ok_or(Error::OpeningPositionNotFound(*note.pos()))
     }
 
-    fn fetch_stake(&self, pk: &BlsPublicKey) -> Result<StakeInfo, Self::Error> {
-        let stake = self
-            .rusk
-            .provisioner(pk)?
-            .map(|stake| StakeInfo {
-                amount: stake.amount,
-                counter: stake.counter,
-                reward: stake.reward,
-            })
-            .unwrap_or_default();
+    fn fetch_stake(&self, pk: &BlsPublicKey) -> Result<StakeData, Self::Error> {
+        let stake = self.rusk.provisioner(pk)?.unwrap_or(StakeData::EMPTY);
         Ok(stake)
+    }
+
+    fn fetch_account(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<AccountData, Self::Error> {
+        let account = self.rusk.account(pk)?;
+        Ok(account)
     }
 }
 
@@ -137,7 +138,7 @@ impl wallet::ProverClient for TestProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<PhoenixTransaction, Self::Error> {
+    ) -> Result<Transaction, Self::Error> {
         let utx_bytes = &utx.to_var_bytes()[..];
         let proof = self.prover.prove_execute(utx_bytes)?;
         info!("UTX: {}", hex::encode(utx_bytes));
@@ -146,7 +147,7 @@ impl wallet::ProverClient for TestProverClient {
 
         //Propagate is not required yet
 
-        Ok(tx)
+        Ok(tx.into())
     }
 }
 
