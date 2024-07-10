@@ -18,7 +18,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
 use dusk_consensus::operations::VoterWithCredits;
-use execution_core::stake::Unstake;
+use execution_core::stake::Withdraw;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
@@ -309,7 +309,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // hit the chain.
         let stake_calls =
             txs.iter().filter(|t| t.err.is_none()).filter_map(|t| {
-                match &t.inner.inner.payload().contract_call() {
+                match &t.inner.inner.call() {
                     Some(call)
                         if (call.contract == STAKE_CONTRACT
                             && (call.fn_name == STAKE
@@ -334,18 +334,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     ) -> Result<ProvisionerChange> {
         let change = match fn_name {
             UNSTAKE => {
-                let unstake: Unstake =
+                let unstake: Withdraw =
                     rkyv::from_bytes(calldata).map_err(|e| {
                         anyhow::anyhow!("Cannot deserialize unstake rkyv {e:?}")
                     })?;
-                ProvisionerChange::Unstake(PublicKey::new(unstake.public_key))
+                ProvisionerChange::Unstake(PublicKey::new(*unstake.account()))
             }
             STAKE => {
                 let stake: execution_core::stake::Stake =
                     rkyv::from_bytes(calldata).map_err(|e| {
                         anyhow::anyhow!("Cannot deserialize stake rkyv {e:?}")
                     })?;
-                ProvisionerChange::Stake(PublicKey::new(stake.public_key))
+                ProvisionerChange::Stake(PublicKey::new(*stake.account()))
             }
             e => unreachable!("Parsing unexpected method: {e}"),
         };
