@@ -14,8 +14,8 @@ use rand_core::OsRng;
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_plonk::prelude::*;
 use execution_core::{
-    BlsScalar, NotePublicKey, NoteSecretKey, PublicKey, SecretKey,
-    StakePublicKey, StakeSecretKey,
+    BlsPublicKey, BlsScalar, BlsSecretKey, NotePublicKey, NoteSecretKey,
+    PublicKey, SecretKey,
 };
 use ff::Field;
 use rusk_abi::hash::Hasher;
@@ -182,8 +182,8 @@ fn stake_signature() {
 
     let message = b"some-message".to_vec();
 
-    let stake_sk = StakeSecretKey::random(&mut OsRng);
-    let stake_pk = StakePublicKey::from(&stake_sk);
+    let stake_sk = BlsSecretKey::random(&mut OsRng);
+    let stake_pk = BlsPublicKey::from(&stake_sk);
 
     let stake_sig = stake_sk.sign(&stake_pk, &message);
 
@@ -195,8 +195,8 @@ fn stake_signature() {
 
     assert!(valid, "Stake Signature verification expected to succeed");
 
-    let wrong_sk = StakeSecretKey::random(&mut OsRng);
-    let wrong_pk = StakePublicKey::from(&wrong_sk);
+    let wrong_sk = BlsSecretKey::random(&mut OsRng);
+    let wrong_pk = BlsPublicKey::from(&wrong_sk);
 
     let arg = (arg.0, wrong_pk, arg.2);
     let valid: bool = session
