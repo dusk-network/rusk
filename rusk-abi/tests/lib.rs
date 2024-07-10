@@ -43,7 +43,7 @@ fn hash_host() {
     }
 
     assert_eq!(
-        "0x0e17c56704c3ec2523d206e2e06e08b336e0079bb4c4c5b850d496125f73cdb9",
+        "0x58c751eca2d6a41227e0c52ef579f4688d698b3447a8bcc27fb2831e11d3239e",
         format!("{:?}", Hasher::digest(input))
     );
 }
@@ -99,7 +99,7 @@ fn hash() {
         .data;
 
     assert_eq!(
-        "0x0e17c56704c3ec2523d206e2e06e08b336e0079bb4c4c5b850d496125f73cdb9",
+        "0x58c751eca2d6a41227e0c52ef579f4688d698b3447a8bcc27fb2831e11d3239e",
         format!("{scalar:?}")
     );
 }

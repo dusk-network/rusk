@@ -5,13 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use blake2b_simd::{Params, State};
-use dusk_bytes::Serializable;
 use execution_core::BlsScalar;
 
-/// Hashes scalars and arbitrary slices of bytes using Blake2b-256, returning
-/// a valid [`BlsScalar`].
+/// Hashes scalars and arbitrary slices of bytes using Blake2b, returning a
+/// valid [`BlsScalar`]. Using the `Hasher` yields the same result as when using
+/// `BlsScalar::hash_to_scalar`.
 ///
-/// The hashing cannot be proved inside a circuit, if that is desired, use
+/// This hash cannot be proven inside a circuit, if that is desired, use
 /// `poseidon_hash` instead.
 pub struct Hasher {
     state: State,
@@ -20,7 +20,7 @@ pub struct Hasher {
 impl Default for Hasher {
     fn default() -> Self {
         Hasher {
-            state: Params::new().hash_length(BlsScalar::SIZE).to_state(),
+            state: Params::new().hash_length(64).to_state(),
         }
     }
 }
@@ -43,32 +43,37 @@ impl Hasher {
         hasher
     }
 
-    /// Get the output of the hasher.
-    pub fn output(self) -> [u8; BlsScalar::SIZE] {
-        let hasher = self;
-        let mut buf = [0u8; BlsScalar::SIZE];
-        buf.copy_from_slice(hasher.state.finalize().as_ref());
-
-        // This is a workaround for the fact that `Blake2b` does not support
-        // bitlengths that are not a multiple of 8.
-        // We're going to zero out the last nibble of the hash to ensure
-        // that the result can fit in a `BlsScalar`.
-        buf[BlsScalar::SIZE - 1] &= 0xf;
-
-        buf
-    }
-
     /// Retrieve result and consume hasher instance.
     pub fn finalize(self) -> BlsScalar {
-        BlsScalar::from_bytes(&self.output()).expect(
-            "Conversion to BlsScalar should never fail after truncation",
-        )
+        BlsScalar::from_bytes_wide(self.state.finalize().as_array())
     }
 
-    /// Compute hash of arbitrary data into a valid [`BlsScalar`].
+    /// Compute hash of arbitrary data into a valid [`BlsScalar`]. This
+    /// equivalent to using `BlsScalar::hash_to_scalar`.
     pub fn digest(data: impl AsRef<[u8]>) -> BlsScalar {
         let mut hasher = Hasher::new();
         hasher.update(data.as_ref());
         hasher.finalize()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand_core::{OsRng, RngCore};
+
+    #[test]
+    fn test_hash() {
+        let mut input = [0u8; 100000];
+        OsRng.fill_bytes(&mut input[..]);
+
+        let mut hasher = Hasher::new();
+        for input_chunk in input.chunks(100) {
+            hasher.update(input_chunk);
+        }
+        let hash = hasher.finalize();
+
+        assert_eq!(hash, BlsScalar::hash_to_scalar(&input));
+        assert_eq!(hash, Hasher::digest(&input));
     }
 }
