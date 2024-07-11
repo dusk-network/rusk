@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
-use crate::config::CONSENSUS_MAX_ITER;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
@@ -120,7 +119,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// Consensus loop terminates on any of these conditions:
     ///
     /// * A fully valid block for current round is accepted
-    /// * Consensus reaches  CONSENSUS_MAX_ITER
     /// * Unrecoverable error is returned by a step execution
     fn spawn_consensus(
         &self,
@@ -186,7 +184,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 ru.base_timeouts.clone(),
             );
 
-            while iter < CONSENSUS_MAX_ITER {
+            loop {
                 Self::consensus_delay().await;
 
                 iter_ctx.on_begin(iter);
@@ -234,10 +232,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 }
 
                 iter_ctx.on_close();
-
                 iter += 1;
             }
-            Err(ConsensusError::MaxIterationReached)
         })
     }
 

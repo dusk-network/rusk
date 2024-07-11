@@ -120,7 +120,6 @@ pub enum ConsensusError {
     NotCommitteeMember,
     NotImplemented,
     NotReady,
-    MaxIterationReached,
     ChildTaskTerminated,
     Canceled(u64),
     VoteAlreadyCollected,

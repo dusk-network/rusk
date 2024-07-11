@@ -21,11 +21,14 @@ use node_data::message::{AsyncQueue, Message, Payload};
 
 use node_data::StepName;
 
-use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
-use node_data::message::payload::{QuorumType, ValidationResult};
+use node_data::message::payload::{
+    QuorumType, RatificationResult, ValidationResult, Vote,
+};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
@@ -113,6 +116,12 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         self.iter_ctx.committees.get_committee(self.step())
     }
 
+    /// Returns true if the last step of last iteration is currently running
+    fn last_step_running(&self) -> bool {
+        self.iteration == CONSENSUS_MAX_ITER - 1
+            && self.step_name() == StepName::Ratification
+    }
+
     /// Runs a loop that collects both inbound messages and timeout event.
     ///
     /// It accepts an instance of MsgHandler impl (phase var) and calls its
@@ -126,11 +135,22 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
-        debug!(event = "run event_loop");
+        let open_consensus_mode = self.last_step_running();
 
-        let timeout = self.iter_ctx.get_timeout(self.step_name());
+        // When consensus is in open_consensus_mode then it keeps Ratification
+        // step running infinitely until either a valid block or
+        // emergency block is accepted
+        let timeout = if open_consensus_mode {
+            let dur = Duration::new(u32::MAX as u64, 0);
+            info!(event = "run event_loop in open_mode", ?dur);
+            dur
+        } else {
+            let dur = self.iter_ctx.get_timeout(self.step_name());
+            debug!(event = "run event_loop", ?dur);
+            dur
+        };
+
         let deadline = Instant::now().checked_add(timeout).unwrap();
-
         let inbound = self.inbound.clone();
 
         // Handle both timeout event and messages from inbound queue.
@@ -138,9 +158,23 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             match time::timeout_at(deadline, inbound.recv()).await {
                 // Inbound message event
                 Ok(Ok(msg)) => {
+                    let success_quorum = match &msg.payload {
+                        Payload::Quorum(q) => matches!(
+                            q.att.result,
+                            RatificationResult::Success(Vote::Valid(_))
+                        ),
+                        _ => false,
+                    };
+
                     if let Some(step_result) =
                         self.process_inbound_msg(phase.clone(), msg).await
                     {
+                        if open_consensus_mode && !success_quorum {
+                            // In open consensus mode, consensus step is
+                            // terminated only in case of a success quorum
+                            continue;
+                        }
+
                         self.report_elapsed_time().await;
                         return Ok(step_result);
                     }
