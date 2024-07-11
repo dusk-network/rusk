@@ -9,12 +9,6 @@ import { appStore } from "$lib/stores";
 
 import HomePage from "../+page.svelte";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 const marketDataSettleTime = vi.hoisted(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 30));
