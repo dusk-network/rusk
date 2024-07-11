@@ -28,7 +28,9 @@ use tempfile::tempdir;
 use common::state::new_state;
 
 fn load_txs() -> Vec<Transaction> {
-    const TXS_BYTES: &[u8] = include_bytes!("block");
+    // The file "txs" can be generated using `generate_phoenix_txs()` in
+    // "tests/rusk-state.rs".
+    const TXS_BYTES: &[u8] = include_bytes!("txs");
 
     let mut txs = Vec::new();
 

@@ -8,10 +8,9 @@
 pub mod common;
 
 use crate::common::*;
-use std::collections::HashMap;
 
 use std::path::Path;
-use std::sync::{mpsc, Arc, RwLock};
+use std::sync::{mpsc, Arc};
 
 use execution_core::{
     transfer::TreeLeaf, JubJubScalar, Note, PublicKey, SecretKey,
@@ -22,15 +21,11 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::chain::{Rusk, RuskTip};
 use rusk::Result;
-use rusk_abi::dusk::LUX;
 use rusk_abi::{TRANSFER_CONTRACT, VM};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
-use tokio::task;
 use tracing::info;
 
 use crate::common::state::new_state;
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -163,11 +158,18 @@ pub fn rusk_state_finalized() -> Result<()> {
     Ok(())
 }
 
-// #[tokio::test(flavor = "multi_thread")]
+// This code is used to generate the transaction bytes for the benchmarks.
+// To generate:
+//   - uncomment the `#[tokio::test(..)]' line
+//   - run the test 'generate_phoenix_txs'
+//   - move the resulting "txs" file under "benches/txs"
 #[allow(dead_code)]
-async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
-    // Setup the logger
-    logger();
+// #[tokio::test(flavor = "multi_thread")]
+async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
+    use common::wallet::{TestProverClient, TestStateClient, TestStore};
+    use std::io::Write;
+
+    common::logger();
 
     let tmp = tempdir()?;
     let snapshot = toml::from_str(include_str!("./config/bench.toml"))
@@ -175,31 +177,23 @@ async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     let rusk = new_state(&tmp, &snapshot)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
+    let cache =
+        Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
-    let wallet = wallet::Wallet::new(
+    let wallet = test_wallet::Wallet::new(
         TestStore,
         TestStateClient { rusk, cache },
         TestProverClient::default(),
     );
-
-    // Generates some public keys for the wallet
-    // for i in 0..100 {
-    //     let pk = wallet.stake_public_key(i).unwrap();
-    //     let pk_bytes = pk.to_bytes();
-    //     let pk_string = bs58::encode(pk_bytes).into_string();
-    //     println!("{pk_string}");
-    // }
 
     const N_ADDRESSES: usize = 100;
 
     const TRANSFER_VALUE: u64 = 1_000_000;
     const GAS_LIMIT: u64 = 100_000_000;
 
-    let mut tasks = Vec::with_capacity(N_ADDRESSES);
-    let mut txs = Vec::with_capacity(N_ADDRESSES);
-
     let wallet = Arc::new(wallet);
+
+    let mut txs_file = std::fs::File::create("txs")?;
 
     for sender_index in 0..N_ADDRESSES as u64 {
         let wallet = wallet.clone();
@@ -208,7 +202,7 @@ async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
         let receiver_index = (sender_index + 1) % N_ADDRESSES as u64;
         let receiver = wallet.public_key(receiver_index).unwrap();
 
-        tasks.push(task::spawn_blocking(move || {
+        let task = tokio::task::spawn_blocking(move || {
             wallet
                 .transfer(
                     &mut rng,
@@ -216,20 +210,14 @@ async fn generate_bench_txs() -> Result<(), Box<dyn std::error::Error>> {
                     &receiver,
                     TRANSFER_VALUE,
                     GAS_LIMIT,
-                    LUX,
+                    rusk_abi::dusk::LUX,
                 )
                 .expect("Making a transfer TX should succeed")
-        }));
-    }
+        });
 
-    for task in tasks {
-        txs.push(task.await.expect("Joining should succeed"));
-    }
-
-    for tx in txs {
-        let tx_bytes = tx.to_var_bytes();
-        let tx_hex = hex::encode(tx_bytes);
-        println!("{tx_hex}");
+        let tx = task.await.expect("Joining should succeed");
+        txs_file.write(hex::encode(tx.to_var_bytes()).as_bytes())?;
+        txs_file.write(b"\n")?;
     }
 
     Ok(())
