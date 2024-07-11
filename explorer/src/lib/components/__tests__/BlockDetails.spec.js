@@ -7,12 +7,6 @@ import { transformBlock } from "$lib/chain-info";
 
 import { BlockDetails } from "../";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 /**
  * @param {HTMLElement} container
  * @param {"next" | "prev"} which

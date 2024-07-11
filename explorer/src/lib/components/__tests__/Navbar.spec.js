@@ -4,12 +4,6 @@ import * as appNavigation from "$app/navigation";
 
 import { Navbar } from "..";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 /** @param {HTMLElement} container */
 const getNotificationElement = (container) =>
   container.querySelector(".dusk-navbar__menu--search-notification");

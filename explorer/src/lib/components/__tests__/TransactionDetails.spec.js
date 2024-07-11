@@ -6,12 +6,6 @@ import { transformTransaction } from "$lib/chain-info";
 
 import { TransactionDetails } from "..";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 describe("Transaction Details", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));

@@ -4,12 +4,6 @@ import { TransactionsList } from "..";
 import { gqlTransaction } from "$lib/mock-data";
 import { transformTransaction } from "$lib/chain-info";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 describe("Transactions List", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 20));

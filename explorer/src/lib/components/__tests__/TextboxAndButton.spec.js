@@ -3,12 +3,6 @@ import { mdiMagnify } from "@mdi/js";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { TextboxAndButton } from "..";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 describe("TextField", () => {
   afterEach(cleanup);
 
