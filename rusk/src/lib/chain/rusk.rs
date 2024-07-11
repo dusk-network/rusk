@@ -25,6 +25,7 @@ use execution_core::{
 };
 use node_data::ledger::{SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
+use rusk_abi::ContractError::{OutOfGas, Panic};
 use rusk_abi::{
     CallReceipt, ContractError, Error as PiecrustError, Event, Session,
     STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
@@ -42,6 +43,8 @@ pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
     StakePublicKey::from_slice(dusk_cpk_bytes)
         .expect("Dusk consensus public key to be valid")
 });
+
+const GAS_PER_DEPLOY_BYTE: u64 = 100;
 
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
@@ -126,10 +129,7 @@ impl Rusk {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
-                    let deploy_result =
-                        try_deploy(&mut session, &unspent_tx.inner, &tx_id);
-
-                    if gas_spent > block_gas_left || deploy_result.is_err() {
+                    if gas_spent > block_gas_left {
                         // If the transaction went over the block gas limit we
                         // re-execute all spent transactions. We don't discard
                         // the transaction, since it is
@@ -440,10 +440,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let tx_id = hex::encode(unspent_tx.id());
         let receipt = execute(&mut session, tx)?;
-
-        let _ = try_deploy(&mut session, &unspent_tx.inner, &tx_id);
 
         update_hasher(&mut event_hasher, &receipt.events);
         events.extend(receipt.events);
@@ -525,6 +522,38 @@ fn execute(
         tx_stripped.as_ref().unwrap_or(tx),
         tx.payload().fee.gas_limit,
     )?;
+
+    // Deploy if this is a deployment transaction
+    if let Some(deploy) = tx.payload().contract_deploy() {
+        if receipt.data.is_ok() {
+            let bytecode_charge =
+                deploy.bytecode.bytes.len() as u64 * GAS_PER_DEPLOY_BYTE;
+            let min_gas_limit = receipt.gas_spent + bytecode_charge;
+            let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
+            if tx.payload().fee.gas_limit < min_gas_limit {
+                receipt.data = Err(OutOfGas);
+            } else if hash != deploy.bytecode.hash {
+                receipt.data = Err(Panic("failed bytecode hash check".into()))
+            } else {
+                let result = session.deploy_raw(
+                    None,
+                    deploy.bytecode.bytes.as_slice(),
+                    deploy.constructor_args.clone(),
+                    deploy.owner.clone(),
+                    tx.payload().fee.gas_limit - receipt.gas_spent,
+                );
+                match result {
+                    Ok(_) => {
+                        receipt.gas_spent += bytecode_charge;
+                    }
+                    Err(err) => {
+                        info!("Tx caused deployment error {err:?}");
+                        receipt.data = Err(Panic("failed deployment".into()))
+                    }
+                }
+            }
+        }
+    };
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
@@ -642,35 +671,6 @@ fn reward_slash_and_update_root(
     events.extend(r.events);
 
     Ok(events)
-}
-
-fn try_deploy(
-    session: &mut Session,
-    tx: &PhoenixTransaction,
-    tx_id: impl AsRef<str>,
-) -> Result<()> {
-    if let Some(deploy) = tx.payload().contract_deploy() {
-        let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
-        if hash != deploy.bytecode.hash {
-            info!(
-                "Tx {} caused deployment bytecode hash error",
-                tx_id.as_ref()
-            );
-            return Err(Error::Vm(rusk_abi::Error::ValidationError));
-        }
-        let result = session.deploy_raw(
-            None,
-            deploy.bytecode.bytes.as_slice(),
-            deploy.constructor_args.clone(),
-            deploy.owner.clone(),
-            tx.payload().fee.gas_limit,
-        );
-        if let Some(err) = result.err() {
-            info!("Tx {} caused deployment error {err:?}", tx_id.as_ref());
-            return Err(err.into());
-        }
-    };
-    Ok(())
 }
 
 fn to_bs58(pk: &StakePublicKey) -> String {

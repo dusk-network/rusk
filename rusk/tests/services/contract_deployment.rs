@@ -27,7 +27,6 @@ use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
-const WALLET_BALANCE: u64 = 10_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
 const GAS_PRICE: u64 = 2;
 const POINT_LIMIT: u64 = 0x10000000;
@@ -38,9 +37,8 @@ const ALICE_CONTRACT_ID: ContractId = {
     bytes[0] = 0xFA;
     ContractId::from_bytes(bytes)
 };
-const ALICE_OWNER: [u8; 32] = [0; 32];
 
-const BOB_OWNER: [u8; 32] = [1; 32];
+const OWNER: [u8; 32] = [1; 32];
 
 const BOB_ECHO_VALUE: u64 = 775;
 const BOB_INIT_VALUE: u8 = 5;
@@ -48,8 +46,9 @@ const BOB_INIT_VALUE: u8 = 5;
 fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
     let dir = dir.as_ref();
 
-    let snapshot = toml::from_str(include_str!("../config/contract_pays.toml"))
-        .expect("Cannot deserialize config");
+    let snapshot =
+        toml::from_str(include_str!("../config/contract_deployment.toml"))
+            .expect("Cannot deserialize config");
 
     let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
         let alice_bytecode = include_bytes!(
@@ -60,7 +59,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
             .deploy(
                 alice_bytecode,
                 ContractData::builder()
-                    .owner(ALICE_OWNER)
+                    .owner(OWNER)
                     .contract_id(ALICE_CONTRACT_ID),
                 POINT_LIMIT,
             )
@@ -75,7 +74,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                 .deploy(
                     bob_bytecode,
                     ContractData::builder()
-                        .owner(BOB_OWNER)
+                        .owner(OWNER)
                         .constructor_arg(&BOB_INIT_VALUE),
                     POINT_LIMIT,
                 )
@@ -102,18 +101,8 @@ fn make_and_execute_transaction_deploy(
     bytecode: impl AsRef<[u8]>,
     gas_limit: u64,
     init_value: u8,
-    should_err: bool,
+    should_fail: bool,
 ) {
-    let initial_balance = wallet
-        .get_balance(SENDER_INDEX)
-        .expect("Getting initial balance should succeed")
-        .value;
-
-    assert_eq!(
-        initial_balance, WALLET_BALANCE,
-        "The sender should have the given initial balance"
-    );
-
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
     let constructor_args = Some(vec![init_value]);
@@ -127,7 +116,7 @@ fn make_and_execute_transaction_deploy(
                     hash,
                     bytes: bytecode.as_ref().to_vec(),
                 },
-                owner: BOB_OWNER.to_vec(),
+                owner: OWNER.to_vec(),
                 constructor_args,
             }),
             SENDER_INDEX,
@@ -137,16 +126,9 @@ fn make_and_execute_transaction_deploy(
         )
         .expect("Making transaction should succeed");
 
-    let expected = if should_err {
-        ExecuteResult {
-            discarded: 0,
-            executed: 0,
-        }
-    } else {
-        ExecuteResult {
-            discarded: 0,
-            executed: 1,
-        }
+    let expected = ExecuteResult {
+        discarded: 0,
+        executed: 1,
     };
 
     let result = generator_procedure(
@@ -157,14 +139,14 @@ fn make_and_execute_transaction_deploy(
         vec![],
         Some(expected),
     );
-    if !should_err {
-        let spent_transactions =
-            result.expect("generator procedure should succeed");
-        let mut spent_transactions = spent_transactions.into_iter();
+    let spent_transactions =
+        result.expect("generator procedure should succeed");
+    let mut spent_transactions = spent_transactions.into_iter();
+    if should_fail {
         let tx = spent_transactions
             .next()
             .expect("There should be one spent transactions");
-        assert!(tx.err.is_none(), "Transaction should succeed");
+        assert!(tx.err.is_some(), "Transaction should fail");
     }
 }
 
@@ -256,7 +238,9 @@ pub async fn contract_deploy() {
         .expect("Getting wallet's balance should succeed")
         .value;
     assert_bob_contract_is_deployed(&path, &rusk, &contract_id);
-    println!("total cost={}", before_balance - after_balance);
+    let funds_spent = before_balance - after_balance;
+    println!("funds spent={}", funds_spent);
+    assert!(funds_spent < GAS_LIMIT * GAS_PRICE);
 }
 
 /// We deploy a contract which is already deployed
@@ -305,7 +289,9 @@ pub async fn contract_already_deployed() {
         .get_balance(0)
         .expect("Getting wallet's balance should succeed")
         .value;
-    println!("total cost={}", before_balance - after_balance);
+    let funds_spent = before_balance - after_balance;
+    println!("funds spent={}", funds_spent);
+    assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
 
 /// We deploy a contract with a corrupted bytecode
@@ -357,5 +343,76 @@ pub async fn contract_deploy_corrupted_bytecode() {
         .get_balance(0)
         .expect("Getting wallet's balance should succeed")
         .value;
-    println!("total cost={}", before_balance - after_balance);
+    let funds_spent = before_balance - after_balance;
+    println!("funds spent={}", funds_spent);
+    assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
+}
+
+/// We deploy different contracts and compare the charge
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy_charge() {
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    );
+    // let bob_contract_id = bytecode_hash(bob_bytecode.as_ref());
+
+    let license_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
+    );
+    // let license_contract_id = bytecode_hash(license_bytecode.as_ref());
+
+    let before_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        bob_bytecode,
+        GAS_LIMIT,
+        BOB_INIT_VALUE,
+        false,
+    );
+    let after_bob_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        license_bytecode,
+        GAS_LIMIT,
+        0,
+        false,
+    );
+    let after_license_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    let bob_deployment_cost = before_balance - after_bob_balance;
+    let license_deployment_cost = after_bob_balance - after_license_balance;
+    println!("bob deployment cost={}", bob_deployment_cost);
+    println!("license deployment cost={}", license_deployment_cost);
+    assert!(license_deployment_cost > bob_deployment_cost);
+    assert!(license_deployment_cost - bob_deployment_cost > 10_000_000);
 }

@@ -55,6 +55,9 @@ impl Bytecode {
         buf = &buf[32..];
         let bytes_len = usize::try_from(u64::from_reader(&mut buf)?)
             .map_err(|_| BytesError::InvalidData)?;
+        if buf.len() < bytes_len {
+            return Err(InvalidData);
+        }
         let bytes = buf[..bytes_len].into();
         Ok((Self { hash, bytes }, 32 + bytes_len + mem::size_of::<u64>()))
     }
