@@ -146,4 +146,40 @@
    "generator_bs58": "rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uz.."
 }
 ```
+
+#### `/on/consensus/provisioner_added`
+- Description: Subscribe for an event of an eligible provisioner joining consensus.
+- Event
+
+```json
+{
+   "round": "1234",
+   "provisioner_bs58": "rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uz.."
+}
+```
  
+#### `/on/consensus/provisioner_slashed`
+- Description: Subscribe for an event of a provisioner being slashed.
+- Event
+
+```json
+{
+   "round": "1234",
+   "provisioner_bs58": "rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uz..",
+   "reason": "missing_candidate",
+   "slash_type": "soft",
+   "slash_amount": 12222222
+}
+```
+
+#### `/on/consensus:#provisioner_bs58/rewarded`
+- Description: Subscribe for an event of a specified provisioner being rewarded with either Generator or Voter reward.
+- Event
+
+```json
+{
+   "round": "1234",
+   "provisioner_bs58": "rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uz..",
+   "reward_dusk": 1600000000
+}
+```
