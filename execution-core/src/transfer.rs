@@ -30,6 +30,7 @@ use crate::{
 
 mod transaction;
 use crate::bytecode::Bytecode;
+use crate::reader::{read_arr, read_str, read_vec};
 pub use transaction::{Payload, Transaction};
 
 /// Unique ID to identify a contract.
@@ -161,26 +162,14 @@ impl ContractDeploy {
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
-        let (bytecode, bytecode_len) = Bytecode::from_buf(buf)?;
-        buf = &buf[bytecode_len..];
+        let bytecode = Bytecode::from_buf(&mut buf)?;
 
-        let owner_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        let owner = buf[..owner_len].into();
-        buf = &buf[owner_len..];
+        let owner = read_vec(&mut buf)?;
 
         let constructor_args = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => {
-                let constructor_args_len =
-                    usize::try_from(u64::from_reader(&mut buf)?)
-                        .map_err(|_| BytesError::InvalidData)?;
-                let constructor_args = buf[..constructor_args_len].into();
-                Some(constructor_args)
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
+            1 => Some(read_vec(&mut buf)?),
+            _ => return Err(BytesError::InvalidData),
         };
 
         Ok(Self {
@@ -230,19 +219,13 @@ impl ContractCall {
     /// # Errors
     /// Errors when the bytes are not cannonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
-        let mut contract = [0u8; 32];
-        contract.copy_from_slice(&buf[..32]);
-        let mut buf = &buf[32..];
+        let mut buf = buf;
 
-        let name_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        let fn_name = String::from_utf8(buf[..name_len].into())
-            .map_err(|_| BytesError::InvalidData)?;
-        buf = &buf[name_len..];
+        let contract = read_arr::<32>(&mut buf)?;
 
-        let args_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        let fn_args = buf[..args_len].into();
+        let fn_name = read_str(&mut buf)?;
+
+        let fn_args = read_vec(&mut buf)?;
 
         Ok(Self {
             contract,

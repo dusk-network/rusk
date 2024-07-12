@@ -14,6 +14,7 @@
 pub type BlockHeight = u64;
 
 pub mod bytecode;
+pub mod reader;
 pub mod stake;
 pub mod transfer;
 

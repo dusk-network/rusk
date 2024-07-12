@@ -14,7 +14,7 @@ use execution_core::transfer::{
 use execution_core::{Note, PublicKey, SecretKey, TxSkeleton};
 use ff::Field;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{RngCore, SeedableRng};
 
 fn build_skeleton_fee_deposit() -> (TxSkeleton, Fee, u64) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -145,5 +145,17 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
     assert_eq!(transaction, deserialized);
+    Ok(())
+}
+
+#[test]
+fn transaction_deserialization_failing() -> Result<(), Error> {
+    let mut data = [0u8; 2 ^ 16];
+    for exp in 3..16 {
+        rand::thread_rng().fill_bytes(&mut data[..2 ^ exp]);
+        let transaction_bytes = data.to_vec();
+        Transaction::from_slice(&transaction_bytes)
+            .expect_err("deserialization should fail");
+    }
     Ok(())
 }

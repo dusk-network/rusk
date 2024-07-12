@@ -17,7 +17,7 @@ rand = { version = "0.8", default-features = false }
 ff = { version = "0.13", default-features = false }
 
 [dev-dependencies]
-rand = { version = "0.8", default-features = false, features = ["std_rng"] }
+rand = { version = "0.8" }
 
 [features]
 # It enables parallel thread aggregation of BlsPublicKey
