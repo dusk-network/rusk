@@ -5,20 +5,46 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt;
+use std::io;
 use std::time::Duration;
 
 use execution_core::StakePublicKey;
-use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
+use node_data::ledger::Fault;
+use node_data::ledger::InvalidFault;
+use node_data::ledger::{Block, Header, Slash, SpentTransaction, Transaction};
 use node_data::StepName;
+use thiserror::Error;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
 pub type VoterWithCredits = (StakePublicKey, usize);
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    Failed,
-    InvalidIterationInfo,
+    #[error("failed to call VST {0}")]
+    InvalidVST(anyhow::Error),
+    #[error("failed to call EST {0}")]
+    InvalidEST(anyhow::Error),
+    #[error("failed to verify header {0}")]
+    InvalidHeader(anyhow::Error),
+    #[error("Unable to update metrics {0}")]
+    MetricsUpdate(anyhow::Error),
+    #[error("Invalid Iteration Info {0}")]
+    InvalidIterationInfo(io::Error),
+    #[error("Invalid Faults {0}")]
+    InvalidFaults(InvalidFault),
+}
+
+impl From<io::Error> for Error {
+    fn from(value: io::Error) -> Self {
+        Self::InvalidIterationInfo(value)
+    }
+}
+
+impl From<InvalidFault> for Error {
+    fn from(value: InvalidFault) -> Self {
+        Self::InvalidFaults(value)
+    }
 }
 
 #[derive(Default, Clone, Debug)]
@@ -26,7 +52,7 @@ pub struct CallParams {
     pub round: u64,
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
-    pub missed_generators: Vec<StakePublicKey>,
+    pub to_slash: Vec<Slash>,
     pub voters_pubkey: Option<Vec<VoterWithCredits>>,
 }
 
@@ -61,6 +87,12 @@ pub trait Operations: Send + Sync {
         candidate_header: &Header,
         disable_winning_att_check: bool,
     ) -> Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>), Error>;
+
+    async fn verify_faults(
+        &self,
+        block_height: u64,
+        faults: &[Fault],
+    ) -> Result<(), Error>;
 
     async fn verify_state_transition(
         &self,
