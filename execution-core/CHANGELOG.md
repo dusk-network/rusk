@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Improved deserialization [#1963]
 - Change payload to support contract deployment [#1882]
 
 
@@ -78,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       StakeData,
   }`
 
+[#1963]: https://github.com/dusk-network/rusk/issues/1963
 [#1882]: https://github.com/dusk-network/rusk/issues/1882
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/execution-core-0.1.0...HEAD
