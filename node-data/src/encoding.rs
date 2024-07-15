@@ -482,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn test_encoding_faul() {
+    fn test_encoding_fault() {
         assert_serializable::<Fault>();
     }
 }

@@ -14,7 +14,7 @@ mod transaction;
 pub use transaction::{SpentTransaction, Transaction};
 
 mod faults;
-pub use faults::Fault;
+pub use faults::{Fault, InvalidFault, Slash, SlashType};
 
 mod attestation;
 pub use attestation::{
@@ -24,7 +24,6 @@ pub use attestation::{
 use crate::bls::PublicKeyBytes;
 use crate::Serializable;
 
-use dusk_bytes::DeserializableSlice;
 use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};

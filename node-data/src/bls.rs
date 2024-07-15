@@ -68,6 +68,10 @@ impl PublicKey {
         &self.inner
     }
 
+    pub fn into_inner(self) -> BlsPublicKey {
+        self.inner
+    }
+
     /// Truncated base58 representation of inner data
     pub fn to_bs58(&self) -> String {
         self.bytes().to_bs58()

@@ -6,9 +6,7 @@
 
 use super::*;
 
-use execution_core::BlsPublicKey;
-
-use crate::message::payload::{RatificationResult, Vote};
+use crate::message::payload::RatificationResult;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
@@ -94,27 +92,6 @@ impl IterationsInfo {
         Self {
             att_list: attestations,
         }
-    }
-
-    pub fn to_missed_generators(&self) -> Result<Vec<BlsPublicKey>, io::Error> {
-        self.to_missed_generators_bytes()
-        .map(|pk| BlsPublicKey::from_slice(pk.inner()).map_err(|e|{
-            tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
-            io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
-        }))
-        .collect()
-    }
-
-    pub fn to_missed_generators_bytes(
-        &self,
-    ) -> impl Iterator<Item = &PublicKeyBytes> {
-        self.att_list
-            .iter()
-            .flatten()
-            .filter(|(c, _)| {
-                c.result == RatificationResult::Fail(Vote::NoCandidate)
-            })
-            .map(|(_, pk)| pk)
     }
 }
 

@@ -4,13 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::message::{
-    payload::{Candidate, Ratification, Validation, Vote},
-    ConsensusHeader, SignInfo, StepMessage,
+use crate::{
+    bls::PublicKey,
+    message::{
+        payload::{
+            Candidate, Ratification, RatificationResult, Validation, Vote,
+        },
+        ConsensusHeader, SignInfo, StepMessage,
+    },
 };
 
 use dusk_bytes::Serializable as DuskSerializeble;
-use execution_core::{BlsAggPublicKey, BlsSigError, BlsSignature};
+use execution_core::{
+    stake::EPOCH, BlsAggPublicKey, BlsSigError, BlsSignature,
+};
+use thiserror::Error;
+use tracing::error;
 
 use super::*;
 
@@ -22,6 +31,32 @@ pub enum Fault {
     DoubleValidationVote(FaultData<Vote>, FaultData<Vote>),
 }
 
+#[derive(Debug, Error)]
+pub enum InvalidFault {
+    #[error("Inner faults have same data")]
+    Duplicated,
+    #[error("Fault is expired")]
+    Expired,
+    #[error("Fault is from future")]
+    Future,
+    #[error("Previous hash mismatch")]
+    PrevHashMismatch,
+    #[error("Iteration mismatch")]
+    IterationMismatch,
+    #[error("Round mismatch")]
+    RoundMismatch,
+    #[error("Invalid Signature {0}")]
+    InvalidSignature(BlsSigError),
+    #[error("Generic error {0}")]
+    Other(String),
+}
+
+impl From<BlsSigError> for InvalidFault {
+    fn from(value: BlsSigError) -> Self {
+        Self::InvalidSignature(value)
+    }
+}
+
 impl Fault {
     /// Hash the serialized form
     pub fn hash(&self) -> [u8; 32] {
@@ -30,8 +65,18 @@ impl Fault {
         Hasher::digest(b).to_bytes()
     }
 
+    pub fn same(&self, other: &Fault) -> bool {
+        let (a, b) = &self.faults_id();
+        other.has_id(a) && other.has_id(b)
+    }
+
+    fn has_id(&self, id: &[u8; 32]) -> bool {
+        let (a, b) = &self.faults_id();
+        a == id || b == id
+    }
+
     /// Return the IDs of the inner faults.
-    pub fn ids(&self) -> (Hash, Hash) {
+    fn faults_id(&self) -> (Hash, Hash) {
         match self {
             Fault::DoubleCandidate(a, b) => {
                 let seed = Candidate::SIGN_SEED;
@@ -54,8 +99,16 @@ impl Fault {
         }
     }
 
+    fn to_culprit(&self) -> PublicKey {
+        match self {
+            Fault::DoubleRatificationVote(a, _)
+            | Fault::DoubleValidationVote(a, _) => a.sig.signer.clone(),
+            Fault::DoubleCandidate(a, _) => a.sig.signer.clone(),
+        }
+    }
+
     /// Get the ConsensusHeader related to the inner FaultDatas
-    pub fn consensus_header(&self) -> (&ConsensusHeader, &ConsensusHeader) {
+    fn consensus_header(&self) -> (&ConsensusHeader, &ConsensusHeader) {
         match self {
             Fault::DoubleRatificationVote(a, b)
             | Fault::DoubleValidationVote(a, b) => (&a.header, &b.header),
@@ -63,8 +116,50 @@ impl Fault {
         }
     }
 
+    /// Check if both faults are related to the same consensus header and
+    /// validate their signatures.
+    ///
+    /// Return the related ConsensusHeader
+    pub fn validate(
+        &self,
+        current_height: u64,
+    ) -> Result<&ConsensusHeader, InvalidFault> {
+        let (h1, h2) = self.consensus_header();
+        // Check that both consensus headers are the same
+        if h1.iteration != h2.iteration {
+            return Err(InvalidFault::IterationMismatch);
+        }
+        if h1.round != h2.round {
+            return Err(InvalidFault::RoundMismatch);
+        }
+        if h1.prev_block_hash != h2.prev_block_hash {
+            return Err(InvalidFault::PrevHashMismatch);
+        }
+
+        // Check that fault refers to different fault_data
+        let (id_a, id_b) = self.faults_id();
+        if id_a == id_b {
+            return Err(InvalidFault::Duplicated);
+        }
+
+        // Check that fault is not expired. A fault expires after an epoch
+        if h1.round < current_height - EPOCH {
+            return Err(InvalidFault::Expired);
+        }
+
+        // Check that fault is related to something that is already processed
+        if h1.round > current_height {
+            return Err(InvalidFault::Future);
+        }
+
+        // Verify signatures
+        self.verify_sigs()?;
+
+        Ok(h1)
+    }
+
     /// Check if both faults are signed properly
-    pub fn verify_sigs(&self) -> Result<(), BlsSigError> {
+    fn verify_sigs(&self) -> Result<(), BlsSigError> {
         match self {
             Fault::DoubleCandidate(a, b) => {
                 let seed = Candidate::SIGN_SEED;
@@ -198,5 +293,80 @@ impl Serializable for Fault {
             }
         };
         Ok(fault)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Slash {
+    pub provisioner: PublicKey,
+    pub r#type: SlashType,
+}
+
+#[derive(Clone, Debug)]
+pub enum SlashType {
+    Soft,
+    Hard,
+    HardWithSeverity(u8),
+}
+
+impl Slash {
+    fn from_iteration_info(
+        value: &IterationInfo,
+    ) -> Result<Option<Self>, dusk_bytes::Error> {
+        let (attestation, provisioner) = value;
+        let slash = match attestation.result {
+            RatificationResult::Fail(Vote::NoCandidate) => SlashType::Soft,
+            RatificationResult::Fail(Vote::Invalid(_)) => SlashType::Hard,
+            _ => {
+                return Ok(None);
+            }
+        };
+        let provisioner = (*provisioner.inner()).try_into().map_err(|e| {
+            error!("Unable to generate provisioners from IterationInfo: {e:?}");
+            e
+        })?;
+        Ok(Some(Self {
+            provisioner,
+            r#type: slash,
+        }))
+    }
+
+    pub fn from_block(block: &Block) -> Result<Vec<Slash>, io::Error> {
+        Self::from_iterations_and_faults(
+            &block.header().failed_iterations,
+            block.faults(),
+        )
+    }
+
+    pub fn from_iterations_and_faults(
+        failed_iterations: &IterationsInfo,
+        faults: &[Fault],
+    ) -> Result<Vec<Slash>, io::Error> {
+        let mut slashing = failed_iterations
+            .att_list
+            .iter()
+            .flatten()
+            .flat_map(Slash::from_iteration_info)
+            .flatten()
+            .collect::<Vec<_>>();
+        slashing.extend(faults.iter().map(Slash::from));
+        Ok(slashing)
+    }
+}
+
+impl From<&Fault> for Slash {
+    fn from(value: &Fault) -> Self {
+        let slash_type = match value {
+            Fault::DoubleCandidate(_, _)
+            | Fault::DoubleRatificationVote(_, _)
+            | Fault::DoubleValidationVote(_, _) => {
+                SlashType::HardWithSeverity(2u8)
+            }
+        };
+        let provisioner = value.to_culprit();
+        Self {
+            provisioner,
+            r#type: slash_type,
+        }
     }
 }
