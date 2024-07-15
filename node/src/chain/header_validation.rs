@@ -14,8 +14,8 @@ use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
-use node_data::ledger::Signature;
-use node_data::ledger::{to_str, Seed};
+use execution_core::stake::EPOCH;
+use node_data::ledger::{to_str, Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::RatificationResult;
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
@@ -61,7 +61,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// Returns the number of Previous Non-Attested Iterations (PNI)
     pub async fn execute_checks(
         &self,
-        candidate_block: &'_ ledger::Header,
+        candidate_block: &ledger::Header,
         disable_winner_att_check: bool,
     ) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)>
     {
@@ -276,6 +276,48 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         Ok(voters)
     }
+
+    /// Verify faults inside a block.
+    pub async fn verify_faults(
+        &self,
+        current_height: u64,
+        faults: &[Fault],
+    ) -> Result<(), InvalidFault> {
+        verify_faults(self.db.clone(), current_height, faults).await
+    }
+}
+
+pub async fn verify_faults<DB: database::DB>(
+    db: Arc<RwLock<DB>>,
+    current_height: u64,
+    faults: &[Fault],
+) -> Result<(), InvalidFault> {
+    for f in faults {
+        let fault_header = f.validate(current_height)?;
+        db.read()
+            .await
+            .view(|db| {
+                let (prev_header, _) = db
+                    .fetch_block_header(&fault_header.prev_block_hash)?
+                    .ok_or(anyhow::anyhow!("Slashing a non accepted header"))?;
+                if prev_header.height != fault_header.round - 1 {
+                    anyhow::bail!("Invalid height for fault");
+                }
+
+                // FIX_ME: Instead of fetching all store faults, check the fault
+                // id directly This needs the fault id to be
+                // changed into "HEIGHT|TYPE|PROV_KEY"
+                let stored_faults =
+                    db.fetch_faults(fault_header.round - EPOCH)?;
+                if stored_faults.iter().any(|other| f.same(other)) {
+                    anyhow::bail!("Double fault detected");
+                }
+
+                Ok(())
+            })
+            .map_err(|e| InvalidFault::Other(format!("{e:?}")))?;
+    }
+    Ok(())
 }
 
 pub async fn verify_block_att(

@@ -12,7 +12,7 @@ use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
 use node_data::ledger::{
-    self, to_str, Block, BlockWithLabel, Label, Seed, SpentTransaction,
+    self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
@@ -29,7 +29,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use super::consensus::Task;
-use crate::chain::header_validation::Validator;
+use crate::chain::header_validation::{verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
     MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
@@ -299,13 +299,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mut changed_provisioners = vec![reward, dusk_reward];
 
         // Update provisioners if a slash has been applied
-        for bytes in blk.header().failed_iterations.to_missed_generators_bytes()
-        {
-            let slashed = bytes.0.try_into().map_err(|e| {
-                anyhow::anyhow!("Cannot deserialize bytes {e:?}")
-            })?;
-            changed_provisioners.push(ProvisionerChange::Slash(slashed));
-        }
+        let slashed = Slash::from_block(blk)?
+            .into_iter()
+            .map(|f| ProvisionerChange::Slash(f.provisioner));
+        changed_provisioners.extend(slashed);
 
         // FIX_ME: This relies on the stake contract being called only by the
         // transfer contract. We should change this once third-party contracts
@@ -454,8 +451,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Persist block in consistency with the VM state update
         let (label, finalized) = {
             let header = blk.header();
+            verify_faults(self.db.clone(), header.height, blk.faults()).await?;
 
             let vm = self.vm.write().await;
+
             let (txs, rolling_result) = self.db.read().await.update(|db| {
                 let (txs, verification_output) =
                     vm.accept(blk, Some(&prev_block_voters[..]))?;
@@ -483,9 +482,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 header.height,
             );
 
-            for slashed in header.failed_iterations.to_missed_generators_bytes()
-            {
-                info!("Slashed {}", slashed.to_base58());
+            for slashed in Slash::from_block(blk)? {
+                info!("Slashed {}", slashed.provisioner.to_base58());
                 slashed_count += 1;
             }
 

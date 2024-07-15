@@ -10,11 +10,12 @@ use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
-    CallParams, Error, Operations, Output, VerificationOutput, VoterWithCredits,
+    self, CallParams, Error, Operations, Output, VerificationOutput,
+    VoterWithCredits,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
-use node_data::ledger::{Block, Header};
+use node_data::ledger::{Block, Fault, Header};
 use node_data::message::AsyncQueue;
 
 use tokio::sync::{oneshot, Mutex, RwLock};
@@ -257,10 +258,20 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         validator
             .execute_checks(candidate_header, disable_winning_att_check)
             .await
-            .map_err(|err| {
-                error!("failed to verify header {}", err);
-                Error::Failed
-            })
+            .map_err(operations::Error::InvalidHeader)
+    }
+
+    async fn verify_faults(
+        &self,
+        block_height: u64,
+        faults: &[Fault],
+    ) -> Result<(), Error> {
+        let validator = Validator::new(
+            self.db.clone(),
+            &self.tip_header,
+            &self.provisioners,
+        );
+        Ok(validator.verify_faults(block_height, faults).await?)
     }
 
     async fn verify_state_transition(
@@ -272,12 +283,8 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         let vm = self.vm.read().await;
 
-        Ok(vm
-            .verify_state_transition(blk, Some(voters))
-            .map_err(|err| {
-                error!("failed to call VST {}", err);
-                Error::Failed
-            })?)
+        vm.verify_state_transition(blk, Some(voters))
+            .map_err(operations::Error::InvalidVST)
     }
 
     async fn execute_state_transition(
@@ -298,10 +305,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 )?;
                 Ok(ret)
             })
-            .map_err(|err: anyhow::Error| {
-                error!("{err}");
-                Error::Failed
-            })?;
+            .map_err(Error::InvalidEST)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
                 let _ = m.delete_tx(t.id());
@@ -345,10 +349,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
                 t.op_write(db_key, bytes)
             })
-            .map_err(|err: anyhow::Error| {
-                error!("{err}");
-                Error::Failed
-            })?;
+            .map_err(Error::MetricsUpdate)?;
 
         Ok(())
     }
