@@ -28,7 +28,7 @@ use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
-const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 13_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 12_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 11_000_000;
 const GAS_PRICE: u64 = 2;
 const POINT_LIMIT: u64 = 0x10000000;

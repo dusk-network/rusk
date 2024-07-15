@@ -134,9 +134,7 @@ impl Rusk {
                         // re-execute all spent transactions. We don't discard
                         // the transaction, since it is
                         // technically valid.
-                        if gas_spent > block_gas_left {
-                            warn!("This is not supposed to happen with conservative tx inclusion");
-                        }
+                        warn!("This is not supposed to happen with conservative tx inclusion");
                         session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
