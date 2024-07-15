@@ -2,12 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import Transactions from "../+page.svelte";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 vi.useFakeTimers();
 
 describe("Dashboard", () => {

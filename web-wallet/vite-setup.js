@@ -5,11 +5,12 @@
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { expect, vi } from "vitest";
 import { readable } from "svelte/store";
+import { ResizeObserver } from "@juggle/resize-observer";
 import crypto from "node:crypto";
 import "jsdom-worker";
 import "vitest-canvas-mock";
 
-import { IntersectionObserver, ResizeObserver } from "./src/lib/dusk/mocks";
+import { IntersectionObserver } from "./src/lib/dusk/mocks";
 import Wallet from "./__mocks__/Wallet.js";
 
 // Mocking the Wallet

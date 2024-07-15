@@ -9,12 +9,6 @@ import { createCurrencyFormatter } from "$lib/dusk/currency";
 import Dashboard from "../+page.svelte";
 import { walletStore } from "$lib/stores";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 vi.mock("$lib/stores", async (importOriginal) => {
   /** @type {WalletStore} */
   const original = await importOriginal();
