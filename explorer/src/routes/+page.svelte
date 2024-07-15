@@ -21,6 +21,11 @@
   onDestroy(pollingDataStore.stop);
 
   $: ({ data, error, isLoading } = $pollingDataStore);
+  $: ({ chainInfoEntries, network } = $appStore);
+
+  const retry = () => {
+    pollingDataStore.start(network, chainInfoEntries);
+  };
 </script>
 
 <section class="chain-info">
@@ -29,7 +34,7 @@
 
 <section class="tables">
   <LatestBlocksCard
-    on:retry={pollingDataStore.start}
+    on:retry={retry}
     className="tables-layout"
     blocks={data?.blocks}
     {error}
@@ -37,7 +42,7 @@
   />
 
   <LatestTransactionsCard
-    on:retry={pollingDataStore.start}
+    on:retry={retry}
     className="tables-layout"
     txns={data?.transactions}
     {error}
