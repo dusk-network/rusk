@@ -16,7 +16,7 @@ use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use execution_core::{stake::StakeData, StakePublicKey};
 use node::vm::VMExecution;
-use node_data::ledger::{Block, SpentTransaction, Transaction};
+use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
 use super::Rusk;
 
@@ -50,13 +50,15 @@ impl VMExecution for Rusk {
         let generator = StakePublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
+        let slashing = Slash::from_block(blk)?;
+
         let (_, verification_output) = self
             .verify_transactions(
                 blk.header().height,
                 blk.header().gas_limit,
                 &generator,
                 blk.txs(),
-                &blk.header().failed_iterations.to_missed_generators()?,
+                slashing,
                 voters,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
@@ -74,6 +76,8 @@ impl VMExecution for Rusk {
         let generator = StakePublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
+        let slashing = Slash::from_block(blk)?;
+
         let (txs, verification_output) = self
             .accept_transactions(
                 blk.header().height,
@@ -84,7 +88,7 @@ impl VMExecution for Rusk {
                     state_root: blk.header().state_hash,
                     event_hash: blk.header().event_hash,
                 }),
-                &blk.header().failed_iterations.to_missed_generators()?,
+                slashing,
                 voters,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
