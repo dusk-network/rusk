@@ -28,6 +28,8 @@ use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 13_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 11_000_000;
 const GAS_PRICE: u64 = 2;
 const POINT_LIMIT: u64 = 0x10000000;
 const SENDER_INDEX: u64 = 0;
@@ -102,6 +104,7 @@ fn make_and_execute_transaction_deploy(
     gas_limit: u64,
     init_value: u8,
     should_fail: bool,
+    should_discard: bool,
 ) {
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
@@ -127,8 +130,8 @@ fn make_and_execute_transaction_deploy(
         .expect("Making transaction should succeed");
 
     let expected = ExecuteResult {
-        discarded: 0,
-        executed: 1,
+        discarded: if should_discard { 1 } else { 0 },
+        executed: if should_discard { 0 } else { 1 },
     };
 
     let result = generator_procedure(
@@ -191,7 +194,10 @@ fn assert_bob_contract_is_deployed(
     );
 }
 
-/// We deploy a contract
+/// We deploy a contract.
+/// Deployment will succeed and only gas used will be consumed.
+/// Wallet will spend (gas used) x GAS_PRICE of funds.
+/// Note that gas used will be proportional to the size of bytecode.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy() {
     logger();
@@ -232,6 +238,7 @@ pub async fn contract_deploy() {
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
+        false,
     );
     let after_balance = wallet
         .get_balance(0)
@@ -243,7 +250,9 @@ pub async fn contract_deploy() {
     assert!(funds_spent < GAS_LIMIT * GAS_PRICE);
 }
 
-/// We deploy a contract which is already deployed
+/// We deploy a contract which is already deployed.
+/// Deployment will fail and all gas provided will be consumed.
+/// Wallet will spend GAS_LIMIT x GAS_PRICE of funds.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_already_deployed() {
     logger();
@@ -284,6 +293,7 @@ pub async fn contract_already_deployed() {
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
+        false,
     );
     let after_balance = wallet
         .get_balance(0)
@@ -294,7 +304,9 @@ pub async fn contract_already_deployed() {
     assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
 
-/// We deploy a contract with a corrupted bytecode
+/// We deploy a contract with a corrupted bytecode.
+/// Deployment will fail and all gas provided will be consumed.
+/// Wallet will spend GAS_LIMIT x GAS_PRICE of funds.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_corrupted_bytecode() {
     logger();
@@ -338,6 +350,7 @@ pub async fn contract_deploy_corrupted_bytecode() {
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
+        false,
     );
     let after_balance = wallet
         .get_balance(0)
@@ -348,7 +361,8 @@ pub async fn contract_deploy_corrupted_bytecode() {
     assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
 
-/// We deploy different contracts and compare the charge
+/// We deploy different contracts and compare the charge.
+/// Charge difference should be related to the difference in bytecode sizes.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_charge() {
     logger();
@@ -392,6 +406,7 @@ pub async fn contract_deploy_charge() {
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
+        false,
     );
     let after_bob_balance = wallet
         .get_balance(0)
@@ -404,6 +419,7 @@ pub async fn contract_deploy_charge() {
         GAS_LIMIT,
         0,
         false,
+        false,
     );
     let after_license_balance = wallet
         .get_balance(0)
@@ -415,4 +431,115 @@ pub async fn contract_deploy_charge() {
     println!("license deployment cost={}", license_deployment_cost);
     assert!(license_deployment_cost > bob_deployment_cost);
     assert!(license_deployment_cost - bob_deployment_cost > 10_000_000);
+}
+
+/// We deploy a contract with insufficient gas limit.
+/// The limit is so small that it is not enough to spend,
+/// transaction will be discarded and no funds will be spent by the wallet.
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy_not_enough_to_spend() {
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    );
+    let contract_id = bytecode_hash(bob_bytecode.as_ref());
+
+    let path = tmp.into_path();
+    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
+    let before_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        bob_bytecode,
+        GAS_LIMIT_NOT_ENOUGH_TO_SPEND,
+        BOB_INIT_VALUE,
+        false,
+        true,
+    );
+    let after_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
+    let funds_spent = before_balance - after_balance;
+    println!("funds spent={}", funds_spent);
+    assert_eq!(funds_spent, 0);
+}
+
+/// We deploy a contract with insufficient gas limit.
+/// The limit is such that it is enough to spend but not enough to deploy.
+/// Transaction won't be discarded and all limit will be spent by the wallet.
+/// Wallet will spend GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY x GAS_PRICE of funds.
+#[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy_not_enough_to_deploy() {
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    );
+    let contract_id = bytecode_hash(bob_bytecode.as_ref());
+
+    let path = tmp.into_path();
+    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
+    let before_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    make_and_execute_transaction_deploy(
+        &rusk,
+        &wallet,
+        bob_bytecode,
+        GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY,
+        BOB_INIT_VALUE,
+        false,
+        false,
+    );
+    let after_balance = wallet
+        .get_balance(0)
+        .expect("Getting wallet's balance should succeed")
+        .value;
+    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
+    let funds_spent = before_balance - after_balance;
+    println!("funds spent={}", funds_spent);
+    assert_eq!(funds_spent, GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY * GAS_PRICE);
 }
