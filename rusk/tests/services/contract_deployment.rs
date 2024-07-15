@@ -17,7 +17,7 @@ use rusk_abi::Error::ContractDoesNotExist;
 use rusk_abi::{ContractData, ContractId};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
+use test_wallet::{self as wallet, Wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -144,54 +144,113 @@ fn make_and_execute_transaction_deploy(
     );
     let spent_transactions =
         result.expect("generator procedure should succeed");
-    let mut spent_transactions = spent_transactions.into_iter();
-    if should_fail {
+    if !should_discard {
+        let mut spent_transactions = spent_transactions.into_iter();
         let tx = spent_transactions
             .next()
             .expect("There should be one spent transactions");
-        assert!(tx.err.is_some(), "Transaction should fail");
+        if should_fail {
+            assert!(tx.err.is_some(), "Transaction should fail");
+        } else {
+            assert!(tx.err.is_none(), "Transaction should not fail");
+        }
     }
 }
 
-fn assert_bob_contract_is_not_deployed(
-    path: &PathBuf,
-    rusk: &Rusk,
-    contract_id: &ContractId,
-) {
-    let commit = rusk.state_root();
-    let vm =
-        rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
-    let mut session = rusk_abi::new_session(&vm, commit, 0)
-        .expect("Session creation should succeed");
-    let result =
-        session.call::<_, u64>(*contract_id, "echo", &BOB_ECHO_VALUE, u64::MAX);
-    match result.err() {
-        Some(ContractDoesNotExist(_)) => (),
-        _ => assert!(false),
-    }
+struct Fixture {
+    pub rusk: Rusk,
+    pub wallet: Wallet<TestStore, TestStateClient, TestProverClient>,
+    pub bob_bytecode: Vec<u8>,
+    pub contract_id: ContractId,
+    pub path: PathBuf,
 }
 
-fn assert_bob_contract_is_deployed(
-    path: &PathBuf,
-    rusk: &Rusk,
-    contract_id: &ContractId,
-) {
-    let commit = rusk.state_root();
-    let vm =
-        rusk_abi::new_vm(path.as_path()).expect("VM creation should succeed");
-    let mut session = rusk_abi::new_session(&vm, commit, 0)
-        .expect("Session creation should succeed");
-    let result =
-        session.call::<_, u64>(*contract_id, "echo", &BOB_ECHO_VALUE, u64::MAX);
-    assert_eq!(
-        result.expect("Echo call should succeed").data,
-        BOB_ECHO_VALUE
-    );
-    let result = session.call::<_, u8>(*contract_id, "value", &(), u64::MAX);
-    assert_eq!(
-        result.expect("Value call should succeed").data,
-        BOB_INIT_VALUE
-    );
+impl Fixture {
+    fn build(deploy_bob: bool) -> Self {
+        let tmp =
+            tempdir().expect("Should be able to create temporary directory");
+        let rusk = initial_state(&tmp, deploy_bob)
+            .expect("Initializing should succeed");
+
+        let cache = Arc::new(RwLock::new(HashMap::new()));
+
+        let wallet = wallet::Wallet::new(
+            TestStore,
+            TestStateClient {
+                rusk: rusk.clone(),
+                cache,
+            },
+            TestProverClient::default(),
+        );
+
+        let original_root = rusk.state_root();
+
+        info!("Original Root: {:?}", hex::encode(original_root));
+
+        let bob_bytecode = include_bytes!(
+            "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+        )
+        .to_vec();
+        let contract_id = bytecode_hash(bob_bytecode.as_slice());
+
+        let path = tmp.into_path();
+        Self {
+            rusk,
+            wallet,
+            bob_bytecode,
+            contract_id,
+            path,
+        }
+    }
+
+    pub fn assert_bob_contract_is_not_deployed(&self) {
+        let commit = self.rusk.state_root();
+        let vm = rusk_abi::new_vm(self.path.as_path())
+            .expect("VM creation should succeed");
+        let mut session = rusk_abi::new_session(&vm, commit, 0)
+            .expect("Session creation should succeed");
+        let result = session.call::<_, u64>(
+            self.contract_id,
+            "echo",
+            &BOB_ECHO_VALUE,
+            u64::MAX,
+        );
+        match result.err() {
+            Some(ContractDoesNotExist(_)) => (),
+            _ => assert!(false),
+        }
+    }
+
+    pub fn assert_bob_contract_is_deployed(&self) {
+        let commit = self.rusk.state_root();
+        let vm = rusk_abi::new_vm(self.path.as_path())
+            .expect("VM creation should succeed");
+        let mut session = rusk_abi::new_session(&vm, commit, 0)
+            .expect("Session creation should succeed");
+        let result = session.call::<_, u64>(
+            self.contract_id,
+            "echo",
+            &BOB_ECHO_VALUE,
+            u64::MAX,
+        );
+        assert_eq!(
+            result.expect("Echo call should succeed").data,
+            BOB_ECHO_VALUE
+        );
+        let result =
+            session.call::<_, u8>(self.contract_id, "value", &(), u64::MAX);
+        assert_eq!(
+            result.expect("Value call should succeed").data,
+            BOB_INIT_VALUE
+        );
+    }
+
+    pub fn wallet_balance(&self) -> u64 {
+        self.wallet
+            .get_balance(0)
+            .expect("Getting wallet's balance should succeed")
+            .value
+    }
 }
 
 /// We deploy a contract.
@@ -201,52 +260,22 @@ fn assert_bob_contract_is_deployed(
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy() {
     logger();
+    let f = Fixture::build(false);
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    );
-    let contract_id = bytecode_hash(bob_bytecode.as_ref());
-
-    let path = tmp.into_path();
-    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
-    let before_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    f.assert_bob_contract_is_not_deployed();
+    let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        bob_bytecode,
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
         false,
     );
-    let after_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
-    assert_bob_contract_is_deployed(&path, &rusk, &contract_id);
+    let after_balance = f.wallet_balance();
+    f.assert_bob_contract_is_deployed();
     let funds_spent = before_balance - after_balance;
-    println!("funds spent={}", funds_spent);
     assert!(funds_spent < GAS_LIMIT * GAS_PRICE);
 }
 
@@ -256,51 +285,21 @@ pub async fn contract_deploy() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_already_deployed() {
     logger();
+    let f = Fixture::build(true);
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, true).expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    );
-    let contract_id = bytecode_hash(bob_bytecode.as_ref());
-
-    let path = tmp.into_path();
-    assert_bob_contract_is_deployed(&path, &rusk, &contract_id);
-    let before_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    f.assert_bob_contract_is_deployed();
+    let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        bob_bytecode,
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
         false,
     );
-    let after_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    let after_balance = f.wallet_balance();
     let funds_spent = before_balance - after_balance;
-    println!("funds spent={}", funds_spent);
     assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
 
@@ -310,54 +309,24 @@ pub async fn contract_already_deployed() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_corrupted_bytecode() {
     logger();
-
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    );
-    let contract_id = bytecode_hash(bob_bytecode.as_ref());
+    let mut f = Fixture::build(false);
 
     // let's corrupt the bytecode
-    let bob_bytecode = &bob_bytecode[4..];
+    f.bob_bytecode = f.bob_bytecode[4..].to_vec();
 
-    let path = tmp.into_path();
-    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
-    let before_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    f.assert_bob_contract_is_not_deployed();
+    let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        bob_bytecode,
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
         false,
     );
-    let after_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    let after_balance = f.wallet_balance();
     let funds_spent = before_balance - after_balance;
-    println!("funds spent={}", funds_spent);
     assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
 
@@ -366,69 +335,35 @@ pub async fn contract_deploy_corrupted_bytecode() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_charge() {
     logger();
-
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    );
-    // let bob_contract_id = bytecode_hash(bob_bytecode.as_ref());
+    let f = Fixture::build(false);
 
     let license_bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
     );
-    // let license_contract_id = bytecode_hash(license_bytecode.as_ref());
 
-    let before_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        bob_bytecode,
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
         false,
     );
-    let after_bob_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    let after_bob_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
+        &f.rusk,
+        &f.wallet,
         license_bytecode,
         GAS_LIMIT,
         0,
         false,
         false,
     );
-    let after_license_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    let after_license_balance = f.wallet_balance();
     let bob_deployment_cost = before_balance - after_bob_balance;
     let license_deployment_cost = after_bob_balance - after_license_balance;
-    println!("bob deployment cost={}", bob_deployment_cost);
-    println!("license deployment cost={}", license_deployment_cost);
     assert!(license_deployment_cost > bob_deployment_cost);
     assert!(license_deployment_cost - bob_deployment_cost > 10_000_000);
 }
@@ -439,52 +374,22 @@ pub async fn contract_deploy_charge() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_not_enough_to_spend() {
     logger();
+    let f = Fixture::build(false);
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    );
-    let contract_id = bytecode_hash(bob_bytecode.as_ref());
-
-    let path = tmp.into_path();
-    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
-    let before_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    f.assert_bob_contract_is_not_deployed();
+    let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        bob_bytecode,
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
         GAS_LIMIT_NOT_ENOUGH_TO_SPEND,
         BOB_INIT_VALUE,
         false,
         true,
     );
-    let after_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
-    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
+    let after_balance = f.wallet_balance();
+    f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
-    println!("funds spent={}", funds_spent);
     assert_eq!(funds_spent, 0);
 }
 
@@ -495,51 +400,21 @@ pub async fn contract_deploy_not_enough_to_spend() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_not_enough_to_deploy() {
     logger();
+    let f = Fixture::build(false);
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, false).expect("Initializing should succeed");
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-        TestProverClient::default(),
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    );
-    let contract_id = bytecode_hash(bob_bytecode.as_ref());
-
-    let path = tmp.into_path();
-    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
-    let before_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
+    f.assert_bob_contract_is_not_deployed();
+    let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &rusk,
-        &wallet,
-        bob_bytecode,
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
         GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY,
         BOB_INIT_VALUE,
-        false,
+        true,
         false,
     );
-    let after_balance = wallet
-        .get_balance(0)
-        .expect("Getting wallet's balance should succeed")
-        .value;
-    assert_bob_contract_is_not_deployed(&path, &rusk, &contract_id);
+    let after_balance = f.wallet_balance();
+    f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
-    println!("funds spent={}", funds_spent);
     assert_eq!(funds_spent, GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY * GAS_PRICE);
 }
