@@ -5,12 +5,6 @@ import { addresses } from "$lib/mock-data";
 
 import { AddressPicker } from "..";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
 describe("AddressPicker", () => {
   const currentAddress = addresses[0];
 

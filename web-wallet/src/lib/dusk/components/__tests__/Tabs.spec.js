@@ -1,12 +1,21 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
+import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { mdiHome } from "@mdi/js";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
+
 import { Tabs } from "..";
 
-vi.useFakeTimers();
-
 describe("Tabs", () => {
+  /**
+   * `@juggle/resize-observer` uses this to get the dimensions of
+   * the observed element and, by specs, the callback won't fire
+   * on the `observe` call if the dimensions are both `0`.
+   */
+  // @ts-ignore we don't need to mock the whole CSS declaration
+  const gcsSpy = vi.spyOn(window, "getComputedStyle").mockReturnValue({
+    height: "320px",
+    width: "320px",
+  });
   const rafSpy = vi.spyOn(window, "requestAnimationFrame");
   const cafSpy = vi.spyOn(window, "cancelAnimationFrame");
   const scrollBySpy = vi.spyOn(HTMLUListElement.prototype, "scrollBy");
@@ -20,6 +29,11 @@ describe("Tabs", () => {
     .mockReturnValue(640);
   const ulClientWidthSpy = vi
     .spyOn(HTMLUListElement.prototype, "clientWidth", "get")
+    .mockReturnValue(320);
+
+  // needed by `@juggle/resize-observer`
+  const ulOffsetWidthSpy = vi
+    .spyOn(HTMLUListElement.prototype, "offsetWidth", "get")
     .mockReturnValue(320);
 
   const items = [
@@ -58,6 +72,22 @@ describe("Tabs", () => {
     target: document.body,
   };
 
+  /** @param {import("svelte").ComponentProps<Tabs>} props */
+  const renderTabs = async (props) => {
+    const renderResult = render(Tabs, { ...baseOptions, props });
+
+    /**
+     * `@juggle/resize-observer` uses some scheduling, so we
+     * need to wait for the first observe to fire.
+     */
+    await vi.waitUntil(() => rafSpy.mock.calls.length > 0);
+
+    // clearing `requestAnimationFrame` calls made by `@juggle/resize-observer`
+    rafSpy.mockClear();
+
+    return renderResult;
+  };
+
   afterEach(() => {
     cleanup();
     rafSpy.mockClear();
@@ -67,10 +97,10 @@ describe("Tabs", () => {
     scrollLeftSpy.mockClear();
     scrollToSpy.mockClear();
     scrollWidthSpy.mockClear();
-    ulClientWidthSpy.mockClear();
   });
 
   afterAll(() => {
+    gcsSpy.mockRestore();
     rafSpy.mockRestore();
     cafSpy.mockRestore();
     scrollBySpy.mockRestore();
@@ -79,15 +109,14 @@ describe("Tabs", () => {
     scrollToSpy.mockRestore();
     scrollWidthSpy.mockRestore();
     ulClientWidthSpy.mockRestore();
-    vi.useRealTimers();
+    ulOffsetWidthSpy.mockRestore();
   });
 
-  it('should render a "Tabs" component and reset its scroll status if no tab is selected', () => {
-    const props = {
+  it('should render a "Tabs" component and reset its scroll status if no tab is selected', async () => {
+    const { container } = await renderTabs({
       ...baseProps,
       selectedTab: undefined,
-    };
-    const { container } = render(Tabs, { ...baseOptions, props });
+    });
     const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
 
     expect(tabsList.scrollTo).toHaveBeenCalledTimes(1);
@@ -96,7 +125,7 @@ describe("Tabs", () => {
   });
 
   it("should scroll the selected tab into view if there's a selection", async () => {
-    const { container } = render(Tabs, baseOptions);
+    const { container } = await renderTabs(baseProps);
     const tab = getAsHTMLElement(
       container,
       `[data-tabid="${baseProps.selectedTab}"]`
@@ -105,40 +134,37 @@ describe("Tabs", () => {
     expect(tab.scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
-  it("should be able to render tabs with icon and text", () => {
-    const props = {
+  it("should be able to render tabs with icon and text", async () => {
+    const { container } = await renderTabs({
       ...baseProps,
       items: itemsWithTextAndIcon,
-    };
-    const { container } = render(Tabs, { ...baseOptions, props });
+    });
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should be able to render tabs with icons only", () => {
-    const props = {
+  it("should be able to render tabs with icons only", async () => {
+    const { container } = await renderTabs({
       ...baseProps,
       items: itemsWithIcon,
-    };
-    const { container } = render(Tabs, { ...baseOptions, props });
+    });
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should use the id as label if the tab hasn't one and is without icon", () => {
-    const props = {
+  it("should use the id as label if the tab hasn't one and is without icon", async () => {
+    const { container } = await renderTabs({
       ...baseProps,
       items: itemsWithIdOnly,
-    };
-    const { container } = render(Tabs, { ...baseOptions, props });
+    });
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should observe the tab list resize on mounting and stop observing when unmounting", () => {
+  it("should observe the tab list resize on mounting and stop observing when unmounting", async () => {
     const observeSpy = vi.spyOn(ResizeObserver.prototype, "observe");
     const disconnectSpy = vi.spyOn(ResizeObserver.prototype, "disconnect");
-    const { container, unmount } = render(Tabs, baseOptions);
+    const { container, unmount } = await renderTabs(baseProps);
     const tabsList = container.querySelector(".dusk-tabs-list");
 
     expect(observeSpy).toHaveBeenCalledTimes(1);
@@ -152,19 +178,18 @@ describe("Tabs", () => {
     disconnectSpy.mockRestore();
   });
 
-  it("should pass additional class names and attributes to the root element", () => {
-    const props = {
+  it("should pass additional class names and attributes to the root element", async () => {
+    const { container } = await renderTabs({
       ...baseProps,
       className: "foo bar",
       id: "some-id",
-    };
-    const { container } = render(Tabs, { ...baseOptions, props });
+    });
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it("should fire a change event when a tab is selected and it's not the current selection", async () => {
-    const { component, getAllByRole } = render(Tabs, baseOptions);
+    const { component, getAllByRole } = await renderTabs(baseProps);
     const tabs = getAllByRole("tab");
 
     let expectedTab = tabs[0];
@@ -193,7 +218,7 @@ describe("Tabs", () => {
   });
 
   it("should scroll a tab into view when it gains focus", async () => {
-    const { getAllByRole } = render(Tabs, baseOptions);
+    const { getAllByRole } = await renderTabs(baseProps);
     const tabs = getAllByRole("tab");
 
     scrollIntoViewSpy.mockClear();
@@ -203,10 +228,10 @@ describe("Tabs", () => {
     expect(tabs[0].scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
-  it("should hide and disable the scroll buttons if there is enough horizontal space", () => {
+  it("should hide and disable the scroll buttons if there is enough horizontal space", async () => {
     scrollWidthSpy.mockReturnValueOnce(0);
 
-    const { container } = render(Tabs, baseOptions);
+    const { container } = await renderTabs(baseProps);
     const leftBtn = getAsHTMLElement(
       container,
       ".dusk-tab-scroll-button:first-of-type"
@@ -223,25 +248,7 @@ describe("Tabs", () => {
   });
 
   it("should show the scroll buttons when there isn't enough horizontal space and enable the appropriate ones", async () => {
-    const originalObserver = ResizeObserver;
-
-    let callback;
-
-    /**
-     * We don't have a proper mock for the observer right now,
-     * so we use the proxy to memorize the callback received by the
-     * observer's constructor.
-     * This way we can call it at will, simulating updates.
-     */
-    global.ResizeObserver = new Proxy(originalObserver, {
-      construct(Target, args) {
-        callback = args[0];
-
-        return new Target(args[0]);
-      },
-    });
-
-    const { container } = render(Tabs, baseOptions);
+    const { container } = await renderTabs(baseProps);
     const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
 
     let leftBtn = getAsHTMLElement(
@@ -267,20 +274,13 @@ describe("Tabs", () => {
     scrollBySpy.mockClear();
     rafSpy.mockClear();
 
-    vi.advanceTimersToNextTimer();
-
-    expect(rafSpy).toHaveBeenCalledTimes(1);
-    expect(tabsList.scrollBy).toHaveBeenCalledTimes(1);
-    expect(tabsList.scrollBy).toHaveBeenCalledWith(5, 0);
-
     await fireEvent.mouseUp(rightBtn);
 
     expect(cafSpy).toHaveBeenCalledTimes(1);
 
-    scrollLeftSpy.mockReturnValue(320);
+    scrollLeftSpy.mockReturnValueOnce(320);
 
-    // we don't care for callback parameters right now
-    await act(callback);
+    await fireEvent.scroll(tabsList);
 
     leftBtn = getAsHTMLElement(
       container,
@@ -305,11 +305,46 @@ describe("Tabs", () => {
     expect(tabsList.scrollBy).toHaveBeenCalledTimes(1);
     expect(tabsList.scrollBy).toHaveBeenCalledWith(-5, 0);
 
-    global.ResizeObserver = originalObserver;
+    await fireEvent.mouseUp(rightBtn);
+  });
+
+  it("should keep scrolling while the scroll button is pressed", async () => {
+    vi.useFakeTimers();
+
+    const { container } = render(Tabs, baseOptions);
+    const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
+    const rightBtn = getAsHTMLElement(
+      container,
+      ".dusk-tab-scroll-button:last-of-type"
+    );
+
+    await vi.advanceTimersToNextTimerAsync();
+
+    expect(rightBtn.getAttribute("hidden")).toBe("false");
+    expect(rightBtn.getAttribute("disabled")).toBeNull();
+
+    await fireEvent.mouseDown(rightBtn, { buttons: 1 });
+
+    const n = 10;
+
+    for (let i = 0; i < n - 1; i++) {
+      await vi.advanceTimersToNextTimerAsync();
+    }
+
+    expect(tabsList.scrollBy).toHaveBeenCalledTimes(n);
+
+    for (let i = 1; i <= n; i++) {
+      expect(tabsList.scrollBy).toHaveBeenNthCalledWith(n, 5, 0);
+    }
+
+    await fireEvent.mouseUp(rightBtn);
+
+    vi.runAllTimers();
+    vi.useRealTimers();
   });
 
   it("should ignore mouse down events if the primary button isn't the only one pressed", async () => {
-    const { container } = render(Tabs, baseOptions);
+    const { container } = await renderTabs(baseProps);
     const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
     const leftBtn = getAsHTMLElement(
       container,
@@ -333,7 +368,7 @@ describe("Tabs", () => {
   });
 
   it("should bring the nearest tab into view on mouse clicks on scroll buttons", async () => {
-    const { container } = render(Tabs, baseOptions);
+    const { container } = await renderTabs(baseProps);
     const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
     const leftBtn = getAsHTMLElement(
       container,
