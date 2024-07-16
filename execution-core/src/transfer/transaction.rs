@@ -159,10 +159,8 @@ impl Payload {
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Transaction {
-    /// Payload
-    pub payload: Payload,
-    /// Proof
-    pub proof: Vec<u8>,
+    payload: Payload,
+    proof: Vec<u8>,
 }
 
 impl PartialEq for Transaction {
@@ -323,5 +321,15 @@ impl Transaction {
         });
 
         pis
+    }
+
+    /// Strips off bytecode if present in the transaction.
+    /// Does nothing if bytecode is not present.
+    pub fn strip_off_bytecode(&mut self) {
+        if let Some(CallOrDeploy::Deploy(deploy)) =
+            &mut self.payload.call_or_deploy
+        {
+            deploy.bytecode.bytes.clear();
+        }
     }
 }

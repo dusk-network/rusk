@@ -96,17 +96,6 @@ fn transaction_serialization_call() -> Result<(), Error> {
     Ok(())
 }
 
-fn strip_off_bytecode(tx: &Transaction) -> Transaction {
-    let mut tx_clone = tx.clone();
-    match &mut tx_clone.payload.call_or_deploy {
-        Some(CallOrDeploy::Deploy(deploy)) => {
-            deploy.bytecode.bytes.clear();
-        }
-        _ => (),
-    }
-    tx_clone
-}
-
 #[test]
 fn transaction_serialization_deploy() -> Result<(), Error> {
     let (tx_skeleton, fee, _) = build_skeleton_fee_deposit();
@@ -141,7 +130,8 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     assert_eq!(transaction, deserialized);
 
     // bytecode stripped off
-    let transaction = strip_off_bytecode(&Transaction::new(payload, proof));
+    let mut transaction = Transaction::new(payload, proof);
+    transaction.strip_off_bytecode();
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
     assert_eq!(transaction, deserialized);
