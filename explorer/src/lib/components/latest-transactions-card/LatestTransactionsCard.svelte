@@ -39,7 +39,6 @@
         action: () => goto("/transactions"),
         disabled: false,
         label: "All Transactions",
-        variant: "secondary",
       }
     : undefined}
 >

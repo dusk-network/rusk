@@ -100,11 +100,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -163,11 +159,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -226,11 +218,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -289,11 +277,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -352,11 +336,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -415,11 +395,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -478,11 +454,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -541,11 +513,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -604,11 +572,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          
@@ -667,11 +631,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <td
           class="table__data-cell"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16
-          </span>
+          16
         </td>
         
          

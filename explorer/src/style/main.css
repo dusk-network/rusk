@@ -48,7 +48,7 @@ body {
 }
 
 html {
-  background-color: var(--page-background-color);
+  background-color: var(--background-color);
   color: var(--on-background-color);
   font-family: var(--main-font-family);
   font-size: var(--main-font-size);

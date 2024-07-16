@@ -183,11 +183,8 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dd
     class="details-list__definition details-list__definition--table"
   >
-    <span
-      class="dusk-badge dusk-badge--variant-alt"
-    >
-      16 DUSK
-    </span>
+    16
+     DUSK
   </dd>
 </dl>
 `;

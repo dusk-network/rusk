@@ -117,6 +117,7 @@
       },
     ],
   ];
+  $: ({ darkMode } = $appStore);
 </script>
 
 <div class="statistics-panel">
@@ -144,6 +145,6 @@
     {/each}
   </div>
   <div class="statistics-panel__world-map">
-    <WorldMap nodes={nodesData} />
+    <WorldMap nodes={nodesData} stroke={darkMode ? "white" : "black"} />
   </div>
 </div>

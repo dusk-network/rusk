@@ -60,7 +60,7 @@
     showSearchNotification = false;
   });
 
-  $: ({ networks } = $appStore);
+  $: ({ darkMode, networks } = $appStore);
 </script>
 
 <nav
@@ -72,7 +72,7 @@
 >
   <AppAnchor href="/" className="dusk-navbar__logo">
     <AppImage
-      src="/dusk_logo.svg"
+      src={darkMode ? "/dusk_logo_light.svg" : "/dusk_logo.svg"}
       alt="Dusk Logo"
       sizes="(max-width: 1024px) 86px, 129px"
     />

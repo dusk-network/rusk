@@ -10,11 +10,20 @@
   border-width: var(--control-border-size);
 }
 
+.dark .textbox-button,
+.dark .dusk-textbox.textbox-button__input {
+  background-color: black;
+}
+
 .dusk-textbox.textbox-button__input {
   width: 100%;
   padding: 0;
   border: none;
   border-radius: 0;
+}
+
+.dark .dusk-textbox.textbox-button__input {
+  color: var(--light-grey);
 }
 
 .dusk-textbox.textbox-button__input:read-write:enabled:focus {
