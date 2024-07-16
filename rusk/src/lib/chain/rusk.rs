@@ -18,7 +18,6 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
 };
-use execution_core::transfer::CallOrDeploy;
 use execution_core::{
     stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
     StakePublicKey,
@@ -507,6 +506,16 @@ fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    if let Some(deploy) = tx.payload().contract_deploy() {
+        let bytecode_charge =
+            deploy.bytecode.bytes.len() as u64 * GAS_PER_DEPLOY_BYTE;
+        if tx.payload().fee.gas_limit < bytecode_charge {
+            return Err(PiecrustError::Panic(
+                "not enough gas to deploy".into(),
+            ));
+        }
+    }
+
     let tx_stripped = strip_off_bytecode(tx);
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.

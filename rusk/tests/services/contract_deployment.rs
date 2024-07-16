@@ -28,8 +28,9 @@ use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
-const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 12_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 11_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY: u64 = 12_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 1_200_000;
 const GAS_PRICE: u64 = 2;
 const POINT_LIMIT: u64 = 0x10000000;
 const SENDER_INDEX: u64 = 0;
@@ -369,8 +370,8 @@ pub async fn contract_deploy_charge() {
 }
 
 /// We deploy a contract with insufficient gas limit.
-/// The limit is so small that it is not enough to spend,
-/// transaction will be discarded and no funds will be spent by the wallet.
+/// The limit is so small that it is not enough to spend.
+/// Transaction will be discarded and no funds will be spent by the wallet.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_not_enough_to_spend() {
     logger();
@@ -398,6 +399,34 @@ pub async fn contract_deploy_not_enough_to_spend() {
 /// Transaction won't be discarded and all limit will be spent by the wallet.
 /// Wallet will spend GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY x GAS_PRICE of funds.
 #[tokio::test(flavor = "multi_thread")]
+pub async fn contract_deploy_not_enough_to_spend_and_deploy() {
+    logger();
+    let f = Fixture::build(false);
+
+    f.assert_bob_contract_is_not_deployed();
+    let before_balance = f.wallet_balance();
+    make_and_execute_transaction_deploy(
+        &f.rusk,
+        &f.wallet,
+        f.bob_bytecode.clone(),
+        GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY,
+        BOB_INIT_VALUE,
+        true,
+        false,
+    );
+    let after_balance = f.wallet_balance();
+    f.assert_bob_contract_is_not_deployed();
+    let funds_spent = before_balance - after_balance;
+    assert_eq!(
+        funds_spent,
+        GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY * GAS_PRICE
+    );
+}
+
+/// We deploy a contract with insufficient gas limit.
+/// The limit is such that it is not enough to deploy.
+/// Transaction will be discarded and no funds will be spent by the wallet.
+#[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_not_enough_to_deploy() {
     logger();
     let f = Fixture::build(false);
@@ -410,11 +439,11 @@ pub async fn contract_deploy_not_enough_to_deploy() {
         f.bob_bytecode.clone(),
         GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY,
         BOB_INIT_VALUE,
-        true,
         false,
+        true,
     );
     let after_balance = f.wallet_balance();
     f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
-    assert_eq!(funds_spent, GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY * GAS_PRICE);
+    assert_eq!(funds_spent, 0);
 }
