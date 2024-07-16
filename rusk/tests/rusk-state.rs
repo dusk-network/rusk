@@ -158,11 +158,11 @@ pub fn rusk_state_finalized() -> Result<()> {
     Ok(())
 }
 
-// This code is used to generate the transaction bytes for the benchmarks.
-// To generate:
+// This code is used to generate the transaction bytes for the phoenix
+// benchmarks. To generate:
 //   - uncomment the `#[tokio::test(..)]' line
 //   - run the test 'generate_phoenix_txs'
-//   - move the resulting "txs" file under "benches/txs"
+//   - move the resulting "phoenix-txs" file under "benches/phoenix-txs"
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
@@ -193,7 +193,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     let wallet = Arc::new(wallet);
 
-    let mut txs_file = std::fs::File::create("txs")?;
+    let mut txs_file = std::fs::File::create("phoenix-txs")?;
 
     for sender_index in 0..N_ADDRESSES as u64 {
         let wallet = wallet.clone();
@@ -208,6 +208,69 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
                     &mut rng,
                     sender_index,
                     &receiver,
+                    TRANSFER_VALUE,
+                    GAS_LIMIT,
+                    rusk_abi::dusk::LUX,
+                )
+                .expect("Making a transfer TX should succeed")
+        });
+
+        let tx = task.await.expect("Joining should succeed");
+        txs_file.write(hex::encode(tx.to_var_bytes()).as_bytes())?;
+        txs_file.write(b"\n")?;
+    }
+
+    Ok(())
+}
+
+// This code is used to generate the transaction bytes for the moonlight
+// benchmarks. To generate:
+//   - uncomment the `#[tokio::test(..)]' line
+//   - run the test 'generate_moonlight_txs'
+//   - move the resulting "moonlight-txs" file under "benches/moonlight-txs"
+#[allow(dead_code)]
+// #[tokio::test(flavor = "multi_thread")]
+async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
+    use common::wallet::{TestProverClient, TestStateClient, TestStore};
+    use std::io::Write;
+
+    common::logger();
+
+    let tmp = tempdir()?;
+    let snapshot = toml::from_str(include_str!("./config/bench.toml"))
+        .expect("Cannot deserialize config");
+
+    let rusk = new_state(&tmp, &snapshot)?;
+
+    let cache =
+        Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
+
+    let wallet = test_wallet::Wallet::new(
+        TestStore,
+        TestStateClient { rusk, cache },
+        TestProverClient::default(),
+    );
+
+    const N_ADDRESSES: usize = 100;
+
+    const TRANSFER_VALUE: u64 = 1_000_000;
+    const GAS_LIMIT: u64 = 100_000_000;
+
+    let wallet = Arc::new(wallet);
+
+    let mut txs_file = std::fs::File::create("moonlight-txs")?;
+
+    for sender_index in 0..N_ADDRESSES as u64 {
+        let wallet = wallet.clone();
+
+        let receiver_index = (sender_index + 1) % N_ADDRESSES as u64;
+        let receiver = wallet.account_public_key(receiver_index).unwrap();
+
+        let task = tokio::task::spawn_blocking(move || {
+            wallet
+                .moonlight_transfer(
+                    sender_index,
+                    receiver,
                     TRANSFER_VALUE,
                     GAS_LIMIT,
                     rusk_abi::dusk::LUX,
