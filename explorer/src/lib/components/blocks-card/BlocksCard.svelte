@@ -21,25 +21,15 @@
   /** @type {Block[]}*/
   let displayedBlocks;
 
-  /** @type {Boolean}*/
-  let isLoadMoreDisabled = false;
+  $: displayedBlocks = blocks ? blocks.slice(0, itemsToDisplay) : [];
+  $: isLoadMoreDisabled =
+    (blocks && itemsToDisplay >= blocks.length) || (loading && blocks === null);
 
   const loadMoreItems = () => {
     if (blocks && itemsToDisplay < blocks.length) {
       itemsToDisplay += ITEMS_TO_DISPLAY;
     }
   };
-
-  $: displayedBlocks = blocks ? blocks.slice(0, itemsToDisplay) : [];
-  $: {
-    if (blocks && itemsToDisplay >= blocks.length) {
-      isLoadMoreDisabled = true;
-    } else if (loading && blocks === null) {
-      isLoadMoreDisabled = true;
-    } else {
-      isLoadMoreDisabled = false;
-    }
-  }
 </script>
 
 <DataCard
