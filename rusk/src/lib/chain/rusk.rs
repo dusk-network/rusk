@@ -488,11 +488,7 @@ fn accept(
 fn strip_off_bytecode(tx: &PhoenixTransaction) -> Option<PhoenixTransaction> {
     let _ = tx.payload().contract_deploy()?;
     let mut tx_clone = tx.clone();
-    if let Some(CallOrDeploy::Deploy(deploy)) =
-        &mut tx_clone.payload.call_or_deploy
-    {
-        deploy.bytecode.bytes.clear();
-    }
+    tx_clone.strip_off_bytecode();
     Some(tx_clone)
 }
 
