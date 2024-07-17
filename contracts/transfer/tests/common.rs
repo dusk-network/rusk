@@ -17,7 +17,7 @@ use rusk_abi::{ContractError, ContractId, Error, Session, TRANSFER_CONTRACT};
 
 use dusk_bytes::Serializable;
 use dusk_plonk::prelude::*;
-use execution_core::transfer::CallOrDeploy;
+use execution_core::transfer::ContractExec;
 use ff::Field;
 use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use poseidon_merkle::Opening as PoseidonOpening;
@@ -287,7 +287,7 @@ pub fn create_transaction<const I: usize>(
     let tx_payload = Payload {
         tx_skeleton,
         fee,
-        call_or_deploy: (contract_call.map(|c| CallOrDeploy::Call(c))),
+        call_or_deploy: (contract_call.map(|c| ContractExec::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();
