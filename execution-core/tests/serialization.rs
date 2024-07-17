@@ -9,7 +9,7 @@ use dusk_bytes::{Error, Serializable};
 use dusk_jubjub::JubJubScalar;
 use execution_core::bytecode::Bytecode;
 use execution_core::transfer::{
-    CallOrDeploy, ContractCall, ContractDeploy, Fee, Payload, Transaction,
+    ContractCall, ContractDeploy, ContractExec, Fee, Payload, Transaction,
 };
 use execution_core::{Note, PublicKey, SecretKey, TxSkeleton};
 use ff::Field;
@@ -82,7 +82,7 @@ fn transaction_serialization_call() -> Result<(), Error> {
     let payload = Payload {
         tx_skeleton,
         fee,
-        call_or_deploy: Some(CallOrDeploy::Call(call)),
+        call_or_deploy: Some(ContractExec::Call(call)),
     };
 
     // set a random proof
@@ -117,7 +117,7 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     let payload = Payload {
         tx_skeleton,
         fee,
-        call_or_deploy: Some(CallOrDeploy::Deploy(deploy)),
+        call_or_deploy: Some(ContractExec::Deploy(deploy)),
     };
 
     // set a random proof

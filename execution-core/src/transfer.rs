@@ -98,7 +98,7 @@ impl Serializable<{ StealthAddress::SIZE + u64::SIZE + BlsPublicKey::SIZE }>
 /// Data for either contract call or contract deployment.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub enum CallOrDeploy {
+pub enum ContractExec {
     /// Data for a contract call.
     Call(ContractCall),
     /// Data for a contract deployment.

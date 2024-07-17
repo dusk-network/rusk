@@ -15,8 +15,8 @@ use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::reader::read_vec;
-use crate::transfer::CallOrDeploy::{Call, Deploy};
-use crate::transfer::{CallOrDeploy, ContractDeploy};
+use crate::transfer::ContractExec::{Call, Deploy};
+use crate::transfer::{ContractDeploy, ContractExec};
 use crate::{
     transfer::{ContractCall, Fee},
     BlsScalar, JubJubAffine, Sender, TxSkeleton,
@@ -31,7 +31,7 @@ pub struct Payload {
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
     /// Data to do a contract call or deployment.
-    pub call_or_deploy: Option<CallOrDeploy>,
+    pub call_or_deploy: Option<ContractExec>,
 }
 
 impl PartialEq for Payload {
@@ -43,7 +43,7 @@ impl PartialEq for Payload {
 impl Eq for Payload {}
 
 impl Payload {
-    /// Return the contract-call data.
+    /// Return the contract-call data, if there is any.
     #[must_use]
     pub fn contract_call(&self) -> Option<&ContractCall> {
         match self.call_or_deploy.as_ref() {
@@ -52,7 +52,7 @@ impl Payload {
         }
     }
 
-    /// Return the contract-deploy data.
+    /// Return the contract-deploy data, if there is any.
     #[must_use]
     pub fn contract_deploy(&self) -> Option<&ContractDeploy> {
         match self.call_or_deploy.as_ref() {
@@ -76,13 +76,13 @@ impl Payload {
 
         // serialize the contract-call
         match &self.call_or_deploy {
-            Some(CallOrDeploy::Call(call)) => {
-                bytes.push(1);
-                bytes.extend(call.to_var_bytes());
-            }
-            Some(CallOrDeploy::Deploy(deploy)) => {
+            Some(ContractExec::Deploy(deploy)) => {
                 bytes.push(2);
                 bytes.extend(deploy.to_var_bytes());
+            }
+            Some(ContractExec::Call(call)) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
             }
             _ => bytes.push(0),
         }
@@ -110,8 +110,8 @@ impl Payload {
         // deserialize contract-call data
         let call_or_deploy = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => Some(CallOrDeploy::Call(ContractCall::from_slice(buf)?)),
-            2 => Some(CallOrDeploy::Deploy(ContractDeploy::from_slice(buf)?)),
+            1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
+            2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
             _ => {
                 return Err(BytesError::InvalidData);
             }
@@ -326,7 +326,7 @@ impl Transaction {
     /// Strips off bytecode if present in the transaction.
     /// Does nothing if bytecode is not present.
     pub fn strip_off_bytecode(&mut self) {
-        if let Some(CallOrDeploy::Deploy(deploy)) =
+        if let Some(ContractExec::Deploy(deploy)) =
             &mut self.payload.call_or_deploy
         {
             deploy.bytecode.bytes.clear();
