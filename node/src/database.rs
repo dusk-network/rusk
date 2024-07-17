@@ -10,9 +10,14 @@ use std::path::Path;
 pub mod rocksdb;
 
 use anyhow::Result;
-use node_data::ledger::{self, Fault};
-use node_data::ledger::{Label, SpentTransaction};
+use node_data::ledger::{self, Fault, Label, SpentTransaction};
 use serde::{Deserialize, Serialize};
+
+pub struct HeaderRecord {
+    pub header: ledger::Header,
+    pub transactions_ids: Vec<[u8; 32]>,
+    pub faults_ids: Vec<[u8; 32]>,
+}
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
@@ -57,10 +62,10 @@ pub trait Ledger {
     ) -> Result<usize>;
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
-    fn fetch_block_header(
-        &self,
-        hash: &[u8],
-    ) -> Result<Option<(ledger::Header, Vec<[u8; 32]>)>>;
+    fn fetch_block_header(&self, hash: &[u8])
+        -> Result<Option<ledger::Header>>;
+
+    fn fetch_block_light(&self, hash: &[u8]) -> Result<Option<HeaderRecord>>;
 
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
     fn fetch_block_hash_by_height(

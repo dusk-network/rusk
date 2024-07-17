@@ -654,7 +654,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 "Cannot get header for last finalized block hash {}",
                 to_str(&lfb_hash)
             ))?
-            .0
             .state_hash;
 
         // A block is considered stable when is either Confirmed or Attested
@@ -709,7 +708,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                     let state_hash = db
                         .fetch_block_header(&hash)?
-                        .map(|(h, _)| h.state_hash)
+                        .map(|h| h.state_hash)
                         .ok_or(anyhow!(
                             "Cannot get header for hash {}",
                             to_str(&hash)
@@ -974,7 +973,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .view(|t| {
                 let res = t
                     .fetch_block_header(&header.prev_block_hash)?
-                    .map(|(prev, _)| prev.seed);
+                    .map(|prev| prev.seed);
 
                 anyhow::Ok::<Option<Seed>>(res)
             })?

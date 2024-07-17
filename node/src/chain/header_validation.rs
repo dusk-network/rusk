@@ -297,7 +297,7 @@ pub async fn verify_faults<DB: database::DB>(
         db.read()
             .await
             .view(|db| {
-                let (prev_header, _) = db
+                let prev_header = db
                     .fetch_block_header(&fault_header.prev_block_hash)?
                     .ok_or(anyhow::anyhow!("Slashing a non accepted header"))?;
                 if prev_header.height != fault_header.round - 1 {

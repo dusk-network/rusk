@@ -4,11 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Candidate, DatabaseOptions, Ledger, Metadata, Persist, DB};
+use super::{
+    Candidate, DatabaseOptions, HeaderRecord, Ledger, Metadata, Persist, DB,
+};
 use anyhow::Result;
 use std::cell::RefCell;
 
-use node_data::ledger::{self, Fault, Label, SpentTransaction};
+use node_data::ledger::{self, Fault, Header, Label, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -446,14 +448,21 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_header(
-        &self,
-        hash: &[u8],
-    ) -> Result<Option<(ledger::Header, Vec<[u8; 32]>)>> {
+    fn fetch_block_light(&self, hash: &[u8]) -> Result<Option<HeaderRecord>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = HeaderRecord::read(&mut &blob[..])?;
-                Ok(Some((record.header, record.transactions_ids)))
+                Ok(Some(record))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn fetch_block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
+        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+            Some(blob) => {
+                let record = Header::read(&mut &blob[..])?;
+                Ok(Some(record))
             }
             None => Ok(None),
         }
@@ -907,12 +916,6 @@ fn deserialize_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
     r.read_exact(&mut hash[..])?;
 
     Ok((value, hash))
-}
-
-struct HeaderRecord {
-    header: ledger::Header,
-    transactions_ids: Vec<[u8; 32]>,
-    faults_ids: Vec<[u8; 32]>,
 }
 
 impl node_data::Serializable for HeaderRecord {

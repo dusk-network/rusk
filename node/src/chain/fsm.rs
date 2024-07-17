@@ -482,7 +482,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             //
             // Then we fallback to N_B.PrevBlock and accept N_B
             let result = acc.db.read().await.view(|t| {
-                if let Some((prev_header, _)) =
+                if let Some(prev_header) =
                     t.fetch_block_header(&remote_blk.header().prev_block_hash)?
                 {
                     let local_height = prev_header.height + 1;
@@ -555,9 +555,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         .fetch_block_header(
                             &remote_blk.header().prev_block_hash,
                         )?
-                        .map(|(prev_header, _)| prev_header.state_hash);
+                        .map(|prev| prev.state_hash);
 
-                    anyhow::Ok::<Option<[u8; 32]>>(res)
+                    anyhow::Ok(res)
                 })?
                 .ok_or_else(|| {
                     anyhow::anyhow!("could not retrieve state_hash")
