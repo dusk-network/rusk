@@ -22,28 +22,54 @@ compile_error!("features \"host\" and \"abi\" are mutually exclusive");
 
 extern crate alloc;
 
-mod types;
-pub use types::*;
+pub use piecrust_uplink::{
+    ContractError, ContractId, Event, StandardBufSerializer, ARGBUF_LEN,
+    CONTRACT_ID_BYTES,
+};
 
+#[cfg(feature = "debug")]
+pub use piecrust_uplink::debug as piecrust_debug;
+
+#[cfg(feature = "abi")]
 mod abi;
-pub use abi::*;
+#[cfg(feature = "abi")]
+pub use abi::{
+    block_height, hash, owner, owner_raw, poseidon_hash, self_owner,
+    self_owner_raw, verify_bls, verify_proof, verify_schnorr,
+};
+#[cfg(feature = "abi")]
+pub use piecrust_uplink::{
+    call,
+    call_raw,
+    call_raw_with_limit,
+    call_with_limit,
+    caller,
+    emit,
+    feed,
+    limit,
+    self_id,
+    spent,
+    wrap_call,
+    wrap_call_unchecked, // maybe use for our Transaction in spend_and_execute
+};
 
 #[cfg(feature = "host")]
 mod host;
 #[cfg(feature = "host")]
-pub use host::*;
+pub use host::{
+    hash, new_ephemeral_vm, new_genesis_session, new_session, new_vm,
+    poseidon_hash, verify_bls, verify_proof, verify_schnorr,
+};
+#[cfg(feature = "host")]
+pub use piecrust::{
+    CallReceipt, CallTree, CallTreeElem, ContractData, Error as PiecrustError,
+    PageOpening, Session, VM,
+};
 
 pub mod dusk;
-#[doc(hidden)]
-pub mod hash;
-
-use hash::Hasher;
 
 use dusk_bytes::DeserializableSlice;
 use execution_core::BlsScalar;
-
-/// Constant depth of the merkle tree that provides the opening proofs.
-pub const POSEIDON_TREE_DEPTH: usize = 17;
 
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
@@ -56,6 +82,24 @@ pub const STAKE_CONTRACT: ContractId = reserved(0x2);
 /// ID of the genesis license contract
 pub const LICENSE_CONTRACT: ContractId = reserved(0x3);
 
+enum Metadata {}
+
+#[allow(dead_code)]
+impl Metadata {
+    pub const BLOCK_HEIGHT: &'static str = "block_height";
+}
+
+enum Query {}
+
+#[allow(dead_code)]
+impl Query {
+    pub const HASH: &'static str = "hash";
+    pub const POSEIDON_HASH: &'static str = "poseidon_hash";
+    pub const VERIFY_PROOF: &'static str = "verify_proof";
+    pub const VERIFY_SCHNORR: &'static str = "verify_schnorr";
+    pub const VERIFY_BLS: &'static str = "verify_bls";
+}
+
 #[inline]
 const fn reserved(b: u8) -> ContractId {
     let mut bytes = [0u8; CONTRACT_ID_BYTES];
@@ -66,7 +110,7 @@ const fn reserved(b: u8) -> ContractId {
 /// Generate a [`ContractId`] address from the given slice of bytes, that is
 /// also a valid [`BlsScalar`]
 pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
-    ContractId::from_bytes(Hasher::digest(bytes).into())
+    ContractId::from_bytes(BlsScalar::hash_to_scalar(bytes).into())
 }
 
 /// Converts a `ContractId` to a `BlsScalar`

@@ -18,8 +18,6 @@ use execution_core::{
     PublicKey, SecretKey,
 };
 use ff::Field;
-use rusk_abi::hash::Hasher;
-use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
 
 const POINT_LIMIT: u64 = 0x1000000;
@@ -44,7 +42,7 @@ fn hash_host() {
 
     assert_eq!(
         "0x58c751eca2d6a41227e0c52ef579f4688d698b3447a8bcc27fb2831e11d3239e",
-        format!("{:?}", Hasher::digest(input))
+        format!("{:?}", BlsScalar::hash_to_scalar(&input[..]))
     );
 }
 
@@ -306,12 +304,9 @@ fn plonk_proof() {
         .expect("Proof should verify successfully");
     let verifier = verifier.to_bytes();
 
-    let public_inputs: Vec<PublicInput> =
-        expected_pi.into_iter().map(|pi| From::from(pi)).collect();
-
     let proof = proof.to_bytes().to_vec();
 
-    let arg = (verifier, proof, public_inputs);
+    let arg = (verifier, proof, expected_pi);
     let valid: bool = session
         .call(contract_id, "verify_proof", &arg, POINT_LIMIT)
         .expect("Query should succeed")
@@ -320,8 +315,6 @@ fn plonk_proof() {
     assert!(valid, "The proof should be valid");
 
     let wrong_public_inputs = vec![BlsScalar::from(0)];
-    let wrong_public_inputs: Vec<PublicInput> =
-        wrong_public_inputs.into_iter().map(From::from).collect();
 
     let arg = (arg.0, arg.1, wrong_public_inputs);
     let valid: bool = session
