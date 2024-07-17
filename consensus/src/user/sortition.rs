@@ -20,7 +20,7 @@ use crate::config::{
 pub struct Config {
     seed: Seed,
     round: u64,
-    pub step: u16,
+    pub step: u8,
     committee_credits: usize,
     exclusion: Vec<PublicKeyBytes>,
 }
@@ -52,7 +52,7 @@ impl Config {
         self.committee_credits
     }
 
-    pub fn step(&self) -> u16 {
+    pub fn step(&self) -> u8 {
         self.step
     }
 
@@ -75,6 +75,8 @@ pub fn create_sortition_hash(cfg: &Config, counter: u32) -> [u8; 32] {
     // write input message
     hasher.update(&cfg.seed.inner()[..]);
     hasher.update(cfg.step.to_le_bytes());
+    // FIXME: Remove the extra bytes after update the tests
+    hasher.update(0u8.to_le_bytes());
     hasher.update(counter.to_le_bytes());
 
     // read hash digest
@@ -108,7 +110,7 @@ mod tests {
         pub fn raw(
             seed: Seed,
             round: u64,
-            step: u16,
+            step: u8,
             committee_credits: usize,
             exclusion: Vec<PublicKeyBytes>,
         ) -> Config {
@@ -210,7 +212,7 @@ mod tests {
         let committee_credits = 45;
         let iteration = 2;
         let relative_step = 2;
-        let step = iteration as u16 * 3 + relative_step;
+        let step = iteration * 3 + relative_step;
 
         let cfg = Config::raw(seed, round, step, committee_credits, vec![]);
         let generator = p.get_generator(iteration, seed, round);

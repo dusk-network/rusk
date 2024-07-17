@@ -24,11 +24,11 @@ use tracing::{debug, error};
 /// It ensures that no multiple votes for same voter are collected.
 pub struct Aggregator<V> {
     // Map between (step, vote) and (signature, voters)
-    votes: BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
+    votes: BTreeMap<(u8, Vote), (AggrSignature, Cluster<PublicKey>)>,
 
     // Map each step to the set of voters. We do this to ensure only one vote
     // per voter is cast
-    uniqueness: BTreeMap<u16, HashMap<PublicKeyBytes, V>>,
+    uniqueness: BTreeMap<u8, HashMap<PublicKeyBytes, V>>,
 }
 
 impl<V> Default for Aggregator<V> {
@@ -220,7 +220,7 @@ mod tests {
     use std::collections::HashMap;
 
     impl<V> Aggregator<V> {
-        pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
+        pub fn get_total(&self, step: u8, vote: Vote) -> Option<usize> {
             if let Some(value) = self.votes.get(&(step, vote)) {
                 return Some(value.1.total_occurrences());
             }

@@ -93,7 +93,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         self.step
     }
 
-    pub fn step(&self) -> u16 {
+    pub fn step(&self) -> u8 {
         self.step.to_step(self.iteration)
     }
 
@@ -106,7 +106,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         committee.is_member(&self.round_update.pubkey_bls)
     }
 
-    pub(crate) fn save_committee(&mut self, step: u16, committee: Committee) {
+    pub(crate) fn save_committee(&mut self, step: u8, committee: Committee) {
         self.iter_ctx.committees.insert(step, committee);
     }
 

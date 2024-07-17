@@ -31,11 +31,11 @@ use tracing::debug;
 /// A pool of all generated committees
 #[derive(Default)]
 pub struct RoundCommittees {
-    committees: HashMap<u16, Committee>,
+    committees: HashMap<u8, Committee>,
 }
 
 impl RoundCommittees {
-    pub(crate) fn get_committee(&self, step: u16) -> Option<&Committee> {
+    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
         self.committees.get(&step)
     }
 
@@ -53,7 +53,7 @@ impl RoundCommittees {
         self.get_committee(step)
     }
 
-    pub(crate) fn insert(&mut self, step: u16, committee: Committee) {
+    pub(crate) fn insert(&mut self, step: u8, committee: Committee) {
         self.committees.insert(step, committee);
     }
 }
