@@ -62,10 +62,6 @@ impl Block {
         &self.faults
     }
 
-    pub fn into_faults(self) -> Vec<Fault> {
-        self.faults
-    }
-
     pub fn set_attestation(&mut self, att: Attestation) {
         self.header.att = att;
     }
