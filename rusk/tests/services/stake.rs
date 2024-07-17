@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use execution_core::{
-    transfer::{CallOrDeploy, ContractCall},
+    transfer::{ContractCall, ContractExec},
     StakePublicKey,
 };
 use rand::prelude::*;
@@ -205,7 +205,7 @@ fn wallet_reward(
     let tx = wallet
         .execute(
             &mut rng,
-            CallOrDeploy::Call(contract_call),
+            ContractExec::Call(contract_call),
             0,
             GAS_LIMIT,
             1,

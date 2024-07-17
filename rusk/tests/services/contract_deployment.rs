@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use execution_core::bytecode::Bytecode;
-use execution_core::transfer::{CallOrDeploy, ContractDeploy};
+use execution_core::transfer::{ContractDeploy, ContractExec};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
@@ -115,7 +115,7 @@ fn make_and_execute_transaction_deploy(
     let tx = wallet
         .execute(
             &mut rng,
-            CallOrDeploy::Deploy(ContractDeploy {
+            ContractExec::Deploy(ContractDeploy {
                 bytecode: Bytecode {
                     hash,
                     bytes: bytecode.as_ref().to_vec(),
