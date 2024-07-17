@@ -21,8 +21,8 @@ pub enum StepName {
 }
 
 impl StepName {
-    pub fn to_step(self, iteration: u8) -> u16 {
-        iteration as u16 * 3 + (self as u16)
+    pub fn to_step(self, iteration: u8) -> u8 {
+        iteration * 3 + (self as u8)
     }
 }
 
