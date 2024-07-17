@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 use dusk_bytes::Error as BytesError;
 use execution_core::{
     stake::{Stake, Unstake, Withdraw},
-    transfer::{CallOrDeploy, ContractCall, Fee, Payload, Transaction},
+    transfer::{ContractCall, ContractExec, Fee, Payload, Transaction},
     BlsPublicKey as StakePublicKey, BlsScalar, JubJubScalar, Note,
     PhoenixError, PublicKey, SchnorrSecretKey, SecretKey, TxSkeleton, ViewKey,
     OUTPUT_NOTES,
@@ -343,7 +343,7 @@ where
     pub fn execute<Rng>(
         &self,
         rng: &mut Rng,
-        call_or_deploy: CallOrDeploy,
+        call_or_deploy: ContractExec,
         sender_index: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -505,7 +505,7 @@ where
             outputs,
             fee,
             value,
-            Some(CallOrDeploy::Call(contract_call)),
+            Some(ContractExec::Call(contract_call)),
         )
         .map_err(Error::from_state_err)?;
 
@@ -589,7 +589,7 @@ where
             outputs,
             fee,
             deposit,
-            Some(CallOrDeploy::Call(call)),
+            Some(ContractExec::Call(call)),
         )
         .map_err(Error::from_state_err)?;
 
@@ -674,7 +674,7 @@ where
             outputs,
             fee,
             deposit,
-            Some(CallOrDeploy::Call(call)),
+            Some(ContractExec::Call(call)),
         )
         .map_err(Error::from_state_err)?;
 
@@ -740,7 +740,7 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
     outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
     fee: Fee,
     deposit: u64,
-    call_or_deploy: Option<CallOrDeploy>,
+    call_or_deploy: Option<ContractExec>,
 ) -> Result<UnprovenTransaction, SC::Error> {
     let nullifiers: Vec<BlsScalar> = inputs
         .iter()
