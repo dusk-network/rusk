@@ -7,7 +7,7 @@
 use crate::commons::{get_current_timestamp, RoundUpdate};
 use crate::operations::{CallParams, Operations, VoterWithCredits};
 use node_data::ledger::{
-    to_str, Attestation, Block, Fault, IterationsInfo, Seed,
+    to_str, Attestation, Block, Fault, IterationsInfo, Seed, Slash,
 };
 use std::cmp::max;
 
@@ -52,6 +52,7 @@ impl<T: Operations> Generator<T> {
                 Seed::from(seed),
                 iteration,
                 failed_iterations,
+                &[],
                 ru.att_voters(),
             )
             .await?;
@@ -88,17 +89,17 @@ impl<T: Operations> Generator<T> {
         seed: Seed,
         iteration: u8,
         failed_iterations: IterationsInfo,
+        faults: &[Fault],
         voters: &[VoterWithCredits],
     ) -> Result<Block, crate::operations::Error> {
-        let missed_generators = failed_iterations
-            .to_missed_generators()
-            .map_err(|_| crate::operations::Error::InvalidIterationInfo)?;
+        let to_slash =
+            Slash::from_iterations_and_faults(&failed_iterations, faults)?;
 
         let call_params = CallParams {
             round: ru.round,
             block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             generator_pubkey: ru.pubkey_bls.clone(),
-            missed_generators,
+            to_slash,
             voters_pubkey: Some(voters.to_owned()),
         };
 

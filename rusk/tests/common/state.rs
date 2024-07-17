@@ -18,7 +18,9 @@ use execution_core::{
 };
 use node_data::{
     bls::PublicKeyBytes,
-    ledger::{Attestation, Block, Header, IterationsInfo, SpentTransaction},
+    ledger::{
+        Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
+    },
     message::payload::Vote,
 };
 
@@ -100,11 +102,16 @@ pub fn generator_procedure(
         )));
     }
 
+    let faults = vec![];
+
+    let to_slash =
+        Slash::from_iterations_and_faults(&failed_iterations, &faults)?;
+
     let call_params = CallParams {
         round,
         block_gas_limit,
         generator_pubkey,
-        missed_generators,
+        to_slash,
         voters_pubkey: None,
     };
 

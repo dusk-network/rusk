@@ -27,7 +27,7 @@ use execution_core::{
     stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
     StakePublicKey,
 };
-use node_data::ledger::{SpentTransaction, Transaction};
+use node_data::ledger::{Slash, SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
 use rusk_abi::{
     CallReceipt, ContractError, Error as PiecrustError, Event, Session,
@@ -99,7 +99,8 @@ impl Rusk {
         let block_height = params.round;
         let block_gas_limit = params.block_gas_limit;
         let generator = params.generator_pubkey.inner();
-        let missed_generators = &params.missed_generators[..];
+        let to_slash = params.to_slash.clone();
+
         let voters = params.voters_pubkey.as_ref().map(|voters| &voters[..]);
 
         let mut session = self.session(block_height, None)?;
@@ -177,7 +178,7 @@ impl Rusk {
             block_height,
             dusk_spent,
             generator,
-            missed_generators,
+            to_slash,
             voters,
         )?;
         update_hasher(&mut event_hasher, &coinbase_events);
@@ -202,7 +203,7 @@ impl Rusk {
         block_gas_limit: u64,
         generator: &StakePublicKey,
         txs: &[Transaction],
-        missed_generators: &[StakePublicKey],
+        slashing: Vec<Slash>,
         voters: Option<&[VoterWithCredits]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
@@ -213,7 +214,7 @@ impl Rusk {
             block_gas_limit,
             generator,
             txs,
-            missed_generators,
+            slashing,
             voters,
         )
         .map(|(a, b, _, _)| (a, b))
@@ -232,7 +233,7 @@ impl Rusk {
         generator: StakePublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
-        missed_generators: &[StakePublicKey],
+        slashing: Vec<Slash>,
         voters: Option<&[VoterWithCredits]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
@@ -243,7 +244,7 @@ impl Rusk {
             block_gas_limit,
             &generator,
             &txs[..],
-            missed_generators,
+            slashing,
             voters,
         )?;
 
@@ -418,7 +419,7 @@ fn accept(
     block_gas_limit: u64,
     generator: &StakePublicKey,
     txs: &[Transaction],
-    missed_generators: &[StakePublicKey],
+    slashing: Vec<Slash>,
     voters: Option<&[VoterWithCredits]>,
 ) -> Result<(
     Vec<SpentTransaction>,
@@ -464,7 +465,7 @@ fn accept(
         block_height,
         dusk_spent,
         generator,
-        missed_generators,
+        slashing,
         voters,
     )?;
 
@@ -544,7 +545,7 @@ fn reward_slash_and_update_root(
     block_height: u64,
     dusk_spent: Dusk,
     generator: &StakePublicKey,
-    slashing: &[StakePublicKey],
+    slashing: Vec<Slash>,
     voters: Option<&[(StakePublicKey, usize)]>,
 ) -> Result<Vec<Event>> {
     let (
@@ -619,15 +620,7 @@ fn reward_slash_and_update_root(
         )
     }
 
-    for to_slash in slashing {
-        let r = session.call::<_, ()>(
-            STAKE_CONTRACT,
-            "slash",
-            &(*to_slash, None::<u64>),
-            u64::MAX,
-        )?;
-        events.extend(r.events);
-    }
+    events.extend(slash(session, slashing)?);
 
     let r = session.call::<_, ()>(
         TRANSFER_CONTRACT,
@@ -663,4 +656,34 @@ fn to_bs58(pk: &StakePublicKey) -> String {
     let mut pk = bs58::encode(&pk.to_bytes()).into_string();
     pk.truncate(16);
     pk
+}
+
+fn slash(session: &mut Session, slash: Vec<Slash>) -> Result<Vec<Event>> {
+    let mut events = vec![];
+    for s in slash {
+        let provisioner = s.provisioner.into_inner();
+        let r = match s.r#type {
+            node_data::ledger::SlashType::Soft => session.call::<_, ()>(
+                STAKE_CONTRACT,
+                "slash",
+                &(provisioner, None::<u64>),
+                u64::MAX,
+            ),
+            node_data::ledger::SlashType::Hard => session.call::<_, ()>(
+                STAKE_CONTRACT,
+                "hard_slash",
+                &(provisioner, None::<u64>, None::<u64>),
+                u64::MAX,
+            ),
+            node_data::ledger::SlashType::HardWithSeverity(severity) => session
+                .call::<_, ()>(
+                    STAKE_CONTRACT,
+                    "hard_slash",
+                    &(provisioner, None::<u64>, Some(severity)),
+                    u64::MAX,
+                ),
+        }?;
+        events.extend(r.events);
+    }
+    Ok(events)
 }

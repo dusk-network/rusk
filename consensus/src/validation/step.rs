@@ -81,23 +81,26 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
         // Verify candidate header (all fields except the winning attestation)
         // NB: Winning attestation is produced only on reaching consensus
-        match executor.verify_block_header(header, true).await {
+        let vote = match executor.verify_block_header(header, true).await {
             Ok((_, voters, _)) => {
                 // Call Verify State Transition to make sure transactions set is
                 // valid
 
-                // Voters here is the list of provisioners that validated the
-                // Tip of the current Block generator
-                let vote =
+                if let Err(err) = executor
+                    .verify_faults(header.height, candidate.faults())
+                    .await
+                {
+                    error!(event = "invalid faults", ?err);
+                    Vote::Invalid(header.hash)
+                } else {
                     match Self::call_vst(candidate, &voters, &executor).await {
                         Ok(_) => Vote::Valid(header.hash),
                         Err(err) => {
                             error!(event = "failed_vst_call", ?err);
                             Vote::Invalid(header.hash)
                         }
-                    };
-
-                Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
+                    }
+                }
             }
             Err(err) => {
                 error!(event = "invalid_header", ?err, ?header);
@@ -105,16 +108,11 @@ impl<T: Operations + 'static> ValidationStep<T> {
                 // the block producer.
                 // However, this is already verified in the Candidate message
                 // verification, so it's safe to vote invalid here
-                Self::cast_vote(
-                    Vote::Invalid(header.hash),
-                    ru,
-                    iteration,
-                    outbound,
-                    inbound,
-                )
-                .await;
+                Vote::Invalid(header.hash)
             }
-        }
+        };
+
+        Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
     }
 
     async fn cast_vote(

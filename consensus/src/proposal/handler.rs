@@ -90,10 +90,17 @@ impl<D: Database> ProposalHandler<D> {
             return Err(ConsensusError::InvalidBlockHash);
         }
 
-        let tx_hashes: Vec<[u8; 32]> =
+        let tx_hashes: Vec<_> =
             p.candidate.txs().iter().map(|t| t.hash()).collect();
         let tx_root = merkle_root(&tx_hashes[..]);
         if tx_root != p.candidate.header().txroot {
+            return Err(ConsensusError::InvalidBlock);
+        }
+
+        let fault_hashes: Vec<_> =
+            p.candidate.faults().iter().map(|t| t.hash()).collect();
+        let fault_root = merkle_root(&fault_hashes[..]);
+        if fault_root != p.candidate.header().faultroot {
             return Err(ConsensusError::InvalidBlock);
         }
 
