@@ -94,7 +94,7 @@ impl Eq for SpentTransaction {}
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use super::*;
-    use execution_core::transfer::{CallOrDeploy, ContractCall, Fee, Payload};
+    use execution_core::transfer::{ContractCall, ContractExec, Fee, Payload};
     use execution_core::{
         BlsScalar, JubJubScalar, Note, PublicKey, SecretKey, TxSkeleton,
     };
@@ -153,7 +153,7 @@ pub mod faker {
         let payload = Payload {
             tx_skeleton,
             fee,
-            call_or_deploy: Some(CallOrDeploy::Call(contract_call)),
+            call_or_deploy: Some(ContractExec::Call(contract_call)),
         };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
