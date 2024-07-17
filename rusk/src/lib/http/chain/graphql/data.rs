@@ -7,21 +7,23 @@
 use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
-use node::database::{Ledger, DB};
+use node::database::{HeaderRecord, Ledger, DB};
 
 pub struct Block {
     header: node_data::ledger::Header,
     txs_id: Vec<[u8; 32]>,
 }
 
-impl Block {
-    pub fn new(
-        header: node_data::ledger::Header,
-        txs_id: Vec<[u8; 32]>,
-    ) -> Self {
-        Self { header, txs_id }
+impl From<HeaderRecord> for Block {
+    fn from(value: HeaderRecord) -> Self {
+        Self {
+            header: value.header,
+            txs_id: value.transactions_ids,
+        }
     }
+}
 
+impl Block {
     pub fn header(&self) -> &node_data::ledger::Header {
         &self.header
     }
@@ -206,7 +208,7 @@ impl SpentTransaction {
         let db = ctx.data::<super::DBContext>()?.read().await;
         let block_height = self.0.block_height;
 
-        let (header, _) = db.view(|t| {
+        let header = db.view(|t| {
             let block_hash =
                 t.fetch_block_hash_by_height(block_height)?.ok_or_else(
                     || FieldError::new("Cannot find block hash by height"),

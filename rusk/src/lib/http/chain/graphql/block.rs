@@ -34,12 +34,12 @@ pub async fn last_block(ctx: &Context<'_>) -> FieldResult<Block> {
         let hash = t.op_read(MD_HASH_KEY)?;
         match hash {
             None => Ok(None),
-            Some(hash) => t.fetch_block_header(&hash),
+            Some(hash) => t.fetch_block_light(&hash),
         }
     })?;
 
     block
-        .map(|(header, txs_id)| Block::new(header, txs_id))
+        .map(Block::from)
         .ok_or_else(|| FieldError::new("Cannot find last block"))
 }
 
@@ -49,8 +49,8 @@ pub async fn block_by_hash(
 ) -> OptResult<Block> {
     let db = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
-    let block = db.read().await.view(|t| t.fetch_block_header(&hash))?;
-    Ok(block.map(|(header, txs_id)| Block::new(header, txs_id)))
+    let header = db.read().await.view(|t| t.fetch_block_light(&hash))?;
+    Ok(header.map(Block::from))
 }
 
 pub async fn last_blocks(
@@ -67,11 +67,11 @@ pub async fn last_blocks(
         let mut blocks = vec![last_block];
         let mut count = count - 1;
         while (count > 0) {
-            match t.fetch_block_header(&hash_to_search)? {
+            match t.fetch_block_light(&hash_to_search)? {
                 None => break,
-                Some((header, txs_id)) => {
-                    hash_to_search = header.prev_block_hash;
-                    blocks.push(Block::new(header, txs_id));
+                Some(h) => {
+                    hash_to_search = h.header.prev_block_hash;
+                    blocks.push(Block::from(h));
                     count -= 1;
                 }
             }
@@ -95,10 +95,9 @@ pub async fn blocks_range(
                 hash_to_search = t.fetch_block_hash_by_height(height)?;
             }
             if let Some(hash) = hash_to_search {
-                let (header, txs_id) =
-                    t.fetch_block_header(&hash)?.expect("Block to be found");
-                hash_to_search = header.prev_block_hash.into();
-                blocks.push(Block::new(header, txs_id))
+                let h = t.fetch_block_light(&hash)?.expect("Block to be found");
+                hash_to_search = h.header.prev_block_hash.into();
+                blocks.push(Block::from(h))
             }
         }
         Ok::<_, anyhow::Error>(blocks)
