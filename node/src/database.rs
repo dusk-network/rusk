@@ -98,7 +98,8 @@ pub trait Ledger {
         label: Label,
     ) -> Result<()>;
 
-    fn fetch_faults(&self, start_height: u64) -> Result<Vec<Fault>>;
+    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
+    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
 }
 
 pub trait Candidate {

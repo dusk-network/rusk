@@ -308,7 +308,7 @@ pub async fn verify_faults<DB: database::DB>(
                 // id directly This needs the fault id to be
                 // changed into "HEIGHT|TYPE|PROV_KEY"
                 let stored_faults =
-                    db.fetch_faults(fault_header.round - EPOCH)?;
+                    db.fetch_faults_by_block(fault_header.round - EPOCH)?;
                 if stored_faults.iter().any(|other| f.same(other)) {
                     anyhow::bail!("Double fault detected");
                 }

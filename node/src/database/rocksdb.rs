@@ -337,23 +337,22 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.get_size())
     }
 
-    fn fetch_faults(&self, start_height: u64) -> Result<Vec<Fault>> {
+    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>> {
         let mut faults = vec![];
         let mut hash = self
             .op_read(MD_HASH_KEY)?
             .ok_or(anyhow::anyhow!("Cannot read tip"))?;
 
         loop {
-            let block = self.fetch_block(&hash)?.ok_or(anyhow::anyhow!(
-                "Cannot read block {}",
-                hex::encode(&hash)
-            ))?;
+            let block = self.fetch_block_light(&hash)?.ok_or(
+                anyhow::anyhow!("Cannot read block {}", hex::encode(&hash)),
+            )?;
 
-            let block_height = block.header().height;
+            let block_height = block.header.height;
 
             if block_height >= start_height {
-                hash = block.header().prev_block_hash.to_vec();
-                faults.extend(block.into_faults());
+                hash = block.header.prev_block_hash.to_vec();
+                faults.extend(self.fetch_faults(&block.faults_ids)?);
             } else {
                 break;
             }
@@ -400,6 +399,28 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
     fn get_block_exists(&self, hash: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_cf, hash)?.is_some())
+    }
+
+    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
+        if faults_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        let ids = faults_ids
+            .iter()
+            .map(|id| (self.ledger_faults_cf, id))
+            .collect::<Vec<_>>();
+
+        // Retrieve all faults ID with single call
+        let faults_buffer = self.snapshot.multi_get_cf(ids);
+
+        let mut faults = vec![];
+        for buf in faults_buffer {
+            let buf = buf?.unwrap();
+            let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+            faults.push(fault);
+        }
+
+        Ok(faults)
     }
 
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
