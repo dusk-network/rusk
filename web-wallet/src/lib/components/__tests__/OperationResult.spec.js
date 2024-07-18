@@ -79,7 +79,7 @@ describe("OperationResult", () => {
   it("should be able to render the `OperationResult` in a failure state", async () => {
     const props = {
       ...baseProps,
-      operation: rejectAfter(delay),
+      operation: rejectAfter(delay, new Error("some error")),
     };
 
     const { container } = render(OperationResult, { ...baseOptions, props });
@@ -93,7 +93,7 @@ describe("OperationResult", () => {
     const props = {
       ...baseProps,
       errorMessage: "Transaction failed",
-      operation: rejectAfter(delay),
+      operation: rejectAfter(delay, new Error("some error")),
     };
 
     const { container } = render(OperationResult, { ...baseOptions, props });

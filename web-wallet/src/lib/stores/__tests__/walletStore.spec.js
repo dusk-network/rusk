@@ -12,8 +12,11 @@ import { keys } from "lamb";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
 
 import { addresses, transactions } from "$lib/mock-data";
+import { rejectAfter, resolveAfter } from "$lib/dusk/test-helpers";
 
 import { walletStore } from "..";
+
+const settleTime = 1000;
 
 vi.useFakeTimers();
 
@@ -124,14 +127,13 @@ describe("walletStore", async () => {
       });
 
       expect(getPsksSpy).toHaveBeenCalledTimes(1);
-      expect(getBalanceSpy).not.toHaveBeenCalled();
-
-      await vi.advanceTimersToNextTimerAsync();
-
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
       expect(getBalanceSpy).toHaveBeenCalledTimes(1);
       expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
+
+      await vi.advanceTimersToNextTimerAsync();
+
       expect(get(walletStore)).toStrictEqual(initializedStore);
     });
 
@@ -148,7 +150,7 @@ describe("walletStore", async () => {
       };
       const error = new Error("sync failed");
 
-      syncSpy.mockRejectedValueOnce(error);
+      syncSpy.mockImplementationOnce(() => rejectAfter(settleTime, error));
 
       await walletStore.init(wallet);
 
@@ -156,7 +158,7 @@ describe("walletStore", async () => {
       expect(getPsksSpy).toHaveBeenCalledTimes(1);
       expect(getBalanceSpy).not.toHaveBeenCalled();
 
-      await vi.advanceTimersToNextTimerAsync();
+      await vi.advanceTimersByTimeAsync(settleTime);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
@@ -271,10 +273,12 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to clear local data and then init the wallet", async () => {
+      walletStore.reset();
       getPsksSpy.mockClear();
       getBalanceSpy.mockClear();
-      syncSpy.mockClear();
-      walletStore.reset();
+      syncSpy
+        .mockClear()
+        .mockImplementationOnce(() => resolveAfter(settleTime, undefined));
 
       await walletStore.clearLocalDataAndInit(wallet);
 
@@ -287,15 +291,14 @@ describe("walletStore", async () => {
         isSyncing: true,
       });
 
-      await vi.advanceTimersToNextTimerAsync();
-
       expect(getPsksSpy).toHaveBeenCalledTimes(1);
-      expect(getBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
+      expect(getBalanceSpy).not.toHaveBeenCalled();
       expect(syncSpy).toHaveBeenCalledTimes(1);
 
-      await vi.advanceTimersToNextTimerAsync();
+      await vi.advanceTimersByTimeAsync(settleTime);
 
+      expect(getBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
       expect(get(walletStore)).toStrictEqual(initializedStore);
     });
 
@@ -452,7 +455,7 @@ describe("walletStore", async () => {
 
   describe("State changing failures", () => {
     /** @typedef {"stake" | "transfer" | "unstake" | "withdrawReward"} Operation */
-    /** @type {Record<Operation, import("vitest").SpyInstance<any>>} */
+    /** @type {Record<Operation, import("vitest").MockInstance<any>>} */
     const operationsMap = {
       stake: stakeSpy,
       transfer: transferSpy,

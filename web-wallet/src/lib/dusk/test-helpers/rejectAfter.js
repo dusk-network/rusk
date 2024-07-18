@@ -1,7 +1,7 @@
-/** @type {(delay: number) => Promise<any>} */
-const rejectAfter = (delay) =>
+/** @type {(delay: number, error: Error) => Promise<any>} */
+const rejectAfter = (delay, error) =>
   new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("some error")), delay);
+    setTimeout(() => reject(error), delay);
   });
 
 export default rejectAfter;

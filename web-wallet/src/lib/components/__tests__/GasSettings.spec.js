@@ -66,7 +66,7 @@ describe("GasSettings", () => {
     });
 
     expect(eventHandler).toHaveBeenCalledTimes(1);
-    expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
+    expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
       limit: baseProps.limitLower,
       price: baseProps.price,
     });
@@ -76,7 +76,7 @@ describe("GasSettings", () => {
     });
 
     expect(eventHandler).toHaveBeenCalledTimes(2);
-    expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
+    expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
       limit: baseProps.limitLower,
       price: baseProps.price * 2,
     });

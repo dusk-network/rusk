@@ -58,7 +58,7 @@ describe("GasControls", () => {
     await fireInput(priceInput, 15);
 
     expect(eventHandler).toHaveBeenCalledTimes(1);
-    expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
+    expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
       limit: baseProps.limit,
       price: 15,
     });
@@ -67,7 +67,7 @@ describe("GasControls", () => {
     await fireInput(limitInput, 25);
 
     expect(eventHandler).toHaveBeenCalledTimes(2);
-    expect(eventHandler.mock.lastCall[0].detail).toStrictEqual({
+    expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
       limit: 25,
       price: 15,
     });
