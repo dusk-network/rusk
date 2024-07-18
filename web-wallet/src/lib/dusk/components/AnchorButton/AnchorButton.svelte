@@ -21,7 +21,7 @@
   export let icon = undefined;
 
   /** @type {ButtonSize} */
-  export let size = "normal";
+  export let size = "default";
 
   /** @type {ButtonVariant} */
   export let variant = "primary";

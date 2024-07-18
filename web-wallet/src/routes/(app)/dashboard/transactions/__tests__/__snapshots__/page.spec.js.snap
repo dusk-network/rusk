@@ -29,7 +29,7 @@ exports[`Dashboard > should render the transactions page 1`] = `
       </strong>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        class="dusk-icon dusk-icon--size--default dusk-balance__icon"
         data-tooltip-id="balance-tooltip"
         data-tooltip-place="right"
         data-tooltip-text="DUSK"
@@ -79,11 +79,11 @@ exports[`Dashboard > should render the transactions page 1`] = `
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled transactions__footer-button"
         href="/some-base-path/dashboard"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >

@@ -22,12 +22,12 @@ exports[`Dashboard > should render a card when there is an error getting transac
       tabindex="0"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button"
         disabled=""
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -48,11 +48,11 @@ exports[`Dashboard > should render a card when there is an error getting transac
        
       <button
         aria-label="Copy Address"
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button address-picker__copy-address-button"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -87,7 +87,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
       </strong>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        class="dusk-icon dusk-icon--size--default dusk-balance__icon"
         data-tooltip-id="balance-tooltip"
         data-tooltip-place="right"
         data-tooltip-text="DUSK"
@@ -131,14 +131,14 @@ exports[`Dashboard > should render a card when there is an error getting transac
       class="dusk-tabs"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button dusk-tab-scroll-button"
         disabled=""
         hidden="true"
         tabindex="-1"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -163,7 +163,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -189,7 +189,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -210,14 +210,14 @@ exports[`Dashboard > should render a card when there is an error getting transac
       </ul>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button dusk-tab-scroll-button"
         disabled=""
         hidden="true"
         tabindex="-1"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -254,7 +254,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
             </span>
              
             <svg
-              class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
               data-tooltip-id="main-tooltip"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -276,11 +276,11 @@ exports[`Dashboard > should render a card when there is an error getting transac
             class="contract-operations__operation svelte-1v0rjcd"
           >
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
               type="button"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -303,11 +303,11 @@ exports[`Dashboard > should render a card when there is an error getting transac
             class="contract-operations__operation svelte-1v0rjcd"
           >
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
               type="button"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -346,7 +346,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
@@ -408,12 +408,12 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
       tabindex="0"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button"
         disabled=""
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -434,11 +434,11 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
        
       <button
         aria-label="Copy Address"
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button address-picker__copy-address-button"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -473,7 +473,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
       </strong>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        class="dusk-icon dusk-icon--size--default dusk-balance__icon"
         data-tooltip-id="balance-tooltip"
         data-tooltip-place="right"
         data-tooltip-text="DUSK"
@@ -517,14 +517,14 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
       class="dusk-tabs"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button dusk-tab-scroll-button"
         disabled=""
         hidden="true"
         tabindex="-1"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -549,7 +549,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
           tabindex="0"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -575,7 +575,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
           tabindex="0"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -596,14 +596,14 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
       </ul>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button dusk-tab-scroll-button"
         disabled=""
         hidden="true"
         tabindex="-1"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -640,7 +640,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
             </span>
              
             <svg
-              class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
               data-tooltip-id="main-tooltip"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -662,11 +662,11 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
             class="contract-operations__operation svelte-1v0rjcd"
           >
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
               type="button"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -689,11 +689,11 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
             class="contract-operations__operation svelte-1v0rjcd"
           >
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
               type="button"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -732,7 +732,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
@@ -799,12 +799,12 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       tabindex="0"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button"
         disabled=""
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -825,11 +825,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
        
       <button
         aria-label="Copy Address"
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button address-picker__copy-address-button"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -864,7 +864,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       </strong>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        class="dusk-icon dusk-icon--size--default dusk-balance__icon"
         data-tooltip-id="balance-tooltip"
         data-tooltip-place="right"
         data-tooltip-text="DUSK"
@@ -908,14 +908,14 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       class="dusk-tabs"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button dusk-tab-scroll-button"
         disabled=""
         hidden="true"
         tabindex="-1"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -940,7 +940,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -966,7 +966,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -987,14 +987,14 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       </ul>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button dusk-tab-scroll-button"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button dusk-tab-scroll-button"
         disabled=""
         hidden="true"
         tabindex="-1"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -1031,7 +1031,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             </span>
              
             <svg
-              class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
               data-tooltip-id="main-tooltip"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -1053,11 +1053,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="contract-operations__operation svelte-1v0rjcd"
           >
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
               type="button"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1080,11 +1080,11 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             class="contract-operations__operation svelte-1v0rjcd"
           >
             <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+              class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
               type="button"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1123,7 +1123,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span

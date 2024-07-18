@@ -35,7 +35,7 @@
         <span
           class={`dusk-toast__item-icon-wrapper dusk-toast__item-icon-wrapper--${type}`}
         >
-          <Icon className="dusk-toast__item-icon" path={icon} size="normal" />
+          <Icon className="dusk-toast__item-icon" path={icon} size="default" />
         </span>
       {/if}
       <span class="dusk-toast__item-message">

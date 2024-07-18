@@ -57,7 +57,7 @@
       buttonProps?.icon ?? {
         path: defaultIconPath,
         position: isNextButton ? "after" : "before",
-        size: "normal",
+        size: "default",
       }
     );
   }

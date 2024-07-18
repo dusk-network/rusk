@@ -15,7 +15,7 @@ exports[`Forced logout page > should render the page alert the user about the fo
         class="dusk-card__header-title"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -54,7 +54,7 @@ exports[`Forced logout page > should render the page alert the user about the fo
    
   <a
     aria-disabled="false"
-    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal"
+    class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default"
     data-sveltekit-replacestate="true"
     href="/some-base-path/"
   >

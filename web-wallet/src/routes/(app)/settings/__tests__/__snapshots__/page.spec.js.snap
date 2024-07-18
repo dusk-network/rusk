@@ -27,7 +27,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           class="settings-group__header svelte-1kathp5"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -80,7 +80,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         class="settings-group__header svelte-1kathp5"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -149,7 +149,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         class="settings-group__header svelte-1kathp5"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -482,7 +482,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         class="settings-group__header svelte-1kathp5"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -520,7 +520,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal settings-group__button--state--danger"
+        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
         data-tooltip-disabled="true"
         data-tooltip-id="main-tooltip"
         data-tooltip-text="Not allowed to reset while syncing"
@@ -565,7 +565,7 @@ exports[`Settings > should render the settings page 1`] = `
           class="settings-group__header svelte-1kathp5"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -618,7 +618,7 @@ exports[`Settings > should render the settings page 1`] = `
         class="settings-group__header svelte-1kathp5"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -687,7 +687,7 @@ exports[`Settings > should render the settings page 1`] = `
         class="settings-group__header svelte-1kathp5"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -1020,7 +1020,7 @@ exports[`Settings > should render the settings page 1`] = `
         class="settings-group__header svelte-1kathp5"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -1040,7 +1040,7 @@ exports[`Settings > should render the settings page 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal settings-group__button--state--danger"
+        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
         data-tooltip-disabled="true"
         data-tooltip-id="main-tooltip"
         data-tooltip-text="Not allowed to reset while syncing"

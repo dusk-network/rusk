@@ -4,7 +4,7 @@ type IconProp = {
   size?: IconSize;
 };
 
-type ButtonSize = "normal" | "small";
+type ButtonSize = "default" | "small";
 
 type BadgeVariant = "neutral" | "success" | "warning" | "error";
 
@@ -22,9 +22,9 @@ type WizardButtonProps = {
   action?: () => void;
 };
 
-type GapSize = "small" | "normal" | "large";
+type GapSize = "small" | "default" | "large";
 
-type IconSize = "small" | "normal" | "large";
+type IconSize = "small" | "default" | "large";
 
 type GroupedSelectOptions = Record<string, SelectOption[] | string[]>;
 

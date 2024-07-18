@@ -24,7 +24,7 @@ exports[`GasSettings > renders the GasSettings component closed 1`] = `
         </span>
          
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-amount__icon"
+          class="dusk-icon dusk-icon--size--default dusk-amount__icon"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           role="graphics-symbol"
@@ -78,7 +78,7 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
         </span>
          
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-amount__icon"
+          class="dusk-icon dusk-icon--size--default dusk-amount__icon"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           role="graphics-symbol"

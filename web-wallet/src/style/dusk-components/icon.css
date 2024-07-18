@@ -3,7 +3,7 @@
   --scaler: 1.5;
 }
 
-.dusk-icon--size--normal {
+.dusk-icon--size--default {
   height: var(--icon-size);
   width: var(--icon-size);
 }

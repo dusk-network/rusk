@@ -45,7 +45,7 @@ exports[`IconHeadingCard > renders the ToggleableCard component with a heading a
       class="dusk-card__header-title"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal"
+        class="dusk-icon dusk-icon--size--default"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -88,7 +88,7 @@ exports[`IconHeadingCard > renders the ToggleableCard component with a toggle 1`
       class="dusk-card__header-title"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal"
+        class="dusk-icon dusk-icon--size--default"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >

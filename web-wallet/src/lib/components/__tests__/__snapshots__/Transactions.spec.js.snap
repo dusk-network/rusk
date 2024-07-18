@@ -15,7 +15,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
      
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
       href="/some-base-path/dashboard/transactions"
     >
       <span
@@ -269,7 +269,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
      
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal transactions__footer-button"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
       href="/some-base-path/dashboard/transactions"
     >
       <span
