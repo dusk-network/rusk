@@ -396,7 +396,7 @@ mod tests {
         let payload = Payload {
             tx_skeleton,
             fee,
-            exec: Some(ContractExec::Call(call)),
+            contract_exec: Some(ContractExec::Call(call)),
         };
 
         let sender_blinder_1 =
