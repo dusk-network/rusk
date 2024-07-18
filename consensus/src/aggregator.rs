@@ -305,8 +305,8 @@ mod tests {
         dbg!("{:?}", p);
 
         // Collect votes from expected committee members
-        let expected_members = vec![0, 1, 3, 4, 5];
-        let expected_votes = vec![1, 1, 1, 2, 3];
+        let expected_members = vec![1, 2, 3, 4];
+        let expected_votes = vec![1, 1, 2, 1];
 
         // The index of the provisioner (inside expected_members) that let the
         // quorum being reached
@@ -320,6 +320,7 @@ mod tests {
                 }
             },
         );
+        println!("winning index {winning_index}");
         let mut collected_votes = 0;
         for i in 0..expected_members.len() - 1 {
             // Select provisioner
@@ -345,6 +346,7 @@ mod tests {
                 break;
             }
 
+            println!("Collecting vote for index {i}");
             // Check collected votes
             let (_, quorum_reached) = a.collect_vote(&c, msg).unwrap();
 
