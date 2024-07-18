@@ -327,6 +327,7 @@ impl Transaction {
     /// Creates a modified clone of this transaction if it contains data for
     /// deployment, clones all fields except for the bytecode' 'bytes' part.
     /// Returns none if the transaction is not a deployment transaction.
+    #[must_use]
     pub fn strip_off_bytecode(&self) -> Option<Self> {
         let deploy = self.payload().contract_deploy()?;
         Some(Self::new(
