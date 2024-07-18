@@ -343,7 +343,7 @@ where
     pub fn execute<Rng>(
         &self,
         rng: &mut Rng,
-        exec: ContractExec,
+        contract_exec: ContractExec,
         sender_index: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -378,7 +378,7 @@ where
             outputs,
             fee,
             0,
-            Some(exec),
+            Some(contract_exec),
         )
         .map_err(Error::from_state_err)?;
 
@@ -740,7 +740,7 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
     outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
     fee: Fee,
     deposit: u64,
-    exec: Option<ContractExec>,
+    contract_exec: Option<ContractExec>,
 ) -> Result<UnprovenTransaction, SC::Error> {
     let nullifiers: Vec<BlsScalar> = inputs
         .iter()
@@ -766,7 +766,7 @@ fn new_unproven_tx<Rng: RngCore + CryptoRng, SC: StateClient>(
     let payload = Payload {
         tx_skeleton,
         fee,
-        exec,
+        contract_exec,
     };
     let payload_hash = payload.hash();
 
