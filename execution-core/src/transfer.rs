@@ -29,9 +29,10 @@ use crate::{
 };
 
 mod transaction;
+pub use transaction::{Payload, Transaction};
+
 use crate::bytecode::Bytecode;
 use crate::reader::{read_arr, read_str, read_vec};
-pub use transaction::{Payload, Transaction};
 
 /// Unique ID to identify a contract.
 pub type ContractId = [u8; 32];

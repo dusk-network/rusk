@@ -31,7 +31,7 @@ pub struct Payload {
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
     /// Data to do a contract call or deployment.
-    pub call_or_deploy: Option<ContractExec>,
+    pub exec: Option<ContractExec>,
 }
 
 impl PartialEq for Payload {
@@ -46,7 +46,7 @@ impl Payload {
     /// Return the contract-call data, if there is any.
     #[must_use]
     pub fn contract_call(&self) -> Option<&ContractCall> {
-        match self.call_or_deploy.as_ref() {
+        match self.exec.as_ref() {
             Some(Call(call)) => Some(call),
             _ => None,
         }
@@ -55,7 +55,7 @@ impl Payload {
     /// Return the contract-deploy data, if there is any.
     #[must_use]
     pub fn contract_deploy(&self) -> Option<&ContractDeploy> {
-        match self.call_or_deploy.as_ref() {
+        match self.exec.as_ref() {
             Some(Deploy(deploy)) => Some(deploy),
             _ => None,
         }
@@ -75,7 +75,7 @@ impl Payload {
         bytes.extend(self.fee.to_bytes());
 
         // serialize the contract-call
-        match &self.call_or_deploy {
+        match &self.exec {
             Some(ContractExec::Deploy(deploy)) => {
                 bytes.push(2);
                 bytes.extend(deploy.to_var_bytes());
@@ -108,7 +108,7 @@ impl Payload {
         let fee = Fee::from_reader(&mut buf)?;
 
         // deserialize contract-call data
-        let call_or_deploy = match u8::from_reader(&mut buf)? {
+        let exec = match u8::from_reader(&mut buf)? {
             0 => None,
             1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
             2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
@@ -120,7 +120,7 @@ impl Payload {
         Ok(Self {
             tx_skeleton,
             fee,
-            call_or_deploy,
+            exec,
         })
     }
 
@@ -326,9 +326,7 @@ impl Transaction {
     /// Strips off bytecode if present in the transaction.
     /// Does nothing if bytecode is not present.
     pub fn strip_off_bytecode(&mut self) {
-        if let Some(ContractExec::Deploy(deploy)) =
-            &mut self.payload.call_or_deploy
-        {
+        if let Some(ContractExec::Deploy(deploy)) = &mut self.payload.exec {
             deploy.bytecode.bytes.clear();
         }
     }
