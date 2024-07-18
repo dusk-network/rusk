@@ -483,13 +483,6 @@ fn accept(
     ))
 }
 
-fn strip_off_bytecode(tx: &PhoenixTransaction) -> Option<PhoenixTransaction> {
-    let _ = tx.payload().contract_deploy()?;
-    let mut tx_clone = tx.clone();
-    tx_clone.strip_off_bytecode();
-    Some(tx_clone)
-}
-
 /// Executes a transaction, returning the receipt of the call and the gas spent.
 /// The following steps are performed:
 ///
@@ -515,7 +508,7 @@ fn execute(
         }
     }
 
-    let tx_stripped = strip_off_bytecode(tx);
+    let tx_stripped = tx.strip_off_bytecode();
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
