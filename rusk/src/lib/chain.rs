@@ -35,6 +35,7 @@ pub struct Rusk {
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
     pub(crate) generation_timeout: Option<Duration>,
+    pub(crate) gas_per_deploy_byte: Option<u64>,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
 }

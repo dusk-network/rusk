@@ -12,6 +12,8 @@
 #db_path = '/home/user/.dusk/rusk'
 #consensus_keys_path = '/home/user/.dusk/rusk/consensus.keys'
 #generation_timeout = '3s'
+# Note: changing the gas per deploy byte parameter is equivalent to forking the chain.
+#gas_per_deploy_byte = 100
 
 [databroker]
 max_inv_entries = 100
