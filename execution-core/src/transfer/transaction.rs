@@ -32,7 +32,7 @@ pub struct Payload {
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
     /// Data to do a contract call or deployment.
-    pub exec: Option<ContractExec>,
+    pub contract_exec: Option<ContractExec>,
 }
 
 impl PartialEq for Payload {
@@ -47,7 +47,7 @@ impl Payload {
     /// Return the contract-call data, if there is any.
     #[must_use]
     pub fn contract_call(&self) -> Option<&ContractCall> {
-        match self.exec.as_ref() {
+        match self.contract_exec.as_ref() {
             Some(Call(call)) => Some(call),
             _ => None,
         }
@@ -56,7 +56,7 @@ impl Payload {
     /// Return the contract-deploy data, if there is any.
     #[must_use]
     pub fn contract_deploy(&self) -> Option<&ContractDeploy> {
-        match self.exec.as_ref() {
+        match self.contract_exec.as_ref() {
             Some(Deploy(deploy)) => Some(deploy),
             _ => None,
         }
@@ -76,7 +76,7 @@ impl Payload {
         bytes.extend(self.fee.to_bytes());
 
         // serialize the contract-call
-        match &self.exec {
+        match &self.contract_exec {
             Some(ContractExec::Deploy(deploy)) => {
                 bytes.push(2);
                 bytes.extend(deploy.to_var_bytes());
@@ -94,7 +94,7 @@ impl Payload {
     /// Deserialize the Payload from a bytes buffer.
     ///
     /// # Errors
-    /// Errors when the bytes are not cannonical.
+    /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
@@ -108,8 +108,8 @@ impl Payload {
         // deserialize fee
         let fee = Fee::from_reader(&mut buf)?;
 
-        // deserialize contract-call data
-        let exec = match u8::from_reader(&mut buf)? {
+        // deserialize contract execution data
+        let contract_exec = match u8::from_reader(&mut buf)? {
             0 => None,
             1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
             2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
@@ -121,7 +121,7 @@ impl Payload {
         Ok(Self {
             tx_skeleton,
             fee,
-            exec,
+            contract_exec,
         })
     }
 
@@ -334,7 +334,7 @@ impl Transaction {
             Payload {
                 tx_skeleton: self.payload().tx_skeleton.clone(),
                 fee: self.payload().fee,
-                exec: Some(ContractExec::Deploy(ContractDeploy {
+                contract_exec: Some(ContractExec::Deploy(ContractDeploy {
                     owner: deploy.owner.clone(),
                     constructor_args: deploy.constructor_args.clone(),
                     bytecode: Bytecode {

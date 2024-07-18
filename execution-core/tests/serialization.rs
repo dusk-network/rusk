@@ -82,7 +82,7 @@ fn transaction_serialization_call() -> Result<(), Error> {
     let payload = Payload {
         tx_skeleton,
         fee,
-        exec: Some(ContractExec::Call(call)),
+        contract_exec: Some(ContractExec::Call(call)),
     };
 
     // set a random proof
@@ -117,7 +117,7 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     let payload = Payload {
         tx_skeleton,
         fee,
-        exec: Some(ContractExec::Deploy(deploy)),
+        contract_exec: Some(ContractExec::Deploy(deploy)),
     };
 
     // set a random proof
