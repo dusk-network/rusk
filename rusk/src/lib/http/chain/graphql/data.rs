@@ -7,15 +7,15 @@
 use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
-use node::database::{HeaderRecord, Ledger, DB};
+use node::database::{Ledger, LightBlock, DB};
 
 pub struct Block {
     header: node_data::ledger::Header,
     txs_id: Vec<[u8; 32]>,
 }
 
-impl From<HeaderRecord> for Block {
-    fn from(value: HeaderRecord) -> Self {
+impl From<LightBlock> for Block {
+    fn from(value: LightBlock) -> Self {
         Self {
             header: value.header,
             txs_id: value.transactions_ids,

@@ -34,7 +34,7 @@ pub async fn last_block(ctx: &Context<'_>) -> FieldResult<Block> {
         let hash = t.op_read(MD_HASH_KEY)?;
         match hash {
             None => Ok(None),
-            Some(hash) => t.fetch_block_light(&hash),
+            Some(hash) => t.fetch_light_block(&hash),
         }
     })?;
 
@@ -49,7 +49,7 @@ pub async fn block_by_hash(
 ) -> OptResult<Block> {
     let db = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
-    let header = db.read().await.view(|t| t.fetch_block_light(&hash))?;
+    let header = db.read().await.view(|t| t.fetch_light_block(&hash))?;
     Ok(header.map(Block::from))
 }
 
@@ -67,7 +67,7 @@ pub async fn last_blocks(
         let mut blocks = vec![last_block];
         let mut count = count - 1;
         while (count > 0) {
-            match t.fetch_block_light(&hash_to_search)? {
+            match t.fetch_light_block(&hash_to_search)? {
                 None => break,
                 Some(h) => {
                     hash_to_search = h.header.prev_block_hash;
@@ -95,7 +95,7 @@ pub async fn blocks_range(
                 hash_to_search = t.fetch_block_hash_by_height(height)?;
             }
             if let Some(hash) = hash_to_search {
-                let h = t.fetch_block_light(&hash)?.expect("Block to be found");
+                let h = t.fetch_light_block(&hash)?.expect("Block to be found");
                 hash_to_search = h.header.prev_block_hash.into();
                 blocks.push(Block::from(h))
             }

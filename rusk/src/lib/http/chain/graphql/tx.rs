@@ -32,7 +32,7 @@ pub async fn last_transactions(
         let mut txs = vec![];
         let mut current_block =
             t.op_read(MD_HASH_KEY).and_then(|res| match res {
-                Some(hash) => t.fetch_block_light(&hash),
+                Some(hash) => t.fetch_light_block(&hash),
                 None => Ok(None),
             })?;
 
@@ -48,7 +48,7 @@ pub async fn last_transactions(
                     return Ok::<_, async_graphql::Error>(txs);
                 }
             }
-            current_block = t.fetch_block_light(&h.header.prev_block_hash)?;
+            current_block = t.fetch_light_block(&h.header.prev_block_hash)?;
         }
 
         Ok::<_, async_graphql::Error>(txs)
