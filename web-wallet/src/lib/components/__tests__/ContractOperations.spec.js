@@ -88,6 +88,6 @@ describe("ContractOperations", () => {
     fireEvent.click(btnReceive);
 
     expect(handleOperationChange).toHaveBeenCalledTimes(1);
-    expect(handleOperationChange.mock.lastCall[0].detail).toBe("receive");
+    expect(handleOperationChange.mock.lastCall?.[0].detail).toBe("receive");
   });
 });

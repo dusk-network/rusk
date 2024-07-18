@@ -55,8 +55,8 @@
     "@testing-library/svelte": "5.1.0",
     "@types/node": "20.14.8",
     "@vitejs/plugin-basic-ssl": "1.1.0",
-    "@vitest/browser": "1.6.0",
-    "@vitest/coverage-istanbul": "1.6.0",
+    "@vitest/browser": "2.0.3",
+    "@vitest/coverage-istanbul": "2.0.3",
     "autoprefixer": "10.4.19",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
@@ -75,7 +75,7 @@
     "vite": "5.3.1",
     "vite-plugin-node-polyfills": "0.22.0",
     "vite-tsconfig-paths": "4.3.2",
-    "vitest": "1.6.0",
+    "vitest": "2.0.3",
     "vitest-canvas-mock": "0.3.3"
   }
 }

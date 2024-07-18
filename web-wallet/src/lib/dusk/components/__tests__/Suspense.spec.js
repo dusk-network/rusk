@@ -75,7 +75,7 @@ describe("Suspense", () => {
   it('should be able to render the `Suspense` in a failure state with the "alert" variant as a default', async () => {
     const props = {
       ...baseProps,
-      waitFor: rejectAfter(delay),
+      waitFor: rejectAfter(delay, new Error("some error")),
     };
 
     const { container } = render(Suspense, { ...baseOptions, props });
@@ -90,7 +90,7 @@ describe("Suspense", () => {
     const props = {
       ...baseProps,
       errorVariant: "details",
-      waitFor: rejectAfter(delay),
+      waitFor: rejectAfter(delay, new Error("some error")),
     };
 
     const { container } = render(Suspense, { ...baseOptions, props });
@@ -104,7 +104,7 @@ describe("Suspense", () => {
     const props = {
       ...baseProps,
       errorMessage: "Operation failed",
-      waitFor: rejectAfter(delay),
+      waitFor: rejectAfter(delay, new Error("some error")),
     };
 
     const { container } = render(Suspense, { ...baseOptions, props });
