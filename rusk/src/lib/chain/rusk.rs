@@ -128,11 +128,10 @@ impl Rusk {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
+                    // If the transaction went over the block gas limit we
+                    // re-execute all spent transactions. We don't discard the
+                    // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
-                        // If the transaction went over the block gas limit we
-                        // re-execute all spent transactions. We don't discard
-                        // the transaction, since it is
-                        // technically valid.
                         warn!("This is not supposed to happen with conservative tx inclusion");
                         session = self.session(block_height, None)?;
 
