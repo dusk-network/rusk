@@ -168,11 +168,9 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         let prev_block_seed = self.db.read().await.view(|v| {
-            let prior_tip =
-                Ledger::fetch_block_by_height(&v, self.prev_header.height - 1)?
-                    .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
-
-            Ok::<_, anyhow::Error>(prior_tip.header().seed)
+            v.fetch_block_header(&self.prev_header.prev_block_hash)?
+                .ok_or_else(|| anyhow::anyhow!("Header not found"))
+                .map(|h| h.seed)
         })?;
 
         let (_, _, voters) = verify_block_att(
