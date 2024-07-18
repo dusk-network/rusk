@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{
-    Candidate, DatabaseOptions, HeaderRecord, Ledger, Metadata, Persist, DB,
+    Candidate, DatabaseOptions, Ledger, LightBlock, Metadata, Persist, DB,
 };
 use anyhow::Result;
 use std::cell::RefCell;
@@ -291,7 +291,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             let cf = self.ledger_cf;
 
             let mut buf = vec![];
-            HeaderRecord {
+            LightBlock {
                 header: header.clone(),
                 transactions_ids: txs
                     .iter()
@@ -344,7 +344,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             .ok_or(anyhow::anyhow!("Cannot read tip"))?;
 
         loop {
-            let block = self.fetch_block_light(&hash)?.ok_or(
+            let block = self.fetch_light_block(&hash)?.ok_or(
                 anyhow::anyhow!("Cannot read block {}", hex::encode(&hash)),
             )?;
 
@@ -426,7 +426,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
-                let record = HeaderRecord::read(&mut &blob[..])?;
+                let record = LightBlock::read(&mut &blob[..])?;
 
                 // Retrieve all transactions buffers with single call
                 let txs_buffers = self.snapshot.multi_get_cf(
@@ -469,10 +469,10 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_light(&self, hash: &[u8]) -> Result<Option<HeaderRecord>> {
+    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
-                let record = HeaderRecord::read(&mut &blob[..])?;
+                let record = LightBlock::read(&mut &blob[..])?;
                 Ok(Some(record))
             }
             None => Ok(None),
@@ -939,7 +939,7 @@ fn deserialize_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
     Ok((value, hash))
 }
 
-impl node_data::Serializable for HeaderRecord {
+impl node_data::Serializable for LightBlock {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // Write block header
         self.header.write(w)?;

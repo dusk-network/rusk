@@ -13,7 +13,7 @@ use anyhow::Result;
 use node_data::ledger::{self, Fault, Label, SpentTransaction};
 use serde::{Deserialize, Serialize};
 
-pub struct HeaderRecord {
+pub struct LightBlock {
     pub header: ledger::Header,
     pub transactions_ids: Vec<[u8; 32]>,
     pub faults_ids: Vec<[u8; 32]>,
@@ -65,7 +65,7 @@ pub trait Ledger {
     fn fetch_block_header(&self, hash: &[u8])
         -> Result<Option<ledger::Header>>;
 
-    fn fetch_block_light(&self, hash: &[u8]) -> Result<Option<HeaderRecord>>;
+    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
 
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
     fn fetch_block_hash_by_height(
