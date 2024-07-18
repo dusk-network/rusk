@@ -153,7 +153,7 @@ pub mod faker {
         let payload = Payload {
             tx_skeleton,
             fee,
-            exec: Some(ContractExec::Call(contract_call)),
+            contract_exec: Some(ContractExec::Call(contract_call)),
         };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
