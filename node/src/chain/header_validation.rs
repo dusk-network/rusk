@@ -16,7 +16,7 @@ use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
 use node_data::ledger::{to_str, Fault, InvalidFault, Seed, Signature};
-use node_data::message::payload::RatificationResult;
+use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
@@ -168,12 +168,21 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         let prev_block_seed = self.db.read().await.view(|v| {
-            let prior_tip =
-                Ledger::fetch_block_by_height(&v, self.prev_header.height - 1)?
-                    .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
-
-            Ok::<_, anyhow::Error>(prior_tip.header().seed)
+            v.fetch_block_header(&self.prev_header.prev_block_hash)?
+                .ok_or_else(|| anyhow::anyhow!("Header not found"))
+                .map(|h| h.seed)
         })?;
+
+        let cert_result = candidate_block.prev_block_cert.result;
+        let prev_block_hash = candidate_block.prev_block_hash;
+
+        match candidate_block.prev_block_cert.result {
+            RatificationResult::Success(Vote::Valid(hash))
+                if hash == prev_block_hash => {}
+            _ => anyhow::bail!(
+                "Invalid result for previous block hash: {cert_result:?}"
+            ),
+        }
 
         let (_, _, voters) = verify_block_att(
             self.prev_header.prev_block_hash,
