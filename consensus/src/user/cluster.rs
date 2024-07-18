@@ -24,6 +24,8 @@ where
     }
 
     /// Adds key with specified weight. Weight per key can be set only once.
+    ///
+    /// Return None if `weight` is 0 or key is already set.
     pub fn add(&mut self, key: &T, weight: usize) -> Option<usize> {
         if weight == 0 {
             return None;

@@ -122,8 +122,9 @@ impl<V: StepVote> Aggregator<V> {
         // An committee member is allowed to vote only once per a single
         // step. Its vote has a weight value depending on how many times it
         // has been extracted in the sortition for this step.
-        let weight = cluster.add(signer, weight);
-        debug_assert!(weight.is_some());
+        let added = cluster
+            .add(signer, weight)
+            .expect("Vote to be added to cluster");
 
         let total = cluster.total_occurrences();
 
@@ -131,7 +132,7 @@ impl<V: StepVote> Aggregator<V> {
             event = "vote aggregated",
             ?vote,
             from = signer.to_bs58(),
-            added = weight,
+            added,
             total,
             majority = committee.majority_quorum(),
             super_majority = committee.super_majority_quorum(),
