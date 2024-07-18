@@ -4,11 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Candidate, DatabaseOptions, Ledger, Metadata, Persist, DB};
+use super::{
+    Candidate, DatabaseOptions, Ledger, LightBlock, Metadata, Persist, DB,
+};
 use anyhow::Result;
 use std::cell::RefCell;
 
-use node_data::ledger::{self, Fault, Label, SpentTransaction};
+use node_data::ledger::{self, Fault, Header, Label, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -289,7 +291,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             let cf = self.ledger_cf;
 
             let mut buf = vec![];
-            HeaderRecord {
+            LightBlock {
                 header: header.clone(),
                 transactions_ids: txs
                     .iter()
@@ -335,23 +337,22 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.get_size())
     }
 
-    fn fetch_faults(&self, start_height: u64) -> Result<Vec<Fault>> {
+    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>> {
         let mut faults = vec![];
         let mut hash = self
             .op_read(MD_HASH_KEY)?
             .ok_or(anyhow::anyhow!("Cannot read tip"))?;
 
         loop {
-            let block = self.fetch_block(&hash)?.ok_or(anyhow::anyhow!(
-                "Cannot read block {}",
-                hex::encode(&hash)
-            ))?;
+            let block = self.fetch_light_block(&hash)?.ok_or(
+                anyhow::anyhow!("Cannot read block {}", hex::encode(&hash)),
+            )?;
 
-            let block_height = block.header().height;
+            let block_height = block.header.height;
 
             if block_height >= start_height {
-                hash = block.header().prev_block_hash.to_vec();
-                faults.extend(block.into_faults());
+                hash = block.header.prev_block_hash.to_vec();
+                faults.extend(self.fetch_faults(&block.faults_ids)?);
             } else {
                 break;
             }
@@ -400,10 +401,32 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.snapshot.get_cf(self.ledger_cf, hash)?.is_some())
     }
 
+    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
+        if faults_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        let ids = faults_ids
+            .iter()
+            .map(|id| (self.ledger_faults_cf, id))
+            .collect::<Vec<_>>();
+
+        // Retrieve all faults ID with single call
+        let faults_buffer = self.snapshot.multi_get_cf(ids);
+
+        let mut faults = vec![];
+        for buf in faults_buffer {
+            let buf = buf?.unwrap();
+            let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+            faults.push(fault);
+        }
+
+        Ok(faults)
+    }
+
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
-                let record = HeaderRecord::read(&mut &blob[..])?;
+                let record = LightBlock::read(&mut &blob[..])?;
 
                 // Retrieve all transactions buffers with single call
                 let txs_buffers = self.snapshot.multi_get_cf(
@@ -446,14 +469,21 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_header(
-        &self,
-        hash: &[u8],
-    ) -> Result<Option<(ledger::Header, Vec<[u8; 32]>)>> {
+    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
-                let record = HeaderRecord::read(&mut &blob[..])?;
-                Ok(Some((record.header, record.transactions_ids)))
+                let record = LightBlock::read(&mut &blob[..])?;
+                Ok(Some(record))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn fetch_block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
+        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+            Some(blob) => {
+                let record = Header::read(&mut &blob[..])?;
+                Ok(Some(record))
             }
             None => Ok(None),
         }
@@ -909,13 +939,7 @@ fn deserialize_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
     Ok((value, hash))
 }
 
-struct HeaderRecord {
-    header: ledger::Header,
-    transactions_ids: Vec<[u8; 32]>,
-    faults_ids: Vec<[u8; 32]>,
-}
-
-impl node_data::Serializable for HeaderRecord {
+impl node_data::Serializable for LightBlock {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // Write block header
         self.header.write(w)?;

@@ -32,12 +32,12 @@ pub async fn last_transactions(
         let mut txs = vec![];
         let mut current_block =
             t.op_read(MD_HASH_KEY).and_then(|res| match res {
-                Some(hash) => t.fetch_block_header(&hash),
+                Some(hash) => t.fetch_light_block(&hash),
                 None => Ok(None),
             })?;
 
-        while let Some((header, block_txs)) = current_block {
-            for txs_id in block_txs {
+        while let Some(h) = current_block {
+            for txs_id in h.transactions_ids {
                 let tx =
                     t.get_ledger_tx_by_hash(&txs_id)?.ok_or_else(|| {
                         FieldError::new("Cannot find transaction")
@@ -48,7 +48,7 @@ pub async fn last_transactions(
                     return Ok::<_, async_graphql::Error>(txs);
                 }
             }
-            current_block = t.fetch_block_header(&header.prev_block_hash)?;
+            current_block = t.fetch_light_block(&h.header.prev_block_hash)?;
         }
 
         Ok::<_, async_graphql::Error>(txs)

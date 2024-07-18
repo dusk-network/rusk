@@ -70,12 +70,10 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
 
         let prev_header = self.acc.db.read().await.view(|t| {
             let prev_hash = &local.prev_block_hash;
-            t.fetch_block_header(prev_hash)?
-                .map(|(header, _)| header)
-                .ok_or(anyhow::anyhow!(
-                    "Unable to find block with hash {}",
-                    to_str(prev_hash)
-                ))
+            t.fetch_block_header(prev_hash)?.ok_or(anyhow::anyhow!(
+                "Unable to find block with hash {}",
+                to_str(prev_hash)
+            ))
         })?;
 
         info!(
