@@ -130,8 +130,9 @@ fn transaction_serialization_deploy() -> Result<(), Error> {
     assert_eq!(transaction, deserialized);
 
     // bytecode stripped off
-    let mut transaction = Transaction::new(payload, proof);
-    transaction.strip_off_bytecode();
+    let transaction = Transaction::new(payload, proof)
+        .strip_off_bytecode()
+        .expect("transaction contains deployment data");
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
     assert_eq!(transaction, deserialized);

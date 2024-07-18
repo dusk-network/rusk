@@ -14,6 +14,7 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::bytecode::Bytecode;
 use crate::reader::read_vec;
 use crate::transfer::ContractExec::{Call, Deploy};
 use crate::transfer::{ContractDeploy, ContractExec};
@@ -323,11 +324,25 @@ impl Transaction {
         pis
     }
 
-    /// Strips off bytecode if present in the transaction.
-    /// Does nothing if bytecode is not present.
-    pub fn strip_off_bytecode(&mut self) {
-        if let Some(ContractExec::Deploy(deploy)) = &mut self.payload.exec {
-            deploy.bytecode.bytes.clear();
-        }
+    /// Creates a modified clone of this transaction if it contains data for
+    /// deployment, clones all fields except for the bytecode' 'bytes' part.
+    /// Returns none if the transaction is not a deployment transaction.
+    pub fn strip_off_bytecode(&self) -> Option<Self> {
+        let deploy = self.payload().contract_deploy()?;
+        Some(Self::new(
+            Payload {
+                tx_skeleton: self.payload().tx_skeleton.clone(),
+                fee: self.payload().fee,
+                exec: Some(ContractExec::Deploy(ContractDeploy {
+                    owner: deploy.owner.clone(),
+                    constructor_args: deploy.constructor_args.clone(),
+                    bytecode: Bytecode {
+                        hash: deploy.bytecode.hash,
+                        bytes: Vec::new(),
+                    },
+                })),
+            },
+            self.proof(),
+        ))
     }
 }
