@@ -2,7 +2,7 @@
 
 exports[`Icon > should accept a custom role for the SVG component 1`] = `
 <svg
-  class="dusk-icon dusk-icon--size--normal"
+  class="dusk-icon dusk-icon--size--default"
   role="presentation"
   viewBox="0 0 24 24"
 >
@@ -14,7 +14,7 @@ exports[`Icon > should accept a custom role for the SVG component 1`] = `
 
 exports[`Icon > should pass additional class names and attributes to the rendered element 1`] = `
 <svg
-  class="dusk-icon dusk-icon--size--normal foo bar"
+  class="dusk-icon dusk-icon--size--default foo bar"
   data-baz="baz"
   role="graphics-symbol"
   viewBox="0 0 24 24"
@@ -27,7 +27,7 @@ exports[`Icon > should pass additional class names and attributes to the rendere
 
 exports[`Icon > should pass additional class names and attributes to the rendered element 2`] = `
 <g
-  class="dusk-icon dusk-icon--size--normal foo bar"
+  class="dusk-icon dusk-icon--size--default foo bar"
   data-baz="baz"
 >
   <rect />
@@ -39,7 +39,7 @@ exports[`Icon > should pass additional class names and attributes to the rendere
 
 exports[`Icon > should render the Icon component 1`] = `
 <svg
-  class="dusk-icon dusk-icon--size--normal"
+  class="dusk-icon dusk-icon--size--default"
   role="graphics-symbol"
   viewBox="0 0 24 24"
 >
@@ -51,7 +51,7 @@ exports[`Icon > should render the Icon component 1`] = `
 
 exports[`Icon > should render the icon inside a \`g\` element if it's part of a stack 1`] = `
 <g
-  class="dusk-icon dusk-icon--size--normal"
+  class="dusk-icon dusk-icon--size--default"
 >
   <rect />
   <path

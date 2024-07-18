@@ -14,11 +14,11 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
     class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -41,11 +41,11 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
     class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -68,12 +68,12 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
     class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
       disabled=""
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -96,11 +96,11 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
     class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -123,11 +123,11 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
     class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -157,11 +157,11 @@ exports[`ContractOperations > should use a default icon if the operation is not 
     class="contract-operations__operation svelte-1v0rjcd"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled contract-operations__operation-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >

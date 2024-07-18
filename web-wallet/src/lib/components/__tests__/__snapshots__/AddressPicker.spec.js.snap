@@ -12,12 +12,12 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
     tabindex="0"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button"
       disabled=""
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -38,11 +38,11 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
      
     <button
       aria-label="Copy Address"
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button address-picker__copy-address-button"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >

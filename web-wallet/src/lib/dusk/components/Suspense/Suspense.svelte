@@ -16,7 +16,7 @@
   export let errorVariant = "alert";
 
   /** @type {GapSize} */
-  export let gap = "normal";
+  export let gap = "default";
 
   /** @type {string} */
   export let pendingMessage = "";
@@ -26,7 +26,7 @@
 
   $: classes = makeClassName([
     "dusk-suspense",
-    gap !== "normal" ? `dusk-suspense--${gap}-gap` : "",
+    gap !== "default" ? `dusk-suspense--${gap}-gap` : "",
     className,
   ]);
 </script>

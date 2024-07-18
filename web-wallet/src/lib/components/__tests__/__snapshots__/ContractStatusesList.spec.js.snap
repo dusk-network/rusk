@@ -24,7 +24,7 @@ exports[`ContractStatusesList > should render the \`ContractStatusesList\` compo
     </span>
      
     <svg
-      class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+      class="dusk-icon dusk-icon--size--default contract-statuses__icon"
       data-tooltip-id="main-tooltip"
       data-tooltip-text="DUSK"
       role="graphics-symbol"
@@ -51,7 +51,7 @@ exports[`ContractStatusesList > should render the \`ContractStatusesList\` compo
     </span>
      
     <svg
-      class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+      class="dusk-icon dusk-icon--size--default contract-statuses__icon"
       data-tooltip-id="main-tooltip"
       data-tooltip-text="DUSK"
       role="graphics-symbol"
@@ -78,7 +78,7 @@ exports[`ContractStatusesList > should render the \`ContractStatusesList\` compo
     </span>
      
     <svg
-      class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+      class="dusk-icon dusk-icon--size--default contract-statuses__icon"
       data-tooltip-id="main-tooltip"
       data-tooltip-text="DUSK"
       role="graphics-symbol"

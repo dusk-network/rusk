@@ -14,14 +14,14 @@
   export let error;
 
   /** @type {GapSize} */
-  export let gap = "normal";
+  export let gap = "default";
 
   /** @type {string} */
   export let summary;
 
   $: classes = makeClassName([
     "dusk-error-alert",
-    gap !== "normal" ? `dusk-error-alert--${gap}-gap` : "",
+    gap !== "default" ? `dusk-error-alert--${gap}-gap` : "",
     className,
   ]);
 </script>

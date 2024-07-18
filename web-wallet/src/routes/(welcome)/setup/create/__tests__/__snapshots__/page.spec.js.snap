@@ -78,7 +78,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
         class="dusk-card__header-title"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -174,11 +174,11 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -198,7 +198,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <span
@@ -208,7 +208,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -334,12 +334,12 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       >
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
           disabled=""
           type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -428,7 +428,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       >
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="grit"
           type="button"
         >
@@ -440,7 +440,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="wreck"
           type="button"
         >
@@ -452,7 +452,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="cart"
           type="button"
         >
@@ -464,7 +464,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="dad"
           type="button"
         >
@@ -476,7 +476,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="rap"
           type="button"
         >
@@ -488,7 +488,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sail"
           type="button"
         >
@@ -500,7 +500,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="robot"
           type="button"
         >
@@ -512,7 +512,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="combine"
           type="button"
         >
@@ -524,7 +524,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="noble"
           type="button"
         >
@@ -536,7 +536,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="slide"
           type="button"
         >
@@ -548,7 +548,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sad"
           type="button"
         >
@@ -560,7 +560,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="farm"
           type="button"
         >
@@ -583,11 +583,11 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -607,7 +607,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -618,7 +618,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -742,11 +742,11 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       >
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
           type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -835,7 +835,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       >
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="grit"
           disabled=""
           type="button"
@@ -848,7 +848,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="wreck"
           disabled=""
           type="button"
@@ -861,7 +861,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="cart"
           disabled=""
           type="button"
@@ -874,7 +874,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="dad"
           disabled=""
           type="button"
@@ -887,7 +887,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="rap"
           disabled=""
           type="button"
@@ -900,7 +900,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sail"
           disabled=""
           type="button"
@@ -913,7 +913,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="robot"
           disabled=""
           type="button"
@@ -926,7 +926,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="combine"
           disabled=""
           type="button"
@@ -939,7 +939,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="noble"
           disabled=""
           type="button"
@@ -952,7 +952,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="slide"
           disabled=""
           type="button"
@@ -965,7 +965,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sad"
           disabled=""
           type="button"
@@ -978,7 +978,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="farm"
           disabled=""
           type="button"
@@ -1020,11 +1020,11 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1044,7 +1044,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -1055,7 +1055,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1179,11 +1179,11 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       >
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
           type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -1272,7 +1272,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       >
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="grit"
           disabled=""
           type="button"
@@ -1285,7 +1285,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="wreck"
           disabled=""
           type="button"
@@ -1298,7 +1298,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="cart"
           disabled=""
           type="button"
@@ -1311,7 +1311,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="dad"
           disabled=""
           type="button"
@@ -1324,7 +1324,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="rap"
           disabled=""
           type="button"
@@ -1337,7 +1337,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sail"
           disabled=""
           type="button"
@@ -1350,7 +1350,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="robot"
           disabled=""
           type="button"
@@ -1363,7 +1363,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="combine"
           disabled=""
           type="button"
@@ -1376,7 +1376,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="noble"
           disabled=""
           type="button"
@@ -1389,7 +1389,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="slide"
           disabled=""
           type="button"
@@ -1402,7 +1402,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sad"
           type="button"
         >
@@ -1414,7 +1414,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="farm"
           disabled=""
           type="button"
@@ -1438,11 +1438,11 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1462,7 +1462,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -1473,7 +1473,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1605,7 +1605,7 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
   >
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <span
@@ -1615,7 +1615,7 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1713,7 +1713,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
         class="dusk-card__header-title"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -1770,11 +1770,11 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1794,7 +1794,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <span
@@ -1804,7 +1804,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -1906,7 +1906,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         class="dusk-card__header-title"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal"
+          class="dusk-icon dusk-icon--size--default"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -1992,11 +1992,11 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2016,7 +2016,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -2027,7 +2027,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2127,12 +2127,12 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
   </p>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled"
+    class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled"
     disabled=""
     type="button"
   >
     <svg
-      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      class="dusk-icon dusk-icon--size--default dusk-button__icon"
       role="graphics-symbol"
       viewBox="0 0 24 24"
     >
@@ -2154,11 +2154,11 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2178,7 +2178,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <span
@@ -2188,7 +2188,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2308,11 +2308,11 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       >
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
           type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -2401,7 +2401,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       >
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="grit"
           disabled=""
           type="button"
@@ -2414,7 +2414,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="wreck"
           disabled=""
           type="button"
@@ -2427,7 +2427,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="cart"
           disabled=""
           type="button"
@@ -2440,7 +2440,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="dad"
           disabled=""
           type="button"
@@ -2453,7 +2453,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="rap"
           disabled=""
           type="button"
@@ -2466,7 +2466,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sail"
           disabled=""
           type="button"
@@ -2479,7 +2479,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="robot"
           disabled=""
           type="button"
@@ -2492,7 +2492,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="combine"
           disabled=""
           type="button"
@@ -2505,7 +2505,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="noble"
           disabled=""
           type="button"
@@ -2518,7 +2518,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="slide"
           disabled=""
           type="button"
@@ -2531,7 +2531,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="sad"
           disabled=""
           type="button"
@@ -2544,7 +2544,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
         </button>
         
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           data-value="farm"
           disabled=""
           type="button"
@@ -2568,11 +2568,11 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
     class="dusk-wizard__step-navigation"
   >
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2592,7 +2592,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       type="button"
     >
       <span
@@ -2602,7 +2602,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2775,11 +2775,11 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
       href="/some-base-path/setup"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2800,7 +2800,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -2811,7 +2811,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -2853,7 +2853,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
           class="dusk-card__header-title"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -2883,7 +2883,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal actions__action"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
           href="/some-base-path/setup"
         >
           <span
@@ -2895,7 +2895,7 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
         </a>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
           type="button"
         >
           <span
@@ -2955,7 +2955,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal actions__action"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
           href="/some-base-path/setup"
         >
           <span
@@ -2967,7 +2967,7 @@ exports[`Create > should render the Terms of Service step of the Create flow if 
         </a>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
           type="button"
         >
           <span

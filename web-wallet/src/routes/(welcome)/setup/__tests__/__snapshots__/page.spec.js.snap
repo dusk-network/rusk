@@ -28,11 +28,11 @@ exports[`Setup > should render the Setup page 1`] = `
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button--labeled"
           href="/some-base-path/setup/create"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -53,11 +53,11 @@ exports[`Setup > should render the Setup page 1`] = `
          
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
           href="/some-base-path/setup/restore/"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -117,11 +117,11 @@ exports[`Setup > should render the Setup page 1`] = `
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button--labeled"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button--labeled"
         href="/some-base-path/login"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >

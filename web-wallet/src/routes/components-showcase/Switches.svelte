@@ -12,7 +12,7 @@
 
 <section>
   <div>
-    <span>Normal switch ({value}):</span>
+    <span>Switch ({value}):</span>
     <Switch bind:value on:change={handleSwitchChange} />
   </div>
   <div>

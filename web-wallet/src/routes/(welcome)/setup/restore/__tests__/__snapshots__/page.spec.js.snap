@@ -16,7 +16,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
           class="dusk-card__header-title"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -46,7 +46,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal actions__action"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
           href="/some-base-path/setup"
         >
           <span
@@ -58,7 +58,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
         </a>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
           type="button"
         >
           <span
@@ -151,11 +151,11 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
         class="dusk-mnemonic__actions-wrapper"
       >
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
           type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -174,12 +174,12 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
         </button>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
           disabled=""
           type="button"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -286,11 +286,11 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button--labeled"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
       href="/some-base-path/setup"
     >
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -311,7 +311,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
     
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
       disabled=""
       type="button"
     >
@@ -322,7 +322,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
       </span>
        
       <svg
-        class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+        class="dusk-icon dusk-icon--size--default dusk-button__icon"
         role="graphics-symbol"
         viewBox="0 0 24 24"
       >
@@ -385,7 +385,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal actions__action"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
           href="/some-base-path/setup"
         >
           <span
@@ -397,7 +397,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
         </a>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal actions__action"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
           type="button"
         >
           <span

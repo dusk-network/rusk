@@ -27,7 +27,7 @@ exports[`Stake > should render the Stake component 1`] = `
         </span>
          
         <svg
-          class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+          class="dusk-icon dusk-icon--size--default contract-statuses__icon"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           role="graphics-symbol"
@@ -54,7 +54,7 @@ exports[`Stake > should render the Stake component 1`] = `
         </span>
          
         <svg
-          class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+          class="dusk-icon dusk-icon--size--default contract-statuses__icon"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           role="graphics-symbol"
@@ -81,7 +81,7 @@ exports[`Stake > should render the Stake component 1`] = `
         </span>
          
         <svg
-          class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+          class="dusk-icon dusk-icon--size--default contract-statuses__icon"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           role="graphics-symbol"
@@ -129,7 +129,7 @@ exports[`Stake > should render the Stake component 1`] = `
       
        
       <svg
-        class="dusk-icon dusk-icon--size--normal"
+        class="dusk-icon dusk-icon--size--default"
         data-tooltip-id="main-tooltip"
         data-tooltip-text="DUSK"
         role="graphics-symbol"
@@ -165,7 +165,7 @@ exports[`Stake > should render the Stake component 1`] = `
             </span>
              
             <svg
-              class="dusk-icon dusk-icon--size--normal dusk-amount__icon"
+              class="dusk-icon dusk-icon--size--default dusk-amount__icon"
               data-tooltip-id="main-tooltip"
               data-tooltip-text="DUSK"
               role="graphics-symbol"
@@ -198,11 +198,11 @@ exports[`Stake > should render the Stake component 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -222,7 +222,7 @@ exports[`Stake > should render the Stake component 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
         type="button"
       >
         <span
@@ -232,7 +232,7 @@ exports[`Stake > should render the Stake component 1`] = `
         </span>
          
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -279,7 +279,7 @@ exports[`Stake > should render the Stake notice 1`] = `
           class="dusk-card__header-title"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -338,11 +338,11 @@ exports[`Stake > should render the Stake notice 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -362,7 +362,7 @@ exports[`Stake > should render the Stake notice 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default"
         type="button"
       >
         <span
@@ -417,7 +417,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           </span>
            
           <svg
-            class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="DUSK"
             role="graphics-symbol"
@@ -444,7 +444,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           </span>
            
           <svg
-            class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="DUSK"
             role="graphics-symbol"
@@ -471,7 +471,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           </span>
            
           <svg
-            class="dusk-icon dusk-icon--size--normal contract-statuses__icon"
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="DUSK"
             role="graphics-symbol"
@@ -499,7 +499,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           class="stake-overview__label"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -525,7 +525,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           </span>
            
           <svg
-            class="dusk-icon dusk-icon--size--normal stake-overview__icon"
+            class="dusk-icon dusk-icon--size--default stake-overview__icon"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="DUSK"
             role="graphics-symbol"
@@ -556,7 +556,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
           </span>
            
           <svg
-            class="dusk-icon dusk-icon--size--normal dusk-amount__icon"
+            class="dusk-icon dusk-icon--size--default dusk-amount__icon"
             data-tooltip-id="main-tooltip"
             data-tooltip-text="DUSK"
             role="graphics-symbol"
@@ -575,11 +575,11 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
       class="dusk-wizard__step-navigation"
     >
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button--labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -599,11 +599,11 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
       
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button--labeled"
+        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled"
         type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
