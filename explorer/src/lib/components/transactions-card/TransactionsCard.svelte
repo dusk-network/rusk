@@ -25,25 +25,15 @@
   /** @type {Transaction[]}*/
   let displayedTxns;
 
-  /** @type {Boolean}*/
-  let isLoadMoreDisabled = false;
+  $: displayedTxns = txns ? txns.slice(0, itemsToDisplay) : [];
+  $: isLoadMoreDisabled =
+    (txns && itemsToDisplay >= txns.length) || (loading && txns === null);
 
   const loadMoreItems = () => {
     if (txns && itemsToDisplay < txns.length) {
       itemsToDisplay += ITEMS_TO_DISPLAY;
     }
   };
-
-  $: displayedTxns = txns ? txns.slice(0, itemsToDisplay) : [];
-  $: {
-    if (txns && itemsToDisplay >= txns.length) {
-      isLoadMoreDisabled = true;
-    } else if (loading && txns === null) {
-      isLoadMoreDisabled = true;
-    } else {
-      isLoadMoreDisabled = false;
-    }
-  }
 </script>
 
 <DataCard
