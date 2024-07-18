@@ -273,7 +273,7 @@ pub fn create_transaction<const I: usize>(
     let tx_payload = Payload {
         tx_skeleton,
         fee,
-        exec: (contract_call.map(|c| ContractExec::Call(c))),
+        contract_exec: (contract_call.map(|c| ContractExec::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();
