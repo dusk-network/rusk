@@ -172,10 +172,7 @@
     .transactions-list {
       display: grid;
       grid-template-columns: max-content auto;
-
-      &__loading-container {
-        margin: 1em auto;
-      }
+      width: 100%;
 
       &__term {
         background-color: var(--background-color-alt);
@@ -187,6 +184,10 @@
 
       &__ticker {
         text-transform: uppercase;
+      }
+
+      &__loading-container {
+        margin: 1em auto;
       }
 
       &__datum {
