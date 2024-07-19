@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::transfer::ContractCall;
+use execution_core::transfer::{ContractCall, ContractExec};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
@@ -75,7 +75,7 @@ fn make_transactions(
     let tx_0 = wallet
         .execute(
             &mut rng,
-            contract_call.clone(),
+            ContractExec::Call(contract_call.clone()),
             SENDER_INDEX_0,
             GAS_LIMIT_0,
             1,
@@ -87,7 +87,14 @@ fn make_transactions(
     // contract, querying for the root of the tree. This will be tested for
     // gas cost.
     let tx_1 = wallet
-        .execute(&mut rng, contract_call, SENDER_INDEX_1, GAS_LIMIT_1, 1, 0)
+        .execute(
+            &mut rng,
+            ContractExec::Call(contract_call),
+            SENDER_INDEX_1,
+            GAS_LIMIT_1,
+            1,
+            0,
+        )
         .expect("Making the transaction should succeed");
 
     let spent_transactions = generator_procedure(

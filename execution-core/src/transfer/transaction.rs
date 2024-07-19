@@ -14,6 +14,10 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::bytecode::Bytecode;
+use crate::reader::read_vec;
+use crate::transfer::ContractExec::{Call, Deploy};
+use crate::transfer::{ContractDeploy, ContractExec};
 use crate::{
     transfer::{ContractCall, Fee},
     BlsScalar, JubJubAffine, Sender, TxSkeleton,
@@ -27,8 +31,8 @@ pub struct Payload {
     pub tx_skeleton: TxSkeleton,
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
-    /// Data to do a contract call.
-    pub contract_call: Option<ContractCall>,
+    /// Data to do a contract call or deployment.
+    pub contract_exec: Option<ContractExec>,
 }
 
 impl PartialEq for Payload {
@@ -40,6 +44,24 @@ impl PartialEq for Payload {
 impl Eq for Payload {}
 
 impl Payload {
+    /// Return the contract-call data, if there is any.
+    #[must_use]
+    pub fn contract_call(&self) -> Option<&ContractCall> {
+        match self.contract_exec.as_ref() {
+            Some(Call(call)) => Some(call),
+            _ => None,
+        }
+    }
+
+    /// Return the contract-deploy data, if there is any.
+    #[must_use]
+    pub fn contract_deploy(&self) -> Option<&ContractDeploy> {
+        match self.contract_exec.as_ref() {
+            Some(Deploy(deploy)) => Some(deploy),
+            _ => None,
+        }
+    }
+
     /// Serialize the `Payload` into a variable length byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
@@ -54,14 +76,16 @@ impl Payload {
         bytes.extend(self.fee.to_bytes());
 
         // serialize the contract-call
-        match self.contract_call {
-            Some(ref call) => {
+        match &self.contract_exec {
+            Some(ContractExec::Deploy(deploy)) => {
+                bytes.push(2);
+                bytes.extend(deploy.to_var_bytes());
+            }
+            Some(ContractExec::Call(call)) => {
                 bytes.push(1);
                 bytes.extend(call.to_var_bytes());
             }
-            None => {
-                bytes.push(0);
-            }
+            _ => bytes.push(0),
         }
 
         bytes
@@ -70,7 +94,7 @@ impl Payload {
     /// Deserialize the Payload from a bytes buffer.
     ///
     /// # Errors
-    /// Errors when the bytes are not cannonical.
+    /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
@@ -84,10 +108,11 @@ impl Payload {
         // deserialize fee
         let fee = Fee::from_reader(&mut buf)?;
 
-        // deserialize contract-call data
-        let contract_call = match u8::from_reader(&mut buf)? {
+        // deserialize contract execution data
+        let contract_exec = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => Some(ContractCall::from_slice(buf)?),
+            1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
+            2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
             _ => {
                 return Err(BytesError::InvalidData);
             }
@@ -96,7 +121,7 @@ impl Payload {
         Ok(Self {
             tx_skeleton,
             fee,
-            contract_call,
+            contract_exec,
         })
     }
 
@@ -108,10 +133,16 @@ impl Payload {
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
         let mut bytes = self.tx_skeleton.to_hash_input_bytes();
 
-        if let Some(call) = &self.contract_call {
+        if let Some(call) = self.contract_call() {
             bytes.extend(call.contract);
             bytes.extend(call.fn_name.as_bytes());
             bytes.extend(&call.fn_args);
+        } else if let Some(deploy) = self.contract_deploy() {
+            bytes.extend(&deploy.bytecode.to_hash_input_bytes());
+            bytes.extend(&deploy.owner);
+            if let Some(constructor_args) = &deploy.constructor_args {
+                bytes.extend(constructor_args);
+            }
         }
 
         bytes
@@ -187,12 +218,13 @@ impl Transaction {
 
         let payload_len = usize::try_from(u64::from_reader(&mut buf)?)
             .map_err(|_| BytesError::InvalidData)?;
+        if buf.len() < payload_len {
+            return Err(BytesError::InvalidData);
+        }
         let payload = Payload::from_slice(&buf[..payload_len])?;
         buf = &buf[payload_len..];
 
-        let proof_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        let proof = buf[..proof_len].into();
+        let proof = read_vec(&mut buf)?;
 
         Ok(Self { payload, proof })
     }
@@ -290,5 +322,28 @@ impl Transaction {
         });
 
         pis
+    }
+
+    /// Creates a modified clone of this transaction if it contains data for
+    /// deployment, clones all fields except for the bytecode' 'bytes' part.
+    /// Returns none if the transaction is not a deployment transaction.
+    #[must_use]
+    pub fn strip_off_bytecode(&self) -> Option<Self> {
+        let deploy = self.payload().contract_deploy()?;
+        Some(Self::new(
+            Payload {
+                tx_skeleton: self.payload().tx_skeleton.clone(),
+                fee: self.payload().fee,
+                contract_exec: Some(ContractExec::Deploy(ContractDeploy {
+                    owner: deploy.owner.clone(),
+                    constructor_args: deploy.constructor_args.clone(),
+                    bytecode: Bytecode {
+                        hash: deploy.bytecode.hash,
+                        bytes: Vec::new(),
+                    },
+                })),
+            },
+            self.proof(),
+        ))
     }
 }

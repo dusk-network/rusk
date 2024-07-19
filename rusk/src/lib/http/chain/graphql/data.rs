@@ -316,7 +316,7 @@ impl Transaction<'_> {
         );
         map.insert("fee".into(), json!(fee));
 
-        if let Some(c) = &tx.payload().contract_call {
+        if let Some(c) = &tx.payload().contract_call() {
             let mut call = Map::new();
             call.insert("contract".into(), json!(hex::encode(c.contract)));
             call.insert("fn_name".into(), json!(&c.fn_name));
@@ -343,7 +343,7 @@ impl Transaction<'_> {
         self.0
             .inner
             .payload()
-            .contract_call
+            .contract_call()
             .as_ref()
             .map(|call| CallData {
                 contract: hex::encode(call.contract),

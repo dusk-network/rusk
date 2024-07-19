@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
+
+- Improved deserialization [#1963]
+- Change payload to support contract deployment [#1882]
+
 
 - Re-export
   - `dusk-bls12_381::BlsScalar`
@@ -75,6 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       StakeData,
   }`
 
+[#1963]: https://github.com/dusk-network/rusk/issues/1963
+[#1882]: https://github.com/dusk-network/rusk/issues/1882
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/execution-core-0.1.0...HEAD
 [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/execution-core-0.1.0

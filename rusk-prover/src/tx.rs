@@ -337,7 +337,7 @@ impl UnprovenTransaction {
 mod tests {
     use super::*;
     use execution_core::{
-        transfer::{ContractCall, Fee},
+        transfer::{ContractCall, ContractExec, Fee},
         SchnorrSecretKey, TxSkeleton,
     };
     use poseidon_merkle::{Item, Tree};
@@ -396,7 +396,7 @@ mod tests {
         let payload = Payload {
             tx_skeleton,
             fee,
-            contract_call: Some(call),
+            contract_exec: Some(ContractExec::Call(call)),
         };
 
         let sender_blinder_1 =

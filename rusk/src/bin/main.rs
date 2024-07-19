@@ -106,6 +106,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let rusk = Rusk::new(
             state_dir,
             config.chain.generation_timeout(),
+            config.chain.gas_per_deploy_byte(),
             config.http.feeder_call_gas,
             _event_sender,
         )?;

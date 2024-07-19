@@ -19,6 +19,9 @@ pub(crate) struct ChainConfig {
     consensus_keys_path: Option<PathBuf>,
     #[serde(with = "humantime_serde")]
     generation_timeout: Option<Duration>,
+    // Note: changing the gas per deploy byte parameter is equivalent to
+    // forking the chain.
+    gas_per_deploy_byte: Option<u64>,
 }
 
 impl ChainConfig {
@@ -64,5 +67,9 @@ impl ChainConfig {
 
     pub(crate) fn generation_timeout(&self) -> Option<Duration> {
         self.generation_timeout
+    }
+
+    pub(crate) fn gas_per_deploy_byte(&self) -> Option<u64> {
+        self.gas_per_deploy_byte
     }
 }

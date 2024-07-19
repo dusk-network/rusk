@@ -23,12 +23,15 @@ use dusk_consensus::config::{
 use dusk_consensus::operations::{
     CallParams, VerificationOutput, VoterWithCredits,
 };
+use execution_core::bytecode::Bytecode;
+use execution_core::transfer::ContractDeploy;
 use execution_core::{
     stake::StakeData, transfer::Transaction as PhoenixTransaction, BlsScalar,
     StakePublicKey,
 };
 use node_data::ledger::{Slash, SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
+use rusk_abi::ContractError::{OutOfGas, Panic};
 use rusk_abi::{
     CallReceipt, ContractError, Error as PiecrustError, Event, Session,
     STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
@@ -47,10 +50,13 @@ pub static DUSK_KEY: LazyLock<StakePublicKey> = LazyLock::new(|| {
         .expect("Dusk consensus public key to be valid")
 });
 
+const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
+
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
         generation_timeout: Option<Duration>,
+        gas_per_deploy_byte: Option<u64>,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
     ) -> Result<Self> {
@@ -83,6 +89,7 @@ impl Rusk {
             vm,
             dir: dir.into(),
             generation_timeout,
+            gas_per_deploy_byte,
             feeder_gas_limit,
             event_sender,
         })
@@ -127,7 +134,11 @@ impl Rusk {
                 continue;
             }
 
-            match execute(&mut session, &unspent_tx.inner) {
+            match execute(
+                &mut session,
+                &unspent_tx.inner,
+                self.gas_per_deploy_byte,
+            ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -141,8 +152,11 @@ impl Rusk {
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
                             // executed before, so we don't bother checking.
-                            let _ =
-                                execute(&mut session, &spent_tx.inner.inner);
+                            let _ = execute(
+                                &mut session,
+                                &spent_tx.inner.inner,
+                                self.gas_per_deploy_byte,
+                            );
                         }
 
                         continue;
@@ -216,6 +230,7 @@ impl Rusk {
             txs,
             slashing,
             voters,
+            self.gas_per_deploy_byte,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -246,6 +261,7 @@ impl Rusk {
             &txs[..],
             slashing,
             voters,
+            self.gas_per_deploy_byte,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -421,6 +437,7 @@ fn accept(
     txs: &[Transaction],
     slashing: Vec<Slash>,
     voters: Option<&[VoterWithCredits]>,
+    gas_per_deploy_byte: Option<u64>,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -439,7 +456,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let receipt = execute(&mut session, tx)?;
+        let receipt = execute(&mut session, tx, gas_per_deploy_byte)?;
 
         update_hasher(&mut event_hasher, &receipt.events);
         events.extend(receipt.events);
@@ -486,29 +503,128 @@ fn accept(
     ))
 }
 
+// Returns gas charge for bytecode deployment.
+fn bytecode_charge(
+    bytecode: &Bytecode,
+    gas_per_deploy_byte: &Option<u64>,
+) -> u64 {
+    bytecode.bytes.len() as u64
+        * gas_per_deploy_byte.unwrap_or(DEFAULT_GAS_PER_DEPLOY_BYTE)
+}
+
+// Contract deployment will fail and charge full gas limit in the
+// following cases:
+// 1) Transaction gas limit is smaller than deploy charge plus gas used for
+//    spending funds.
+// 2) Transaction's bytecode's bytes are not consistent with bytecode's hash.
+// 3) Deployment fails for deploy-specific reasons like e.g.:
+//      - contract already deployed
+//      - corrupted bytecode
+//      - sufficient gas to spend funds yet insufficient for deployment
+fn contract_deploy(
+    session: &mut Session,
+    deploy: &ContractDeploy,
+    gas_limit: u64,
+    gas_per_deploy_byte: Option<u64>,
+    receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
+) {
+    let deploy_charge = bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
+    let min_gas_limit = receipt.gas_spent + deploy_charge;
+    let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
+    if gas_limit < min_gas_limit {
+        receipt.data = Err(OutOfGas);
+    } else if hash != deploy.bytecode.hash {
+        receipt.data = Err(Panic("failed bytecode hash check".into()))
+    } else {
+        let result = session.deploy_raw(
+            None,
+            deploy.bytecode.bytes.as_slice(),
+            deploy.constructor_args.clone(),
+            deploy.owner.clone(),
+            gas_limit - receipt.gas_spent,
+        );
+        match result {
+            Ok(_) => receipt.gas_spent += deploy_charge,
+            Err(err) => {
+                info!("Tx caused deployment error {err:?}");
+                receipt.data = Err(Panic("failed deployment".into()))
+            }
+        }
+    }
+}
+
 /// Executes a transaction, returning the receipt of the call and the gas spent.
 /// The following steps are performed:
 ///
-/// 1. Call the "spend_and_execute" function on the transfer contract with
+/// 1. Check if the transaction contains contract deployment data, and if so,
+///    verifies if gas limit is enough for deployment. If gas limit is not
+///    sufficient for deployment, transaction is discarded.
+///
+/// 2. Call the "spend_and_execute" function on the transfer contract with
 ///    unlimited gas. If this fails, an error is returned. If an error is
 ///    returned the transaction should be considered unspendable/invalid, but no
 ///    re-execution of previous transactions is required.
 ///
-/// 2. Call the "refund" function on the transfer contract with unlimited gas.
+/// 3. If the transaction contains contract deployment data, additional checks
+///    are performed and if they pass, deployment is executed. The following
+///    checks are performed:
+///    - gas limit should be is smaller than deploy charge plus gas used for
+///      spending funds
+///    - transaction's bytecode's bytes are consistent with bytecode's hash
+///    Deployment execution may fail for deployment-specific reasons, such as
+///    for example:
+///    - contract already deployed
+///    - corrupted bytecode
+///    If deployment execution fails, the entire gas limit is consumed and error
+///    is returned.
+///
+/// 4. Call the "refund" function on the transfer contract with unlimited gas.
 ///    The amount charged depends on the gas spent by the transaction, and the
-///    optional contract call in step 1.
+///    optional contract call in steps 2 or 3.
+///
+/// Note that deployment transaction will never be re-executed for reasons
+/// related to deployment, as it is either discarded or it charges the
+/// full gas limit. It might be re-executed only if some other transaction
+/// failed to fit the block.
 fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
+    gas_per_deploy_byte: Option<u64>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    // Transaction will be discarded if it is a deployment transaction
+    // with gas limit smaller than deploy charge.
+    if let Some(deploy) = tx.payload().contract_deploy() {
+        let deploy_charge =
+            bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
+        if tx.payload().fee.gas_limit < deploy_charge {
+            return Err(PiecrustError::Panic(
+                "not enough gas to deploy".into(),
+            ));
+        }
+    }
+
+    let tx_stripped = tx.strip_off_bytecode();
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
-        tx,
+        tx_stripped.as_ref().unwrap_or(tx),
         tx.payload().fee.gas_limit,
     )?;
+
+    // Deploy if this is a deployment transaction and spend part is successful.
+    if let Some(deploy) = tx.payload().contract_deploy() {
+        if receipt.data.is_ok() {
+            contract_deploy(
+                session,
+                deploy,
+                tx.payload().fee.gas_limit,
+                gas_per_deploy_byte,
+                &mut receipt,
+            );
+        }
+    };
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {

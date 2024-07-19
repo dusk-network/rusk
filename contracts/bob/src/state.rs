@@ -6,11 +6,13 @@
 
 /// Bob contract.
 #[derive(Debug, Clone)]
-pub struct Bob;
+pub struct Bob {
+    value: u8,
+}
 
 impl Bob {
     pub const fn new() -> Self {
-        Self
+        Self { value: 0 }
     }
 
     #[allow(dead_code)]
@@ -20,7 +22,17 @@ impl Bob {
 }
 
 impl Bob {
-    pub fn ping(&mut self) {
-        rusk_abi::debug!("Bob ping");
+    pub fn init(&mut self, n: u8) {
+        self.value = n;
+    }
+
+    pub fn ping(&mut self) {}
+
+    pub fn echo(&mut self, n: u64) -> u64 {
+        n
+    }
+
+    pub fn value(&mut self) -> u8 {
+        self.value
     }
 }

@@ -7,14 +7,16 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{Error, Serializable};
 use dusk_jubjub::JubJubScalar;
-use execution_core::transfer::{ContractCall, Fee, Payload, Transaction};
+use execution_core::bytecode::Bytecode;
+use execution_core::transfer::{
+    ContractCall, ContractDeploy, ContractExec, Fee, Payload, Transaction,
+};
 use execution_core::{Note, PublicKey, SecretKey, TxSkeleton};
 use ff::Field;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{RngCore, SeedableRng};
 
-#[test]
-fn transaction_from_to_bytes() -> Result<(), Error> {
+fn build_skeleton_fee_deposit() -> (TxSkeleton, Fee, u64) {
     let mut rng = StdRng::seed_from_u64(42);
 
     // set the general parameters
@@ -61,6 +63,12 @@ fn transaction_from_to_bytes() -> Result<(), Error> {
 
     // build the fee
     let fee = Fee::new(&mut rng, &sender_pk, gas_limit, gas_price);
+    (tx_skeleton, fee, deposit)
+}
+
+#[test]
+fn transaction_serialization_call() -> Result<(), Error> {
+    let (tx_skeleton, fee, deposit) = build_skeleton_fee_deposit();
 
     // build the contract-call
     let contract = [42; 32];
@@ -74,7 +82,7 @@ fn transaction_from_to_bytes() -> Result<(), Error> {
     let payload = Payload {
         tx_skeleton,
         fee,
-        contract_call: Some(call),
+        contract_exec: Some(ContractExec::Call(call)),
     };
 
     // set a random proof
@@ -85,5 +93,60 @@ fn transaction_from_to_bytes() -> Result<(), Error> {
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
     assert_eq!(transaction, deserialized);
+    Ok(())
+}
+
+#[test]
+fn transaction_serialization_deploy() -> Result<(), Error> {
+    let (tx_skeleton, fee, _) = build_skeleton_fee_deposit();
+
+    // build the contract-deploy
+    let bytecode = Bytecode {
+        hash: [1u8; 32],
+        bytes: vec![1, 2, 3, 4, 5],
+    };
+    let owner = [1; 32];
+    let constructor_args = vec![5];
+    let deploy = ContractDeploy {
+        bytecode,
+        owner: owner.to_vec(),
+        constructor_args: Some(constructor_args),
+    };
+
+    // build the payload
+    let payload = Payload {
+        tx_skeleton,
+        fee,
+        contract_exec: Some(ContractExec::Deploy(deploy)),
+    };
+
+    // set a random proof
+    let proof = [42; 42].to_vec();
+
+    // bytecode not stripped off
+    let transaction = Transaction::new(payload.clone(), proof.clone());
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+    assert_eq!(transaction, deserialized);
+
+    // bytecode stripped off
+    let transaction = Transaction::new(payload, proof)
+        .strip_off_bytecode()
+        .expect("transaction contains deployment data");
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+    assert_eq!(transaction, deserialized);
+    Ok(())
+}
+
+#[test]
+fn transaction_deserialization_failing() -> Result<(), Error> {
+    let mut data = [0u8; 2 ^ 16];
+    for exp in 3..16 {
+        rand::thread_rng().fill_bytes(&mut data[..2 ^ exp]);
+        let transaction_bytes = data.to_vec();
+        Transaction::from_slice(&transaction_bytes)
+            .expect_err("deserialization should fail");
+    }
     Ok(())
 }
