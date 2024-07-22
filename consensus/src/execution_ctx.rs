@@ -237,20 +237,20 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     /// Process messages from past
-    async fn process_past_events(&mut self, msg: Message) -> Option<Message> {
+    async fn process_past_events(&mut self, msg: Message) {
         if msg.header.round != self.round_update.round
             || self.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
         {
             // Discard messages from past if current iteration is not considered
             // an emergency iteration
-            return None;
+            return;
         }
 
         self.on_emergency_mode(msg).await
     }
 
     /// Handles a consensus message in emergency mode
-    async fn on_emergency_mode(&mut self, msg: Message) -> Option<Message> {
+    async fn on_emergency_mode(&mut self, msg: Message) {
         if let Err(e) = self.outbound.send(msg.clone()).await {
             error!("could not send msg due to {:?}", e);
         }
@@ -293,15 +293,16 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 }
             }
         }
-
-        None
     }
 
     /// Delegates the received message to the Phase handler for further
     /// processing.
     ///
-    /// Returning Option::Some here is interpreted as FinalMessage by
-    /// event_loop.
+    /// Returning Option::Some here is interpreted as FinalMessage for the
+    /// current iteration by event_loop.
+    ///
+    /// If the message belongs to a former iteration, it returns None (even if
+    /// the message is processed due to emergency mode)
     async fn process_inbound_msg<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
@@ -349,7 +350,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 return None;
             }
             Err(ConsensusError::PastEvent) => {
-                return self.process_past_events(msg).await;
+                self.process_past_events(msg).await;
+                return None;
             }
             Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
                 warn!(event = "No quorum reached", iter = msg.header.iteration);
