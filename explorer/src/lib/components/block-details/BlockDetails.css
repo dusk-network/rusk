@@ -8,7 +8,6 @@
 
 .block-details__list-anchor {
   display: flex;
-  color: var(--primary-color);
 }
 
 .block-details__gas-used.dusk-progress-bar {

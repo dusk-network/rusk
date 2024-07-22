@@ -1,4 +1,5 @@
 import { get, writable } from "svelte/store";
+import { browser } from "$app/environment";
 
 /** @type {NetworkOption[]}*/
 const networks = [
@@ -6,8 +7,17 @@ const networks = [
   { label: "Devnet", value: import.meta.env.VITE_DUSK_DEVNET_NODE },
 ];
 
+const browserDefaults = browser
+  ? {
+      darkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
+    }
+  : {
+      darkMode: false,
+    };
+
 /** @type {AppStoreContent} */
 const initialState = {
+  ...browserDefaults,
   blocksListEntries: Number(import.meta.env.VITE_BLOCKS_LIST_ENTRIES),
   chainInfoEntries: Number(import.meta.env.VITE_CHAIN_INFO_ENTRIES),
   fetchInterval: Number(import.meta.env.VITE_REFETCH_INTERVAL) || 1000,
@@ -32,8 +42,17 @@ const setNetwork = (network) =>
     network,
   });
 
+/** @param {boolean} darkMode */
+const setTheme = (darkMode) => {
+  set({
+    ...get(store),
+    darkMode,
+  });
+};
+
 /** @type {AppStore} */
 export default {
   setNetwork,
+  setTheme,
   subscribe,
 };

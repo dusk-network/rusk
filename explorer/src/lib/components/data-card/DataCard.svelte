@@ -37,7 +37,7 @@
       <Button
         on:click={headerButtonDetails.action}
         text={headerButtonDetails.label}
-        variant={headerButtonDetails.variant || "secondary"}
+        variant={headerButtonDetails.variant || "tertiary"}
         disabled={headerButtonDetails.disabled}
       />
     {/if}

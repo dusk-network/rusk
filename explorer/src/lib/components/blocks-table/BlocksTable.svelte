@@ -9,7 +9,6 @@
     TableHead,
     TableRow,
   } from "$lib/components/table";
-  import { Badge } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { getRelativeTimeString, makeClassName } from "$lib/dusk/string";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -56,12 +55,7 @@
           {numberFormatter(block.transactions.stats.gasUsed)}
         </TableCell>
         <TableCell>{numberFormatter(block.transactions.data.length)}</TableCell>
-        <TableCell
-          ><Badge
-            variant="alt"
-            text={numberFormatter(luxToDusk(block.header.reward))}
-          /></TableCell
-        >
+        <TableCell>{numberFormatter(luxToDusk(block.header.reward))}</TableCell>
       </TableRow>
     {/each}
   </TableBody>

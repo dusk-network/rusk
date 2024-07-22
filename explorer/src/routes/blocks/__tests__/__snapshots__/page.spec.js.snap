@@ -18,7 +18,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
         disabled=""
         type="button"
       >
@@ -63,7 +63,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
         type="button"
       >
         <span
@@ -176,11 +176,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -239,11 +235,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -302,11 +294,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -365,11 +353,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -428,11 +412,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -491,11 +471,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -554,11 +530,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -617,11 +589,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -680,11 +648,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -743,11 +707,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -806,11 +766,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -869,11 +825,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -932,11 +884,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -995,11 +943,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -1058,11 +1002,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               <td
                 class="table__data-cell"
               >
-                <span
-                  class="dusk-badge dusk-badge--variant-alt"
-                >
-                  16
-                </span>
+                16
               </td>
               
                
@@ -1258,11 +1198,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -1448,11 +1385,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -1638,11 +1572,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -1828,11 +1759,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -2018,11 +1946,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -2208,11 +2133,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -2398,11 +2320,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -2588,11 +2507,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -2778,11 +2694,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -2968,11 +2881,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -3158,11 +3068,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -3348,11 +3255,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -3538,11 +3442,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -3728,11 +3629,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
         
@@ -3918,11 +3816,8 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            <span
-              class="dusk-badge dusk-badge--variant-alt"
-            >
-              16 DUSK
-            </span>
+            16
+             DUSK
           </dd>
         </dl>
       </div>

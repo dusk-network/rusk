@@ -124,6 +124,6 @@
     {icon}
     text={buttonText}
     size="normal"
-    variant="secondary"
+    variant="primary"
   />
 </div>

@@ -19,6 +19,7 @@ describe("appStore", () => {
     expect(get(appStore)).toStrictEqual({
       blocksListEntries: Number(env.VITE_BLOCKS_LIST_ENTRIES),
       chainInfoEntries: Number(env.VITE_CHAIN_INFO_ENTRIES),
+      darkMode: false,
       fetchInterval: Number(env.VITE_REFETCH_INTERVAL),
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
@@ -50,5 +51,13 @@ describe("appStore", () => {
     appStore.setNetwork("some-network");
 
     expect(get(appStore).network).toBe("some-network");
+  });
+
+  it("should expose a service method to set the dark mode theme", async () => {
+    const { appStore } = await import("..");
+
+    appStore.setTheme(true);
+
+    expect(get(appStore).darkMode).toBe(true);
   });
 });

@@ -2,7 +2,7 @@
 
 <script>
   import { AppAnchor, DetailList, ListItem } from "$lib/components";
-  import { Badge, ProgressBar } from "$lib/dusk/components";
+  import { ProgressBar } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import { getRelativeTimeString } from "$lib/dusk/string";
   import { luxToDusk } from "$lib/dusk/currency";
@@ -76,10 +76,7 @@
   <ListItem tooltipText="The reward allocated to the block generator">
     <svelte:fragment slot="term">rewards</svelte:fragment>
     <svelte:fragment slot="definition">
-      <Badge
-        variant="alt"
-        text={`${formatter(luxToDusk(data.header.reward))} DUSK`}
-      />
+      {formatter(luxToDusk(data.header.reward))} DUSK
     </svelte:fragment>
   </ListItem>
 </DetailList>

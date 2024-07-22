@@ -15,7 +15,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
       disabled=""
       type="button"
     >
@@ -129,11 +129,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -192,11 +188,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -255,11 +247,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -318,11 +306,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -381,11 +365,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -444,11 +424,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -507,11 +483,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -570,11 +542,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -633,11 +601,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -696,11 +660,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-alt"
-              >
-                16
-              </span>
+              16
             </td>
             
              
@@ -896,11 +856,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -1086,11 +1043,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -1276,11 +1230,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -1466,11 +1417,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -1656,11 +1604,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -1846,11 +1791,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -2036,11 +1978,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -2226,11 +2165,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -2416,11 +2352,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
       
@@ -2606,11 +2539,8 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
         <dd
           class="details-list__definition details-list__definition--table"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-alt"
-          >
-            16 DUSK
-          </span>
+          16
+           DUSK
         </dd>
       </dl>
     </div>
@@ -2635,7 +2565,7 @@ exports[`Blocks Card > should disable the \`Show More\` button is the card is in
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
       disabled=""
       type="button"
     >
@@ -2675,7 +2605,7 @@ exports[`Blocks Card > should render the \`BlocksCard\` component 1`] = `
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
       type="button"
     >
       <span

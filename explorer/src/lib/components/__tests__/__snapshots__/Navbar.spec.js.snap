@@ -102,7 +102,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
           
            
           <button
-            class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button"
+            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--normal dusk-icon-button"
             type="submit"
           >
              

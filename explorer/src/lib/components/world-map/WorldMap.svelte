@@ -1,6 +1,5 @@
 <script>
   // @ts-nocheck
-
   import { geoNaturalEarth1, geoPath } from "d3-geo";
   import { uniquesBy } from "lamb";
   import dataset from "./world-map.json";
@@ -9,6 +8,9 @@
 
   /** @type {Array<{lat: number, lon:number}> | Error | null}*/
   export let nodes;
+
+  /** @type {string} */
+  export let stroke = "black";
 
   /** @type {import("d3-geo").GeoProjection}*/
   const projection = geoNaturalEarth1();
@@ -29,7 +31,7 @@
       width="5"
       height="10"
     >
-      <line x1="2.5" y1="0" x2="2.5" y2="10" stroke="black" stroke-width="1" />
+      <line x1="2.5" y1="0" x2="2.5" y2="10" {stroke} stroke-width="1" />
     </pattern>
   </defs>
   {#each dataset.features as data, index (index)}

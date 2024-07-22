@@ -3,7 +3,10 @@
 <script>
   import { AppAnchor, AppImage, AppSource } from "$lib/components";
   import { Anchor } from "$lib/dusk/components";
+  import { appStore } from "$lib/stores";
   import "./Footer.css";
+
+  $: ({ darkMode } = $appStore);
 </script>
 
 <div class="footer">
@@ -32,7 +35,7 @@
       <picture>
         <AppSource media="(max-width:768px)" srcset="/dusk_logo_icon.svg" />
         <AppImage
-          src="/dusk_logo.svg"
+          src={darkMode ? "/dusk_logo_light.svg" : "/dusk_logo.svg"}
           alt="Dusk Logo"
           sizes="(max-width:768px) 20px, 86px"
           className="footer__logo-image"

@@ -15,7 +15,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if the card
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
       disabled=""
       type="button"
     >
@@ -55,7 +55,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
       disabled=""
       type="button"
     >
@@ -3042,7 +3042,7 @@ exports[`Transactions Card > should render the \`TransactionsCard\` component 1`
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
       type="button"
     >
       <span

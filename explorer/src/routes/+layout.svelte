@@ -1,6 +1,7 @@
 <script>
   import { Tooltip } from "$lib/dusk/components";
   import { Footer, Navbar } from "$lib/components";
+  import { appStore } from "$lib/stores";
   import "../style/main.css";
 
   /**
@@ -13,6 +14,10 @@
       document.body.style.overflow = "hidden";
     }
   };
+
+  appStore.subscribe(({ darkMode }) => {
+    document.documentElement.classList.toggle("dark", darkMode);
+  });
 </script>
 
 <header>
