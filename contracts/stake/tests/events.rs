@@ -14,7 +14,7 @@ use execution_core::{
     BlsPublicKey, BlsSecretKey, PublicKey, SecretKey,
 };
 use rusk_abi::dusk::dusk;
-use rusk_abi::{Error, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{PiecrustError, STAKE_CONTRACT, TRANSFER_CONTRACT};
 
 use crate::common::assert::assert_event;
 use crate::common::init::instantiate;
@@ -22,7 +22,7 @@ use crate::common::init::instantiate;
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
 
 #[test]
-fn reward_slash() -> Result<(), Error> {
+fn reward_slash() -> Result<(), PiecrustError> {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
@@ -111,7 +111,7 @@ fn reward_slash() -> Result<(), Error> {
 }
 
 #[test]
-fn stake_hard_slash() -> Result<(), Error> {
+fn stake_hard_slash() -> Result<(), PiecrustError> {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
