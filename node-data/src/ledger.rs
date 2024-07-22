@@ -24,7 +24,6 @@ pub use attestation::{
 use crate::bls::PublicKeyBytes;
 use crate::Serializable;
 
-use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};
 

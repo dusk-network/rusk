@@ -16,7 +16,7 @@ use crate::{
 
 use dusk_bytes::Serializable as DuskSerializeble;
 use execution_core::{
-    stake::EPOCH, BlsAggPublicKey, BlsSigError, BlsSignature,
+    stake::EPOCH, BlsAggPublicKey, BlsScalar, BlsSigError, BlsSignature,
 };
 use thiserror::Error;
 use tracing::error;
@@ -62,7 +62,7 @@ impl Fault {
     pub fn hash(&self) -> [u8; 32] {
         let mut b = vec![];
         self.write(&mut b).expect("Write to a vec shall not fail");
-        Hasher::digest(b).to_bytes()
+        BlsScalar::hash_to_scalar(&b[..]).to_bytes()
     }
 
     pub fn same(&self, other: &Fault) -> bool {
@@ -80,20 +80,26 @@ impl Fault {
         match self {
             Fault::DoubleCandidate(a, b) => {
                 let seed = Candidate::SIGN_SEED;
-                let a = Hasher::digest(a.get_signed_data(seed)).to_bytes();
-                let b = Hasher::digest(b.get_signed_data(seed)).to_bytes();
+                let a = BlsScalar::hash_to_scalar(&a.get_signed_data(seed)[..])
+                    .to_bytes();
+                let b = BlsScalar::hash_to_scalar(&b.get_signed_data(seed)[..])
+                    .to_bytes();
                 (a, b)
             }
             Fault::DoubleRatificationVote(a, b) => {
                 let seed = Ratification::SIGN_SEED;
-                let a = Hasher::digest(a.get_signed_data(seed)).to_bytes();
-                let b = Hasher::digest(b.get_signed_data(seed)).to_bytes();
+                let a = BlsScalar::hash_to_scalar(&a.get_signed_data(seed)[..])
+                    .to_bytes();
+                let b = BlsScalar::hash_to_scalar(&b.get_signed_data(seed)[..])
+                    .to_bytes();
                 (a, b)
             }
             Fault::DoubleValidationVote(a, b) => {
                 let seed = Validation::SIGN_SEED;
-                let a = Hasher::digest(a.get_signed_data(seed)).to_bytes();
-                let b = Hasher::digest(b.get_signed_data(seed)).to_bytes();
+                let a = BlsScalar::hash_to_scalar(&a.get_signed_data(seed)[..])
+                    .to_bytes();
+                let b = BlsScalar::hash_to_scalar(&b.get_signed_data(seed)[..])
+                    .to_bytes();
                 (a, b)
             }
         }
