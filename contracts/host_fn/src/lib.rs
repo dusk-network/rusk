@@ -16,7 +16,7 @@ use execution_core::{
     BlsPublicKey, BlsScalar, BlsSignature, PublicKey, SchnorrPublicKey,
     SchnorrSignature,
 };
-use rusk_abi::{ContractId, PaymentInfo, PublicInput};
+use rusk_abi::{ContractId, PublicInput};
 
 #[no_mangle]
 static SELF_ID: ContractId = ContractId::uninitialized();
@@ -119,11 +119,4 @@ unsafe fn contract_owner(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn contract_owner_raw(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner_raw())
-}
-
-const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);
-
-#[no_mangle]
-fn payment_info(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
 }
