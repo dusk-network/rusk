@@ -11,7 +11,6 @@ mod common;
 
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
-use std::time::Duration;
 
 use criterion::measurement::WallTime;
 use criterion::{
@@ -22,15 +21,17 @@ use execution_core::{
 };
 use node_data::ledger::Transaction;
 use rand::prelude::StdRng;
+use rand::seq::SliceRandom;
 use rand::SeedableRng;
+use rusk::Rusk;
 use tempfile::tempdir;
 
 use common::state::new_state;
 
-fn load_txs() -> Vec<Transaction> {
-    // The file "txs" can be generated using `generate_phoenix_txs()` in
-    // "tests/rusk-state.rs".
-    const TXS_BYTES: &[u8] = include_bytes!("txs");
+fn load_phoenix_txs() -> Vec<Transaction> {
+    // The file "phoenix-txs" can be generated using
+    // `generate_phoenix_txs()` in "tests/rusk-state.rs".
+    const TXS_BYTES: &[u8] = include_bytes!("phoenix-txs");
 
     let mut txs = Vec::new();
 
@@ -45,7 +46,36 @@ fn load_txs() -> Vec<Transaction> {
         });
     }
 
-    for tx in txs.iter() {
+    preverify(&txs);
+
+    txs
+}
+
+fn load_moonlight_txs() -> Vec<Transaction> {
+    // The file "moonlight-txs" can be generated using
+    // `generate_moonlight_txs()` in "tests/rusk-state.rs".
+    const TXS_BYTES: &[u8] = include_bytes!("moonlight-txs");
+
+    let mut txs = Vec::new();
+
+    for line in BufReader::new(TXS_BYTES).lines() {
+        let line = line.unwrap();
+        let tx_bytes = hex::decode(line).unwrap();
+        let tx = ProtocolTransaction::from_slice(&tx_bytes).unwrap();
+        txs.push(Transaction {
+            version: 1,
+            r#type: 0,
+            inner: tx,
+        });
+    }
+
+    preverify(&txs);
+
+    txs
+}
+
+fn preverify(txs: &[Transaction]) {
+    for tx in txs {
         match &tx.inner {
             ProtocolTransaction::Phoenix(tx) => {
                 match rusk::verifier::verify_proof(tx) {
@@ -57,13 +87,18 @@ fn load_txs() -> Vec<Transaction> {
                 }
                 .unwrap()
             }
-            ProtocolTransaction::Moonlight(_) => {
-                panic!("All transactions must be phoenix")
+            ProtocolTransaction::Moonlight(tx) => {
+                match rusk::verifier::verify_signature(tx) {
+                    Ok(true) => Ok(()),
+                    Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
+                    Err(e) => {
+                        Err(anyhow::anyhow!("Cannot verify the signature: {e}"))
+                    }
+                }
+                .unwrap()
             }
         }
     }
-
-    txs
 }
 
 pub fn with_group<T, F>(name: &str, c: &mut Criterion, closure: F) -> T
@@ -76,126 +111,77 @@ where
     r
 }
 
+fn bench_accept(
+    group: &mut BenchmarkGroup<WallTime>,
+    name: &str,
+    rusk: Rusk,
+    txs: Vec<Transaction>,
+) {
+    const BLOCK_HEIGHT: u64 = 1;
+    const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+
+    let generator = {
+        let mut rng = StdRng::seed_from_u64(0xbeef);
+        let sk = BlsSecretKey::random(&mut rng);
+        BlsPublicKey::from(&sk)
+    };
+
+    let txs = Arc::new(txs);
+
+    for n_txs in N_TXS {
+        let rusk = rusk.clone();
+        let txs = txs.clone();
+
+        group.bench_with_input(
+            BenchmarkId::new(name, format!("{} TXs", n_txs)),
+            n_txs,
+            move |b, n_txs| {
+                b.iter(|| {
+                    let txs = txs[..*n_txs].to_vec();
+
+                    rusk.accept_transactions(
+                        BLOCK_HEIGHT,
+                        BLOCK_GAS_LIMIT,
+                        generator,
+                        txs,
+                        None,
+                        vec![],
+                        None,
+                    )
+                    .expect("Accepting transactions should succeed");
+
+                    rusk.revert_to_base_root()
+                        .expect("Reverting should succeed");
+                })
+            },
+        );
+    }
+}
+
 pub fn accept_benchmark(c: &mut Criterion) {
-    with_group("State Transitions", c, |group| {
-        let tmp = tempdir().expect("Creating a temp dir should work");
-        let snapshot =
-            toml::from_str(include_str!("../tests/config/bench.toml"))
-                .expect("Cannot deserialize config");
+    let tmp = tempdir().expect("Creating a temp dir should work");
+    let snapshot = toml::from_str(include_str!("../tests/config/bench.toml"))
+        .expect("Cannot deserialize config");
 
-        let rusk =
-            new_state(&tmp, &snapshot).expect("Creating state should work");
-        let txs = Arc::new(load_txs());
+    let rusk = new_state(&tmp, &snapshot).expect("Creating state should work");
 
-        let generator = {
-            let mut rng = StdRng::seed_from_u64(0xbeef);
-            let sk = BlsSecretKey::random(&mut rng);
-            BlsPublicKey::from(&sk)
-        };
+    let phoenix_txs = load_phoenix_txs();
+    let moonlight_txs = load_moonlight_txs();
 
-        const BLOCK_HEIGHT: u64 = 1;
-        const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+    let mut mixed_txs = phoenix_txs.clone();
+    mixed_txs.extend(moonlight_txs.clone());
+    mixed_txs.shuffle(&mut rng);
 
-        for input in INPUTS {
-            let rusk = rusk.clone();
-            let txs = txs.clone();
-
-            group.measurement_time(Duration::from_secs(input.measurement_time));
-
-            group.bench_with_input(
-                BenchmarkId::new("AST", format!("{} TXs", input.n_txs)),
-                &input.n_txs,
-                move |b, n_txs| {
-                    b.iter(|| {
-                        let txs = txs.as_ref()[..*n_txs].to_vec();
-
-                        rusk.accept_transactions(
-                            BLOCK_HEIGHT,
-                            BLOCK_GAS_LIMIT,
-                            generator,
-                            txs,
-                            None,
-                            vec![],
-                            None,
-                        )
-                        .expect("Accepting transactions should succeed");
-
-                        rusk.revert_to_base_root()
-                            .expect("Reverting should succeed");
-                    })
-                },
-            );
-        }
-    });
+    let mut group = c.benchmark_group("AST");
+    bench_accept(&mut group, "Phoenix", rusk.clone(), phoenix_txs);
+    bench_accept(&mut group, "Moonlight", rusk.clone(), moonlight_txs);
+    bench_accept(&mut group, "Phoenix & Moonlight", rusk.clone(), mixed_txs);
+    group.finish();
 }
 
 criterion_group!(benches, accept_benchmark);
 criterion_main!(benches);
 
-struct Input {
-    n_txs: usize,
-    measurement_time: u64, // secs
-}
-
-const INPUTS: &[Input] = &[
-    Input {
-        n_txs: 1,
-        measurement_time: 5,
-    },
-    Input {
-        n_txs: 2,
-        measurement_time: 7,
-    },
-    Input {
-        n_txs: 3,
-        measurement_time: 9,
-    },
-    Input {
-        n_txs: 4,
-        measurement_time: 10,
-    },
-    Input {
-        n_txs: 5,
-        measurement_time: 12,
-    },
-    Input {
-        n_txs: 10,
-        measurement_time: 20,
-    },
-    Input {
-        n_txs: 20,
-        measurement_time: 35,
-    },
-    Input {
-        n_txs: 30,
-        measurement_time: 60,
-    },
-    Input {
-        n_txs: 40,
-        measurement_time: 67,
-    },
-    Input {
-        n_txs: 50,
-        measurement_time: 84,
-    },
-    Input {
-        n_txs: 60,
-        measurement_time: 99,
-    },
-    Input {
-        n_txs: 70,
-        measurement_time: 115,
-    },
-    Input {
-        n_txs: 80,
-        measurement_time: 131,
-    },
-    Input {
-        n_txs: 90,
-        measurement_time: 150,
-    },
-    Input {
-        n_txs: 100,
-        measurement_time: 164,
-    },
-];
+const N_TXS: &[usize] =
+    &[1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
