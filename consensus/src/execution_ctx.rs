@@ -24,9 +24,7 @@ use node_data::StepName;
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
-use node_data::message::payload::{
-    QuorumType, RatificationResult, ValidationResult, Vote,
-};
+use node_data::message::payload::{QuorumType, ValidationResult};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -158,20 +156,14 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             match time::timeout_at(deadline, inbound.recv()).await {
                 // Inbound message event
                 Ok(Ok(msg)) => {
-                    let success_quorum = match &msg.payload {
-                        Payload::Quorum(q) => matches!(
-                            q.att.result,
-                            RatificationResult::Success(Vote::Valid(_))
-                        ),
-                        _ => false,
-                    };
-
                     if let Some(step_result) =
                         self.process_inbound_msg(phase.clone(), msg).await
                     {
-                        if open_consensus_mode && !success_quorum {
-                            // In open consensus mode, consensus step is
-                            // terminated only in case of a success quorum
+                        if open_consensus_mode {
+                            // In open consensus mode, consensus step is never
+                            // terminated.
+                            // The acceptor will cancel the consensus if the
+                            // block is accepted
                             continue;
                         }
 
@@ -186,8 +178,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     info!(event = "timeout-ed");
-
-                    return self.process_timeout_event(phase).await;
+                    if open_consensus_mode {
+                        error!("Timeout detected during last step running. This should never happen")
+                    } else {
+                        return self.process_timeout_event(phase).await;
+                    }
                 }
             }
         }

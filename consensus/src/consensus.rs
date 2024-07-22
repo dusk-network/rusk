@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
+use crate::config::CONSENSUS_MAX_ITER;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
@@ -15,7 +16,7 @@ use crate::proposal;
 use crate::queue::MsgRegistry;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{debug, info, Instrument};
+use tracing::{debug, error, info, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
@@ -231,8 +232,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     }
                 }
 
-                iter_ctx.on_close();
-                iter += 1;
+                if iter >= CONSENSUS_MAX_ITER - 1 {
+                    error!("Trying to move to an out of bound iteration this should be a bug");
+                    error!("Sticking to the same iter {iter}");
+                } else {
+                    iter_ctx.on_close();
+                    iter += 1;
+                }
             }
         })
     }
