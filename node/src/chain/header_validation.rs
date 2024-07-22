@@ -184,13 +184,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             ),
         }
 
-        let (_, _, voters) = verify_block_att(
+        let (_, _, voters) = verify_att(
+            &candidate_block.prev_block_cert,
             self.prev_header.prev_block_hash,
+            self.prev_header.height,
+            self.prev_header.iteration,
             prev_block_seed,
             self.provisioners.prev(),
-            self.prev_header.height,
-            &candidate_block.prev_block_cert,
-            self.prev_header.iteration,
         )
         .await?;
 
@@ -228,13 +228,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, rat_quorum, _) = verify_block_att(
+                let (_, rat_quorum, _) = verify_att(
+                    att,
                     self.prev_header.hash,
+                    candidate_block.height,
+                    iter as u8,
                     self.prev_header.seed,
                     self.provisioners.current(),
-                    candidate_block.height,
-                    att,
-                    iter as u8,
                 )
                 .await?;
 
@@ -251,13 +251,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, voters) = verify_block_att(
+        let (_, _, voters) = verify_att(
+            &candidate_block.att,
             self.prev_header.hash,
+            candidate_block.height,
+            candidate_block.iteration,
             self.prev_header.seed,
             self.provisioners.current(),
-            candidate_block.height,
-            &candidate_block.att,
-            candidate_block.iteration,
         )
         .await?;
 
@@ -273,13 +273,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         provisioners: &Provisioners,
         prev_block_seed: Seed,
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, voters) = verify_block_att(
+        let (_, _, voters) = verify_att(
+            &blk.att,
             blk.prev_block_hash,
+            blk.height,
+            blk.iteration,
             prev_block_seed,
             provisioners,
-            blk.height,
-            &blk.att,
-            blk.iteration,
         )
         .await?;
 
@@ -329,13 +329,13 @@ pub async fn verify_faults<DB: database::DB>(
     Ok(())
 }
 
-pub async fn verify_block_att(
+pub async fn verify_att(
+    att: &ledger::Attestation,
     prev_block_hash: [u8; 32],
+    round: u64,
+    iteration: u8,
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    round: u64,
-    att: &ledger::Attestation,
-    iteration: u8,
 ) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<VoterWithCredits>)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
