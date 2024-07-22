@@ -18,7 +18,7 @@ use alloc::vec::Vec;
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use execution_core::{
     stake::StakeData,
-    transfer::{AccountData, Transaction},
+    transfer::{AccountData, Transaction, TRANSFER_TREE_DEPTH},
     BlsPublicKey, BlsScalar, BlsSecretKey, Note, SecretKey, ViewKey,
 };
 use poseidon_merkle::Opening as PoseidonOpening;
@@ -28,8 +28,6 @@ use sha2::{Digest, Sha256};
 
 pub use imp::*;
 pub use rusk_prover::UnprovenTransaction;
-
-pub use rusk_abi::POSEIDON_TREE_DEPTH;
 
 /// The maximum size of call data.
 pub const MAX_CALL_SIZE: usize = rusk_abi::ARGBUF_LEN;
@@ -149,7 +147,7 @@ pub trait StateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonOpening<(), POSEIDON_TREE_DEPTH>, Self::Error>;
+    ) -> Result<PoseidonOpening<(), TRANSFER_TREE_DEPTH>, Self::Error>;
 
     /// Queries the node for the stake of a key. If the key has no stake, a
     /// `Default` stake info should be returned.
