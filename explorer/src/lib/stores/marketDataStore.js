@@ -1,27 +1,54 @@
 import { derived, get } from "svelte/store";
-import { always, pickIn } from "lamb";
 
 import { createPollingDataStore } from "$lib/dusk/svelte-stores";
-import { duskAPI, marketDataStorage } from "$lib/services";
+import { MarketDataInfo } from "$lib/market-data";
+import { duskAPI } from "$lib/services";
 
 import appStore from "./appStore";
+
+const storeKey = "market-data";
+
+/**
+ * @param {"reading" | "storing"} action
+ * @param {unknown} err
+ */
+const logStoreError = (action, err) =>
+  /* eslint-disable-next-line no-console */
+  console.error(`Error while ${action} market data: %s`, err);
+
+/** @type {() => MarketDataStorage | null} */
+function getStorage() {
+  try {
+    const storedData = localStorage.getItem(storeKey);
+
+    return storedData ? MarketDataInfo.parse(storedData).toStorageData() : null;
+  } catch (err) {
+    logStoreError("reading", err);
+
+    return null;
+  }
+}
+
+/** @param {MarketDataInfo} info */
+function setStorage(info) {
+  try {
+    localStorage.setItem(storeKey, info.toJSON());
+  } catch (err) {
+    logStoreError("storing", err);
+  }
+}
 
 const fetchInterval = get(appStore).marketDataFetchInterval;
 const pollingDataStore = createPollingDataStore(
   duskAPI.getMarketData,
   fetchInterval
 );
-const getStorage = () => marketDataStorage.get().catch(always(null));
-
-/** @param {MarketDataStorage} value */
-const setStorage = (value) =>
-  marketDataStorage.set(value).catch(always(undefined));
 
 /** @type {MarketDataStoreContent} */
 const initialState = {
   ...get(pollingDataStore),
   lastUpdate: null,
-  ...(await getStorage()),
+  ...getStorage(),
 };
 
 const marketDataStore = derived(
@@ -43,8 +70,9 @@ const marketDataStore = derived(
 
     if (hasNewData) {
       setStorage(
-        /** @type {MarketDataStorage} */ (
-          pickIn(newStore, ["data", "lastUpdate"])
+        new MarketDataInfo(
+          newStore.data,
+          /** @type {Date}*/ (newStore.lastUpdate)
         )
       );
     }
