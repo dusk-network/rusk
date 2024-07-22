@@ -136,7 +136,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let open_consensus_mode = self.last_step_running();
 
         // When consensus is in open_consensus_mode then it keeps Ratification
-        // step running infinitely until either a valid block or
+        // step running indefinitely until either a valid block or
         // emergency block is accepted
         let timeout = if open_consensus_mode {
             let dur = Duration::new(u32::MAX as u64, 0);
@@ -162,7 +162,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         if open_consensus_mode {
                             // In open consensus mode, consensus step is never
                             // terminated.
-                            // The acceptor will cancel the consensus if the
+                            // The acceptor will cancel the consensus if a
                             // block is accepted
                             continue;
                         }
