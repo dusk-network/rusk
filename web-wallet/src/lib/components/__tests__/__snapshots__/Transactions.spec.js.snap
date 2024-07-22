@@ -2,10 +2,10 @@
 
 exports[`Transactions > renders the correct amount of Transactions, as the limit supplied 1`] = `
 <article
-  class="transactions svelte-13w6rnl"
+  class="transactions svelte-1xfwm7e"
 >
   <header
-    class="transactions__header svelte-13w6rnl"
+    class="transactions__header svelte-1xfwm7e"
   >
     <h3
       class="h4"
@@ -256,10 +256,10 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
 
 exports[`Transactions > renders transactions correctly when items are fulfilled 1`] = `
 <article
-  class="transactions svelte-13w6rnl"
+  class="transactions svelte-1xfwm7e"
 >
   <header
-    class="transactions__header svelte-13w6rnl"
+    class="transactions__header svelte-1xfwm7e"
   >
     <h3
       class="h4"
