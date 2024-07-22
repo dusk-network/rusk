@@ -15,7 +15,9 @@ use execution_core::{
     value_commitment, BlsPublicKey, BlsScalar, BlsSecretKey, JubJubScalar,
     Note, PublicKey, SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
 };
-use rusk_abi::{ContractError, ContractId, Error, Session, TRANSFER_CONTRACT};
+use rusk_abi::{
+    ContractError, ContractId, PiecrustError, Session, TRANSFER_CONTRACT,
+};
 
 use dusk_bytes::Serializable;
 use dusk_plonk::prelude::*;
@@ -31,7 +33,7 @@ const GAS_LIMIT: u64 = 0x10_000_000;
 pub fn leaves_from_height(
     session: &mut Session,
     height: u64,
-) -> Result<Vec<TreeLeaf>, Error> {
+) -> Result<Vec<TreeLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -51,7 +53,7 @@ pub fn leaves_from_height(
 pub fn leaves_from_pos(
     session: &mut Session,
     pos: u64,
-) -> Result<Vec<TreeLeaf>, Error> {
+) -> Result<Vec<TreeLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -68,19 +70,19 @@ pub fn leaves_from_pos(
         .collect())
 }
 
-pub fn num_notes(session: &mut Session) -> Result<u64, Error> {
+pub fn num_notes(session: &mut Session) -> Result<u64, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
         .map(|r| r.data)
 }
 
-pub fn update_root(session: &mut Session) -> Result<(), Error> {
+pub fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn root(session: &mut Session) -> Result<BlsScalar, Error> {
+pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
         .map(|r| r.data)
@@ -89,7 +91,7 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, Error> {
 pub fn account(
     session: &mut Session,
     pk: &BlsPublicKey,
-) -> Result<AccountData, Error> {
+) -> Result<AccountData, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "account", pk, GAS_LIMIT)
         .map(|r| r.data)
@@ -98,7 +100,7 @@ pub fn account(
 pub fn contract_balance(
     session: &mut Session,
     contract: ContractId,
-) -> Result<u64, Error> {
+) -> Result<u64, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "contract_balance", &contract, GAS_LIMIT)
         .map(|r| r.data)
@@ -107,7 +109,7 @@ pub fn contract_balance(
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, Error> {
+) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)
@@ -141,7 +143,7 @@ pub fn prover_verifier(input_notes: usize) -> (Prover, Verifier) {
 pub fn execute(
     session: &mut Session,
     tx: impl Into<Transaction>,
-) -> Result<u64, Error> {
+) -> Result<u64, PiecrustError> {
     let tx = tx.into();
 
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
