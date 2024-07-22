@@ -88,7 +88,7 @@ fn wallet_transfer(
 
     for i in 0..3 {
         let tx = wallet
-            .transfer(&mut rng, i, &receiver, amount, GAS_LIMIT, 1)
+            .phoenix_transfer(&mut rng, i, &receiver, amount, GAS_LIMIT, 1)
             .expect("Failed to transfer");
         txs.push(tx);
     }
@@ -122,15 +122,17 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee_0 = txs[0].payload().fee;
-    let fee_0 = fee_0.gas_limit * fee_0.gas_price;
+    let gas_limit_0 = txs[0].gas_limit();
+    let gas_price_0 = txs[0].gas_price();
+    let fee_0 = gas_limit_0 * gas_price_0;
 
     let final_balance_1 = wallet
         .get_balance(1)
         .expect("Failed to get the balance")
         .value;
-    let fee_1 = txs[1].payload().fee;
-    let fee_1 = fee_1.gas_limit * fee_1.gas_price;
+    let gas_limit_1 = txs[1].gas_limit();
+    let gas_price_1 = txs[1].gas_price();
+    let fee_1 = gas_limit_1 * gas_price_1;
 
     assert!(
         initial_balance_0 - amount - fee_0 <= final_balance_0,

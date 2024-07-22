@@ -21,7 +21,7 @@ use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
-use execution_core::{StakePublicKey, StakeSecretKey, StakeSignature};
+use execution_core::{BlsPublicKey, BlsSecretKey, BlsSignature};
 use node_data::ledger::{Attestation, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
@@ -36,7 +36,7 @@ fn create_step_votes(
     step: StepName,
     iteration: u8,
     provisioners: &Provisioners,
-    keys: &[(node_data::bls::PublicKey, StakeSecretKey)],
+    keys: &[(node_data::bls::PublicKey, BlsSecretKey)],
 ) -> StepVotes {
     let round = tip_header.height + 1;
     let seed = tip_header.seed;
@@ -83,7 +83,7 @@ fn create_step_votes(
                 }
                 _ => unreachable!(),
             };
-            signatures.push(StakeSignature::from_bytes(sig.inner()).unwrap());
+            signatures.push(BlsSignature::from_bytes(sig.inner()).unwrap());
             cluster.add(pk, weight);
         }
     }
@@ -113,8 +113,8 @@ pub fn verify_block_att(c: &mut Criterion) {
             let mut provisioners = Provisioners::empty();
             let rng = &mut StdRng::seed_from_u64(0xbeef);
             for _ in 0..input.provisioners {
-                let sk = StakeSecretKey::random(rng);
-                let pk = StakePublicKey::from(&sk);
+                let sk = BlsSecretKey::random(rng);
+                let pk = BlsPublicKey::from(&sk);
                 let pk = node_data::bls::PublicKey::new(pk);
                 keys.push((pk.clone(), sk));
                 provisioners.add_member_with_value(pk, 1000000000000)

@@ -9,7 +9,7 @@ use dusk_consensus::{
     operations::{CallParams, VerificationOutput},
     user::{provisioners::Provisioners, stake::Stake},
 };
-use execution_core::StakePublicKey;
+use execution_core::BlsPublicKey;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 #[derive(Default)]
@@ -58,7 +58,7 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn get_provisioner(
         &self,
-        pk: &StakePublicKey,
+        pk: &BlsPublicKey,
     ) -> anyhow::Result<Option<Stake>>;
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;

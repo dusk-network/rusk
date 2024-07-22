@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use execution_core::{stake::StakeData, StakePublicKey, StakeSecretKey};
+use execution_core::{stake::StakeData, BlsPublicKey, BlsSecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::{
@@ -66,7 +66,7 @@ fn instantiate(vm: &VM) -> Session {
 
 fn do_get_provisioners(
     session: &mut Session,
-) -> Result<impl Iterator<Item = (StakePublicKey, StakeData)>, Error> {
+) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>, Error> {
     let (sender, receiver) = mpsc::channel();
     session.feeder_call::<_, ()>(
         STAKE_CONTRACT,
@@ -76,7 +76,7 @@ fn do_get_provisioners(
         sender,
     )?;
     Ok(receiver.into_iter().map(|bytes| {
-        rkyv::from_bytes::<(StakePublicKey, StakeData)>(&bytes)
+        rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes)
             .expect("The contract should only return (pk, stake_data) tuples")
     }))
 }
@@ -87,11 +87,11 @@ fn do_insert_stake<Rng: RngCore + CryptoRng>(
 ) -> Result<(), Error> {
     let stake_data = StakeData {
         amount: Some((TEST_STAKE, 0)),
-        counter: 1,
+        nonce: 1,
         reward: 0,
     };
-    let sk = StakeSecretKey::random(rng);
-    let pk = StakePublicKey::from(&sk);
+    let sk = BlsSecretKey::random(rng);
+    let pk = BlsPublicKey::from(&sk);
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
@@ -116,7 +116,7 @@ fn get_provisioners(c: &mut Criterion) {
 
     c.bench_function("get_provisioners", |b| {
         b.iter(|| {
-            let _: Vec<(StakePublicKey, StakeData)> =
+            let _: Vec<(BlsPublicKey, StakeData)> =
                 do_get_provisioners(&mut session)
                     .expect("getting provisioners should succeed")
                     .collect();

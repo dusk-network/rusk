@@ -17,8 +17,9 @@ mod imp;
 use alloc::vec::Vec;
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use execution_core::{
-    stake::StakeData, transfer::Transaction, BlsPublicKey as StakePublicKey,
-    BlsScalar, BlsSecretKey as StakeSecretKey, Note, SecretKey, ViewKey,
+    stake::StakeData,
+    transfer::{AccountData, Transaction},
+    BlsPublicKey, BlsScalar, BlsSecretKey, Note, SecretKey, ViewKey,
 };
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand_chacha::ChaCha12Rng;
@@ -41,27 +42,27 @@ pub trait Store {
     /// Retrieves the seed used to derive keys.
     fn get_seed(&self) -> Result<[u8; 64], Self::Error>;
 
-    /// Retrieves a derived secret spend key from the store.
-    ///
-    /// The provided implementation simply gets the seed and regenerates the key
-    /// every time with [`generate_sk`]. It may be reimplemented to
-    /// provide a cache for keys, or implement a different key generation
-    /// algorithm.
-    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, Self::Error> {
-        let seed = self.get_seed()?;
-        Ok(derive_sk(&seed, index))
-    }
-
     /// Retrieves a derived secret key from the store.
     ///
     /// The provided implementation simply gets the seed and regenerates the key
     /// every time with [`generate_sk`]. It may be reimplemented to
     /// provide a cache for keys, or implement a different key generation
     /// algorithm.
-    fn retrieve_stake_sk(
+    fn fetch_secret_key(&self, index: u64) -> Result<SecretKey, Self::Error> {
+        let seed = self.get_seed()?;
+        Ok(derive_sk(&seed, index))
+    }
+
+    /// Retrieves a derived account secret key from the store.
+    ///
+    /// The provided implementation simply gets the seed and regenerates the key
+    /// every time with [`generate_sk`]. It may be reimplemented to
+    /// provide a cache for keys, or implement a different key generation
+    /// algorithm.
+    fn fetch_account_secret_key(
         &self,
         index: u64,
-    ) -> Result<StakeSecretKey, Self::Error> {
+    ) -> Result<BlsSecretKey, Self::Error> {
         let seed = self.get_seed()?;
         Ok(derive_stake_sk(&seed, index))
     }
@@ -92,7 +93,7 @@ pub fn derive_sk(seed: &[u8; 64], index: u64) -> SecretKey {
 /// `index` are passed through SHA-256. A constant is then mixed in and the
 /// resulting hash is then used to seed a `ChaCha12` CSPRNG, which is
 /// subsequently used to generate the key.
-pub fn derive_stake_sk(seed: &[u8; 64], index: u64) -> StakeSecretKey {
+pub fn derive_stake_sk(seed: &[u8; 64], index: u64) -> BlsSecretKey {
     let mut hash = Sha256::new();
 
     hash.update(seed);
@@ -102,7 +103,7 @@ pub fn derive_stake_sk(seed: &[u8; 64], index: u64) -> StakeSecretKey {
     let hash = hash.finalize().into();
     let mut rng = ChaCha12Rng::from_seed(hash);
 
-    StakeSecretKey::random(&mut rng)
+    BlsSecretKey::random(&mut rng)
 }
 
 /// Types that are client of the prover.
@@ -152,10 +153,13 @@ pub trait StateClient {
 
     /// Queries the node for the stake of a key. If the key has no stake, a
     /// `Default` stake info should be returned.
-    fn fetch_stake(
+    fn fetch_stake(&self, pk: &BlsPublicKey) -> Result<StakeData, Self::Error>;
+
+    /// Queries the account data for a given key.
+    fn fetch_account(
         &self,
-        pk: &StakePublicKey,
-    ) -> Result<StakeInfo, Self::Error>;
+        pk: &BlsPublicKey,
+    ) -> Result<AccountData, Self::Error>;
 }
 
 /// Information about the balance of a particular key.
@@ -191,76 +195,6 @@ impl Serializable<16> for BalanceInfo {
 
         writer.write(&self.value.to_bytes());
         writer.write(&self.spendable.to_bytes());
-
-        buf
-    }
-}
-
-/// The stake of a particular key.
-#[derive(Debug, Default, Hash, Clone, Copy, PartialEq, Eq)]
-pub struct StakeInfo {
-    /// The value and eligibility of the stake, in that order.
-    pub amount: Option<(u64, u64)>,
-    /// The reward available for withdrawal.
-    pub reward: u64,
-    /// Signature counter.
-    pub counter: u64,
-}
-
-impl From<StakeData> for StakeInfo {
-    fn from(data: StakeData) -> Self {
-        StakeInfo {
-            amount: data.amount,
-            reward: data.reward,
-            counter: data.counter,
-        }
-    }
-}
-
-impl Serializable<32> for StakeInfo {
-    type Error = dusk_bytes::Error;
-
-    /// Deserializes in the same order as defined in [`to_bytes`]. If the
-    /// deserialized value is 0, then `amount` will be `None`. This means that
-    /// the eligibility value is left loose, and could be any number when value
-    /// is 0.
-    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let mut reader = &buf[..];
-
-        let value = u64::from_reader(&mut reader)?;
-        let eligibility = u64::from_reader(&mut reader)?;
-        let reward = u64::from_reader(&mut reader)?;
-        let counter = u64::from_reader(&mut reader)?;
-
-        let amount = match value > 0 {
-            true => Some((value, eligibility)),
-            false => None,
-        };
-
-        Ok(Self {
-            amount,
-            reward,
-            counter,
-        })
-    }
-
-    /// Serializes the amount and the eligibility first, and then the reward and
-    /// the counter. If `amount` is `None`, and since a stake of no value should
-    /// not be possible, the first 16 bytes are filled with zeros.
-    #[allow(unused_must_use)]
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut buf = [0u8; Self::SIZE];
-        let mut writer = &mut buf[..];
-
-        let (value, eligibility) = self.amount.unwrap_or_default();
-
-        writer.write(&value.to_bytes());
-        writer.write(&eligibility.to_bytes());
-        writer.write(&self.reward.to_bytes());
-        writer.write(&self.counter.to_bytes());
 
         buf
     }

@@ -12,26 +12,55 @@ use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
+use dusk_bytes::Serializable;
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{ContractError, ContractId, PublicInput, STAKE_CONTRACT};
 
 use execution_core::{
     transfer::{
-        Fee, Mint, SenderAccount, Transaction, TreeLeaf, TRANSFER_TREE_DEPTH,
+        AccountData, MoonlightTransaction, PhoenixTransaction, Transaction,
+        TreeLeaf, Withdraw, WithdrawReceiver, WithdrawReplayToken,
+        WithdrawSignature, TRANSFER_TREE_DEPTH,
     },
-    BlsScalar, Note,
+    BlsPublicKey, BlsScalar, Note, Sender,
 };
+
+use crate::transitory;
+use transitory::Deposit;
 
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 5000;
+
+/// An empty account, used as the default return and for instantiating new
+/// entries.
+const EMPTY_ACCOUNT: AccountData = AccountData {
+    nonce: 0,
+    balance: 0,
+};
+
+fn contract_fn_sender(fn_name: &str, contract: ContractId) -> Sender {
+    let mut bytes = [0u8; 128];
+
+    let mut offset = 0;
+
+    bytes[offset..offset + fn_name.len()].copy_from_slice(fn_name.as_bytes());
+    offset += fn_name.len();
+
+    bytes[offset..offset + 32].copy_from_slice(&contract.to_bytes());
+
+    Sender::ContractInfo(bytes)
+}
 
 pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
-    balances: BTreeMap<ContractId, u64>,
-    deposit: Option<(ContractId, u64)>,
+    // NOTE: we should never remove entries from this list, since the entries
+    //       contain the nonce of the given account. Doing so opens the account
+    //       up to replay attacks.
+    accounts: BTreeMap<[u8; BlsPublicKey::SIZE], AccountData>,
+    contract_balances: BTreeMap<ContractId, u64>,
 }
 
 impl TransferState {
@@ -40,63 +69,136 @@ impl TransferState {
             tree: Tree::new(),
             nullifiers: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
-            balances: BTreeMap::new(),
-            deposit: None,
+            accounts: BTreeMap::new(),
+            contract_balances: BTreeMap::new(),
         }
     }
 
-    /// Mint a new phoenix note.
+    /// Checks the [`Withdraw`] is correct, and mints the amount of the
+    /// withdrawal.
+    fn mint_withdrawal(&mut self, fn_name: &str, withdraw: Withdraw) {
+        let contract = withdraw.contract();
+        let value = withdraw.value();
+
+        let msg = withdraw.signature_message();
+        let signature = withdraw.signature();
+
+        match withdraw.token() {
+            WithdrawReplayToken::Phoenix(nullifiers) => {
+                let tx_payload = transitory::unwrap_phoenix_tx().payload();
+
+                for n in &tx_payload.tx_skeleton.nullifiers {
+                    if !nullifiers.contains(n) {
+                        panic!("Incorrect nullifiers signed");
+                    }
+                }
+            }
+            WithdrawReplayToken::Moonlight(nonce) => {
+                let tx_payload = transitory::unwrap_moonlight_tx().payload();
+
+                if nonce != &tx_payload.nonce {
+                    panic!("Incorrect nonce signed");
+                }
+            }
+        }
+
+        match withdraw.receiver() {
+            WithdrawReceiver::Phoenix(address) => {
+                let signature = match signature {
+                    WithdrawSignature::Phoenix(s) => s,
+                    _ => panic!(
+                        "Withdrawal to Phoenix must be signed with Schnorr"
+                    ),
+                };
+
+                let hash = rusk_abi::hash(msg);
+                let pk = address.note_pk();
+
+                if !rusk_abi::verify_schnorr(hash, *pk, *signature) {
+                    panic!("Invalid signature");
+                }
+
+                let sender = contract_fn_sender(
+                    fn_name,
+                    ContractId::from_bytes(*contract),
+                );
+
+                let note = Note::transparent_stealth(*address, value, sender);
+                self.push_note_current_height(note);
+            }
+            WithdrawReceiver::Moonlight(account) => {
+                let signature = match signature {
+                    WithdrawSignature::Moonlight(s) => s,
+                    _ => panic!(
+                        "Withdrawal to Moonlight must be signed with BLS"
+                    ),
+                };
+
+                if !rusk_abi::verify_bls(msg, *account, *signature) {
+                    panic!("Invalid signature");
+                }
+
+                let account_bytes = account.to_bytes();
+                let account =
+                    self.accounts.entry(account_bytes).or_insert(EMPTY_ACCOUNT);
+
+                account.balance += value;
+            }
+        }
+    }
+
+    /// Mint more Dusk.
     ///
-    /// This can only be called by the stake-contracts. The method will increase
-    /// the total amount of circulating dusk. This happens when the reward for
-    /// staking and participating in the consensus is withdrawn.
-    pub fn mint(&mut self, mint: Mint) {
-        let caller = rusk_abi::caller();
-        if caller != STAKE_CONTRACT {
+    /// This can only be called by the stake contract, and will increase the
+    /// total amount of circulating Dusk. It is intended to be called during the
+    /// execution of the `withdraw` function, and the amount minted should
+    /// conform to the consensus emission schedule.
+    ///
+    /// # Safety
+    /// We assume on trust that the value sent by the stake contract is
+    /// according to consensus rules.
+    pub fn mint(&mut self, mint: Withdraw) {
+        if rusk_abi::caller() != STAKE_CONTRACT {
             panic!("Can only be called by the stake contract!")
         }
-        let sender = SenderAccount {
-            contract: caller.to_bytes(),
-            account: mint.sender,
-        };
 
-        let note = Note::transparent_stealth(mint.address, mint.value, sender);
+        let contract = mint.contract();
 
-        self.push_note_current_height(note);
+        if mint.contract() != contract {
+            panic!("Withdrawal should from the stake contract");
+        }
+
+        self.mint_withdrawal("MINT", mint);
     }
 
-    /// Withdraw from a contract's balance into a phoenix-note.
+    /// Withdraw from a contract's balance to a Phoenix note or a Moonlight
+    /// account.
     ///
-    /// Even though a new phoenix-note is minted, the funds are only moved there
-    /// from the contract's balance. This means that, unlike [`mint`], calling
-    /// this function will not increase the total amount of circulating dusk.
+    /// Users sign the `Withdraw` data, which the contract being called
+    /// (withdrawn from) is then responsible for making available to this
+    /// contract via a call to this function. The function allows for
+    /// withdrawals to both Phoenix notes and Moonlight accounts.
     ///
     /// # Panics
-    /// This can only be called by a contract that with sufficient balance.
-    pub fn withdraw(&mut self, withdraw: Mint) {
-        // check if the request comes from a contract
-        let contract = rusk_abi::caller();
-        if contract.is_uninitialized() {
-            panic!("The \"withdraw\" method can only be called by another contract.")
+    /// This can only be called by the contract specified, and only if said
+    /// contract has enough balance.
+    pub fn withdraw(&mut self, withdraw: Withdraw) {
+        let contract = ContractId::from_bytes(*withdraw.contract());
+
+        if contract != rusk_abi::caller() {
+            panic!("The \"withdraw\" function can only be called by the contract specified in the payload");
         }
 
-        // check if the contract has enough balance
-        if self.balance(&contract) < withdraw.value {
-            panic!("The contract doesn't have enough balance.");
+        let value = withdraw.value();
+
+        if self.contract_balance(&contract) < value {
+            panic!("The contract doesn't have enough balance");
         }
 
-        // subtract the withdraw-value from the contract's balance
-        self.sub_balance(&contract, withdraw.value)
-            .expect("The contract should have enough balance");
+        self.sub_contract_balance(&contract, value)
+            .expect("Subtracting balance from contract should succeed");
 
-        // push a new phoenix-note with the given data to the tree
-        let sender = SenderAccount {
-            contract: contract.to_bytes(),
-            account: withdraw.sender,
-        };
-        let note =
-            Note::transparent_stealth(withdraw.address, withdraw.value, sender);
-        self.push_note_current_height(note);
+        self.mint_withdrawal("WITHDRAW", withdraw);
     }
 
     /// Deposit funds to a contract's balance.
@@ -115,31 +217,53 @@ impl TransferState {
             panic!("Only a contract is authorized to claim a deposit.")
         }
 
-        let deposit = self.deposit.take();
+        let deposit = transitory::deposit_info_mut();
         match deposit {
-            Some((deposit_contract, deposit_value)) => {
+            Deposit::Available(deposit_contract, deposit_value) => {
+                let deposit_contract = *deposit_contract;
+                let deposit_value = *deposit_value;
+
                 if deposit_value != value {
                     panic!(
-                        "The value to deposit doesn't match the previously deposited value"
-                        );
-                } else if deposit_contract != caller {
-                    panic!(
-                        "The caller is not authorized to claim the deposit."
+                        "The value to deposit doesn't match the value in the transaction"
                     );
-                } else {
-                    self.add_balance(deposit_contract, deposit_value);
                 }
+
+                if deposit_contract != caller {
+                    panic!("The calling contract doesn't match the contract in the transaction");
+                }
+
+                // add to the contract's balance and set the deposit as taken
+                self.add_contract_balance(deposit_contract, deposit_value);
+                *deposit = Deposit::Taken(deposit_contract, deposit_value);
             }
-            None => {
-                panic!("There is no deposit on the state.");
+            Deposit::Taken(_, _) => {
+                panic!("The deposit has already been taken")
             }
+            Deposit::None => panic!("There is no deposit in the transaction"),
         }
     }
 
-    /// Spends the inputs and creates the given UTXO, and executes the contract
-    /// call if present. It performs all checks necessary to ensure the
-    /// transaction is valid - hash matches, anchor has been a root of the
-    /// tree, proof checks out, etc...
+    /// The top level transaction execution function.
+    ///
+    /// Delegates to [`Self::spend_and_execute_phoenix`] and
+    /// [`Self::spend_and_execute_moonlight`], depending on if the transaction
+    /// uses the Phoenix or the Moonlight models, respectively.
+    pub fn spend_and_execute(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<Vec<u8>, ContractError> {
+        match tx {
+            Transaction::Phoenix(tx) => self.spend_and_execute_phoenix(tx),
+            Transaction::Moonlight(tx) => self.spend_and_execute_moonlight(tx),
+        }
+    }
+
+    /// Spends the inputs and creates the given UTXO within the given phoenix
+    /// transaction, and executes the contract call if present. It performs
+    /// all checks necessary to ensure the transaction is valid - hash
+    /// matches, anchor has been a root of the tree, proof checks out,
+    /// etc...
     ///
     /// This will emplace the deposit in the state, if it exists - making it
     /// available for any contracts called.
@@ -153,10 +277,13 @@ impl TransferState {
     /// change in state.
     ///
     /// [`refund`]: [`TransferState::refund`]
-    pub fn spend_and_execute(
+    fn spend_and_execute_phoenix(
         &mut self,
-        tx: Transaction,
+        tx: PhoenixTransaction,
     ) -> Result<Vec<u8>, ContractError> {
+        transitory::put_transaction(tx);
+        let tx = transitory::unwrap_phoenix_tx();
+
         let tx_skeleton = &tx.payload().tx_skeleton;
 
         // panic if the root is invalid
@@ -173,7 +300,7 @@ impl TransferState {
         self.nullifiers.extend(&tx_skeleton.nullifiers);
 
         // verify the phoenix-circuit
-        if !verify_tx_proof(&tx) {
+        if !verify_tx_proof(tx) {
             panic!("Invalid transaction proof!");
         }
 
@@ -182,26 +309,113 @@ impl TransferState {
         self.tree
             .extend_notes(block_height, tx_skeleton.outputs.clone());
 
-        // if present, place the contract deposit on the state
-        if tx.payload().tx_skeleton.deposit > 0 {
-            let contract = match &tx.payload().contract_call() {
-                Some(call) => ContractId::from_bytes(call.contract),
-                None => {
-                    panic!("There needs to be a contract call when depositing funds");
-                }
-            };
-            self.deposit = Some((contract, tx.payload().tx_skeleton.deposit));
-        }
-
         // perform contract call if present
         let mut result = Ok(Vec::new());
-        if let Some(call) = &tx.payload().contract_call() {
+        if let Some(call) = tx.call() {
             result = rusk_abi::call_raw(
                 ContractId::from_bytes(call.contract),
                 &call.fn_name,
                 &call.fn_args,
             );
         }
+
+        result
+    }
+
+    /// Spends the amount available to the moonlight transaction, and executes
+    /// the contract call if present. It performs all checks necessary to ensure
+    /// the transaction is valid - signature check, available funds, etc...
+    ///
+    /// This will emplace the deposit in the state, if it exists - making it
+    /// available for any contracts called.
+    ///
+    /// [`refund`] **must** be called if this function succeeds, otherwise we
+    /// will have an inconsistent state.
+    ///
+    /// # Panics
+    /// Any failure in the checks performed in processing the transaction will
+    /// result in a panic. The contract expects the environment to roll back any
+    /// change in state.
+    ///
+    /// [`refund`]: [`TransferState::refund`]
+    fn spend_and_execute_moonlight(
+        &mut self,
+        tx: MoonlightTransaction,
+    ) -> Result<Vec<u8>, ContractError> {
+        transitory::put_transaction(tx);
+        let tx = transitory::unwrap_moonlight_tx();
+
+        // check the signature is valid and made by `from`
+        let payload = tx.payload();
+        let signature = *tx.signature();
+
+        let from = payload.from;
+        let digest = tx.signature_message();
+
+        if !rusk_abi::verify_bls(digest, from, signature) {
+            panic!("Invalid signature!");
+        }
+
+        // check `from` has the funds necessary to suppress the total value
+        // available in this transaction, and that the `nonce` is higher than
+        // the currently held number. If these conditions are violated we panic
+        // since the transaction is invalid - either because the account doesn't
+        // have (enough) funds, or because they're possibly trying to reuse a
+        // previously used signature (i.e. a replay attack).
+        //
+        // Afterwards, we simply deduct the total amount of the transaction from
+        // the balance, increment the nonce, and rely on `refund` to be called
+        // after a successful exit.
+        let from_bytes = from.to_bytes(); // TODO: this is expensive. maybe we should address the
+                                          //       fact that `BlsPublicKey` doesn't impl `Ord`
+                                          //       so we can just use it directly as a key in the
+                                          //       `BTreeMap`
+
+        // the total value carried by a transaction is the sum of the value, the
+        // deposit, and gas_limit * gas_price.
+        let total_value = payload.value
+            + payload.deposit
+            + payload.gas_limit * payload.gas_price;
+
+        match self.accounts.get_mut(&from_bytes) {
+            Some(account) => {
+                if total_value > account.balance {
+                    panic!("Account doesn't have enough funds");
+                }
+                if payload.nonce <= account.nonce {
+                    panic!("Replayed nonce");
+                }
+
+                account.balance -= total_value;
+                account.nonce = payload.nonce;
+            }
+            None => panic!("Account has no funds"),
+        }
+
+        // if there is a value carried by the transaction but no key specified
+        // in the `to` field, we just give the value back to `from`.
+        if payload.value > 0 {
+            let key = match payload.to {
+                Some(to) => to.to_bytes(),
+                None => from_bytes,
+            };
+
+            // if the key has no entry, we simply instantiate a new one with a
+            // zero nonce and balance.
+            let account = self.accounts.entry(key).or_insert(EMPTY_ACCOUNT);
+            account.balance += payload.value;
+        }
+
+        // perform contract call if present
+        let mut result = Ok(Vec::new());
+        if let Some(call) = tx.call() {
+            result = rusk_abi::call_raw(
+                ContractId::from_bytes(call.contract),
+                &call.fn_name,
+                &call.fn_args,
+            );
+        }
+
         result
     }
 
@@ -211,17 +425,52 @@ impl TransferState {
     /// in the fee structure.
     ///
     /// This function guarantees that it will not panic.
-    pub fn refund(&mut self, fee: Fee, gas_spent: u64) {
-        let deposit = self.deposit.map(|(_, d)| d);
+    pub fn refund(&mut self, gas_spent: u64) {
+        let tx = transitory::unwrap_tx();
 
-        let remainder_note = fee.gen_remainder_note(gas_spent, deposit);
+        // If there is a deposit still available on the call to this function,
+        // we refund it to the called.
+        let deposit = match transitory::deposit_info() {
+            Deposit::Available(_, deposit) => Some(*deposit),
+            _ => None,
+        };
 
-        let remainder_value = remainder_note
-            .value(None)
-            .expect("Should always succeed for a transparent note");
+        // in phoenix, a refund note is with the unspent amount to the stealth
+        // address in the `Fee` structure, while in moonlight we simply refund
+        // the `from` account for what it didn't spend
+        //
+        // any eventual deposit that failed to be "picked up" is refunded in the
+        // same way - in phoenix the same note is reused, in moonlight the
+        // 'key's balance gets increased.
+        match tx {
+            Transaction::Phoenix(tx) => {
+                let fee = &tx.payload().fee;
 
-        if remainder_value > 0 {
-            self.push_note_current_height(remainder_note);
+                let remainder_note = fee.gen_remainder_note(gas_spent, deposit);
+
+                let remainder_value = remainder_note
+                    .value(None)
+                    .expect("Should always succeed for a transparent note");
+
+                if remainder_value > 0 {
+                    self.push_note_current_height(remainder_note);
+                }
+            }
+            Transaction::Moonlight(tx) => {
+                let payload = tx.payload();
+
+                let from_bytes = payload.from.to_bytes();
+
+                let remaining_gas = payload.gas_limit - gas_spent;
+                let remaining = remaining_gas * payload.gas_price
+                    + deposit.unwrap_or_default();
+
+                let account = self.accounts.get_mut(&from_bytes).expect(
+                    "The account that just transacted must have an entry",
+                );
+
+                account.balance += remaining;
+            }
         }
     }
 
@@ -289,14 +538,38 @@ impl TransferState {
             .collect()
     }
 
+    pub fn account(&self, key: &BlsPublicKey) -> AccountData {
+        let key_bytes = key.to_bytes();
+        self.accounts
+            .get(&key_bytes)
+            .cloned()
+            .unwrap_or(EMPTY_ACCOUNT)
+    }
+
+    pub fn add_account_balance(&mut self, key: &BlsPublicKey, value: u64) {
+        let key_bytes = key.to_bytes();
+        let account = self.accounts.entry(key_bytes).or_insert(EMPTY_ACCOUNT);
+        account.balance = account.balance.saturating_add(value);
+    }
+
+    pub fn sub_account_balance(&mut self, key: &BlsPublicKey, value: u64) {
+        let key_bytes = key.to_bytes();
+        if let Some(account) = self.accounts.get_mut(&key_bytes) {
+            account.balance = account.balance.saturating_sub(value);
+        }
+    }
+
     /// Return the balance of a given contract.
-    pub fn balance(&self, contract_id: &ContractId) -> u64 {
-        self.balances.get(contract_id).copied().unwrap_or_default()
+    pub fn contract_balance(&self, contract_id: &ContractId) -> u64 {
+        self.contract_balances
+            .get(contract_id)
+            .copied()
+            .unwrap_or_default()
     }
 
     /// Add balance to the given contract
-    pub fn add_balance(&mut self, contract: ContractId, value: u64) {
-        match self.balances.entry(contract) {
+    pub fn add_contract_balance(&mut self, contract: ContractId, value: u64) {
+        match self.contract_balances.entry(contract) {
             Entry::Vacant(ve) => {
                 ve.insert(value);
             }
@@ -304,6 +577,28 @@ impl TransferState {
                 let v = oe.get_mut();
                 *v += value
             }
+        }
+    }
+
+    pub(crate) fn sub_contract_balance(
+        &mut self,
+        address: &ContractId,
+        value: u64,
+    ) -> Result<(), Error> {
+        match self.contract_balances.get_mut(address) {
+            Some(balance) => {
+                let (bal, underflow) = balance.overflowing_sub(value);
+
+                if underflow {
+                    Err(Error::NotEnoughBalance)
+                } else {
+                    *balance = bal;
+
+                    Ok(())
+                }
+            }
+
+            _ => Err(Error::NotEnoughBalance),
         }
     }
 
@@ -329,31 +624,9 @@ impl TransferState {
         let block_height = rusk_abi::block_height();
         self.push_note(block_height, note)
     }
-
-    pub(crate) fn sub_balance(
-        &mut self,
-        address: &ContractId,
-        value: u64,
-    ) -> Result<(), Error> {
-        match self.balances.get_mut(address) {
-            Some(balance) => {
-                let (bal, underflow) = balance.overflowing_sub(value);
-
-                if underflow {
-                    Err(Error::NotEnoughBalance)
-                } else {
-                    *balance = bal;
-
-                    Ok(())
-                }
-            }
-
-            _ => Err(Error::NotEnoughBalance),
-        }
-    }
 }
 
-fn verify_tx_proof(tx: &Transaction) -> bool {
+fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
     let pis: Vec<PublicInput> =
         tx.public_inputs().iter().map(|pi| pi.into()).collect();
 

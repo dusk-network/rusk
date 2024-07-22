@@ -214,7 +214,7 @@ mod tests {
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bytes::DeserializableSlice;
-    use execution_core::{StakePublicKey, StakeSecretKey};
+    use execution_core::{BlsPublicKey, BlsSecretKey};
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
     use std::collections::HashMap;
@@ -246,7 +246,7 @@ mod tests {
             .iter()
             .map(|hex| hex::decode(hex).expect("valid hex"))
             .map(|data| {
-                StakeSecretKey::from_slice(&data[..]).expect("valid secret key")
+                BlsSecretKey::from_slice(&data[..]).expect("valid secret key")
             })
             .collect();
 
@@ -267,9 +267,8 @@ mod tests {
         tip_header.height = 0;
 
         for secret_key in sks {
-            let pubkey_bls = node_data::bls::PublicKey::new(
-                StakePublicKey::from(&secret_key),
-            );
+            let pubkey_bls =
+                node_data::bls::PublicKey::new(BlsPublicKey::from(&secret_key));
 
             p.add_member_with_value(pubkey_bls.clone(), 1000 * DUSK);
 

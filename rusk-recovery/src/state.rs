@@ -17,14 +17,14 @@ use tracing::info;
 use url::Url;
 
 use execution_core::{
-    stake::StakeData, transfer::SenderAccount, BlsPublicKey, BlsSecretKey,
-    JubJubScalar, Note, PublicKey,
+    stake::{StakeAmount, StakeData},
+    BlsPublicKey, JubJubScalar, Note, PublicKey, Sender,
 };
 use rusk_abi::{ContractData, ContractId, Session, VM};
 use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
 
 use crate::Theme;
-pub use snapshot::{Balance, GenesisStake, Snapshot};
+pub use snapshot::{GenesisStake, PhoenixBalance, Snapshot};
 
 mod http;
 mod snapshot;
@@ -55,38 +55,58 @@ fn generate_transfer_state(
     let theme = Theme::default();
 
     let mut update_root = false;
-    snapshot.transfers().enumerate().for_each(|(idx, balance)| {
-        update_root = true;
-        info!("{} balance #{}", theme.action("Generating"), idx,);
 
-        let mut rng = match balance.seed {
-            Some(seed) => StdRng::seed_from_u64(seed),
-            None => StdRng::from_entropy(),
-        };
+    snapshot
+        .phoenix_balances()
+        .enumerate()
+        .for_each(|(idx, balance)| {
+            update_root = true;
+            info!("{} phoenix balance #{idx}", theme.action("Generating"));
 
-        balance.notes.iter().for_each(|&amount| {
-            let r = JubJubScalar::random(&mut rng);
-            let address = balance.address().gen_stealth_address(&r);
-            let sender = SenderAccount {
-                contract: STAKE_CONTRACT.to_bytes(),
-                account: BlsPublicKey::from(&BlsSecretKey::random(&mut rng)),
+            let mut rng = match balance.seed {
+                Some(seed) => StdRng::seed_from_u64(seed),
+                None => StdRng::from_entropy(),
             };
-            let note = Note::transparent_stealth(address, amount, sender);
+
+            balance.notes.iter().for_each(|&amount| {
+                let r = JubJubScalar::random(&mut rng);
+                let address = balance.address().gen_stealth_address(&r);
+                // the sender is "genesis"
+                let sender = Sender::ContractInfo([0u8; 128]);
+                let note = Note::transparent_stealth(address, amount, sender);
+                session
+                    .call::<(u64, Note), ()>(
+                        TRANSFER_CONTRACT,
+                        "push_note",
+                        &(GENESIS_BLOCK_HEIGHT, note),
+                        u64::MAX,
+                    )
+                    .expect("Minting should succeed");
+            });
+        });
+
+    snapshot
+        .moonlight_accounts()
+        .enumerate()
+        .for_each(|(idx, account)| {
+            info!("{} moonlight account #{idx}", theme.action("Generating"));
+
             session
-                .call::<(u64, Note), ()>(
+                .call::<(BlsPublicKey, u64), ()>(
                     TRANSFER_CONTRACT,
-                    "push_note",
-                    &(GENESIS_BLOCK_HEIGHT, note),
+                    "add_account_balance",
+                    &(*account.address(), account.balance),
                     u64::MAX,
                 )
-                .expect("Minting should succeed");
+                .expect("Making account should succeed");
         });
-    });
+
     if update_root {
         session
             .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
             .expect("Root to be updated after pushing genesis note");
     }
+
     Ok(())
 }
 
@@ -97,16 +117,20 @@ fn generate_stake_state(
     let theme = Theme::default();
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
-        let amount = (staker.amount > 0)
-            .then(|| (staker.amount, staker.eligibility.unwrap_or_default()));
+
+        let amount = (staker.amount > 0).then(|| StakeAmount {
+            value: staker.amount,
+            eligibility: staker.eligibility.unwrap_or_default(),
+        });
 
         let stake = StakeData {
             amount,
             reward: staker.reward.unwrap_or_default(),
-            counter: 0,
+            nonce: 0,
             faults: 0,
             hard_faults: 0,
         };
+
         session
             .call::<_, ()>(
                 STAKE_CONTRACT,

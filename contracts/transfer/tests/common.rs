@@ -8,10 +8,12 @@ use std::sync::mpsc;
 
 use execution_core::{
     transfer::{
-        ContractCall, Fee, Payload, Transaction, TreeLeaf, TRANSFER_TREE_DEPTH,
+        AccountData, ContractCall, Fee, MoonlightPayload, MoonlightTransaction,
+        PhoenixPayload, PhoenixTransaction, Transaction, TreeLeaf,
+        TRANSFER_TREE_DEPTH,
     },
-    value_commitment, BlsScalar, JubJubScalar, Note, PublicKey,
-    SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
+    value_commitment, BlsPublicKey, BlsScalar, BlsSecretKey, JubJubScalar,
+    Note, PublicKey, SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
 };
 use rusk_abi::{ContractError, ContractId, Error, Session, TRANSFER_CONTRACT};
 
@@ -24,7 +26,7 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-const POINT_LIMIT: u64 = 0x10_000_000;
+const GAS_LIMIT: u64 = 0x10_000_000;
 
 pub fn leaves_from_height(
     session: &mut Session,
@@ -36,7 +38,7 @@ pub fn leaves_from_height(
         TRANSFER_CONTRACT,
         "leaves_from_height",
         &height,
-        POINT_LIMIT,
+        GAS_LIMIT,
         feeder,
     )?;
 
@@ -56,7 +58,7 @@ pub fn leaves_from_pos(
         TRANSFER_CONTRACT,
         "leaves_from_pos",
         &pos,
-        POINT_LIMIT,
+        GAS_LIMIT,
         feeder,
     )?;
 
@@ -74,13 +76,22 @@ pub fn num_notes(session: &mut Session) -> Result<u64, Error> {
 
 pub fn update_root(session: &mut Session) -> Result<(), Error> {
     session
-        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
 pub fn root(session: &mut Session) -> Result<BlsScalar, Error> {
     session
-        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
+        .map(|r| r.data)
+}
+
+pub fn account(
+    session: &mut Session,
+    pk: &BlsPublicKey,
+) -> Result<AccountData, Error> {
+    session
+        .call(TRANSFER_CONTRACT, "account", pk, GAS_LIMIT)
         .map(|r| r.data)
 }
 
@@ -89,12 +100,7 @@ pub fn contract_balance(
     contract: ContractId,
 ) -> Result<u64, Error> {
     session
-        .call(
-            TRANSFER_CONTRACT,
-            "contract_balance",
-            &contract,
-            POINT_LIMIT,
-        )
+        .call(TRANSFER_CONTRACT, "contract_balance", &contract, GAS_LIMIT)
         .map(|r| r.data)
 }
 
@@ -103,7 +109,7 @@ pub fn opening(
     pos: u64,
 ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, Error> {
     session
-        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)
 }
 
@@ -132,12 +138,17 @@ pub fn prover_verifier(input_notes: usize) -> (Prover, Verifier) {
 
 /// Executes a transaction.
 /// Returns result containing gas spent.
-pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
+pub fn execute(
+    session: &mut Session,
+    tx: impl Into<Transaction>,
+) -> Result<u64, Error> {
+    let tx = tx.into();
+
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
-        tx.payload().fee.gas_limit,
+        tx.gas_limit(),
     )?;
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -149,7 +160,7 @@ pub fn execute(session: &mut Session, tx: Transaction) -> Result<u64, Error> {
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.payload().fee, receipt.gas_spent),
+            &receipt.gas_spent,
             u64::MAX,
         )
         .expect("Refunding must succeed");
@@ -169,9 +180,42 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
         .collect()
 }
 
+pub fn create_moonlight_transaction(
+    session: &mut Session,
+    from_sk: &BlsSecretKey,
+    to: Option<BlsPublicKey>,
+    value: u64,
+    deposit: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    exec: Option<impl Into<ContractExec>>,
+) -> MoonlightTransaction {
+    let from = BlsPublicKey::from(from_sk);
+
+    let account =
+        account(session, &from).expect("Getting the account should work");
+    let nonce = account.nonce + 1;
+
+    let payload = MoonlightPayload {
+        from,
+        to,
+        value,
+        deposit,
+        gas_limit,
+        gas_price,
+        nonce,
+        exec: exec.map(Into::into),
+    };
+
+    let digest = payload.to_hash_input_bytes();
+    let signature = from_sk.sign(&from, &digest);
+
+    MoonlightTransaction::new(payload, signature)
+}
+
 /// Generate a TxCircuit given the sender secret-key, receiver public-key, the
 /// input note positions in the transaction tree and the new output-notes.
-pub fn create_transaction<const I: usize>(
+pub fn create_phoenix_transaction<const I: usize>(
     session: &mut Session,
     sender_sk: &SecretKey,
     receiver_pk: &PublicKey,
@@ -182,7 +226,7 @@ pub fn create_transaction<const I: usize>(
     is_obfuscated: bool,
     deposit: u64,
     contract_call: Option<ContractCall>,
-) -> Transaction {
+) -> PhoenixTransaction {
     let mut rng = StdRng::seed_from_u64(0xfeeb);
     let sender_vk = ViewKey::from(sender_sk);
     let sender_pk = PublicKey::from(sender_sk);
@@ -284,10 +328,10 @@ pub fn create_transaction<const I: usize>(
         deposit,
     };
 
-    let tx_payload = Payload {
+    let tx_payload = PhoenixPayload {
         tx_skeleton,
         fee,
-        contract_exec: (contract_call.map(|c| ContractExec::Call(c))),
+        exec: (contract_call.map(|c| ContractExec::Call(c))),
     };
 
     let payload_hash = tx_payload.hash();
@@ -374,5 +418,5 @@ pub fn create_transaction<const I: usize>(
         .expect("creating a proof should succeed");
 
     // build the transaction from the payload and proof
-    Transaction::new(tx_payload, proof.to_bytes())
+    PhoenixTransaction::new(tx_payload, proof.to_bytes())
 }

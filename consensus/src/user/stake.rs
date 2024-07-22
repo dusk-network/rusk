@@ -9,7 +9,7 @@ pub struct Stake {
     value: u64,
 
     pub reward: u64,
-    pub counter: u64,
+    pub nonce: u64,
     pub eligible_since: u64,
 }
 
@@ -18,13 +18,13 @@ impl Stake {
         value: u64,
         reward: u64,
         eligible_since: u64,
-        counter: u64,
+        nonce: u64,
     ) -> Self {
         Self {
             value,
             reward,
             eligible_since,
-            counter,
+            nonce,
         }
     }
 

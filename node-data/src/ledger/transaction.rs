@@ -6,17 +6,17 @@
 
 use super::*;
 
-use execution_core::transfer::Transaction as PhoenixTransaction;
+use execution_core::transfer::Transaction as ProtocolTransaction;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: u32,
     pub r#type: u32,
-    pub inner: PhoenixTransaction,
+    pub inner: ProtocolTransaction,
 }
 
-impl From<PhoenixTransaction> for Transaction {
-    fn from(value: PhoenixTransaction) -> Self {
+impl From<ProtocolTransaction> for Transaction {
+    fn from(value: ProtocolTransaction) -> Self {
         Self {
             inner: value,
             r#type: 1,
@@ -60,13 +60,12 @@ impl Transaction {
     }
 
     pub fn gas_price(&self) -> u64 {
-        self.inner.payload().fee.gas_price
+        self.inner.gas_price()
     }
+
     pub fn to_nullifiers(&self) -> Vec<[u8; 32]> {
         self.inner
-            .payload()
-            .tx_skeleton
-            .nullifiers
+            .nullifiers()
             .iter()
             .map(|n| n.to_bytes())
             .collect()
@@ -94,7 +93,9 @@ impl Eq for SpentTransaction {}
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use super::*;
-    use execution_core::transfer::{ContractCall, ContractExec, Fee, Payload};
+    use execution_core::transfer::{
+        ContractCall, ContractExec, Fee, PhoenixPayload,
+    };
     use execution_core::{
         BlsScalar, JubJubScalar, Note, PublicKey, SecretKey, TxSkeleton,
     };
@@ -150,13 +151,13 @@ pub mod faker {
         let contract_call =
             ContractCall::new([21; 32], "some_method", &()).unwrap();
 
-        let payload = Payload {
+        let payload = PhoenixPayload {
             tx_skeleton,
             fee,
-            contract_exec: Some(ContractExec::Call(contract_call)),
+            exec: Some(ContractExec::Call(contract_call)),
         };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-        PhoenixTransaction::new(payload, proof).into()
+        ProtocolTransaction::phoenix(payload, proof).into()
     }
 }

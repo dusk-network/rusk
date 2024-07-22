@@ -73,7 +73,7 @@ fn make_transactions(
         fn_args: Vec::new(),
     };
     let tx_0 = wallet
-        .execute(
+        .phoenix_execute(
             &mut rng,
             ContractExec::Call(contract_call.clone()),
             SENDER_INDEX_0,
@@ -87,9 +87,9 @@ fn make_transactions(
     // contract, querying for the root of the tree. This will be tested for
     // gas cost.
     let tx_1 = wallet
-        .execute(
+        .phoenix_execute(
             &mut rng,
-            ContractExec::Call(contract_call),
+            contract_call,
             SENDER_INDEX_1,
             GAS_LIMIT_1,
             1,

@@ -17,7 +17,7 @@ use crate::user::sortition;
 
 use crate::config::CONSENSUS_MAX_ITER;
 use dusk_bytes::Serializable as BytesSerializable;
-use execution_core::{StakeAggPublicKey, StakeSignature};
+use execution_core::{BlsAggPublicKey, BlsSignature};
 use tokio::sync::RwLock;
 use tracing::error;
 
@@ -177,13 +177,13 @@ pub fn verify_votes(
 }
 
 impl Cluster<PublicKey> {
-    fn aggregate_pks(&self) -> Result<StakeAggPublicKey, StepSigError> {
+    fn aggregate_pks(&self) -> Result<BlsAggPublicKey, StepSigError> {
         let pks: Vec<_> =
             self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
 
         match pks.split_first() {
             Some((first, rest)) => {
-                let mut apk = StakeAggPublicKey::from(first);
+                let mut apk = BlsAggPublicKey::from(first);
                 apk.aggregate(rest)?;
                 Ok(apk)
             }
@@ -196,7 +196,7 @@ fn verify_step_signature(
     header: &ConsensusHeader,
     step: StepName,
     vote: &Vote,
-    apk: StakeAggPublicKey,
+    apk: BlsAggPublicKey,
     signature: &[u8; 48],
 ) -> Result<(), StepSigError> {
     // Compile message to verify
@@ -206,7 +206,7 @@ fn verify_step_signature(
         StepName::Proposal => Err(StepSigError::InvalidType)?,
     };
 
-    let sig = StakeSignature::from_bytes(signature)?;
+    let sig = BlsSignature::from_bytes(signature)?;
     let mut msg = header.signable();
     msg.extend_from_slice(sign_seed);
     vote.write(&mut msg).expect("Writing to vec should succeed");

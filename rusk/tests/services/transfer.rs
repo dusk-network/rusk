@@ -71,7 +71,7 @@ fn wallet_transfer(
 
     // Execute a transfer
     let tx = wallet
-        .transfer(&mut rng, 0, &receiver_pk, amount, 1_000_000_000, 2)
+        .phoenix_transfer(&mut rng, 0, &receiver_pk, amount, 1_000_000_000, 2)
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
@@ -117,8 +117,7 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee = tx.inner.inner.payload().fee;
-    let fee = gas_spent * fee.gas_price;
+    let fee = gas_spent * tx.inner.inner.gas_price();
 
     assert_eq!(
         sender_initial_balance - amount - fee,

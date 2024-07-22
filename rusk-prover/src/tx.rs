@@ -12,7 +12,7 @@ use dusk_bytes::{
 };
 use dusk_plonk::prelude::Proof;
 use execution_core::{
-    transfer::{Payload, Transaction, TRANSFER_TREE_DEPTH},
+    transfer::{PhoenixPayload, PhoenixTransaction, TRANSFER_TREE_DEPTH},
     BlsScalar, JubJubAffine, JubJubExtended, JubJubScalar, Note, PublicKey,
     SchnorrSignature, SchnorrSignatureDouble, SecretKey,
     GENERATOR_NUMS_EXTENDED, OUTPUT_NOTES,
@@ -160,15 +160,15 @@ impl UnprovenTransactionInput {
 pub struct UnprovenTransaction {
     pub inputs: Vec<UnprovenTransactionInput>,
     pub outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
-    pub payload: Payload,
+    pub payload: PhoenixPayload,
     pub sender_pk: PublicKey,
     pub signatures: (SchnorrSignature, SchnorrSignature),
 }
 
 impl UnprovenTransaction {
     /// Consumes self and a proof to generate a transaction.
-    pub fn gen_transaction(self, proof: Proof) -> Transaction {
-        Transaction::new(self.payload, proof.to_bytes())
+    pub fn gen_transaction(self, proof: Proof) -> PhoenixTransaction {
+        PhoenixTransaction::new(self.payload, proof.to_bytes())
     }
 
     /// Serialize the transaction to a variable length byte buffer.
@@ -296,7 +296,7 @@ impl UnprovenTransaction {
             outputs.try_into().map_err(|_| BytesError::InvalidData)?;
 
         let payload_len = u64::from_reader(&mut buffer)?;
-        let payload = Payload::from_slice(buffer)?;
+        let payload = PhoenixPayload::from_slice(buffer)?;
         let mut buffer = &buffer[payload_len as usize..];
 
         let sender_pk = PublicKey::from_reader(&mut buffer)?;
@@ -323,7 +323,7 @@ impl UnprovenTransaction {
     }
 
     /// Returns the payload of the transaction.
-    pub fn payload(&self) -> &Payload {
+    pub fn payload(&self) -> &PhoenixPayload {
         &self.payload
     }
 
@@ -393,10 +393,10 @@ mod tests {
         )
         .unwrap();
 
-        let payload = Payload {
+        let payload = PhoenixPayload {
             tx_skeleton,
             fee,
-            contract_exec: Some(ContractExec::Call(call)),
+            exec: Some(ContractExec::Call(call)),
         };
 
         let sender_blinder_1 =

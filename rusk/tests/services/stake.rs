@@ -8,8 +8,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use execution_core::{
-    transfer::{ContractCall, ContractExec},
-    StakePublicKey,
+    stake::StakeAmount, transfer::ContractCall, BlsPublicKey,
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -72,7 +71,7 @@ fn wallet_stake(
     );
 
     let tx = wallet
-        .stake(&mut rng, 0, 2, value, GAS_LIMIT, 1)
+        .phoenix_stake(&mut rng, 0, 2, value, GAS_LIMIT, 1)
         .expect("Failed to create a stake transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -92,7 +91,7 @@ fn wallet_stake(
     }
 
     let stake = wallet.get_stake(2).expect("stake to be found");
-    let stake_value = stake.amount.expect("stake should have an amount").0;
+    let stake_value = stake.amount.expect("stake should have an amount").value;
 
     assert_eq!(stake_value, value);
 
@@ -103,7 +102,7 @@ fn wallet_stake(
         .expect("stake amount to be found");
 
     let tx = wallet
-        .unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
+        .phoenix_unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
         .expect("Failed to unstake");
     let spent_txs = generator_procedure(
         rusk,
@@ -121,7 +120,7 @@ fn wallet_stake(
     assert_eq!(stake.amount, None);
 
     let tx = wallet
-        .withdraw(&mut rng, 0, 1, GAS_LIMIT, 1)
+        .phoenix_withdraw(&mut rng, 0, 1, GAS_LIMIT, 1)
         .expect("failed to withdraw reward");
     generator_procedure(
         rusk,
@@ -189,8 +188,8 @@ fn wallet_reward(
 ) {
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let stake_sk = wallet.store().retrieve_stake_sk(2).unwrap();
-    let stake_pk = StakePublicKey::from(&stake_sk);
+    let stake_sk = wallet.store().fetch_account_secret_key(2).unwrap();
+    let stake_pk = BlsPublicKey::from(&stake_sk);
     let reward_calldata = (stake_pk, 6u32);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
@@ -203,14 +202,7 @@ fn wallet_reward(
     )
     .expect("calldata should serialize");
     let tx = wallet
-        .execute(
-            &mut rng,
-            ContractExec::Call(contract_call),
-            0,
-            GAS_LIMIT,
-            1,
-            0,
-        )
+        .phoenix_execute(&mut rng, contract_call, 0, GAS_LIMIT, 1, 0)
         .expect("Failed to create a reward transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -296,10 +288,16 @@ pub async fn slash() -> Result<()> {
     let contract_balance = rusk
         .contract_balance(STAKE_CONTRACT)
         .expect("balance to exists");
-    let to_slash = wallet.stake_public_key(0).unwrap();
+    let to_slash = wallet.account_public_key(0).unwrap();
     let stake = wallet.get_stake(0).unwrap();
     assert_eq!(stake.reward, dusk(3.0));
-    assert_eq!(stake.amount, Some((dusk(20.0), 0)));
+    assert_eq!(
+        stake.amount,
+        Some(StakeAmount {
+            value: dusk(20.0),
+            eligibility: 0
+        })
+    );
 
     generator_procedure(
         &rusk,
@@ -324,9 +322,15 @@ pub async fn slash() -> Result<()> {
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(3.0));
-    assert_eq!(prev.amount, Some((dusk(20.0), 0)));
+    assert_eq!(
+        prev.amount,
+        Some(StakeAmount {
+            value: dusk(20.0),
+            eligibility: 0
+        })
+    );
 
-    let (prev_stake, _) = prev.amount.unwrap();
+    let prev_stake = prev.amount.unwrap().value;
     let slashed_amount = prev_stake / 10;
 
     let after_slash = wallet.get_stake(0).unwrap();
@@ -334,9 +338,18 @@ pub async fn slash() -> Result<()> {
     assert_eq!(after_slash.reward, prev.reward + slashed_amount);
     assert_eq!(
         after_slash.amount,
-        Some((prev_stake - slashed_amount, 4320))
+        Some(StakeAmount {
+            value: prev_stake - slashed_amount,
+            eligibility: 4320
+        })
     );
-    assert_eq!(after_slash.amount, Some((dusk(18.0), 4320)));
+    assert_eq!(
+        after_slash.amount,
+        Some(StakeAmount {
+            value: dusk(18.0),
+            eligibility: 4320
+        })
+    );
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance - slashed_amount);
     let contract_balance = new_balance;
@@ -355,9 +368,15 @@ pub async fn slash() -> Result<()> {
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(5.0));
-    assert_eq!(prev.amount, Some((dusk(18.0), 4320)));
+    assert_eq!(
+        prev.amount,
+        Some(StakeAmount {
+            value: dusk(18.0),
+            eligibility: 4320
+        })
+    );
 
-    let (prev_stake, _) = prev.amount.unwrap();
+    let prev_stake = prev.amount.unwrap().value;
     // 20% slash
     let slashed_amount = prev_stake / 10 * 2;
 
@@ -366,9 +385,18 @@ pub async fn slash() -> Result<()> {
     assert_eq!(after_slash.reward, prev.reward + slashed_amount);
     assert_eq!(
         after_slash.amount,
-        Some((prev_stake - slashed_amount, 6480))
+        Some(StakeAmount {
+            value: prev_stake - slashed_amount,
+            eligibility: 6480
+        })
     );
-    assert_eq!(after_slash.amount, Some((dusk(14.4), 6480)));
+    assert_eq!(
+        after_slash.amount,
+        Some(StakeAmount {
+            value: dusk(14.4),
+            eligibility: 6480
+        })
+    );
 
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance - slashed_amount);
@@ -388,14 +416,26 @@ pub async fn slash() -> Result<()> {
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(8.6));
-    assert_eq!(prev.amount, Some((dusk(14.4), 6480)));
+    assert_eq!(
+        prev.amount,
+        Some(StakeAmount {
+            value: dusk(14.4),
+            eligibility: 6480
+        })
+    );
 
-    let (prev_stake, _) = prev.amount.unwrap();
+    let prev_stake = prev.amount.unwrap().value;
     // 30% slash
     let slashed_amount = prev_stake / 10 * 3;
     let after_slash = wallet.get_stake(0).unwrap();
     assert_eq!(after_slash.reward, dusk(12.92));
-    assert_eq!(after_slash.amount, Some((dusk(10.08), 17280)));
+    assert_eq!(
+        after_slash.amount,
+        Some(StakeAmount {
+            value: dusk(10.08),
+            eligibility: 17280
+        })
+    );
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance - slashed_amount);
 
@@ -404,7 +444,7 @@ pub async fn slash() -> Result<()> {
         &[],
         9001,
         BLOCK_GAS_LIMIT,
-        vec![wallet.stake_public_key(1).unwrap()],
+        vec![wallet.account_public_key(1).unwrap()],
         None,
     )
     .expect_err("Slashing a public key that never staked must fail");
@@ -414,7 +454,13 @@ pub async fn slash() -> Result<()> {
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(8.6));
-    assert_eq!(prev.amount, Some((dusk(14.4), 6480)));
+    assert_eq!(
+        prev.amount,
+        Some(StakeAmount {
+            value: dusk(14.4),
+            eligibility: 6480
+        })
+    );
 
     generator_procedure(&rusk, &[], 9001, BLOCK_GAS_LIMIT, vec![], None)
         .expect("To work properly");

@@ -14,12 +14,13 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use crate::operations::VoterWithCredits;
-use execution_core::{BlsSigError, StakeSecretKey};
+use execution_core::{BlsSecretKey, BlsSigError};
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
 use tracing::error;
+
+use crate::operations::VoterWithCredits;
 
 pub type TimeoutSet = HashMap<StepName, Duration>;
 
@@ -30,7 +31,7 @@ pub struct RoundUpdate {
 
     // This provisioner consensus keys
     pub pubkey_bls: PublicKey,
-    pub secret_key: StakeSecretKey,
+    pub secret_key: BlsSecretKey,
 
     seed: Seed,
     hash: [u8; 32],
@@ -44,7 +45,7 @@ pub struct RoundUpdate {
 impl RoundUpdate {
     pub fn new(
         pubkey_bls: PublicKey,
-        secret_key: StakeSecretKey,
+        secret_key: BlsSecretKey,
         tip_header: &Header,
         base_timeouts: TimeoutSet,
         att_voters: Vec<VoterWithCredits>,

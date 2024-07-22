@@ -8,16 +8,16 @@ use std::fmt;
 use std::io;
 use std::time::Duration;
 
-use execution_core::StakePublicKey;
-use node_data::ledger::Fault;
-use node_data::ledger::InvalidFault;
-use node_data::ledger::{Block, Header, Slash, SpentTransaction, Transaction};
+use execution_core::BlsPublicKey;
+use node_data::ledger::{
+    Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
+};
 use node_data::StepName;
 use thiserror::Error;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
-pub type VoterWithCredits = (StakePublicKey, usize);
+pub type VoterWithCredits = (BlsPublicKey, usize);
 
 #[derive(Debug, Error)]
 pub enum Error {

@@ -98,10 +98,11 @@ impl Rusk {
             .expect("Cannot query state for provisioners")
             .map(|(key, stake)| {
                 let key = bs58::encode(key.to_bytes()).into_string();
-                let (amount, eligibility) = stake.amount.unwrap_or_default();
+                let amount = stake.amount.unwrap_or_default();
+
                 Provisioner {
-                    amount,
-                    eligibility,
+                    amount: amount.value,
+                    eligibility: amount.eligibility,
                     key,
                     reward: stake.reward,
                 }

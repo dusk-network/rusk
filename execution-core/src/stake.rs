@@ -6,14 +6,15 @@
 
 //! Types used by Dusk's stake contract.
 
-extern crate alloc;
+use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
-    BlockHeight, BlsScalar, StakePublicKey, StakeSignature, StealthAddress,
+    transfer::{Withdraw as TransferWithdraw, WithdrawReceiver},
+    BlsPublicKey, BlsSecretKey, BlsSignature,
 };
 
 /// Epoch used for stake operations
@@ -24,107 +25,148 @@ pub const STAKE_WARNINGS: u8 = 1;
 
 /// Calculate the block height at which the next epoch takes effect.
 #[must_use]
-pub const fn next_epoch(block_height: BlockHeight) -> u64 {
+pub const fn next_epoch(block_height: u64) -> u64 {
     let to_next_epoch = EPOCH - (block_height % EPOCH);
     block_height + to_next_epoch
 }
 
 /// Stake a value on the stake contract.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-#[archive_attr(derive(bytecheck::CheckBytes))]
+#[archive_attr(derive(CheckBytes))]
 pub struct Stake {
-    /// Public key to which the stake will belong.
-    pub public_key: StakePublicKey,
-    /// Signature belonging to the given public key.
-    pub signature: StakeSignature,
-    /// Value to stake.
-    pub value: u64,
+    account: BlsPublicKey,
+    value: u64,
+    nonce: u64,
+    signature: BlsSignature,
 }
 
 impl Stake {
-    const MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
-    /// Return the digest to be signed in the `stake` function of the stake
-    /// contract.
+    const MESSAGE_SIZE: usize = BlsPublicKey::SIZE + u64::SIZE + u64::SIZE;
+
+    /// Create a new stake.
     #[must_use]
-    pub fn signature_message(
-        counter: u64,
-        value: u64,
-    ) -> [u8; Self::MESSAGE_SIZE] {
+    pub fn new(sk: &BlsSecretKey, value: u64, nonce: u64) -> Self {
+        let account = BlsPublicKey::from(sk);
+
+        let mut stake = Stake {
+            account,
+            value,
+            nonce,
+            signature: BlsSignature::default(),
+        };
+
+        let msg = stake.signature_message();
+        stake.signature = sk.sign(&account, &msg);
+
+        stake
+    }
+
+    /// Account to which the stake will belong.
+    #[must_use]
+    pub fn account(&self) -> &BlsPublicKey {
+        &self.account
+    }
+
+    /// Value to stake.
+    #[must_use]
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    /// Nonce used for replay protection. Nonces are strictly increasing,
+    /// meaning that once a transaction has been settled, only a higher
+    /// nonce can be used.
+    ///
+    /// The current nonce is queryable via the stake contract in the form of
+    /// [`StakeData`] and best practice is to use `nonce + 1` for a single
+    /// transaction.
+    #[must_use]
+    pub fn nonce(&self) -> u64 {
+        self.nonce
+    }
+
+    /// Signature of the stake.
+    #[must_use]
+    pub fn signature(&self) -> &BlsSignature {
+        &self.signature
+    }
+
+    /// Return the message that is used as the input to the signature.
+    #[must_use]
+    pub fn signature_message(&self) -> [u8; Self::MESSAGE_SIZE] {
         let mut bytes = [0u8; Self::MESSAGE_SIZE];
 
-        bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
-        bytes[u64::SIZE..].copy_from_slice(&value.to_bytes());
+        let mut offset = 0;
+
+        bytes[offset..offset + BlsPublicKey::SIZE]
+            .copy_from_slice(&self.account.to_bytes());
+        offset += BlsPublicKey::SIZE;
+
+        bytes[offset..offset + u64::SIZE]
+            .copy_from_slice(&self.value.to_bytes());
+        offset += u64::SIZE;
+
+        bytes[offset..offset + u64::SIZE]
+            .copy_from_slice(&self.nonce.to_bytes());
 
         bytes
     }
 }
 
-/// Unstake a value from the stake contract.
-#[derive(Debug, Clone, PartialEq, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct Unstake {
-    /// Public key to unstake.
-    pub public_key: StakePublicKey,
-    /// Signature belonging to the given public key.
-    pub signature: StakeSignature,
-    /// The address to mint to.
-    pub address: StealthAddress,
-}
-
-impl Unstake {
-    const MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE + StealthAddress::SIZE;
-    /// Signature message used for [`Unstake`].
-    #[must_use]
-    pub fn signature_message(
-        counter: u64,
-        value: u64,
-        address: StealthAddress,
-    ) -> [u8; Self::MESSAGE_SIZE] {
-        let mut bytes = [0u8; Self::MESSAGE_SIZE];
-
-        bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
-        bytes[u64::SIZE..u64::SIZE + u64::SIZE]
-            .copy_from_slice(&value.to_bytes());
-        bytes[u64::SIZE + u64::SIZE
-            ..u64::SIZE + u64::SIZE + StealthAddress::SIZE]
-            .copy_from_slice(&address.to_bytes());
-
-        bytes
-    }
-}
-
-/// Withdraw the accumulated reward.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+/// Withdraw some value from the stake contract.
+///
+/// This is used in both `unstake` and `withdraw`.
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Withdraw {
-    /// Public key to withdraw the rewards.
-    pub public_key: StakePublicKey,
-    /// Signature belonging to the given public key.
-    pub signature: StakeSignature,
-    /// The address to mint to.
-    pub address: StealthAddress,
-    /// A nonce to prevent replay.
-    pub nonce: BlsScalar,
+    account: BlsPublicKey,
+    withdraw: TransferWithdraw,
+    signature: BlsSignature,
 }
 
 impl Withdraw {
-    const MESSAGE_SIZE: usize =
-        u64::SIZE + StealthAddress::SIZE + BlsScalar::SIZE;
+    /// Create a new withdraw call.
+    #[must_use]
+    pub fn new(sk: &BlsSecretKey, withdraw: TransferWithdraw) -> Self {
+        let account = BlsPublicKey::from(sk);
+
+        let mut stake_withdraw = Withdraw {
+            account,
+            withdraw,
+            signature: BlsSignature::default(),
+        };
+
+        let msg = stake_withdraw.signature_message();
+        stake_withdraw.signature = sk.sign(&account, &msg);
+
+        stake_withdraw
+    }
+
+    /// The public key to withdraw from.
+    #[must_use]
+    pub fn account(&self) -> &BlsPublicKey {
+        &self.account
+    }
+
+    /// The inner withdrawal to pass to the transfer contract.
+    #[must_use]
+    pub fn transfer_withdraw(&self) -> &TransferWithdraw {
+        &self.withdraw
+    }
+
+    /// Signature of the withdraw.
+    #[must_use]
+    pub fn signature(&self) -> &BlsSignature {
+        &self.signature
+    }
 
     /// Signature message used for [`Withdraw`].
     #[must_use]
-    pub fn signature_message(
-        counter: u64,
-        address: StealthAddress,
-        nonce: BlsScalar,
-    ) -> [u8; Self::MESSAGE_SIZE] {
-        let mut bytes = [0u8; Self::MESSAGE_SIZE];
+    pub fn signature_message(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
 
-        bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
-        bytes[u64::SIZE..u64::SIZE + StealthAddress::SIZE]
-            .copy_from_slice(&address.to_bytes());
-        bytes[u64::SIZE + StealthAddress::SIZE..]
-            .copy_from_slice(&nonce.to_bytes());
+        bytes.extend(self.account.to_bytes());
+        bytes.extend(self.withdraw.wrapped_signature_message());
 
         bytes
     }
@@ -133,12 +175,15 @@ impl Withdraw {
 /// Event emitted after a stake contract operation is performed.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct StakingEvent {
-    /// Public key which is relevant to the event.
-    pub public_key: StakePublicKey,
-    /// Value of the relevant operation, be it stake, unstake, withdrawal,
-    /// reward, or slash.
+pub struct StakeEvent {
+    /// Account associated to the event.
+    pub account: BlsPublicKey,
+    /// Value of the relevant operation, be it `stake`, `unstake`, `withdraw`,
+    /// `reward`, or `slash`.
     pub value: u64,
+    /// The receiver of the action, relevant in `withdraw` and `unstake`
+    /// operations.
+    pub receiver: Option<WithdrawReceiver>,
 }
 
 /// The representation of a public key's stake.
@@ -153,17 +198,21 @@ pub struct StakingEvent {
 /// signature could be used to prove ownership of the secret key in two
 /// different transactions.
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Archive, Deserialize, Serialize,
+    Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
 #[archive_attr(derive(CheckBytes))]
-#[allow(clippy::module_name_repetitions)]
 pub struct StakeData {
     /// Amount staked and eligibility.
-    pub amount: Option<(u64, BlockHeight)>,
+    pub amount: Option<StakeAmount>,
     /// The reward for participating in consensus.
     pub reward: u64,
-    /// The signature counter to prevent replay.
-    pub counter: u64,
+    /// Nonce used for replay protection. Nonces are strictly increasing,
+    /// meaning that once a transaction has been settled, only a higher
+    /// nonce can be used.
+    ///
+    /// The current nonce is queryable via the stake contract and best
+    /// practice is to use `nonce + 1` for a single transaction.
+    pub nonce: u64,
     /// Faults
     pub faults: u8,
     /// Hard Faults
@@ -171,14 +220,19 @@ pub struct StakeData {
 }
 
 impl StakeData {
+    /// An empty stake.
+    pub const EMPTY: Self = Self {
+        amount: None,
+        reward: 0,
+        nonce: 0,
+        faults: 0,
+        hard_faults: 0,
+    };
+
     /// Create a new stake given its initial `value` and `reward`, together with
     /// the `block_height` of its creation.
     #[must_use]
-    pub const fn new(
-        value: u64,
-        reward: u64,
-        block_height: BlockHeight,
-    ) -> Self {
+    pub const fn new(value: u64, reward: u64, block_height: u64) -> Self {
         let eligibility = Self::eligibility_from_height(block_height);
         Self::with_eligibility(value, reward, eligibility)
     }
@@ -189,92 +243,165 @@ impl StakeData {
     pub const fn with_eligibility(
         value: u64,
         reward: u64,
-        eligibility: BlockHeight,
+        eligibility: u64,
     ) -> Self {
         let amount = match value {
             0 => None,
-            _ => Some((value, eligibility)),
+            _ => Some(StakeAmount { value, eligibility }),
         };
 
         Self {
             amount,
             reward,
-            counter: 0,
+            nonce: 0,
             faults: 0,
             hard_faults: 0,
         }
     }
 
-    /// Returns the value the user is staking, together with its eligibility.
-    #[must_use]
-    pub const fn amount(&self) -> Option<&(u64, BlockHeight)> {
-        self.amount.as_ref()
-    }
-
-    /// Returns the value of the reward.
-    #[must_use]
-    pub const fn reward(&self) -> u64 {
-        self.reward
-    }
-
-    /// Returns the interaction count of the stake.
-    #[must_use]
-    pub const fn counter(&self) -> u64 {
-        self.counter
-    }
-
-    /// Insert a stake [`amount`] with a particular `value`, starting from a
-    /// particular `block_height`.
-    ///
-    /// # Panics
-    /// If the value is zero or the stake already contains an amount.
-    pub fn insert_amount(&mut self, value: u64, block_height: BlockHeight) {
-        assert_ne!(value, 0, "A stake can't have zero value");
-        assert!(self.amount.is_none(), "Can't stake twice for the same key!");
-
-        let eligibility = Self::eligibility_from_height(block_height);
-        self.amount = Some((value, eligibility));
-    }
-
-    /// Increases the held reward by the given `value`.
-    pub fn increase_reward(&mut self, value: u64) {
-        self.reward += value;
-    }
-
-    /// Removes the total [`amount`] staked.
-    ///
-    /// # Panics
-    /// If the stake has no amount.
-    pub fn remove_amount(&mut self) -> (u64, BlockHeight) {
-        self.amount
-            .take()
-            .expect("Can't withdraw non-existing amount!")
-    }
-
-    /// Sets the reward to zero.
-    pub fn deplete_reward(&mut self) {
-        self.reward = 0;
-    }
-
-    /// Increment the interaction [`counter`].
-    pub fn increment_counter(&mut self) {
-        self.counter += 1;
-    }
-
-    /// Returns true if the stake is valid - meaning there is an amount staked
+    /// Returns true if the stake is valid - meaning there is an `amount` staked
     /// and the given `block_height` is larger or equal to the stake's
     /// eligibility. If there is no `amount` staked this is false.
     #[must_use]
-    pub fn is_valid(&self, block_height: BlockHeight) -> bool {
-        self.amount
-            .map(|(_, eligibility)| block_height >= eligibility)
-            .unwrap_or_default()
+    pub fn is_valid(&self, block_height: u64) -> bool {
+        match &self.amount {
+            Some(amount) => block_height >= amount.eligibility,
+            None => false,
+        }
     }
 
     /// Compute the eligibility of a stake from the starting block height.
     #[must_use]
-    pub const fn eligibility_from_height(block_height: BlockHeight) -> u64 {
+    pub const fn eligibility_from_height(block_height: u64) -> u64 {
+        StakeAmount::eligibility_from_height(block_height)
+    }
+}
+
+const STAKE_DATA_SIZE: usize =
+    u8::SIZE + StakeAmount::SIZE + u64::SIZE + u64::SIZE + u8::SIZE + u8::SIZE;
+
+impl Serializable<STAKE_DATA_SIZE> for StakeData {
+    type Error = dusk_bytes::Error;
+
+    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        let mut buf = &buf[..];
+
+        // if the tag is zero we skip the bytes
+        let tag = u8::from_reader(&mut buf)?;
+        let amount = match tag {
+            0 => {
+                buf = &buf[..StakeAmount::SIZE];
+                None
+            }
+            _ => Some(StakeAmount::from_reader(&mut buf)?),
+        };
+
+        let reward = u64::from_reader(&mut buf)?;
+        let nonce = u64::from_reader(&mut buf)?;
+
+        let faults = u8::from_reader(&mut buf)?;
+        let hard_faults = u8::from_reader(&mut buf)?;
+
+        Ok(Self {
+            amount,
+            reward,
+            nonce,
+            faults,
+            hard_faults,
+        })
+    }
+
+    #[allow(unused_must_use)]
+    fn to_bytes(&self) -> [u8; Self::SIZE] {
+        const ZERO_AMOUNT: [u8; StakeAmount::SIZE] = [0u8; StakeAmount::SIZE];
+
+        let mut buf = [0u8; Self::SIZE];
+        let mut writer = &mut buf[..];
+
+        match &self.amount {
+            None => {
+                writer.write(&0u8.to_bytes());
+                writer.write(&ZERO_AMOUNT);
+            }
+            Some(amount) => {
+                writer.write(&1u8.to_bytes());
+                writer.write(&amount.to_bytes());
+            }
+        }
+
+        writer.write(&self.reward.to_bytes());
+        writer.write(&self.nonce.to_bytes());
+
+        writer.write(&self.faults.to_bytes());
+        writer.write(&self.hard_faults.to_bytes());
+
+        buf
+    }
+}
+
+/// Value staked and eligibility.
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
+)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakeAmount {
+    /// The value staked.
+    pub value: u64,
+    /// The eligibility of the stake.
+    pub eligibility: u64,
+}
+
+impl StakeAmount {
+    /// Create a new stake amount.
+    #[must_use]
+    pub const fn new(value: u64, block_height: u64) -> Self {
+        let eligibility = Self::eligibility_from_height(block_height);
+        Self::with_eligibility(value, eligibility)
+    }
+
+    /// Create a new stake given its initial `value` and `reward`, together with
+    /// the `eligibility`.
+    #[must_use]
+    pub const fn with_eligibility(value: u64, eligibility: u64) -> Self {
+        Self { value, eligibility }
+    }
+
+    /// Compute the eligibility of a stake from the starting block height.
+    #[must_use]
+    pub const fn eligibility_from_height(block_height: u64) -> u64 {
         let maturity_blocks = EPOCH;
         next_epoch(block_height) + maturity_blocks
+    }
+}
+
+const STAKE_AMOUNT_SIZE: usize = u64::SIZE + u64::SIZE;
+
+impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
+    type Error = dusk_bytes::Error;
+
+    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        let mut buf = &buf[..];
+
+        let value = u64::from_reader(&mut buf)?;
+        let eligibility = u64::from_reader(&mut buf)?;
+
+        Ok(Self { value, eligibility })
+    }
+
+    #[allow(unused_must_use)]
+    fn to_bytes(&self) -> [u8; Self::SIZE] {
+        let mut buf = [0u8; Self::SIZE];
+        let mut writer = &mut buf[..];
+
+        writer.write(&self.value.to_bytes());
+        writer.write(&self.eligibility.to_bytes());
+
+        buf
     }
 }

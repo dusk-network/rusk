@@ -146,9 +146,7 @@ impl MempoolSrv {
 
             let nullifiers: Vec<_> = tx
                 .inner
-                .payload()
-                .tx_skeleton
-                .nullifiers
+                .nullifiers()
                 .iter()
                 .map(|nullifier| nullifier.to_bytes())
                 .collect();
@@ -156,9 +154,7 @@ impl MempoolSrv {
             // ensure nullifiers do not exist in the mempool
             for m_tx_id in view.get_txs_by_nullifiers(&nullifiers) {
                 if let Some(m_tx) = view.get_tx(m_tx_id)? {
-                    if m_tx.inner.payload().fee.gas_price
-                        < tx.inner.payload().fee.gas_price
-                    {
+                    if m_tx.inner.gas_price() < tx.inner.gas_price() {
                         view.delete_tx(m_tx_id)?;
                     } else {
                         return Err(

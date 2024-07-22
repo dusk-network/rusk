@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved deserialization [#1963]
 - Change payload to support contract deployment [#1882]
 
-
 - Re-export
   - `dusk-bls12_381::BlsScalar`
   - `dusk-jubjub::{
@@ -49,38 +48,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       OUTPUT_NOTES
     }`
 - Add type-alias:
-  - `pub type StakeSecretKey = BlsSecretKey`
-  - `pub type StakePublicKey = BlsPublicKey`
-  - `pub type StakeSignature = BlsSignature`
-  - `pub type StakeAggPublicKey = BlsAggPublicKey`
-  - `pub type NoteSecretKey = SchnorrSecretKey`
   - `pub type NotePublicKey = SchnorrPublicKey`
+  - `pub type NoteSecretKey = SchnorrSecretKey`
   - `pub type NoteSignature = SchnorrSignature`
 - Add modules, types and functionality:
   - `transfer::{
-      ContractId,
-      TRANSFER_TREE_DEPTH,
-      TreeLeaf,
-      Mint,
+      AccountData,
       ContractCall,
       Fee,
-      SenderAccount,
-      Payload,
+      MoonlightPayload,
+      MoonlightTransaction,
+      PhoenixPayload,
+      PhoenixTransaction,
+      TreeLeaf,
+      Withdraw,
+      WithdrawReceiver,
+      WithdrawSignature,
+      WithdrawSecretKey,
+      WithdrawReplayToken,
       Transaction,
+      TRANSFER_TREE_DEPTH,
+      ContractId,
     }`
   - `stake::{
+      Stake,
+      StakeAmount,
+      StakeData,
+      StakeEvent,
+      Withdraw,
       EPOCH,
       STAKE_WARNINGS,
       next_epoch,
-      Stake,
-      Unstake,
-      Withdraw,
-      StakingEvent,
-      StakeData,
   }`
 
 [#1963]: https://github.com/dusk-network/rusk/issues/1963
+[#1963]: https://github.com/dusk-network/rusk/issues/1856
 [#1882]: https://github.com/dusk-network/rusk/issues/1882
+[#1723]: https://github.com/dusk-network/rusk/issues/1723
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/execution-core-0.1.0...HEAD
 [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/execution-core-0.1.0
