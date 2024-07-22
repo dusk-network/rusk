@@ -173,12 +173,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             return Ok(vec![]);
         }
 
-        let prev_block_seed = self.db.read().await.view(|v| {
-            v.fetch_block_header(&self.prev_header.prev_block_hash)?
-                .ok_or_else(|| anyhow::anyhow!("Header not found"))
-                .map(|h| h.seed)
-        })?;
-
         let cert_result = candidate_block.prev_block_cert.result;
         let prev_block_hash = candidate_block.prev_block_hash;
 
@@ -189,6 +183,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 "Invalid result for previous block hash: {cert_result:?}"
             ),
         }
+
+        let prev_block_seed = self.db.read().await.view(|v| {
+            v.fetch_block_header(&self.prev_header.prev_block_hash)?
+                .ok_or_else(|| anyhow::anyhow!("Header not found"))
+                .map(|h| h.seed)
+        })?;
 
         let (_, _, voters) = verify_att(
             &candidate_block.prev_block_cert,
