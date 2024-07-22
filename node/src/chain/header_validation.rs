@@ -70,9 +70,15 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.verify_prev_block_cert(candidate_block).await?;
 
         let mut candidate_block_voters = vec![];
-        if !disable_winner_att_check {
-            candidate_block_voters =
-                self.verify_success_att(candidate_block).await?;
+        if !disable_att_check {
+            candidate_block_voters = verify_success_att(
+                &att,
+                candidate_block.to_consensus_header(),
+                self.prev_header.seed,
+                self.provisioners.current(),
+                candidate_block.hash,
+            )
+            .await?;
         }
 
         let pni = self.verify_failed_iterations(candidate_block).await?;
@@ -186,9 +192,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         let (_, _, voters) = verify_att(
             &candidate_block.prev_block_cert,
-            self.prev_header.prev_block_hash,
-            self.prev_header.height,
-            self.prev_header.iteration,
+            self.prev_header.to_consensus_header(),
             prev_block_seed,
             self.provisioners.prev(),
         )
@@ -230,9 +234,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 let (_, rat_quorum, _) = verify_att(
                     att,
-                    self.prev_header.hash,
-                    candidate_block.height,
-                    iter as u8,
+                    candidate_block.to_consensus_header(),
                     self.prev_header.seed,
                     self.provisioners.current(),
                 )
@@ -253,9 +255,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
         let (_, _, voters) = verify_att(
             &candidate_block.att,
-            self.prev_header.hash,
-            candidate_block.height,
-            candidate_block.iteration,
+            candidate_block.get_consensus_header(),
             self.prev_header.seed,
             self.provisioners.current(),
         )
@@ -275,9 +275,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     ) -> anyhow::Result<Vec<VoterWithCredits>> {
         let (_, _, voters) = verify_att(
             &blk.att,
-            blk.prev_block_hash,
-            blk.height,
-            blk.iteration,
+            blk.to_consensus_header(),
             prev_block_seed,
             provisioners,
         )
@@ -331,9 +329,7 @@ pub async fn verify_faults<DB: database::DB>(
 
 pub async fn verify_att(
     att: &ledger::Attestation,
-    prev_block_hash: [u8; 32],
-    round: u64,
-    iteration: u8,
+    consensus_header: ConsensusHeader,
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
 ) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<VoterWithCredits>)> {
@@ -341,11 +337,6 @@ pub async fn verify_att(
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
-    let consensus_header = ConsensusHeader {
-        iteration,
-        round,
-        prev_block_hash,
-    };
     let v_committee;
     let r_committee;
 
@@ -369,8 +360,8 @@ pub async fn verify_att(
             return Err(anyhow!(
                 "invalid validation, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
                 vote,
-                round,
-                iteration,
+                consensus_header.round,
+                consensus_header.iteration,
                 to_str(curr_seed.inner()),
                 att.validation,
                 e
@@ -397,8 +388,8 @@ pub async fn verify_att(
             return Err(anyhow!(
                 "invalid ratification, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
                 vote,
-                round,
-                iteration,
+                consensus_header.round,
+                consensus_header.iteration,
                 to_str(curr_seed.inner()),
                 att.ratification,
                 e,

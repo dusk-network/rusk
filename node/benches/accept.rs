@@ -26,6 +26,7 @@ use node_data::ledger::{Attestation, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
+use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -155,12 +156,15 @@ pub fn verify_att(c: &mut Criterion) {
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
+                    let consensus_header = ConsensusHeader {
+                        prev_block_hash: [0u8; 32],
+                        round: tip_header.height + 1,
+                        iteration: 0,
+                    };
                     b.to_async(FuturesExecutor).iter(|| async {
                         chain::verify_att(
                             &att,
-                            [0u8; 32],
-                            tip_header.height + 1,
-                            iteration,
+                            consensus_header,
                             tip_header.seed,
                             &provisioners,
                         )
