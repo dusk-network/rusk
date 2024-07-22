@@ -13,8 +13,7 @@ use execution_core::transfer::{ContractDeploy, ContractExec};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use rusk_abi::Error::ContractDoesNotExist;
-use rusk_abi::{ContractData, ContractId};
+use rusk_abi::{ContractData, ContractId, PiecrustError};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Wallet};
@@ -217,7 +216,7 @@ impl Fixture {
             u64::MAX,
         );
         match result.err() {
-            Some(ContractDoesNotExist(_)) => (),
+            Some(PiecrustError::ContractDoesNotExist(_)) => (),
             _ => assert!(false),
         }
     }
