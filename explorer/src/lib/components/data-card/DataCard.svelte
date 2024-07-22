@@ -4,7 +4,6 @@
   import { DataAlert } from "$lib/components";
   import { Button, Card, ProgressBar } from "$lib/dusk/components";
   import { makeClassName } from "$lib/dusk/string";
-  import { appStore } from "$lib/stores";
 
   import "./DataCard.css";
 

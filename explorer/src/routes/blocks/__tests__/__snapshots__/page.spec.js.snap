@@ -18,7 +18,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
         disabled=""
         type="button"
       >
@@ -63,7 +63,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
         type="button"
       >
         <span

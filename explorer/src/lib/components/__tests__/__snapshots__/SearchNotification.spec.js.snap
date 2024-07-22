@@ -20,7 +20,7 @@ exports[`Search Notification > renders the Search Notification component with a 
     </span>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button search-notification__header-action"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button search-notification__header-action"
       type="button"
     >
        
@@ -67,7 +67,7 @@ exports[`Search Notification > renders the Search Notification component with th
     </span>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal dusk-icon-button search-notification__header-action"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal dusk-icon-button search-notification__header-action"
       type="button"
     >
        

@@ -31,7 +31,7 @@
         position: "after",
         size: "normal",
       }}
-      variant={"tertiary"}
+      variant="tertiary"
     />
   </header>
   {#if data.res instanceof Error}
