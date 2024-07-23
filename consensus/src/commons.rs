@@ -20,7 +20,7 @@ use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
 use tracing::error;
 
-use crate::operations::VoterWithCredits;
+use crate::operations::Voter;
 
 pub type TimeoutSet = HashMap<StepName, Duration>;
 
@@ -36,7 +36,7 @@ pub struct RoundUpdate {
     seed: Seed,
     hash: [u8; 32],
     att: Attestation,
-    att_voters: Vec<VoterWithCredits>,
+    att_voters: Vec<Voter>,
     timestamp: u64,
 
     pub base_timeouts: TimeoutSet,
@@ -48,7 +48,7 @@ impl RoundUpdate {
         secret_key: BlsSecretKey,
         tip_header: &Header,
         base_timeouts: TimeoutSet,
-        att_voters: Vec<VoterWithCredits>,
+        att_voters: Vec<Voter>,
     ) -> Self {
         let round = tip_header.height + 1;
         RoundUpdate {
@@ -80,7 +80,7 @@ impl RoundUpdate {
         self.timestamp
     }
 
-    pub fn att_voters(&self) -> &Vec<VoterWithCredits> {
+    pub fn att_voters(&self) -> &Vec<Voter> {
         &self.att_voters
     }
 }
