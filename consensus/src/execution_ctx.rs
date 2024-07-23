@@ -21,11 +21,12 @@ use node_data::message::{AsyncQueue, Message, Payload};
 
 use node_data::StepName;
 
-use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
 use node_data::message::payload::{QuorumType, ValidationResult};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
@@ -113,6 +114,12 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         self.iter_ctx.committees.get_committee(self.step())
     }
 
+    /// Returns true if the last step of last iteration is currently running
+    fn last_step_running(&self) -> bool {
+        self.iteration == CONSENSUS_MAX_ITER - 1
+            && self.step_name() == StepName::Ratification
+    }
+
     /// Runs a loop that collects both inbound messages and timeout event.
     ///
     /// It accepts an instance of MsgHandler impl (phase var) and calls its
@@ -126,11 +133,22 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
-        debug!(event = "run event_loop");
+        let open_consensus_mode = self.last_step_running();
 
-        let timeout = self.iter_ctx.get_timeout(self.step_name());
+        // When consensus is in open_consensus_mode then it keeps Ratification
+        // step running indefinitely until either a valid block or
+        // emergency block is accepted
+        let timeout = if open_consensus_mode {
+            let dur = Duration::new(u32::MAX as u64, 0);
+            info!(event = "run event_loop in open_mode", ?dur);
+            dur
+        } else {
+            let dur = self.iter_ctx.get_timeout(self.step_name());
+            debug!(event = "run event_loop", ?dur);
+            dur
+        };
+
         let deadline = Instant::now().checked_add(timeout).unwrap();
-
         let inbound = self.inbound.clone();
 
         // Handle both timeout event and messages from inbound queue.
@@ -141,6 +159,14 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     if let Some(step_result) =
                         self.process_inbound_msg(phase.clone(), msg).await
                     {
+                        if open_consensus_mode {
+                            // In open consensus mode, consensus step is never
+                            // terminated.
+                            // The acceptor will cancel the consensus if a
+                            // block is accepted
+                            continue;
+                        }
+
                         self.report_elapsed_time().await;
                         return Ok(step_result);
                     }
@@ -152,8 +178,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     info!(event = "timeout-ed");
-
-                    return self.process_timeout_event(phase).await;
+                    if open_consensus_mode {
+                        error!("Timeout detected during last step running. This should never happen")
+                    } else {
+                        return self.process_timeout_event(phase).await;
+                    }
                 }
             }
         }
@@ -203,20 +232,20 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     /// Process messages from past
-    async fn process_past_events(&mut self, msg: Message) -> Option<Message> {
+    async fn process_past_events(&mut self, msg: Message) {
         if msg.header.round != self.round_update.round
             || self.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
         {
             // Discard messages from past if current iteration is not considered
             // an emergency iteration
-            return None;
+            return;
         }
 
         self.on_emergency_mode(msg).await
     }
 
     /// Handles a consensus message in emergency mode
-    async fn on_emergency_mode(&mut self, msg: Message) -> Option<Message> {
+    async fn on_emergency_mode(&mut self, msg: Message) {
         if let Err(e) = self.outbound.send(msg.clone()).await {
             error!("could not send msg due to {:?}", e);
         }
@@ -259,15 +288,16 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 }
             }
         }
-
-        None
     }
 
     /// Delegates the received message to the Phase handler for further
     /// processing.
     ///
-    /// Returning Option::Some here is interpreted as FinalMessage by
-    /// event_loop.
+    /// Returning Option::Some here is interpreted as FinalMessage for the
+    /// current iteration by event_loop.
+    ///
+    /// If the message belongs to a former iteration, it returns None (even if
+    /// the message is processed due to emergency mode)
     async fn process_inbound_msg<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
@@ -315,7 +345,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 return None;
             }
             Err(ConsensusError::PastEvent) => {
-                return self.process_past_events(msg).await;
+                self.process_past_events(msg).await;
+                return None;
             }
             Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
                 warn!(event = "No quorum reached", iter = msg.header.iteration);

@@ -16,7 +16,7 @@ use crate::proposal;
 use crate::queue::MsgRegistry;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{debug, info, Instrument};
+use tracing::{debug, error, info, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
@@ -120,7 +120,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// Consensus loop terminates on any of these conditions:
     ///
     /// * A fully valid block for current round is accepted
-    /// * Consensus reaches  CONSENSUS_MAX_ITER
     /// * Unrecoverable error is returned by a step execution
     fn spawn_consensus(
         &self,
@@ -186,7 +185,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 ru.base_timeouts.clone(),
             );
 
-            while iter < CONSENSUS_MAX_ITER {
+            loop {
                 Self::consensus_delay().await;
 
                 iter_ctx.on_begin(iter);
@@ -233,11 +232,14 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     }
                 }
 
-                iter_ctx.on_close();
-
-                iter += 1;
+                if iter >= CONSENSUS_MAX_ITER - 1 {
+                    error!("Trying to move to an out of bound iteration this should be a bug");
+                    error!("Sticking to the same iter {iter}");
+                } else {
+                    iter_ctx.on_close();
+                    iter += 1;
+                }
             }
-            Err(ConsensusError::MaxIterationReached)
         })
     }
 
