@@ -20,9 +20,7 @@ use dusk_consensus::config::{
     validation_committee_quorum, validation_extra,
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
-use dusk_consensus::operations::{
-    CallParams, VerificationOutput, VoterWithCredits,
-};
+use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use execution_core::bytecode::Bytecode;
 use execution_core::transfer::ContractDeploy;
 use execution_core::{
@@ -219,7 +217,7 @@ impl Rusk {
         generator: &BlsPublicKey,
         txs: &[Transaction],
         slashing: Vec<Slash>,
-        voters: Option<&[VoterWithCredits]>,
+        voters: Option<&[Voter]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -250,7 +248,7 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         slashing: Vec<Slash>,
-        voters: Option<&[VoterWithCredits]>,
+        voters: Option<&[Voter]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -439,7 +437,7 @@ fn accept(
     generator: &BlsPublicKey,
     txs: &[Transaction],
     slashing: Vec<Slash>,
-    voters: Option<&[VoterWithCredits]>,
+    voters: Option<&[Voter]>,
     gas_per_deploy_byte: Option<u64>,
 ) -> Result<(
     Vec<SpentTransaction>,

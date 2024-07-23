@@ -9,9 +9,7 @@ mod query;
 use tracing::info;
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{
-    CallParams, VerificationOutput, VoterWithCredits,
-};
+use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use execution_core::{
@@ -46,7 +44,7 @@ impl VMExecution for Rusk {
     fn verify_state_transition(
         &self,
         blk: &Block,
-        voters: Option<&[VoterWithCredits]>,
+        voters: Option<&[Voter]>,
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
@@ -72,7 +70,7 @@ impl VMExecution for Rusk {
     fn accept(
         &self,
         blk: &Block,
-        voters: Option<&[VoterWithCredits]>,
+        voters: Option<&[Voter]>,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
