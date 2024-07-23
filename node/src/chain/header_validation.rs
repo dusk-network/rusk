@@ -15,7 +15,7 @@ use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
-use node_data::ledger::{to_str, Fault, InvalidFault, Seed, Signature};
+use node_data::ledger::{to_str, Fault, Hash, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
@@ -62,23 +62,24 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn execute_checks(
         &self,
         candidate_block: &ledger::Header,
-        disable_winner_att_check: bool,
-    ) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)>
-    {
+        disable_att_check: bool,
+    ) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
         self.verify_basic_fields(candidate_block).await?;
+
         let prev_block_voters =
             self.verify_prev_block_cert(candidate_block).await?;
 
         let mut candidate_block_voters = vec![];
         if !disable_att_check {
-            candidate_block_voters = verify_success_att(
-                &att,
-                candidate_block.to_consensus_header(),
-                self.prev_header.seed,
-                self.provisioners.current(),
-                candidate_block.hash,
-            )
-            .await?;
+            candidate_block_voters = self
+                .verify_success_att(
+                    &candidate_block.att,
+                    candidate_block.to_consensus_header(),
+                    self.prev_header.seed,
+                    self.provisioners.current(),
+                    candidate_block.hash,
+                )
+                .await?;
         }
 
         let pni = self.verify_failed_iterations(candidate_block).await?;
@@ -173,16 +174,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             return Ok(vec![]);
         }
 
-        let cert_result = candidate_block.prev_block_cert.result;
         let prev_block_hash = candidate_block.prev_block_hash;
-
-        match candidate_block.prev_block_cert.result {
-            RatificationResult::Success(Vote::Valid(hash))
-                if hash == prev_block_hash => {}
-            _ => anyhow::bail!(
-                "Invalid result for previous block hash: {cert_result:?}"
-            ),
-        }
 
         let prev_block_seed = self.db.read().await.view(|v| {
             v.fetch_block_header(&self.prev_header.prev_block_hash)?
@@ -190,13 +182,15 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 .map(|h| h.seed)
         })?;
 
-        let (_, _, voters) = verify_att(
-            &candidate_block.prev_block_cert,
-            self.prev_header.to_consensus_header(),
-            prev_block_seed,
-            self.provisioners.prev(),
-        )
-        .await?;
+        let voters = self
+            .verify_success_att(
+                &candidate_block.prev_block_cert,
+                self.prev_header.to_consensus_header(),
+                prev_block_seed,
+                self.provisioners.prev(),
+                prev_block_hash,
+            )
+            .await?;
 
         Ok(voters)
     }
@@ -251,13 +245,25 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
     pub async fn verify_success_att(
         &self,
-        candidate_block: &'a ledger::Header,
+        att: &'a ledger::Attestation,
+        consensus_header: ConsensusHeader,
+        curr_seed: Signature,
+        curr_eligible_provisioners: &Provisioners,
+        block_hash: Hash,
     ) -> anyhow::Result<Vec<Voter>> {
+        match att.result {
+            RatificationResult::Success(Vote::Valid(hash))
+                if hash == block_hash => {}
+            _ => anyhow::bail!(
+                "Invalid attestation for block hash: {block_hash:?}"
+            ),
+        }
+
         let (_, _, voters) = verify_att(
-            &candidate_block.att,
-            candidate_block.get_consensus_header(),
-            self.prev_header.seed,
-            self.provisioners.current(),
+            &att,
+            consensus_header,
+            curr_seed,
+            curr_eligible_provisioners,
         )
         .await?;
 
