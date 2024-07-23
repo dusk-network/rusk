@@ -10,7 +10,7 @@ import {
 import { get } from "svelte/store";
 
 import { rejectAfter, resolveAfter } from "$lib/dusk/promise";
-import { duskAPI, marketDataStorage } from "$lib/services";
+import { duskAPI } from "$lib/services";
 
 /**
  * We don't import from "..", because we don't want
@@ -41,6 +41,7 @@ vi.mock("$lib/services", async (importOriginal) => ({
 }));
 
 describe("marketDataStore", async () => {
+  const storeKey = "market-data";
   const { marketDataFetchInterval } = get(appStore);
   const fakeMarketDataB = { data: "B" };
 
@@ -54,7 +55,7 @@ describe("marketDataStore", async () => {
     vi.clearAllTimers();
     vi.mocked(duskAPI.getMarketData).mockClear();
 
-    await marketDataStorage.clear();
+    localStorage.clear();
 
     marketDataStore = (await import("../marketDataStore")).default;
   });
@@ -233,6 +234,8 @@ describe("marketDataStore", async () => {
   });
 
   describe("Handling local storage", () => {
+    const consoleErrorSpy = vi.spyOn(console, "error");
+
     beforeEach(() => {
       vi.resetModules();
       vi.clearAllTimers();
@@ -240,35 +243,51 @@ describe("marketDataStore", async () => {
     });
 
     afterEach(() => {
-      marketDataStorage.clear();
+      consoleErrorSpy.mockReset();
+    });
+
+    afterAll(() => {
+      consoleErrorSpy.mockRestore();
     });
 
     it("should use data in local storage to initialize the store if present", async () => {
       const storedData = {
         data: "C",
-        lastUpdate: new Date(2024, 1, 15),
+        lastUpdate: new Date(Date.now()),
       };
 
-      // @ts-expect-error we don't care to pass the correct type
-      marketDataStorage.set(storedData);
+      localStorage.setItem(storeKey, JSON.stringify(storedData));
 
       marketDataStore = (await import("../marketDataStore")).default;
 
       expect(get(marketDataStore)).toStrictEqual({
         error: null,
-        isLoading: true,
+        isLoading: false,
         ...storedData,
       });
     });
 
-    it("should ignore errors while retrieving local storage data and initialize the store as usual", async () => {
-      const getDataSpy = vi
-        .spyOn(marketDataStorage, "get")
-        .mockRejectedValue(new Error("some erro"));
+    it("should ignore errors while retrieving local storage data and initialize the store as usual, after logging them in the console", async () => {
+      const FakeMarketDataInfo = () => {};
+
+      FakeMarketDataInfo.parse = () => {
+        throw new Error("some error");
+      };
+
+      vi.doMock("$lib/market-data", async (importOriginal) => ({
+        .../** @type {typeof import("$lib/market-data")} */ (
+          await importOriginal()
+        ),
+        MarketDataInfo: FakeMarketDataInfo,
+      }));
+      localStorage.setItem(storeKey, "{}");
+
+      // we don't want to see our fake error in the console
+      consoleErrorSpy.mockImplementationOnce(() => {});
 
       marketDataStore = (await import("../marketDataStore")).default;
 
-      expect(getDataSpy).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
       expect(get(marketDataStore)).toStrictEqual({
         data: null,
         error: null,
@@ -276,17 +295,17 @@ describe("marketDataStore", async () => {
         lastUpdate: null,
       });
 
-      getDataSpy.mockRestore();
+      vi.doUnmock("$lib/market-data");
     });
 
     it("should start the polling as usual if there's data stored, but it's stale", async () => {
-      const storedData = {
-        data: "D",
-        lastUpdate: new Date(Date.now() - marketDataFetchInterval - 1),
-      };
-
-      // @ts-expect-error we don't care to pass the correct type
-      marketDataStorage.set(storedData);
+      localStorage.setItem(
+        storeKey,
+        JSON.stringify({
+          data: "D",
+          lastUpdate: new Date(Date.now() - marketDataFetchInterval - 1),
+        })
+      );
 
       marketDataStore = (await import("../marketDataStore")).default;
 
@@ -300,13 +319,14 @@ describe("marketDataStore", async () => {
     it("should delay the polling if there's data stored and it's not stale", async () => {
       const offset = Math.floor(marketDataFetchInterval / 2);
       const expectedDelay = marketDataFetchInterval - offset;
-      const storedData = {
-        data: "D",
-        lastUpdate: new Date(Date.now() - marketDataFetchInterval + offset),
-      };
 
-      // @ts-expect-error we don't care to pass the correct type
-      marketDataStorage.set(storedData);
+      localStorage.setItem(
+        storeKey,
+        JSON.stringify({
+          data: "D",
+          lastUpdate: new Date(Date.now() - marketDataFetchInterval + offset),
+        })
+      );
 
       marketDataStore = (await import("../marketDataStore")).default;
 
@@ -326,8 +346,6 @@ describe("marketDataStore", async () => {
     });
 
     it("should save the received data in local storage if the request has new data", async () => {
-      const setDataSpy = vi.spyOn(marketDataStorage, "set");
-
       marketDataStore = (await import("../marketDataStore")).default;
 
       await vi.advanceTimersByTimeAsync(settleTime);
@@ -342,22 +360,11 @@ describe("marketDataStore", async () => {
         isLoading: false,
       };
 
+      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(1);
       expect(get(marketDataStore)).toStrictEqual(expectedStore);
-
-      await expect(marketDataStorage.get()).resolves.toStrictEqual(
-        expectedStorage
+      expect(localStorage.getItem(storeKey)).toStrictEqual(
+        JSON.stringify(expectedStorage)
       );
-
-      await vi.advanceTimersByTimeAsync(marketDataFetchInterval + settleTime);
-
-      expect(setDataSpy).toHaveBeenCalledTimes(1);
-      expect(duskAPI.getMarketData).toHaveBeenCalledTimes(2);
-      expect(get(marketDataStore)).toStrictEqual(expectedStore);
-      await expect(marketDataStorage.get()).resolves.toStrictEqual(
-        expectedStorage
-      );
-
-      setDataSpy.mockRestore();
     });
 
     it("should leave the local storage as it is if the market data request ends with an error", async () => {
@@ -367,13 +374,10 @@ describe("marketDataStore", async () => {
         rejectAfter(settleTime, error)
       );
 
-      const setDataSpy = vi.spyOn(marketDataStorage, "set");
-
       marketDataStore = (await import("../marketDataStore")).default;
 
       await vi.advanceTimersByTimeAsync(settleTime);
 
-      expect(setDataSpy).not.toHaveBeenCalled();
       expect(get(marketDataStore)).toStrictEqual({
         data: null,
         error,
@@ -381,15 +385,18 @@ describe("marketDataStore", async () => {
         lastUpdate: null,
       });
 
-      await expect(marketDataStorage.get()).resolves.toBeNull();
-
-      setDataSpy.mockRestore();
+      expect(localStorage.getItem(storeKey)).toBeNull();
     });
 
     it("should ignore errors while writing to the storage and continue polling as usual", async () => {
       const setDataSpy = vi
-        .spyOn(marketDataStorage, "set")
-        .mockRejectedValue(new Error("some error"));
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {
+          throw new Error("some error");
+        });
+
+      // we don't want to see our fake error in the console
+      consoleErrorSpy.mockImplementationOnce(() => {});
 
       marketDataStore = (await import("../marketDataStore")).default;
 
@@ -403,7 +410,7 @@ describe("marketDataStore", async () => {
         lastUpdate: new Date(),
       });
 
-      await expect(marketDataStorage.get()).resolves.toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
       setDataSpy.mockRestore();
     });

@@ -17,9 +17,6 @@ export default defineConfig(({ mode }) => {
   process.env.PUBLIC_APP_VERSION = APP_VERSION;
 
   return {
-    build: {
-      target: ["es2022", "edge89", "firefox89", "chrome89", "safari15"],
-    },
     define: {
       CONFIG: {
         LOCAL_STORAGE_APP_KEY: process.env.npm_package_name,
