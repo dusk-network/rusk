@@ -309,38 +309,31 @@ describe("Tabs", () => {
   });
 
   it("should keep scrolling while the scroll button is pressed", async () => {
-    vi.useFakeTimers();
-
-    const { container } = render(Tabs, baseOptions);
+    const { container } = await renderTabs(baseProps);
     const tabsList = getAsHTMLElement(container, ".dusk-tabs-list");
     const rightBtn = getAsHTMLElement(
       container,
       ".dusk-tab-scroll-button:last-of-type"
     );
 
-    await vi.advanceTimersToNextTimerAsync();
-
     expect(rightBtn.getAttribute("hidden")).toBe("false");
     expect(rightBtn.getAttribute("disabled")).toBeNull();
 
     await fireEvent.mouseDown(rightBtn, { buttons: 1 });
 
-    const n = 10;
+    const frames = 10;
 
-    for (let i = 0; i < n - 1; i++) {
-      await vi.advanceTimersToNextTimerAsync();
+    for (let i = 0; i < frames - 1; i++) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     }
 
-    expect(tabsList.scrollBy).toHaveBeenCalledTimes(n);
+    expect(tabsList.scrollBy).toHaveBeenCalledTimes(frames);
 
-    for (let i = 1; i <= n; i++) {
-      expect(tabsList.scrollBy).toHaveBeenNthCalledWith(n, 5, 0);
+    for (let i = 1; i <= frames; i++) {
+      expect(tabsList.scrollBy).toHaveBeenNthCalledWith(i, 5, 0);
     }
 
     await fireEvent.mouseUp(rightBtn);
-
-    vi.runAllTimers();
-    vi.useRealTimers();
   });
 
   it("should ignore mouse down events if the primary button isn't the only one pressed", async () => {
