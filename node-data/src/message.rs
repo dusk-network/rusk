@@ -71,7 +71,7 @@ impl Message {
         };
         Some(signer)
     }
-    pub fn get_step(&self) -> u16 {
+    pub fn get_step(&self) -> u8 {
         match &self.payload {
             Payload::Candidate(c) => c.get_step(),
             Payload::Validation(v) => v.get_step(),
@@ -1152,7 +1152,7 @@ pub trait StepMessage {
     fn sign_info(&self) -> &SignInfo;
     fn sign_info_mut(&mut self) -> &mut SignInfo;
 
-    fn get_step(&self) -> u16 {
+    fn get_step(&self) -> u8 {
         Self::STEP_NAME.to_step(self.header().iteration)
     }
 

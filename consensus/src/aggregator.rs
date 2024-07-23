@@ -24,11 +24,11 @@ use tracing::{debug, error};
 /// It ensures that no multiple votes for same voter are collected.
 pub struct Aggregator<V> {
     // Map between (step, vote) and (signature, voters)
-    votes: BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
+    votes: BTreeMap<(u8, Vote), (AggrSignature, Cluster<PublicKey>)>,
 
     // Map each step to the set of voters. We do this to ensure only one vote
     // per voter is cast
-    uniqueness: BTreeMap<u16, HashMap<PublicKeyBytes, V>>,
+    uniqueness: BTreeMap<u8, HashMap<PublicKeyBytes, V>>,
 }
 
 impl<V> Default for Aggregator<V> {
@@ -122,8 +122,9 @@ impl<V: StepVote> Aggregator<V> {
         // An committee member is allowed to vote only once per a single
         // step. Its vote has a weight value depending on how many times it
         // has been extracted in the sortition for this step.
-        let weight = cluster.add(signer, weight);
-        debug_assert!(weight.is_some());
+        let added = cluster
+            .add(signer, weight)
+            .expect("Vote to be added to cluster");
 
         let total = cluster.total_occurrences();
 
@@ -131,7 +132,7 @@ impl<V: StepVote> Aggregator<V> {
             event = "vote aggregated",
             ?vote,
             from = signer.to_bs58(),
-            added = weight,
+            added,
             total,
             majority = committee.majority_quorum(),
             super_majority = committee.super_majority_quorum(),
@@ -220,7 +221,7 @@ mod tests {
     use std::collections::HashMap;
 
     impl<V> Aggregator<V> {
-        pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
+        pub fn get_total(&self, step: u8, vote: Vote) -> Option<usize> {
             if let Some(value) = self.votes.get(&(step, vote)) {
                 return Some(value.1.total_occurrences());
             }
@@ -304,8 +305,8 @@ mod tests {
         dbg!("{:?}", p);
 
         // Collect votes from expected committee members
-        let expected_members = vec![0, 1, 3, 4, 5];
-        let expected_votes = vec![1, 1, 1, 2, 3];
+        let expected_members = vec![1, 2, 3, 4];
+        let expected_votes = vec![1, 1, 2, 1];
 
         // The index of the provisioner (inside expected_members) that let the
         // quorum being reached
@@ -319,6 +320,7 @@ mod tests {
                 }
             },
         );
+        println!("winning index {winning_index}");
         let mut collected_votes = 0;
         for i in 0..expected_members.len() - 1 {
             // Select provisioner
@@ -344,6 +346,7 @@ mod tests {
                 break;
             }
 
+            println!("Collecting vote for index {i}");
             // Check collected votes
             let (_, quorum_reached) = a.collect_vote(&c, msg).unwrap();
 

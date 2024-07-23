@@ -7,7 +7,7 @@
 use std::time::Duration;
 
 /// Maximum number of iterations Consensus runs per a single round.
-pub const CONSENSUS_MAX_ITER: u8 = 255;
+pub const CONSENSUS_MAX_ITER: u8 = 50;
 
 /// Percentage number that determines quorums.
 pub const SUPERMAJORITY_THRESHOLD: f64 = 0.67;
@@ -25,10 +25,10 @@ pub const RATIFICATION_COMMITTEE_QUORUM: f64 =
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
 
-pub const RELAX_ITERATION_THRESHOLD: u8 = 10;
+pub const RELAX_ITERATION_THRESHOLD: u8 = 8;
 
-/// Emergency mode is enabled only for the last N iterations
-pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = CONSENSUS_MAX_ITER - 50;
+/// Emergency mode is enabled after 16 iterations
+pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
 
 pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);

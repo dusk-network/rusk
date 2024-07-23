@@ -20,7 +20,7 @@ use crate::config::{
 pub struct Config {
     seed: Seed,
     round: u64,
-    pub step: u16,
+    pub step: u8,
     committee_credits: usize,
     exclusion: Vec<PublicKeyBytes>,
 }
@@ -52,7 +52,7 @@ impl Config {
         self.committee_credits
     }
 
-    pub fn step(&self) -> u16 {
+    pub fn step(&self) -> u8 {
         self.step
     }
 
@@ -108,7 +108,7 @@ mod tests {
         pub fn raw(
             seed: Seed,
             round: u64,
-            step: u16,
+            step: u8,
             committee_credits: usize,
             exclusion: Vec<PublicKeyBytes>,
         ) -> Config {
@@ -125,9 +125,9 @@ mod tests {
     #[test]
     pub fn test_sortition_hash() {
         let hash = [
-            102, 194, 89, 58, 228, 163, 25, 223, 222, 214, 246, 137, 213, 168,
-            65, 13, 83, 130, 73, 187, 213, 145, 71, 20, 64, 167, 93, 251, 151,
-            200, 167, 168,
+            74, 64, 238, 174, 226, 52, 11, 105, 93, 251, 204, 6, 137, 176, 14,
+            96, 77, 139, 92, 76, 7, 178, 38, 16, 132, 233, 13, 180, 78, 206,
+            204, 31,
         ];
 
         assert_eq!(
@@ -142,8 +142,8 @@ mod tests {
     #[test]
     pub fn test_generate_sortition_score() {
         let dataset = vec![
-            ([3; 48], 123342342, 40818748),
-            ([4; 48], 44443333, 26458886),
+            ([3; 48], 123342342, 80689917),
+            ([4; 48], 44443333, 20330495),
         ];
 
         for (seed, total_weight, expected_score) in dataset {
@@ -177,7 +177,7 @@ mod tests {
         );
 
         // Verify expected distribution
-        assert_eq!(vec![8, 20, 14, 22], committee.get_occurrences());
+        assert_eq!(vec![4, 29, 9, 22], committee.get_occurrences());
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
             committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
-        assert_eq!(vec![3, 17, 9, 16], committee.get_occurrences());
+        assert_eq!(vec![6, 13, 11, 15], committee.get_occurrences());
     }
 
     #[test]
@@ -210,7 +210,7 @@ mod tests {
         let committee_credits = 45;
         let iteration = 2;
         let relative_step = 2;
-        let step = iteration as u16 * 3 + relative_step;
+        let step = iteration * 3 + relative_step;
 
         let cfg = Config::raw(seed, round, step, committee_credits, vec![]);
         let generator = p.get_generator(iteration, seed, round);
@@ -224,7 +224,7 @@ mod tests {
             committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
-        assert_eq!(vec![3, 17, 9, 16], committee.get_occurrences());
+        assert_eq!(vec![6, 13, 11, 15], committee.get_occurrences());
 
         // Run the same extraction, with the generator excluded
         let cfg =
@@ -242,7 +242,7 @@ mod tests {
             committee_credits,
             committee.get_occurrences().iter().sum::<usize>()
         );
-        assert_eq!(vec![5, 23, 17], committee.get_occurrences());
+        assert_eq!(vec![8, 13, 24], committee.get_occurrences());
     }
 
     #[test]

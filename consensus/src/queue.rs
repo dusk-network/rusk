@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-type StepMap<T> = BTreeMap<u16, Vec<T>>;
+type StepMap<T> = BTreeMap<u8, Vec<T>>;
 type RoundMap<T> = BTreeMap<u64, StepMap<T>>;
 
 #[derive(Debug, Default)]
@@ -18,7 +18,7 @@ where
 /// A message registry that stores messages based on their round and step.
 impl<T: Debug + Clone> MsgRegistry<T> {
     /// Inserts a message into the registry based on its round and step.
-    pub fn put_msg(&mut self, round: u64, step: u16, msg: T) {
+    pub fn put_msg(&mut self, round: u64, step: u8, msg: T) {
         self.0
             .entry(round)
             .or_default()
@@ -32,7 +32,7 @@ impl<T: Debug + Clone> MsgRegistry<T> {
     pub fn drain_msg_by_round_step(
         &mut self,
         round: u64,
-        step: u16,
+        step: u8,
     ) -> Option<Vec<T>> {
         self.0
             .get_mut(&round)
@@ -96,7 +96,7 @@ mod tests {
         assert!(reg.drain_msg_by_round_step(4444, 2).is_none());
 
         for i in 1..100 {
-            reg.put_msg(4444, i as u16, Item(i));
+            reg.put_msg(4444, i as u8, Item(i));
         }
 
         assert_eq!(reg.msg_count(), 100 + 2);

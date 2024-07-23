@@ -187,18 +187,15 @@ impl Provisioners {
                 sortition::generate_sortition_score(hash, &total_weight);
 
             // NB: The public key can be extracted multiple times per committee.
-            match comm.extract_and_subtract_member(score) {
-                Some((pk, subtracted_stake)) => {
-                    // append the public key to the committee set.
-                    extracted.push(pk);
+            let (pk, subtracted_stake) =
+                comm.extract_and_subtract_member(score);
+            // append the public key to the committee set.
+            extracted.push(pk);
 
-                    if total_weight > subtracted_stake {
-                        total_weight -= subtracted_stake;
-                    } else {
-                        break;
-                    }
-                }
-                None => panic!("invalid score"),
+            if total_weight > subtracted_stake {
+                total_weight -= subtracted_stake;
+            } else {
+                break;
             }
         }
 
@@ -277,9 +274,9 @@ impl<'a> CommitteeGenerator<'a> {
     fn extract_and_subtract_member(
         &mut self,
         mut score: BigInt,
-    ) -> Option<(PublicKey, BigInt)> {
+    ) -> (PublicKey, BigInt) {
         if self.members.is_empty() {
-            return None;
+            panic!("Cannot extract member from an empty committee");
         }
 
         loop {
@@ -290,7 +287,7 @@ impl<'a> CommitteeGenerator<'a> {
                     // accordingly.
                     let subtracted_stake = BigInt::from(stake.subtract(DUSK));
 
-                    return Some((pk.clone(), subtracted_stake));
+                    return (pk.clone(), subtracted_stake);
                 }
 
                 score -= total_stake;
