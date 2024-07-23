@@ -16,7 +16,7 @@ use execution_core::{
     BlsPublicKey, BlsScalar, BlsSignature, PublicKey, SchnorrPublicKey,
     SchnorrSignature,
 };
-use rusk_abi::{ContractId, PublicInput};
+use rusk_abi::ContractId;
 
 #[no_mangle]
 static SELF_ID: ContractId = ContractId::uninitialized();
@@ -39,7 +39,7 @@ impl HostFnTest {
         &self,
         verifier_data: Vec<u8>,
         proof: Vec<u8>,
-        public_inputs: Vec<PublicInput>,
+        public_inputs: Vec<BlsScalar>,
     ) -> bool {
         rusk_abi::verify_proof(verifier_data, proof, public_inputs)
     }
