@@ -6,7 +6,7 @@
 
 use node_data::bls::PublicKey;
 use node_data::ledger::{Seed, StepVotes};
-use node_data::message::payload::{self, Quorum, Vote};
+use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
 
@@ -19,54 +19,6 @@ use crate::config::CONSENSUS_MAX_ITER;
 use dusk_bytes::Serializable as BytesSerializable;
 use execution_core::{BlsAggPublicKey, BlsSignature};
 use tokio::sync::RwLock;
-use tracing::error;
-
-/// Performs all three-steps verification of a quorum msg.
-pub async fn verify_quorum(
-    quorum: &Quorum,
-    committees_set: &RwLock<CommitteeSet<'_>>,
-    seed: Seed,
-) -> Result<(), StepSigError> {
-    // Verify validation
-    verify_step_votes(
-        &quorum.header,
-        quorum.vote(),
-        &quorum.att.validation,
-        committees_set,
-        seed,
-        StepName::Validation,
-    )
-    .await
-    .map_err(|e| {
-        error!(
-            desc = "invalid validation",
-            sv = ?quorum.att.validation,
-            hdr = ?quorum.header,
-        );
-        e
-    })?;
-
-    // Verify ratification
-    verify_step_votes(
-        &quorum.header,
-        quorum.vote(),
-        &quorum.att.ratification,
-        committees_set,
-        seed,
-        StepName::Ratification,
-    )
-    .await
-    .map_err(|e| {
-        error!(
-            desc = "invalid ratification",
-            sv = ?quorum.att.ratification,
-            hdr = ?quorum.header,
-        );
-        e
-    })?;
-
-    Ok(())
-}
 
 pub async fn verify_step_votes(
     header: &ConsensusHeader,
