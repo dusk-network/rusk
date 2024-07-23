@@ -116,7 +116,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             tokio::select! {
                 biased;
                 // Receives results from the upper layer
-                recv = &mut result_chan.recv() => {
+                recv = result_chan.recv() => {
                     match recv? {
                         Err(ConsensusError::Canceled(round)) => {
                             info!(event = "consensus canceled", round);
@@ -186,7 +186,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     }
                 },
                 // Re-routes messages originated from Consensus (upper) layer to the network layer.
-                recv = &mut outbound_chan.recv() => {
+                recv = outbound_chan.recv() => {
                     let msg = recv?;
 
                     // Handle quorum messages from Consensus layer.
