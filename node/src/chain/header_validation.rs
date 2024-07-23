@@ -9,7 +9,7 @@ use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::MINIMUM_BLOCK_TIME;
-use dusk_consensus::operations::VoterWithCredits;
+use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
@@ -63,7 +63,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &ledger::Header,
         disable_winner_att_check: bool,
-    ) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)>
+    ) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)>
     {
         self.verify_basic_fields(candidate_block).await?;
         let prev_block_voters =
@@ -168,7 +168,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+    ) -> anyhow::Result<Vec<Voter>> {
         if self.prev_header.height == 0 {
             return Ok(vec![]);
         }
@@ -252,7 +252,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn verify_success_att(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+    ) -> anyhow::Result<Vec<Voter>> {
         let (_, _, voters) = verify_att(
             &candidate_block.att,
             candidate_block.get_consensus_header(),
@@ -272,7 +272,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         blk: &'a ledger::Header,
         provisioners: &Provisioners,
         prev_block_seed: Seed,
-    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+    ) -> anyhow::Result<Vec<Voter>> {
         let (_, _, voters) = verify_att(
             &blk.att,
             blk.to_consensus_header(),
@@ -332,7 +332,7 @@ pub async fn verify_att(
     consensus_header: ConsensusHeader,
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<VoterWithCredits>)> {
+) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<Voter>)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
@@ -402,7 +402,7 @@ pub async fn verify_att(
 }
 
 /// Merges two committees into a vector
-fn merge_committees(a: &Committee, b: &Committee) -> Vec<VoterWithCredits> {
+fn merge_committees(a: &Committee, b: &Committee) -> Vec<Voter> {
     let mut members = a.members().clone();
     for (key, value) in b.members() {
         // Keeps track of the number of occurrences for each member.
