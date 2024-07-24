@@ -17,6 +17,7 @@ export { default as ListItem } from "./list-item/ListItem.svelte";
 export { default as Navbar } from "./navbar/Navbar.svelte";
 export { default as Rerender } from "./rerender/Rerender.svelte";
 export { default as SearchNotification } from "./search-notification/SearchNotification.svelte";
+export { default as StaleDataNotice } from "./stale-data-notice/StaleDataNotice.svelte";
 export { default as TextboxAndButton } from "./textbox-and-button/TextboxAndButton.svelte";
 export { default as TransactionsCard } from "./transactions-card/TransactionsCard.svelte";
 export { default as TransactionDetails } from "./transaction-details/TransactionDetails.svelte";

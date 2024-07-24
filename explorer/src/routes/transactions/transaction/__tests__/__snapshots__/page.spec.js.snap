@@ -237,6 +237,8 @@ exports[`Transaction Details > should render the Transaction details page and qu
           0.000290766 DUSK ($0.0001071037)
           
            
+          
+           
         </dd>
         <dt
           class="details-list__term"
@@ -263,6 +265,8 @@ exports[`Transaction Details > should render the Transaction details page and qu
           class="details-list__definition"
         >
           0.000000001 DUSK ($0.0000000004)
+          
+           
           
            
         </dd>
