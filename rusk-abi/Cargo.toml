@@ -25,7 +25,7 @@ execution-core = { version = "0.1.0", path = "../execution-core" }
 # These are patches since these crates don't seem to like semver.
 rkyv = { version = "=0.7.39", default-features = false, features = ["size_32"] }
 
-lru = "0.12"
+lru = { version = "0.12", optional = true }
 
 [dev-dependencies]
 rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
@@ -44,8 +44,8 @@ dlmalloc = ["piecrust-uplink/dlmalloc"]
 
 # These are the features available for when one wishes to use `rusk-abi` as a
 # host.
-host = ["piecrust"]
-host_debug = ["piecrust/debug"]
+host = ["piecrust", "lru"]
+host_debug = ["piecrust/debug", "lru"]
 
 [[test]]
 name = "test-rusk-abi"

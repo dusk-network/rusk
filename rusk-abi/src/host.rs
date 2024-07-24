@@ -5,11 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
-use blake2b_simd::Params;
-use std::env;
-use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use dusk_bytes::DeserializableSlice;
 use dusk_plonk::prelude::{Proof, Verifier};
@@ -18,9 +14,10 @@ use execution_core::{
     BlsAggPublicKey, BlsPublicKey, BlsScalar, BlsSignature, SchnorrPublicKey,
     SchnorrSignature,
 };
-use lru::LruCache;
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
+
+mod cache;
 
 pub use piecrust::*;
 
@@ -104,8 +101,13 @@ fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 fn host_verify_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_plonk_verification(hash);
+
     wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        verify_proof(vd, proof, pis)
+        let is_valid = cached.unwrap_or_else(|| verify_proof(vd, proof, pis));
+        cache::put_plonk_verification(hash, is_valid);
+        is_valid
     })
 }
 
@@ -116,7 +118,14 @@ fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| verify_bls(msg, pk, sig))
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_bls_verification(hash);
+
+    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
+        let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
+        cache::put_bls_verification(hash, is_valid);
+        is_valid
+    })
 }
 
 /// Compute the blake2b hash of the given scalars, returning the resulting
@@ -131,54 +140,6 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     PoseidonHash::digest(Domain::Other, &scalars)[0]
 }
 
-/// A simple LRU cache for plonk verification.
-///
-/// # Safety
-/// `f` should not panic.
-unsafe fn with_verification_cache<T, F>(f: F) -> T
-where
-    F: FnOnce(MutexGuard<LruCache<[u8; blake2b_simd::OUTBYTES], bool>>) -> T,
-{
-    const VERIFICATION_CACHE_SIZE: usize = 512;
-
-    static CACHE: OnceLock<
-        Mutex<LruCache<[u8; blake2b_simd::OUTBYTES], bool>>,
-    > = OnceLock::new();
-
-    CACHE
-        .get_or_init(|| {
-            let mut cache_size = None;
-
-            if let Ok(s) = env::var("RUSK_ABI_PREFERIFY_CACHE_SIZE") {
-                cache_size = s.parse().ok();
-            }
-
-            let mut cache_size = cache_size.unwrap_or(VERIFICATION_CACHE_SIZE);
-            if cache_size == 0 {
-                cache_size = VERIFICATION_CACHE_SIZE;
-            }
-
-            Mutex::new(LruCache::new(NonZeroUsize::new(cache_size).unwrap()))
-        })
-        .lock()
-        .map(f)
-        .unwrap()
-}
-
-fn get_cache(hash: [u8; blake2b_simd::OUTBYTES]) -> Option<bool> {
-    // SAFETY: The cache never panics
-    unsafe { with_verification_cache(|mut cache| cache.get(&hash).copied()) }
-}
-
-fn put_cache(hash: [u8; blake2b_simd::OUTBYTES], verified: bool) {
-    // SAFETY: The cache never panics
-    unsafe {
-        with_verification_cache(|mut cache| {
-            cache.put(hash, verified);
-        });
-    }
-}
-
 /// Verify a proof is valid for a given circuit type and public inputs
 ///
 /// # Panics
@@ -188,22 +149,6 @@ pub fn verify_proof(
     proof: Vec<u8>,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
-    let mut hasher = Params::default().to_state();
-
-    hasher.update(&verifier_data);
-    hasher.update(&proof);
-    public_inputs
-        .iter()
-        .for_each(|pi| pi.update_hasher(&mut hasher));
-
-    let hash = *hasher.finalize().as_array();
-
-    // If the proof verification has been memoized with the same arguments,
-    // return the result
-    if let Some(v) = get_cache(hash) {
-        return v;
-    }
-
     let verifier = Verifier::try_from_bytes(verifier_data)
         .expect("Verifier data coming from the contract should be valid");
     let proof = Proof::from_slice(&proof).expect("Proof should be valid");
@@ -227,11 +172,7 @@ pub fn verify_proof(
         }
     });
 
-    let verified = verifier.verify(&proof, &pis[..]).is_ok();
-    if verified {
-        put_cache(hash, verified);
-    }
-    verified
+    verifier.verify(&proof, &pis[..]).is_ok()
 }
 
 /// Verify a schnorr signature is valid for the given public key and message
