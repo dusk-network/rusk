@@ -2,20 +2,20 @@
 
 exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 <section
-  class="dashboard svelte-45qdg5"
+  class="dashboard svelte-1vjgr62"
 >
   <span>
     some text
   </span>
    
   <footer
-    class="footer svelte-45qdg5"
+    class="footer svelte-1vjgr62"
   >
     <nav
-      class="footer__navigation svelte-45qdg5"
+      class="footer__navigation svelte-1vjgr62"
     >
       <div
-        class="footer__network-status svelte-45qdg5"
+        class="footer__network-status svelte-1vjgr62"
       >
         <svg
           class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
@@ -32,7 +32,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         
          
         <div
-          class="footer__network-message svelte-45qdg5"
+          class="footer__network-message svelte-1vjgr62"
         >
           <span>
             Dusk testnet
@@ -42,7 +42,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
       </div>
        
       <div
-        class="footer__actions svelte-45qdg5"
+        class="footer__actions svelte-1vjgr62"
       >
          
         <a
@@ -75,20 +75,20 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 
 exports[`Dashboard Layout > should render the dashboard layout in the error state 1`] = `
 <section
-  class="dashboard svelte-45qdg5"
+  class="dashboard svelte-1vjgr62"
 >
   <span>
     some text
   </span>
    
   <footer
-    class="footer svelte-45qdg5"
+    class="footer svelte-1vjgr62"
   >
     <nav
-      class="footer__navigation svelte-45qdg5"
+      class="footer__navigation svelte-1vjgr62"
     >
       <div
-        class="footer__network-status svelte-45qdg5"
+        class="footer__network-status svelte-1vjgr62"
       >
         <svg
           class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--error"
@@ -106,7 +106,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         
          
         <div
-          class="footer__network-message svelte-45qdg5"
+          class="footer__network-message svelte-1vjgr62"
         >
           <span>
             Dusk testnet - Sync Failed
@@ -116,7 +116,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
       </div>
        
       <div
-        class="footer__actions svelte-45qdg5"
+        class="footer__actions svelte-1vjgr62"
       >
         <button
           aria-label="Retry synchronization"
@@ -169,20 +169,20 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
 
 exports[`Dashboard Layout > should render the dashboard layout in the sync state 1`] = `
 <section
-  class="dashboard svelte-45qdg5"
+  class="dashboard svelte-1vjgr62"
 >
   <span>
     some text
   </span>
    
   <footer
-    class="footer svelte-45qdg5"
+    class="footer svelte-1vjgr62"
   >
     <nav
-      class="footer__navigation svelte-45qdg5"
+      class="footer__navigation svelte-1vjgr62"
     >
       <div
-        class="footer__network-status svelte-45qdg5"
+        class="footer__network-status svelte-1vjgr62"
       >
         <svg
           class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
@@ -199,7 +199,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         
          
         <div
-          class="footer__network-message svelte-45qdg5"
+          class="footer__network-message svelte-1vjgr62"
         >
           <span>
             Syncing with Dusk testnet
@@ -217,7 +217,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
       </div>
        
       <div
-        class="footer__actions svelte-45qdg5"
+        class="footer__actions svelte-1vjgr62"
       >
          
         <a
