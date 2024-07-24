@@ -12,7 +12,6 @@ use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use dusk_bytes::Serializable;
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rusk_abi::{ContractError, ContractId, PublicInput, STAKE_CONTRACT};
@@ -59,7 +58,7 @@ pub struct TransferState {
     // NOTE: we should never remove entries from this list, since the entries
     //       contain the nonce of the given account. Doing so opens the account
     //       up to replay attacks.
-    accounts: BTreeMap<[u8; BlsPublicKey::SIZE], AccountData>,
+    accounts: BTreeMap<[u8; 193], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
 }
 
@@ -138,7 +137,7 @@ impl TransferState {
                     panic!("Invalid signature");
                 }
 
-                let account_bytes = account.to_bytes();
+                let account_bytes = account.to_raw_bytes();
                 let account =
                     self.accounts.entry(account_bytes).or_insert(EMPTY_ACCOUNT);
 
@@ -366,10 +365,7 @@ impl TransferState {
         // Afterwards, we simply deduct the total amount of the transaction from
         // the balance, increment the nonce, and rely on `refund` to be called
         // after a successful exit.
-        let from_bytes = from.to_bytes(); // TODO: this is expensive. maybe we should address the
-                                          //       fact that `BlsPublicKey` doesn't impl `Ord`
-                                          //       so we can just use it directly as a key in the
-                                          //       `BTreeMap`
+        let from_bytes = from.to_raw_bytes();
 
         // the total value carried by a transaction is the sum of the value, the
         // deposit, and gas_limit * gas_price.
@@ -396,7 +392,7 @@ impl TransferState {
         // in the `to` field, we just give the value back to `from`.
         if payload.value > 0 {
             let key = match payload.to {
-                Some(to) => to.to_bytes(),
+                Some(to) => to.to_raw_bytes(),
                 None => from_bytes,
             };
 
@@ -459,7 +455,7 @@ impl TransferState {
             Transaction::Moonlight(tx) => {
                 let payload = tx.payload();
 
-                let from_bytes = payload.from.to_bytes();
+                let from_bytes = payload.from.to_raw_bytes();
 
                 let remaining_gas = payload.gas_limit - gas_spent;
                 let remaining = remaining_gas * payload.gas_price
@@ -539,7 +535,7 @@ impl TransferState {
     }
 
     pub fn account(&self, key: &BlsPublicKey) -> AccountData {
-        let key_bytes = key.to_bytes();
+        let key_bytes = key.to_raw_bytes();
         self.accounts
             .get(&key_bytes)
             .cloned()
@@ -547,13 +543,13 @@ impl TransferState {
     }
 
     pub fn add_account_balance(&mut self, key: &BlsPublicKey, value: u64) {
-        let key_bytes = key.to_bytes();
+        let key_bytes = key.to_raw_bytes();
         let account = self.accounts.entry(key_bytes).or_insert(EMPTY_ACCOUNT);
         account.balance = account.balance.saturating_add(value);
     }
 
     pub fn sub_account_balance(&mut self, key: &BlsPublicKey, value: u64) {
-        let key_bytes = key.to_bytes();
+        let key_bytes = key.to_raw_bytes();
         if let Some(account) = self.accounts.get_mut(&key_bytes) {
             account.balance = account.balance.saturating_sub(value);
         }
