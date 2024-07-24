@@ -39,6 +39,7 @@ rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 dirs = "4"
 blake3 = "1"
+blake2b_simd = { version = "1", default-features = false }
 
 poseidon-merkle = { version = "0.6", features = ["rkyv-impl", "size_32"] }
 sha3 = "0.10"

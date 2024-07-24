@@ -9,6 +9,8 @@
 #[cfg(feature = "node")]
 pub mod chain;
 mod error;
+pub mod gen_id;
+mod hash;
 pub mod http;
 pub mod verifier;
 mod version;

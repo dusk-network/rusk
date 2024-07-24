@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `gen_contract_id` and 32-byte hash for contract deployment [#1884]
 - Add execution of contract deployment [#1882]
 - Add first version of RUES, allowing websocket clients to subscribe for events
   emitted by block transitions [#931]
@@ -210,6 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#1884]: https://github.com/dusk-network/rusk/issues/1884
 [#1882]: https://github.com/dusk-network/rusk/issues/1882
 [#1675]: https://github.com/dusk-network/rusk/issues/1675
 [#1640]: https://github.com/dusk-network/rusk/issues/1640

@@ -41,6 +41,7 @@ use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
 use super::{coinbase_value, Rusk, RuskTip};
+use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
@@ -540,7 +541,11 @@ fn contract_deploy(
         receipt.data = Err(Panic("failed bytecode hash check".into()))
     } else {
         let result = session.deploy_raw(
-            None,
+            Some(gen_contract_id(
+                &deploy.bytecode.bytes,
+                deploy.nonce,
+                &deploy.owner,
+            )),
             deploy.bytecode.bytes.as_slice(),
             deploy.constructor_args.clone(),
             deploy.owner.clone(),
