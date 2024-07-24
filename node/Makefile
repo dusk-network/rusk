@@ -17,4 +17,7 @@ clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
 	@cargo check --benches
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 .PHONY: test help binary clean

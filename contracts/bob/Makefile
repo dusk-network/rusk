@@ -16,4 +16,6 @@ test:
 
 clippy: 
 
+doc:
+
 .PHONY: all test wasm

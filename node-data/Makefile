@@ -10,4 +10,7 @@ clean:
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 .PHONY: test help clean

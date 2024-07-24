@@ -39,6 +39,9 @@ clippy: ## Run clippy
 		-- -D warnings
 	@cargo check --benches --features testwallet
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 build: ## Build rusk binary
 	@cargo build --release
 

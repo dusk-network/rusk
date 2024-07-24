@@ -13,6 +13,8 @@ wasm: $(SUBDIRS) ## Generate the WASM for all the contracts
 
 clippy: $(SUBDIRS) ## Run clippy
 
+doc: $(SUBDIRS) ## Run doc gen
+
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 

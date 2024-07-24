@@ -11,4 +11,7 @@ clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
 	@cargo clippy --no-default-features --features=host --release -- -D warnings
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 .PHONY: all help test

@@ -48,6 +48,18 @@ clippy: ## Run clippy
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./rusk/ $@
 
+doc: ## Run doc gen
+	$(MAKE) -j -C ./circuits $@
+	$(MAKE) -C ./consensus $@
+	$(MAKE) -j1 -C ./contracts $@
+	$(MAKE) -C ./node $@
+	$(MAKE) -C ./node-data $@
+	$(MAKE) -C ./rusk/ $@
+	$(MAKE) -C ./rusk-abi $@
+	$(MAKE) -C ./rusk-profile $@
+	$(MAKE) -C ./rusk-prover/ $@
+	$(MAKE) -C ./rusk-recovery $@
+
 run: keys state web-wallet ## Run the server
 	$(MAKE) -C ./rusk/ $@
 

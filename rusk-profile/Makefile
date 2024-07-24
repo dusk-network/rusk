@@ -12,6 +12,9 @@ test: $(SUBDIRS)
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 $(SUBDIRS):
 	$(MAKE) -C $@
 
