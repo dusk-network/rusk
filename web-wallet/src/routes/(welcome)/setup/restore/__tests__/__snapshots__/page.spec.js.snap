@@ -46,7 +46,7 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
           href="/some-base-path/setup"
         >
           <span
@@ -286,7 +286,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+      class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
       href="/some-base-path/setup"
     >
       <svg
@@ -369,7 +369,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
       <p>
         Our 
         <a
-          class="dusk-anchor"
+          class="dusk-anchor dusk-anchor--on-surface"
           href="https://dusk.network/privacy-policy/"
           rel="noopener noreferrer"
           target="_blank"
@@ -385,7 +385,7 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
       >
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
           href="/some-base-path/setup"
         >
           <span

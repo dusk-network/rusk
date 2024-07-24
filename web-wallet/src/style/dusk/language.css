@@ -77,6 +77,7 @@
 
   /* Anchors */
 
+  --anchor-color-on-surface: var(--accent-light-900);
   --anchor-color: var(--secondary-color);
   --anchor-color-visited: var(--secondary-color);
   --anchor-color-hover: var(--secondary-color-variant-light);
@@ -118,6 +119,9 @@
   --on-background-color: var(--light-grey);
   --on-primary-color: var(--smokey-black);
   --on-surface-color: var(--light-grey);
+
+  /* Anchors */
+  --anchor-color-on-surface: var(--accent-dark-900);
 
   /* Controls */
 

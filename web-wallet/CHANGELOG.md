@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update anchor colors to ensure better accessibility [#1765]
 - Update Transactions list design [#1922]
 - Update Buttons to match the design system [#1606]
 
@@ -221,6 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1591]: https://github.com/dusk-network/rusk/issues/1591
 [#1598]: https://github.com/dusk-network/rusk/issues/1598
 [#1606]: https://github.com/dusk-network/rusk/issues/1606
+[#1765]: https://github.com/dusk-network/rusk/issues/1765
 [#1901]: https://github.com/dusk-network/rusk/issues/1901
 [#1922]: https://github.com/dusk-network/rusk/issues/1922
 
