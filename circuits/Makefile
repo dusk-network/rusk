@@ -12,6 +12,8 @@ test: ## Run all the tests for the circuits
 
 clippy: $(SUBDIRS) ## Run clippy
 
+doc: $(SUBDIRS) ## Run doc gen
+
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 

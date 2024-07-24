@@ -14,4 +14,7 @@ clippy: ## Run clippy
 	@cargo clippy --release --no-default-features --features state -- -D warnings
 	@cargo clippy --release --no-default-features --features keys -- -D warnings
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 .PHONY: test clippy help

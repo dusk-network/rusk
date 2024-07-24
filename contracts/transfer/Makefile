@@ -28,4 +28,7 @@ clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
 	@cargo clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
 
+doc: ## Run doc gen
+	@cargo doc --release
+
 .PHONY: all check test wasm help
