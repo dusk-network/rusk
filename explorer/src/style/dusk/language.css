@@ -77,7 +77,7 @@
 
   /* Anchors */
 
-  --anchor-color-on-surface: var(--anchor-color);
+  --anchor-color-on-surface: var(--accent-light-900);
   --anchor-color: var(--secondary-color);
   --anchor-color-visited: var(--secondary-color);
   --anchor-color-hover: var(--secondary-color-variant-light);
