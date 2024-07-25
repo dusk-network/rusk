@@ -284,15 +284,15 @@ impl Payload {
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes.extend(self.from.to_bytes());
+        bytes.extend(self.from.to_raw_bytes());
         if let Some(to) = &self.to {
-            bytes.extend(to.to_bytes());
+            bytes.extend(to.to_raw_bytes());
         }
-        bytes.extend(self.value.to_bytes());
-        bytes.extend(self.deposit.to_bytes());
-        bytes.extend(self.gas_limit.to_bytes());
-        bytes.extend(self.gas_price.to_bytes());
-        bytes.extend(self.nonce.to_bytes());
+        bytes.extend(self.value.to_le_bytes());
+        bytes.extend(self.deposit.to_le_bytes());
+        bytes.extend(self.gas_limit.to_le_bytes());
+        bytes.extend(self.gas_price.to_le_bytes());
+        bytes.extend(self.nonce.to_le_bytes());
 
         match &self.exec {
             Some(ContractExec::Deploy(d)) => {
