@@ -13,9 +13,16 @@ use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
-    transfer::{Withdraw as TransferWithdraw, WithdrawReceiver},
-    BlsPublicKey, BlsSecretKey, BlsSignature,
+    signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+        Signature as BlsSignature,
+    },
+    transfer::withdraw::{Withdraw as TransferWithdraw, WithdrawReceiver},
+    ContractId,
 };
+
+/// ID of the genesis stake contract
+pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
 
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;

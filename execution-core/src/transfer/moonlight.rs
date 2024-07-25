@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Types related to the moonlight transaction model of Dusk's transfer
+//! contract.
+
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
@@ -11,22 +14,37 @@ use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
-    transfer::{Bytecode, ContractCall, ContractDeploy, ContractExec},
-    BlsPublicKey, BlsScalar, BlsSignature,
+    signatures::bls::{
+        PublicKey as AccountPublicKey, Signature as AccountSignature,
+    },
+    transfer::contract_exec::{
+        ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+    },
+    BlsScalar,
 };
+
+/// A Moonlight account's information.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct AccountData {
+    /// Number used for replay protection.
+    pub nonce: u64,
+    /// Account balance.
+    pub balance: u64,
+}
 
 /// Moonlight transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Transaction {
     pub(crate) payload: Payload,
-    pub(crate) signature: BlsSignature,
+    pub(crate) signature: AccountSignature,
 }
 
 impl Transaction {
     /// Create a new transaction.
     #[must_use]
-    pub fn new(payload: Payload, signature: BlsSignature) -> Self {
+    pub fn new(payload: Payload, signature: AccountSignature) -> Self {
         Self { payload, signature }
     }
 
@@ -38,7 +56,7 @@ impl Transaction {
 
     /// The proof of the transaction.
     #[must_use]
-    pub fn signature(&self) -> &BlsSignature {
+    pub fn signature(&self) -> &AccountSignature {
         &self.signature
     }
 
@@ -87,7 +105,7 @@ impl Transaction {
                 exec: Some(ContractExec::Deploy(ContractDeploy {
                     owner: deploy.owner.clone(),
                     constructor_args: deploy.constructor_args.clone(),
-                    bytecode: Bytecode {
+                    bytecode: ContractBytecode {
                         hash: deploy.bytecode.hash,
                         bytes: Vec::new(),
                     },
@@ -130,7 +148,7 @@ impl Transaction {
         let payload = Payload::from_slice(payload_buf)?;
         buf = new_buf;
 
-        let signature = BlsSignature::from_bytes(
+        let signature = AccountSignature::from_bytes(
             buf.try_into().map_err(|_| BytesError::InvalidData)?,
         )
         .map_err(|_| BytesError::InvalidData)?;
@@ -168,9 +186,9 @@ impl Transaction {
 #[archive_attr(derive(CheckBytes))]
 pub struct Payload {
     /// Key of the sender of this transaction.
-    pub from: BlsPublicKey,
+    pub from: AccountPublicKey,
     /// Key of the receiver of the funds.
-    pub to: Option<BlsPublicKey>,
+    pub to: Option<AccountPublicKey>,
     /// Value to be transferred.
     pub value: u64,
     /// Deposit for a contract.
@@ -237,12 +255,12 @@ impl Payload {
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
-        let from = BlsPublicKey::from_reader(&mut buf)?;
+        let from = AccountPublicKey::from_reader(&mut buf)?;
 
         // deserialize recipient
         let to = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => Some(BlsPublicKey::from_reader(&mut buf)?),
+            1 => Some(AccountPublicKey::from_reader(&mut buf)?),
             _ => {
                 return Err(BytesError::InvalidData);
             }
@@ -303,7 +321,7 @@ impl Payload {
                 }
             }
             Some(ContractExec::Call(c)) => {
-                bytes.extend(c.contract);
+                bytes.extend(c.contract.as_bytes());
                 bytes.extend(c.fn_name.as_bytes());
                 bytes.extend(&c.fn_args);
             }
