@@ -17,11 +17,16 @@ use tracing::info;
 use url::Url;
 
 use execution_core::{
-    stake::{StakeAmount, StakeData},
-    BlsPublicKey, JubJubScalar, Note, PublicKey, Sender,
+    license::LICENSE_CONTRACT,
+    signatures::bls::PublicKey as AccountPublicKey,
+    stake::{StakeAmount, StakeData, STAKE_CONTRACT},
+    transfer::{
+        phoenix::{Note, PublicKey, Sender},
+        TRANSFER_CONTRACT,
+    },
+    ContractId, JubJubScalar,
 };
-use rusk_abi::{ContractData, ContractId, Session, VM};
-use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{ContractData, Session, VM};
 
 use crate::Theme;
 pub use snapshot::{GenesisStake, PhoenixBalance, Snapshot};
@@ -92,7 +97,7 @@ fn generate_transfer_state(
             info!("{} moonlight account #{idx}", theme.action("Generating"));
 
             session
-                .call::<(BlsPublicKey, u64), ()>(
+                .call::<(AccountPublicKey, u64), ()>(
                     TRANSFER_CONTRACT,
                     "add_account_balance",
                     &(*account.address(), account.balance),

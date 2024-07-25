@@ -7,8 +7,10 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use execution_core::{BlsPublicKey, PublicKey};
-use rusk_abi::dusk::Dusk;
+use execution_core::{
+    signatures::bls::PublicKey as AccountPublicKey,
+    transfer::phoenix::PublicKey as PhoenixPublicKey, Dusk,
+};
 use serde_derive::{Deserialize, Serialize};
 
 mod stake;
@@ -20,26 +22,26 @@ use wrapper::Wrapper;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct PhoenixBalance {
-    address: Wrapper<PublicKey, { PublicKey::SIZE }>,
+    address: Wrapper<PhoenixPublicKey, { PhoenixPublicKey::SIZE }>,
     pub seed: Option<u64>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub notes: Vec<Dusk>,
 }
 
 impl PhoenixBalance {
-    pub fn address(&self) -> &PublicKey {
+    pub fn address(&self) -> &PhoenixPublicKey {
         &self.address
     }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct MoonlightAccount {
-    address: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
+    address: Wrapper<AccountPublicKey, { AccountPublicKey::SIZE }>,
     pub balance: Dusk,
 }
 
 impl MoonlightAccount {
-    pub fn address(&self) -> &BlsPublicKey {
+    pub fn address(&self) -> &AccountPublicKey {
         &self.address
     }
 }
@@ -47,7 +49,7 @@ impl MoonlightAccount {
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Snapshot {
     base_state: Option<String>,
-    owner: Option<Wrapper<PublicKey, { PublicKey::SIZE }>>,
+    owner: Option<Wrapper<PhoenixPublicKey, { PhoenixPublicKey::SIZE }>>,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
@@ -87,7 +89,7 @@ impl Snapshot {
     }
 
     /// Return the owner of the smart contract.
-    pub fn owner(&self) -> [u8; PublicKey::SIZE] {
+    pub fn owner(&self) -> [u8; PhoenixPublicKey::SIZE] {
         let dusk = Wrapper::from(*state::DUSK_KEY);
         self.owner.as_ref().unwrap_or(&dusk).to_bytes()
     }

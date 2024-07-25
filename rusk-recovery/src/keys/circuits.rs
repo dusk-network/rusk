@@ -10,15 +10,15 @@ use cargo_toml::{Dependency, Manifest};
 use dusk_plonk::prelude::Circuit;
 use tracing::info;
 
-use execution_core::transfer::TRANSFER_TREE_DEPTH;
+use execution_core::transfer::phoenix::NOTES_TREE_DEPTH;
 
 use license_circuits::LicenseCircuit;
 use phoenix_circuits::transaction::TxCircuit;
 
-type ExecuteCircuitOneTwo = TxCircuit<TRANSFER_TREE_DEPTH, 1>;
-type ExecuteCircuitTwoTwo = TxCircuit<TRANSFER_TREE_DEPTH, 2>;
-type ExecuteCircuitThreeTwo = TxCircuit<TRANSFER_TREE_DEPTH, 3>;
-type ExecuteCircuitFourTwo = TxCircuit<TRANSFER_TREE_DEPTH, 4>;
+type ExecuteCircuitOneTwo = TxCircuit<NOTES_TREE_DEPTH, 1>;
+type ExecuteCircuitTwoTwo = TxCircuit<NOTES_TREE_DEPTH, 2>;
+type ExecuteCircuitThreeTwo = TxCircuit<NOTES_TREE_DEPTH, 3>;
+type ExecuteCircuitFourTwo = TxCircuit<NOTES_TREE_DEPTH, 4>;
 
 use rusk_profile::{Circuit as CircuitProfile, Theme};
 
