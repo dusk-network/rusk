@@ -8,12 +8,18 @@ use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    BlsPublicKey, BlsScalar, BlsSignature, PublicKey, SchnorrPublicKey,
-    SchnorrSignature,
+    signatures::{
+        bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+        schnorr::{
+            PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+        },
+    },
+    transfer::phoenix::PublicKey as PhoenixPublicKey,
+    BlsScalar, ContractId,
 };
 use piecrust_uplink::{host_query, meta_data};
 
-use crate::{ContractId, Metadata, Query};
+use crate::{Metadata, Query};
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
 /// The output of the hasher is truncated (last nibble) to fit onto a scalar.
@@ -57,25 +63,27 @@ pub fn block_height() -> u64 {
 /// Query owner of a given contract.
 /// Returns none if contract is not found.
 /// Panics if owner is not a valid public key (should never happen).
-pub fn owner(contract: ContractId) -> Option<PublicKey> {
+pub fn owner(contract: ContractId) -> Option<PhoenixPublicKey> {
     owner_raw(contract).map(|buf| {
-        PublicKey::from_bytes(&buf).expect("Owner should deserialize correctly")
+        PhoenixPublicKey::from_bytes(&buf)
+            .expect("Owner should deserialize correctly")
     })
 }
 
 /// Query self owner of a given contract.
 /// Panics if owner is not a valid public key (should never happen).
-pub fn self_owner() -> PublicKey {
+pub fn self_owner() -> PhoenixPublicKey {
     let buf = self_owner_raw();
-    PublicKey::from_bytes(&buf).expect("Owner should deserialize correctly")
+    PhoenixPublicKey::from_bytes(&buf)
+        .expect("Owner should deserialize correctly")
 }
 
 /// Query raw "to_bytes" serialization of the owner of a given contract.
-pub fn owner_raw(contract: ContractId) -> Option<[u8; PublicKey::SIZE]> {
+pub fn owner_raw(contract: ContractId) -> Option<[u8; PhoenixPublicKey::SIZE]> {
     piecrust_uplink::owner(contract)
 }
 
 /// Query raw "to_bytes" serialization of the self owner.
-pub fn self_owner_raw() -> [u8; PublicKey::SIZE] {
+pub fn self_owner_raw() -> [u8; PhoenixPublicKey::SIZE] {
     piecrust_uplink::self_owner()
 }
