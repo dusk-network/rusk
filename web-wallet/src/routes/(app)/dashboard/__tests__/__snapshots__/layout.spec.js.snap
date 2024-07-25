@@ -48,7 +48,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         <a
           aria-disabled="false"
           aria-label="Settings"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="Settings"
           href="/some-base-path/settings"
@@ -142,7 +142,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         <a
           aria-disabled="false"
           aria-label="Settings"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="Settings"
           href="/some-base-path/settings"
@@ -223,7 +223,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <a
           aria-disabled="false"
           aria-label="Settings"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
           data-tooltip-id="main-tooltip"
           data-tooltip-text="Settings"
           href="/some-base-path/settings"

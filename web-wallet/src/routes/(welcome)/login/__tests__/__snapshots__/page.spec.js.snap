@@ -87,7 +87,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+      class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
       href="/some-base-path/setup"
     >
       <svg
@@ -191,7 +191,7 @@ exports[`Login > Password workflow > should show the password field and the link
          
         <a
           aria-disabled="false"
-          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default"
           href="/some-base-path/setup/restore"
         >
           <span
@@ -212,7 +212,7 @@ exports[`Login > Password workflow > should show the password field and the link
   >
     <a
       aria-disabled="false"
-      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+      class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
       href="/some-base-path/setup"
     >
       <svg

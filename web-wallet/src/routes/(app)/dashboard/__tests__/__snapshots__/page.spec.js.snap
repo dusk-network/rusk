@@ -346,7 +346,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
@@ -732,7 +732,7 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
@@ -1123,7 +1123,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
        
       <a
         aria-disabled="false"
-        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default transactions__footer-button"
         href="/some-base-path/dashboard/transactions"
       >
         <span
@@ -1151,7 +1151,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           <samp>
             <a
-              class="dusk-anchor"
+              class="dusk-anchor dusk-anchor--on-surface"
               href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
               rel="noopener noreferrer"
               target="_blank"
@@ -1235,7 +1235,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           <samp>
             <a
-              class="dusk-anchor"
+              class="dusk-anchor dusk-anchor--on-surface"
               href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
               rel="noopener noreferrer"
               target="_blank"
@@ -1302,7 +1302,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           <samp>
             <a
-              class="dusk-anchor"
+              class="dusk-anchor dusk-anchor--on-surface"
               href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
               rel="noopener noreferrer"
               target="_blank"
@@ -1369,7 +1369,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           <samp>
             <a
-              class="dusk-anchor"
+              class="dusk-anchor dusk-anchor--on-surface"
               href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh792h"
               rel="noopener noreferrer"
               target="_blank"
@@ -1453,7 +1453,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         >
           <samp>
             <a
-              class="dusk-anchor"
+              class="dusk-anchor dusk-anchor--on-surface"
               href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh791h"
               rel="noopener noreferrer"
               target="_blank"
