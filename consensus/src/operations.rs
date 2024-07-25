@@ -8,7 +8,7 @@ use std::fmt;
 use std::io;
 use std::time::Duration;
 
-use execution_core::BlsPublicKey;
+use node_data::bls::PublicKey;
 use node_data::ledger::{
     Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
 };
@@ -17,7 +17,7 @@ use thiserror::Error;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
-pub type Voter = (BlsPublicKey, usize);
+pub type Voter = (PublicKey, usize);
 
 #[derive(Debug, Error)]
 pub enum Error {

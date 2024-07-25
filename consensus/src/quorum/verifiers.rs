@@ -11,6 +11,7 @@ use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
 
 use crate::commons::StepSigError;
+use crate::operations::Voter;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -142,6 +143,12 @@ impl Cluster<PublicKey> {
             None => Err(StepSigError::EmptyApk),
         }
     }
+
+    pub fn to_voters(&self) -> Vec<Voter> {
+        self.iter()
+            .map(|(public_key, &weight)| (public_key.clone(), weight))
+            .collect()
+    }
 }
 
 fn verify_step_signature(
@@ -164,4 +171,65 @@ fn verify_step_signature(
     vote.write(&mut msg).expect("Writing to vec should succeed");
     apk.verify(&sig, &msg)?;
     Ok(())
+}
+
+pub async fn get_step_voters(
+    header: &ConsensusHeader,
+    sv: &StepVotes,
+    committees_set: &RwLock<CommitteeSet<'_>>,
+    seed: Seed,
+    step: StepName,
+) -> Vec<Voter> {
+    // compute committee for `step`
+    let committee =
+        get_step_committee(header, committees_set, seed, step).await;
+
+    // extract quorum voters from `sv`
+    let bitset = sv.bitset;
+    let q_committee = committee.intersect(bitset);
+
+    q_committee.to_voters()
+}
+
+async fn get_step_committee(
+    header: &ConsensusHeader,
+    committees_set: &RwLock<CommitteeSet<'_>>,
+    seed: Seed,
+    step: StepName,
+) -> Committee {
+    let round = header.round;
+    let iteration = header.iteration;
+
+    // exclude current-iteration generator
+    let mut exclusion_list = vec![];
+    let generator = committees_set
+        .read()
+        .await
+        .provisioners()
+        .get_generator(iteration, seed, round);
+
+    exclusion_list.push(generator);
+
+    // exclude next-iteration generator
+    if iteration < CONSENSUS_MAX_ITER {
+        let next_generator = committees_set
+            .read()
+            .await
+            .provisioners()
+            .get_generator(iteration + 1, seed, round);
+
+        exclusion_list.push(next_generator);
+    }
+
+    let cfg =
+        sortition::Config::new(seed, round, iteration, step, exclusion_list);
+
+    if committees_set.read().await.get(&cfg).is_none() {
+        let _ = committees_set.write().await.get_or_create(&cfg);
+    }
+
+    let set = committees_set.read().await;
+    let committee = set.get(&cfg).expect("committee to be created");
+
+    committee.clone()
 }
