@@ -17,9 +17,16 @@ mod imp;
 use alloc::vec::Vec;
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use execution_core::{
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::StakeData,
-    transfer::{AccountData, Transaction, TRANSFER_TREE_DEPTH},
-    BlsPublicKey, BlsScalar, BlsSecretKey, Note, SecretKey, ViewKey,
+    transfer::{
+        moonlight::AccountData,
+        phoenix::{
+            Note, SecretKey as PhoenixSecretKey, ViewKey, NOTES_TREE_DEPTH,
+        },
+        Transaction,
+    },
+    BlsScalar,
 };
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand_chacha::ChaCha12Rng;
@@ -30,7 +37,7 @@ pub use imp::*;
 pub use rusk_prover::UnprovenTransaction;
 
 /// The maximum size of call data.
-pub const MAX_CALL_SIZE: usize = rusk_abi::ARGBUF_LEN;
+pub const MAX_CALL_SIZE: usize = execution_core::ARGBUF_LEN;
 
 /// Stores the cryptographic material necessary to derive cryptographic keys.
 pub trait Store {
@@ -46,7 +53,10 @@ pub trait Store {
     /// every time with [`generate_sk`]. It may be reimplemented to
     /// provide a cache for keys, or implement a different key generation
     /// algorithm.
-    fn fetch_secret_key(&self, index: u64) -> Result<SecretKey, Self::Error> {
+    fn fetch_secret_key(
+        &self,
+        index: u64,
+    ) -> Result<PhoenixSecretKey, Self::Error> {
         let seed = self.get_seed()?;
         Ok(derive_sk(&seed, index))
     }
@@ -72,7 +82,7 @@ pub trait Store {
 /// `index` are passed through SHA-256. A constant is then mixed in and the
 /// resulting hash is then used to seed a `ChaCha12` CSPRNG, which is
 /// subsequently used to generate the key.
-pub fn derive_sk(seed: &[u8; 64], index: u64) -> SecretKey {
+pub fn derive_sk(seed: &[u8; 64], index: u64) -> PhoenixSecretKey {
     let mut hash = Sha256::new();
 
     hash.update(seed);
@@ -82,7 +92,7 @@ pub fn derive_sk(seed: &[u8; 64], index: u64) -> SecretKey {
     let hash = hash.finalize().into();
     let mut rng = ChaCha12Rng::from_seed(hash);
 
-    SecretKey::random(&mut rng)
+    PhoenixSecretKey::random(&mut rng)
 }
 
 /// Generates a secret key from its seed and index.
@@ -147,7 +157,7 @@ pub trait StateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonOpening<(), TRANSFER_TREE_DEPTH>, Self::Error>;
+    ) -> Result<PoseidonOpening<(), NOTES_TREE_DEPTH>, Self::Error>;
 
     /// Queries the node for the stake of a key. If the key has no stake, a
     /// `Default` stake info should be returned.

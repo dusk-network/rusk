@@ -18,7 +18,6 @@ rusk-prover = { version = "0.3.0", path = "../rusk-prover", default-features = f
 ff = { version = "0.13", default-features = false }
 
 # rusk dependencies
-rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false }
 execution-core = { version = "0.1.0", path = "../execution-core" }
 
 [dev-dependencies]
