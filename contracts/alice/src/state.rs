@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::transfer::Withdraw;
-use rusk_abi::TRANSFER_CONTRACT;
+use execution_core::transfer::{withdraw::Withdraw, TRANSFER_CONTRACT};
 
 /// Alice contract.
 #[derive(Debug, Clone)]
