@@ -10,6 +10,7 @@ use dusk_bytes::Serializable;
 use execution_core::BlsScalar;
 use execution_core::{BlsPublicKey, PhoenixError};
 use rusk_abi::dusk::Dusk;
+use rusk_abi::PiecrustError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -38,7 +39,7 @@ pub enum Error {
     /// Originating from Phoenix.
     Phoenix(PhoenixError),
     /// Piecrust VM internal Errors
-    Vm(rusk_abi::Error),
+    Vm(PiecrustError),
     /// IO Errors
     Io(io::Error),
     /// Bad block height in coinbase (got, expected)
@@ -67,8 +68,8 @@ impl From<Box<dyn std::error::Error>> for Error {
     }
 }
 
-impl From<rusk_abi::Error> for Error {
-    fn from(err: rusk_abi::Error) -> Self {
+impl From<PiecrustError> for Error {
+    fn from(err: PiecrustError) -> Self {
         Error::Vm(err)
     }
 }

@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
-
 use execution_core::transfer::Transaction as ProtocolTransaction;
+use execution_core::BlsScalar;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
@@ -42,7 +41,7 @@ impl Transaction {
     /// ### Returns
     /// An array of 32 bytes representing the hash of the transaction.
     pub fn hash(&self) -> [u8; 32] {
-        Hasher::digest(self.inner.to_var_bytes()).to_bytes()
+        BlsScalar::hash_to_scalar(&self.inner.to_var_bytes()[..]).to_bytes()
     }
 
     /// Computes the transaction ID.
@@ -56,7 +55,7 @@ impl Transaction {
     /// ### Returns
     /// An array of 32 bytes representing the transaction ID.
     pub fn id(&self) -> [u8; 32] {
-        Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
+        self.inner.hash().to_bytes()
     }
 
     pub fn gas_price(&self) -> u64 {
@@ -93,6 +92,7 @@ impl Eq for SpentTransaction {}
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use super::*;
+    use crate::ledger::Dummy;
     use execution_core::transfer::{
         ContractCall, ContractExec, Fee, PhoenixPayload,
     };

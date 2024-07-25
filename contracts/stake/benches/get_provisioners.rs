@@ -9,7 +9,7 @@ use execution_core::{stake::StakeData, BlsPublicKey, BlsSecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::{
-    ContractData, Error, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
+    ContractData, PiecrustError, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use std::sync::mpsc;
 
@@ -24,7 +24,7 @@ fn config() -> Criterion {
     Criterion::default().sample_size(SAMPLE_SIZE)
 }
 
-fn update_root(session: &mut Session) -> Result<(), Error> {
+fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
         .map(|r| r.data)
@@ -66,7 +66,7 @@ fn instantiate(vm: &VM) -> Session {
 
 fn do_get_provisioners(
     session: &mut Session,
-) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>, Error> {
+) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>, PiecrustError> {
     let (sender, receiver) = mpsc::channel();
     session.feeder_call::<_, ()>(
         STAKE_CONTRACT,
@@ -84,7 +84,7 @@ fn do_get_provisioners(
 fn do_insert_stake<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     session: &mut Session,
-) -> Result<(), Error> {
+) -> Result<(), PiecrustError> {
     let stake_data = StakeData {
         amount: Some((TEST_STAKE, 0)),
         nonce: 1,

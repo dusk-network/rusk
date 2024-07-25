@@ -34,8 +34,8 @@ use node_data::ledger::{Slash, SpentTransaction, Transaction};
 use rusk_abi::dusk::Dusk;
 use rusk_abi::ContractError::{OutOfGas, Panic};
 use rusk_abi::{
-    CallReceipt, ContractError, Error as PiecrustError, Event, Session,
-    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
+    CallReceipt, ContractError, Event, PiecrustError, Session, STAKE_CONTRACT,
+    TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;

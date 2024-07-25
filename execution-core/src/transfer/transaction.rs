@@ -234,6 +234,15 @@ impl Transaction {
             Self::Moonlight(tx) => tx.to_hash_input_bytes(),
         }
     }
+
+    /// Create the unique transaction hash.
+    #[must_use]
+    pub fn hash(&self) -> BlsScalar {
+        match self {
+            Self::Phoenix(tx) => tx.hash(),
+            Self::Moonlight(tx) => tx.hash(),
+        }
+    }
 }
 
 impl From<PhoenixTransaction> for Transaction {

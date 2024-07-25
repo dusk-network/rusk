@@ -12,7 +12,6 @@ use dusk_bytes::Serializable;
 use poseidon_merkle::{Opening, Tree};
 
 use execution_core::BlsScalar;
-use rusk_abi::PublicInput;
 
 use crate::collection::Map;
 use crate::error::Error;
@@ -104,13 +103,12 @@ impl LicenseContractState {
     /// creates a session with the corresponding session id.
     /// Method intended to be called by the user.
     pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
-        let mut pi = Vec::new();
-        for scalar in use_license_arg.public_inputs.iter() {
-            pi.push(PublicInput::BlsScalar(*scalar));
-        }
-        let vd = verifier_data_license_circuit();
-        Self::assert_proof(vd, use_license_arg.proof.to_bytes().to_vec(), pi)
-            .expect("Provided proof verification should succeed!");
+        Self::assert_proof(
+            verifier_data_license_circuit(),
+            use_license_arg.proof.to_bytes().to_vec(),
+            use_license_arg.public_inputs.clone(),
+        )
+        .expect("Provided proof verification should succeed!");
 
         // after a successful proof verification we can add a session to a
         // shared list of sessions
@@ -139,7 +137,7 @@ impl LicenseContractState {
     fn assert_proof(
         verifier_data: &[u8],
         proof: Vec<u8>,
-        public_inputs: Vec<PublicInput>,
+        public_inputs: Vec<BlsScalar>,
     ) -> Result<(), Error> {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then_some(())

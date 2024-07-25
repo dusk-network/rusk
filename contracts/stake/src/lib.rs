@@ -18,7 +18,7 @@ use state::StakeState;
 /// The minimum amount of Dusk one can stake.
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
-use rusk_abi::{ContractId, PaymentInfo};
+use rusk_abi::ContractId;
 
 #[no_mangle]
 static SELF_ID: ContractId = ContractId::uninitialized();
@@ -149,11 +149,4 @@ fn assert_external_caller() {
     if !rusk_abi::caller().is_uninitialized() {
         panic!("Can only be called from the outside the VM");
     }
-}
-
-const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);
-
-#[no_mangle]
-fn payment_info(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
 }

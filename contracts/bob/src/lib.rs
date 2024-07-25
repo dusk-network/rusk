@@ -17,8 +17,6 @@ use state::Bob;
 mod wasm {
     use super::*;
 
-    use rusk_abi::PaymentInfo;
-
     #[no_mangle]
     static mut STATE: Bob = Bob::new();
 
@@ -40,12 +38,5 @@ mod wasm {
     #[no_mangle]
     unsafe fn value(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |()| STATE.value())
-    }
-
-    const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);
-
-    #[no_mangle]
-    fn payment_info(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
     }
 }

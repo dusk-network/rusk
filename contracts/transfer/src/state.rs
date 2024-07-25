@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use dusk_bytes::Serializable;
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-use rusk_abi::{ContractError, ContractId, PublicInput, STAKE_CONTRACT};
+use rusk_abi::{ContractError, ContractId, STAKE_CONTRACT};
 
 use execution_core::{
     transfer::{
@@ -627,9 +627,6 @@ impl TransferState {
 }
 
 fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
-    let pis: Vec<PublicInput> =
-        tx.public_inputs().iter().map(|pi| pi.into()).collect();
-
     // fetch the verifier data
     let num_inputs = tx.payload().tx_skeleton.nullifiers.len();
     let vd = verifier_data_execute(num_inputs)
@@ -637,7 +634,7 @@ fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
         .to_vec();
 
     // verify the proof
-    rusk_abi::verify_proof(vd, tx.proof().to_vec(), pis)
+    rusk_abi::verify_proof(vd, tx.proof().to_vec(), tx.public_inputs())
 }
 
 #[cfg(test)]

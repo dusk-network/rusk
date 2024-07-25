@@ -22,14 +22,16 @@ use execution_core::{
     value_commitment, JubJubScalar, Note, PublicKey, SchnorrSecretKey,
     SecretKey, Sender, TxSkeleton, ViewKey,
 };
-use rusk_abi::{CallReceipt, ContractError, Error, Session, TRANSFER_CONTRACT};
+use rusk_abi::{
+    CallReceipt, ContractError, PiecrustError, Session, TRANSFER_CONTRACT,
+};
 
 const POINT_LIMIT: u64 = 0x100000000;
 
 pub fn leaves_from_height(
     session: &mut Session,
     height: u64,
-) -> Result<Vec<TreeLeaf>, Error> {
+) -> Result<Vec<TreeLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -49,7 +51,7 @@ pub fn leaves_from_height(
 pub fn leaves_from_pos(
     session: &mut Session,
     pos: u64,
-) -> Result<Vec<TreeLeaf>, Error> {
+) -> Result<Vec<TreeLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -66,13 +68,13 @@ pub fn leaves_from_pos(
         .collect())
 }
 
-pub fn update_root(session: &mut Session) -> Result<(), Error> {
+pub fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn root(session: &mut Session) -> Result<BlsScalar, Error> {
+pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
         .map(|r| r.data)
@@ -81,7 +83,7 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, Error> {
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, Error> {
+) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
         .map(|r| r.data)
@@ -123,7 +125,7 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 pub fn execute(
     session: &mut Session,
     tx: impl Into<Transaction>,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     let tx = tx.into();
 
     // Spend the inputs and execute the call. If this errors the transaction is

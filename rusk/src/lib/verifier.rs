@@ -28,9 +28,6 @@ pub static VD_EXEC_4_2: LazyLock<Vec<u8>> =
 
 /// Verifies the proof of the incoming transaction.
 pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
-    let pi: Vec<rusk_abi::PublicInput> =
-        tx.public_inputs().iter().map(|pi| pi.into()).collect();
-
     let inputs_len = tx.payload().tx_skeleton.nullifiers.len();
     let outputs_len = tx.payload().tx_skeleton.outputs.len();
 
@@ -46,7 +43,11 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
     // Maybe we want to handle internal serialization error too,
     // currently they map to `false`.
-    Ok(rusk_abi::verify_proof(vd.to_vec(), tx.proof().to_vec(), pi))
+    Ok(rusk_abi::verify_proof(
+        vd.to_vec(),
+        tx.proof().to_vec(),
+        tx.public_inputs(),
+    ))
 }
 
 /// Verifies the signature of the incoming transaction.

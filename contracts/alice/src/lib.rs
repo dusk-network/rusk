@@ -17,7 +17,7 @@ mod wasm {
     use super::*;
     use state::Alice;
 
-    use rusk_abi::{ContractId, PaymentInfo};
+    use rusk_abi::ContractId;
 
     #[no_mangle]
     static SELF_ID: ContractId = ContractId::uninitialized();
@@ -37,12 +37,5 @@ mod wasm {
     #[no_mangle]
     unsafe fn deposit(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
-    }
-
-    const PAYMENT_INFO: PaymentInfo = PaymentInfo::Any(None);
-
-    #[no_mangle]
-    fn payment_info(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
     }
 }

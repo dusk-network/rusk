@@ -14,15 +14,13 @@ use execution_core::{
     BlsAggPublicKey, BlsPublicKey, BlsScalar, BlsSignature, SchnorrPublicKey,
     SchnorrSignature,
 };
+use piecrust::{Error as PiecrustError, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
 mod cache;
 
-pub use piecrust::*;
-
-use crate::hash::Hasher;
-use crate::{Metadata, PublicInput, Query};
+use crate::{Metadata, Query};
 
 /// Create a new session based on the given `vm`. The vm *must* have been
 /// created using [`new_vm`] or [`new_ephemeral_vm`].
@@ -30,7 +28,7 @@ pub fn new_session(
     vm: &VM,
     base: [u8; 32],
     block_height: u64,
-) -> Result<Session, Error> {
+) -> Result<Session, PiecrustError> {
     vm.session(
         SessionData::builder()
             .base(base)
@@ -52,14 +50,14 @@ pub fn new_genesis_session(vm: &VM) -> Session {
 /// Create a new [`VM`] compliant with Dusk's specification.
 pub fn new_vm<P: AsRef<Path> + Into<PathBuf>>(
     root_dir: P,
-) -> Result<VM, Error> {
+) -> Result<VM, PiecrustError> {
     let mut vm = VM::new(root_dir)?;
     register_host_queries(&mut vm);
     Ok(vm)
 }
 
 /// Creates a new [`VM`] with a temporary directory.
-pub fn new_ephemeral_vm() -> Result<VM, Error> {
+pub fn new_ephemeral_vm() -> Result<VM, PiecrustError> {
     let mut vm = VM::ephemeral()?;
     register_host_queries(&mut vm);
     Ok(vm)
@@ -129,10 +127,10 @@ fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 /// Compute the blake2b hash of the given scalars, returning the resulting
-/// scalar. The output of the hasher is truncated (last nibble) to fit onto a
-/// scalar.
+/// scalar. The hash is computed in such a way that it will always return a
+/// valid scalar.
 pub fn hash(bytes: Vec<u8>) -> BlsScalar {
-    Hasher::digest(bytes)
+    BlsScalar::hash_to_scalar(&bytes[..])
 }
 
 /// Compute the poseidon hash of the given scalars
@@ -147,32 +145,13 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 pub fn verify_proof(
     verifier_data: Vec<u8>,
     proof: Vec<u8>,
-    public_inputs: Vec<PublicInput>,
+    public_inputs: Vec<BlsScalar>,
 ) -> bool {
     let verifier = Verifier::try_from_bytes(verifier_data)
         .expect("Verifier data coming from the contract should be valid");
     let proof = Proof::from_slice(&proof).expect("Proof should be valid");
 
-    let n_pi = public_inputs.iter().fold(0, |num, pi| {
-        num + match pi {
-            PublicInput::Point(_) => 2,
-            PublicInput::BlsScalar(_) => 1,
-            PublicInput::JubJubScalar(_) => 1,
-        }
-    });
-
-    let mut pis = Vec::with_capacity(n_pi);
-
-    public_inputs.into_iter().for_each(|pi| match pi {
-        PublicInput::Point(p) => pis.extend([p.get_u(), p.get_v()]),
-        PublicInput::BlsScalar(s) => pis.push(s),
-        PublicInput::JubJubScalar(s) => {
-            let s: BlsScalar = s.into();
-            pis.push(s)
-        }
-    });
-
-    verifier.verify(&proof, &pis[..]).is_ok()
+    verifier.verify(&proof, &public_inputs[..]).is_ok()
 }
 
 /// Verify a schnorr signature is valid for the given public key and message
