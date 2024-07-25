@@ -201,7 +201,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let prev_seed = self.get_prev_block_seed().await.expect("valid seed");
         Validator::<DB>::get_voters(tip.header(), provisioners_list, prev_seed)
             .await
-            .expect("valid voters")
     }
 
     // Re-route message to consensus task

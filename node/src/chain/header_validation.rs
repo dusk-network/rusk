@@ -15,10 +15,12 @@ use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
+use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Fault, Hash, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
@@ -278,16 +280,31 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         blk: &'a ledger::Header,
         provisioners: &Provisioners,
         prev_block_seed: Seed,
-    ) -> anyhow::Result<Vec<Voter>> {
-        let (_, _, voters) = verify_att(
-            &blk.att,
-            blk.to_consensus_header(),
-            prev_block_seed,
-            provisioners,
-        )
-        .await?;
+    ) -> Vec<Voter> {
+        let att = &blk.att;
+        let consensus_header = blk.to_consensus_header();
 
-        Ok(voters)
+        let committee = RwLock::new(CommitteeSet::new(provisioners));
+
+        let validation_voters = verifiers::get_step_voters(
+            &consensus_header,
+            &att.validation,
+            &committee,
+            prev_block_seed,
+            StepName::Validation,
+        )
+        .await;
+
+        let ratification_voters = verifiers::get_step_voters(
+            &consensus_header,
+            &att.ratification,
+            &committee,
+            prev_block_seed,
+            StepName::Ratification,
+        )
+        .await;
+
+        merge_voters(validation_voters, ratification_voters)
     }
 
     /// Verify faults inside a block.
@@ -416,8 +433,18 @@ fn merge_committees(a: &Committee, b: &Committee) -> Vec<Voter> {
         *counter += *value;
     }
 
-    members
-        .into_iter()
-        .map(|(key, credits)| (*key.inner(), credits))
-        .collect()
+    members.into_iter().collect()
+}
+
+/// Merges two Vec<Voter>, summing up the usize values if the PublicKey is
+/// repeated
+fn merge_voters(v1: Vec<Voter>, v2: Vec<Voter>) -> Vec<Voter> {
+    let mut voter_map: BTreeMap<PublicKey, usize> = BTreeMap::new();
+
+    for (pk, count) in v1.into_iter().chain(v2.into_iter()) {
+        let counter = voter_map.entry(pk).or_insert(0);
+        *counter += count;
+    }
+
+    voter_map.into_iter().collect()
 }
