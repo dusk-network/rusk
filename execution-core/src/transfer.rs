@@ -169,8 +169,8 @@ impl Withdraw {
     /// withdrawal. Instead it is meant to be used by structures wrapping
     /// withdrawals to offer additional functionality.
     ///
-    /// To see the signature used to sign a withdrawal, see
-    /// [`WithdrawPayload::signature_message`].
+    /// To see the signature message used to sign a withdrawal, see
+    /// [`stake::Withdraw::signature_message`][`crate::stake::Withdraw::signature_message`].
     #[must_use]
     pub fn signature_message(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
@@ -204,7 +204,7 @@ impl Withdraw {
     /// Returns the message that should be "mixed in" as input for a signature
     /// of an item that wraps a [`Withdraw`].
     ///
-    /// One example of this is [`stake::Withdraw`].
+    /// One example of this is [`stake::Withdraw`][`crate::stake::Withdraw`].
     #[must_use]
     pub fn wrapped_signature_message(&self) -> Vec<u8> {
         let mut bytes = self.signature_message();
@@ -268,7 +268,7 @@ impl<'a> From<&'a BlsSecretKey> for WithdrawSecretKey<'a> {
 #[archive_attr(derive(CheckBytes))]
 pub enum WithdrawSignature {
     /// A transaction withdrawing to Phoenix must sign using their
-    /// [`SecretKey`].
+    /// [`SchnorrSecretKey`].
     Phoenix(SchnorrSignature),
     /// A transaction withdrawing to Moonlight - must sign using their
     /// [`BlsSecretKey`].

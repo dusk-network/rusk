@@ -35,7 +35,7 @@ pub struct SpentTransaction {
 impl Transaction {
     /// Computes the hash of the transaction.
     ///
-    /// This method returns the [hash](rusk_abi::hash()) of the entire
+    /// This method returns the hash of the entire
     /// transaction in its serialized form
     ///
     /// ### Returns

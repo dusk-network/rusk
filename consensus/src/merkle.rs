@@ -78,7 +78,7 @@ impl<const H: usize> BinaryMerkle<H> {
 /// Calculate the root of a dynamic merkle tree (containing up to 2^15 elements)
 /// in the same way of how dusk-blockchain does
 ///
-/// For reference impl check here https://github.com/dusk-network/dusk-crypto/blob/master/merkletree/merkletree.go
+/// For reference impl check here <https://github.com/dusk-network/dusk-crypto/blob/master/merkletree/merkletree.go>
 pub fn merkle_root<N: Into<Hash> + Copy>(values: &[N]) -> [u8; 32] {
     if values.is_empty() {
         return EMPTY_NODE.0;
