@@ -10,7 +10,7 @@
 
 extern crate alloc;
 
-use rusk_abi::dusk::*;
+use execution_core::{dusk, transfer::TRANSFER_CONTRACT, Dusk};
 
 mod state;
 use state::StakeState;
@@ -128,10 +128,10 @@ unsafe fn set_burnt_amount(arg_len: u32) -> u32 {
 /// Asserts the call is made via the transfer contract.
 ///
 /// # Panics
-/// When the `caller` is not [`rusk_abi::TRANSFER_CONTRACT`].
+/// When the `caller` is not [`TRANSFER_CONTRACT`].
 fn assert_transfer_caller() {
     const PANIC_MSG: &str = "Can only be called from the transfer contract";
-    if rusk_abi::caller().expect(PANIC_MSG) != rusk_abi::TRANSFER_CONTRACT {
+    if rusk_abi::caller().expect(PANIC_MSG) != TRANSFER_CONTRACT {
         panic!("{PANIC_MSG}");
     }
 }

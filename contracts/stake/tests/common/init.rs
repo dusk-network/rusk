@@ -6,9 +6,16 @@
 
 use rand::{CryptoRng, RngCore};
 
-use execution_core::{JubJubScalar, Note, PublicKey};
+use execution_core::{
+    stake::STAKE_CONTRACT,
+    transfer::{
+        phoenix::{Note, PublicKey as PhoenixPublicKey},
+        TRANSFER_CONTRACT,
+    },
+    JubJubScalar,
+};
 use ff::Field;
-use rusk_abi::{ContractData, Session, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
+use rusk_abi::{ContractData, Session, VM};
 
 use crate::common::utils::update_root;
 
@@ -20,7 +27,7 @@ const POINT_LIMIT: u64 = 0x100_000_000;
 pub fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
-    pk: &PublicKey,
+    pk: &PhoenixPublicKey,
     genesis_value: u64,
 ) -> Session {
     let transfer_bytecode = include_bytes!(

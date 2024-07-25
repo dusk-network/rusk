@@ -7,8 +7,9 @@
 use dusk_bytes::Serializable;
 use rkyv::{check_archived_root, Deserialize, Infallible};
 
-use execution_core::{stake::StakeEvent, BlsPublicKey};
-use rusk_abi::Event;
+use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey, stake::StakeEvent, Event,
+};
 
 pub fn assert_event<S>(
     events: &Vec<Event>,

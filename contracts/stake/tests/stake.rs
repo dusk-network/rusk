@@ -11,12 +11,19 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use execution_core::{
-    stake::{Stake, StakeData, Withdraw as StakeWithdraw},
-    transfer::{ContractCall, Withdraw, WithdrawReceiver, WithdrawReplayToken},
-    BlsPublicKey, BlsSecretKey, JubJubScalar, PublicKey, SecretKey, ViewKey,
+    dusk,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
+    stake::{Stake, StakeData, Withdraw as StakeWithdraw, STAKE_CONTRACT},
+    transfer::{
+        contract_exec::ContractCall,
+        phoenix::{
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            ViewKey as PhoenixViewKey,
+        },
+        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
+    },
+    JubJubScalar, LUX,
 };
-use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::STAKE_CONTRACT;
 
 use crate::common::assert::assert_event;
 use crate::common::init::instantiate;
@@ -39,9 +46,9 @@ fn stake_withdraw_unstake() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let phoenix_sender_sk = SecretKey::random(rng);
-    let phoenix_sender_vk = ViewKey::from(&phoenix_sender_sk);
-    let phoenix_sender_pk = PublicKey::from(&phoenix_sender_sk);
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
@@ -70,7 +77,7 @@ fn stake_withdraw_unstake() {
         .expect("Should serialize Stake correctly")
         .to_vec();
     let contract_call = Some(ContractCall {
-        contract: STAKE_CONTRACT.to_bytes(),
+        contract: STAKE_CONTRACT,
         fn_name: String::from("stake"),
         fn_args: stake_bytes,
     });
@@ -183,7 +190,7 @@ fn stake_withdraw_unstake() {
     let withdraw = Withdraw::new(
         rng,
         &note_sk,
-        STAKE_CONTRACT.to_bytes(),
+        STAKE_CONTRACT,
         REWARD_AMOUNT,
         WithdrawReceiver::Phoenix(address),
         WithdrawReplayToken::Phoenix(vec![
@@ -198,7 +205,7 @@ fn stake_withdraw_unstake() {
         .to_vec();
 
     let contract_call = Some(ContractCall {
-        contract: STAKE_CONTRACT.to_bytes(),
+        contract: STAKE_CONTRACT,
         fn_name: String::from("withdraw"),
         fn_args: withdraw_bytes,
     });
@@ -292,7 +299,7 @@ fn stake_withdraw_unstake() {
     let withdraw = Withdraw::new(
         rng,
         &note_sk,
-        STAKE_CONTRACT.to_bytes(),
+        STAKE_CONTRACT,
         INITIAL_STAKE,
         WithdrawReceiver::Phoenix(address),
         WithdrawReplayToken::Phoenix(vec![
@@ -309,7 +316,7 @@ fn stake_withdraw_unstake() {
         .to_vec();
 
     let contract_call = Some(ContractCall {
-        contract: STAKE_CONTRACT.to_bytes(),
+        contract: STAKE_CONTRACT,
         fn_name: String::from("unstake"),
         fn_args: unstake_bytes,
     });
