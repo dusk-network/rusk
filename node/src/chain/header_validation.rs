@@ -12,7 +12,7 @@ use dusk_consensus::config::MINIMUM_BLOCK_TIME;
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
-use dusk_consensus::user::committee::{Committee, CommitteeSet};
+use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
 use node_data::bls::PublicKey;
@@ -360,8 +360,8 @@ pub async fn verify_att(
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
-    let v_committee;
-    let r_committee;
+    let validation_voters;
+    let ratification_voters;
 
     let vote = att.result.vote();
     // Verify validation
@@ -375,9 +375,9 @@ pub async fn verify_att(
     )
     .await
     {
-        Ok((validation_quorum_result, committee)) => {
+        Ok((validation_quorum_result, voters)) => {
             result.0 = validation_quorum_result;
-            v_committee = committee;
+            validation_voters = voters;
         }
         Err(e) => {
             return Err(anyhow!(
@@ -403,9 +403,9 @@ pub async fn verify_att(
     )
     .await
     {
-        Ok((ratification_quorum_result, committee)) => {
+        Ok((ratification_quorum_result, voters)) => {
             result.1 = ratification_quorum_result;
-            r_committee = committee;
+            ratification_voters = voters;
         }
         Err(e) => {
             return Err(anyhow!(
@@ -420,20 +420,8 @@ pub async fn verify_att(
         }
     }
 
-    let voters = merge_committees(&v_committee, &r_committee);
+    let voters = merge_voters(validation_voters, ratification_voters);
     Ok((result.0, result.1, voters))
-}
-
-/// Merges two committees into a vector
-fn merge_committees(a: &Committee, b: &Committee) -> Vec<Voter> {
-    let mut members = a.members().clone();
-    for (key, value) in b.members() {
-        // Keeps track of the number of occurrences for each member.
-        let counter = members.entry(key.clone()).or_insert(0);
-        *counter += *value;
-    }
-
-    members.into_iter().collect()
 }
 
 /// Merges two Vec<Voter>, summing up the usize values if the PublicKey is
