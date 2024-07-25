@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
+
 ### Changed
 
 - Update font-display to swap for custom fonts to improve performance [#2026]
@@ -227,6 +231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1901]: https://github.com/dusk-network/rusk/issues/1901
 [#1922]: https://github.com/dusk-network/rusk/issues/1922
 [#2026]: https://github.com/dusk-network/rusk/issues/2026
+[#2000]: https://github.com/dusk-network/rusk/issues/2000
 
 <!-- VERSIONS -->
 

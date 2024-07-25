@@ -263,7 +263,7 @@
         ? { action: resetOperation, disabled: false }
         : undefined}
       nextButton={{
-        disabled: stakeAmount === 0,
+        disabled: flow === "stake" ? stakeAmount === 0 : !isGasValid,
         icon: {
           path:
             flow === "stake" ? mdiDatabaseOutline : mdiDatabaseArrowDownOutline,
