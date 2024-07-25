@@ -7,9 +7,10 @@
 use std::{fmt, io};
 
 use dusk_bytes::Serializable;
-use execution_core::BlsScalar;
-use execution_core::{BlsPublicKey, PhoenixError};
-use rusk_abi::dusk::Dusk;
+use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey,
+    transfer::phoenix::Error as PhoenixError, BlsScalar, Dusk,
+};
 use rusk_abi::PiecrustError;
 
 #[derive(Debug)]

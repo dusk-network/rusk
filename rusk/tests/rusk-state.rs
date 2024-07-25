@@ -13,7 +13,14 @@ use std::path::Path;
 use std::sync::{mpsc, Arc};
 
 use execution_core::{
-    transfer::TreeLeaf, JubJubScalar, Note, PublicKey, SecretKey,
+    transfer::{
+        phoenix::{
+            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            TreeLeaf,
+        },
+        TRANSFER_CONTRACT,
+    },
+    JubJubScalar, LUX,
 };
 use ff::Field;
 use parking_lot::RwLockWriteGuard;
@@ -21,7 +28,7 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::{Rusk, RuskTip};
 use rusk::Result;
-use rusk_abi::{TRANSFER_CONTRACT, VM};
+use rusk_abi::VM;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -54,9 +61,10 @@ where
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let sender_sk = SecretKey::random(&mut rng);
-    let sender_pk = PublicKey::from(&sender_sk);
-    let receiver_pk = PublicKey::from(&SecretKey::random(&mut rng));
+    let sender_sk = PhoenixSecretKey::random(&mut rng);
+    let sender_pk = PhoenixPublicKey::from(&sender_sk);
+    let receiver_pk =
+        PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
 
     let sender_blinder = [
         JubJubScalar::random(&mut rng),
@@ -210,7 +218,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
                     &receiver,
                     TRANSFER_VALUE,
                     GAS_LIMIT,
-                    rusk_abi::dusk::LUX,
+                    LUX,
                 )
                 .expect("Making a transfer TX should succeed")
         });
@@ -273,7 +281,7 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
                     receiver,
                     TRANSFER_VALUE,
                     GAS_LIMIT,
-                    rusk_abi::dusk::LUX,
+                    LUX,
                 )
                 .expect("Making a transfer TX should succeed")
         });

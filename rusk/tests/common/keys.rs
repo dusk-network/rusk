@@ -10,7 +10,7 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use tracing::info;
 
-use execution_core::BlsSecretKey;
+use execution_core::signatures::bls::SecretKey as BlsSecretKey;
 
 #[allow(dead_code)]
 pub static STAKE_SK: LazyLock<BlsSecretKey> = LazyLock::new(|| {
