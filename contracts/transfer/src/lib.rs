@@ -41,6 +41,11 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
 }
 
+#[no_mangle]
+unsafe fn convert(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| STATE.convert(arg))
+}
+
 // Queries
 
 #[no_mangle]

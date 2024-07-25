@@ -16,7 +16,8 @@ use execution_core::{
     Note, PublicKey, SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
 };
 use rusk_abi::{
-    ContractError, ContractId, PiecrustError, Session, TRANSFER_CONTRACT,
+    CallReceipt, ContractError, ContractId, PiecrustError, Session,
+    TRANSFER_CONTRACT,
 };
 
 use dusk_bytes::Serializable;
@@ -143,7 +144,7 @@ pub fn prover_verifier(input_notes: usize) -> (Prover, Verifier) {
 pub fn execute(
     session: &mut Session,
     tx: impl Into<Transaction>,
-) -> Result<u64, PiecrustError> {
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     let tx = tx.into();
 
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
@@ -169,7 +170,20 @@ pub fn execute(
 
     receipt.events.extend(refund_receipt.events);
 
-    Ok(receipt.gas_spent)
+    Ok(receipt)
+}
+
+pub fn owned_notes_value<'a, I: IntoIterator<Item = &'a Note>>(
+    vk: ViewKey,
+    notes: I,
+) -> u64 {
+    notes.into_iter().fold(0, |acc, note| {
+        acc + if vk.owns(note.stealth_address()) {
+            note.value(Some(&vk)).unwrap()
+        } else {
+            0
+        }
+    })
 }
 
 /// Returns vector of notes owned by a given view key.
@@ -183,20 +197,16 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 }
 
 pub fn create_moonlight_transaction(
-    session: &mut Session,
     from_sk: &BlsSecretKey,
     to: Option<BlsPublicKey>,
     value: u64,
     deposit: u64,
     gas_limit: u64,
     gas_price: u64,
+    nonce: u64,
     exec: Option<impl Into<ContractExec>>,
 ) -> MoonlightTransaction {
     let from = BlsPublicKey::from(from_sk);
-
-    let account =
-        account(session, &from).expect("Getting the account should work");
-    let nonce = account.nonce + 1;
 
     let payload = MoonlightPayload {
         from,
