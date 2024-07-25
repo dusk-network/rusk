@@ -15,15 +15,22 @@ use alloc::vec::Vec;
 use dusk_bytes::Serializable;
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-use rusk_abi::{ContractError, ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
 
 use execution_core::{
+    signatures::bls::PublicKey as AccountPublicKey,
+    stake::STAKE_CONTRACT,
     transfer::{
-        AccountData, MoonlightTransaction, PhoenixTransaction, Transaction,
-        TreeLeaf, Withdraw, WithdrawReceiver, WithdrawReplayToken,
-        WithdrawSignature, TRANSFER_TREE_DEPTH,
+        moonlight::{AccountData, Transaction as MoonlightTransaction},
+        phoenix::{
+            Note, Sender, Transaction as PhoenixTransaction, TreeLeaf,
+            NOTES_TREE_DEPTH,
+        },
+        withdraw::{
+            Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
+        },
+        Transaction, TRANSFER_CONTRACT,
     },
-    BlsPublicKey, BlsScalar, Note, Sender,
+    BlsScalar, ContractError, ContractId,
 };
 
 use crate::transitory;
@@ -59,7 +66,7 @@ pub struct TransferState {
     // NOTE: we should never remove entries from this list, since the entries
     //       contain the nonce of the given account. Doing so opens the account
     //       up to replay attacks.
-    accounts: BTreeMap<[u8; BlsPublicKey::SIZE], AccountData>,
+    accounts: BTreeMap<[u8; AccountPublicKey::SIZE], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
 }
 
@@ -118,10 +125,7 @@ impl TransferState {
                     panic!("Invalid signature");
                 }
 
-                let sender = contract_fn_sender(
-                    fn_name,
-                    ContractId::from_bytes(*contract),
-                );
+                let sender = contract_fn_sender(fn_name, *contract);
 
                 let note = Note::transparent_stealth(*address, value, sender);
                 self.push_note_current_height(note);
@@ -184,21 +188,21 @@ impl TransferState {
     /// This can only be called by the contract specified, and only if said
     /// contract has enough balance.
     pub fn withdraw(&mut self, withdraw: Withdraw) {
-        let contract = ContractId::from_bytes(*withdraw.contract());
+        let contract = withdraw.contract();
 
         let caller = rusk_abi::caller()
             .expect("A withdrawal must happen in the context of a transaction");
-        if contract != caller {
+        if *contract != caller {
             panic!("The \"withdraw\" function can only be called by the contract specified in the payload");
         }
 
         let value = withdraw.value();
 
-        if self.contract_balance(&contract) < value {
+        if self.contract_balance(contract) < value {
             panic!("The contract doesn't have enough balance");
         }
 
-        self.sub_contract_balance(&contract, value)
+        self.sub_contract_balance(contract, value)
             .expect("Subtracting balance from contract should succeed");
 
         self.mint_withdrawal("WITHDRAW", withdraw);
@@ -224,7 +228,7 @@ impl TransferState {
             panic!("Only the first contract call can be a conversion");
         }
 
-        if *convert.contract() != TRANSFER_CONTRACT.to_bytes() {
+        if *convert.contract() != TRANSFER_CONTRACT {
             panic!("The conversion must target the transfer contract");
         }
 
@@ -366,11 +370,8 @@ impl TransferState {
         // perform contract call if present
         let mut result = Ok(Vec::new());
         if let Some(call) = tx.call() {
-            result = rusk_abi::call_raw(
-                ContractId::from_bytes(call.contract),
-                &call.fn_name,
-                &call.fn_args,
-            );
+            result =
+                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
         }
 
         result
@@ -421,7 +422,7 @@ impl TransferState {
         // the balance, increment the nonce, and rely on `refund` to be called
         // after a successful exit.
         let from_bytes = from.to_bytes(); // TODO: this is expensive. maybe we should address the
-                                          //       fact that `BlsPublicKey` doesn't impl `Ord`
+                                          //       fact that `AccountPublicKey` doesn't impl `Ord`
                                           //       so we can just use it directly as a key in the
                                           //       `BTreeMap`
 
@@ -469,11 +470,8 @@ impl TransferState {
         // perform contract call if present
         let mut result = Ok(Vec::new());
         if let Some(call) = tx.call() {
-            result = rusk_abi::call_raw(
-                ContractId::from_bytes(call.contract),
-                &call.fn_name,
-                &call.fn_args,
-            );
+            result =
+                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
         }
 
         result
@@ -582,7 +580,7 @@ impl TransferState {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>> {
+    ) -> Option<PoseidonOpening<(), NOTES_TREE_DEPTH>> {
         self.tree.opening(pos)
     }
 
@@ -598,7 +596,7 @@ impl TransferState {
             .collect()
     }
 
-    pub fn account(&self, key: &BlsPublicKey) -> AccountData {
+    pub fn account(&self, key: &AccountPublicKey) -> AccountData {
         let key_bytes = key.to_bytes();
         self.accounts
             .get(&key_bytes)
@@ -606,13 +604,13 @@ impl TransferState {
             .unwrap_or(EMPTY_ACCOUNT)
     }
 
-    pub fn add_account_balance(&mut self, key: &BlsPublicKey, value: u64) {
+    pub fn add_account_balance(&mut self, key: &AccountPublicKey, value: u64) {
         let key_bytes = key.to_bytes();
         let account = self.accounts.entry(key_bytes).or_insert(EMPTY_ACCOUNT);
         account.balance = account.balance.saturating_add(value);
     }
 
-    pub fn sub_account_balance(&mut self, key: &BlsPublicKey, value: u64) {
+    pub fn sub_account_balance(&mut self, key: &AccountPublicKey, value: u64) {
         let key_bytes = key.to_bytes();
         if let Some(account) = self.accounts.get_mut(&key_bytes) {
             account.balance = account.balance.saturating_sub(value);
