@@ -16,7 +16,7 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
 use node_data::bls::PublicKey;
-use node_data::ledger::{to_str, Fault, Hash, InvalidFault, Seed, Signature};
+use node_data::ledger::{to_str, Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
@@ -73,15 +73,14 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         let mut candidate_block_voters = vec![];
         if !disable_att_check {
-            candidate_block_voters = self
-                .verify_success_att(
-                    &candidate_block.att,
-                    candidate_block.to_consensus_header(),
-                    self.prev_header.seed,
-                    self.provisioners.current(),
-                    candidate_block.hash,
-                )
-                .await?;
+            (_, _, candidate_block_voters) = verify_att(
+                &candidate_block.att,
+                candidate_block.to_consensus_header(),
+                self.prev_header.seed,
+                self.provisioners.current(),
+                RatificationResult::Success(Vote::Valid(candidate_block.hash)),
+            )
+            .await?;
         }
 
         let pni = self.verify_failed_iterations(candidate_block).await?;
@@ -184,15 +183,14 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 .map(|h| h.seed)
         })?;
 
-        let voters = self
-            .verify_success_att(
-                &candidate_block.prev_block_cert,
-                self.prev_header.to_consensus_header(),
-                prev_block_seed,
-                self.provisioners.prev(),
-                prev_block_hash,
-            )
-            .await?;
+        let (_, _, voters) = verify_att(
+            &candidate_block.prev_block_cert,
+            self.prev_header.to_consensus_header(),
+            prev_block_seed,
+            self.provisioners.prev(),
+            RatificationResult::Success(Vote::Valid(prev_block_hash)),
+        )
+        .await?;
 
         Ok(voters)
     }
@@ -216,10 +214,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             if let Some((att, pk)) = att {
                 info!(event = "verify_att", att_type = "failed_att", iter);
 
-                if let RatificationResult::Success(_) = att.result {
-                    anyhow::bail!("Failed iterations should not contains a RatificationResult::Success");
-                }
-
                 let expected_pk = self.provisioners.current().get_generator(
                     iter as u8,
                     self.prev_header.seed,
@@ -233,6 +227,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     candidate_block.to_consensus_header(),
                     self.prev_header.seed,
                     self.provisioners.current(),
+                    RatificationResult::Fail(Vote::default()),
                 )
                 .await?;
 
@@ -243,33 +238,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         Ok(candidate_block.iteration - failed_atts)
-    }
-
-    pub async fn verify_success_att(
-        &self,
-        att: &'a ledger::Attestation,
-        consensus_header: ConsensusHeader,
-        curr_seed: Signature,
-        curr_eligible_provisioners: &Provisioners,
-        block_hash: Hash,
-    ) -> anyhow::Result<Vec<Voter>> {
-        match att.result {
-            RatificationResult::Success(Vote::Valid(hash))
-                if hash == block_hash => {}
-            _ => anyhow::bail!(
-                "Invalid attestation for block hash: {block_hash:?}"
-            ),
-        }
-
-        let (_, _, voters) = verify_att(
-            &att,
-            consensus_header,
-            curr_seed,
-            curr_eligible_provisioners,
-        )
-        .await?;
-
-        Ok(voters)
     }
 
     /// Extracts voters list of a block.
@@ -355,7 +323,32 @@ pub async fn verify_att(
     consensus_header: ConsensusHeader,
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
+    expected_result: RatificationResult,
 ) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<Voter>)> {
+    // Check expected result
+    match (att.result, expected_result) {
+        // Both are Success and the inner Valid(Hash) values match
+        (
+            RatificationResult::Success(Vote::Valid(r_hash)),
+            RatificationResult::Success(Vote::Valid(e_hash)),
+        ) => {
+            if r_hash != e_hash {
+                anyhow::bail!(
+                    "Invalid Attestation: Expected block hash: {:?}, Got: {:?}",
+                    e_hash,
+                    r_hash
+                )
+            }
+        }
+        // Both are Fail
+        (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
+        // All other mismatches
+        _ => anyhow::bail!(
+            "Invalid Attestation: Result: {:?}, Expected: {:?}",
+            att.result,
+            expected_result
+        ),
+    }
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
