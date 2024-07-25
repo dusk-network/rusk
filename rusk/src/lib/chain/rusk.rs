@@ -682,8 +682,6 @@ fn reward_slash_and_update_root(
         return Err(InvalidCreditsCount(block_height, 0));
     }
 
-    let credit_reward = voters_reward / 64 * 2;
-
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
@@ -718,6 +716,10 @@ fn reward_slash_and_update_root(
         extra_reward = generator_curr_extra_reward,
         credits,
     );
+
+    let credit_reward = voters_reward
+        / (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
+            as u64;
 
     for (to_voter, credits) in voters.unwrap_or_default() {
         let voter = to_voter.inner();
