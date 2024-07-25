@@ -156,9 +156,4 @@
       background: var(--warning-color);
     }
   }
-
-  :global(.dark .footer__actions-button) {
-    background-color: #000;
-    border-color: #000;
-  }
 </style>
