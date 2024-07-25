@@ -28,7 +28,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
-) -> Result<(QuorumResult, Committee), StepSigError> {
+) -> Result<(QuorumResult, Vec<Voter>), StepSigError> {
     let round = header.round;
     let iteration = header.iteration;
 
@@ -61,8 +61,9 @@ pub async fn verify_step_votes(
     let set = committees_set.read().await;
     let committee = set.get(&cfg).expect("committee to be created");
 
-    let quorum_result = verify_votes(header, step, vote, sv, committee)?;
-    Ok((quorum_result, committee.clone()))
+    let (quorum_result, voters) =
+        verify_votes(header, step, vote, sv, committee)?;
+    Ok((quorum_result, voters))
 }
 
 #[derive(Default)]
@@ -83,7 +84,7 @@ pub fn verify_votes(
     vote: &Vote,
     step_votes: &StepVotes,
     committee: &Committee,
-) -> Result<QuorumResult, StepSigError> {
+) -> Result<(QuorumResult, Vec<Voter>), StepSigError> {
     let bitset = step_votes.bitset;
     let signature = step_votes.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
@@ -126,7 +127,7 @@ pub fn verify_votes(
         verify_step_signature(header, step, vote, apk, signature)?;
     }
     // Verification done
-    Ok(quorum_result)
+    Ok((quorum_result, sub_committee.to_voters()))
 }
 
 impl Cluster<PublicKey> {
