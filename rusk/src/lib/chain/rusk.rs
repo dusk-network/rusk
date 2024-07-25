@@ -663,7 +663,7 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
     slashing: Vec<Slash>,
-    voters: Option<&[(BlsPublicKey, usize)]>,
+    voters: Option<&[Voter]>,
 ) -> Result<Vec<Event>> {
     let (
         dusk_value,
@@ -713,25 +713,26 @@ fn reward_slash_and_update_root(
 
     debug!(
         event = "generator rewarded",
-        voter = to_bs58(generator),
+        generator = to_bs58(generator),
         total_reward = generator_reward,
         extra_reward = generator_curr_extra_reward,
         credits,
     );
 
     for (to_voter, credits) in voters.unwrap_or_default() {
+        let voter = to_voter.inner();
         let voter_reward = *credits as u64 * credit_reward;
         let r = session.call::<_, ()>(
             STAKE_CONTRACT,
             "reward",
-            &(*to_voter, voter_reward),
+            &(*voter, voter_reward),
             u64::MAX,
         )?;
         events.extend(r.events);
 
         debug!(
             event = "validator of prev block rewarded",
-            voter = to_bs58(to_voter),
+            voter = to_bs58(voter),
             credits = *credits,
             reward = voter_reward
         )
