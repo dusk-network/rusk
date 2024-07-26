@@ -165,10 +165,13 @@ fn phoenix_with_deploy() -> Result<(), Error> {
     let mut constructor_args = vec![0; 20];
     rng.fill_bytes(&mut constructor_args);
 
+    let nonce = rng.next_u64();
+
     let deploy = ContractDeploy {
         bytecode,
         owner,
         constructor_args: Some(constructor_args),
+        nonce,
     };
 
     let transaction =
@@ -240,10 +243,13 @@ fn moonlight_with_deploy() -> Result<(), Error> {
     let mut constructor_args = vec![0; 20];
     rng.fill_bytes(&mut constructor_args);
 
+    let nonce = rng.next_u64();
+
     let deploy = ContractDeploy {
         bytecode,
         owner,
         constructor_args: Some(constructor_args),
+        nonce,
     };
 
     let transaction =

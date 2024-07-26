@@ -12,6 +12,7 @@ use execution_core::bytecode::Bytecode;
 use execution_core::transfer::{ContractDeploy, ContractExec};
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::gen_id::gen_contract_id;
 use rusk::{Result, Rusk};
 use rusk_abi::{ContractData, ContractId, PiecrustError};
 use rusk_recovery_tools::state;
@@ -77,7 +78,12 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                     bob_bytecode,
                     ContractData::builder()
                         .owner(OWNER)
-                        .constructor_arg(&BOB_INIT_VALUE),
+                        .constructor_arg(&BOB_INIT_VALUE)
+                        .contract_id(gen_contract_id(
+                            &bob_bytecode,
+                            0u64,
+                            &OWNER,
+                        )),
                     POINT_LIMIT,
                 )
                 .expect("Deploying the alice contract should succeed");
@@ -121,6 +127,7 @@ fn make_and_execute_transaction_deploy(
                 },
                 owner: OWNER.to_vec(),
                 constructor_args,
+                nonce: 0,
             }),
             SENDER_INDEX,
             gas_limit,
@@ -191,7 +198,7 @@ impl Fixture {
             "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
         )
         .to_vec();
-        let contract_id = bytecode_hash(bob_bytecode.as_slice());
+        let contract_id = gen_contract_id(&bob_bytecode, 0u64, &OWNER);
 
         let path = tmp.into_path();
         Self {

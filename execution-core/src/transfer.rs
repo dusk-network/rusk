@@ -328,6 +328,8 @@ pub struct ContractDeploy {
     pub owner: Vec<u8>,
     /// Constructor arguments of the deployed contract.
     pub constructor_args: Option<Vec<u8>>,
+    /// Nonce for contract id uniqueness and vanity
+    pub nonce: u64,
 }
 
 /// All the data the transfer-contract needs to perform a contract-call.
@@ -365,6 +367,8 @@ impl ContractDeploy {
             None => bytes.push(0),
         }
 
+        bytes.extend(self.nonce.to_bytes());
+
         bytes
     }
 
@@ -385,10 +389,13 @@ impl ContractDeploy {
             _ => return Err(BytesError::InvalidData),
         };
 
+        let nonce = u64::from_reader(&mut buf)?;
+
         Ok(Self {
             bytecode,
             owner,
             constructor_args,
+            nonce,
         })
     }
 }

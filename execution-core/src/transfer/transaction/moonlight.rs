@@ -91,6 +91,7 @@ impl Transaction {
                         hash: deploy.bytecode.hash,
                         bytes: Vec::new(),
                     },
+                    nonce: deploy.nonce,
                 })),
             },
             *self.signature(),

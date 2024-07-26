@@ -81,8 +81,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       next_epoch,
   }`
 
+### Added
+
+- Add `nonce` contract deploy transaction [#1884]
+
+
 [#1963]: https://github.com/dusk-network/rusk/issues/1963
 [#1963]: https://github.com/dusk-network/rusk/issues/1856
+[#1884]: https://github.com/dusk-network/rusk/issues/1884
 [#1882]: https://github.com/dusk-network/rusk/issues/1882
 [#1723]: https://github.com/dusk-network/rusk/issues/1723
 
