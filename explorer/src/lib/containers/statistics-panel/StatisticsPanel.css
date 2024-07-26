@@ -36,7 +36,7 @@
 .statistics-panel__statistics-item::before {
   content: "";
   position: absolute;
-  background-color: var(--primary-color);
+  background-color: var(--taupe-grey);
   z-index: 1;
 }
 
