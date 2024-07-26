@@ -156,12 +156,13 @@ pub fn verify_att(c: &mut Criterion) {
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
-                    let consensus_header = ConsensusHeader {
-                        prev_block_hash: [0u8; 32],
-                        round: tip_header.height + 1,
-                        iteration: 0,
-                    };
                     b.to_async(FuturesExecutor).iter(|| async {
+                        let consensus_header = ConsensusHeader {
+                            prev_block_hash: [0u8; 32],
+                            round: tip_header.height + 1,
+                            iteration: 0,
+                        };
+
                         chain::verify_att(
                             &att,
                             consensus_header,
