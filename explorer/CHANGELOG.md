@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement warning for stale market data [#1892]
 
+### Changed
+
+- Update font-display to swap for custom fonts to improve performance [#2025]
+
 ## [0.1.0] - 2024-07-24
 
 ### Added
@@ -21,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#2017]: https://github.com/dusk-network/rusk/issues/2017
 [#1892]: https://github.com/dusk-network/rusk/issues/1892
+[#2025]: https://github.com/dusk-network/rusk/issues/2025
 
 <!-- VERSIONS -->
 
