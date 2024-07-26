@@ -52,7 +52,7 @@ impl ContextProvisioners {
     pub fn prev(&self) -> &Provisioners {
         self.prev.as_ref().unwrap_or(&self.current)
     }
-    /// Swap `self.current` and `self.prev` and update `self.current` with [new]
+    /// Swap `self.current` and `self.prev` and update `self.current` with `new`
     pub fn update_and_swap(&mut self, mut new: Provisioners) {
         mem::swap(&mut self.current, &mut new);
 
@@ -68,7 +68,7 @@ impl ContextProvisioners {
         self.prev = Some(prev);
     }
 
-    /// Change `self.current` with [new] and set `self.prev` to [None]
+    /// Change `self.current` with `new` and set `self.prev` to [None]
     pub fn update(&mut self, new: Provisioners) {
         self.current = new;
         self.prev = None;

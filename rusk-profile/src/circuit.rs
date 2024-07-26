@@ -95,7 +95,7 @@ impl Circuit {
     /// Checks whether [`Circuit::id`] is correct.
     ///
     /// Note: The check can only be performed when the plonk-version is stored
-    /// in the [`Metadata`]
+    /// as metadata in the [`Circuit`]
     pub fn check_id(&self) -> Option<bool> {
         match self.plonk_version() {
             None => None,
