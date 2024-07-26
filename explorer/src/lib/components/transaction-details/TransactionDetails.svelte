@@ -7,6 +7,7 @@
     DataGuard,
     ListItem,
     Rerender,
+    StaleDataNotice,
   } from "$lib/components";
   import { Badge, Card, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -143,6 +144,7 @@
         <DataGuard data={market?.currentPrice.usd}>
           {`${feeFormatter(luxToDusk(data.feepaid))} DUSK (${currencyFormatter(luxToDusk(data.feepaid) * /** @type {number} */ (market?.currentPrice.usd))})`}
         </DataGuard>
+        <StaleDataNotice />
       </svelte:fragment>
     </ListItem>
 
@@ -153,6 +155,7 @@
         <DataGuard data={market?.currentPrice.usd}>
           {`${feeFormatter(luxToDusk(data.gasprice))} DUSK (${currencyFormatter(luxToDusk(data.gasprice) * /** @type {number} */ (market?.currentPrice.usd))})`}
         </DataGuard>
+        <StaleDataNotice />
       </svelte:fragment>
     </ListItem>
 

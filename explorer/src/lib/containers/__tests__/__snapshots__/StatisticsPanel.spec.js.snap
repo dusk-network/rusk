@@ -31,6 +31,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
+          
         </div>
          
         <span
@@ -59,6 +61,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           <span>
             - - -
           </span>
+          
+           
           
         </div>
          
@@ -94,6 +98,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
         </div>
          
         <span
@@ -123,6 +128,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
         </div>
          
         <span
@@ -157,6 +163,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
         </div>
          
         <span
@@ -186,6 +193,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
         </div>
          
         <span
@@ -220,6 +228,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
         </div>
          
         <span
@@ -249,6 +258,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
             - - -
           </span>
           
+           
         </div>
          
         <span
@@ -1025,6 +1035,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           0.368
           
           
+           
+          
         </div>
          
         <span
@@ -1052,6 +1064,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
            
           168M
           
+          
+           
           
         </div>
          
@@ -1086,6 +1100,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           58.2M
           
           
+           
         </div>
          
         <span
@@ -1114,6 +1129,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           2.6M
           
           
+           
         </div>
          
         <span
@@ -1147,6 +1163,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           487,596
           
           
+           
         </div>
          
         <span
@@ -1175,6 +1192,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           10
           
           
+           
         </div>
          
         <span
@@ -1208,6 +1226,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           945
           
           
+           
         </div>
          
         <span
@@ -1236,6 +1255,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           34
           
           
+           
         </div>
          
         <span

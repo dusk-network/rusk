@@ -13,7 +13,7 @@
   import { createCompactFormatter } from "$lib/dusk/value";
   import { duskIcon } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
-  import { DataGuard, WorldMap } from "$lib/components";
+  import { DataGuard, StaleDataNotice, WorldMap } from "$lib/components";
   import { duskAPI } from "$lib/services";
   import {
     createDataStore,
@@ -55,12 +55,14 @@
   $: statistics = [
     [
       {
+        canBeStale: true,
         compact: true,
         data: marketData?.currentPrice.usd,
         icon: mdiCurrencyUsd,
         title: "Dusk Price",
       },
       {
+        canBeStale: true,
         compact: true,
         data: marketData?.marketCap.usd,
         icon: mdiCurrencyUsd,
@@ -70,6 +72,7 @@
 
     [
       {
+        canBeStale: false,
         compact: true,
         data: statsData?.activeStake
           ? luxToDusk(statsData?.activeStake)
@@ -78,6 +81,7 @@
         title: "Current Staked Amount",
       },
       {
+        canBeStale: false,
         compact: true,
         data: statsData?.waitingStake
           ? luxToDusk(statsData?.waitingStake)
@@ -89,12 +93,14 @@
 
     [
       {
+        canBeStale: false,
         compact: false,
         data: statsData?.lastBlock,
         icon: mdiCubeOutline,
         title: "Last Block",
       },
       {
+        canBeStale: false,
         compact: true,
         data: statsData?.txs100blocks.transfers,
         icon: mdiSwapVertical,
@@ -104,12 +110,14 @@
 
     [
       {
+        canBeStale: false,
         compact: true,
         data: statsData?.activeProvisioners,
         icon: mdiAccountGroupOutline,
         title: "Provisioners",
       },
       {
+        canBeStale: false,
         compact: true,
         data: statsData?.waitingProvisioners,
         icon: mdiAccountGroupOutline,
@@ -135,6 +143,9 @@
                   {valueFormatter(item.data)}
                 {/if}
               </DataGuard>
+              {#if item.canBeStale}
+                <StaleDataNotice />
+              {/if}
             </div>
             <span class="statistics-panel__statistics-item-title"
               >{item.title}</span

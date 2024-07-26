@@ -233,5 +233,5 @@
   style:left={`${x}px`}
   style:top={`${y}px`}
 >
-  {text}
+  {text.replace(/\\r\\n|\\r|\\n|\\t/g, (m) => (m === "\\t" ? "\t" : "\n"))}
 </div>

@@ -200,6 +200,8 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         0.000290766 DUSK ($0.0001071037)
         
          
+        
+         
       </dd>
       <dt
         class="details-list__term"
@@ -226,6 +228,8 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         class="details-list__definition"
       >
         0.000000001 DUSK ($0.0000000004)
+        
+         
         
          
       </dd>
@@ -525,6 +529,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
         0.000290766 DUSK ($0.0001071037)
         
          
+        
+         
       </dd>
       <dt
         class="details-list__term"
@@ -551,6 +557,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
         class="details-list__definition"
       >
         0.000000001 DUSK ($0.0000000004)
+        
+         
         
          
       </dd>
