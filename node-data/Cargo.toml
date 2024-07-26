@@ -10,7 +10,6 @@ sha2 = "0.10"
 fake = { version = "2.5", features = ['derive'], optional = true }
 rand = { version = "0.8", optional = true }
 hex = { version = "0.4", optional = true }
-rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false }
 execution-core = { version = "0.1.0", path = "../execution-core" }
 
 rand_core = { version = "0.6", default-features = false }

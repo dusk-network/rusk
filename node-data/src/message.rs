@@ -5,9 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable as DuskSerializable;
-use execution_core::{
-    BlsMultisigPublicKey, BlsMultisigSignature, BlsPublicKey, BlsSecretKey,
-    BlsSigError,
+use execution_core::signatures::bls::{
+    Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+    MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
+    SecretKey as BlsSecretKey,
 };
 use tracing::warn;
 

@@ -18,7 +18,9 @@ use std::fs;
 use std::path::PathBuf;
 use tracing::warn;
 
-use execution_core::{BlsPublicKey, BlsSecretKey};
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
 
 /// Extends BlsPublicKey by implementing a few traits

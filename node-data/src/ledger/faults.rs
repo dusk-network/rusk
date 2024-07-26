@@ -16,8 +16,12 @@ use crate::{
 
 use dusk_bytes::Serializable as DuskSerializeble;
 use execution_core::{
-    stake::EPOCH, BlsMultisigPublicKey, BlsMultisigSignature, BlsScalar,
-    BlsSigError,
+    signatures::bls::{
+        Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+        MultisigSignature as BlsMultisigSignature,
+    },
+    stake::EPOCH,
+    BlsScalar,
 };
 use thiserror::Error;
 use tracing::error;
