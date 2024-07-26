@@ -122,6 +122,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
     class="details-list__definition details-list__definition--table"
   >
     <div
+      aria-label="Gas Used"
       class="dusk-progress-bar blocks-list__gas-used"
       role="progressbar"
     >

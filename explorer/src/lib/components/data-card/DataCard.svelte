@@ -43,7 +43,7 @@
     {/if}
   </header>
   {#if loading && !data}
-    <ProgressBar className="data-card__progress-bar" />
+    <ProgressBar ariaLabel="Loading" className="data-card__progress-bar" />
   {:else if error || hasEmptyData}
     <DataAlert on:retry {error} />
   {:else if data}

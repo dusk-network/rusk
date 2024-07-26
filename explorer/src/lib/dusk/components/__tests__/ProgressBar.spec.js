@@ -14,7 +14,7 @@ describe("ProgressBar", () => {
 
   it("renders the Stepper component with current percentage set as zero", () => {
     const { container } = render(ProgressBar, {
-      props: { currentPercentage: 0 },
+      props: { ariaLabel: "Loading", currentPercentage: 0 },
     });
 
     expect(container.firstChild).toMatchSnapshot();
@@ -22,7 +22,7 @@ describe("ProgressBar", () => {
 
   it("re-renders the Stepper component when the current percentage property changes", async () => {
     const { container, rerender } = render(ProgressBar, {
-      props: { currentPercentage: 0 },
+      props: { ariaLabel: "Loading", currentPercentage: 0 },
     });
 
     expect(container.firstChild).toMatchSnapshot();

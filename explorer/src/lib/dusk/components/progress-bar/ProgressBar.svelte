@@ -10,10 +10,13 @@
   /** @type {string | Undefined} */
   export let className = undefined;
 
+  /** @type {string} */
+  export let ariaLabel;
+
   $: classes = makeClassName(["dusk-progress-bar", className]);
 </script>
 
-<div role="progressbar" class={classes}>
+<div role="progressbar" class={classes} aria-label={ariaLabel}>
   <div
     style={currentPercentage !== undefined
       ? `width: ${currentPercentage}%`

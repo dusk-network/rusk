@@ -28,6 +28,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if the card
   </header>
    
   <div
+    aria-label="Loading"
     class="dusk-progress-bar data-card__progress-bar"
     role="progressbar"
   >

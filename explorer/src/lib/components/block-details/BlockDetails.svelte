@@ -153,6 +153,7 @@
             data.transactions.stats.gasLimit) *
             100}
           className="block-details__gas-used"
+          ariaLabel="Gas Used"
         />
       </svelte:fragment>
     </ListItem>

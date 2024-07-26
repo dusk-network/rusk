@@ -23,6 +23,7 @@ exports[`Block Details > should render the Block Details page and query the nece
       </header>
        
       <div
+        aria-label="Loading"
         class="dusk-progress-bar data-card__progress-bar"
         role="progressbar"
       >
@@ -55,6 +56,7 @@ exports[`Block Details > should render the Block Details page and query the nece
       </header>
        
       <div
+        aria-label="Loading"
         class="dusk-progress-bar data-card__progress-bar"
         role="progressbar"
       >
@@ -359,6 +361,7 @@ exports[`Block Details > should render the Block Details page and query the nece
             580,718
              
             <div
+              aria-label="Gas Used"
               class="dusk-progress-bar block-details__gas-used"
               role="progressbar"
             >

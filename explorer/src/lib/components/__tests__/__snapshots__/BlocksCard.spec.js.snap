@@ -795,6 +795,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -982,6 +983,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -1169,6 +1171,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -1356,6 +1359,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -1543,6 +1547,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -1730,6 +1735,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -1917,6 +1923,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -2104,6 +2111,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -2291,6 +2299,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -2478,6 +2487,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
           class="details-list__definition details-list__definition--table"
         >
           <div
+            aria-label="Gas Used"
             class="dusk-progress-bar blocks-list__gas-used"
             role="progressbar"
           >
@@ -2578,6 +2588,7 @@ exports[`Blocks Card > should disable the \`Show More\` button is the card is in
   </header>
    
   <div
+    aria-label="Loading"
     class="dusk-progress-bar data-card__progress-bar"
     role="progressbar"
   >
