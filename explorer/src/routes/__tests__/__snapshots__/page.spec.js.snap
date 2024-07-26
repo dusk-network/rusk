@@ -107,7 +107,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Current Staked Amount
+            Current Stake
           </span>
         </div>
         <div
@@ -137,7 +137,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Next Epoch Staked Amount
+            Pending Stake
           </span>
         </div>
          
@@ -237,7 +237,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Provisioners
+            Active Provisioners
           </span>
         </div>
         <div
@@ -267,7 +267,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Next Epoch Provisioners
+            Pending Provisioners
           </span>
         </div>
          
@@ -1114,7 +1114,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Current Staked Amount
+            Current Stake
           </span>
         </div>
         <div
@@ -1144,7 +1144,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Next Epoch Staked Amount
+            Pending Stake
           </span>
         </div>
          
@@ -1244,7 +1244,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Provisioners
+            Active Provisioners
           </span>
         </div>
         <div
@@ -1274,7 +1274,7 @@ exports[`home page > should render the home page, start polling for the latest c
           <span
             class="statistics-panel__statistics-item-title"
           >
-            Next Epoch Provisioners
+            Pending Provisioners
           </span>
         </div>
          

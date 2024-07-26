@@ -78,7 +78,7 @@
           ? luxToDusk(statsData?.activeStake)
           : undefined,
         icon: duskIcon,
-        title: "Current Staked Amount",
+        title: "Current Stake",
       },
       {
         canBeStale: false,
@@ -87,7 +87,7 @@
           ? luxToDusk(statsData?.waitingStake)
           : undefined,
         icon: duskIcon,
-        title: "Next Epoch Staked Amount",
+        title: "Pending Stake",
       },
     ],
 
@@ -114,14 +114,14 @@
         compact: true,
         data: statsData?.activeProvisioners,
         icon: mdiAccountGroupOutline,
-        title: "Provisioners",
+        title: "Active Provisioners",
       },
       {
         canBeStale: false,
         compact: true,
         data: statsData?.waitingProvisioners,
         icon: mdiAccountGroupOutline,
-        title: "Next Epoch Provisioners",
+        title: "Pending Provisioners",
       },
     ],
   ];
