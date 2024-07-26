@@ -145,10 +145,8 @@ impl Cluster<PublicKey> {
         }
     }
 
-    pub fn to_voters(&self) -> Vec<Voter> {
-        self.iter()
-            .map(|(public_key, &weight)| (public_key.clone(), weight))
-            .collect()
+    pub fn to_voters(self) -> Vec<Voter> {
+        self.into_vec()
     }
 }
 
