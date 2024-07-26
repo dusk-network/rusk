@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update Statistics Panel labels for clarity [#2034]
 - Update font-display to swap for custom fonts to improve performance [#2025]
 
 ## [0.1.0] - 2024-07-24
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2017]: https://github.com/dusk-network/rusk/issues/2017
 [#1892]: https://github.com/dusk-network/rusk/issues/1892
 [#2025]: https://github.com/dusk-network/rusk/issues/2025
+[#2034]: https://github.com/dusk-network/rusk/issues/2034
 
 <!-- VERSIONS -->
 

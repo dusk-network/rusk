@@ -104,7 +104,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Current Staked Amount
+          Current Stake
         </span>
       </div>
       <div
@@ -134,7 +134,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Next Epoch Staked Amount
+          Pending Stake
         </span>
       </div>
        
@@ -234,7 +234,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Provisioners
+          Active Provisioners
         </span>
       </div>
       <div
@@ -264,7 +264,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Next Epoch Provisioners
+          Pending Provisioners
         </span>
       </div>
        
@@ -1106,7 +1106,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Current Staked Amount
+          Current Stake
         </span>
       </div>
       <div
@@ -1135,7 +1135,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Next Epoch Staked Amount
+          Pending Stake
         </span>
       </div>
        
@@ -1232,7 +1232,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Provisioners
+          Active Provisioners
         </span>
       </div>
       <div
@@ -1261,7 +1261,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          Next Epoch Provisioners
+          Pending Provisioners
         </span>
       </div>
        
