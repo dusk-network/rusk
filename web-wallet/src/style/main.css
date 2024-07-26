@@ -33,6 +33,7 @@
   font-style: normal;
   font-weight: 400;
   src: url("/fonts/soehne-buch.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
@@ -40,6 +41,7 @@
   font-style: normal;
   font-weight: 500;
   src: url("/fonts/soehne-kraftig.woff2") format("woff2");
+  font-display: swap;
 }
 
 * {
