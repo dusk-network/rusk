@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add accessible name to the nav bar button on mobile [#2036]
 - Implement warning for stale market data [#1892]
 
 ### Changed
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2025]: https://github.com/dusk-network/rusk/issues/2025
 [#2034]: https://github.com/dusk-network/rusk/issues/2034
 [#2039]: https://github.com/dusk-network/rusk/issues/2039
+[#2036]: https://github.com/dusk-network/rusk/issues/2036
 
 <!-- VERSIONS -->
 

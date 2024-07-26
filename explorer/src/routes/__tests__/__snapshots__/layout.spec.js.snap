@@ -21,6 +21,7 @@ exports[`Main layout > should render the app's main layout 1`] = `
       <button
         aria-controls="dusk-navbar-menu"
         aria-expanded="false"
+        aria-label="Toggle Menu"
         class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button dusk-navbar__toggle"
         type="button"
       >
