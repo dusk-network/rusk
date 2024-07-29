@@ -12,7 +12,7 @@ use execution_core::{
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::chain::MINIMUM_STAKE;
+use rusk::node::MINIMUM_STAKE;
 use rusk::{Result, Rusk};
 use rusk_abi::dusk::dusk;
 use rusk_abi::STAKE_CONTRACT;

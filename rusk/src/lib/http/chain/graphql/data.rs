@@ -89,7 +89,7 @@ impl Block {
     }
 
     pub async fn reward(&self) -> u64 {
-        crate::chain::emission_amount(self.header.height)
+        crate::node::emission_amount(self.header.height)
     }
 
     pub async fn fees(

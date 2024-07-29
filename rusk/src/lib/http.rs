@@ -65,9 +65,9 @@ use anyhow::Error as AnyhowError;
 use hyper_util::rt::TokioIo;
 use rand::rngs::OsRng;
 
-#[cfg(feature = "node")]
-use crate::chain::{Rusk, RuskNode};
 use crate::http::event::{FullOrStreamBody, RuesEventData};
+#[cfg(feature = "node")]
+use crate::node::{Rusk, RuskNode};
 use crate::VERSION;
 
 pub use self::event::{ContractEvent, RuesEvent};

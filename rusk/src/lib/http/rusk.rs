@@ -17,7 +17,7 @@ use tokio::task;
 
 use rusk_abi::ContractId;
 
-use crate::chain::Rusk;
+use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 

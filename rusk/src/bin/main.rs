@@ -23,9 +23,9 @@ use node::{
     telemetry::TelemetrySrv,
     LongLivedService, Node,
 };
-#[cfg(feature = "node")]
-use rusk::chain::Rusk;
 use rusk::http::{DataSources, HttpServer};
+#[cfg(feature = "node")]
+use rusk::node::Rusk;
 use rusk::Result;
 
 use tokio::sync::broadcast;
@@ -142,7 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         let net = Kadcast::new(config.clone().kadcast.into())?;
 
-        let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
+        let node = rusk::node::RuskNode(Node::new(net, db, rusk.clone()));
         (rusk, node, service_list)
     };
     let mut _ws_server = None;
