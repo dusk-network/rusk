@@ -382,8 +382,14 @@ impl TransferState {
                 if total_value > account.balance {
                     panic!("Account doesn't have enough funds");
                 }
-                if payload.nonce <= account.nonce {
-                    panic!("Replayed nonce");
+
+                // NOTE: exhausting the nonce is nearly impossible, since it
+                //       requires performing more than 18 quintillion
+                //       transactions. Since this number is so large, we also
+                //       skip overflow checks.
+                let incremented_nonce = account.nonce + 1;
+                if payload.nonce != incremented_nonce {
+                    panic!("Invalid nonce");
                 }
 
                 account.balance -= total_value;
