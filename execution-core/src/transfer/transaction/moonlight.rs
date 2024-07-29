@@ -179,12 +179,11 @@ pub struct Payload {
     pub gas_limit: u64,
     /// Price for each unit of gas.
     pub gas_price: u64,
-    /// Nonce used for replay protection. Nonces are strictly increasing,
-    /// meaning that once a transaction has been settled, only a higher
-    /// nonce can be used.
+    /// Nonce used for replay protection. Nonces are strictly increasing and
+    /// incremental, meaning that for a transaction to be valid, only the
+    /// current nonce + 1 can be used.
     ///
-    /// The current nonce is queryable via the transfer contract and best
-    /// practice is to use `nonce + 1` for a single transaction.
+    /// The current nonce is queryable via the transfer contract.
     pub nonce: u64,
     /// Data to do a contract call or deployment.
     pub exec: Option<ContractExec>,

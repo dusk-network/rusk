@@ -73,13 +73,12 @@ impl Stake {
         self.value
     }
 
-    /// Nonce used for replay protection. Nonces are strictly increasing,
-    /// meaning that once a transaction has been settled, only a higher
-    /// nonce can be used.
+    /// Nonce used for replay protection. Nonces are strictly increasing and
+    /// incremental, meaning that for a transaction to be valid, only the
+    /// current nonce + 1 can be used.
     ///
     /// The current nonce is queryable via the stake contract in the form of
-    /// [`StakeData`] and best practice is to use `nonce + 1` for a single
-    /// transaction.
+    /// [`StakeData`].
     #[must_use]
     pub fn nonce(&self) -> u64 {
         self.nonce
@@ -206,12 +205,12 @@ pub struct StakeData {
     pub amount: Option<StakeAmount>,
     /// The reward for participating in consensus.
     pub reward: u64,
-    /// Nonce used for replay protection. Nonces are strictly increasing,
-    /// meaning that once a transaction has been settled, only a higher
-    /// nonce can be used.
+    /// Nonce used for replay protection. Nonces are strictly increasing and
+    /// incremental, meaning that for a transaction to be valid, only the
+    /// current nonce + 1 can be used.
     ///
-    /// The current nonce is queryable via the stake contract and best
-    /// practice is to use `nonce + 1` for a single transaction.
+    /// The current nonce is queryable via the stake contract in the form of
+    /// [`StakeData`].
     pub nonce: u64,
     /// Faults
     pub faults: u8,

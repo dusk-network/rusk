@@ -84,9 +84,14 @@ impl StakeState {
             panic!("Can't stake twice for the same key");
         }
 
+        // NOTE: exhausting the nonce is nearly impossible, since it
+        //       requires performing more than 18 quintillion stake operations.
+        //       Since this number is so large, we also skip overflow checks.
+        let incremented_nonce = loaded_stake.nonce + 1;
+
         // check signature and nonce used are correct
-        if nonce <= loaded_stake.nonce {
-            panic!("Replayed nonce");
+        if nonce != incremented_nonce {
+            panic!("Invalid nonce");
         }
 
         let digest = stake.signature_message().to_vec();
