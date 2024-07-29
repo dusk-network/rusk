@@ -10,9 +10,11 @@ mod args;
 mod config;
 #[cfg(feature = "ephemeral")]
 mod ephemeral;
+mod log;
 
 use clap::Parser;
 
+use log::Log;
 #[cfg(feature = "node")]
 use node::{
     chain::ChainSrv,
@@ -31,7 +33,6 @@ use rusk::Result;
 use tokio::sync::broadcast;
 
 use tracing::info;
-use tracing_subscriber::filter::EnvFilter;
 
 use crate::config::Config;
 
@@ -43,51 +44,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = Config::from(&args);
 
-    let log = config.log_level();
-    let log_filter = config.log_filter();
-
-    // Generate a subscriber with the desired default log level and optional log
-    // filter.
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(EnvFilter::new(log_filter).add_directive(log.into()));
+    let log = Log::new(config.log_level(), config.log_filter());
 
     #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
     // Set custom tracing format if subcommand is specified
     if let Some(command) = args.command {
-        let subscriber = subscriber
-            .with_level(false)
-            .without_time()
-            .with_target(false)
-            .finish();
-        tracing::subscriber::set_global_default(subscriber)?;
+        log.register()?;
         command.run()?;
         return Ok(());
     }
 
-    // Set the subscriber as global.
-    // so this subscriber will be used as the default in all threads for the
-    // remainder of the duration of the program, similar to how `loggers`
-    // work in the `log` crate.
-    match config.log_type().as_str() {
-        "json" => {
-            let subscriber = subscriber
-                .json()
-                .with_current_span(false)
-                .flatten_event(true)
-                .finish();
-
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        "plain" => {
-            let subscriber = subscriber.with_ansi(false).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        "coloured" => {
-            let subscriber = subscriber.finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        _ => unreachable!(),
-    };
+    log.with_format(config.log_type()).register()?;
 
     #[cfg(feature = "ephemeral")]
     let tempdir = match args.state_path {
