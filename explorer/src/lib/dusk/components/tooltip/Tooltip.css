@@ -4,7 +4,7 @@
   width: max-content;
   max-width: 40%;
   white-space: break-spaces;
-  z-index: 1;
+  z-index: 9999;
 
   --tip-size: 0.625em;
   --half-tip-size: calc(var(--tip-size) / 2);
