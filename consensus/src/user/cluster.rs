@@ -43,6 +43,10 @@ where
         self.0.iter()
     }
 
+    pub fn into_vec(self) -> Vec<(T, usize)> {
+        self.0.into_iter().collect()
+    }
+
     pub fn contains_key(&self, key: &T) -> bool {
         self.0.contains_key(key)
     }

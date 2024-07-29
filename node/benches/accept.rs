@@ -26,6 +26,7 @@ use node_data::ledger::{Attestation, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
+use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -105,8 +106,8 @@ where
     r
 }
 
-pub fn verify_block_att(c: &mut Criterion) {
-    with_group("verify_block_att", c, |group| {
+pub fn verify_att(c: &mut Criterion) {
+    with_group("verify_att", c, |group| {
         for input in INPUTS {
             group.measurement_time(Duration::from_secs(input.measurement_time));
             let mut keys = vec![];
@@ -151,18 +152,25 @@ pub fn verify_block_att(c: &mut Criterion) {
 
             group.bench_function(
                 BenchmarkId::new(
-                    "verify_block_att",
+                    "verify_att",
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
                     b.to_async(FuturesExecutor).iter(|| async {
-                        chain::verify_block_att(
-                            [0u8; 32],
+                        let consensus_header = ConsensusHeader {
+                            prev_block_hash: [0u8; 32],
+                            round: tip_header.height + 1,
+                            iteration: 0,
+                        };
+
+                        chain::verify_att(
+                            &att,
+                            consensus_header,
                             tip_header.seed,
                             &provisioners,
-                            tip_header.height + 1,
-                            &att,
-                            iteration,
+                            RatificationResult::Success(Vote::Valid(
+                                block_hash,
+                            )),
                         )
                         .await
                         .expect("block to be verified")
@@ -200,5 +208,5 @@ const INPUTS: &[Input] = &[
         measurement_time: 15,
     },
 ];
-criterion_group!(benches, verify_block_att);
+criterion_group!(benches, verify_att);
 criterion_main!(benches);

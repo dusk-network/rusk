@@ -20,9 +20,7 @@ use dusk_consensus::config::{
     validation_committee_quorum, validation_extra,
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
-use dusk_consensus::operations::{
-    CallParams, VerificationOutput, VoterWithCredits,
-};
+use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use execution_core::bytecode::Bytecode;
 use execution_core::transfer::ContractDeploy;
 use execution_core::{
@@ -220,7 +218,7 @@ impl Rusk {
         generator: &BlsPublicKey,
         txs: &[Transaction],
         slashing: Vec<Slash>,
-        voters: Option<&[VoterWithCredits]>,
+        voters: Option<&[Voter]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -251,7 +249,7 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         slashing: Vec<Slash>,
-        voters: Option<&[VoterWithCredits]>,
+        voters: Option<&[Voter]>,
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -440,7 +438,7 @@ fn accept(
     generator: &BlsPublicKey,
     txs: &[Transaction],
     slashing: Vec<Slash>,
-    voters: Option<&[VoterWithCredits]>,
+    voters: Option<&[Voter]>,
     gas_per_deploy_byte: Option<u64>,
 ) -> Result<(
     Vec<SpentTransaction>,
@@ -670,7 +668,7 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
     slashing: Vec<Slash>,
-    voters: Option<&[(BlsPublicKey, usize)]>,
+    voters: Option<&[Voter]>,
 ) -> Result<Vec<Event>> {
     let (
         dusk_value,
@@ -688,8 +686,6 @@ fn reward_slash_and_update_root(
     if voters.is_some() && credits == 0 && block_height > 1 {
         return Err(InvalidCreditsCount(block_height, 0));
     }
-
-    let credit_reward = voters_reward / 64 * 2;
 
     let r = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -720,25 +716,30 @@ fn reward_slash_and_update_root(
 
     debug!(
         event = "generator rewarded",
-        voter = to_bs58(generator),
+        generator = to_bs58(generator),
         total_reward = generator_reward,
         extra_reward = generator_curr_extra_reward,
         credits,
     );
 
+    let credit_reward = voters_reward
+        / (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
+            as u64;
+
     for (to_voter, credits) in voters.unwrap_or_default() {
+        let voter = to_voter.inner();
         let voter_reward = *credits as u64 * credit_reward;
         let r = session.call::<_, ()>(
             STAKE_CONTRACT,
             "reward",
-            &(*to_voter, voter_reward),
+            &(*voter, voter_reward),
             u64::MAX,
         )?;
         events.extend(r.events);
 
         debug!(
             event = "validator of prev block rewarded",
-            voter = to_bs58(to_voter),
+            voter = to_bs58(voter),
             credits = *credits,
             reward = voter_reward
         )

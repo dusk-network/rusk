@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::message::ConsensusHeader;
+
 use super::*;
 
 pub type Seed = Signature;
@@ -58,6 +60,15 @@ impl std::fmt::Debug for Header {
 }
 
 impl Header {
+    /// Return the corresponding ConsensusHeader
+    pub fn to_consensus_header(&self) -> ConsensusHeader {
+        ConsensusHeader {
+            prev_block_hash: self.prev_block_hash,
+            round: self.height,
+            iteration: self.iteration,
+        }
+    }
+
     /// Marshal hashable fields.
     pub(crate) fn marshal_hashable<W: Write>(
         &self,

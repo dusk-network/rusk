@@ -7,7 +7,7 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config;
 use crate::execution_ctx::ExecutionCtx;
-use crate::operations::{Operations, VoterWithCredits};
+use crate::operations::{Operations, Voter};
 use crate::validation::handler;
 use anyhow::anyhow;
 use node_data::ledger::{to_str, Block};
@@ -140,7 +140,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
     async fn call_vst(
         candidate: &Block,
-        voters: &[VoterWithCredits],
+        voters: &[Voter],
         executor: &Arc<T>,
     ) -> anyhow::Result<()> {
         match executor.verify_state_transition(candidate, voters).await {

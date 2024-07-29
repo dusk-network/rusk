@@ -22,7 +22,7 @@ use crate::{LongLivedService, Message};
 use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::commons::ConsensusError;
-pub use header_validation::verify_block_att;
+pub use header_validation::verify_att;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};

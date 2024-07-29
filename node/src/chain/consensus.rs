@@ -10,8 +10,7 @@ use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
-    self, CallParams, Error, Operations, Output, VerificationOutput,
-    VoterWithCredits,
+    self, CallParams, Error, Operations, Output, VerificationOutput, Voter,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
@@ -87,7 +86,7 @@ impl Task {
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         base_timeout: TimeoutSet,
-        voters: Vec<VoterWithCredits>,
+        voters: Vec<Voter>,
     ) {
         let current = provisioners_list.to_current();
         let consensus_task = Consensus::new(
@@ -248,7 +247,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         candidate_header: &Header,
         disable_winning_att_check: bool,
-    ) -> Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>), Error> {
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
@@ -277,7 +276,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     async fn verify_state_transition(
         &self,
         blk: &Block,
-        voters: &[VoterWithCredits],
+        voters: &[Voter],
     ) -> Result<VerificationOutput, dusk_consensus::operations::Error> {
         info!("verifying state");
 

@@ -9,16 +9,18 @@ use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::MINIMUM_BLOCK_TIME;
-use dusk_consensus::operations::VoterWithCredits;
+use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
-use dusk_consensus::user::committee::{Committee, CommitteeSet};
+use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
+use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
@@ -62,17 +64,23 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn execute_checks(
         &self,
         candidate_block: &ledger::Header,
-        disable_winner_att_check: bool,
-    ) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)>
-    {
+        disable_att_check: bool,
+    ) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
         self.verify_basic_fields(candidate_block).await?;
+
         let prev_block_voters =
             self.verify_prev_block_cert(candidate_block).await?;
 
         let mut candidate_block_voters = vec![];
-        if !disable_winner_att_check {
-            candidate_block_voters =
-                self.verify_success_att(candidate_block).await?;
+        if !disable_att_check {
+            (_, _, candidate_block_voters) = verify_att(
+                &candidate_block.att,
+                candidate_block.to_consensus_header(),
+                self.prev_header.seed,
+                self.provisioners.current(),
+                RatificationResult::Success(Vote::Valid(candidate_block.hash)),
+            )
+            .await?;
         }
 
         let pni = self.verify_failed_iterations(candidate_block).await?;
@@ -162,10 +170,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<Vec<VoterWithCredits>> {
+    ) -> anyhow::Result<Vec<Voter>> {
         if self.prev_header.height == 0 {
             return Ok(vec![]);
         }
+
+        let prev_block_hash = candidate_block.prev_block_hash;
 
         let prev_block_seed = self.db.read().await.view(|v| {
             v.fetch_block_header(&self.prev_header.prev_block_hash)?
@@ -173,24 +183,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 .map(|h| h.seed)
         })?;
 
-        let cert_result = candidate_block.prev_block_cert.result;
-        let prev_block_hash = candidate_block.prev_block_hash;
-
-        match candidate_block.prev_block_cert.result {
-            RatificationResult::Success(Vote::Valid(hash))
-                if hash == prev_block_hash => {}
-            _ => anyhow::bail!(
-                "Invalid result for previous block hash: {cert_result:?}"
-            ),
-        }
-
-        let (_, _, voters) = verify_block_att(
-            self.prev_header.prev_block_hash,
+        let (_, _, voters) = verify_att(
+            &candidate_block.prev_block_cert,
+            self.prev_header.to_consensus_header(),
             prev_block_seed,
             self.provisioners.prev(),
-            self.prev_header.height,
-            &candidate_block.prev_block_cert,
-            self.prev_header.iteration,
+            RatificationResult::Success(Vote::Valid(prev_block_hash)),
         )
         .await?;
 
@@ -216,10 +214,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             if let Some((att, pk)) = att {
                 info!(event = "verify_att", att_type = "failed_att", iter);
 
-                if let RatificationResult::Success(_) = att.result {
-                    anyhow::bail!("Failed iterations should not contains a RatificationResult::Success");
-                }
-
                 let expected_pk = self.provisioners.current().get_generator(
                     iter as u8,
                     self.prev_header.seed,
@@ -228,13 +222,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
-                let (_, rat_quorum, _) = verify_block_att(
-                    self.prev_header.hash,
+                let (_, rat_quorum, _) = verify_att(
+                    att,
+                    candidate_block.to_consensus_header(),
                     self.prev_header.seed,
                     self.provisioners.current(),
-                    candidate_block.height,
-                    att,
-                    iter as u8,
+                    RatificationResult::Fail(Vote::default()),
                 )
                 .await?;
 
@@ -247,23 +240,6 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(candidate_block.iteration - failed_atts)
     }
 
-    pub async fn verify_success_att(
-        &self,
-        candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, voters) = verify_block_att(
-            self.prev_header.hash,
-            self.prev_header.seed,
-            self.provisioners.current(),
-            candidate_block.height,
-            &candidate_block.att,
-            candidate_block.iteration,
-        )
-        .await?;
-
-        Ok(voters)
-    }
-
     /// Extracts voters list of a block.
     ///
     /// Returns a list of voters with their credits for both ratification and
@@ -272,18 +248,31 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         blk: &'a ledger::Header,
         provisioners: &Provisioners,
         prev_block_seed: Seed,
-    ) -> anyhow::Result<Vec<VoterWithCredits>> {
-        let (_, _, voters) = verify_block_att(
-            blk.prev_block_hash,
-            prev_block_seed,
-            provisioners,
-            blk.height,
-            &blk.att,
-            blk.iteration,
-        )
-        .await?;
+    ) -> Vec<Voter> {
+        let att = &blk.att;
+        let consensus_header = blk.to_consensus_header();
 
-        Ok(voters)
+        let committee = RwLock::new(CommitteeSet::new(provisioners));
+
+        let validation_voters = verifiers::get_step_voters(
+            &consensus_header,
+            &att.validation,
+            &committee,
+            prev_block_seed,
+            StepName::Validation,
+        )
+        .await;
+
+        let ratification_voters = verifiers::get_step_voters(
+            &consensus_header,
+            &att.ratification,
+            &committee,
+            prev_block_seed,
+            StepName::Ratification,
+        )
+        .await;
+
+        merge_voters(validation_voters, ratification_voters)
     }
 
     /// Verify faults inside a block.
@@ -329,25 +318,43 @@ pub async fn verify_faults<DB: database::DB>(
     Ok(())
 }
 
-pub async fn verify_block_att(
-    prev_block_hash: [u8; 32],
+pub async fn verify_att(
+    att: &ledger::Attestation,
+    consensus_header: ConsensusHeader,
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    round: u64,
-    att: &ledger::Attestation,
-    iteration: u8,
-) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<VoterWithCredits>)> {
+    expected_result: RatificationResult,
+) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<Voter>)> {
+    // Check expected result
+    match (att.result, expected_result) {
+        // Both are Success and the inner Valid(Hash) values match
+        (
+            RatificationResult::Success(Vote::Valid(r_hash)),
+            RatificationResult::Success(Vote::Valid(e_hash)),
+        ) => {
+            if r_hash != e_hash {
+                anyhow::bail!(
+                    "Invalid Attestation: Expected block hash: {:?}, Got: {:?}",
+                    e_hash,
+                    r_hash
+                )
+            }
+        }
+        // Both are Fail
+        (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
+        // All other mismatches
+        _ => anyhow::bail!(
+            "Invalid Attestation: Result: {:?}, Expected: {:?}",
+            att.result,
+            expected_result
+        ),
+    }
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
-    let consensus_header = ConsensusHeader {
-        iteration,
-        round,
-        prev_block_hash,
-    };
-    let v_committee;
-    let r_committee;
+    let validation_voters;
+    let ratification_voters;
 
     let vote = att.result.vote();
     // Verify validation
@@ -361,16 +368,16 @@ pub async fn verify_block_att(
     )
     .await
     {
-        Ok((validation_quorum_result, committee)) => {
+        Ok((validation_quorum_result, voters)) => {
             result.0 = validation_quorum_result;
-            v_committee = committee;
+            validation_voters = voters;
         }
         Err(e) => {
             return Err(anyhow!(
                 "invalid validation, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
                 vote,
-                round,
-                iteration,
+                consensus_header.round,
+                consensus_header.iteration,
                 to_str(curr_seed.inner()),
                 att.validation,
                 e
@@ -389,16 +396,16 @@ pub async fn verify_block_att(
     )
     .await
     {
-        Ok((ratification_quorum_result, committee)) => {
+        Ok((ratification_quorum_result, voters)) => {
             result.1 = ratification_quorum_result;
-            r_committee = committee;
+            ratification_voters = voters;
         }
         Err(e) => {
             return Err(anyhow!(
                 "invalid ratification, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
                 vote,
-                round,
-                iteration,
+                consensus_header.round,
+                consensus_header.iteration,
                 to_str(curr_seed.inner()),
                 att.ratification,
                 e,
@@ -406,21 +413,19 @@ pub async fn verify_block_att(
         }
     }
 
-    let voters = merge_committees(&v_committee, &r_committee);
+    let voters = merge_voters(validation_voters, ratification_voters);
     Ok((result.0, result.1, voters))
 }
 
-/// Merges two committees into a vector
-fn merge_committees(a: &Committee, b: &Committee) -> Vec<VoterWithCredits> {
-    let mut members = a.members().clone();
-    for (key, value) in b.members() {
-        // Keeps track of the number of occurrences for each member.
-        let counter = members.entry(key.clone()).or_insert(0);
-        *counter += *value;
+/// Merges two Vec<Voter>, summing up the usize values if the PublicKey is
+/// repeated
+fn merge_voters(v1: Vec<Voter>, v2: Vec<Voter>) -> Vec<Voter> {
+    let mut voter_map: BTreeMap<PublicKey, usize> = BTreeMap::new();
+
+    for (pk, count) in v1.into_iter().chain(v2.into_iter()) {
+        let counter = voter_map.entry(pk).or_insert(0);
+        *counter += count;
     }
 
-    members
-        .into_iter()
-        .map(|(key, credits)| (*key.inner(), credits))
-        .collect()
+    voter_map.into_iter().collect()
 }

@@ -6,11 +6,12 @@
 
 use node_data::bls::PublicKey;
 use node_data::ledger::{Seed, StepVotes};
-use node_data::message::payload::{self, Quorum, Vote};
+use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
 
 use crate::commons::StepSigError;
+use crate::operations::Voter;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -19,54 +20,6 @@ use crate::config::CONSENSUS_MAX_ITER;
 use dusk_bytes::Serializable as BytesSerializable;
 use execution_core::{BlsAggPublicKey, BlsSignature};
 use tokio::sync::RwLock;
-use tracing::error;
-
-/// Performs all three-steps verification of a quorum msg.
-pub async fn verify_quorum(
-    quorum: &Quorum,
-    committees_set: &RwLock<CommitteeSet<'_>>,
-    seed: Seed,
-) -> Result<(), StepSigError> {
-    // Verify validation
-    verify_step_votes(
-        &quorum.header,
-        quorum.vote(),
-        &quorum.att.validation,
-        committees_set,
-        seed,
-        StepName::Validation,
-    )
-    .await
-    .map_err(|e| {
-        error!(
-            desc = "invalid validation",
-            sv = ?quorum.att.validation,
-            hdr = ?quorum.header,
-        );
-        e
-    })?;
-
-    // Verify ratification
-    verify_step_votes(
-        &quorum.header,
-        quorum.vote(),
-        &quorum.att.ratification,
-        committees_set,
-        seed,
-        StepName::Ratification,
-    )
-    .await
-    .map_err(|e| {
-        error!(
-            desc = "invalid ratification",
-            sv = ?quorum.att.ratification,
-            hdr = ?quorum.header,
-        );
-        e
-    })?;
-
-    Ok(())
-}
 
 pub async fn verify_step_votes(
     header: &ConsensusHeader,
@@ -75,7 +28,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
-) -> Result<(QuorumResult, Committee), StepSigError> {
+) -> Result<(QuorumResult, Vec<Voter>), StepSigError> {
     let round = header.round;
     let iteration = header.iteration;
 
@@ -108,8 +61,9 @@ pub async fn verify_step_votes(
     let set = committees_set.read().await;
     let committee = set.get(&cfg).expect("committee to be created");
 
-    let quorum_result = verify_votes(header, step, vote, sv, committee)?;
-    Ok((quorum_result, committee.clone()))
+    let (quorum_result, voters) =
+        verify_votes(header, step, vote, sv, committee)?;
+    Ok((quorum_result, voters))
 }
 
 #[derive(Default)]
@@ -130,7 +84,7 @@ pub fn verify_votes(
     vote: &Vote,
     step_votes: &StepVotes,
     committee: &Committee,
-) -> Result<QuorumResult, StepSigError> {
+) -> Result<(QuorumResult, Vec<Voter>), StepSigError> {
     let bitset = step_votes.bitset;
     let signature = step_votes.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
@@ -173,7 +127,7 @@ pub fn verify_votes(
         verify_step_signature(header, step, vote, apk, signature)?;
     }
     // Verification done
-    Ok(quorum_result)
+    Ok((quorum_result, sub_committee.to_voters()))
 }
 
 impl Cluster<PublicKey> {
@@ -189,6 +143,10 @@ impl Cluster<PublicKey> {
             }
             None => Err(StepSigError::EmptyApk),
         }
+    }
+
+    pub fn to_voters(self) -> Vec<Voter> {
+        self.into_vec()
     }
 }
 
@@ -212,4 +170,65 @@ fn verify_step_signature(
     vote.write(&mut msg).expect("Writing to vec should succeed");
     apk.verify(&sig, &msg)?;
     Ok(())
+}
+
+pub async fn get_step_voters(
+    header: &ConsensusHeader,
+    sv: &StepVotes,
+    committees_set: &RwLock<CommitteeSet<'_>>,
+    seed: Seed,
+    step: StepName,
+) -> Vec<Voter> {
+    // compute committee for `step`
+    let committee =
+        get_step_committee(header, committees_set, seed, step).await;
+
+    // extract quorum voters from `sv`
+    let bitset = sv.bitset;
+    let q_committee = committee.intersect(bitset);
+
+    q_committee.to_voters()
+}
+
+async fn get_step_committee(
+    header: &ConsensusHeader,
+    committees_set: &RwLock<CommitteeSet<'_>>,
+    seed: Seed,
+    step: StepName,
+) -> Committee {
+    let round = header.round;
+    let iteration = header.iteration;
+
+    // exclude current-iteration generator
+    let mut exclusion_list = vec![];
+    let generator = committees_set
+        .read()
+        .await
+        .provisioners()
+        .get_generator(iteration, seed, round);
+
+    exclusion_list.push(generator);
+
+    // exclude next-iteration generator
+    if iteration < CONSENSUS_MAX_ITER {
+        let next_generator = committees_set
+            .read()
+            .await
+            .provisioners()
+            .get_generator(iteration + 1, seed, round);
+
+        exclusion_list.push(next_generator);
+    }
+
+    let cfg =
+        sortition::Config::new(seed, round, iteration, step, exclusion_list);
+
+    if committees_set.read().await.get(&cfg).is_none() {
+        let _ = committees_set.write().await.get_or_create(&cfg);
+    }
+
+    let set = committees_set.read().await;
+    let committee = set.get(&cfg).expect("committee to be created");
+
+    committee.clone()
 }

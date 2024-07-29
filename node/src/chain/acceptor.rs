@@ -17,7 +17,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
-use dusk_consensus::operations::VoterWithCredits;
+use dusk_consensus::operations::Voter;
 use execution_core::stake::Withdraw;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
@@ -193,7 +193,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         &self,
         provisioners_list: &Provisioners,
         tip: &Block,
-    ) -> Vec<VoterWithCredits> {
+    ) -> Vec<Voter> {
         if tip.header().height == 0 {
             return vec![];
         };
@@ -201,7 +201,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let prev_seed = self.get_prev_block_seed().await.expect("valid seed");
         Validator::<DB>::get_voters(tip.header(), provisioners_list, prev_seed)
             .await
-            .expect("valid voters")
     }
 
     // Re-route message to consensus task
@@ -1026,7 +1025,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>)> {
+) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
     let validator = Validator::new(db, prev_header, provisioners);
     validator.execute_checks(header, false).await
 }

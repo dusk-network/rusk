@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{get_current_timestamp, RoundUpdate};
-use crate::operations::{CallParams, Operations, VoterWithCredits};
+use crate::operations::{CallParams, Operations, Voter};
 use node_data::ledger::{
     to_str, Attestation, Block, Fault, IterationsInfo, Seed, Slash,
 };
@@ -90,7 +90,7 @@ impl<T: Operations> Generator<T> {
         iteration: u8,
         failed_iterations: IterationsInfo,
         faults: &[Fault],
-        voters: &[VoterWithCredits],
+        voters: &[Voter],
     ) -> Result<Block, crate::operations::Error> {
         let to_slash =
             Slash::from_iterations_and_faults(&failed_iterations, faults)?;

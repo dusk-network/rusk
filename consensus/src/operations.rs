@@ -8,7 +8,7 @@ use std::fmt;
 use std::io;
 use std::time::Duration;
 
-use execution_core::BlsPublicKey;
+use node_data::bls::PublicKey;
 use node_data::ledger::{
     Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
 };
@@ -17,7 +17,7 @@ use thiserror::Error;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
-pub type VoterWithCredits = (BlsPublicKey, usize);
+pub type Voter = (PublicKey, usize);
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -53,7 +53,7 @@ pub struct CallParams {
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
     pub to_slash: Vec<Slash>,
-    pub voters_pubkey: Option<Vec<VoterWithCredits>>,
+    pub voters_pubkey: Option<Vec<Voter>>,
 }
 
 #[derive(Default)]
@@ -86,7 +86,7 @@ pub trait Operations: Send + Sync {
         &self,
         candidate_header: &Header,
         disable_winning_att_check: bool,
-    ) -> Result<(u8, Vec<VoterWithCredits>, Vec<VoterWithCredits>), Error>;
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error>;
 
     async fn verify_faults(
         &self,
@@ -97,7 +97,7 @@ pub trait Operations: Send + Sync {
     async fn verify_state_transition(
         &self,
         blk: &Block,
-        voters: &[VoterWithCredits],
+        voters: &[Voter],
     ) -> Result<VerificationOutput, Error>;
 
     async fn execute_state_transition(
