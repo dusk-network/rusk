@@ -11,13 +11,21 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use parking_lot::RwLock;
-use tokio::sync::broadcast;
-
-use node::database::rocksdb::Backend;
+use kadcast::config::Config as KadcastConfig;
+use node::chain::ChainSrv;
+use node::database::rocksdb::{self, Backend};
+use node::database::DatabaseOptions;
+use node::database::DB;
+use node::databroker::conf::Params as BrokerParam;
+use node::databroker::DataBrokerSrv;
+use node::mempool::MempoolSrv;
 use node::network::Kadcast;
+use node::telemetry::TelemetrySrv;
+use node::{LongLivedService, Node};
+use parking_lot::RwLock;
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::VM;
+use tokio::sync::broadcast;
 
 use crate::http::RuesEvent;
 
@@ -40,16 +48,117 @@ pub struct Rusk {
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
 }
 
+type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
+
+pub struct RuskNode {
+    inner: node::Node<Kadcast<255>, Backend, Rusk>,
+}
+
 #[derive(Clone)]
-pub struct RuskNode(pub node::Node<Kadcast<255>, Backend, Rusk>);
+pub struct RuskNodeBuilder {
+    consensus_keys_path: String,
+    databroker: BrokerParam,
+    kadcast: KadcastConfig,
+    telemetry_address: Option<String>,
+    db_path: PathBuf,
+    db_options: DatabaseOptions,
+    node: Option<node::Node<Kadcast<255>, Backend, Rusk>>,
+    rusk: Rusk,
+}
+
+impl RuskNodeBuilder {
+    pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
+        self.consensus_keys_path = consensus_keys_path;
+        self
+    }
+
+    pub fn with_databroker<P: Into<BrokerParam>>(
+        mut self,
+        databroker: P,
+    ) -> Self {
+        self.databroker = databroker.into();
+        self
+    }
+
+    pub fn with_kadcast<K: Into<kadcast::config::Config>>(
+        mut self,
+        kadcast: K,
+    ) -> Self {
+        self.kadcast = kadcast.into();
+        self
+    }
+
+    pub fn with_db_path(mut self, db_path: PathBuf) -> Self {
+        self.db_path = db_path;
+        self
+    }
+
+    pub fn with_db_options(mut self, db_options: DatabaseOptions) -> Self {
+        self.db_options = db_options;
+        self
+    }
+
+    pub fn with_telemetry(
+        mut self,
+        telemetry_listen_add: Option<String>,
+    ) -> Self {
+        self.telemetry_address = telemetry_listen_add;
+        self
+    }
+
+    pub fn new(rusk: Rusk) -> Self {
+        Self {
+            rusk,
+            node: Default::default(),
+            db_path: Default::default(),
+            db_options: Default::default(),
+            kadcast: Default::default(),
+            consensus_keys_path: Default::default(),
+            databroker: Default::default(),
+            telemetry_address: Default::default(),
+        }
+    }
+
+    pub fn to_rusk(&self) -> Rusk {
+        self.rusk.clone()
+    }
+
+    pub fn to_rusk_node(&mut self) -> anyhow::Result<RuskNode> {
+        if self.node.is_none() {
+            let db = rocksdb::Backend::create_or_open(
+                self.db_path.clone(),
+                self.db_options.clone(),
+            );
+            let net = Kadcast::new(self.kadcast.clone())?;
+            let node = Node::new(net, db, self.rusk.clone());
+            self.node = Some(node)
+        }
+        Ok(RuskNode {
+            inner: self.node.clone().expect("Node to be initialized"),
+        })
+    }
+
+    pub async fn run(mut self) -> anyhow::Result<()> {
+        let node = self.to_rusk_node()?;
+        let mut service_list: Vec<Box<Services>> = vec![
+            Box::<MempoolSrv>::default(),
+            Box::new(ChainSrv::new(self.consensus_keys_path)),
+            Box::new(DataBrokerSrv::new(self.databroker)),
+            Box::new(TelemetrySrv::new(self.telemetry_address)),
+        ];
+        node.inner.initialize(&mut service_list).await?;
+        node.inner.spawn_all(service_list).await?;
+        Ok(())
+    }
+}
 
 impl RuskNode {
     pub fn db(&self) -> Arc<tokio::sync::RwLock<Backend>> {
-        self.0.database() as Arc<tokio::sync::RwLock<Backend>>
+        self.inner.database() as Arc<tokio::sync::RwLock<Backend>>
     }
 
     pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {
-        self.0.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
+        self.inner.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
     }
 }
 

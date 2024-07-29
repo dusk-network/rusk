@@ -112,14 +112,14 @@ impl RuskNode {
             .into();
         let tx_message = Message::new_transaction(tx);
 
-        let network = self.0.network();
+        let network = self.network();
         network.read().await.route_internal(tx_message);
 
         Ok(ResponseData::new(DataType::None))
     }
 
     async fn alive_nodes(&self, amount: usize) -> anyhow::Result<ResponseData> {
-        let nodes = self.0.network().read().await.alive_nodes(amount).await;
+        let nodes = self.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
         Ok(ResponseData::new(serde_json::to_value(nodes)?))
     }
