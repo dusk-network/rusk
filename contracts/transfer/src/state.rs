@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use dusk_bytes::Serializable;
 use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-use rusk_abi::{ContractError, ContractId, STAKE_CONTRACT};
+use rusk_abi::{ContractError, ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
 
 use execution_core::{
     transfer::{
@@ -199,6 +199,58 @@ impl TransferState {
             .expect("Subtracting balance from contract should succeed");
 
         self.mint_withdrawal("WITHDRAW", withdraw);
+    }
+
+    /// Takes the deposit addressed to this contract, and immediately withdraws
+    /// it, effectively performing an atomic conversion between Phoenix notes
+    /// and Moonlight balance.
+    ///
+    /// This functions checks whether the deposit included with the transaction
+    /// is the exact value included in `convert`, and imposes that the
+    /// caller is indeed this contract.
+    ///
+    /// # Panics
+    /// This can only be called by this contract - the transfer contract - and
+    /// will panic if this is not the case.
+    pub fn convert(&mut self, convert: Withdraw) {
+        // since each transaction only has, at maximum, a single contract call,
+        // this check impliest that this is the first contract call.
+        if rusk_abi::caller() != TRANSFER_CONTRACT {
+            panic!("Only the first contract call can be a conversion");
+        }
+
+        if *convert.contract() != TRANSFER_CONTRACT.to_bytes() {
+            panic!("The conversion must target the transfer contract");
+        }
+
+        let deposit = transitory::deposit_info_mut();
+        match deposit {
+            Deposit::Available(_, deposit_value) => {
+                let deposit_value = *deposit_value;
+
+                if convert.value() != deposit_value {
+                    panic!("The value to convert doesn't match the value in the transaction");
+                }
+
+                // Since this is the first contract call, and the target of a
+                // deposit is always the first contract call, we can skip this
+                // check.
+                // if deposit_contract != TRANSFER_CONTRACT {
+                //     panic!();
+                // }
+
+                // Handle the withdrawal part of the conversion and set the
+                // deposit as being taken. Interesting to note is that we don't
+                // need to change the value held by the contract at all, since
+                // it never changes.
+                self.mint_withdrawal("CONVERT", convert);
+                *deposit = Deposit::Taken(TRANSFER_CONTRACT, deposit_value);
+            }
+            Deposit::None => panic!("There is no deposit in the transaction"),
+            // Since this is the first contract call, it is impossible for the
+            // deposit to be already taken.
+            _ => unreachable!(),
+        }
     }
 
     /// Deposit funds to a contract's balance.

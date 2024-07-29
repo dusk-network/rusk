@@ -9,7 +9,8 @@ pub mod common;
 use crate::common::{
     account, contract_balance, create_moonlight_transaction,
     create_phoenix_transaction, execute, filter_notes_owned_by,
-    leaves_from_height, leaves_from_pos, num_notes, update_root,
+    leaves_from_height, leaves_from_pos, num_notes, owned_notes_value,
+    update_root,
 };
 
 use dusk_bytes::Serializable;
@@ -187,7 +188,9 @@ fn phoenix_transfer() {
         contract_call,
     );
 
-    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_1_2 : {} gas", gas_spent);
@@ -250,18 +253,19 @@ fn moonlight_transfer() {
     );
 
     let transaction = create_moonlight_transaction(
-        session,
         &moonlight_sender_sk,
         Some(moonlight_receiver_pk),
         TRANSFER_VALUE,
         0,
         GAS_LIMIT,
         LUX,
+        sender_account.nonce + 1,
         None::<ContractExec>,
     );
 
-    let gas_spent =
-        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent = execute(session, transaction)
+        .expect("Transaction should succeed")
+        .gas_spent;
 
     println!("MOONLIGHT TRANSFER: {} gas", gas_spent);
 
@@ -329,7 +333,9 @@ fn phoenix_alice_ping() {
         contract_call,
     );
 
-    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_PING: {} gas", gas_spent);
@@ -374,18 +380,19 @@ fn moonlight_alice_ping() {
     );
 
     let transaction = create_moonlight_transaction(
-        session,
         &moonlight_sk,
         None,
         0,
         0,
         GAS_LIMIT,
         LUX,
+        acc.nonce + 1,
         contract_call,
     );
 
-    let gas_spent =
-        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent = execute(session, transaction)
+        .expect("Transaction should succeed")
+        .gas_spent;
 
     println!("MOONLIGHT PING: {} gas", gas_spent);
 
@@ -449,14 +456,15 @@ fn phoenix_deposit_and_withdraw() {
         contract_call,
     );
 
-    let gas_spent =
-        execute(session, tx.clone()).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx.clone())
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_DEPOSIT: {} gas", gas_spent);
 
     let leaves = leaves_from_height(session, 1)
-        .expect("Getting the notes should succeed");
+        .expect("getting the notes should succeed");
     assert_eq!(
         PHOENIX_GENESIS_VALUE,
         transfer_value
@@ -541,7 +549,9 @@ fn phoenix_deposit_and_withdraw() {
         contract_call,
     );
 
-    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_WITHDRAW: {} gas", gas_spent);
@@ -552,4 +562,298 @@ fn phoenix_deposit_and_withdraw() {
         alice_balance, 0,
         "Alice should have no balance after it is withdrawn"
     );
+}
+
+#[test]
+fn phoenix_to_moonlight_swap() {
+    const SWAP_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sk = SecretKey::random(rng);
+    let phoenix_vk = ViewKey::from(&phoenix_sk);
+    let phoenix_pk = PublicKey::from(&phoenix_sk);
+
+    let moonlight_sk = BlsSecretKey::random(rng);
+    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+    let mut session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let swapper_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        swapper_account.balance, MOONLIGHT_GENESIS_VALUE,
+        "The swapper's account should have the genesis value"
+    );
+
+    let leaves = leaves_from_height(session, 0)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+
+    assert_eq!(notes.len(), 1, "There should be one note at this height");
+
+    let convert = Withdraw::new(
+        rng,
+        &moonlight_sk,
+        TRANSFER_CONTRACT.to_bytes(),
+        SWAP_VALUE,
+        WithdrawReceiver::Moonlight(moonlight_pk),
+        WithdrawReplayToken::Phoenix(vec![notes[0].gen_nullifier(&phoenix_sk)]),
+    );
+
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT.to_bytes(),
+        fn_name: String::from("convert"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&convert)
+            .expect("should serialize conversion correctly")
+            .to_vec(),
+    };
+
+    let tx = create_phoenix_transaction(
+        session,
+        &phoenix_sk,
+        &phoenix_pk,
+        GAS_LIMIT,
+        LUX,
+        [0],
+        0,
+        true,
+        SWAP_VALUE,
+        Some(contract_call),
+    );
+
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("CONVERT phoenix to moonlight: {} gas", gas_spent);
+
+    let swapper_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        swapper_account.balance,
+        MOONLIGHT_GENESIS_VALUE + SWAP_VALUE,
+        "The swapper's account should have swap value added"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    let notes_value = owned_notes_value(phoenix_vk, &notes);
+
+    assert_eq!(
+        notes.len(),
+        3,
+        "New notes should have been created as transfer to self, change, and refund"
+    );
+    assert_eq!(
+        notes_value,
+        PHOENIX_GENESIS_VALUE - gas_spent - SWAP_VALUE,
+        "The new notes should have the original value minus the swapped value and gas spent"
+    );
+}
+
+#[test]
+fn moonlight_to_phoenix_swap() {
+    const SWAP_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sk = SecretKey::random(rng);
+    let phoenix_vk = ViewKey::from(&phoenix_sk);
+    let phoenix_pk = PublicKey::from(&phoenix_sk);
+
+    let moonlight_sk = BlsSecretKey::random(rng);
+    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+    let mut session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let swapper_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+    let nonce = swapper_account.nonce + 1;
+
+    assert_eq!(
+        swapper_account.balance, MOONLIGHT_GENESIS_VALUE,
+        "The swapper's account should have the genesis value"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+
+    assert_eq!(notes.len(), 0, "There should be no notes at this height");
+
+    let address =
+        phoenix_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let note_sk = phoenix_sk.gen_note_sk(&address);
+
+    let convert = Withdraw::new(
+        rng,
+        &note_sk,
+        TRANSFER_CONTRACT.to_bytes(),
+        SWAP_VALUE,
+        WithdrawReceiver::Phoenix(address),
+        WithdrawReplayToken::Moonlight(nonce),
+    );
+
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT.to_bytes(),
+        fn_name: String::from("convert"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&convert)
+            .expect("should serialize conversion correctly")
+            .to_vec(),
+    };
+
+    let tx = create_moonlight_transaction(
+        &moonlight_sk,
+        None,
+        0,
+        SWAP_VALUE,
+        GAS_LIMIT,
+        LUX,
+        nonce,
+        Some(contract_call),
+    );
+
+    let gas_spent = execute(&mut session, tx)
+        .expect("Executing transaction should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("CONVERT moonlight to phoenix: {} gas", gas_spent);
+
+    let swapper_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        swapper_account.balance,
+        MOONLIGHT_GENESIS_VALUE - gas_spent - SWAP_VALUE,
+        "The swapper's account should have had the swap value subtracted along with gas spent"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    let notes_value = owned_notes_value(phoenix_vk, &notes);
+
+    assert_eq!(notes.len(), 1, "A new note should have been created");
+    assert_eq!(
+        notes_value, SWAP_VALUE,
+        "The new note should have the swapped value",
+    );
+}
+
+#[test]
+fn swap_wrong_contract_targeted() {
+    const SWAP_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sk = SecretKey::random(rng);
+    let phoenix_vk = ViewKey::from(&phoenix_sk);
+    let phoenix_pk = PublicKey::from(&phoenix_sk);
+
+    let moonlight_sk = BlsSecretKey::random(rng);
+    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+    let mut session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let swapper_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+    let nonce = swapper_account.nonce + 1;
+
+    assert_eq!(
+        swapper_account.balance, MOONLIGHT_GENESIS_VALUE,
+        "The swapper's account should have the genesis value"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+
+    assert_eq!(notes.len(), 0, "There should be no notes at this height");
+
+    let address =
+        phoenix_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let note_sk = phoenix_sk.gen_note_sk(&address);
+
+    let convert = Withdraw::new(
+        rng,
+        &note_sk,
+        ALICE_ID.to_bytes(), /* this should be the transfer contract, but
+                              * we're testing the "wrong target" case */
+        SWAP_VALUE,
+        WithdrawReceiver::Phoenix(address),
+        WithdrawReplayToken::Moonlight(nonce),
+    );
+
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT.to_bytes(),
+        fn_name: String::from("convert"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&convert)
+            .expect("should serialize conversion correctly")
+            .to_vec(),
+    };
+
+    let tx = create_moonlight_transaction(
+        &moonlight_sk,
+        None,
+        0,
+        SWAP_VALUE,
+        GAS_LIMIT,
+        LUX,
+        nonce,
+        Some(contract_call),
+    );
+
+    let receipt = execute(&mut session, tx)
+        .expect("Executing transaction should succeed");
+    update_root(session).expect("Updating the root should succeed");
+
+    let res = receipt.data;
+    let gas_spent = receipt.gas_spent;
+
+    assert!(matches!(res, Err(_)), "The contract call should error");
+
+    let swapper_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        swapper_account.balance,
+        MOONLIGHT_GENESIS_VALUE - gas_spent,
+        "The swapper's account should have only the gas spent subtracted"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+
+    assert!(notes.is_empty(), "A new note should not been created");
 }
