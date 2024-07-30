@@ -14,7 +14,9 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use execution_core::{BlsSecretKey, BlsSigError};
+use execution_core::signatures::bls::{
+    Error as BlsSigError, SecretKey as BlsSecretKey,
+};
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;

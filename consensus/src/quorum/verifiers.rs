@@ -18,7 +18,10 @@ use crate::user::sortition;
 
 use crate::config::CONSENSUS_MAX_ITER;
 use dusk_bytes::Serializable as BytesSerializable;
-use execution_core::{BlsMultisigPublicKey, BlsMultisigSignature};
+use execution_core::signatures::bls::{
+    MultisigPublicKey as BlsMultisigPublicKey,
+    MultisigSignature as BlsMultisigSignature,
+};
 use tokio::sync::RwLock;
 
 pub async fn verify_step_votes(

@@ -7,7 +7,9 @@
 use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
-use execution_core::{BlsMultisigSignature, BlsSigError};
+use execution_core::signatures::bls::{
+    Error as BlsSigError, MultisigSignature as BlsMultisigSignature,
+};
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
@@ -215,7 +217,9 @@ mod tests {
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bytes::DeserializableSlice;
-    use execution_core::{BlsPublicKey, BlsSecretKey};
+    use execution_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
     use std::collections::HashMap;
