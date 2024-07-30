@@ -79,6 +79,7 @@
   </AppAnchor>
   <Button
     aria-controls="dusk-navbar-menu"
+    aria-label="Toggle Menu"
     aria-expanded={!hidden}
     className="dusk-navbar__toggle"
     icon={{ path: hidden ? mdiMenu : mdiClose, size: "large" }}
