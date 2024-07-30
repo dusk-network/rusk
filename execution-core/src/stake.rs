@@ -21,6 +21,8 @@ use crate::{
     ContractId,
 };
 
+use crate::{dusk, Dusk};
+
 /// ID of the genesis stake contract
 pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
 
@@ -187,6 +189,9 @@ pub struct StakeEvent {
     /// operations.
     pub receiver: Option<WithdrawReceiver>,
 }
+
+/// The minimum amount of Dusk one can stake.
+pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 /// The representation of a public key's stake.
 ///
