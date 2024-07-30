@@ -21,8 +21,6 @@ use rusk_abi::VM;
 
 use crate::http::RuesEvent;
 
-pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
-
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
     pub current: [u8; 32],

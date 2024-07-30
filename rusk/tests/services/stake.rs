@@ -7,6 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
+use execution_core::stake::MINIMUM_STAKE;
 use execution_core::{
     dusk,
     signatures::bls::PublicKey as BlsPublicKey,
@@ -15,7 +16,6 @@ use execution_core::{
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::MINIMUM_STAKE;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
