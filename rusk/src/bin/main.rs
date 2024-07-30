@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (_event_sender, event_receiver) = broadcast::channel(channel_cap);
 
     #[cfg(feature = "node")]
-    let mut node = {
+    let mut node_builder = {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
 
@@ -93,14 +93,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if config.http.listen {
         info!("Configuring HTTP");
 
-        let handler = DataSources {
-            #[cfg(feature = "node")]
-            node: node.to_rusk_node()?,
-            #[cfg(feature = "node")]
-            rusk: node.to_rusk(),
-            #[cfg(feature = "prover")]
-            prover: rusk_prover::LocalProver,
-        };
+        #[allow(unused_mut)]
+        let mut handler = DataSources::default();
+
+        #[cfg(feature = "prover")]
+        handler.sources.push(Box::new(rusk_prover::LocalProver));
+
+        #[cfg(feature = "node")]
+        handler.sources.extend(node_builder.build_data_sources()?);
 
         let listen_addr = config.http.listen_addr();
 
@@ -124,7 +124,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     #[cfg(feature = "node")]
-    if let Err(e) = node.run().await {
+    if let Err(e) = node_builder.build_and_run().await {
         tracing::error!("node terminated with err: {}", e);
         return Err(e.into());
     }

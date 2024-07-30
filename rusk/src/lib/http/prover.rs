@@ -10,6 +10,10 @@ use super::*;
 
 #[async_trait]
 impl HandleRequest for LocalProver {
+    fn can_handle(&self, request: &MessageRequest) -> bool {
+        matches!(request.event.to_route(), (_, "rusk", topic) | (_, "prover", topic) if topic.starts_with("prove_"))
+    }
+
     async fn handle(
         &self,
         request: &MessageRequest,

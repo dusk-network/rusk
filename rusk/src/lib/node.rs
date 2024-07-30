@@ -27,7 +27,7 @@ use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::VM;
 use tokio::sync::broadcast;
 
-use crate::http::RuesEvent;
+use crate::http::{HandleRequest, RuesEvent};
 
 pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
@@ -119,11 +119,17 @@ impl RuskNodeBuilder {
         }
     }
 
-    pub fn to_rusk(&self) -> Rusk {
-        self.rusk.clone()
+    pub fn build_data_sources(
+        &mut self,
+    ) -> anyhow::Result<Vec<Box<dyn HandleRequest>>> {
+        let sources: Vec<Box<dyn HandleRequest>> = vec![
+            Box::new(self.rusk.clone()),
+            Box::new(self.get_or_create_node()?),
+        ];
+        Ok(sources)
     }
 
-    pub fn to_rusk_node(&mut self) -> anyhow::Result<RuskNode> {
+    fn get_or_create_node(&mut self) -> anyhow::Result<RuskNode> {
         if self.node.is_none() {
             let db = rocksdb::Backend::create_or_open(
                 self.db_path.clone(),
@@ -138,8 +144,8 @@ impl RuskNodeBuilder {
         })
     }
 
-    pub async fn run(mut self) -> anyhow::Result<()> {
-        let node = self.to_rusk_node()?;
+    pub async fn build_and_run(mut self) -> anyhow::Result<()> {
+        let node = self.get_or_create_node()?;
         let mut service_list: Vec<Box<Services>> = vec![
             Box::<MempoolSrv>::default(),
             Box::new(ChainSrv::new(self.consensus_keys_path)),

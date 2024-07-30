@@ -23,6 +23,13 @@ const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 
 #[async_trait]
 impl HandleRequest for Rusk {
+    fn can_handle(&self, request: &MessageRequest) -> bool {
+        matches!(
+            &request.event.to_route(),
+            (Target::Contract(_), ..) | (Target::Host(_), "rusk", _)
+        )
+    }
+
     async fn handle(
         &self,
         request: &MessageRequest,

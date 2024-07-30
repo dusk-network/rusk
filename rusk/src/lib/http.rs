@@ -66,8 +66,6 @@ use hyper_util::rt::TokioIo;
 use rand::rngs::OsRng;
 
 use crate::http::event::{FullOrStreamBody, RuesEventData};
-#[cfg(feature = "node")]
-use crate::node::{Rusk, RuskNode};
 use crate::VERSION;
 
 pub use self::event::{ContractEvent, RuesEvent};
@@ -123,17 +121,16 @@ impl HttpServer {
     }
 }
 
+#[derive(Default)]
 pub struct DataSources {
-    #[cfg(feature = "node")]
-    pub rusk: Rusk,
-    #[cfg(feature = "node")]
-    pub node: RuskNode,
-    #[cfg(feature = "prover")]
-    pub prover: rusk_prover::LocalProver,
+    pub sources: Vec<Box<dyn HandleRequest>>,
 }
 
 #[async_trait]
 impl HandleRequest for DataSources {
+    fn can_handle(&self, request: &MessageRequest) -> bool {
+        self.sources.iter().any(|s| s.can_handle(request))
+    }
     async fn handle(
         &self,
         request: &MessageRequest,
@@ -143,22 +140,12 @@ impl HandleRequest for DataSources {
             request.event.target, request.event.topic
         );
         request.check_rusk_version()?;
-        match request.event.to_route() {
-            #[cfg(feature = "prover")]
-            // target `rusk` shall be removed in future versions
-            (_, "rusk", topic) | (_, "prover", topic)
-                if topic.starts_with("prove_") =>
-            {
-                self.prover.handle(request).await
+        for h in &self.sources {
+            if h.can_handle(request) {
+                return h.handle(request).await;
             }
-            #[cfg(feature = "node")]
-            (Target::Contract(_), ..) | (_, "rusk", _) => {
-                self.rusk.handle(request).await
-            }
-            #[cfg(feature = "node")]
-            (_, "Chain", _) => self.node.handle(request).await,
-            _ => Err(anyhow::anyhow!("unsupported target type")),
         }
+        Err(anyhow::anyhow!("unsupported target type"))
     }
 }
 
@@ -859,6 +846,7 @@ async fn handle_execution<H>(
 
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
+    fn can_handle(&self, request: &MessageRequest) -> bool;
     async fn handle(
         &self,
         request: &MessageRequest,
@@ -889,6 +877,10 @@ mod tests {
 
     #[async_trait]
     impl HandleRequest for TestHandle {
+        fn can_handle(&self, _request: &MessageRequest) -> bool {
+            true
+        }
+
         async fn handle(
             &self,
             request: &MessageRequest,
