@@ -1,4 +1,12 @@
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { deductLuxFeeFrom } from "$lib/contracts";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
@@ -157,13 +165,15 @@ describe("Stake", () => {
   });
 
   describe("Stake operation", () => {
-    vi.useFakeTimers();
-
-    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+    beforeAll(() => {
+      vi.useFakeTimers();
+    });
 
     afterAll(() => {
       vi.useRealTimers();
     });
+
+    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
 
     it("should perform a stake for the desired amount, give a success message and supply a link to see the transaction in the explorer", async () => {
       const { getByRole, getByText } = render(Stake, baseProps);
@@ -233,6 +243,110 @@ describe("Stake", () => {
       );
       expect(getByText("Transaction completed")).toBeInTheDocument();
       expect(() => getByRole("link", { name: /explorer/i })).toThrow();
+    });
+  });
+
+  describe("Unstake operation", () => {
+    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+
+    beforeAll(() => {
+      vi.useFakeTimers();
+    });
+
+    afterAll(() => {
+      vi.useRealTimers();
+    });
+
+    it("should perform an ustake, give a success message and supply a link to see the transaction in the explorer", async () => {
+      /** @type {import("svelte").ComponentProps<Stake>} */
+      const props = { ...baseProps, flow: "unstake" };
+
+      const { getByRole, getByText } = render(Stake, props);
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      await fireEvent.click(getByRole("button", { name: "Unstake" }));
+
+      expect(baseProps.execute).toHaveBeenCalledTimes(1);
+      expect(baseProps.execute).toHaveBeenCalledWith(
+        baseProps.gasSettings.gasPrice,
+        baseProps.gasSettings.gasLimit
+      );
+
+      const explorerLink = getByRole("link", { name: /explorer/i });
+
+      expect(getByText("Transaction completed")).toBeInTheDocument();
+      expect(explorerLink).toHaveAttribute("target", "_blank");
+      expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
+    });
+
+    it("should not allow to unstake, if wrong gas settings are provided", async () => {
+      /** @type {import("svelte").ComponentProps<Stake>} */
+      const props = {
+        ...baseProps,
+        flow: "unstake",
+        gasSettings: { gasLimit: 29000000090, gasPrice: 1 },
+      };
+
+      const { getByRole } = render(Stake, props);
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      const unstakeButton = getByRole("button", { name: "Unstake" });
+
+      expect(unstakeButton).toBeDisabled();
+    });
+  });
+
+  describe("Withdraw Rewards operation", () => {
+    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+
+    beforeAll(() => {
+      vi.useFakeTimers();
+    });
+
+    afterAll(() => {
+      vi.useRealTimers();
+    });
+
+    it("should perform a withdraw rewards, give a success message and supply a link to see the transaction in the explorer", async () => {
+      /** @type {import("svelte").ComponentProps<Stake>} */
+      const props = { ...baseProps, flow: "withdraw-rewards" };
+
+      const { getByRole, getByText } = render(Stake, props);
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      await fireEvent.click(getByRole("button", { name: "Withdraw" }));
+
+      expect(baseProps.execute).toHaveBeenCalledTimes(1);
+      expect(baseProps.execute).toHaveBeenCalledWith(
+        baseProps.gasSettings.gasPrice,
+        baseProps.gasSettings.gasLimit
+      );
+
+      const explorerLink = getByRole("link", { name: /explorer/i });
+
+      expect(getByText("Transaction completed")).toBeInTheDocument();
+      expect(explorerLink).toHaveAttribute("target", "_blank");
+      expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
+    });
+
+    it("should not allow to unstake, if wrong gas settings are provided", async () => {
+      /** @type {import("svelte").ComponentProps<Stake>} */
+      const props = {
+        ...baseProps,
+        flow: "unstake",
+        gasSettings: { gasLimit: 29000000090, gasPrice: 1 },
+      };
+
+      const { getByRole } = render(Stake, props);
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      const unstakeButton = getByRole("button", { name: "Unstake" });
+
+      expect(unstakeButton).toBeDisabled();
     });
   });
 });
