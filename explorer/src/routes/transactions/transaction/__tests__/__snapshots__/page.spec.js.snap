@@ -20,6 +20,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
     </header>
      
     <div
+      aria-label="Loading"
       class="dusk-progress-bar data-card__progress-bar"
       role="progressbar"
     >

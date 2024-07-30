@@ -2,6 +2,7 @@
 
 exports[`ProgressBar > re-renders the Stepper component when the current percentage property changes 1`] = `
 <div
+  aria-label="Loading"
   class="dusk-progress-bar"
   role="progressbar"
 >
@@ -14,6 +15,7 @@ exports[`ProgressBar > re-renders the Stepper component when the current percent
 
 exports[`ProgressBar > re-renders the Stepper component when the current percentage property changes 2`] = `
 <div
+  aria-label="Loading"
   class="dusk-progress-bar"
   role="progressbar"
 >
@@ -37,6 +39,7 @@ exports[`ProgressBar > renders the ProgressBar component with no current percent
 
 exports[`ProgressBar > renders the Stepper component with current percentage set as zero 1`] = `
 <div
+  aria-label="Loading"
   class="dusk-progress-bar"
   role="progressbar"
 >

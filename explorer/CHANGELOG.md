@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add accessible name to the gas used progress bar [#2037]
 - Add accessible name to the nav bar button on mobile [#2036]
 - Implement warning for stale market data [#1892]
 
@@ -30,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1892]: https://github.com/dusk-network/rusk/issues/1892
 [#2025]: https://github.com/dusk-network/rusk/issues/2025
 [#2034]: https://github.com/dusk-network/rusk/issues/2034
-[#2039]: https://github.com/dusk-network/rusk/issues/2039
 [#2036]: https://github.com/dusk-network/rusk/issues/2036
+[#2037]: https://github.com/dusk-network/rusk/issues/2037
+[#2039]: https://github.com/dusk-network/rusk/issues/2039
 
 <!-- VERSIONS -->
 

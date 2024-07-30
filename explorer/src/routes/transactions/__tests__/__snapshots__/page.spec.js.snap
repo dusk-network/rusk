@@ -31,6 +31,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
     </header>
      
     <div
+      aria-label="Loading"
       class="dusk-progress-bar data-card__progress-bar"
       role="progressbar"
     >

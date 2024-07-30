@@ -171,6 +171,7 @@ exports[`DataCard > should render the \`DataCard\` in the loading state 1`] = `
   </header>
    
   <div
+    aria-label="Loading"
     class="dusk-progress-bar data-card__progress-bar"
     role="progressbar"
   >

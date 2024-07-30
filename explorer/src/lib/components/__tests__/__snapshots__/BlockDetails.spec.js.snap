@@ -282,6 +282,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
         580,718
          
         <div
+          aria-label="Gas Used"
           class="dusk-progress-bar block-details__gas-used"
           role="progressbar"
         >
