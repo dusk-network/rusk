@@ -1,11 +1,51 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent } from "@testing-library/svelte";
 import { get } from "svelte/store";
-import { appStore } from "$lib/stores";
+
+import { appStore as realAppStore } from "$lib/stores";
 
 import { renderWithSimpleContent } from "$lib/dusk/test-helpers";
 
 import MainLayout from "../+layout.svelte";
+
+function createTooltippedElement() {
+  const tooltippedElement = document.body.appendChild(
+    document.createElement("div")
+  );
+
+  tooltippedElement.setAttribute("data-tooltip-id", "main-tooltip");
+  tooltippedElement.setAttribute("data-tooltip-text", "some text");
+
+  return tooltippedElement;
+}
+
+vi.mock("$lib/stores", async (importOriginal) => {
+  /** @type {typeof import("$lib/stores")} */
+  const original = await importOriginal();
+  const storeGet = (await import("svelte/store")).get;
+  const { mockReadableStore } = await import("$lib/dusk/test-helpers");
+  const mockedAppStore = mockReadableStore(storeGet(original.appStore));
+
+  return {
+    ...original,
+    appStore: {
+      ...mockedAppStore,
+
+      /** @param {boolean} v */
+      setTheme: (v) =>
+        mockedAppStore.setMockedStoreValue({
+          ...mockedAppStore.getMockedStoreValue(),
+          darkMode: v,
+        }),
+    },
+  };
+});
+
+// just an alias to force the type
+const appStore =
+  /** @type { AppStore & ReturnType<import("$lib/dusk/test-helpers").mockReadableStore>} */ (
+    realAppStore
+  );
 
 describe("Main layout", () => {
   const baseOptions = { props: {}, target: document.body };
@@ -51,5 +91,53 @@ describe("Main layout", () => {
 
     expect(isDarkMode()).toBe(false);
     expect(hasDarkClass()).toBe(false);
+  });
+
+  it("should not set a delay show on the tooltip if the device has touch support", async () => {
+    vi.useFakeTimers();
+
+    renderWithSimpleContent(MainLayout, baseOptions);
+
+    const tooltip = document.getElementById("main-tooltip");
+    const tooltippedElement = createTooltippedElement();
+
+    expect(get(appStore).hasTouchSupport).toBe(true);
+    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+
+    await fireEvent.mouseEnter(tooltippedElement);
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(tooltip).toHaveAttribute("aria-hidden", "false");
+
+    vi.useRealTimers();
+  });
+
+  it("should use the default delay for the tooltip if the device ha touch support", async () => {
+    const defaultDelayShow = 500;
+
+    vi.useFakeTimers();
+
+    appStore.setMockedStoreValue({
+      ...get(appStore),
+      hasTouchSupport: false,
+    });
+
+    renderWithSimpleContent(MainLayout, baseOptions);
+
+    const tooltippedElement = createTooltippedElement();
+    const tooltip = document.getElementById("main-tooltip");
+
+    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+
+    await fireEvent.mouseEnter(tooltippedElement);
+    await vi.advanceTimersByTimeAsync(defaultDelayShow - 1);
+
+    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(tooltip).toHaveAttribute("aria-hidden", "false");
+
+    vi.useRealTimers();
   });
 });

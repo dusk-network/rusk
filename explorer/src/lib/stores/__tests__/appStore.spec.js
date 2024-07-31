@@ -1,9 +1,28 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 
 describe("appStore", () => {
+  const originalTouchStart = window.ontouchstart;
+  const originalMaxTouchPoints = navigator.maxTouchPoints;
+
+  delete window.ontouchstart;
+
+  Object.defineProperty(navigator, "maxTouchPoints", {
+    value: 0,
+    writable: true,
+  });
+
   beforeEach(() => {
     vi.resetModules();
+  });
+
+  afterAll(() => {
+    window.ontouchstart = originalTouchStart;
+
+    Object.defineProperty(navigator, "maxTouchPoints", {
+      value: originalMaxTouchPoints,
+      writable: false,
+    });
   });
 
   it("should be a readable store holding the information needed throughout the whole application", async () => {
@@ -20,12 +39,35 @@ describe("appStore", () => {
       chainInfoEntries: Number(env.VITE_CHAIN_INFO_ENTRIES),
       darkMode: false,
       fetchInterval: Number(env.VITE_REFETCH_INTERVAL),
+      hasTouchSupport: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
       networks: expectedNetworks,
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
     });
+  });
+
+  it("should set the `hasTouchSupport` property to true if the `ontouchstart` property exists on `window`", async () => {
+    window.ontouchstart = originalTouchStart;
+
+    const { appStore } = await import("..");
+
+    expect(get(appStore).hasTouchSupport).toBe(true);
+
+    delete window.ontouchstart;
+  });
+
+  it("should set the `hasTouchSupport` property to true if the `navigator.maxTouchPoints` property is greater than zero", async () => {
+    // @ts-ignore
+    navigator.maxTouchPoints = 1;
+
+    const { appStore } = await import("..");
+
+    expect(get(appStore).hasTouchSupport).toBe(true);
+
+    // @ts-ignore
+    navigator.maxTouchPoints = 0;
   });
 
   it("should use default values for the fetch intervals if the env vars are missing", async () => {
