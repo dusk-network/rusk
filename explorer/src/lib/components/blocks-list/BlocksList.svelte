@@ -11,13 +11,18 @@
   /** @type {Block} */
   export let data;
 
+  /** @type {Boolean} */
+  export let displayTooltips = false;
+
   const formatter = createValueFormatter("en");
 </script>
 
 <DetailList>
   <!-- HEIGHT -->
   <ListItem
-    tooltipText="The height of the block indicates the length of the block chain and is increased with each additional block"
+    tooltipText={displayTooltips
+      ? "The height of the block indicates the length of the block chain and is increased with each additional block"
+      : ""}
   >
     <svelte:fragment slot="term">block</svelte:fragment>
     <svelte:fragment slot="definition"
@@ -30,7 +35,11 @@
   </ListItem>
 
   <!-- TIMESTAMP -->
-  <ListItem tooltipText="Time elapsed since the block was created">
+  <ListItem
+    tooltipText={displayTooltips
+      ? "Time elapsed since the block was created"
+      : ""}
+  >
     <svelte:fragment slot="term">relative time</svelte:fragment>
     <time
       datetime={data.header.date.toISOString()}
@@ -43,7 +52,9 @@
 
   <!-- AVERAGE FEE PAID -->
   <ListItem
-    tooltipText="The average fee paid for the transactions within the block"
+    tooltipText={displayTooltips
+      ? "The average fee paid for the transactions within the block"
+      : ""}
   >
     <svelte:fragment slot="term">average fee paid</svelte:fragment>
     <svelte:fragment slot="definition">
@@ -52,7 +63,11 @@
   </ListItem>
 
   <!-- GAS USED -->
-  <ListItem tooltipText="The amount of gas used generating the block">
+  <ListItem
+    tooltipText={displayTooltips
+      ? "The amount of gas used generating the block"
+      : ""}
+  >
     <svelte:fragment slot="term">gas used</svelte:fragment>
     <svelte:fragment slot="definition">
       <ProgressBar
@@ -66,7 +81,11 @@
   </ListItem>
 
   <!-- TRANSACTIONS -->
-  <ListItem tooltipText="The number of transactions included in the block">
+  <ListItem
+    tooltipText={displayTooltips
+      ? "The number of transactions included in the block"
+      : ""}
+  >
     <svelte:fragment slot="term">txn(s)</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(data.transactions.data.length)}
@@ -74,7 +93,11 @@
   </ListItem>
 
   <!-- BLOCK REWARD -->
-  <ListItem tooltipText="The reward allocated to the block generator">
+  <ListItem
+    tooltipText={displayTooltips
+      ? "The reward allocated to the block generator"
+      : ""}
+  >
     <svelte:fragment slot="term">rewards</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(luxToDusk(data.header.reward))} DUSK
