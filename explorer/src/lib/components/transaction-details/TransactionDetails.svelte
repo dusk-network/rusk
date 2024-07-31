@@ -162,17 +162,13 @@
     <!-- GAS LIMIT -->
     <ListItem tooltipText="The transaction gas limit">
       <svelte:fragment slot="term">transaction gas limit</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{feeFormatter(luxToDusk(data.gaslimit))} DUSK</svelte:fragment
-      >
+      <svelte:fragment slot="definition">{data.gaslimit}</svelte:fragment>
     </ListItem>
 
     <!-- GAS SPENT -->
     <ListItem tooltipText="The amount of gas spent generating the transaction">
       <svelte:fragment slot="term">gas spent</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{formatter(luxToDusk(data.gasspent))} DUSK</svelte:fragment
-      >
+      <svelte:fragment slot="definition">{data.gasspent}</svelte:fragment>
     </ListItem>
 
     <!-- PAYLOAD -->

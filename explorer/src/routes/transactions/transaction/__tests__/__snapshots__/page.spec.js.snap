@@ -295,8 +295,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
         <dd
           class="details-list__definition"
         >
-          0.50
-           DUSK
+          500000000
         </dd>
         <dt
           class="details-list__term"
@@ -322,8 +321,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
         <dd
           class="details-list__definition"
         >
-          0.000290766
-           DUSK
+          290766
         </dd>
         <dt
           class="details-list__term"
