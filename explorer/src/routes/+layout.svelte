@@ -18,6 +18,8 @@
   appStore.subscribe(({ darkMode }) => {
     document.documentElement.classList.toggle("dark", darkMode);
   });
+
+  const { hasTouchSupport } = $appStore;
 </script>
 
 <header>
@@ -30,4 +32,4 @@
   <Footer />
 </footer>
 
-<Tooltip id="main-tooltip" />
+<Tooltip defaultDelayShow={hasTouchSupport ? 0 : undefined} id="main-tooltip" />
