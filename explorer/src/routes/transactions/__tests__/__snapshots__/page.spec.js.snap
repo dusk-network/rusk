@@ -1255,20 +1255,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -1287,20 +1273,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1320,20 +1292,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -1347,20 +1305,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -1374,20 +1318,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -1402,20 +1332,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -1434,20 +1350,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -1470,20 +1372,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -1502,20 +1390,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1535,20 +1409,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -1562,20 +1422,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -1589,20 +1435,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -1617,20 +1449,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -1649,20 +1467,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -1685,20 +1489,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -1717,20 +1507,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1750,20 +1526,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -1777,20 +1539,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -1804,20 +1552,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -1832,20 +1566,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -1864,20 +1584,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -1900,20 +1606,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -1932,20 +1624,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1965,20 +1643,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -1992,20 +1656,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -2019,20 +1669,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -2047,20 +1683,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -2079,20 +1701,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -2115,20 +1723,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -2147,20 +1741,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2180,20 +1760,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -2207,20 +1773,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -2234,20 +1786,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -2262,20 +1800,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -2294,20 +1818,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -2330,20 +1840,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -2362,20 +1858,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2395,20 +1877,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -2422,20 +1890,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -2449,20 +1903,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -2477,20 +1917,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -2509,20 +1935,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -2545,20 +1957,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -2577,20 +1975,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2610,20 +1994,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -2637,20 +2007,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -2664,20 +2020,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -2692,20 +2034,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -2724,20 +2052,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -2760,20 +2074,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -2792,20 +2092,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2825,20 +2111,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -2852,20 +2124,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -2879,20 +2137,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -2907,20 +2151,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -2939,20 +2169,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -2975,20 +2191,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -3007,20 +2209,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3040,20 +2228,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -3067,20 +2241,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -3094,20 +2254,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -3122,20 +2268,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -3154,20 +2286,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -3190,20 +2308,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -3222,20 +2326,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3255,20 +2345,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -3282,20 +2358,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -3309,20 +2371,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -3337,20 +2385,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -3369,20 +2403,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -3405,20 +2425,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -3437,20 +2443,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3470,20 +2462,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -3497,20 +2475,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -3524,20 +2488,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -3552,20 +2502,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -3584,20 +2520,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -3620,20 +2542,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -3652,20 +2560,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3685,20 +2579,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -3712,20 +2592,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -3739,20 +2605,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -3767,20 +2619,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -3799,20 +2637,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -3835,20 +2659,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -3867,20 +2677,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3900,20 +2696,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -3927,20 +2709,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -3954,20 +2722,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -3982,20 +2736,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -4014,20 +2754,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -4050,20 +2776,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -4082,20 +2794,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -4115,20 +2813,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -4142,20 +2826,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -4169,20 +2839,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -4197,20 +2853,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -4229,20 +2871,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>
@@ -4265,20 +2893,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             ID
           </dt>
@@ -4297,20 +2911,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -4330,20 +2930,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Price
           </dt>
@@ -4357,20 +2943,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Gas Limit
           </dt>
@@ -4384,20 +2956,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Fee
           </dt>
@@ -4412,20 +2970,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Status
           </dt>
@@ -4444,20 +2988,6 @@ exports[`Transactions page > should render the Transactions page, start polling 
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             Type
           </dt>

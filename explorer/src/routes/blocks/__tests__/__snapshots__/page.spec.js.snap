@@ -1023,20 +1023,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -1055,20 +1041,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1088,20 +1060,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -1116,20 +1074,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -1152,20 +1096,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -1179,20 +1109,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -1211,20 +1127,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -1243,20 +1145,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1276,20 +1164,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -1304,20 +1178,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -1340,20 +1200,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -1367,20 +1213,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -1399,20 +1231,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -1431,20 +1249,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1464,20 +1268,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -1492,20 +1282,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -1528,20 +1304,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -1555,20 +1317,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -1587,20 +1335,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -1619,20 +1353,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1652,20 +1372,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -1680,20 +1386,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -1716,20 +1408,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -1743,20 +1421,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -1775,20 +1439,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -1807,20 +1457,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -1840,20 +1476,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -1868,20 +1490,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -1904,20 +1512,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -1931,20 +1525,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -1963,20 +1543,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -1995,20 +1561,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2028,20 +1580,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -2056,20 +1594,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -2092,20 +1616,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -2119,20 +1629,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -2151,20 +1647,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -2183,20 +1665,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2216,20 +1684,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -2244,20 +1698,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -2280,20 +1720,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -2307,20 +1733,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -2339,20 +1751,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -2371,20 +1769,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2404,20 +1788,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -2432,20 +1802,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -2468,20 +1824,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -2495,20 +1837,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -2527,20 +1855,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -2559,20 +1873,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2592,20 +1892,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -2620,20 +1906,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -2656,20 +1928,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -2683,20 +1941,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -2715,20 +1959,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -2747,20 +1977,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2780,20 +1996,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -2808,20 +2010,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -2844,20 +2032,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -2871,20 +2045,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -2903,20 +2063,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -2935,20 +2081,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -2968,20 +2100,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -2996,20 +2114,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -3032,20 +2136,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -3059,20 +2149,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -3091,20 +2167,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -3123,20 +2185,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3156,20 +2204,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -3184,20 +2218,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -3220,20 +2240,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -3247,20 +2253,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -3279,20 +2271,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -3311,20 +2289,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3344,20 +2308,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -3372,20 +2322,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -3408,20 +2344,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -3435,20 +2357,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -3467,20 +2375,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -3499,20 +2393,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3532,20 +2412,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -3560,20 +2426,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -3596,20 +2448,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -3623,20 +2461,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>
@@ -3655,20 +2479,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             block
           </dt>
@@ -3687,20 +2497,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             relative time
           </dt>
@@ -3720,20 +2516,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             average fee paid
           </dt>
@@ -3748,20 +2530,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             gas used
           </dt>
@@ -3784,20 +2552,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             txn(s)
           </dt>
@@ -3811,20 +2565,6 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
              
             rewards
           </dt>

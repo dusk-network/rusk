@@ -45,6 +45,7 @@
         {error}
         loading={isLoading}
         isOnHomeScreen={false}
+        displayTooltips={true}
       />
     </Rerender>
   </div>

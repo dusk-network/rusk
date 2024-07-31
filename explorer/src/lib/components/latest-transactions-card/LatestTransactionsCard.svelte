@@ -24,6 +24,9 @@
   /** @type {Boolean} */
   export let isOnHomeScreen = true;
 
+  /** @type {Boolean} */
+  export let displayTooltips = false;
+
   $: classes = makeClassName(["latest-transactions-card", className]);
 </script>
 
@@ -49,7 +52,11 @@
   />
   <div class="desktop-hidden">
     {#each txns as txn (txn)}
-      <TransactionsList data={txn} mode={isOnHomeScreen ? "compact" : "full"} />
+      <TransactionsList
+        data={txn}
+        mode={isOnHomeScreen ? "compact" : "full"}
+        {displayTooltips}
+      />
     {/each}
   </div>
 </DataCard>

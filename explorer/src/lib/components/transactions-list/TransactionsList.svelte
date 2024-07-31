@@ -20,6 +20,9 @@
   /** @type {"compact" | "full"} */
   export let mode;
 
+  /** @type {Boolean} */
+  export let displayTooltips = false;
+
   /** @type {number} */
   let screenWidth = window.innerWidth;
 
@@ -40,7 +43,7 @@
 
 <DetailList>
   <!-- TRANSACTION ID -->
-  <ListItem tooltipText="The ID of the transaction">
+  <ListItem tooltipText={displayTooltips ? "The ID of the transaction" : ""}>
     <svelte:fragment slot="term">ID</svelte:fragment>
     <svelte:fragment slot="definition">
       <AppAnchor
@@ -55,7 +58,11 @@
   </ListItem>
 
   <!-- TIMESTAMP -->
-  <ListItem tooltipText="Time elapsed since the transaction was created">
+  <ListItem
+    tooltipText={displayTooltips
+      ? "Time elapsed since the transaction was created"
+      : ""}
+  >
     <svelte:fragment slot="term">relative time</svelte:fragment>
     <time
       datetime={data.date.toISOString()}
@@ -68,7 +75,9 @@
 
   {#if mode === "full"}
     <!-- GAS PRICE -->
-    <ListItem tooltipText="The transaction gas price in lux">
+    <ListItem
+      tooltipText={displayTooltips ? "The transaction gas price in lux" : ""}
+    >
       <svelte:fragment slot="term">Gas Price</svelte:fragment>
       <svelte:fragment slot="definition">
         {formatter(data.gasprice)}
@@ -76,7 +85,9 @@
     </ListItem>
 
     <!-- GAS LIMIT -->
-    <ListItem tooltipText="The transaction gas limit in lux">
+    <ListItem
+      tooltipText={displayTooltips ? "The transaction gas limit in lux" : ""}
+    >
       <svelte:fragment slot="term">Gas Limit</svelte:fragment>
       <svelte:fragment slot="definition">
         {formatter(data.gaslimit)}
@@ -85,7 +96,7 @@
   {/if}
 
   <!-- TX FEE -->
-  <ListItem tooltipText="The transaction fee amount">
+  <ListItem tooltipText={displayTooltips ? "The transaction fee amount" : ""}>
     <svelte:fragment slot="term">Fee</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(luxToDusk(data.feepaid))} DUSK
@@ -93,7 +104,7 @@
   </ListItem>
 
   <!-- STATUS -->
-  <ListItem tooltipText="The transaction status">
+  <ListItem tooltipText={displayTooltips ? "The transaction status" : ""}>
     <svelte:fragment slot="term">Status</svelte:fragment>
     <svelte:fragment slot="definition">
       <DataGuard data={data.success}>
@@ -107,7 +118,7 @@
   </ListItem>
 
   <!-- TYPE -->
-  <ListItem tooltipText="The transaction type">
+  <ListItem tooltipText={displayTooltips ? "The transaction type" : ""}>
     <svelte:fragment slot="term">Type</svelte:fragment>
     <svelte:fragment slot="definition"
       ><DataGuard data={data.method}>
