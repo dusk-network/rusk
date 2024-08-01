@@ -206,10 +206,8 @@ pub fn create_moonlight_transaction(
     nonce: u64,
     exec: Option<impl Into<ContractExec>>,
 ) -> MoonlightTransaction {
-    let from = BlsPublicKey::from(from_sk);
-
     let payload = MoonlightPayload {
-        from,
+        from: BlsPublicKey::from(from_sk),
         to,
         value,
         deposit,
@@ -220,7 +218,7 @@ pub fn create_moonlight_transaction(
     };
 
     let digest = payload.to_hash_input_bytes();
-    let signature = from_sk.sign(&from, &digest);
+    let signature = from_sk.sign(&digest);
 
     MoonlightTransaction::new(payload, signature)
 }
