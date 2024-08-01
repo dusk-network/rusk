@@ -41,7 +41,7 @@ impl<T: Operations> Generator<T> {
         // Sign seed
         let seed = ru
             .secret_key
-            .sign(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
+            .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
             .to_bytes();
 
         let start = Instant::now();
