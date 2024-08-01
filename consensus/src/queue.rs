@@ -4,11 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt::Debug;
+use tracing::warn;
 
-type StepMap<T> = BTreeMap<u8, Vec<T>>;
+type StepMap<T> = BTreeMap<u8, VecDeque<T>>;
 type RoundMap<T> = BTreeMap<u64, StepMap<T>>;
+
+const MAX_MESSAGES_PER_QUEUE: usize = 1000;
 
 #[derive(Debug, Default)]
 pub struct MsgRegistry<T: ?Sized>(RoundMap<T>)
@@ -19,12 +22,19 @@ where
 impl<T: Debug + Clone> MsgRegistry<T> {
     /// Inserts a message into the registry based on its round and step.
     pub fn put_msg(&mut self, round: u64, step: u8, msg: T) {
-        self.0
+        let vec = self
+            .0
             .entry(round)
             .or_default()
             .entry(step)
-            .or_default()
-            .push(msg);
+            .or_insert(VecDeque::with_capacity(MAX_MESSAGES_PER_QUEUE));
+
+        if vec.len() == vec.capacity() {
+            warn!("queue ({}, {}) is full, dropping", round, step);
+            vec.pop_front();
+        }
+
+        vec.push_back(msg);
     }
 
     /// Drains and returns all messages that belong to the specified round and
@@ -33,7 +43,7 @@ impl<T: Debug + Clone> MsgRegistry<T> {
         &mut self,
         round: u64,
         step: u8,
-    ) -> Option<Vec<T>> {
+    ) -> Option<VecDeque<T>> {
         self.0
             .get_mut(&round)
             .and_then(|r| r.remove_entry(&step).map(|(_, v)| v))
