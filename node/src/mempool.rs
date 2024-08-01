@@ -43,7 +43,7 @@ pub struct MempoolSrv {
 impl Default for MempoolSrv {
     fn default() -> Self {
         Self {
-            inbound: AsyncQueue::unbounded(),
+            inbound: AsyncQueue::bounded(20_000, "mempool_inbound"),
         }
     }
 }

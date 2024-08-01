@@ -19,7 +19,7 @@ use node_data::message::AsyncQueue;
 
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
 use crate::chain::metrics::AverageElapsedTime;
@@ -69,10 +69,10 @@ impl Task {
         );
 
         Ok(Self {
-            main_inbound: AsyncQueue::unbounded(),
-            outbound: AsyncQueue::unbounded(),
+            main_inbound: AsyncQueue::bounded(20_000, "consensus_inbound"),
+            outbound: AsyncQueue::bounded(20_000, "consensus_outbound"),
             future_msg: Arc::new(Mutex::new(MsgRegistry::default())),
-            result: AsyncQueue::unbounded(),
+            result: AsyncQueue::bounded(10, "consensus_result"),
             running_task: None,
             task_id: 0,
             keys,
@@ -137,10 +137,7 @@ impl Task {
                     consensus_task.spin(ru, current.into(), cancel_rx).await;
 
                 // Notify chain component about the consensus result
-                let _ = resp
-                    .send(res)
-                    .await
-                    .map_err(|e| error!("Unable to send consensus result {e}"));
+                resp.try_send(res);
 
                 trace!("terminate consensus task: {}", id);
                 id

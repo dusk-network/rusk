@@ -235,7 +235,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     pub fn new(keys_path: String) -> Self {
         Self {
-            inbound: AsyncQueue::unbounded(),
+            inbound: AsyncQueue::bounded(20_000, "chain_inbound"),
             keys_path,
             acceptor: None,
         }

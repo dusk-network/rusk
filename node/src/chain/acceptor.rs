@@ -225,7 +225,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
 
                 if enable_enqueue {
-                    task.main_inbound.try_send(msg)?;
+                    task.main_inbound.try_send(msg);
                 }
             }
             Payload::Quorum(payload) => {

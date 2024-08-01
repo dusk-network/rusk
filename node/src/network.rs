@@ -56,9 +56,7 @@ impl<const N: usize> Listener<N> {
         // Sender task
         tokio::spawn(async move {
             if let Some(Some(queue)) = routes.read().await.get(topic as usize) {
-                if let Err(e) = queue.send(msg).await {
-                    error!("Unable to reroute message with topic {topic}: {e}");
-                };
+                queue.try_send(msg);
             };
 
             counter.fetch_sub(1, Ordering::Relaxed);
@@ -171,9 +169,7 @@ impl<const N: usize> Kadcast<N> {
 
         tokio::spawn(async move {
             if let Some(Some(queue)) = routes.read().await.get(topic) {
-                if let Err(e) = queue.send(msg.clone()).await {
-                    error!("Unable to route_internal message with topic {topic}: {e}");
-                };
+                queue.try_send(msg.clone());
             };
         });
     }
@@ -334,7 +330,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         self.remove_route(response_msg_topic.into()).await;
 
         let res = {
-            let queue = AsyncQueue::unbounded();
+            let queue = AsyncQueue::bounded(2, "temp_queue");
             // register a temporary route that will be unregister on drop
             self.add_route(response_msg_topic.into(), queue.clone())
                 .await?;
