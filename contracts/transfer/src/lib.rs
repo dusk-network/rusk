@@ -16,11 +16,8 @@ mod transitory;
 mod tree;
 mod verifier_data;
 
-use rusk_abi::{ContractId, STAKE_CONTRACT};
+use rusk_abi::STAKE_CONTRACT;
 use state::TransferState;
-
-#[no_mangle]
-static SELF_ID: ContractId = ContractId::uninitialized();
 
 static mut STATE: TransferState = TransferState::new();
 
@@ -153,13 +150,18 @@ unsafe fn add_contract_balance(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn sub_contract_balance(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(module, value)| {
-        if rusk_abi::caller() != STAKE_CONTRACT {
-            panic!("Can only be called by the stake contract!")
-        }
+        assert_stake_caller();
         STATE
             .sub_contract_balance(&module, value)
             .expect("Cannot subtract balance")
     })
+}
+
+fn assert_stake_caller() {
+    const PANIC_MSG: &str = "Can only be called by the stake contract";
+    if rusk_abi::caller().expect(PANIC_MSG) != STAKE_CONTRACT {
+        panic!("{PANIC_MSG}");
+    }
 }
 
 /// Asserts the call is made "from the outside", meaning that it's not an
@@ -168,7 +170,7 @@ unsafe fn sub_contract_balance(arg_len: u32) -> u32 {
 /// # Panics
 /// When the `caller` is not "uninitialized".
 fn assert_external_caller() {
-    if !rusk_abi::caller().is_uninitialized() {
+    if rusk_abi::caller().is_some() {
         panic!("Can only be called from the outside the VM");
     }
 }
