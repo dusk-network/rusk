@@ -133,16 +133,6 @@ pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
         Ok(())
     }
 
-    async fn add_filter(
-        &self,
-        topic: u8,
-        filter_fn: BoxedFilter,
-        network: &Arc<RwLock<N>>,
-    ) -> anyhow::Result<()> {
-        network.write().await.add_filter(topic, filter_fn).await?;
-        Ok(())
-    }
-
     /// Returns service name.
     fn name(&self) -> &'static str;
 }

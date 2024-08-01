@@ -48,16 +48,6 @@ impl Default for MempoolSrv {
     }
 }
 
-pub struct TxFilter {}
-impl crate::Filter for TxFilter {
-    fn filter(&mut self, _msg: &Message) -> anyhow::Result<()> {
-        // TODO: Ensure transaction does not exist in the mempool state
-        // TODO: Ensure transaction does not exist in blockchain
-        // TODO: Check  Nullifier
-        Ok(())
-    }
-}
-
 #[async_trait]
 impl<N: Network, DB: database::DB, VM: vm::VMExecution>
     LongLivedService<N, DB, VM> for MempoolSrv
@@ -81,16 +71,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             self,
             TOPICS,
             self.inbound.clone(),
-            &network,
-        )
-        .await?;
-
-        // Add a filter that will discard any transactions invalid to the actual
-        // mempool, blockchain state.
-        LongLivedService::<N, DB, VM>::add_filter(
-            self,
-            Topics::Tx.into(),
-            Box::new(TxFilter {}),
             &network,
         )
         .await?;
