@@ -17,11 +17,6 @@ mod wasm {
     use super::*;
     use state::Alice;
 
-    use rusk_abi::ContractId;
-
-    #[no_mangle]
-    static SELF_ID: ContractId = ContractId::uninitialized();
-
     static mut STATE: Alice = state::Alice;
 
     #[no_mangle]
