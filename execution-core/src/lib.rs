@@ -28,8 +28,9 @@ pub use dusk_jubjub::{
 
 // signature types
 pub use bls12_381_bls::{
-    Error as BlsSigError, PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-    Signature as BlsSignature, APK as BlsAggPublicKey,
+    Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+    MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
+    SecretKey as BlsSecretKey, Signature as BlsSignature,
 };
 
 pub use jubjub_schnorr::{

@@ -124,8 +124,7 @@ impl Withdraw {
                 withdraw.signature = signature.into();
             }
             WithdrawSecretKey::Moonlight(sk) => {
-                let pk = BlsPublicKey::from(sk);
-                let signature = sk.sign(&pk, &msg);
+                let signature = sk.sign(&msg);
                 withdraw.signature = signature.into();
             }
         }

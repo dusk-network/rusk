@@ -102,7 +102,7 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     };
 
     let msg = payload.to_hash_input_bytes();
-    let signature = sk.sign(&pk, &msg);
+    let signature = sk.sign(&msg);
 
     MoonlightTransaction::new(payload, signature).into()
 }
