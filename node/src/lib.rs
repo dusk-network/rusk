@@ -18,7 +18,6 @@ use async_trait::async_trait;
 use node_data::message::payload::Inv;
 use node_data::message::AsyncQueue;
 use node_data::message::Message;
-use node_data::message::Topics;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
@@ -64,15 +63,6 @@ pub trait Network: Send + Sync + 'static {
         msg: &Message,
         amount: usize,
     ) -> anyhow::Result<()>;
-
-    /// Sends a Get message and waits for a response with timeout
-    async fn send_and_wait(
-        &mut self,
-        request_msg: &Message,
-        response_msg_topic: Topics,
-        timeout_millis: u64,
-        recv_peers_count: usize,
-    ) -> anyhow::Result<Message>;
 
     /// Routes any message of the specified type to this queue.
     async fn add_route(

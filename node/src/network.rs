@@ -13,12 +13,11 @@ use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
 use node_data::message::payload::{GetResource, Inv};
+use node_data::message::AsyncQueue;
 use node_data::message::Metadata;
-use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use tokio::time::{self, Instant};
 use tracing::{error, info, trace, warn};
 
 mod frame;
@@ -174,15 +173,6 @@ impl<const N: usize> Kadcast<N> {
         });
     }
 
-    /// Removes a route, if exists, for a given topic.
-    async fn remove_route(&mut self, topic: u8) {
-        let mut guard = self.routes.write().await;
-
-        if let Some(Some(_)) = guard.get_mut(topic as usize) {
-            guard[topic as usize] = None;
-        }
-    }
-
     pub async fn alive_nodes(&self, amount: usize) -> Vec<SocketAddr> {
         self.peer.alive_nodes(amount).await
     }
@@ -318,42 +308,6 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         *route = Some(queue);
 
         Ok(())
-    }
-
-    async fn send_and_wait(
-        &mut self,
-        request_msg: &Message,
-        response_msg_topic: Topics,
-        timeout_millis: u64,
-        recv_peers_count: usize,
-    ) -> anyhow::Result<Message> {
-        self.remove_route(response_msg_topic.into()).await;
-
-        let res = {
-            let queue = AsyncQueue::bounded(2, "temp_queue");
-            // register a temporary route that will be unregister on drop
-            self.add_route(response_msg_topic.into(), queue.clone())
-                .await?;
-
-            self.send_to_alive_peers(request_msg, recv_peers_count)
-                .await?;
-
-            let deadline =
-                Instant::now() + Duration::from_millis(timeout_millis);
-
-            // Wait for a response message or a timeout
-            match time::timeout_at(deadline, queue.recv()).await {
-                // Got a response message
-                Ok(Ok(msg)) => Ok(msg),
-                // Failed to receive a response message
-                Ok(Err(_)) => anyhow::bail!("failed to receive"),
-                // Timeout expired
-                Err(_) => anyhow::bail!("timeout err"),
-            }
-        };
-
-        self.remove_route(response_msg_topic.into()).await;
-        res
     }
 
     async fn add_filter(
