@@ -68,7 +68,6 @@ exports[`Block Details > should render the Block Details page and query the nece
        
     </div>
     
-    
   </div>
 </section>
 `;
@@ -219,13 +218,12 @@ exports[`Block Details > should render the Block Details page and query the nece
             class="details-list__definition"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-04-16T20:07:02.000Z"
               slot="definition"
             >
               Tue, 16 Apr 2024 20:07:02 GMT (last month)
               
-               
             </time>
           </dd>
           <dt
@@ -525,11 +523,12 @@ exports[`Block Details > should render the Block Details page and query the nece
                     3a3f6f90a1...e2e37f0602
                   </a>
                    
-                  <small
-                    class="transaction__time"
+                  <time
+                    class="dusk-relative-time transaction__time"
+                    datetime="2024-04-16T20:07:02.000Z"
                   >
                     last month
-                  </small>
+                  </time>
                 </td>
                 
                  
@@ -599,11 +598,12 @@ exports[`Block Details > should render the Block Details page and query the nece
                     07bfabea1d...2723b76d00
                   </a>
                    
-                  <small
-                    class="transaction__time"
+                  <time
+                    class="dusk-relative-time transaction__time"
+                    datetime="2024-04-16T20:07:02.000Z"
                   >
                     last month
-                  </small>
+                  </time>
                 </td>
                 
                  
@@ -668,7 +668,6 @@ exports[`Block Details > should render the Block Details page and query the nece
       
        
     </div>
-    
     
   </div>
 </section>
@@ -820,13 +819,12 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-04-16T20:07:02.000Z"
               slot="definition"
             >
               Tue, 16 Apr 2024 20:07:02 GMT (last month)
               
-               
             </time>
           </dd>
           <dt
@@ -1121,11 +1119,12 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-04-16T20:07:02.000Z"
               slot="definition"
             >
               last month
+              
             </time>
           </dd>
            
@@ -1336,11 +1335,12 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-04-16T20:07:02.000Z"
               slot="definition"
             >
               last month
+              
             </time>
           </dd>
            
@@ -1496,7 +1496,6 @@ exports[`Block Details > should render the Transaction section of the Block Deta
       
        
     </div>
-    
     
   </div>
 </section>

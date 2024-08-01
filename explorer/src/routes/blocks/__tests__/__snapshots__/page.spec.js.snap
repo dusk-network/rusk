@@ -68,7 +68,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:54.000Z"
               slot="definition"
             >
@@ -172,7 +172,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:51.000Z"
               slot="definition"
             >
@@ -276,7 +276,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:47.000Z"
               slot="definition"
             >
@@ -380,7 +380,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:45.000Z"
               slot="definition"
             >
@@ -484,7 +484,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:42.000Z"
               slot="definition"
             >
@@ -588,7 +588,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:39.000Z"
               slot="definition"
             >
@@ -692,7 +692,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:35.000Z"
               slot="definition"
             >
@@ -796,7 +796,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:32.000Z"
               slot="definition"
             >
@@ -900,7 +900,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:29.000Z"
               slot="definition"
             >
@@ -1004,7 +1004,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:24.000Z"
               slot="definition"
             >
@@ -1108,7 +1108,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:21.000Z"
               slot="definition"
             >
@@ -1212,7 +1212,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:26:09.000Z"
               slot="definition"
             >
@@ -1316,7 +1316,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:25:58.000Z"
               slot="definition"
             >
@@ -1420,7 +1420,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:25:55.000Z"
               slot="definition"
             >
@@ -1524,7 +1524,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="block-details__list-timestamp"
+              class="dusk-relative-time block-details__list-timestamp"
               datetime="2024-05-28T14:25:36.000Z"
               slot="definition"
             >
@@ -1742,11 +1742,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,454
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:54.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -1801,11 +1802,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,453
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:51.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -1860,11 +1862,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,452
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:47.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -1919,11 +1922,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,451
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:45.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -1978,11 +1982,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,450
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:42.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2037,11 +2042,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,449
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:39.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2096,11 +2102,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,448
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:35.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2155,11 +2162,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,447
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:32.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2214,11 +2222,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,446
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:29.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2273,11 +2282,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,445
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:24.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2332,11 +2342,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,444
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:21.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2391,11 +2402,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,443
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:26:09.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2450,11 +2462,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,442
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:25:58.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2509,11 +2522,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,441
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:25:55.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                
@@ -2568,11 +2582,12 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
                   1,365,440
                 </a>
                  
-                <small
-                  class="block__time"
+                <time
+                  class="dusk-relative-time block__time"
+                  datetime="2024-05-28T14:25:36.000Z"
                 >
                   yesterday
-                </small>
+                </time>
               </td>
               
                

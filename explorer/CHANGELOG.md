@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Statistics Panel separator lines color [#2039]
 - Update Statistics Panel labels for clarity [#2034]
 - Update font-display to swap for custom fonts to improve performance [#2025]
+- Optimize auto re-renders of relative times [#2059]
 
 ### Fixed
 
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2037]: https://github.com/dusk-network/rusk/issues/2037
 [#2039]: https://github.com/dusk-network/rusk/issues/2039
 [#2056]: https://github.com/dusk-network/rusk/issues/2056
+[#2059]: https://github.com/dusk-network/rusk/issues/2059
 [#2061]: https://github.com/dusk-network/rusk/issues/2061
 
 <!-- VERSIONS -->

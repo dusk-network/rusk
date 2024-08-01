@@ -140,13 +140,12 @@ exports[`Block Details > renders the Block Details component 1`] = `
         class="details-list__definition"
       >
         <time
-          class="block-details__list-timestamp"
+          class="dusk-relative-time block-details__list-timestamp"
           datetime="2024-04-16T20:07:02.000Z"
           slot="definition"
         >
           Tue, 16 Apr 2024 20:07:02 GMT (last month)
           
-           
         </time>
       </dd>
       <dt

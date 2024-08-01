@@ -2,11 +2,13 @@
 
 <script>
   import { AppAnchor, DetailList, ListItem } from "$lib/components";
-  import { ProgressBar } from "$lib/dusk/components";
+  import { ProgressBar, RelativeTime } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
-  import { getRelativeTimeString } from "$lib/dusk/string";
   import { luxToDusk } from "$lib/dusk/currency";
   import "./BlocksList.css";
+
+  /** @type {boolean} */
+  export let autoRefreshTime = false;
 
   /** @type {Block} */
   export let data;
@@ -41,13 +43,12 @@
       : ""}
   >
     <svelte:fragment slot="term">relative time</svelte:fragment>
-    <time
-      datetime={data.header.date.toISOString()}
-      class="block-details__list-timestamp"
+    <RelativeTime
+      autoRefresh={autoRefreshTime}
+      className="block-details__list-timestamp"
+      date={data.header.date}
       slot="definition"
-    >
-      {getRelativeTimeString(data.header.date, "long")}
-    </time>
+    />
   </ListItem>
 
   <!-- AVERAGE FEE PAID -->
