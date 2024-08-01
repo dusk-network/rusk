@@ -25,7 +25,7 @@ use async_graphql::{
 use serde_json::json;
 
 use super::*;
-use crate::http::RuskNode;
+use crate::node::RuskNode;
 use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
@@ -49,6 +49,9 @@ fn variables_from_request(request: &MessageRequest) -> Variables {
 }
 #[async_trait]
 impl HandleRequest for RuskNode {
+    fn can_handle(&self, request: &MessageRequest) -> bool {
+        matches!(request.event.to_route(), (Target::Host(_), "Chain", _))
+    }
     async fn handle(
         &self,
         request: &MessageRequest,
@@ -112,14 +115,14 @@ impl RuskNode {
             .into();
         let tx_message = Message::new_transaction(tx);
 
-        let network = self.0.network();
+        let network = self.network();
         network.read().await.route_internal(tx_message);
 
         Ok(ResponseData::new(DataType::None))
     }
 
     async fn alive_nodes(&self, amount: usize) -> anyhow::Result<ResponseData> {
-        let nodes = self.0.network().read().await.alive_nodes(amount).await;
+        let nodes = self.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
         Ok(ResponseData::new(serde_json::to_value(nodes)?))
     }

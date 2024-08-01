@@ -19,7 +19,7 @@ use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::chain::{Rusk, RuskTip};
+use rusk::node::{Rusk, RuskTip};
 use rusk::Result;
 use rusk_abi::{TRANSFER_CONTRACT, VM};
 use tempfile::tempdir;

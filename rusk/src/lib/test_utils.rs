@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::chain::{Rusk, RuskTip};
 use crate::error::Error;
+use crate::node::{Rusk, RuskTip};
 
 use std::pin::Pin;
 use std::sync::mpsc;
