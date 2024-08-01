@@ -18,11 +18,6 @@ use state::StakeState;
 /// The minimum amount of Dusk one can stake.
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
-use rusk_abi::ContractId;
-
-#[no_mangle]
-static SELF_ID: ContractId = ContractId::uninitialized();
-
 static mut STATE: StakeState = StakeState::new();
 
 // Transactions
@@ -135,8 +130,9 @@ unsafe fn set_burnt_amount(arg_len: u32) -> u32 {
 /// # Panics
 /// When the `caller` is not [`rusk_abi::TRANSFER_CONTRACT`].
 fn assert_transfer_caller() {
-    if rusk_abi::caller() != rusk_abi::TRANSFER_CONTRACT {
-        panic!("Can only be called from the transfer contract");
+    const PANIC_MSG: &str = "Can only be called from the transfer contract";
+    if rusk_abi::caller().expect(PANIC_MSG) != rusk_abi::TRANSFER_CONTRACT {
+        panic!("{PANIC_MSG}");
     }
 }
 
@@ -146,7 +142,7 @@ fn assert_transfer_caller() {
 /// # Panics
 /// When the `caller` is not "uninitialized".
 fn assert_external_caller() {
-    if !rusk_abi::caller().is_uninitialized() {
+    if rusk_abi::caller().is_some() {
         panic!("Can only be called from the outside the VM");
     }
 }
