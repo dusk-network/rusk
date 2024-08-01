@@ -19,7 +19,7 @@ use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use tracing::{error, info, Instrument};
+use tracing::{info, Instrument};
 
 pub struct RatificationStep<DB> {
     handler: Arc<Mutex<handler::RatificationHandler>>,
@@ -43,9 +43,7 @@ impl<DB: Database> RatificationStep<DB> {
         info!(event = "send_vote", validation_bitset = result.sv().bitset);
 
         // Publish
-        outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-            error!("could not publish ratification msg {:?}", err)
-        });
+        outbound.try_send(msg.clone());
 
         msg
     }

@@ -128,14 +128,10 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let msg = Message::new_validation(validation);
 
         // Publish
-        outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-            error!("could not publish validation {err:?}")
-        });
+        outbound.try_send(msg.clone());
 
         // Register my vote locally
-        inbound.send(msg).await.unwrap_or_else(|err| {
-            error!("could not register validation {err:?}")
-        });
+        inbound.try_send(msg);
     }
 
     async fn call_vst(

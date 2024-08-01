@@ -168,9 +168,7 @@ impl QuorumMsgSender {
             _ => return,
         }
 
-        if let Err(e) = self.queue.send(msg).await {
-            error!("send quorum_msg failed with {e:?}")
-        }
+        self.queue.try_send(msg);
     }
 }
 

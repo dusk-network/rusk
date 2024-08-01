@@ -246,9 +246,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     /// Handles a consensus message in emergency mode
     async fn on_emergency_mode(&mut self, msg: Message) {
-        if let Err(e) = self.outbound.send(msg.clone()).await {
-            error!("could not send msg due to {:?}", e);
-        }
+        self.outbound.try_send(msg.clone());
 
         // Try to cast validation vote for a candidate block from former
         // iteration
@@ -322,9 +320,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         match valid {
             Ok(_) => {
                 // Re-publish the returned message
-                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-                    error!("unable to re-publish a handled msg {:?}", err)
-                });
+                self.outbound.try_send(msg.clone());
             }
             // This is a message from future round or step.
             // Save it in future_msgs to be processed when we reach
@@ -332,9 +328,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             Err(ConsensusError::FutureEvent) => {
                 trace!("future msg {:?}", msg);
 
-                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-                    error!("unable to re-publish a handled msg {:?}", err)
-                });
+                self.outbound.try_send(msg.clone());
 
                 self.future_msgs.lock().await.put_msg(
                     msg.header.round,
@@ -446,14 +440,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         msg_topic = ?msg.topic(),
                     );
 
-                    self.outbound.send(msg.clone()).await.unwrap_or_else(
-                        |err| {
-                            error!(
-                                "unable to re-publish a drained msg {:?}",
-                                err
-                            )
-                        },
-                    );
+                    self.outbound.try_send(msg.clone());
 
                     if let Ok(HandleMsgOutput::Ready(msg)) = phase
                         .lock()
