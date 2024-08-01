@@ -33,7 +33,7 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
     class="details-list__definition details-list__definition--table"
   >
     <time
-      class="transaction-details__list-timestamp"
+      class="dusk-relative-time transaction-details__list-timestamp"
       datetime="2024-04-16T06:39:09.000Z"
       slot="definition"
     >
@@ -127,7 +127,7 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
     class="details-list__definition details-list__definition--table"
   >
     <time
-      class="transaction-details__list-timestamp"
+      class="dusk-relative-time transaction-details__list-timestamp"
       datetime="2024-04-16T06:39:09.000Z"
       slot="definition"
     >

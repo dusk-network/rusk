@@ -6,6 +6,8 @@ export { default as Card } from "./card/Card.svelte";
 export { default as Icon } from "./icon/Icon.svelte";
 export { default as NavList } from "./nav-list/NavList.svelte";
 export { default as ProgressBar } from "./progress-bar/ProgressBar.svelte";
+export { default as Rerender } from "./rerender/Rerender.svelte";
+export { default as RelativeTime } from "./relative-time/RelativeTime.svelte";
 export { default as Select } from "./select/Select.svelte";
 export { default as Switch } from "./switch/Switch.svelte";
 export { default as Textbox } from "./textbox/Textbox.svelte";

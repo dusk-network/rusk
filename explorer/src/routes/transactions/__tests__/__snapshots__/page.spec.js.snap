@@ -144,11 +144,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   070280c695...94efca2a0e
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:42:20.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -218,11 +219,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   534f753d5a...5153259c00
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:42:08.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -292,11 +294,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   c6f13af20c...fc68ebb102
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:41:58.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -366,11 +369,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   31c7dce26a...bf7bcb4c04
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:40:57.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -440,11 +444,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   4fa6e913c0...9e4dd5510d
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:40:28.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -514,11 +519,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   d1a7928a43...79ccdb2e04
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:39:59.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -588,11 +594,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   004ca8683c...cff9718b06
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:39:13.000Z"
                 >
                   18 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -662,11 +669,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   b5a77063e4...4496253a05
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:01:59.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -736,11 +744,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   b263d9d594...9d80b06e0b
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:01:15.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -810,11 +819,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   b4525cb82f...f5275d7709
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T05:00:40.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -884,11 +894,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   40fb9d20eb...516584df08
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T04:52:39.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -958,11 +969,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   b5ad0ec014...04f807910b
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T04:51:02.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -1032,11 +1044,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   56504a6d62...ba14520c00
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T04:50:30.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -1106,11 +1119,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   d65e4ebe37...d5026ea001
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T04:48:45.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -1180,11 +1194,12 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   6c0ac7828b...10b1febf06
                 </a>
                  
-                <small
-                  class="transaction__time"
+                <time
+                  class="dusk-relative-time transaction__time"
+                  datetime="2024-05-29T04:47:48.000Z"
                 >
                   19 hours ago
-                </small>
+                </time>
               </td>
               
                
@@ -1281,7 +1296,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:42:20.000Z"
               slot="definition"
             >
@@ -1398,7 +1413,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:42:08.000Z"
               slot="definition"
             >
@@ -1515,7 +1530,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:41:58.000Z"
               slot="definition"
             >
@@ -1632,7 +1647,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:40:57.000Z"
               slot="definition"
             >
@@ -1749,7 +1764,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:40:28.000Z"
               slot="definition"
             >
@@ -1866,7 +1881,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:39:59.000Z"
               slot="definition"
             >
@@ -1983,7 +1998,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:39:13.000Z"
               slot="definition"
             >
@@ -2100,7 +2115,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:01:59.000Z"
               slot="definition"
             >
@@ -2217,7 +2232,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:01:15.000Z"
               slot="definition"
             >
@@ -2334,7 +2349,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T05:00:40.000Z"
               slot="definition"
             >
@@ -2451,7 +2466,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T04:52:39.000Z"
               slot="definition"
             >
@@ -2568,7 +2583,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T04:51:02.000Z"
               slot="definition"
             >
@@ -2685,7 +2700,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T04:50:30.000Z"
               slot="definition"
             >
@@ -2802,7 +2817,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T04:48:45.000Z"
               slot="definition"
             >
@@ -2919,7 +2934,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
             class="details-list__definition details-list__definition--table"
           >
             <time
-              class="transaction-details__list-timestamp"
+              class="dusk-relative-time transaction-details__list-timestamp"
               datetime="2024-05-29T04:47:48.000Z"
               slot="definition"
             >
