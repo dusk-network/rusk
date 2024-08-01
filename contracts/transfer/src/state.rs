@@ -158,8 +158,9 @@ impl TransferState {
     /// We assume on trust that the value sent by the stake contract is
     /// according to consensus rules.
     pub fn mint(&mut self, mint: Withdraw) {
-        if rusk_abi::caller() != STAKE_CONTRACT {
-            panic!("Can only be called by the stake contract!")
+        const PANIC_MSG: &str = "Can only be called by the stake contract";
+        if rusk_abi::caller().expect(PANIC_MSG) != STAKE_CONTRACT {
+            panic!("{PANIC_MSG}")
         }
 
         let contract = mint.contract();
@@ -185,7 +186,9 @@ impl TransferState {
     pub fn withdraw(&mut self, withdraw: Withdraw) {
         let contract = ContractId::from_bytes(*withdraw.contract());
 
-        if contract != rusk_abi::caller() {
+        let caller = rusk_abi::caller()
+            .expect("A withdrawal must happen in the context of a transaction");
+        if contract != caller {
             panic!("The \"withdraw\" function can only be called by the contract specified in the payload");
         }
 
@@ -215,7 +218,9 @@ impl TransferState {
     pub fn convert(&mut self, convert: Withdraw) {
         // since each transaction only has, at maximum, a single contract call,
         // this check impliest that this is the first contract call.
-        if rusk_abi::caller() != TRANSFER_CONTRACT {
+        let caller = rusk_abi::caller()
+            .expect("A conversion must happen in the context of a transaction");
+        if caller != TRANSFER_CONTRACT {
             panic!("Only the first contract call can be a conversion");
         }
 
@@ -263,11 +268,8 @@ impl TransferState {
     /// This function will panic if there is no deposit on the state or the
     /// caller-id doesn't match the contract-id stored for the deposit.
     pub fn deposit(&mut self, value: u64) {
-        // check is the request comes from a contract
-        let caller = rusk_abi::caller();
-        if caller.is_uninitialized() {
-            panic!("Only a contract is authorized to claim a deposit.")
-        }
+        let caller = rusk_abi::caller()
+            .expect("A deposit must happen in the context of a transaction");
 
         let deposit = transitory::deposit_info_mut();
         match deposit {

@@ -16,10 +16,6 @@ use execution_core::{
     BlsPublicKey, BlsScalar, BlsSignature, PublicKey, SchnorrPublicKey,
     SchnorrSignature,
 };
-use rusk_abi::ContractId;
-
-#[no_mangle]
-static SELF_ID: ContractId = ContractId::uninitialized();
 
 static mut STATE: HostFnTest = HostFnTest;
 

@@ -38,11 +38,7 @@ pub const fn verifier_data_license_circuit() -> &'static [u8] {
 mod wasm {
     use super::*;
 
-    use rusk_abi::ContractId;
     use state::LicenseContractState;
-
-    #[no_mangle]
-    static SELF_ID: ContractId = ContractId::uninitialized();
 
     static mut STATE: LicenseContractState = LicenseContractState::new();
 
