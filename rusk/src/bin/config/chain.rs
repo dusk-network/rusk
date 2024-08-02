@@ -22,6 +22,8 @@ pub(crate) struct ChainConfig {
     // Note: changing the gas per deploy byte parameter is equivalent to
     // forking the chain.
     gas_per_deploy_byte: Option<u64>,
+
+    max_queue_size: Option<usize>,
 }
 
 impl ChainConfig {
@@ -71,5 +73,9 @@ impl ChainConfig {
 
     pub(crate) fn gas_per_deploy_byte(&self) -> Option<u64> {
         self.gas_per_deploy_byte
+    }
+
+    pub(crate) fn max_queue_size(&self) -> usize {
+        self.max_queue_size.unwrap_or(10_000)
     }
 }

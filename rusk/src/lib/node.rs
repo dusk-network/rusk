@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::http::{HandleRequest, RuesEvent};
 use kadcast::config::Config as KadcastConfig;
 use node::chain::ChainSrv;
 use node::database::rocksdb::{self, Backend};
@@ -18,6 +19,7 @@ use node::database::DatabaseOptions;
 use node::database::DB;
 use node::databroker::conf::Params as BrokerParam;
 use node::databroker::DataBrokerSrv;
+use node::mempool::conf::Params as MempoolParam;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
@@ -26,8 +28,6 @@ use parking_lot::RwLock;
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::VM;
 use tokio::sync::broadcast;
-
-use crate::http::{HandleRequest, RuesEvent};
 
 pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
@@ -59,9 +59,12 @@ pub struct RuskNodeBuilder {
     consensus_keys_path: String,
     databroker: BrokerParam,
     kadcast: KadcastConfig,
+    mempool: MempoolParam,
     telemetry_address: Option<String>,
     db_path: PathBuf,
     db_options: DatabaseOptions,
+    max_chain_queue_size: usize,
+
     node: Option<node::Node<Kadcast<255>, Backend, Rusk>>,
     rusk: Rusk,
 }
@@ -106,16 +109,28 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_mempool(mut self, conf: MempoolParam) -> Self {
+        self.mempool = conf;
+        self
+    }
+
+    pub fn with_chain_queue_size(mut self, max_queue_size: usize) -> Self {
+        self.max_chain_queue_size = max_queue_size;
+        self
+    }
+
     pub fn new(rusk: Rusk) -> Self {
         Self {
-            rusk,
-            node: Default::default(),
-            db_path: Default::default(),
-            db_options: Default::default(),
-            kadcast: Default::default(),
             consensus_keys_path: Default::default(),
             databroker: Default::default(),
-            telemetry_address: Default::default(),
+            kadcast: Default::default(),
+            mempool: Default::default(),
+            telemetry_address: None,
+            db_path: Default::default(),
+            db_options: Default::default(),
+            max_chain_queue_size: 0,
+            node: None,
+            rusk,
         }
     }
 
@@ -147,8 +162,11 @@ impl RuskNodeBuilder {
     pub async fn build_and_run(mut self) -> anyhow::Result<()> {
         let node = self.get_or_create_node()?;
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::<MempoolSrv>::default(),
-            Box::new(ChainSrv::new(self.consensus_keys_path)),
+            Box::new(MempoolSrv::new(self.mempool)),
+            Box::new(ChainSrv::new(
+                self.consensus_keys_path,
+                self.max_chain_queue_size,
+            )),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];

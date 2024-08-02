@@ -11,6 +11,8 @@ pub mod databroker;
 #[cfg(feature = "node")]
 pub mod kadcast;
 #[cfg(feature = "node")]
+pub mod mempool;
+#[cfg(feature = "node")]
 pub mod telemetry;
 
 pub mod http;
@@ -20,8 +22,6 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::args::Args;
-
 #[cfg(feature = "node")]
 use self::chain::ChainConfig;
 #[cfg(feature = "node")]
@@ -30,6 +30,9 @@ use self::databroker::DataBrokerConfig;
 use self::kadcast::KadcastConfig;
 #[cfg(feature = "node")]
 use self::telemetry::TelemetryConfig;
+use crate::args::Args;
+#[cfg(feature = "node")]
+use crate::config::mempool::MempoolConfig;
 
 use self::http::HttpConfig;
 
@@ -57,6 +60,10 @@ pub(crate) struct Config {
     #[cfg(feature = "node")]
     #[serde(default = "TelemetryConfig::default")]
     pub(crate) telemetry: TelemetryConfig,
+
+    #[cfg(feature = "node")]
+    #[serde(default = "MempoolConfig::default")]
+    pub(crate) mempool: MempoolConfig,
 }
 
 /// Default log_level.
