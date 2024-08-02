@@ -106,12 +106,15 @@ pub trait Network: Send + Sync + 'static {
 pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
     Send + Sync
 {
+    #[allow(unused_variables)]
     async fn initialize(
         &mut self,
         network: Arc<RwLock<N>>,
         database: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
 
     async fn execute(
         &mut self,
