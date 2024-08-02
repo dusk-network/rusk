@@ -6,10 +6,13 @@
 
 use super::*;
 
-use execution_core::transfer::phoenix::{
-    value_commitment, Sender, NOTES_TREE_DEPTH,
+use execution_core::{
+    transfer::phoenix::{
+        value_commitment, Sender, TxCircuit, TxInputNote, TxOutputNote,
+        NOTES_TREE_DEPTH,
+    },
+    JubJubAffine,
 };
-use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use rand::{CryptoRng, RngCore};
 
 use crate::prover::fetch_prover;

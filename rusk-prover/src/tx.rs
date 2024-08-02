@@ -10,8 +10,8 @@ use alloc::vec::Vec;
 use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
-use dusk_plonk::prelude::Proof;
 use execution_core::{
+    plonk::Proof,
     signatures::schnorr::{
         Signature as SchnorrSignature,
         SignatureDouble as SchnorrSignatureDouble,

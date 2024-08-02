@@ -6,20 +6,18 @@ autobins = false
 
 [dependencies]
 dusk-bytes = { version = "0.1" }
-dusk-plonk = { version = "0.19", default-features = false }
 poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
 rand_core = "0.6"
 
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 
-execution-core = { version = "0.1.0", path = "../execution-core" }
+execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
 
 ## feature local_prover
 once_cell = { version = "1.9", optional = true }
 rand = { version = "0.8", optional = true }
 rusk-profile = { version = "0.6", path = "../rusk-profile", optional = true }
-phoenix-circuits = { version = "0.2.1-rc", optional = true }
 
 [dev-dependencies]
 hex = "0.4"
@@ -30,11 +28,11 @@ rand = "0.8"
 default = ["local_prover"]
 local_prover = [
     "once_cell",
-    "dusk-plonk/std",
     "rand",
     "rusk-profile",
-    "phoenix-circuits",
     "std",
 ]
 no_random = []
-std = []
+std = [
+    "execution-core/std"
+]
