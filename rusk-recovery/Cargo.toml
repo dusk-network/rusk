@@ -25,12 +25,11 @@ flate2 = "1"
 tar = "0.4"
 cargo_toml = "0.15"
 
-phoenix-circuits = "0.2.1-rc"
 license-circuits = { version = "0.1", path = "../circuits/license" }
 
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
-execution-core = { version = "0.1.0", path = "../execution-core" }
+execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
 
 serde_derive = { version = "1", optional = true }
 serde = { version = "1", optional = true }
