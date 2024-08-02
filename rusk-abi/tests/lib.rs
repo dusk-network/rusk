@@ -183,7 +183,7 @@ fn stake_signature() {
     let stake_sk = BlsSecretKey::random(&mut OsRng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
 
-    let stake_sig = stake_sk.sign(&stake_pk, &message);
+    let stake_sig = stake_sk.sign(&message);
 
     let arg = (message, stake_pk, stake_sig);
     let valid: bool = session

@@ -7,7 +7,7 @@
 use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
-use execution_core::{BlsSigError, BlsSignature};
+use execution_core::{BlsMultisigSignature, BlsSigError};
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
@@ -184,12 +184,12 @@ impl<V> fmt::Display for Aggregator<V> {
 
 #[derive(Default)]
 pub(super) struct AggrSignature {
-    data: Option<BlsSignature>,
+    data: Option<BlsMultisigSignature>,
 }
 
 impl AggrSignature {
     pub fn add(&mut self, data: &[u8; 48]) -> Result<(), BlsSigError> {
-        let sig = BlsSignature::from_bytes(data)?;
+        let sig = BlsMultisigSignature::from_bytes(data)?;
 
         let aggr_sig = match self.data {
             Some(data) => data.aggregate(&[sig]),

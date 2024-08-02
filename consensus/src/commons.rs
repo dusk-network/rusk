@@ -91,8 +91,6 @@ pub enum StepSigError {
     VoteSetTooSmall,
     #[error("Verification error {0}")]
     VerificationFailed(BlsSigError),
-    #[error("Empty Apk instance")]
-    EmptyApk,
     #[error("Invalid Type")]
     InvalidType,
 }

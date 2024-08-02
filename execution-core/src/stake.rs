@@ -46,17 +46,15 @@ impl Stake {
     /// Create a new stake.
     #[must_use]
     pub fn new(sk: &BlsSecretKey, value: u64, nonce: u64) -> Self {
-        let account = BlsPublicKey::from(sk);
-
         let mut stake = Stake {
-            account,
+            account: BlsPublicKey::from(sk),
             value,
             nonce,
             signature: BlsSignature::default(),
         };
 
         let msg = stake.signature_message();
-        stake.signature = sk.sign(&account, &msg);
+        stake.signature = sk.sign(&msg);
 
         stake
     }
@@ -127,16 +125,14 @@ impl Withdraw {
     /// Create a new withdraw call.
     #[must_use]
     pub fn new(sk: &BlsSecretKey, withdraw: TransferWithdraw) -> Self {
-        let account = BlsPublicKey::from(sk);
-
         let mut stake_withdraw = Withdraw {
-            account,
+            account: BlsPublicKey::from(sk),
             withdraw,
             signature: BlsSignature::default(),
         };
 
         let msg = stake_withdraw.signature_message();
-        stake_withdraw.signature = sk.sign(&account, &msg);
+        stake_withdraw.signature = sk.sign(&msg);
 
         stake_withdraw
     }

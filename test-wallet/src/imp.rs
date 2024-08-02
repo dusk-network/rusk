@@ -717,7 +717,7 @@ where
         };
 
         let digest = payload.to_hash_input_bytes();
-        let signature = from_sk.sign(&from, &digest);
+        let signature = from_sk.sign(&digest);
 
         Ok(Transaction::moonlight(payload, signature))
     }

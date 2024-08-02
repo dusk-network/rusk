@@ -16,7 +16,8 @@ use crate::{
 
 use dusk_bytes::Serializable as DuskSerializeble;
 use execution_core::{
-    stake::EPOCH, BlsAggPublicKey, BlsScalar, BlsSigError, BlsSignature,
+    stake::EPOCH, BlsMultisigPublicKey, BlsMultisigSignature, BlsScalar,
+    BlsSigError,
 };
 use thiserror::Error;
 use tracing::error;
@@ -199,8 +200,8 @@ impl Fault {
         msg: &[u8],
     ) -> Result<(), BlsSigError> {
         let signature = sign_info.signature.inner();
-        let sig = BlsSignature::from_bytes(signature)?;
-        let pk = BlsAggPublicKey::from(sign_info.signer.inner());
+        let sig = BlsMultisigSignature::from_bytes(signature)?;
+        let pk = BlsMultisigPublicKey::aggregate(&[*sign_info.signer.inner()])?;
         pk.verify(&sig, msg)
     }
 }
