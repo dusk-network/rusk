@@ -17,9 +17,19 @@ bytecheck = { version = "0.6", default-features = false }
 rand = { version = "0.8", default-features = false }
 ff = { version = "0.13", default-features = false }
 
+# zk-dependencies
+dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"], optional = true }
+phoenix-circuits = { version = "0.2.1-rc", optional = true }
+
 [dev-dependencies]
 rand = "0.8"
 
 [features]
 # It enables parallel thread aggregation of BlsPublicKey
 parallel = ["bls12_381-bls/parallel"]
+
+# It enables zk-capabilities
+zk = ["dusk-plonk", "phoenix-circuits"]
+
+# Enables std feature for dusk-plonk
+std = ["dusk-plonk/std"]
