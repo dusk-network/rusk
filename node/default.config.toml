@@ -47,3 +47,6 @@ max_inv_entries = 500
 max_ongoing_requests = 100
 delay_on_resp_msg = 500
 max_queue_size = 1000
+
+[mempool]
+max_queue_size = 1000
