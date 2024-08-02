@@ -57,7 +57,10 @@ pub(crate) struct Task {
 impl Task {
     /// Creates a new consensus task with the given keys encrypted with password
     /// from env var DUSK_CONSENSUS_KEYS_PASS.
-    pub(crate) fn new_with_keys(path: String) -> anyhow::Result<Self> {
+    pub(crate) fn new_with_keys(
+        path: String,
+        max_inbound_size: usize,
+    ) -> anyhow::Result<Self> {
         let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
             .map_err(|_| anyhow::anyhow!("DUSK_CONSENSUS_KEYS_PASS not set"))?;
         info!(event = "loading consensus keys", path = path);
@@ -69,10 +72,16 @@ impl Task {
         );
 
         Ok(Self {
-            main_inbound: AsyncQueue::bounded(20_000, "consensus_inbound"),
-            outbound: AsyncQueue::bounded(20_000, "consensus_outbound"),
+            main_inbound: AsyncQueue::bounded(
+                max_inbound_size,
+                "consensus_inbound",
+            ),
+            outbound: AsyncQueue::bounded(
+                max_inbound_size,
+                "consensus_outbound",
+            ),
             future_msg: Arc::new(Mutex::new(MsgRegistry::default())),
-            result: AsyncQueue::bounded(10, "consensus_result"),
+            result: AsyncQueue::bounded(1, "consensus_result"),
             running_task: None,
             task_id: 0,
             keys,

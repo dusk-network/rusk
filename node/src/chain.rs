@@ -49,6 +49,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     inbound: AsyncQueue<Message>,
     keys_path: String,
     acceptor: Option<Arc<RwLock<Acceptor<N, DB, VM>>>>,
+    max_consensus_queue_size: usize,
 }
 
 #[async_trait]
@@ -74,6 +75,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             db,
             network.clone(),
             vm.clone(),
+            self.max_consensus_queue_size,
         )
         .await?;
 
@@ -233,11 +235,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
-    pub fn new(keys_path: String) -> Self {
+    pub fn new(keys_path: String, max_inbound_size: usize) -> Self {
+        info!(
+            "ChainSrv::new with keys_path: {}, max_inbound_size: {}",
+            keys_path, max_inbound_size
+        );
+
         Self {
-            inbound: AsyncQueue::bounded(20_000, "chain_inbound"),
+            inbound: AsyncQueue::bounded(max_inbound_size, "chain_inbound"),
             keys_path,
             acceptor: None,
+            max_consensus_queue_size: max_inbound_size,
         }
     }
 

@@ -40,10 +40,10 @@ pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
 }
 
-impl Default for MempoolSrv {
-    fn default() -> Self {
+impl MempoolSrv {
+    pub fn new(max_queue_size: usize) -> Self {
         Self {
-            inbound: AsyncQueue::bounded(20_000, "mempool_inbound"),
+            inbound: AsyncQueue::bounded(max_queue_size, "mempool_inbound"),
         }
     }
 }

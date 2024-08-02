@@ -69,7 +69,7 @@ impl Response {
 pub struct DataBrokerSrv {
     /// A queue of pending requests to process.
     /// Request here is literally a GET message
-    requests: AsyncQueue<Message>,
+    inbound: AsyncQueue<Message>,
 
     /// Limits the number of ongoing requests.
     limit_ongoing_requests: Arc<Semaphore>,
@@ -80,11 +80,15 @@ pub struct DataBrokerSrv {
 impl DataBrokerSrv {
     pub fn new(conf: conf::Params) -> Self {
         info!("DataBrokerSrv::new with conf: {}", conf);
-        let permits = conf.max_ongoing_requests;
         Self {
             conf,
-            requests: AsyncQueue::bounded(20_000, "data_broker_requests"),
-            limit_ongoing_requests: Arc::new(Semaphore::new(permits)),
+            inbound: AsyncQueue::bounded(
+                conf.max_queue_size,
+                "databroker_inbound",
+            ),
+            limit_ongoing_requests: Arc::new(Semaphore::new(
+                conf.max_ongoing_requests,
+            )),
         }
     }
 }
@@ -116,7 +120,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         LongLivedService::<N, DB, VM>::add_routes(
             self,
             TOPICS,
-            self.requests.clone(),
+            self.inbound.clone(),
             &network,
         )
         .await?;
@@ -130,11 +134,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 self.limit_ongoing_requests.clone().acquire_owned().await?;
 
             // Wait for a request to process.
-            let msg = self.requests.recv().await?;
+            let msg = self.inbound.recv().await?;
 
             let network = network.clone();
             let db = db.clone();
-            let conf = self.conf.clone();
+            let conf = self.conf;
 
             // Spawn a task to handle the request asynchronously.
             tokio::spawn(async move {
