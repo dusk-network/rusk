@@ -12,8 +12,11 @@ use std::sync::OnceLock;
 use rand_core::OsRng;
 
 use dusk_bytes::{ParseHexStr, Serializable};
-use dusk_plonk::prelude::*;
 use execution_core::{
+    plonk::{
+        Circuit, Compiler, Composer, Constraint, Error as PlonkError,
+        PublicParameters,
+    },
     signatures::{
         bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
         schnorr::{
@@ -231,7 +234,7 @@ impl TestCircuit {
 }
 
 impl Circuit for TestCircuit {
-    fn circuit(&self, composer: &mut Composer) -> Result<(), Error> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         // append 3 gates that always evaluate to true
 
         let a = composer.append_witness(self.a);
