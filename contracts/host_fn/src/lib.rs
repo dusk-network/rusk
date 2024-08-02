@@ -13,8 +13,14 @@ use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    BlsPublicKey, BlsScalar, BlsSignature, PublicKey, SchnorrPublicKey,
-    SchnorrSignature,
+    signatures::{
+        bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+        schnorr::{
+            PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+        },
+    },
+    transfer::phoenix::PublicKey as PhoenixPublicKey,
+    BlsScalar,
 };
 
 static mut STATE: HostFnTest = HostFnTest;
@@ -62,11 +68,11 @@ impl HostFnTest {
         rusk_abi::block_height()
     }
 
-    pub fn owner(&self) -> PublicKey {
+    pub fn owner(&self) -> PhoenixPublicKey {
         rusk_abi::self_owner()
     }
 
-    pub fn owner_raw(&self) -> [u8; PublicKey::SIZE] {
+    pub fn owner_raw(&self) -> [u8; PhoenixPublicKey::SIZE] {
         rusk_abi::self_owner_raw()
     }
 }

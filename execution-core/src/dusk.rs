@@ -20,11 +20,16 @@ pub const LUX: Dusk = dusk(1.0 / DUSK_UNIT);
 pub type Dusk = u64;
 
 /// Converts from floating point format to Dusk.
+#[must_use]
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_sign_loss)]
 pub const fn dusk(value: f64) -> Dusk {
     (value * DUSK_UNIT) as Dusk
 }
 
 /// Converts from Dusk to floating point format.
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
 pub const fn from_dusk(dusk: Dusk) -> f64 {
     dusk as f64 / DUSK_UNIT
 }

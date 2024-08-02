@@ -9,7 +9,7 @@ use dusk_consensus::{
     operations::{CallParams, VerificationOutput},
     user::{provisioners::Provisioners, stake::Stake},
 };
-use execution_core::BlsPublicKey;
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 #[derive(Default)]

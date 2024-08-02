@@ -10,13 +10,13 @@ use core::cmp::min;
 use dusk_bytes::Serializable;
 
 use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Stake, StakeAmount, StakeData, StakeEvent, Withdraw, EPOCH,
-        STAKE_WARNINGS,
+        STAKE_CONTRACT, STAKE_WARNINGS,
     },
-    BlsPublicKey,
+    transfer::TRANSFER_CONTRACT,
 };
-use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 
 use crate::*;
 

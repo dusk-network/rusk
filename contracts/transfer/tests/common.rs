@@ -7,22 +7,29 @@
 use std::sync::mpsc;
 
 use execution_core::{
-    transfer::{
-        AccountData, ContractCall, Fee, MoonlightPayload, MoonlightTransaction,
-        PhoenixPayload, PhoenixTransaction, Transaction, TreeLeaf,
-        TRANSFER_TREE_DEPTH,
+    signatures::{
+        bls::{PublicKey as AccountPublicKey, SecretKey as AccountSecretKey},
+        schnorr::SecretKey as SchnorrSecretKey,
     },
-    value_commitment, BlsPublicKey, BlsScalar, BlsSecretKey, JubJubScalar,
-    Note, PublicKey, SchnorrSecretKey, SecretKey, Sender, TxSkeleton, ViewKey,
+    transfer::{
+        contract_exec::{ContractCall, ContractExec},
+        moonlight::{
+            AccountData, Payload as MoonlightPayload,
+            Transaction as MoonlightTransaction,
+        },
+        phoenix::{
+            value_commitment, Fee, Note, Payload as PhoenixPayload, PublicKey,
+            SecretKey, Sender, Transaction as PhoenixTransaction, TreeLeaf,
+            TxSkeleton, ViewKey, NOTES_TREE_DEPTH,
+        },
+        Transaction, TRANSFER_CONTRACT,
+    },
+    BlsScalar, ContractError, ContractId, JubJubScalar,
 };
-use rusk_abi::{
-    CallReceipt, ContractError, ContractId, PiecrustError, Session,
-    TRANSFER_CONTRACT,
-};
+use rusk_abi::{CallReceipt, PiecrustError, Session};
 
 use dusk_bytes::Serializable;
 use dusk_plonk::prelude::*;
-use execution_core::transfer::ContractExec;
 use ff::Field;
 use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use poseidon_merkle::Opening as PoseidonOpening;
@@ -91,7 +98,7 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
 
 pub fn account(
     session: &mut Session,
-    pk: &BlsPublicKey,
+    pk: &AccountPublicKey,
 ) -> Result<AccountData, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "account", pk, GAS_LIMIT)
@@ -110,7 +117,7 @@ pub fn contract_balance(
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, PiecrustError> {
+) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)
@@ -197,8 +204,8 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 }
 
 pub fn create_moonlight_transaction(
-    from_sk: &BlsSecretKey,
-    to: Option<BlsPublicKey>,
+    from_sk: &AccountSecretKey,
+    to: Option<AccountPublicKey>,
     value: u64,
     deposit: u64,
     gas_limit: u64,
@@ -207,7 +214,7 @@ pub fn create_moonlight_transaction(
     exec: Option<impl Into<ContractExec>>,
 ) -> MoonlightTransaction {
     let payload = MoonlightPayload {
-        from: BlsPublicKey::from(from_sk),
+        from: AccountPublicKey::from(from_sk),
         to,
         value,
         deposit,
@@ -407,7 +414,7 @@ pub fn create_phoenix_transaction<const I: usize>(
     let sig_b = schnorr_sk_b.sign(&mut rng, payload_hash);
 
     // Build the circuit
-    let circuit: TxCircuit<TRANSFER_TREE_DEPTH, I> = TxCircuit::new(
+    let circuit: TxCircuit<NOTES_TREE_DEPTH, I> = TxCircuit::new(
         tx_input_notes
             .try_into()
             .expect("The input notes should be the correct ammount"),

@@ -14,11 +14,19 @@ use rand_core::OsRng;
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_plonk::prelude::*;
 use execution_core::{
-    BlsPublicKey, BlsScalar, BlsSecretKey, NotePublicKey, NoteSecretKey,
-    PublicKey, SecretKey,
+    signatures::{
+        bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
+        schnorr::{
+            PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
+        },
+    },
+    transfer::phoenix::{
+        PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    },
+    BlsScalar, ContractId,
 };
 use ff::Field;
-use rusk_abi::{ContractData, ContractId, Session, VM};
+use rusk_abi::{ContractData, Session, VM};
 
 const POINT_LIMIT: u64 = 0x1000000;
 
@@ -136,19 +144,19 @@ fn schnorr_signature() {
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
-    let note_sk = NoteSecretKey::random(&mut OsRng);
+    let sk = SchnorrSecretKey::random(&mut OsRng);
     let message = BlsScalar::random(&mut OsRng);
-    let note_pk = NotePublicKey::from(&note_sk);
+    let pk = SchnorrPublicKey::from(&sk);
 
-    let note_sig = note_sk.sign(&mut OsRng, message);
+    let sig = sk.sign(&mut OsRng, message);
 
-    assert!(note_pk.verify(&note_sig, message).is_ok());
+    assert!(pk.verify(&sig, message).is_ok());
 
     let valid: bool = session
         .call(
             contract_id,
             "verify_schnorr",
-            &(message, note_pk, note_sig),
+            &(message, pk, sig),
             POINT_LIMIT,
         )
         .expect("Querying should succeed")
@@ -156,14 +164,14 @@ fn schnorr_signature() {
 
     assert!(valid, "Signature verification expected to succeed");
 
-    let wrong_sk = NoteSecretKey::random(&mut OsRng);
-    let note_pk = NotePublicKey::from(&wrong_sk);
+    let wrong_sk = SchnorrSecretKey::random(&mut OsRng);
+    let pk = SchnorrPublicKey::from(&wrong_sk);
 
     let valid: bool = session
         .call(
             contract_id,
             "verify_schnorr",
-            &(message, note_pk, note_sig),
+            &(message, pk, sig),
             POINT_LIMIT,
         )
         .expect("Querying should succeed")
@@ -173,19 +181,19 @@ fn schnorr_signature() {
 }
 
 #[test]
-fn stake_signature() {
+fn bls_signature() {
     let vm =
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let message = b"some-message".to_vec();
 
-    let stake_sk = BlsSecretKey::random(&mut OsRng);
-    let stake_pk = BlsPublicKey::from(&stake_sk);
+    let sk = BlsSecretKey::random(&mut OsRng);
+    let pk = BlsPublicKey::from(&sk);
 
-    let stake_sig = stake_sk.sign(&message);
+    let sig = sk.sign(&message);
 
-    let arg = (message, stake_pk, stake_sig);
+    let arg = (message, pk, sig);
     let valid: bool = session
         .call(contract_id, "verify_bls", &arg, POINT_LIMIT)
         .expect("Query should succeed")
@@ -341,11 +349,11 @@ fn block_height() {
     assert_eq!(height, HEIGHT);
 }
 
-fn get_owner() -> &'static PublicKey {
-    static OWNER: OnceLock<PublicKey> = OnceLock::new();
+fn get_owner() -> &'static PhoenixPublicKey {
+    static OWNER: OnceLock<PhoenixPublicKey> = OnceLock::new();
     OWNER.get_or_init(|| {
-        let sk = SecretKey::random(&mut OsRng);
-        PublicKey::from(&sk)
+        let sk = PhoenixSecretKey::random(&mut OsRng);
+        PhoenixPublicKey::from(&sk)
     })
 }
 
@@ -369,7 +377,7 @@ fn owner() {
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
-    let owner: PublicKey = session
+    let owner: PhoenixPublicKey = session
         .call(contract_id, "contract_owner", get_owner(), POINT_LIMIT)
         .expect("Query should succeed")
         .data;

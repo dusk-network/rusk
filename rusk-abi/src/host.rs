@@ -11,7 +11,13 @@ use dusk_bytes::DeserializableSlice;
 use dusk_plonk::prelude::{Proof, Verifier};
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use execution_core::{
-    BlsPublicKey, BlsScalar, BlsSignature, SchnorrPublicKey, SchnorrSignature,
+    signatures::{
+        bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+        schnorr::{
+            PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+        },
+    },
+    BlsScalar,
 };
 use piecrust::{Error as PiecrustError, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;

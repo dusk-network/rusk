@@ -8,6 +8,7 @@ use super::RUSK_VERSION_HEADER;
 
 use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
+use execution_core::ContractId;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{stream, Stream, StreamExt};
 use http_body_util::{BodyExt, Either, Full, StreamBody};
@@ -21,7 +22,6 @@ use pin_project::pin_project;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use rkyv::Archive;
-use rusk_abi::ContractId;
 use semver::{Version, VersionReq};
 use serde::de::{Error, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeMap;
@@ -747,8 +747,8 @@ pub struct ContractEvent {
     pub data: Vec<u8>,
 }
 
-impl From<rusk_abi::Event> for ContractEvent {
-    fn from(event: rusk_abi::Event) -> Self {
+impl From<execution_core::Event> for ContractEvent {
+    fn from(event: execution_core::Event) -> Self {
         Self {
             target: WrappedContractId(event.source),
             topic: event.topic,
@@ -757,7 +757,7 @@ impl From<rusk_abi::Event> for ContractEvent {
     }
 }
 
-impl From<ContractEvent> for rusk_abi::Event {
+impl From<ContractEvent> for execution_core::Event {
     fn from(event: ContractEvent) -> Self {
         Self {
             source: event.target.0,
@@ -828,8 +828,8 @@ impl From<ContractEvent> for RuesEvent {
     }
 }
 
-impl From<rusk_abi::Event> for RuesEvent {
-    fn from(event: rusk_abi::Event) -> Self {
+impl From<execution_core::Event> for RuesEvent {
+    fn from(event: execution_core::Event) -> Self {
         Self::from(ContractEvent::from(event))
     }
 }

@@ -21,7 +21,10 @@ use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
-use execution_core::{BlsMultisigSignature, BlsPublicKey, BlsSecretKey};
+use execution_core::signatures::bls::{
+    MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
+    SecretKey as BlsSecretKey,
+};
 use node_data::ledger::{Attestation, StepVotes};
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,

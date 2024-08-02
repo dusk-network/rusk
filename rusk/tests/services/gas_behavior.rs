@@ -8,11 +8,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::transfer::{ContractCall, ContractExec};
+use execution_core::transfer::{
+    contract_exec::{ContractCall, ContractExec},
+    TRANSFER_CONTRACT,
+};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use rusk_abi::TRANSFER_CONTRACT;
 use tempfile::tempdir;
 use test_wallet::{self as wallet};
 use tracing::info;
@@ -68,7 +70,7 @@ fn make_transactions(
     // contract, querying for the root of the tree. This will be given too
     // little gas to execute correctly and error, consuming all gas provided.
     let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT.to_bytes(),
+        contract: TRANSFER_CONTRACT,
         fn_name: String::from("root"),
         fn_args: Vec::new(),
     };

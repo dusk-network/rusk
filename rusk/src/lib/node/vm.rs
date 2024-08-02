@@ -13,8 +13,8 @@ use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use execution_core::{
-    stake::StakeData, transfer::Transaction as ProtocolTransaction,
-    BlsPublicKey,
+    signatures::bls::PublicKey as BlsPublicKey, stake::StakeData,
+    transfer::Transaction as ProtocolTransaction,
 };
 use node::vm::VMExecution;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};

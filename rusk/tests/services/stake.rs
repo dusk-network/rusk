@@ -8,14 +8,15 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use execution_core::{
-    stake::StakeAmount, transfer::ContractCall, BlsPublicKey,
+    dusk,
+    signatures::bls::PublicKey as BlsPublicKey,
+    stake::{StakeAmount, STAKE_CONTRACT},
+    transfer::contract_exec::ContractCall,
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::MINIMUM_STAKE;
 use rusk::{Result, Rusk};
-use rusk_abi::dusk::dusk;
-use rusk_abi::STAKE_CONTRACT;
 use std::collections::HashMap;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Store};

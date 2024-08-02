@@ -100,7 +100,9 @@ mod tests {
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bytes::DeserializableSlice;
-    use execution_core::{BlsPublicKey, BlsSecretKey};
+    use execution_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
 
     use node_data::ledger::Seed;
 

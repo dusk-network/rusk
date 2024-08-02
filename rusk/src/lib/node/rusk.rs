@@ -21,20 +21,18 @@ use dusk_consensus::config::{
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
-use execution_core::bytecode::Bytecode;
-use execution_core::transfer::ContractDeploy;
 use execution_core::{
-    stake::StakeData,
-    transfer::{AccountData, Transaction as ProtocolTransaction},
-    BlsPublicKey, BlsScalar,
+    signatures::bls::PublicKey as BlsPublicKey,
+    stake::{StakeData, STAKE_CONTRACT},
+    transfer::{
+        contract_exec::{ContractBytecode, ContractDeploy},
+        moonlight::AccountData,
+        Transaction as ProtocolTransaction, TRANSFER_CONTRACT,
+    },
+    BlsScalar, ContractError, Dusk, Event,
 };
 use node_data::ledger::{Slash, SpentTransaction, Transaction};
-use rusk_abi::dusk::Dusk;
-use rusk_abi::ContractError::{OutOfGas, Panic};
-use rusk_abi::{
-    CallReceipt, ContractError, Event, PiecrustError, Session, STAKE_CONTRACT,
-    TRANSFER_CONTRACT, VM,
-};
+use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
@@ -507,7 +505,7 @@ fn accept(
 
 // Returns gas charge for bytecode deployment.
 fn bytecode_charge(
-    bytecode: &Bytecode,
+    bytecode: &ContractBytecode,
     gas_per_deploy_byte: &Option<u64>,
 ) -> u64 {
     bytecode.bytes.len() as u64
@@ -534,9 +532,10 @@ fn contract_deploy(
     let min_gas_limit = receipt.gas_spent + deploy_charge;
     let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
     if gas_limit < min_gas_limit {
-        receipt.data = Err(OutOfGas);
+        receipt.data = Err(ContractError::OutOfGas);
     } else if hash != deploy.bytecode.hash {
-        receipt.data = Err(Panic("failed bytecode hash check".into()))
+        receipt.data =
+            Err(ContractError::Panic("failed bytecode hash check".into()))
     } else {
         let result = session.deploy_raw(
             Some(gen_contract_id(
@@ -553,7 +552,8 @@ fn contract_deploy(
             Ok(_) => receipt.gas_spent += deploy_charge,
             Err(err) => {
                 info!("Tx caused deployment error {err:?}");
-                receipt.data = Err(Panic("failed deployment".into()))
+                receipt.data =
+                    Err(ContractError::Panic("failed deployment".into()))
             }
         }
     }

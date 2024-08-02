@@ -20,7 +20,7 @@ pub(crate) use event::{
     RequestData, Target,
 };
 
-use rusk_abi::Event;
+use execution_core::Event;
 use tracing::{info, warn};
 
 use std::borrow::Cow;
@@ -861,7 +861,7 @@ mod tests {
     use event::Event as EventRequest;
 
     use crate::http::event::WrappedContractId;
-    use rusk_abi::ContractId;
+    use execution_core::ContractId;
     use std::net::TcpStream;
     use tungstenite::client;
 

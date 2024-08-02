@@ -19,15 +19,22 @@ use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
 use execution_core::{
-    transfer::{
-        ContractCall, ContractExec, Withdraw, WithdrawReceiver,
-        WithdrawReplayToken,
+    dusk,
+    signatures::bls::{
+        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
-    BlsPublicKey, BlsSecretKey, JubJubScalar, Note, PublicKey, SecretKey,
-    ViewKey,
+    transfer::{
+        contract_exec::{ContractCall, ContractExec},
+        phoenix::{
+            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            ViewKey as PhoenixViewKey,
+        },
+        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
+        TRANSFER_CONTRACT,
+    },
+    ContractId, JubJubScalar, LUX,
 };
-use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractData, ContractId, Session, TRANSFER_CONTRACT, VM};
+use rusk_abi::{ContractData, Session, VM};
 
 const PHOENIX_GENESIS_VALUE: u64 = dusk(1_000.0);
 const MOONLIGHT_GENESIS_VALUE: u64 = dusk(1_000.0);
@@ -52,8 +59,8 @@ const OWNER: [u8; 32] = [0; 32];
 fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
-    phoenix_pk: &PublicKey,
-    moonlight_pk: &BlsPublicKey,
+    phoenix_pk: &PhoenixPublicKey,
+    moonlight_pk: &AccountPublicKey,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
         "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -143,13 +150,14 @@ fn phoenix_transfer() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let phoenix_sender_sk = SecretKey::random(rng);
-    let phoenix_sender_pk = PublicKey::from(&phoenix_sender_sk);
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
-    let phoenix_receiver_pk = PublicKey::from(&SecretKey::random(rng));
+    let phoenix_receiver_pk =
+        PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let session = &mut instantiate(rng, vm, &phoenix_sender_pk, &moonlight_pk);
 
@@ -229,12 +237,13 @@ fn moonlight_transfer() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let phoenix_pk = PublicKey::from(&SecretKey::random(rng));
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
 
-    let moonlight_sender_sk = BlsSecretKey::random(rng);
-    let moonlight_sender_pk = BlsPublicKey::from(&moonlight_sender_sk);
+    let moonlight_sender_sk = AccountSecretKey::random(rng);
+    let moonlight_sender_pk = AccountPublicKey::from(&moonlight_sender_sk);
 
-    let moonlight_receiver_pk = BlsPublicKey::from(&BlsSecretKey::random(rng));
+    let moonlight_receiver_pk =
+        AccountPublicKey::from(&AccountSecretKey::random(rng));
 
     let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_sender_pk);
 
@@ -294,11 +303,11 @@ fn phoenix_alice_ping() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let phoenix_sender_sk = SecretKey::random(rng);
-    let phoenix_sender_pk = PublicKey::from(&phoenix_sender_sk);
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let session = &mut instantiate(rng, vm, &phoenix_sender_pk, &moonlight_pk);
 
@@ -315,7 +324,7 @@ fn phoenix_alice_ping() {
     let is_obfuscated = false;
     let deposit = 0;
     let contract_call = Some(ContractCall {
-        contract: ALICE_ID.to_bytes(),
+        contract: ALICE_ID,
         fn_name: String::from("ping"),
         fn_args: vec![],
     });
@@ -358,10 +367,10 @@ fn moonlight_alice_ping() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let phoenix_pk = PublicKey::from(&SecretKey::random(rng));
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
 
@@ -369,7 +378,7 @@ fn moonlight_alice_ping() {
         .expect("Getting the sender account should succeed");
 
     let contract_call = Some(ContractCall {
-        contract: ALICE_ID.to_bytes(),
+        contract: ALICE_ID,
         fn_name: String::from("ping"),
         fn_args: vec![],
     });
@@ -416,12 +425,12 @@ fn phoenix_deposit_and_withdraw() {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let phoenix_sender_sk = SecretKey::random(rng);
-    let phoenix_sender_vk = ViewKey::from(&phoenix_sender_sk);
-    let phoenix_sender_pk = PublicKey::from(&phoenix_sender_sk);
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let session = &mut instantiate(rng, vm, &phoenix_sender_pk, &moonlight_pk);
 
@@ -438,7 +447,7 @@ fn phoenix_deposit_and_withdraw() {
     let is_obfuscated = false;
     let deposit_value = PHOENIX_GENESIS_VALUE / 2;
     let contract_call = Some(ContractCall {
-        contract: ALICE_ID.to_bytes(),
+        contract: ALICE_ID,
         fn_name: String::from("deposit"),
         fn_args: deposit_value.to_bytes().into(),
     });
@@ -471,7 +480,7 @@ fn phoenix_deposit_and_withdraw() {
             + tx.payload().tx_skeleton.deposit
             + tx.payload().tx_skeleton.max_fee
             + tx.payload().tx_skeleton.outputs[1]
-                .value(Some(&ViewKey::from(&phoenix_sender_sk)))
+                .value(Some(&PhoenixViewKey::from(&phoenix_sender_sk)))
                 .unwrap()
     );
     assert_eq!(
@@ -513,7 +522,7 @@ fn phoenix_deposit_and_withdraw() {
     let withdraw = Withdraw::new(
         rng,
         &note_sk,
-        ALICE_ID.to_bytes(),
+        ALICE_ID,
         PHOENIX_GENESIS_VALUE / 2,
         WithdrawReceiver::Phoenix(address),
         WithdrawReplayToken::Phoenix(vec![
@@ -529,7 +538,7 @@ fn phoenix_deposit_and_withdraw() {
     let is_obfuscated = false;
     let deposit_value = 0;
     let contract_call = Some(ContractCall {
-        contract: ALICE_ID.to_bytes(),
+        contract: ALICE_ID,
         fn_name: String::from("withdraw"),
         fn_args: rkyv::to_bytes::<_, 1024>(&withdraw)
             .expect("should serialize Mint correctly")
@@ -570,12 +579,12 @@ fn phoenix_to_moonlight_swap() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let phoenix_sk = SecretKey::random(rng);
-    let phoenix_vk = ViewKey::from(&phoenix_sk);
-    let phoenix_pk = PublicKey::from(&phoenix_sk);
+    let phoenix_sk = PhoenixSecretKey::random(rng);
+    let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
+    let phoenix_pk = PhoenixPublicKey::from(&phoenix_sk);
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -601,14 +610,14 @@ fn phoenix_to_moonlight_swap() {
     let convert = Withdraw::new(
         rng,
         &moonlight_sk,
-        TRANSFER_CONTRACT.to_bytes(),
+        TRANSFER_CONTRACT,
         SWAP_VALUE,
         WithdrawReceiver::Moonlight(moonlight_pk),
         WithdrawReplayToken::Phoenix(vec![notes[0].gen_nullifier(&phoenix_sk)]),
     );
 
     let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT.to_bytes(),
+        contract: TRANSFER_CONTRACT,
         fn_name: String::from("convert"),
         fn_args: rkyv::to_bytes::<_, 1024>(&convert)
             .expect("should serialize conversion correctly")
@@ -670,12 +679,12 @@ fn moonlight_to_phoenix_swap() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let phoenix_sk = SecretKey::random(rng);
-    let phoenix_vk = ViewKey::from(&phoenix_sk);
-    let phoenix_pk = PublicKey::from(&phoenix_sk);
+    let phoenix_sk = PhoenixSecretKey::random(rng);
+    let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
+    let phoenix_pk = PhoenixPublicKey::from(&phoenix_sk);
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -706,14 +715,14 @@ fn moonlight_to_phoenix_swap() {
     let convert = Withdraw::new(
         rng,
         &note_sk,
-        TRANSFER_CONTRACT.to_bytes(),
+        TRANSFER_CONTRACT,
         SWAP_VALUE,
         WithdrawReceiver::Phoenix(address),
         WithdrawReplayToken::Moonlight(nonce),
     );
 
     let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT.to_bytes(),
+        contract: TRANSFER_CONTRACT,
         fn_name: String::from("convert"),
         fn_args: rkyv::to_bytes::<_, 1024>(&convert)
             .expect("should serialize conversion correctly")
@@ -768,12 +777,12 @@ fn swap_wrong_contract_targeted() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let phoenix_sk = SecretKey::random(rng);
-    let phoenix_vk = ViewKey::from(&phoenix_sk);
-    let phoenix_pk = PublicKey::from(&phoenix_sk);
+    let phoenix_sk = PhoenixSecretKey::random(rng);
+    let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
+    let phoenix_pk = PhoenixPublicKey::from(&phoenix_sk);
 
-    let moonlight_sk = BlsSecretKey::random(rng);
-    let moonlight_pk = BlsPublicKey::from(&moonlight_sk);
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -804,15 +813,15 @@ fn swap_wrong_contract_targeted() {
     let convert = Withdraw::new(
         rng,
         &note_sk,
-        ALICE_ID.to_bytes(), /* this should be the transfer contract, but
-                              * we're testing the "wrong target" case */
+        ALICE_ID, /* this should be the transfer contract, but
+                   * we're testing the "wrong target" case */
         SWAP_VALUE,
         WithdrawReceiver::Phoenix(address),
         WithdrawReplayToken::Moonlight(nonce),
     );
 
     let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT.to_bytes(),
+        contract: TRANSFER_CONTRACT,
         fn_name: String::from("convert"),
         fn_args: rkyv::to_bytes::<_, 1024>(&convert)
             .expect("should serialize conversion correctly")

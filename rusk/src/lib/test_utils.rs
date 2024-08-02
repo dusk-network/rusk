@@ -16,12 +16,18 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
-use execution_core::stake::StakeData;
-use execution_core::transfer::{TreeLeaf, TRANSFER_TREE_DEPTH};
-use execution_core::{BlsPublicKey, BlsScalar, Note, ViewKey};
+use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey,
+    stake::{StakeData, STAKE_CONTRACT},
+    transfer::{
+        phoenix::{Note, TreeLeaf, ViewKey, NOTES_TREE_DEPTH},
+        TRANSFER_CONTRACT,
+    },
+    BlsScalar, ContractId,
+};
 use parking_lot::RwLockWriteGuard;
 use poseidon_merkle::Opening as PoseidonOpening;
-use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT, VM};
+use rusk_abi::VM;
 
 pub type StoredNote = (Note, u64);
 
@@ -59,7 +65,7 @@ impl Rusk {
     pub fn tree_opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>> {
+    ) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>> {
         self.query(TRANSFER_CONTRACT, "opening", &pos)
     }
 

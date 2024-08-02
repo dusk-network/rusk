@@ -13,9 +13,14 @@ use crate::common::block::Block as BlockAwait;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_plonk::prelude::Proof;
 use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey,
     stake::StakeData,
-    transfer::{AccountData, Transaction, TRANSFER_TREE_DEPTH},
-    BlsPublicKey, BlsScalar, Note, ViewKey,
+    transfer::{
+        moonlight::AccountData,
+        phoenix::{Note, ViewKey, NOTES_TREE_DEPTH},
+        Transaction,
+    },
+    BlsScalar,
 };
 use futures::StreamExt;
 use poseidon_merkle::Opening as PoseidonOpening;
@@ -101,7 +106,7 @@ impl wallet::StateClient for TestStateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonOpening<(), TRANSFER_TREE_DEPTH>, Self::Error> {
+    ) -> Result<PoseidonOpening<(), NOTES_TREE_DEPTH>, Self::Error> {
         self.rusk
             .tree_opening(*note.pos())?
             .ok_or(Error::OpeningPositionNotFound(*note.pos()))

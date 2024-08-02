@@ -7,15 +7,23 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Error;
 use dusk_jubjub::JubJubScalar;
-use execution_core::bytecode::Bytecode;
-use execution_core::transfer::{
-    ContractCall, ContractDeploy, ContractExec, Fee, Transaction,
-};
-use execution_core::transfer::{
-    MoonlightPayload, MoonlightTransaction, PhoenixPayload, PhoenixTransaction,
-};
 use execution_core::{
-    BlsPublicKey, BlsSecretKey, Note, PublicKey, SecretKey, TxSkeleton,
+    signatures::bls::{
+        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+    },
+    transfer::{
+        contract_exec::{
+            ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+        },
+        moonlight::{
+            Payload as MoonlightPayload, Transaction as MoonlightTransaction,
+        },
+        phoenix::{
+            Fee, Note, Payload as PhoenixPayload, PublicKey, SecretKey,
+            Transaction as PhoenixTransaction, TxSkeleton,
+        },
+        Transaction,
+    },
 };
 use ff::Field;
 use rand::rngs::StdRng;
@@ -87,8 +95,8 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
     exec: Option<ContractExec>,
 ) -> Transaction {
-    let sk = BlsSecretKey::random(rng);
-    let pk = BlsPublicKey::from(&sk);
+    let sk = AccountSecretKey::random(rng);
+    let pk = AccountPublicKey::from(&sk);
 
     let payload = MoonlightPayload {
         from: pk,
@@ -133,7 +141,7 @@ fn phoenix_with_call() -> Result<(), Error> {
     rng.fill_bytes(&mut fn_args);
 
     let call = ContractCall {
-        contract,
+        contract: contract.into(),
         fn_name: String::from("deposit"),
         fn_args,
     };
@@ -157,7 +165,7 @@ fn phoenix_with_deploy() -> Result<(), Error> {
     rng.fill_bytes(&mut hash);
     let mut bytes = vec![0; 100];
     rng.fill_bytes(&mut bytes);
-    let bytecode = Bytecode { hash, bytes };
+    let bytecode = ContractBytecode { hash, bytes };
 
     let mut owner = [0; 32].to_vec();
     rng.fill_bytes(&mut owner);
@@ -211,7 +219,7 @@ fn moonlight_with_call() -> Result<(), Error> {
     rng.fill_bytes(&mut fn_args);
 
     let call = ContractCall {
-        contract,
+        contract: contract.into(),
         fn_name: String::from("deposit"),
         fn_args,
     };
@@ -235,7 +243,7 @@ fn moonlight_with_deploy() -> Result<(), Error> {
     rng.fill_bytes(&mut hash);
     let mut bytes = vec![0; 100];
     rng.fill_bytes(&mut bytes);
-    let bytecode = Bytecode { hash, bytes };
+    let bytecode = ContractBytecode { hash, bytes };
 
     let mut owner = [0; 32].to_vec();
     rng.fill_bytes(&mut owner);
