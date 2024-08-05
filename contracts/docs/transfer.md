@@ -38,7 +38,36 @@ unable to provide on its own, such as the case of `spend_and_execute` and `refun
 called in sequence.
 
 #### `spend_and_execute(Transaction) -> Result<Vec<u8>, ContractError>`
+
+The main entrypoint for Dusk transactions, taking in either a Moonlight or Phoenix `transaction`.
+Checks if the transaction is valid, spends **all** the available funds, and executes the contract
+call if present in the transaction.
+
+It returns the result of the contract call, as returned by the called contract, if the call exists
+and succeeds. If the call exists and fails, an error containing the reason for failure is returned.
+The call may fail its execution for a myriad of reasons, the most common being it running out of gas
+during execution or a panic by the called contract.
+If there is no call present, an empty vector of bytes is returned.
+
+If this function panics or runs out of gas, a transaction should be considered *invalid*, meaning it
+has no chance of ever being executed and should be discarded.
+
+The gas spent during the execution of this function forms part of the gas that gets charged to a
+transaction, the other part being a possible contract deployment. Since it spends all available
+funds, a subsequent call to [`refund`] is **required** to return unspent funds to the user.
+
+[`refund`]: #refundu64
+
 #### `refund(u64)`
+
+This function must be called after a successful [`spend_and_execute`] call. It is guaranteed to
+succeed if the passed `gas_spent` does not exceed a transaction's gas limit.
+
+It is responsible for computing the unspent funds of a transaction and returning them to the
+appropriate account or address, depending on if the executed transaction was Moonlight or Phoenix.
+
+[`spend_and_execute`]: #spend_and_executetransaction---resultvecu8-contracterror
+
 #### `push_note(u64, Note) -> Note`
 #### `update_root()`
 #### `add_account_balance(AccountPublicKey, u64)`
