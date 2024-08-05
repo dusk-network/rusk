@@ -6,6 +6,8 @@ const networks = [
   { label: "Testnet", value: import.meta.env.VITE_DUSK_TESTNET_NODE },
 ];
 
+const mql = window.matchMedia("(max-width: 1024px)");
+
 const browserDefaults = browser
   ? {
       darkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
@@ -21,6 +23,7 @@ const initialState = {
   chainInfoEntries: Number(import.meta.env.VITE_CHAIN_INFO_ENTRIES),
   fetchInterval: Number(import.meta.env.VITE_REFETCH_INTERVAL) || 1000,
   hasTouchSupport: "ontouchstart" in window || navigator.maxTouchPoints > 0,
+  isSmallScreen: mql.matches,
   marketDataFetchInterval:
     Number(import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL) || 120000,
   network: networks[0].value,
@@ -34,6 +37,20 @@ const initialState = {
 
 const store = writable(initialState);
 const { set, subscribe } = store;
+
+mql.addEventListener("change", (event) => {
+  if(event.matches){
+    set({
+      ...get(store),
+      isSmallScreen: true,
+    });
+  } else {
+    set({
+      ...get(store),
+      isSmallScreen: false,
+    });
+  }
+})
 
 /** @param {string} network */
 const setNetwork = (network) =>

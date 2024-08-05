@@ -39,6 +39,7 @@
     blocks={data?.blocks}
     {error}
     loading={isLoading}
+    {appStore}
   />
 
   <LatestTransactionsCard
@@ -47,6 +48,7 @@
     txns={data?.transactions}
     {error}
     loading={isLoading}
+    {appStore}
   />
 </section>
 

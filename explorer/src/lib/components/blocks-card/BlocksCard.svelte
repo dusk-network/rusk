@@ -14,6 +14,9 @@
   /** @type {Boolean} */
   export let loading;
 
+  /** @type {AppStore} */
+  export let appStore;
+
   const ITEMS_TO_DISPLAY = 15;
 
   let itemsToDisplay = ITEMS_TO_DISPLAY;
@@ -44,14 +47,16 @@
     label: "Show More",
   }}
 >
-  <BlocksTable
-    data={displayedBlocks}
-    className="blocks-card__table mobile-hidden"
-  />
-
-  <div class="blocks-card__list desktop-hidden">
-    {#each displayedBlocks as block (block)}
-      <BlocksList data={block} />
-    {/each}
-  </div>
+  {#if $appStore.isSmallScreen}
+    <div class="blocks-card__list">
+      {#each displayedBlocks as block (block)}
+        <BlocksList data={block} />
+      {/each}
+    </div>
+  {:else}
+    <BlocksTable
+      data={displayedBlocks}
+      className="blocks-card__table"
+    />
+  {/if}
 </DataCard>

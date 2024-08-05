@@ -79,26 +79,8 @@ svg {
   min-width: 100px;
 }
 
-.mobile-hidden {
-  display: block;
-}
-
-.desktop-hidden {
-  display: none;
-}
-
 @media (max-width: 768px) {
   body {
     padding: 0 1.25rem;
-  }
-}
-
-@media (max-width: 1024px) {
-  .mobile-hidden {
-    display: none;
-  }
-
-  .desktop-hidden {
-    display: block;
   }
 }
