@@ -106,12 +106,15 @@ pub trait Network: Send + Sync + 'static {
 pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
     Send + Sync
 {
+    #[allow(unused_variables)]
     async fn initialize(
         &mut self,
         network: Arc<RwLock<N>>,
         database: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
 
     async fn execute(
         &mut self,
@@ -130,16 +133,6 @@ pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
         for topic in my_topics {
             guard.add_route(*topic, queue.clone()).await?
         }
-        Ok(())
-    }
-
-    async fn add_filter(
-        &self,
-        topic: u8,
-        filter_fn: BoxedFilter,
-        network: &Arc<RwLock<N>>,
-    ) -> anyhow::Result<()> {
-        network.write().await.add_filter(topic, filter_fn).await?;
         Ok(())
     }
 
