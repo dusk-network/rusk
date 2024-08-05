@@ -21,10 +21,10 @@ use zk_citadel::license::{
 };
 
 use execution_core::{
-    BlsScalar, JubJubAffine, PublicKey, SecretKey, StealthAddress, ViewKey,
-    GENERATOR_EXTENDED,
+    transfer::phoenix::{PublicKey, SecretKey, StealthAddress, ViewKey},
+    BlsScalar, ContractId, JubJubAffine, GENERATOR_EXTENDED,
 };
-use rusk_abi::{ContractData, ContractId, Session};
+use rusk_abi::{ContractData, Session};
 use rusk_profile::get_common_reference_string;
 
 #[path = "../src/license_types.rs"]

@@ -11,12 +11,12 @@ use poseidon_merkle::{
 };
 
 use execution_core::{
-    transfer::{TreeLeaf, TRANSFER_TREE_DEPTH},
-    BlsScalar, Note,
+    transfer::phoenix::{Note, TreeLeaf, NOTES_TREE_DEPTH},
+    BlsScalar,
 };
 
 pub struct Tree {
-    tree: PoseidonTree<(), TRANSFER_TREE_DEPTH>,
+    tree: PoseidonTree<(), NOTES_TREE_DEPTH>,
     // Since `dusk-merkle` does not include data blocks with the tree, we do it
     // here.
     leaves: Vec<TreeLeaf>,
@@ -95,7 +95,7 @@ impl Tree {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>> {
+    ) -> Option<PoseidonOpening<(), NOTES_TREE_DEPTH>> {
         self.tree.opening(pos)
     }
 

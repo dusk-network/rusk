@@ -6,7 +6,10 @@
 
 use dusk_plonk::prelude::*;
 use dusk_poseidon::{Domain, Hash};
-use execution_core::{JubJubAffine, PublicKey, SecretKey, GENERATOR_EXTENDED};
+use execution_core::{
+    transfer::phoenix::{PublicKey, SecretKey},
+    JubJubAffine, GENERATOR_EXTENDED,
+};
 use ff::Field;
 use license_circuits::{Error, LicenseCircuit, DEPTH};
 use poseidon_merkle::{Item, Opening, Tree};

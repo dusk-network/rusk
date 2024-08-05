@@ -12,10 +12,17 @@ use dusk_bytes::{
 };
 use dusk_plonk::prelude::Proof;
 use execution_core::{
-    transfer::{PhoenixPayload, PhoenixTransaction, TRANSFER_TREE_DEPTH},
-    BlsScalar, JubJubAffine, JubJubExtended, JubJubScalar, Note, PublicKey,
-    SchnorrSignature, SchnorrSignatureDouble, SecretKey,
-    GENERATOR_NUMS_EXTENDED, OUTPUT_NOTES,
+    signatures::schnorr::{
+        Signature as SchnorrSignature,
+        SignatureDouble as SchnorrSignatureDouble,
+    },
+    transfer::phoenix::{
+        Note, Payload as PhoenixPayload, PublicKey as PhoenixPublicKey,
+        SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
+        NOTES_TREE_DEPTH, OUTPUT_NOTES,
+    },
+    BlsScalar, JubJubAffine, JubJubExtended, JubJubScalar,
+    GENERATOR_NUMS_EXTENDED,
 };
 
 use poseidon_merkle::Opening as PoseidonOpening;
@@ -25,7 +32,7 @@ use rand_core::{CryptoRng, RngCore};
 #[derive(PartialEq, Debug, Clone)]
 pub struct UnprovenTransactionInput {
     pub nullifier: BlsScalar,
-    pub opening: PoseidonOpening<(), TRANSFER_TREE_DEPTH>,
+    pub opening: PoseidonOpening<(), NOTES_TREE_DEPTH>,
     pub note: Note,
     pub value: u64,
     pub value_blinder: JubJubScalar,
@@ -36,11 +43,11 @@ pub struct UnprovenTransactionInput {
 impl UnprovenTransactionInput {
     pub fn new<Rng: RngCore + CryptoRng>(
         rng: &mut Rng,
-        sender_sk: &SecretKey,
+        sender_sk: &PhoenixSecretKey,
         note: Note,
         value: u64,
         value_blinder: JubJubScalar,
-        opening: PoseidonOpening<(), TRANSFER_TREE_DEPTH>,
+        opening: PoseidonOpening<(), NOTES_TREE_DEPTH>,
         payload_hash: BlsScalar,
     ) -> Self {
         let nullifier = note.gen_nullifier(sender_sk);
@@ -124,7 +131,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Returns the opening of the input.
-    pub fn opening(&self) -> &PoseidonOpening<(), TRANSFER_TREE_DEPTH> {
+    pub fn opening(&self) -> &PoseidonOpening<(), NOTES_TREE_DEPTH> {
         &self.opening
     }
 
@@ -161,7 +168,7 @@ pub struct UnprovenTransaction {
     pub inputs: Vec<UnprovenTransactionInput>,
     pub outputs: [(Note, u64, JubJubScalar, [JubJubScalar; 2]); OUTPUT_NOTES],
     pub payload: PhoenixPayload,
-    pub sender_pk: PublicKey,
+    pub sender_pk: PhoenixPublicKey,
     pub signatures: (SchnorrSignature, SchnorrSignature),
 }
 
@@ -235,7 +242,7 @@ impl UnprovenTransaction {
             // the payload-hash
             + BlsScalar::SIZE
             // the sender-pk
-            + PublicKey::SIZE
+            + PhoenixPublicKey::SIZE
             // the two signatures
             + 2 * SchnorrSignature::SIZE;
 
@@ -299,7 +306,7 @@ impl UnprovenTransaction {
         let payload = PhoenixPayload::from_slice(buffer)?;
         let mut buffer = &buffer[payload_len as usize..];
 
-        let sender_pk = PublicKey::from_reader(&mut buffer)?;
+        let sender_pk = PhoenixPublicKey::from_reader(&mut buffer)?;
         let sig_a = SchnorrSignature::from_reader(&mut buffer)?;
         let sig_b = SchnorrSignature::from_reader(&mut buffer)?;
 
@@ -337,8 +344,11 @@ impl UnprovenTransaction {
 mod tests {
     use super::*;
     use execution_core::{
-        transfer::{ContractCall, ContractExec, Fee},
-        SchnorrSecretKey, TxSkeleton,
+        signatures::schnorr::SecretKey as SchnorrSecretKey,
+        transfer::{
+            contract_exec::{ContractCall, ContractExec},
+            phoenix::{Fee, TxSkeleton},
+        },
     };
     use poseidon_merkle::{Item, Tree};
     use rand::{rngs::StdRng, SeedableRng};
@@ -346,9 +356,10 @@ mod tests {
     #[test]
     fn serialize_deserialize() -> Result<(), BytesError> {
         let mut rng = StdRng::seed_from_u64(0xbeef);
-        let sender_sk = SecretKey::random(&mut rng);
-        let sender_pk = PublicKey::from(&sender_sk);
-        let receiver_pk = PublicKey::from(&SecretKey::random(&mut rng));
+        let sender_sk = PhoenixSecretKey::random(&mut rng);
+        let sender_pk = PhoenixPublicKey::from(&sender_sk);
+        let receiver_pk =
+            PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
 
         let transfer_value = 42;
         let transfer_value_blinder = JubJubScalar::from(5647890216u64);

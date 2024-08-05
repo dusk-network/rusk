@@ -6,6 +6,7 @@
 
 use crate::Theme;
 use dusk_plonk::prelude::{Compiler, PublicParameters};
+use execution_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -16,10 +17,6 @@ use rusk_profile::Circuit as CircuitProfile;
 use tracing::{info, warn};
 
 mod circuits;
-
-/// Label used for the ZK transcript initialization. Must be the same for prover
-/// and verifier.
-const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 
 static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     let theme = Theme::default();

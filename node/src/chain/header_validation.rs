@@ -154,13 +154,18 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         seed: &[u8; 48],
         pk_bytes: &[u8; 96],
     ) -> anyhow::Result<()> {
-        let pk = execution_core::BlsPublicKey::from_bytes(pk_bytes)
-            .map_err(|err| anyhow!("invalid pk bytes: {:?}", err))?;
+        let pk =
+            execution_core::signatures::bls::PublicKey::from_bytes(pk_bytes)
+                .map_err(|err| anyhow!("invalid pk bytes: {:?}", err))?;
 
-        let signature = execution_core::BlsSignature::from_bytes(seed)
+        let signature =
+            execution_core::signatures::bls::MultisigSignature::from_bytes(
+                seed,
+            )
             .map_err(|err| anyhow!("invalid signature bytes: {}", err))?;
 
-        execution_core::BlsAggPublicKey::from(&pk)
+        execution_core::signatures::bls::MultisigPublicKey::aggregate(&[pk])
+            .map_err(|err| anyhow!("failed aggregating single key: {}", err))?
             .verify(&signature, &self.prev_header.seed.inner()[..])
             .map_err(|err| anyhow!("invalid seed: {:?}", err))?;
 

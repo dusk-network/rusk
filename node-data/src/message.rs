@@ -5,8 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable as DuskSerializable;
-use execution_core::{
-    BlsAggPublicKey, BlsPublicKey, BlsSecretKey, BlsSigError, BlsSignature,
+use execution_core::signatures::bls::{
+    Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+    MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
+    SecretKey as BlsSecretKey,
 };
 use tracing::{error, warn};
 
@@ -1172,8 +1174,11 @@ pub trait StepMessage {
 
     fn verify_signature(&self) -> Result<(), BlsSigError> {
         let signature = self.sign_info().signature.inner();
-        let sig = BlsSignature::from_bytes(signature)?;
-        let pk = BlsAggPublicKey::from(self.sign_info().signer.inner());
+        let sig = BlsMultisigSignature::from_bytes(signature)?;
+        let pk = BlsMultisigPublicKey::aggregate(&[*self
+            .sign_info()
+            .signer
+            .inner()])?;
         let msg = self.signable();
         pk.verify(&sig, &msg)
     }
@@ -1181,7 +1186,7 @@ pub trait StepMessage {
     fn sign(&mut self, sk: &BlsSecretKey, pk: &BlsPublicKey) {
         let msg = self.signable();
         let sign_info = self.sign_info_mut();
-        let signature = sk.sign(pk, &msg).to_bytes();
+        let signature = sk.sign_multisig(pk, &msg).to_bytes();
         sign_info.signature = signature.into();
         sign_info.signer = PublicKey::new(*pk)
     }

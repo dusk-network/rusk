@@ -13,9 +13,16 @@ use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
-    transfer::{Withdraw as TransferWithdraw, WithdrawReceiver},
-    BlsPublicKey, BlsSecretKey, BlsSignature,
+    signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+        Signature as BlsSignature,
+    },
+    transfer::withdraw::{Withdraw as TransferWithdraw, WithdrawReceiver},
+    ContractId,
 };
+
+/// ID of the genesis stake contract
+pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
 
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
@@ -46,17 +53,15 @@ impl Stake {
     /// Create a new stake.
     #[must_use]
     pub fn new(sk: &BlsSecretKey, value: u64, nonce: u64) -> Self {
-        let account = BlsPublicKey::from(sk);
-
         let mut stake = Stake {
-            account,
+            account: BlsPublicKey::from(sk),
             value,
             nonce,
             signature: BlsSignature::default(),
         };
 
         let msg = stake.signature_message();
-        stake.signature = sk.sign(&account, &msg);
+        stake.signature = sk.sign(&msg);
 
         stake
     }
@@ -127,16 +132,14 @@ impl Withdraw {
     /// Create a new withdraw call.
     #[must_use]
     pub fn new(sk: &BlsSecretKey, withdraw: TransferWithdraw) -> Self {
-        let account = BlsPublicKey::from(sk);
-
         let mut stake_withdraw = Withdraw {
-            account,
+            account: BlsPublicKey::from(sk),
             withdraw,
             signature: BlsSignature::default(),
         };
 
         let msg = stake_withdraw.signature_message();
-        stake_withdraw.signature = sk.sign(&account, &msg);
+        stake_withdraw.signature = sk.sign(&msg);
 
         stake_withdraw
     }

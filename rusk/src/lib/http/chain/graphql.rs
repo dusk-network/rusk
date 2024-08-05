@@ -13,6 +13,7 @@ use data::*;
 use tx::*;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
+use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
 
@@ -66,7 +67,11 @@ impl Query {
         let blocks = self.blocks(ctx, last, range).await?;
 
         let contract = match contract {
-            Some(contract) => Some(hex::decode(contract)?),
+            Some(contract) => {
+                let mut decoded = [0u8; 32];
+                decoded.copy_from_slice(&hex::decode(contract)?[..]);
+                Some(ContractId::from(decoded))
+            }
             _ => None,
         };
 
@@ -84,11 +89,9 @@ impl Query {
                                     .inner
                                     .call()
                                     .map(|c| c.contract)
-                                    .unwrap_or(
-                                        rusk_abi::TRANSFER_CONTRACT.to_bytes(),
-                                    );
+                                    .unwrap_or(TRANSFER_CONTRACT);
 
-                            tx_contract == contract[..]
+                            tx_contract == *contract
                         })
                         .collect();
                     txs.append(&mut txs_to_add);

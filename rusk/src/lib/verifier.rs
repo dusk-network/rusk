@@ -9,7 +9,10 @@
 use crate::error::Error;
 use crate::Result;
 
-use execution_core::transfer::{MoonlightTransaction, PhoenixTransaction};
+use execution_core::transfer::{
+    moonlight::Transaction as MoonlightTransaction,
+    phoenix::Transaction as PhoenixTransaction,
+};
 use rusk_profile::Circuit as CircuitProfile;
 
 use std::sync::LazyLock;

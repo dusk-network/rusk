@@ -13,14 +13,21 @@ use alloc::vec::Vec;
 
 use dusk_bytes::Error as BytesError;
 use execution_core::{
-    stake::{Stake, StakeData, Withdraw as StakeWithdraw},
-    transfer::{
-        AccountData, ContractCall, ContractDeploy, ContractExec, Fee,
-        MoonlightPayload, PhoenixPayload, Transaction, Withdraw,
-        WithdrawReceiver, WithdrawReplayToken,
+    signatures::{
+        bls::PublicKey as BlsPublicKey, schnorr::SecretKey as SchnorrSecretKey,
     },
-    BlsPublicKey, BlsScalar, JubJubScalar, Note, PhoenixError, PublicKey,
-    SchnorrSecretKey, SecretKey, TxSkeleton, ViewKey, OUTPUT_NOTES,
+    stake::{Stake, StakeData, Withdraw as StakeWithdraw, STAKE_CONTRACT},
+    transfer::{
+        contract_exec::{ContractCall, ContractDeploy, ContractExec},
+        moonlight::{AccountData, Payload as MoonlightPayload},
+        phoenix::{
+            Error as PhoenixError, Fee, Note, Payload as PhoenixPayload,
+            PublicKey, SecretKey, TxSkeleton, ViewKey, OUTPUT_NOTES,
+        },
+        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
+        Transaction,
+    },
+    BlsScalar, JubJubScalar,
 };
 use ff::Field;
 use rand_core::{CryptoRng, Error as RngError, RngCore};
@@ -486,7 +493,7 @@ where
             .to_vec();
 
         let contract_call = ContractCall {
-            contract: rusk_abi::STAKE_CONTRACT.to_bytes(),
+            contract: STAKE_CONTRACT,
             fn_name: String::from(TX_STAKE),
             fn_args: stake_bytes,
         };
@@ -555,7 +562,7 @@ where
                 let withdraw = Withdraw::new(
                     rng,
                     &note_sk,
-                    rusk_abi::STAKE_CONTRACT.to_bytes(),
+                    STAKE_CONTRACT,
                     amount.value,
                     WithdrawReceiver::Phoenix(address),
                     WithdrawReplayToken::Phoenix(nullifiers),
@@ -569,7 +576,7 @@ where
                         .to_vec();
 
                 ContractCall {
-                    contract: rusk_abi::STAKE_CONTRACT.to_bytes(),
+                    contract: STAKE_CONTRACT,
                     fn_name: String::from(TX_UNSTAKE),
                     fn_args: withdraw_bytes,
                 }
@@ -632,7 +639,7 @@ where
                 let withdraw = Withdraw::new(
                     rng,
                     &note_sk,
-                    rusk_abi::STAKE_CONTRACT.to_bytes(),
+                    STAKE_CONTRACT,
                     stake.reward,
                     WithdrawReceiver::Phoenix(address),
                     WithdrawReplayToken::Phoenix(nullifiers),
@@ -645,7 +652,7 @@ where
                     .to_vec();
 
                 ContractCall {
-                    contract: rusk_abi::STAKE_CONTRACT.to_bytes(),
+                    contract: STAKE_CONTRACT,
                     fn_name: String::from(TX_WITHDRAW),
                     fn_args: unstake_bytes,
                 }
@@ -717,7 +724,7 @@ where
         };
 
         let digest = payload.to_hash_input_bytes();
-        let signature = from_sk.sign(&from, &digest);
+        let signature = from_sk.sign(&digest);
 
         Ok(Transaction::moonlight(payload, signature))
     }

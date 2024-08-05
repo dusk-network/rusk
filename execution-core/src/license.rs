@@ -4,15 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod public_input;
-pub use public_input::*;
+//! Types used by Dusk's license contract.
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "host")] {
-        mod host;
-        pub use host::*;
-    } else {
-        mod hosted;
-        pub use hosted::*;
-    }
-}
+use crate::{reserved, ContractId};
+
+/// ID of the genesis license contract
+pub const LICENSE_CONTRACT: ContractId = reserved(0x3);

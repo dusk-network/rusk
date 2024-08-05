@@ -15,7 +15,7 @@ use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
 
-use rusk_abi::ContractId;
+use execution_core::ContractId;
 
 use crate::node::Rusk;
 

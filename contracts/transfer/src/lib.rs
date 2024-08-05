@@ -16,7 +16,7 @@ mod transitory;
 mod tree;
 mod verifier_data;
 
-use rusk_abi::STAKE_CONTRACT;
+use execution_core::stake::STAKE_CONTRACT;
 use state::TransferState;
 
 static mut STATE: TransferState = TransferState::new();

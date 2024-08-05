@@ -17,7 +17,8 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
 use execution_core::{
-    transfer::Transaction as ProtocolTransaction, BlsPublicKey, BlsSecretKey,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
+    transfer::Transaction as ProtocolTransaction,
 };
 use node_data::ledger::Transaction;
 use rand::prelude::StdRng;

@@ -7,8 +7,7 @@
 use dusk_bytes::Serializable;
 use serde_derive::{Deserialize, Serialize};
 
-use execution_core::BlsPublicKey;
-use rusk_abi::dusk::Dusk;
+use execution_core::{signatures::bls::PublicKey as BlsPublicKey, Dusk};
 
 use super::wrapper::Wrapper;
 

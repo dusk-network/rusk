@@ -94,11 +94,14 @@ pub mod faker {
     use super::*;
     use crate::ledger::Dummy;
     use execution_core::transfer::{
-        ContractCall, ContractExec, Fee, PhoenixPayload,
+        contract_exec::{ContractCall, ContractExec},
+        phoenix::{
+            Fee, Note, Payload as PhoenixPayload,
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            TxSkeleton,
+        },
     };
-    use execution_core::{
-        BlsScalar, JubJubScalar, Note, PublicKey, SecretKey, TxSkeleton,
-    };
+    use execution_core::{BlsScalar, JubJubScalar};
     use rand::Rng;
 
     impl<T> Dummy<T> for Transaction {
@@ -122,7 +125,7 @@ pub mod faker {
     /// Generates a decodable transaction from a fixed blob with a specified
     /// gas price.
     pub fn gen_dummy_tx(gas_price: u64) -> Transaction {
-        let pk = PublicKey::from(&SecretKey::new(
+        let pk = PhoenixPublicKey::from(&PhoenixSecretKey::new(
             JubJubScalar::from(42u64),
             JubJubScalar::from(42u64),
         ));

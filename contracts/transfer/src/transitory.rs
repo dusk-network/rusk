@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rusk_abi::ContractId;
-
-use execution_core::transfer::{
-    MoonlightTransaction, PhoenixTransaction, Transaction,
+use execution_core::{
+    transfer::{
+        moonlight::Transaction as MoonlightTransaction,
+        phoenix::Transaction as PhoenixTransaction, Transaction,
+    },
+    ContractId,
 };
 
 /// The state of a deposit while a transaction is executing.
@@ -62,8 +64,8 @@ pub fn put_transaction(tx: impl Into<Transaction>) {
         if d > 0 {
             let contract = tx
                 .call()
-                .map(|call| ContractId::from_bytes(call.contract))
-                .expect("There must be a contract when depositing funds");
+                .expect("There must be a contract when depositing funds")
+                .contract;
 
             // When a transaction is initially inserted, any deposit is
             // available for pick up.

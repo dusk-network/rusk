@@ -7,90 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Improved deserialization [#1963]
-- Change payload to support contract deployment [#1882]
-
-- Re-export
-  - `dusk-bls12_381::BlsScalar`
-  - `dusk-jubjub::{
-      JubJubAffine,
-      JubJubExtended,
-      JubJubScalar,
-      GENERATOR_EXTENDED,
-      GENERATOR_NUMS_EXTENDED
-    }`
-  - `bls12_381_bls::{
-      Error as BlsSigError,
-      PublicKey as BlsPublicKey,
-      SecretKey as BlsSecretKey,
-      Signature as BlsSignature,
-      APK as BlsAggPublicKey
-    }`
-  - `jubjub_schnorr::{
-      PublicKey as SchnorrPublicKey,
-      SecretKey as SchnorrSecretKey,
-      Signature as SchnorrSignature,
-      SignatureDouble as SchnorrSignatureDouble
-    }`
-  - `phoenix_core::{
-      value_commitment,
-      Error as PhoenixError,
-      Note,
-      PublicKey,
-      SecretKey,
-      Sender,
-      StealthAddress,
-      TxSkeleton,
-      ViewKey,
-      NOTE_VAL_ENC_SIZE,
-      OUTPUT_NOTES
-    }`
-- Add type-alias:
-  - `pub type NotePublicKey = SchnorrPublicKey`
-  - `pub type NoteSecretKey = SchnorrSecretKey`
-  - `pub type NoteSignature = SchnorrSignature`
-- Add modules, types and functionality:
-  - `transfer::{
-      AccountData,
-      ContractCall,
-      Fee,
-      MoonlightPayload,
-      MoonlightTransaction,
-      PhoenixPayload,
-      PhoenixTransaction,
-      TreeLeaf,
-      Withdraw,
-      WithdrawReceiver,
-      WithdrawSignature,
-      WithdrawSecretKey,
-      WithdrawReplayToken,
-      Transaction,
-      TRANSFER_TREE_DEPTH,
-      ContractId,
-    }`
-  - `stake::{
-      Stake,
-      StakeAmount,
-      StakeData,
-      StakeEvent,
-      Withdraw,
-      EPOCH,
-      STAKE_WARNINGS,
-      next_epoch,
-  }`
-
 ### Added
 
-- Add `nonce` contract deploy transaction [#1884]
-
-
-[#1963]: https://github.com/dusk-network/rusk/issues/1963
-[#1963]: https://github.com/dusk-network/rusk/issues/1856
-[#1884]: https://github.com/dusk-network/rusk/issues/1884
-[#1882]: https://github.com/dusk-network/rusk/issues/1882
-[#1723]: https://github.com/dusk-network/rusk/issues/1723
+- Add, types, type-alias, functionality, re-exports and modules:
+```rust
+dusk;
+from_dusk;
+Dusk;
+LUX;
+pub use dusk_bls12_381::BlsScalar;
+pub use dusk_jubjub::{
+    JubJubAffine,
+    JubJubExtended,
+    JubJubScalar,
+    GENERATOR_EXTENDED,
+    GENERATOR_NUMS_EXTENDED
+};
+pub use piecrust_uplink::{
+    ContractError,
+    ContractId,
+    Event,
+    StandardBufSerializer,
+    ARGBUF_LEN,
+    CONTRACT_ID_BYTES,
+};
+signatures::{
+    bls::{
+        Error,
+        PublicKey,
+        SecretKey,
+        Signature,
+        APK as AggPublicKey,
+    };
+    schnorr::{
+        PublicKey,
+        SecretKey,
+        Signature,
+        SignatureDouble,
+    }
+}
+transfer::{
+    contract_exec::{
+        ContractBytecode;
+        ContractCall;
+        ContractExec;
+    };
+    moonlight::{
+        AccountData;
+        Payload;
+        Transaction;
+    };
+    phoenix::{
+        Fee;
+        Payload;
+        Transaction;
+        TreeLeaf;
+        NOTES_TREE_DEPTH;
+        TRANSCRIPT_LABEL;
+        pub use phoenix_core::{
+            value_commitment,
+            Error as PhoenixError,
+            Note,
+            PublicKey,
+            SecretKey,
+            Sender,
+            StealthAddress,
+            TxSkeleton,
+            ViewKey,
+            NOTE_VAL_ENC_SIZE,
+            OUTPUT_NOTES
+        };
+        pub type NotePublicKey = SchnorrPublicKey;
+        pub type NoteSecretKey = SchnorrSecretKey;
+        pub type NoteSignature = SchnorrSignature;
+    };
+    withdraw::{
+        Withdraw;
+        WithdrawReceiver;
+        WithdrawSignature;
+        WithdrawSecretKey;
+        WithdrawReplayToken;
+    };
+    Transaction;
+    TRANSFER_CONTRACT;
+};
+stake::{
+    Stake;
+    StakeAmount;
+    StakeData;
+    StakeEvent;
+    Withdraw;
+    EPOCH;
+    STAKE_CONTRACT;
+    STAKE_WARNINGS;
+    next_epoch;
+};
+licence::LICENSE_CONTRACT;
+```
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/execution-core-0.1.0...HEAD
 [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/execution-core-0.1.0

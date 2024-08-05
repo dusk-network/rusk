@@ -18,7 +18,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
 use dusk_consensus::operations::Voter;
-use execution_core::stake::Withdraw;
+use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
@@ -81,12 +81,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
 
 const STAKE: &str = "stake";
 const UNSTAKE: &str = "unstake";
-const STAKE_CONTRACT: [u8; 32] = stake_contract_id();
-const fn stake_contract_id() -> [u8; 32] {
-    let mut bytes = [0u8; 32];
-    bytes[0] = 2;
-    bytes
-}
 
 #[derive(Debug)]
 enum ProvisionerChange {

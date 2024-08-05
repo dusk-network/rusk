@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::http::{HandleRequest, RuesEvent};
+use execution_core::{dusk, Dusk};
 use kadcast::config::Config as KadcastConfig;
 use node::chain::ChainSrv;
 use node::database::rocksdb::{self, Backend};
@@ -25,7 +25,6 @@ use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 use parking_lot::RwLock;
-use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::VM;
 use tokio::sync::broadcast;
 

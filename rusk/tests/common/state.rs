@@ -13,7 +13,9 @@ use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_consensus::operations::CallParams;
-use execution_core::{transfer::Transaction, BlsPublicKey};
+use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
+};
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{

@@ -6,8 +6,9 @@
 
 use super::*;
 
-use execution_core::transfer::TRANSFER_TREE_DEPTH;
-use execution_core::{value_commitment, Sender};
+use execution_core::transfer::phoenix::{
+    value_commitment, Sender, NOTES_TREE_DEPTH,
+};
 use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use rand::{CryptoRng, RngCore};
 
@@ -28,7 +29,7 @@ pub static EXEC_4_2_PROVER: Lazy<PlonkProver> =
 
 fn create_circuit<const I: usize>(
     utx: &UnprovenTransaction,
-) -> Result<TxCircuit<TRANSFER_TREE_DEPTH, I>, ProverError> {
+) -> Result<TxCircuit<NOTES_TREE_DEPTH, I>, ProverError> {
     // Create the `TxInputNote`
     let mut tx_input_notes = Vec::with_capacity(utx.inputs().len());
     utx.inputs.iter().for_each(|input| {
@@ -42,7 +43,7 @@ fn create_circuit<const I: usize>(
             signature: input.sig,
         });
     });
-    let tx_input_notes: [TxInputNote<TRANSFER_TREE_DEPTH>; I] = tx_input_notes
+    let tx_input_notes: [TxInputNote<NOTES_TREE_DEPTH>; I] = tx_input_notes
         .try_into()
         .expect("the numbers of input-notes should be as expected");
 
@@ -98,7 +99,7 @@ fn create_circuit<const I: usize>(
     ];
 
     // Build the circuit
-    let circuit: TxCircuit<TRANSFER_TREE_DEPTH, I> = TxCircuit::new(
+    let circuit: TxCircuit<NOTES_TREE_DEPTH, I> = TxCircuit::new(
         tx_input_notes,
         tx_output_notes,
         utx.payload_hash(),

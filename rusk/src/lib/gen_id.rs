@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::hash::Hasher;
-use rusk_abi::ContractId;
+use blake2b_simd::Params;
+use execution_core::{ContractId, CONTRACT_ID_BYTES};
 
 /// Generate a [`ContractId`] address from:
 /// - slice of bytes,
@@ -16,11 +16,15 @@ pub fn gen_contract_id(
     nonce: u64,
     owner: impl AsRef<[u8]>,
 ) -> ContractId {
-    let mut hasher = Hasher::new();
+    let mut hasher = Params::new().hash_length(CONTRACT_ID_BYTES).to_state();
     hasher.update(bytes.as_ref());
-    hasher.update(nonce.to_le_bytes());
+    hasher.update(&nonce.to_le_bytes()[..]);
     hasher.update(owner.as_ref());
-    let hash_bytes = hasher.finalize();
+    let hash_bytes: [u8; CONTRACT_ID_BYTES] = hasher
+        .finalize()
+        .as_bytes()
+        .try_into()
+        .expect("the hash result is exactly `CONTRACT_ID_BYTES` long");
     ContractId::from_bytes(hash_bytes)
 }
 
@@ -47,7 +51,7 @@ mod tests {
 
         assert_eq!(
             hex::encode(contract_id.as_bytes()),
-            "a138d3b9c87235dac6f62d1d30b75cffbb94601d9cbe5bd540b3e1e5842c8a7d"
+            "2da8b6277789a88c7215789e227ef4dd97486db252e554805c7b874a17e07785"
         );
     }
 }

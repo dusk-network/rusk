@@ -10,11 +10,17 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use execution_core::{
-    stake::{StakeAmount, StakeData},
-    BlsPublicKey, BlsSecretKey, PublicKey, SecretKey,
+    dusk,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
+    stake::{StakeAmount, StakeData, STAKE_CONTRACT},
+    transfer::{
+        phoenix::{
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+        },
+        TRANSFER_CONTRACT,
+    },
 };
-use rusk_abi::dusk::dusk;
-use rusk_abi::{PiecrustError, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::PiecrustError;
 
 use crate::common::assert::assert_event;
 use crate::common::init::instantiate;
@@ -28,8 +34,8 @@ fn reward_slash() -> Result<(), PiecrustError> {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let sk = SecretKey::random(rng);
-    let pk = PublicKey::from(&sk);
+    let sk = PhoenixSecretKey::random(rng);
+    let pk = PhoenixPublicKey::from(&sk);
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
@@ -117,8 +123,8 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let sk = SecretKey::random(rng);
-    let pk = PublicKey::from(&sk);
+    let sk = PhoenixSecretKey::random(rng);
+    let pk = PhoenixPublicKey::from(&sk);
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);

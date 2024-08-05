@@ -4,16 +4,196 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Types related to the phoenix transaction model of Dusk's transfer contract.
+
 use alloc::vec::Vec;
+use core::cmp;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
+use dusk_poseidon::{Domain, Hash};
+use ff::Field;
+use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
-    transfer::{Bytecode, ContractCall, ContractDeploy, ContractExec, Fee},
-    BlsScalar, JubJubAffine, Sender, TxSkeleton,
+    transfer::contract_exec::{
+        ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+    },
+    BlsScalar, JubJubAffine, JubJubScalar,
 };
+
+// phoenix types
+pub use phoenix_core::{
+    value_commitment, Error, Note, PublicKey, SecretKey, Sender,
+    StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
+};
+
+/// Label used for the ZK transcript initialization. Must be the same for prover
+/// and verifier.
+pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
+
+/// The depth of the transfer tree.
+pub const NOTES_TREE_DEPTH: usize = 17;
+
+/// The Fee structure
+#[derive(Debug, Clone, Copy, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Fee {
+    /// Gas limit set for a phoenix transaction
+    pub gas_limit: u64,
+    /// Gas price set for a phoenix transaction
+    pub gas_price: u64,
+    /// Address to send the remainder note
+    pub stealth_address: StealthAddress,
+    /// Sender to use for the remainder
+    pub sender: Sender,
+}
+
+impl PartialEq for Fee {
+    fn eq(&self, other: &Self) -> bool {
+        self.sender == other.sender && self.hash() == other.hash()
+    }
+}
+
+impl Eq for Fee {}
+
+impl Fee {
+    /// Create a new Fee with inner randomness
+    #[must_use]
+    pub fn new<R: RngCore + CryptoRng>(
+        rng: &mut R,
+        pk: &PublicKey,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Self {
+        let r = JubJubScalar::random(&mut *rng);
+
+        let sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+
+        Self::deterministic(&r, pk, gas_limit, gas_price, &sender_blinder)
+    }
+
+    /// Create a new Fee without inner randomness
+    #[must_use]
+    pub fn deterministic(
+        r: &JubJubScalar,
+        pk: &PublicKey,
+        gas_limit: u64,
+        gas_price: u64,
+        sender_blinder: &[JubJubScalar; 2],
+    ) -> Self {
+        let stealth_address = pk.gen_stealth_address(r);
+        let sender =
+            Sender::encrypt(stealth_address.note_pk(), pk, sender_blinder);
+
+        Fee {
+            gas_limit,
+            gas_price,
+            stealth_address,
+            sender,
+        }
+    }
+
+    /// Calculate the max-fee.
+    #[must_use]
+    pub fn max_fee(&self) -> u64 {
+        self.gas_limit * self.gas_price
+    }
+
+    /// Return a hash represented by `H(gas_limit, gas_price, H([note_pk]))`
+    #[must_use]
+    pub fn hash(&self) -> BlsScalar {
+        let npk = self.stealth_address.note_pk().as_ref().to_hash_inputs();
+
+        let hash_inputs = [
+            BlsScalar::from(self.gas_limit),
+            BlsScalar::from(self.gas_price),
+            npk[0],
+            npk[1],
+        ];
+        Hash::digest(Domain::Other, &hash_inputs)[0]
+    }
+
+    /// Generates a remainder from the fee and the given gas consumed.
+    ///
+    /// If there is a deposit, it means that the deposit hasn't been picked up
+    /// by the contract. In this case, it is added to the remainder note.
+    #[must_use]
+    pub fn gen_remainder_note(
+        &self,
+        gas_consumed: u64,
+        deposit: Option<u64>,
+    ) -> Note {
+        // Consuming more gas than the limit provided should never occur, and
+        // it's not the responsibility of the `Fee` to check that.
+        // Here defensively ensure it's not panicking, capping the gas consumed
+        // to the gas limit.
+        let gas_consumed = cmp::min(gas_consumed, self.gas_limit);
+        let gas_changes = (self.gas_limit - gas_consumed) * self.gas_price;
+
+        Note::transparent_stealth(
+            self.stealth_address,
+            gas_changes + deposit.unwrap_or_default(),
+            self.sender,
+        )
+    }
+}
+
+const SIZE: usize = 2 * u64::SIZE + StealthAddress::SIZE + Sender::SIZE;
+
+impl Serializable<SIZE> for Fee {
+    type Error = BytesError;
+
+    /// Converts a Fee into it's byte representation
+    #[must_use]
+    fn to_bytes(&self) -> [u8; Self::SIZE] {
+        let mut buf = [0u8; Self::SIZE];
+
+        buf[..u64::SIZE].copy_from_slice(&self.gas_limit.to_bytes());
+        let mut start = u64::SIZE;
+        buf[start..start + u64::SIZE]
+            .copy_from_slice(&self.gas_price.to_bytes());
+        start += u64::SIZE;
+        buf[start..start + StealthAddress::SIZE]
+            .copy_from_slice(&self.stealth_address.to_bytes());
+        start += StealthAddress::SIZE;
+        buf[start..start + Sender::SIZE]
+            .copy_from_slice(&self.sender.to_bytes());
+
+        buf
+    }
+
+    /// Attempts to convert a byte representation of a fee into a `Fee`,
+    /// failing if the input is invalid
+    fn from_bytes(bytes: &[u8; Self::SIZE]) -> Result<Self, Self::Error> {
+        let mut reader = &bytes[..];
+
+        let gas_limit = u64::from_reader(&mut reader)?;
+        let gas_price = u64::from_reader(&mut reader)?;
+        let stealth_address = StealthAddress::from_reader(&mut reader)?;
+        let sender = Sender::from_reader(&mut reader)?;
+
+        Ok(Fee {
+            gas_limit,
+            gas_price,
+            stealth_address,
+            sender,
+        })
+    }
+}
+/// A leaf of the transfer tree.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TreeLeaf {
+    /// The height of the block when the note was inserted in the tree.
+    pub block_height: u64,
+    /// The note inserted in the tree.
+    pub note: Note,
+}
 
 /// Phoenix transaction.
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
@@ -93,7 +273,7 @@ impl Transaction {
                 exec: Some(ContractExec::Deploy(ContractDeploy {
                     owner: deploy.owner.clone(),
                     constructor_args: deploy.constructor_args.clone(),
-                    bytecode: Bytecode {
+                    bytecode: ContractBytecode {
                         hash: deploy.bytecode.hash,
                         bytes: Vec::new(),
                     },
@@ -340,7 +520,7 @@ impl Payload {
                 }
             }
             Some(ContractExec::Call(c)) => {
-                bytes.extend(c.contract);
+                bytes.extend(c.contract.as_bytes());
                 bytes.extend(c.fn_name.as_bytes());
                 bytes.extend(&c.fn_args);
             }

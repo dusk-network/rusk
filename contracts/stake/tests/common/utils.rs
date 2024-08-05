@@ -15,16 +15,20 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use execution_core::{
+    signatures::schnorr::SecretKey as SchnorrSecretKey,
     transfer::{
-        ContractCall, ContractExec, Fee, PhoenixPayload, Transaction, TreeLeaf,
-        TRANSFER_TREE_DEPTH,
+        contract_exec::{ContractCall, ContractExec},
+        phoenix::{
+            value_commitment, Fee, Note, Payload as PhoenixPayload,
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            Sender, TreeLeaf, TxSkeleton, ViewKey as PhoenixViewKey,
+            NOTES_TREE_DEPTH,
+        },
+        Transaction, TRANSFER_CONTRACT,
     },
-    value_commitment, JubJubScalar, Note, PublicKey, SchnorrSecretKey,
-    SecretKey, Sender, TxSkeleton, ViewKey,
+    ContractError, JubJubScalar,
 };
-use rusk_abi::{
-    CallReceipt, ContractError, PiecrustError, Session, TRANSFER_CONTRACT,
-};
+use rusk_abi::{CallReceipt, PiecrustError, Session};
 
 const POINT_LIMIT: u64 = 0x100000000;
 
@@ -83,7 +87,7 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH>>, PiecrustError> {
+) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
         .map(|r| r.data)
@@ -113,7 +117,7 @@ pub fn prover_verifier(input_notes: usize) -> (Prover, Verifier) {
 }
 
 pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
-    vk: ViewKey,
+    vk: PhoenixViewKey,
     iter: I,
 ) -> Vec<Note> {
     iter.into_iter()
@@ -163,8 +167,8 @@ pub fn execute(
 /// input note positions in the transaction tree and the new output-notes.
 pub fn create_transaction<const I: usize>(
     session: &mut Session,
-    sender_sk: &SecretKey,
-    receiver_pk: &PublicKey,
+    sender_sk: &PhoenixSecretKey,
+    receiver_pk: &PhoenixPublicKey,
     gas_limit: u64,
     gas_price: u64,
     input_pos: [u64; I],
@@ -174,8 +178,8 @@ pub fn create_transaction<const I: usize>(
     contract_call: Option<ContractCall>,
 ) -> Transaction {
     let mut rng = StdRng::seed_from_u64(0xfeeb);
-    let sender_vk = ViewKey::from(sender_sk);
-    let sender_pk = PublicKey::from(sender_sk);
+    let sender_vk = PhoenixViewKey::from(sender_sk);
+    let sender_pk = PhoenixPublicKey::from(sender_sk);
 
     // Create the transaction payload:
 
@@ -344,7 +348,7 @@ pub fn create_transaction<const I: usize>(
     let sig_b = schnorr_sk_b.sign(&mut rng, payload_hash);
 
     // Build the circuit
-    let circuit: TxCircuit<TRANSFER_TREE_DEPTH, I> = TxCircuit::new(
+    let circuit: TxCircuit<NOTES_TREE_DEPTH, I> = TxCircuit::new(
         tx_input_notes
             .try_into()
             .expect("The input notes should be the correct ammount"),

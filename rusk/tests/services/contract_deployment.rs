@@ -8,13 +8,15 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use execution_core::bytecode::Bytecode;
-use execution_core::transfer::{ContractDeploy, ContractExec};
+use execution_core::{
+    transfer::contract_exec::{ContractBytecode, ContractDeploy, ContractExec},
+    ContractId,
+};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::gen_id::gen_contract_id;
 use rusk::{Result, Rusk};
-use rusk_abi::{ContractData, ContractId, PiecrustError};
+use rusk_abi::{ContractData, PiecrustError};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Wallet};
@@ -86,7 +88,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                         )),
                     POINT_LIMIT,
                 )
-                .expect("Deploying the alice contract should succeed");
+                .expect("Deploying the bob contract should succeed");
         }
     })
     .expect("Deploying initial state should succeed");
@@ -121,7 +123,7 @@ fn make_and_execute_transaction_deploy(
         .phoenix_execute(
             &mut rng,
             ContractExec::Deploy(ContractDeploy {
-                bytecode: Bytecode {
+                bytecode: ContractBytecode {
                     hash,
                     bytes: bytecode.as_ref().to_vec(),
                 },

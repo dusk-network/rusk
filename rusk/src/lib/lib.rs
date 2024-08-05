@@ -8,7 +8,6 @@
 
 mod error;
 pub mod gen_id;
-mod hash;
 pub mod http;
 #[cfg(feature = "node")]
 pub mod node;
