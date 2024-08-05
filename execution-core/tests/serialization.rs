@@ -15,104 +15,134 @@ use execution_core::{
         contract_exec::{
             ContractBytecode, ContractCall, ContractDeploy, ContractExec,
         },
-        moonlight::{
-            Payload as MoonlightPayload, Transaction as MoonlightTransaction,
-        },
         phoenix::{
-            Fee, Note, Payload as PhoenixPayload, PublicKey, SecretKey,
-            Transaction as PhoenixTransaction, TxSkeleton,
+            Note, Prove, PublicKey as PhoenixPublicKey,
+            SecretKey as PhoenixSecretKey, TxCircuitVec, NOTES_TREE_DEPTH,
         },
         Transaction,
     },
 };
 use ff::Field;
+use poseidon_merkle::{Item, Tree};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
+
+struct RandomTestProver();
+
+impl Prove for RandomTestProver {
+    fn prove(_circuit: TxCircuitVec) -> Vec<u8> {
+        let mut proof = vec![0; 50_000_000];
+        let mut rng = StdRng::seed_from_u64(42);
+        rng.fill_bytes(&mut proof);
+
+        proof
+    }
+}
 
 fn new_phoenix_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
     exec: Option<ContractExec>,
 ) -> Transaction {
-    // set the general parameters
-    let sender_pk = PublicKey::from(&SecretKey::random(rng));
-    let receiver_pk = PublicKey::from(&SecretKey::random(rng));
+    // generate the keys
+    let sender_sk = PhoenixSecretKey::random(rng);
+    let sender_pk = PhoenixPublicKey::from(&sender_sk);
+    let change_pk = &sender_pk;
 
-    let gas_limit = 500;
-    let gas_price = 42;
-
-    // build the tx-skeleton
-    let value = 25;
+    let receiver_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
     let value_blinder = JubJubScalar::random(&mut *rng);
     let sender_blinder = [
         JubJubScalar::random(&mut *rng),
         JubJubScalar::random(&mut *rng),
     ];
-    let note = Note::obfuscated(
+
+    // create the input notes and their merkle openings
+    let mut input_0 = Note::obfuscated(
         rng,
         &sender_pk,
-        &receiver_pk,
-        value,
+        &sender_pk,
+        42,
         value_blinder,
         sender_blinder,
     );
+    input_0.set_pos(0);
+    let mut input_1 = Note::obfuscated(
+        rng,
+        &sender_pk,
+        &sender_pk,
+        8,
+        value_blinder,
+        sender_blinder,
+    );
+    input_1.set_pos(1);
+    let mut input_2 = Note::obfuscated(
+        rng,
+        &receiver_pk,
+        &sender_pk,
+        1000000,
+        value_blinder,
+        sender_blinder,
+    );
+    input_2.set_pos(2);
+    let notes = vec![input_0, input_1, input_2];
 
+    let mut notes_tree = Tree::<(), NOTES_TREE_DEPTH>::new();
+    for note in notes.iter() {
+        let item = Item {
+            hash: note.hash(),
+            data: (),
+        };
+        notes_tree.insert(*note.pos(), item);
+    }
+
+    let mut inputs = Vec::new();
+    for note in notes {
+        let opening = notes_tree
+            .opening(*note.pos())
+            .expect("The note should was added at the given position");
+        inputs.push((note, opening));
+    }
+
+    // set the remaining parameter
+    let transfer_value = 25;
+    let obfuscated_transaction = true;
     let root = BlsScalar::from(123);
-    let nullifiers = vec![
-        BlsScalar::from(456),
-        BlsScalar::from(789),
-        BlsScalar::from(6583),
-        BlsScalar::from(98978542),
-    ];
-    let outputs = [note.clone(), note];
-    let max_fee = gas_limit * gas_price;
     let deposit = 10;
+    let gas_limit = 50;
+    let gas_price = 1;
 
-    let tx_skeleton = TxSkeleton {
+    Transaction::phoenix::<R, RandomTestProver>(
+        rng,
+        &sender_sk,
+        change_pk,
+        &receiver_pk,
+        inputs,
         root,
-        nullifiers,
-        outputs,
-        max_fee,
+        transfer_value,
+        obfuscated_transaction,
         deposit,
-    };
-
-    // build the fee
-    let fee = Fee::new(rng, &sender_pk, gas_limit, gas_price);
-
-    // build the payload
-    let payload = PhoenixPayload {
-        tx_skeleton,
-        fee,
+        gas_limit,
+        gas_price,
         exec,
-    };
-
-    // set a random proof
-    let proof = [42; 42].to_vec();
-
-    PhoenixTransaction::new(payload, proof).into()
+    )
 }
 
 fn new_moonlight_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
     exec: Option<ContractExec>,
 ) -> Transaction {
-    let sk = AccountSecretKey::random(rng);
-    let pk = AccountPublicKey::from(&sk);
+    let from_sk = AccountSecretKey::random(rng);
+    let to_account =
+        Some(AccountPublicKey::from(&AccountSecretKey::random(rng)));
 
-    let payload = MoonlightPayload {
-        from: pk,
-        to: None,
-        value: rng.gen(),
-        deposit: rng.gen(),
-        gas_limit: rng.gen(),
-        gas_price: rng.gen(),
-        nonce: rng.gen(),
-        exec,
-    };
+    let value: u64 = rng.gen();
+    let deposit: u64 = rng.gen();
+    let gas_limit: u64 = rng.gen();
+    let gas_price: u64 = rng.gen();
+    let nonce: u64 = rng.gen();
 
-    let msg = payload.to_hash_input_bytes();
-    let signature = sk.sign(&msg);
-
-    MoonlightTransaction::new(payload, signature).into()
+    Transaction::moonlight(
+        &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce, exec,
+    )
 }
 
 #[test]

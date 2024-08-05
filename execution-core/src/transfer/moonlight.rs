@@ -15,7 +15,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
     signatures::bls::{
-        PublicKey as AccountPublicKey, Signature as AccountSignature,
+        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+        Signature as AccountSignature,
     },
     transfer::contract_exec::{
         ContractBytecode, ContractCall, ContractDeploy, ContractExec,
@@ -37,27 +38,87 @@ pub struct AccountData {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Transaction {
-    pub(crate) payload: Payload,
-    pub(crate) signature: AccountSignature,
+    payload: Payload,
+    signature: AccountSignature,
 }
 
 impl Transaction {
     /// Create a new transaction.
     #[must_use]
-    pub fn new(payload: Payload, signature: AccountSignature) -> Self {
-        Self { payload, signature }
-    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        from_sk: &AccountSecretKey,
+        to_account: Option<AccountPublicKey>,
+        value: u64,
+        deposit: u64,
+        gas_limit: u64,
+        gas_price: u64,
+        nonce: u64,
+        exec: Option<impl Into<ContractExec>>,
+    ) -> Self {
+        let payload = Payload {
+            from_account: AccountPublicKey::from(from_sk),
+            to_account,
+            value,
+            deposit,
+            gas_limit,
+            gas_price,
+            nonce,
+            exec: exec.map(Into::into),
+        };
 
-    /// The payload of the transaction.
-    #[must_use]
-    pub fn payload(&self) -> &Payload {
-        &self.payload
+        let digest = payload.signature_message();
+        let signature = from_sk.sign(&digest);
+
+        Self { payload, signature }
     }
 
     /// The proof of the transaction.
     #[must_use]
     pub fn signature(&self) -> &AccountSignature {
         &self.signature
+    }
+
+    /// Return the sender of the transaction.
+    #[must_use]
+    pub fn from_account(&self) -> &AccountPublicKey {
+        &self.payload.from_account
+    }
+
+    /// Return the receiver of the transaction, if it exists.
+    #[must_use]
+    pub fn to_account(&self) -> Option<&AccountPublicKey> {
+        self.payload.to_account.as_ref()
+    }
+
+    /// Return the value transferred in the transaction.
+    #[must_use]
+    pub fn value(&self) -> u64 {
+        self.payload.value
+    }
+
+    /// Returns the deposit of the transaction.
+    #[must_use]
+    pub fn deposit(&self) -> u64 {
+        self.payload.deposit
+    }
+
+    /// Returns the gas limit of the transaction.
+    #[must_use]
+    pub fn gas_limit(&self) -> u64 {
+        self.payload.gas_limit
+    }
+
+    /// Returns the gas price of the transaction.
+    #[must_use]
+    pub fn gas_price(&self) -> u64 {
+        self.payload.gas_price
+    }
+
+    /// Returns the nonce of the transaction.
+    #[must_use]
+    pub fn nonce(&self) -> u64 {
+        self.payload.nonce
     }
 
     /// Return the contract call data, if there is any.
@@ -87,33 +148,26 @@ impl Transaction {
     }
 
     /// Creates a modified clone of this transaction if it contains data for
-    /// deployment, clones all fields except for the bytecode' 'bytes' part.
+    /// deployment, clones all fields except for the bytecode 'bytes' part.
     /// Returns none if the transaction is not a deployment transaction.
     #[must_use]
     pub fn strip_off_bytecode(&self) -> Option<Self> {
         let deploy = self.deploy()?;
 
-        Some(Self::new(
-            Payload {
-                from: self.payload.from,
-                to: self.payload.to,
-                value: self.payload.value,
-                deposit: self.payload.deposit,
-                gas_limit: self.payload.gas_limit,
-                gas_price: self.payload.gas_price,
-                nonce: self.payload.nonce,
-                exec: Some(ContractExec::Deploy(ContractDeploy {
-                    owner: deploy.owner.clone(),
-                    constructor_args: deploy.constructor_args.clone(),
-                    bytecode: ContractBytecode {
-                        hash: deploy.bytecode.hash,
-                        bytes: Vec::new(),
-                    },
-                    nonce: deploy.nonce,
-                })),
+        let stripped_deploy = ContractExec::Deploy(ContractDeploy {
+            owner: deploy.owner.clone(),
+            constructor_args: deploy.constructor_args.clone(),
+            bytecode: ContractBytecode {
+                hash: deploy.bytecode.hash,
+                bytes: Vec::new(),
             },
-            *self.signature(),
-        ))
+            nonce: deploy.nonce,
+        });
+
+        let mut stripped_transaction = self.clone();
+        stripped_transaction.payload.exec = Some(stripped_deploy);
+
+        Some(stripped_transaction)
     }
 
     /// Serialize a transaction into a byte buffer.
@@ -162,7 +216,7 @@ impl Transaction {
     /// for hashing and *cannot* be used to deserialize the transaction again.
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
-        let mut bytes = self.payload.to_hash_input_bytes();
+        let mut bytes = self.payload.signature_message();
         bytes.extend(self.signature.to_bytes());
         bytes
     }
@@ -171,10 +225,10 @@ impl Transaction {
     /// transaction a valid one.
     #[must_use]
     pub fn signature_message(&self) -> Vec<u8> {
-        self.payload.to_hash_input_bytes()
+        self.payload.signature_message()
     }
 
-    /// Create the payload hash.
+    /// Create the transaction hash.
     #[must_use]
     pub fn hash(&self) -> BlsScalar {
         BlsScalar::hash_to_scalar(&self.to_hash_input_bytes())
@@ -184,11 +238,11 @@ impl Transaction {
 /// The payload for a moonlight transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct Payload {
+struct Payload {
     /// Key of the sender of this transaction.
-    pub from: AccountPublicKey,
+    pub from_account: AccountPublicKey,
     /// Key of the receiver of the funds.
-    pub to: Option<AccountPublicKey>,
+    pub to_account: Option<AccountPublicKey>,
     /// Value to be transferred.
     pub value: u64,
     /// Deposit for a contract.
@@ -213,10 +267,10 @@ impl Payload {
     pub fn to_var_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes.extend(self.from.to_bytes());
+        bytes.extend(self.from_account.to_bytes());
 
         // serialize the recipient
-        match self.to {
+        match self.to_account {
             Some(to) => {
                 bytes.push(1);
                 bytes.extend(to.to_bytes());
@@ -255,10 +309,10 @@ impl Payload {
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
-        let from = AccountPublicKey::from_reader(&mut buf)?;
+        let from_account = AccountPublicKey::from_reader(&mut buf)?;
 
         // deserialize recipient
-        let to = match u8::from_reader(&mut buf)? {
+        let to_account = match u8::from_reader(&mut buf)? {
             0 => None,
             1 => Some(AccountPublicKey::from_reader(&mut buf)?),
             _ => {
@@ -283,8 +337,8 @@ impl Payload {
         };
 
         Ok(Self {
-            from,
-            to,
+            from_account,
+            to_account,
             value,
             deposit,
             gas_limit,
@@ -299,11 +353,11 @@ impl Payload {
     /// Note: The result of this function is *only* meant to be used as an input
     /// for hashing and *cannot* be used to deserialize the payload again.
     #[must_use]
-    pub fn to_hash_input_bytes(&self) -> Vec<u8> {
+    pub fn signature_message(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes.extend(self.from.to_bytes());
-        if let Some(to) = &self.to {
+        bytes.extend(self.from_account.to_bytes());
+        if let Some(to) = &self.to_account {
             bytes.extend(to.to_bytes());
         }
         bytes.extend(self.value.to_bytes());
@@ -329,11 +383,5 @@ impl Payload {
         }
 
         bytes
-    }
-
-    /// Create the payload hash.
-    #[must_use]
-    pub fn hash(&self) -> BlsScalar {
-        BlsScalar::hash_to_scalar(&self.to_hash_input_bytes())
     }
 }

@@ -11,11 +11,13 @@ use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError};
+use poseidon_merkle::Opening;
+use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
     signatures::bls::{
-        PublicKey as AccountPublicKey, Signature as AccountSignature,
+        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
     BlsScalar, ContractId,
 };
@@ -28,13 +30,12 @@ pub mod withdraw;
 /// ID of the genesis transfer contract
 pub const TRANSFER_CONTRACT: ContractId = crate::reserved(0x1);
 
-use contract_exec::{ContractCall, ContractDeploy};
-use moonlight::{
-    Payload as MoonlightPayload, Transaction as MoonlightTransaction,
-};
+use contract_exec::{ContractCall, ContractDeploy, ContractExec};
+use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{
-    Note, Payload as PhoenixPayload, Sender, StealthAddress,
-    Transaction as PhoenixTransaction,
+    Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    Sender, StealthAddress, Transaction as PhoenixTransaction,
+    NOTES_TREE_DEPTH,
 };
 
 /// The transaction used by the transfer contract.
@@ -51,35 +52,72 @@ pub enum Transaction {
 impl Transaction {
     /// Create a new phoenix transaction.
     #[must_use]
-    pub fn phoenix(payload: PhoenixPayload, proof: impl Into<Vec<u8>>) -> Self {
-        Self::Phoenix(PhoenixTransaction::new(payload, proof))
+    #[allow(clippy::too_many_arguments)]
+    pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
+        rng: &mut R,
+        sender_sk: &PhoenixSecretKey,
+        change_pk: &PhoenixPublicKey,
+        receiver_pk: &PhoenixPublicKey,
+        inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
+        root: BlsScalar,
+        transfer_value: u64,
+        obfuscated_transaction: bool,
+        deposit: u64,
+        gas_limit: u64,
+        gas_price: u64,
+        exec: Option<impl Into<ContractExec>>,
+    ) -> Self {
+        Self::Phoenix(PhoenixTransaction::new::<R, P>(
+            rng,
+            sender_sk,
+            change_pk,
+            receiver_pk,
+            inputs,
+            root,
+            transfer_value,
+            obfuscated_transaction,
+            deposit,
+            gas_limit,
+            gas_price,
+            exec,
+        ))
     }
 
     /// Create a new moonlight transaction.
     #[must_use]
+    #[allow(clippy::too_many_arguments)]
     pub fn moonlight(
-        payload: MoonlightPayload,
-        signature: AccountSignature,
+        from_sk: &AccountSecretKey,
+        to_account: Option<AccountPublicKey>,
+        value: u64,
+        deposit: u64,
+        gas_limit: u64,
+        gas_price: u64,
+        nonce: u64,
+        exec: Option<impl Into<ContractExec>>,
     ) -> Self {
-        Self::Moonlight(MoonlightTransaction::new(payload, signature))
+        Self::Moonlight(MoonlightTransaction::new(
+            from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
+            exec,
+        ))
     }
 
     /// Return the sender of the account for Moonlight transactions.
     #[must_use]
-    pub fn from(&self) -> Option<&AccountPublicKey> {
+    pub fn from_account(&self) -> Option<&AccountPublicKey> {
         match self {
             Self::Phoenix(_) => None,
-            Self::Moonlight(tx) => Some(&tx.payload.from),
+            Self::Moonlight(tx) => Some(tx.from_account()),
         }
     }
 
     /// Return the receiver of the transaction for Moonlight transactions, if it
     /// exists.
     #[must_use]
-    pub fn to(&self) -> Option<&AccountPublicKey> {
+    pub fn to_account(&self) -> Option<&AccountPublicKey> {
         match self {
             Self::Phoenix(_) => None,
-            Self::Moonlight(tx) => tx.payload.to.as_ref(),
+            Self::Moonlight(tx) => tx.to_account(),
         }
     }
 
@@ -88,7 +126,7 @@ impl Transaction {
     pub fn value(&self) -> Option<u64> {
         match self {
             Self::Phoenix(_) => None,
-            Self::Moonlight(tx) => Some(tx.payload.value),
+            Self::Moonlight(tx) => Some(tx.value()),
         }
     }
 
@@ -97,7 +135,7 @@ impl Transaction {
     #[must_use]
     pub fn nullifiers(&self) -> &[BlsScalar] {
         match self {
-            Self::Phoenix(tx) => &tx.payload.tx_skeleton.nullifiers,
+            Self::Phoenix(tx) => tx.nullifiers(),
             Self::Moonlight(_) => &[],
         }
     }
@@ -106,7 +144,7 @@ impl Transaction {
     #[must_use]
     pub fn root(&self) -> Option<&BlsScalar> {
         match self {
-            Self::Phoenix(tx) => Some(&tx.payload.tx_skeleton.root),
+            Self::Phoenix(tx) => Some(tx.root()),
             Self::Moonlight(_) => None,
         }
     }
@@ -115,7 +153,7 @@ impl Transaction {
     #[must_use]
     pub fn outputs(&self) -> &[Note] {
         match self {
-            Self::Phoenix(tx) => &tx.payload.tx_skeleton.outputs,
+            Self::Phoenix(tx) => &tx.outputs()[..],
             Self::Moonlight(_) => &[],
         }
     }
@@ -124,7 +162,7 @@ impl Transaction {
     #[must_use]
     pub fn stealth_address(&self) -> Option<&StealthAddress> {
         match self {
-            Self::Phoenix(tx) => Some(&tx.payload.fee.stealth_address),
+            Self::Phoenix(tx) => Some(tx.stealth_address()),
             Self::Moonlight(_) => None,
         }
     }
@@ -133,7 +171,7 @@ impl Transaction {
     #[must_use]
     pub fn sender(&self) -> Option<&Sender> {
         match self {
-            Self::Phoenix(tx) => Some(&tx.payload.fee.sender),
+            Self::Phoenix(tx) => Some(tx.sender()),
             Self::Moonlight(_) => None,
         }
     }
@@ -142,8 +180,8 @@ impl Transaction {
     #[must_use]
     pub fn deposit(&self) -> u64 {
         match self {
-            Self::Phoenix(tx) => tx.payload.tx_skeleton.deposit,
-            Self::Moonlight(tx) => tx.payload.deposit,
+            Self::Phoenix(tx) => tx.deposit(),
+            Self::Moonlight(tx) => tx.deposit(),
         }
     }
 
@@ -151,8 +189,8 @@ impl Transaction {
     #[must_use]
     pub fn gas_limit(&self) -> u64 {
         match self {
-            Self::Phoenix(tx) => tx.payload.fee.gas_limit,
-            Self::Moonlight(tx) => tx.payload.gas_limit,
+            Self::Phoenix(tx) => tx.gas_limit(),
+            Self::Moonlight(tx) => tx.gas_limit(),
         }
     }
 
@@ -160,8 +198,8 @@ impl Transaction {
     #[must_use]
     pub fn gas_price(&self) -> u64 {
         match self {
-            Self::Phoenix(tx) => tx.payload.fee.gas_price,
-            Self::Moonlight(tx) => tx.payload.gas_price,
+            Self::Phoenix(tx) => tx.gas_price(),
+            Self::Moonlight(tx) => tx.gas_price(),
         }
     }
 
