@@ -37,13 +37,13 @@ They are only callable by the host because they rely on guarantees that the cont
 unable to provide on its own, such as the case of `spend_and_execute` and `refund`, that must be
 called in sequence.
 
-#### `spend_and_execute: Transaction -> Result<Vec<u8>, ContractError>`
-#### `refund: u64 -> ()`
-#### `push_note: (u64, Note) -> Note`
-#### `update_root: () -> ()`
-#### `add_account_balance: (AccountPublicKey, u64) -> ()`
-#### `sub_account_balance: (AccountPublicKey, u64) -> ()`
-#### `add_contract_balance: (ContractId, u64) -> ()`
+#### `spend_and_execute(Transaction) -> Result<Vec<u8>, ContractError>`
+#### `refund(u64)`
+#### `push_note(u64, Note) -> Note`
+#### `update_root()`
+#### `add_account_balance(AccountPublicKey, u64)`
+#### `sub_account_balance(AccountPublicKey, u64)`
+#### `add_contract_balance(ContractId, u64)`
 
 ### Contract Calls
 
@@ -54,11 +54,11 @@ call them.
 Of particular note are the pair of `deposit` and `withdraw`, allowing for Dusk to be deposited to
 and withdrawn from a contract, respectively.
 
-#### `deposit: u64 -> ()`
-#### `withdraw: Withdraw -> ()`
-#### `convert: Withdraw -> ()`
-#### `mint: Withdraw -> ()`
-#### `sub_contract_balance: (ContractId, u64) -> Result<(), Error>`
+#### `deposit(u64)`
+#### `withdraw(Withdraw)`
+#### `convert(Withdraw)`
+#### `mint(Withdraw)`
+#### `sub_contract_balance(ContractId, u64) -> Result<(), Error>`
 
 ### Queries
 
@@ -70,14 +70,14 @@ of the network, or by contracts wishing to do the same.
 
 <!-- Normal queries -->
 
-#### `root: () -> BlsScalar`
-#### `account: AccountPublicKey -> AccountData`
-#### `contract_balance: ContractId -> u64`
-#### `opening: u64 -> Opening<(), NOTES_TREE_DEPTH>`
-#### `existing_nullifiers: Vec<BlsScalar> -> BlsScalar`
-#### `num_notes: () -> u64`
+#### `root() -> BlsScalar`
+#### `account(AccountPublicKey) -> AccountData`
+#### `contract_balance(ContractId) -> u64`
+#### `opening(u64) -> Opening<(), NOTES_TREE_DEPTH>`
+#### `existing_nullifiers(Vec<BlsScalar>) -> BlsScalar`
+#### `num_notes() -> u64`
 
 <!-- Feeder queries -->
 
-#### `leaves_from_height: u64 -> ()`
-#### `leaves_from_pos: u64 -> ()`
+#### `leaves_from_height(u64)`
+#### `leaves_from_pos(u64)`
