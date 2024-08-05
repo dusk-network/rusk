@@ -112,7 +112,7 @@ describe("Main layout", () => {
     vi.useRealTimers();
   });
 
-  it("should use the default delay for the tooltip if the device ha touch support", async () => {
+  it("should use the default delay for the tooltip if the device has touch support", async () => {
     const defaultDelayShow = 500;
 
     vi.useFakeTimers();

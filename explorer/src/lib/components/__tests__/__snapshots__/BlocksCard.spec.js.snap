@@ -747,34 +747,3 @@ exports[`Blocks Card > should render the \`BlocksCard\` component 1`] = `
    
 </div>
 `;
-
-exports[`Blocks Card > should render the \`BlocksCard\` component with the mobile layout 1`] = `
-<div
-  class="dusk-card data-card"
->
-  <header
-    class="data-card__header"
-    slot="header"
-  >
-    <h1
-      class="data-card__header-title"
-    >
-      Blocks — 0 Displayed Items
-    </h1>
-     
-    <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
-      type="button"
-    >
-      <span
-        class="dusk-button__text"
-      >
-        Show More
-      </span>
-    </button>
-  </header>
-   
-  
-   
-</div>
-`;

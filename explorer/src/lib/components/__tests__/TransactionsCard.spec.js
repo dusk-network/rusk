@@ -4,7 +4,6 @@ import { compose, mapWith, take } from "lamb";
 
 import { gqlTransactions } from "$lib/mock-data";
 import { transformTransaction } from "$lib/chain-info";
-import { appStore } from "$lib/stores";
 
 import { TransactionsCard } from "..";
 
@@ -17,9 +16,9 @@ describe("Transactions Card", () => {
 
   const baseProps = {
     error: null,
+    isSmallScreen: false,
     loading: false,
     txns: null,
-    appStore: appStore
   };
   const baseOptions = {
     props: baseProps,

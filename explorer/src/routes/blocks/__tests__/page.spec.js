@@ -6,6 +6,7 @@ import { duskAPI } from "$lib/services";
 import { transformBlock } from "$lib/chain-info";
 import { appStore } from "$lib/stores";
 import { gqlBlocks } from "$lib/mock-data";
+import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
 import Blocks from "../+page.svelte";
 
@@ -56,5 +57,20 @@ describe("Blocks page", () => {
     await vi.advanceTimersByTimeAsync(fetchInterval * 10);
 
     expect(getBlocksSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("should render the Blocks page with the mobile layout", async () => {
+    const { container } = render(Blocks);
+
+    changeMediaQueryMatches("(max-width: 1024px)", true);
+
+    expect(get(appStore).isSmallScreen).toBe(true);
+
+    expect(getBlocksSpy).toHaveBeenCalledTimes(1);
+    expect(getBlocksSpy).toHaveBeenNthCalledWith(1, network, blocksListEntries);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(container.firstChild).toMatchSnapshot();
   });
 });

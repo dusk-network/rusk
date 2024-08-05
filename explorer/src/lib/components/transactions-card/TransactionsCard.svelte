@@ -18,8 +18,8 @@
   /** @type {Boolean} */
   export let loading;
 
-  /** @type {AppStore} */
-  export let appStore;
+  /** @type {boolean} */
+  export let isSmallScreen;
 
   const ITEMS_TO_DISPLAY = 15;
 
@@ -51,7 +51,7 @@
     label: "Show More",
   }}
 >
-  {#if $appStore.isSmallScreen}
+  {#if isSmallScreen}
     <div class="transactions-card__list">
       {#each displayedTxns as txn (txn)}
         <TransactionsList data={txn} mode="full" />

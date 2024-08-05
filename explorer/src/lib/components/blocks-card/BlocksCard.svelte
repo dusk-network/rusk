@@ -14,8 +14,8 @@
   /** @type {Boolean} */
   export let loading;
 
-  /** @type {AppStore} */
-  export let appStore;
+  /** @type {boolean} */
+  export let isSmallScreen;
 
   const ITEMS_TO_DISPLAY = 15;
 
@@ -47,16 +47,13 @@
     label: "Show More",
   }}
 >
-  {#if $appStore.isSmallScreen}
+  {#if isSmallScreen}
     <div class="blocks-card__list">
       {#each displayedBlocks as block (block)}
         <BlocksList data={block} />
       {/each}
     </div>
   {:else}
-    <BlocksTable
-      data={displayedBlocks}
-      className="blocks-card__table"
-    />
+    <BlocksTable data={displayedBlocks} className="blocks-card__table" />
   {/if}
 </DataCard>
