@@ -37,7 +37,8 @@ signatures::{
         PublicKey,
         SecretKey,
         Signature,
-        APK as AggPublicKey,
+        MutlisigPublicKey,
+        MultisigSignature
     };
     schnorr::{
         PublicKey,
@@ -103,6 +104,31 @@ stake::{
     next_epoch;
 };
 licence::LICENSE_CONTRACT;
+```
+- under the `"zk"` feature:
+```rust
+plonk::{
+    pub use dusk_plonk::{
+        Circuit,
+        Compiler,
+        Composer,
+        Constraint,
+        Error,
+        Proof,
+        Prover,
+        PublicParameters,
+        Verifier,
+        Witness,
+        WitnessPoint,
+    }
+};
+transfer::phoenix::{
+    pub use phoenix_circuits{
+        TxCircuit,
+        TxInputNote,
+        TxOutputNote,
+    };
+};
 ```
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/execution-core-0.1.0...HEAD

@@ -9,9 +9,8 @@ use alloc::vec::Vec;
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
 
-use execution_core::BlsScalar;
+use execution_core::{plonk::Proof, BlsScalar};
 
-use dusk_plonk::prelude::Proof;
 use poseidon_merkle::Item;
 
 #[allow(dead_code)]

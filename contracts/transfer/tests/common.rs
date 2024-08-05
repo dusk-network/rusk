@@ -7,6 +7,7 @@
 use std::sync::mpsc;
 
 use execution_core::{
+    plonk::{Prover, Verifier},
     signatures::{
         bls::{PublicKey as AccountPublicKey, SecretKey as AccountSecretKey},
         schnorr::SecretKey as SchnorrSecretKey,
@@ -20,18 +21,17 @@ use execution_core::{
         phoenix::{
             value_commitment, Fee, Note, Payload as PhoenixPayload, PublicKey,
             SecretKey, Sender, Transaction as PhoenixTransaction, TreeLeaf,
-            TxSkeleton, ViewKey, NOTES_TREE_DEPTH,
+            TxCircuit, TxInputNote, TxOutputNote, TxSkeleton, ViewKey,
+            NOTES_TREE_DEPTH,
         },
         Transaction, TRANSFER_CONTRACT,
     },
-    BlsScalar, ContractError, ContractId, JubJubScalar,
+    BlsScalar, ContractError, ContractId, JubJubAffine, JubJubScalar,
 };
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 
 use dusk_bytes::Serializable;
-use dusk_plonk::prelude::*;
 use ff::Field;
-use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::SeedableRng;

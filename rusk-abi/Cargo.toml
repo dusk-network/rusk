@@ -10,17 +10,15 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
 blake2b_simd = { version = "1", default-features = false }
-cfg-if = "1"
 
 dusk-poseidon = "0.39"
 dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
-dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 piecrust-uplink = { version = "0.16" }
 piecrust = { version = "0.23", optional = true }
 
-execution-core = { version = "0.1.0", path = "../execution-core" }
+execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
 
 # These are patches since these crates don't seem to like semver.
 rkyv = { version = "=0.7.39", default-features = false, features = ["size_32"] }

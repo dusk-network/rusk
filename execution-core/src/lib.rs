@@ -31,7 +31,7 @@ pub use dusk_jubjub::{
 
 /// Signatures used in the Dusk protocol.
 pub mod signatures {
-    /// Types for the bls-signature scheme.
+    /// Types for the bls-signature scheme operating on the `bls12_381` curve.
     pub mod bls {
         pub use bls12_381_bls::{
             Error, MultisigPublicKey, MultisigSignature, PublicKey, SecretKey,
@@ -39,7 +39,7 @@ pub mod signatures {
         };
     }
 
-    /// Types for the schnorr-signature scheme.
+    /// Types for the schnorr-signature scheme operating on the `jubjub` curve.
     pub mod schnorr {
         pub use jubjub_schnorr::{
             PublicKey, SecretKey, Signature, SignatureDouble,
@@ -51,6 +51,16 @@ pub use piecrust_uplink::{
     ContractError, ContractId, Event, StandardBufSerializer, ARGBUF_LEN,
     CONTRACT_ID_BYTES,
 };
+
+/// Types and traits to create plonk circuits and generate and verify plonk
+/// proofs.
+#[cfg(feature = "zk")]
+pub mod plonk {
+    pub use dusk_plonk::prelude::{
+        Circuit, Compiler, Composer, Constraint, Error, Proof, Prover,
+        PublicParameters, Verifier, Witness, WitnessPoint,
+    };
+}
 
 #[inline]
 const fn reserved(b: u8) -> ContractId {

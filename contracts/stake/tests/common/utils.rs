@@ -7,26 +7,25 @@
 use std::sync::mpsc;
 
 use dusk_bytes::Serializable;
-use dusk_plonk::prelude::*;
 use ff::Field;
-use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use execution_core::{
+    plonk::{Prover, Verifier},
     signatures::schnorr::SecretKey as SchnorrSecretKey,
     transfer::{
         contract_exec::{ContractCall, ContractExec},
         phoenix::{
             value_commitment, Fee, Note, Payload as PhoenixPayload,
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Sender, TreeLeaf, TxSkeleton, ViewKey as PhoenixViewKey,
-            NOTES_TREE_DEPTH,
+            Sender, TreeLeaf, TxCircuit, TxInputNote, TxOutputNote, TxSkeleton,
+            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
         },
         Transaction, TRANSFER_CONTRACT,
     },
-    ContractError, JubJubScalar,
+    BlsScalar, ContractError, JubJubAffine, JubJubScalar,
 };
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 
