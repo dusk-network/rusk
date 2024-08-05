@@ -17,8 +17,8 @@
   /** @type {Boolean} */
   export let loading;
 
-  /** @type {AppStore} */
-  export let appStore;
+  /** @type {boolean} */
+  export let isSmallScreen;
 
   $: classes = makeClassName(["latest-blocks-card", className]);
 </script>
@@ -36,11 +36,11 @@
     label: "All Blocks",
   }}
 >
-  {#if $appStore.isSmallScreen}
+  {#if isSmallScreen}
     {#each blocks as block (block)}
       <BlocksList data={block} />
     {/each}
   {:else}
-    <BlocksTable data={blocks}/>
+    <BlocksTable data={blocks} />
   {/if}
 </DataCard>

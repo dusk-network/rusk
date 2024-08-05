@@ -16,10 +16,10 @@ describe("Transactions Card", () => {
   const data = getTenTransactions(gqlTransactions.transactions);
 
   const baseProps = {
+    appStore: appStore,
     error: null,
     loading: false,
     txns: null,
-    appStore: appStore
   };
   const baseOptions = {
     props: baseProps,

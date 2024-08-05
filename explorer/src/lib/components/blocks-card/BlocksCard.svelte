@@ -27,6 +27,7 @@
   $: displayedBlocks = blocks ? blocks.slice(0, itemsToDisplay) : [];
   $: isLoadMoreDisabled =
     (blocks && itemsToDisplay >= blocks.length) || (loading && blocks === null);
+  $: ({ isSmallScreen } = $appStore);
 
   const loadMoreItems = () => {
     if (blocks && itemsToDisplay < blocks.length) {
@@ -47,16 +48,13 @@
     label: "Show More",
   }}
 >
-  {#if $appStore.isSmallScreen}
+  {#if isSmallScreen}
     <div class="blocks-card__list">
       {#each displayedBlocks as block (block)}
         <BlocksList data={block} />
       {/each}
     </div>
   {:else}
-    <BlocksTable
-      data={displayedBlocks}
-      className="blocks-card__table"
-    />
+    <BlocksTable data={displayedBlocks} className="blocks-card__table" />
   {/if}
 </DataCard>

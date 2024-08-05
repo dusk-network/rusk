@@ -31,6 +31,7 @@
   $: displayedTxns = txns ? txns.slice(0, itemsToDisplay) : [];
   $: isLoadMoreDisabled =
     (txns && itemsToDisplay >= txns.length) || (loading && txns === null);
+  $: ({ isSmallScreen } = $appStore);
 
   const loadMoreItems = () => {
     if (txns && itemsToDisplay < txns.length) {
@@ -51,7 +52,7 @@
     label: "Show More",
   }}
 >
-  {#if $appStore.isSmallScreen}
+  {#if isSmallScreen}
     <div class="transactions-card__list">
       {#each displayedTxns as txn (txn)}
         <TransactionsList data={txn} mode="full" />
