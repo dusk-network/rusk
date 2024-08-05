@@ -13,7 +13,7 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Stake, StakeAmount, StakeData, StakeEvent, Withdraw, EPOCH,
-        STAKE_CONTRACT, STAKE_WARNINGS,
+        MINIMUM_STAKE, STAKE_CONTRACT, STAKE_WARNINGS,
     },
     transfer::TRANSFER_CONTRACT,
 };
