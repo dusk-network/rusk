@@ -18,6 +18,9 @@
   /** @type {Boolean} */
   export let loading;
 
+  /** @type {AppStore} */
+  export let appStore;
+
   const ITEMS_TO_DISPLAY = 15;
 
   let itemsToDisplay = ITEMS_TO_DISPLAY;
@@ -48,15 +51,17 @@
     label: "Show More",
   }}
 >
-  <TransactionsTable
-    className="transactions-card__table mobile-hidden"
-    data={displayedTxns}
-    mode="full"
-  />
-
-  <div class="transactions-card__list desktop-hidden">
-    {#each displayedTxns as txn (txn)}
-      <TransactionsList data={txn} mode="full" />
-    {/each}
-  </div>
+  {#if $appStore.isSmallScreen}
+    <div class="transactions-card__list">
+      {#each displayedTxns as txn (txn)}
+        <TransactionsList data={txn} mode="full" />
+      {/each}
+    </div>
+  {:else}
+    <TransactionsTable
+      className="transactions-card__table"
+      data={displayedTxns}
+      mode="full"
+    />
+  {/if}
 </DataCard>

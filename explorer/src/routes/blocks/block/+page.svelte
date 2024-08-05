@@ -46,6 +46,7 @@
         loading={isLoading}
         isOnHomeScreen={false}
         displayTooltips={true}
+        {appStore}
       />
     </Rerender>
   </div>

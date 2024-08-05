@@ -29,5 +29,6 @@
     txns={data}
     {error}
     loading={isLoading}
+    {appStore}
   />
 </section>
