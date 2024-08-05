@@ -50,7 +50,7 @@ mql.addEventListener("change", (event) => {
       isSmallScreen: false,
     });
   }
-})
+});
 
 /** @param {string} network */
 const setNetwork = (network) =>

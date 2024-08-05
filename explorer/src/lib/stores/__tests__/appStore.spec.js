@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
+import appStore from "../appStore";
 
 describe("appStore", () => {
   const originalTouchStart = window.ontouchstart;
@@ -39,6 +40,7 @@ describe("appStore", () => {
       chainInfoEntries: Number(env.VITE_CHAIN_INFO_ENTRIES),
       darkMode: false,
       fetchInterval: Number(env.VITE_REFETCH_INTERVAL),
+      isSmallScreen: false,
       hasTouchSupport: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
@@ -100,5 +102,29 @@ describe("appStore", () => {
     appStore.setTheme(true);
 
     expect(get(appStore).darkMode).toBe(true);
+  });
+
+  it.only("should update the `isSmallScreen` property when the window width changes respective to the provided media query", async () => {
+    let changeCallback;
+
+    const mqAddListenerSpy = vi.spyOn(MediaQueryList.prototype, "addEventListener").mockImplementation((eventName, callback) => {
+      if (eventName === "change") {
+        changeCallback = callback;
+      }
+    });
+
+    
+
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 150,
+    });
+
+    window.dispatchEvent(new Event('resize'));
+
+    expect(mqAddListenerSpy).toHaveBeenCalledOnce();
+
+    mqAddListenerSpy.mockRestore();
   });
 });

@@ -4,7 +4,7 @@ import { compose, mapWith, take } from "lamb";
 
 import { gqlBlocks } from "$lib/mock-data";
 import { transformBlock } from "$lib/chain-info";
-
+import { appStore } from "$lib/stores";
 import { BlocksCard } from "..";
 
 describe("Blocks Card", () => {
@@ -18,6 +18,7 @@ describe("Blocks Card", () => {
     blocks: null,
     error: null,
     loading: false,
+    appStore: appStore
   };
   const baseOptions = {
     props: baseProps,
