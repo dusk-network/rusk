@@ -55,7 +55,6 @@ transfer::{
     };
     moonlight::{
         AccountData;
-        Payload;
         Transaction;
     };
     phoenix::{
