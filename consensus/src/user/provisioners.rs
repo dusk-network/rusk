@@ -6,6 +6,8 @@
 
 use crate::user::sortition;
 use crate::user::stake::Stake;
+use execution_core::dusk;
+use execution_core::stake::MINIMUM_STAKE;
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::StepName;
 
@@ -16,8 +18,7 @@ use std::mem;
 
 use super::committee::Committee;
 
-pub const DUSK: u64 = 1_000_000_000;
-const MINIMUM_STAKE: u64 = 1_000 * DUSK;
+pub const DUSK: u64 = dusk(1.0);
 
 #[derive(Clone, Debug)]
 pub struct Provisioners {

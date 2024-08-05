@@ -29,15 +29,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         "telemetry"
     }
 
-    async fn initialize(
-        &mut self,
-        _network: Arc<RwLock<N>>,
-        _db: Arc<RwLock<DB>>,
-        _vm: Arc<RwLock<VM>>,
-    ) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     /// Initialize and spawn Prometheus Exporter and Recorder
     async fn execute(
         &mut self,

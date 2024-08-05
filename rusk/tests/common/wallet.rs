@@ -11,8 +11,8 @@ use std::sync::{Arc, RwLock};
 use crate::common::block::Block as BlockAwait;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_plonk::prelude::Proof;
 use execution_core::{
+    plonk::Proof,
     signatures::bls::PublicKey as BlsPublicKey,
     stake::StakeData,
     transfer::{

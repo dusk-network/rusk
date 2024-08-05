@@ -9,7 +9,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 execution-core = { version = "0.1.0", path = "../../execution-core" }
 dusk-bytes = "0.1"
-dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
@@ -18,7 +17,7 @@ rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi" }
 [dev-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
-phoenix-circuits = "0.2.1-rc"
+execution-core = { version = "0.1.0", path = "../../execution-core", features = ["zk"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 hex = "0.4"
 rand = "0.8"

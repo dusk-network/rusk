@@ -9,7 +9,6 @@ extern crate alloc;
 use std::ops::Range;
 use std::sync::mpsc;
 
-use dusk_plonk::prelude::*;
 use dusk_poseidon::{Domain, Hash};
 use ff::Field;
 use poseidon_merkle::Opening;
@@ -21,8 +20,9 @@ use zk_citadel::license::{
 };
 
 use execution_core::{
+    plonk::{Compiler, PublicParameters},
     transfer::phoenix::{PublicKey, SecretKey, StealthAddress, ViewKey},
-    BlsScalar, ContractId, JubJubAffine, GENERATOR_EXTENDED,
+    BlsScalar, ContractId, JubJubAffine, JubJubScalar, GENERATOR_EXTENDED,
 };
 use rusk_abi::{ContractData, Session};
 use rusk_profile::get_common_reference_string;

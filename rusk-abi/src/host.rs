@@ -8,9 +8,9 @@ use alloc::vec::Vec;
 use std::path::{Path, PathBuf};
 
 use dusk_bytes::DeserializableSlice;
-use dusk_plonk::prelude::{Proof, Verifier};
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use execution_core::{
+    plonk::{Proof, Verifier},
     signatures::{
         bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
         schnorr::{

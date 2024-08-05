@@ -5,8 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::Theme;
-use dusk_plonk::prelude::{Compiler, PublicParameters};
-use execution_core::transfer::phoenix::TRANSCRIPT_LABEL;
+use execution_core::{
+    plonk::{Compiler, PublicParameters},
+    transfer::phoenix::TRANSCRIPT_LABEL,
+};
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;

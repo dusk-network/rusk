@@ -7,13 +7,12 @@
 use std::io::{self, ErrorKind};
 
 use cargo_toml::{Dependency, Manifest};
-use dusk_plonk::prelude::Circuit;
 use tracing::info;
 
-use execution_core::transfer::phoenix::NOTES_TREE_DEPTH;
+use execution_core::plonk::Circuit;
+use execution_core::transfer::phoenix::{TxCircuit, NOTES_TREE_DEPTH};
 
 use license_circuits::LicenseCircuit;
-use phoenix_circuits::transaction::TxCircuit;
 
 type ExecuteCircuitOneTwo = TxCircuit<NOTES_TREE_DEPTH, 1>;
 type ExecuteCircuitTwoTwo = TxCircuit<NOTES_TREE_DEPTH, 2>;

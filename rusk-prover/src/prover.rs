@@ -9,7 +9,7 @@ mod execute;
 use crate::{ProverError, ProverResult};
 
 use dusk_bytes::Serializable;
-use dusk_plonk::prelude::Prover as PlonkProver;
+use execution_core::plonk::Prover as PlonkProver;
 use once_cell::sync::Lazy;
 
 #[cfg(not(feature = "no_random"))]
@@ -17,8 +17,6 @@ use rand::rngs::OsRng;
 
 #[cfg(feature = "no_random")]
 use rand::{rngs::StdRng, SeedableRng};
-
-use dusk_plonk::prelude::*;
 
 #[derive(Debug, Default)]
 pub struct LocalProver;
@@ -38,7 +36,7 @@ pub fn fetch_prover(circuit_name: &str) -> PlonkProver {
         panic!("there should be a prover key stored for {}", circuit_name)
     });
 
-    Prover::try_from_bytes(pk).expect("Prover key is expected to by valid")
+    PlonkProver::try_from_bytes(pk).expect("Prover key is expected to by valid")
 }
 
 #[cfg(test)]

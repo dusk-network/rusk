@@ -7,11 +7,10 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-execution-core = { version = "0.1.0", path = "../../execution-core" }
+execution-core = { version = "0.1.0", path = "../../execution-core", features = ["zk"] }
 dusk-bytes = "0.1"
 dusk-poseidon = "0.39"
 poseidon-merkle = { version = "0.6", features = ["rkyv-impl", "zk", "size_32"] }
-dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 

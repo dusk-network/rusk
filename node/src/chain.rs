@@ -26,6 +26,7 @@ pub use header_validation::verify_att;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -62,7 +63,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<()> {
-        let tip = Self::load_tip(db.clone(), vm.clone()).await?;
+        let tip =
+            Self::load_tip(db.read().await.deref(), vm.read().await.deref())
+                .await?;
 
         let state_hash = tip.inner().header().state_hash;
         let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
@@ -73,8 +76,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             tip,
             provisioners_list,
             db,
-            network.clone(),
-            vm.clone(),
+            network,
+            vm,
             self.max_consensus_queue_size,
         )
         .await?;
@@ -254,12 +257,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     /// Panics
     ///
     /// If register entry is read but block is not found.
-    async fn load_tip(
-        db: Arc<RwLock<DB>>,
-        vm: Arc<RwLock<VM>>,
-    ) -> Result<BlockWithLabel> {
-        let stored_block = db.read().await.update(|t| {
-            Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
+    async fn load_tip(db: &DB, vm: &VM) -> Result<BlockWithLabel> {
+        let stored_block = db.view(|t| {
+            anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
                 t.fetch_block(&tip_hash[..])
                     .expect("block to be found if metadata is set")
             }))
@@ -268,8 +268,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         let block = match stored_block {
             Some(blk) => {
                 let (_, label) = db
-                    .read()
-                    .await
                     .view(|t| {
                         t.fetch_block_label_by_height(blk.header().height)
                     })?
@@ -280,9 +278,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             None => {
                 // Lack of register record means the loaded database is
                 // either malformed or empty.
-                let state = vm.read().await.get_state_root()?;
+                let state = vm.get_state_root()?;
                 let genesis_blk = genesis::generate_state(state);
-                db.write().await.update(|t| {
+                db.update(|t| {
                     // Persist genesis block
                     t.store_block(
                         genesis_blk.header(),

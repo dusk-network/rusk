@@ -29,6 +29,9 @@ pub use phoenix_core::{
     StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
 };
 
+#[cfg(feature = "zk")]
+pub use phoenix_circuits::transaction::{TxCircuit, TxInputNote, TxOutputNote};
+
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
@@ -46,7 +49,7 @@ pub struct Fee {
     pub gas_price: u64,
     /// Address to send the remainder note
     pub stealth_address: StealthAddress,
-    /// Sender to use for the remainder
+    /// Sender to use for the remainder note
     pub sender: Sender,
 }
 

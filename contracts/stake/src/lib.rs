@@ -10,13 +10,10 @@
 
 extern crate alloc;
 
-use execution_core::{dusk, transfer::TRANSFER_CONTRACT, Dusk};
+use execution_core::transfer::TRANSFER_CONTRACT;
 
 mod state;
 use state::StakeState;
-
-/// The minimum amount of Dusk one can stake.
-pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 static mut STATE: StakeState = StakeState::new();
 
