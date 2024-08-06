@@ -7,6 +7,7 @@ export { default as Card } from "./Card/Card.svelte";
 export { default as Checkbox } from "./Checkbox/Checkbox.svelte";
 export { default as ErrorAlert } from "./ErrorAlert/ErrorAlert.svelte";
 export { default as ErrorDetails } from "./ErrorDetails/ErrorDetails.svelte";
+export { default as ExclusiveChoice } from "./ExclusiveChoice/ExclusiveChoice.svelte";
 export { default as Icon } from "./Icon/Icon.svelte";
 export { default as Mnemonic } from "./Mnemonic/Mnemonic.svelte";
 export { default as ProgressBar } from "./ProgressBar/ProgressBar.svelte";

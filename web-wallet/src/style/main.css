@@ -9,6 +9,7 @@
 @import url("./dusk-components/checkbox.css");
 @import url("./dusk-components/error-alert.css");
 @import url("./dusk-components/error-details.css");
+@import url("./dusk-components/exclusive-choice.css");
 @import url("./dusk-components/mnemonic.css");
 @import url("./dusk-components/icon.css");
 @import url("./dusk-components/progress-bar.css");
@@ -112,7 +113,8 @@ svg {
     .dusk-switch[aria-disabled="false"],
     .dusk-textbox:read-write:enabled,
     *[role="menuitem"]
-  ):focus {
+  ):focus,
+.dusk-exclusive-choice:focus-within {
   border-color: var(--secondary-color-variant-dark);
   box-shadow: inset 0 0 0 var(--control-border-size)
     var(--secondary-color-variant-dark);

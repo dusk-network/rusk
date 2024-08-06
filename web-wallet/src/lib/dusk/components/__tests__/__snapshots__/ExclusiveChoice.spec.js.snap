@@ -1,0 +1,325 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ExclusiveChoice > should accept a custom name for the radio elements 1`] = `
+<div
+  class="dusk-exclusive-choice"
+  role="radiogroup"
+>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-1"
+    name="my-custom-name"
+    type="radio"
+    value="1"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-1"
+  >
+    one
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-2"
+    name="my-custom-name"
+    type="radio"
+    value="2"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-2"
+  >
+    two
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    disabled=""
+    id="some-generated-id-3"
+    name="my-custom-name"
+    type="radio"
+    value="3"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-3"
+  >
+    three
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-4"
+    name="my-custom-name"
+    type="radio"
+    value="4"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-4"
+  >
+    four
+  </label>
+</div>
+`;
+
+exports[`ExclusiveChoice > should accept an array of options object without labels and use the value as labels 1`] = `
+<div
+  class="dusk-exclusive-choice"
+  role="radiogroup"
+>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-1"
+    name="some-generated-id"
+    type="radio"
+    value="1"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-1"
+  >
+    1
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-2"
+    name="some-generated-id"
+    type="radio"
+    value="2"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-2"
+  >
+    2
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-3"
+    name="some-generated-id"
+    type="radio"
+    value="3"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-3"
+  >
+    3
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-4"
+    name="some-generated-id"
+    type="radio"
+    value="4"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-4"
+  >
+    4
+  </label>
+</div>
+`;
+
+exports[`ExclusiveChoice > should accept an array of string as options 1`] = `
+<div
+  class="dusk-exclusive-choice"
+  role="radiogroup"
+>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-one"
+    name="some-generated-id"
+    type="radio"
+    value="one"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-one"
+  >
+    one
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-two"
+    name="some-generated-id"
+    type="radio"
+    value="two"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-two"
+  >
+    two
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-three"
+    name="some-generated-id"
+    type="radio"
+    value="three"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-three"
+  >
+    three
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-four"
+    name="some-generated-id"
+    type="radio"
+    value="four"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-four"
+  >
+    four
+  </label>
+</div>
+`;
+
+exports[`ExclusiveChoice > should pass additional class names and attributes to the rendered element 1`] = `
+<div
+  class="dusk-exclusive-choice foo bar"
+  id="some-id"
+  role="radiogroup"
+>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-1"
+    name="some-generated-id"
+    type="radio"
+    value="1"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-1"
+  >
+    one
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-2"
+    name="some-generated-id"
+    type="radio"
+    value="2"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-2"
+  >
+    two
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    disabled=""
+    id="some-generated-id-3"
+    name="some-generated-id"
+    type="radio"
+    value="3"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-3"
+  >
+    three
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-4"
+    name="some-generated-id"
+    type="radio"
+    value="4"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-4"
+  >
+    four
+  </label>
+</div>
+`;
+
+exports[`ExclusiveChoice > should render the \`ExclusiveChoice\` component 1`] = `
+<div
+  class="dusk-exclusive-choice"
+  role="radiogroup"
+>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-1"
+    name="some-generated-id"
+    type="radio"
+    value="1"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-1"
+  >
+    one
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-2"
+    name="some-generated-id"
+    type="radio"
+    value="2"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-2"
+  >
+    two
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    disabled=""
+    id="some-generated-id-3"
+    name="some-generated-id"
+    type="radio"
+    value="3"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-3"
+  >
+    three
+  </label>
+  <input
+    class="dusk-exclusive-choice__radio"
+    id="some-generated-id-4"
+    name="some-generated-id"
+    type="radio"
+    value="4"
+  />
+   
+  <label
+    class="dusk-exclusive-choice__label"
+    for="some-generated-id-4"
+  >
+    four
+  </label>
+</div>
+`;
