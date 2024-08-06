@@ -11,7 +11,7 @@ use dusk_consensus::commons::{ConsensusError, TimeoutSet};
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
-use node_data::events::Event;
+use node_data::events::{BlockEvent, Event, TransactionEvent};
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
@@ -427,6 +427,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         blk: &Block,
         enable_consensus: bool,
     ) -> anyhow::Result<bool> {
+        let mut events = vec![];
         let mut task = self.task.write().await;
 
         let mut tip = self.tip.write().await;
@@ -462,14 +463,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let (txs, rolling_result) = self.db.read().await.update(|db| {
                 let (txs, verification_output) =
                     vm.accept(blk, Some(&prev_block_voters[..]))?;
-
+                for spent_tx in txs.iter() {
+                    events.push(TransactionEvent::Executed(spent_tx).into());
+                }
                 est_elapsed_time = start.elapsed();
 
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_hash, verification_output.event_hash);
 
                 let rolling_results =
-                    self.rolling_finality::<DB>(pni, blk, db)?;
+                    self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
 
                 let label = rolling_results.0;
                 // Store block with updated transactions with Error and GasSpent
@@ -551,14 +554,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Delete from mempool any transaction already included in the
                 // block
                 for tx in tip.inner().txs().iter() {
-                    let _ = Mempool::delete_tx(t, tx.id())
-                        .map_err(|e| warn!("Error while deleting tx: {e}"));
+                    let tx_id = tx.id();
+                    let deleted = Mempool::delete_tx(t, tx_id)
+                        .map_err(|e| warn!("Error while deleting tx: {e}"))
+                        .unwrap_or_default();
+                    if deleted {
+                        events.push(TransactionEvent::Removed(tx_id).into());
+                    }
 
                     let nullifiers = tx.to_nullifiers();
                     for orphan_tx in t.get_txs_by_nullifiers(&nullifiers) {
-                        let _ = Mempool::delete_tx(t, orphan_tx).map_err(|e| {
-                            warn!("Error while deleting orphan_tx: {e}")
-                        });
+                        let deleted = Mempool::delete_tx(t, orphan_tx)
+                            .map_err(|e| {
+                                warn!("Error while deleting orphan_tx: {e}")
+                            })
+                            .unwrap_or_default();
+                        if deleted {
+                            events.push(
+                                TransactionEvent::Removed(orphan_tx).into(),
+                            );
+                        }
                     }
                 }
                 Ok(Candidate::count(t))
@@ -595,6 +610,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             ?label
         );
 
+        events.push(BlockEvent::Accepted(tip.inner()).into());
+
+        for node_event in events {
+            if let Err(e) = self.event_sender.try_send(node_event) {
+                warn!("cannot notify event {e}")
+            };
+        }
+
         // Restart Consensus.
         if enable_consensus {
             let base_timeouts = self.adjust_round_base_timeouts().await;
@@ -623,6 +646,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         pni: u8,
         blk: &Block,
         db: &D::P<'_>,
+        events: &mut Vec<Event>,
     ) -> Result<(Label, Option<RollingFinalityResult>)> {
         let confirmed_after = match pni {
             0 => 1u64,
@@ -681,6 +705,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             ?label,
                         );
                         *label = Label::Confirmed(current_height - height);
+
+                        let event = BlockEvent::StateChange {
+                            hash: *hash,
+                            state: "confirmed",
+                            height: current_height,
+                        };
+                        events.push(event.into());
+
                         db.store_block_label(height, hash, *label)?;
                         stable_count += 1;
                     } else {
@@ -708,6 +740,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 Label::Confirmed(_) => {
                     let finalized_after = current_height - height;
                     label = Label::Final(finalized_after);
+                    let event = BlockEvent::StateChange {
+                        hash,
+                        state: "finalized",
+                        height: current_height,
+                    };
+                    events.push(event.into());
                     db.store_block_label(height, &hash, label)?;
 
                     let state_hash = db
