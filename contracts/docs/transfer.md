@@ -60,19 +60,48 @@ funds, a subsequent call to [`refund`] is **required** to return unspent funds t
 
 #### `refund(u64)`
 
-This function must be called after a successful [`spend_and_execute`] call. It is guaranteed to
-succeed if the passed `gas_spent` does not exceed a transaction's gas limit.
+This function is responsible for computing the unspent funds of a transaction and returning them to
+the appropriate account or address, depending on if the executed transaction was Moonlight or
+Phoenix.
 
-It is responsible for computing the unspent funds of a transaction and returning them to the
-appropriate account or address, depending on if the executed transaction was Moonlight or Phoenix.
+It must be called after a successful [`spend_and_execute`] call. It is guaranteed to succeed if the
+passed `gas_spent` does not exceed a transaction's gas limit.
 
 [`spend_and_execute`]: #spend_and_executetransaction---resultvecu8-contracterror
 
 #### `push_note(u64, Note) -> Note`
+
+Inserts a `note` at the next position in merkle tree, with the given `block_height` attached. A
+sequence of calls to be function must be succeeded by a call to [`update_root`] to update the root
+of the merkle tree. The caller is responsible for ensuring that block height remains monotonically
+increasing in the tree.
+
+This function is primarily intended for inserting notes into the tree at genesis.
+
+[`update_root`]: #update_root
+
 #### `update_root()`
+
+Updates the root of the merkle tree. Since merkle tree insertion is lazy, this function must be
+explicitly called after notes have been inserted in the tree.
+
+This means that it must be called once after every block ingestion, meaning after a sequence of
+[`spend_and_execute`] and [`refund`] calls.
+
 #### `add_account_balance(AccountPublicKey, u64)`
+
+Adds `balance` to the account with the given `public_key`. This function is intended for
+manipulating balances at genesis.
+
 #### `sub_account_balance(AccountPublicKey, u64)`
+
+Subtracts `balance` to the account with the given `public_key`. This function is intended for
+manipulating balances at genesis.
+
 #### `add_contract_balance(ContractId, u64)`
+
+Adds `balance` to the contract with the given `id`. This function is intended for manipulating
+contract balances at genesis.
 
 ### Contract Calls
 
