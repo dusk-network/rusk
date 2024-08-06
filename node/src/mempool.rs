@@ -4,7 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod conf;
+
 use crate::database::{Ledger, Mempool};
+use crate::mempool::conf::Params;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
 use node_data::ledger::Transaction;
@@ -12,7 +15,7 @@ use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
@@ -40,10 +43,14 @@ pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
 }
 
-impl Default for MempoolSrv {
-    fn default() -> Self {
+impl MempoolSrv {
+    pub fn new(conf: Params) -> Self {
+        info!("MempoolSrv::new with conf {}", conf);
         Self {
-            inbound: AsyncQueue::unbounded(),
+            inbound: AsyncQueue::bounded(
+                conf.max_queue_size,
+                "mempool_inbound",
+            ),
         }
     }
 }

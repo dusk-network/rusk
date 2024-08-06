@@ -4,27 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fmt::Formatter;
-
 use serde::{Deserialize, Serialize};
+use std::fmt::Formatter;
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Params {
-    pub max_inv_entries: usize,
-    pub max_ongoing_requests: usize,
     pub max_queue_size: usize,
-
-    /// delay_on_resp_msg is in milliseconds. It mitigates stress on UDP
-    /// buffers when network latency is 0 (localnet network only)
-    pub delay_on_resp_msg: Option<u64>,
 }
 
 impl Default for Params {
     fn default() -> Self {
         Self {
-            max_inv_entries: 100,
-            max_ongoing_requests: 1000,
-            delay_on_resp_msg: None,
             max_queue_size: 1000,
         }
     }
@@ -32,12 +22,6 @@ impl Default for Params {
 
 impl std::fmt::Display for Params {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "max_inv_entries: {}, max_ongoing_requests: {} ,max_queue_size: {}",
-            self.max_inv_entries,
-            self.max_ongoing_requests,
-            self.max_queue_size
-        )
+        write!(f, "max_queue_size: {}", self.max_queue_size)
     }
 }

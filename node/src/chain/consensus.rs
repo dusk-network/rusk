@@ -19,7 +19,7 @@ use node_data::message::AsyncQueue;
 
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
 use crate::chain::metrics::AverageElapsedTime;
@@ -60,7 +60,10 @@ pub(crate) struct Task {
 impl Task {
     /// Creates a new consensus task with the given keys encrypted with password
     /// from env var DUSK_CONSENSUS_KEYS_PASS.
-    pub(crate) fn new_with_keys(path: String) -> anyhow::Result<Self> {
+    pub(crate) fn new_with_keys(
+        path: String,
+        max_inbound_size: usize,
+    ) -> anyhow::Result<Self> {
         let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
             .map_err(|_| anyhow::anyhow!("DUSK_CONSENSUS_KEYS_PASS not set"))?;
         info!(event = "loading consensus keys", path = path);
@@ -72,10 +75,16 @@ impl Task {
         );
 
         Ok(Self {
-            main_inbound: AsyncQueue::unbounded(),
-            outbound: AsyncQueue::unbounded(),
+            main_inbound: AsyncQueue::bounded(
+                max_inbound_size,
+                "consensus_inbound",
+            ),
+            outbound: AsyncQueue::bounded(
+                max_inbound_size,
+                "consensus_outbound",
+            ),
             future_msg: Arc::new(Mutex::new(MsgRegistry::default())),
-            result: AsyncQueue::unbounded(),
+            result: AsyncQueue::bounded(1, "consensus_result"),
             running_task: None,
             task_id: 0,
             keys,
@@ -140,10 +149,7 @@ impl Task {
                     consensus_task.spin(ru, current.into(), cancel_rx).await;
 
                 // Notify chain component about the consensus result
-                let _ = resp
-                    .send(res)
-                    .await
-                    .map_err(|e| error!("Unable to send consensus result {e}"));
+                resp.try_send(res);
 
                 trace!("terminate consensus task: {}", id);
                 id

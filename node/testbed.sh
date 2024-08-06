@@ -28,6 +28,7 @@ run_node() {
             --http-listen-addr "$WS_LISTEN_ADDR" \
             --telemetry-listen-addr "$TELEMETRY_LISTEN_ADDR" \
             --delay-on-resp-msg 10 \
+	    --config ./node/default.config.toml \
             > "${TEMPD}/node_${ID}.log" &
 }
 

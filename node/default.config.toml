@@ -5,6 +5,7 @@ log_type = 'json'
 db_path = '/tmp/rusk-harness/'
 consensus_keys_path = '/tmp/consensus_bls.keys'
 generation_timeout = '3s'
+max_queue_size = 5000
 
 [chain.db_options]
 enable_debug = false
@@ -45,3 +46,7 @@ cache_prune_every = '5m'
 max_inv_entries = 500
 max_ongoing_requests = 100
 delay_on_resp_msg = 500
+max_queue_size = 5000
+
+[mempool]
+max_queue_size = 5000

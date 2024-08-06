@@ -125,6 +125,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
+        max_queue_size: usize,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
@@ -143,7 +144,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             db: db.clone(),
             vm: vm.clone(),
             network: network.clone(),
-            task: RwLock::new(Task::new_with_keys(keys_path.to_string())?),
+            task: RwLock::new(Task::new_with_keys(
+                keys_path.to_string(),
+                max_queue_size,
+            )?),
         };
 
         // NB. After restart, state_root returned by VM is always the last
@@ -219,7 +223,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
 
                 if enable_enqueue {
-                    task.main_inbound.try_send(msg)?;
+                    task.main_inbound.try_send(msg);
                 }
             }
             Payload::Quorum(payload) => {

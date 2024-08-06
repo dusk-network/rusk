@@ -75,9 +75,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 )
                 .await
             {
-                if let Err(e) = ctx.outbound.send(msg.clone()).await {
-                    error!("could not send newblock msg due to {:?}", e);
-                }
+                ctx.outbound.try_send(msg.clone());
 
                 Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
                 // register new candidate in local state

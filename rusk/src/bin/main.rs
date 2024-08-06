@@ -88,6 +88,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_consensus_keys(config.chain.consensus_keys_path())
             .with_databroker(config.databroker)
             .with_telemetry(config.telemetry.listen_addr())
+            .with_chain_queue_size(config.chain.max_queue_size())
+            .with_mempool(config.mempool.into())
     };
     let mut _ws_server = None;
     if config.http.listen {

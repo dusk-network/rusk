@@ -10,7 +10,7 @@ use execution_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,
 };
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::bls::PublicKey;
 use crate::ledger::{to_str, Hash, Signature};
@@ -1118,27 +1118,41 @@ impl From<Topics> for u8 {
 pub struct AsyncQueue<M: Clone> {
     receiver: async_channel::Receiver<M>,
     sender: async_channel::Sender<M>,
+
+    cap: usize,
+    label: &'static str,
 }
 
 impl<M: Clone> AsyncQueue<M> {
-    pub fn bounded(cap: usize) -> Self {
+    /// Creates a bounded async queue with fixed capacity
+    ///
+    /// `Label` sets a queue label for logging
+    ///
+    /// Panics
+    /// Capacity must be a positive number. If cap is zero, this function will
+    /// panic.
+    pub fn bounded(cap: usize, label: &'static str) -> Self {
         let (sender, receiver) = async_channel::bounded(cap);
-        Self { receiver, sender }
-    }
-
-    pub fn unbounded() -> Self {
-        let (sender, receiver) = async_channel::unbounded();
-        Self { receiver, sender }
+        Self {
+            receiver,
+            sender,
+            cap,
+            label,
+        }
     }
 }
 
 impl<M: Clone> AsyncQueue<M> {
-    pub fn send(&self, msg: M) -> async_channel::Send<'_, M> {
-        self.sender.send(msg)
-    }
-
-    pub fn try_send(&self, msg: M) -> Result<(), TrySendError<M>> {
-        self.sender.try_send(msg)
+    pub fn try_send(&self, msg: M) {
+        let label = self.label;
+        let _ = self.sender.try_send(msg).map_err(|err| match err {
+            TrySendError::Full(_) => {
+                error!("queue ({label}) is full, cap: {}", self.cap);
+            }
+            TrySendError::Closed(_) => {
+                error!("queue ({label}) is closed");
+            }
+        });
     }
 
     pub fn recv(&self) -> async_channel::Recv<'_, M> {
