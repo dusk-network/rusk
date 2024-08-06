@@ -424,11 +424,9 @@ mod tests {
     /// Asserts if encoding/decoding of a serializable type runs properly.
     fn assert_serializable<S: Dummy<Faker> + Eq + Serializable>() {
         let obj: S = Faker.fake();
-        let mut buf = vec![];
-        obj.write(&mut buf).expect("should be writable");
+        let data = obj.write_to_vec();
 
-        assert!(obj
-            .eq(&S::read(&mut &buf.to_vec()[..]).expect("should be readable")));
+        assert!(obj.eq(&S::read(&mut &data[..]).expect("should be readable")));
     }
 
     #[test]

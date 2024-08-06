@@ -32,6 +32,13 @@ pub trait Serializable {
     where
         Self: Sized;
 
+    fn write_to_vec(&self) -> Vec<u8> {
+        let mut buffer = vec![];
+        self.write(&mut buffer)
+            .expect("Writing to vec should succeed");
+        buffer
+    }
+
     fn read_bytes<R: Read, const N: usize>(r: &mut R) -> io::Result<[u8; N]> {
         let mut buffer = [0u8; N];
         r.read_exact(&mut buffer)?;

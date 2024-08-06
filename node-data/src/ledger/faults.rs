@@ -65,9 +65,8 @@ impl From<BlsSigError> for InvalidFault {
 impl Fault {
     /// Hash the serialized form
     pub fn hash(&self) -> [u8; 32] {
-        let mut b = vec![];
-        self.write(&mut b).expect("Write to a vec shall not fail");
-        BlsScalar::hash_to_scalar(&b[..]).to_bytes()
+        let data = self.write_to_vec();
+        BlsScalar::hash_to_scalar(&data).to_bytes()
     }
 
     pub fn same(&self, other: &Fault) -> bool {

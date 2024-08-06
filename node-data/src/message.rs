@@ -332,9 +332,7 @@ impl ConsensusHeader {
     }
 
     pub fn signable(&self) -> Vec<u8> {
-        let mut buf = vec![];
-        self.write(&mut buf).expect("Writing to vec should succeed");
-        buf
+        self.write_to_vec()
     }
 }
 
@@ -1387,8 +1385,8 @@ mod tests {
     }
 
     fn assert_serialize<S: Serializable + PartialEq + core::fmt::Debug>(v: S) {
-        let mut buf = vec![];
-        assert!(v.write(&mut buf).is_ok());
+        let buf = v.write_to_vec();
+
         let dup = S::read(&mut &buf[..]).expect("deserialize is ok");
         assert_eq!(
             v,
