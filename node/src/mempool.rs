@@ -10,7 +10,7 @@ use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
-use node_data::events::Event;
+use node_data::events::{Event, TransactionEvent};
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
@@ -137,7 +137,12 @@ impl MempoolSrv {
             for m_tx_id in view.get_txs_by_nullifiers(&nullifiers) {
                 if let Some(m_tx) = view.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        view.delete_tx(m_tx_id)?;
+                        if view.delete_tx(m_tx_id)? {
+                            let node_event = TransactionEvent::Removed(m_tx_id).into();
+                            if let Err(e) = self.event_sender.try_send(node_event) {
+                                warn!("cannot notify mempool accepted transaction {e}")
+                            };
+                        }
                     } else {
                         return Err(
                             TxAcceptanceError::NullifierExistsInMempool,
@@ -161,6 +166,12 @@ impl MempoolSrv {
 
         // Add transaction to the mempool
         db.read().await.update(|db| db.add_tx(tx))?;
+
+        let node_event = TransactionEvent::Included(tx).into();
+
+        if let Err(e) = self.event_sender.try_send(node_event) {
+            warn!("cannot notify mempool accepted transaction {e}")
+        };
 
         Ok(())
     }
