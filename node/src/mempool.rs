@@ -10,10 +10,12 @@ use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
+use node_data::events::Event;
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use thiserror::Error;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
@@ -44,10 +46,11 @@ impl From<anyhow::Error> for TxAcceptanceError {
 pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
     conf: Params,
+    event_sender: Sender<Event>,
 }
 
 impl MempoolSrv {
-    pub fn new(conf: Params) -> Self {
+    pub fn new(conf: Params, event_sender: Sender<Event>) -> Self {
         info!("MempoolSrv::new with conf {}", conf);
         Self {
             inbound: AsyncQueue::bounded(
@@ -55,6 +58,7 @@ impl MempoolSrv {
                 "mempool_inbound",
             ),
             conf,
+            event_sender,
         }
     }
 }

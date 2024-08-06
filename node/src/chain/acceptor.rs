@@ -11,6 +11,7 @@ use dusk_consensus::commons::{ConsensusError, TimeoutSet};
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
+use node_data::events::Event;
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
@@ -25,6 +26,7 @@ use node_data::{Serializable, StepName};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
@@ -67,6 +69,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     pub(crate) db: Arc<RwLock<DB>>,
     pub(crate) vm: Arc<RwLock<VM>>,
     network: Arc<RwLock<N>>,
+
+    event_sender: Sender<Event>,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
@@ -118,6 +122,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// and Ledger states. If any inconsistencies are found, it reverts to the
     /// last known finalized state. Finally, it initiates a new consensus
     /// [Task].
+    #[allow(clippy::too_many_arguments)]
     pub async fn init_consensus(
         keys_path: &str,
         tip: BlockWithLabel,
@@ -126,6 +131,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
         max_queue_size: usize,
+        event_sender: Sender<Event>,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
@@ -148,6 +154,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 keys_path.to_string(),
                 max_queue_size,
             )?),
+            event_sender,
         };
 
         // NB. After restart, state_root returned by VM is always the last
