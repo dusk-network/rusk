@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod events;
 mod rusk;
 mod vm;
 
@@ -11,13 +12,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::http::{HandleRequest, RuesEvent};
+use events::ChainEventStreamer;
 use execution_core::{dusk, Dusk};
 use kadcast::config::Config as KadcastConfig;
 use node::chain::ChainSrv;
 use node::database::rocksdb::{self, Backend};
-use node::database::DatabaseOptions;
-use node::database::DB;
+use node::database::{DatabaseOptions, DB};
 use node::databroker::conf::Params as BrokerParam;
 use node::databroker::DataBrokerSrv;
 use node::mempool::conf::Params as MempoolParam;
@@ -27,9 +27,9 @@ use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 use parking_lot::RwLock;
 use rusk_abi::VM;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, mpsc};
 
-pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
+use crate::http::{HandleRequest, RuesEvent};
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -67,6 +67,7 @@ pub struct RuskNodeBuilder {
 
     node: Option<node::Node<Kadcast<255>, Backend, Rusk>>,
     rusk: Rusk,
+    rues_sender: Option<broadcast::Sender<RuesEvent>>,
 }
 
 impl RuskNodeBuilder {
@@ -101,6 +102,14 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_rues(
+        mut self,
+        rues_sender: broadcast::Sender<RuesEvent>,
+    ) -> Self {
+        self.rues_sender = Some(rues_sender);
+        self
+    }
+
     pub fn with_telemetry(
         mut self,
         telemetry_listen_add: Option<String>,
@@ -131,6 +140,7 @@ impl RuskNodeBuilder {
             max_chain_queue_size: 0,
             node: None,
             rusk,
+            rues_sender: None,
         }
     }
 
@@ -161,15 +171,23 @@ impl RuskNodeBuilder {
 
     pub async fn build_and_run(mut self) -> anyhow::Result<()> {
         let node = self.get_or_create_node()?;
+        let (sender, node_receiver) = mpsc::channel(1000);
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool)),
+            Box::new(MempoolSrv::new(self.mempool, sender.clone())),
             Box::new(ChainSrv::new(
                 self.consensus_keys_path,
                 self.max_chain_queue_size,
+                sender.clone(),
             )),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];
+        if let Some(rues_sender) = self.rues_sender {
+            service_list.push(Box::new(ChainEventStreamer {
+                rues_sender,
+                node_receiver,
+            }))
+        }
         node.inner.initialize(&mut service_list).await?;
         node.inner.spawn_all(service_list).await?;
         Ok(())
