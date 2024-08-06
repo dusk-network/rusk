@@ -6,6 +6,7 @@
 
 pub mod bls;
 pub mod encoding;
+pub mod events;
 pub mod ledger;
 pub mod message;
 
