@@ -15,10 +15,10 @@ describe("Blocks Card", () => {
   const data = getTenBlocks(gqlBlocks.blocks);
 
   const baseProps = {
+    appStore: appStore,
     blocks: null,
     error: null,
     loading: false,
-    appStore: appStore
   };
   const baseOptions = {
     props: baseProps,

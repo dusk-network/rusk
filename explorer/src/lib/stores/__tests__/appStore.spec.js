@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
-import appStore from "../appStore";
+
+import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
 describe("appStore", () => {
   const originalTouchStart = window.ontouchstart;
@@ -40,8 +41,8 @@ describe("appStore", () => {
       chainInfoEntries: Number(env.VITE_CHAIN_INFO_ENTRIES),
       darkMode: false,
       fetchInterval: Number(env.VITE_REFETCH_INTERVAL),
-      isSmallScreen: false,
       hasTouchSupport: false,
+      isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
       networks: expectedNetworks,
@@ -104,27 +105,31 @@ describe("appStore", () => {
     expect(get(appStore).darkMode).toBe(true);
   });
 
-  it.only("should update the `isSmallScreen` property when the window width changes respective to the provided media query", async () => {
-    let changeCallback;
+  it("should set the `isSmallScreen` property to `false` when the related media query doesn't match", async () => {
+    const { appStore } = await import("..");
 
-    const mqAddListenerSpy = vi.spyOn(MediaQueryList.prototype, "addEventListener").mockImplementation((eventName, callback) => {
-      if (eventName === "change") {
-        changeCallback = callback;
-      }
-    });
+    expect(get(appStore).isSmallScreen).toBe(false);
+  });
 
-    
+  it("should set the `isSmallScreen` property to `true` when the related media query matches", async () => {
+    const mqMatchesSpy = vi
+      .spyOn(MediaQueryList.prototype, "matches", "get")
+      .mockReturnValue(true);
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: 150,
-    });
+    const { appStore } = await import("..");
 
-    window.dispatchEvent(new Event('resize'));
+    expect(get(appStore).isSmallScreen).toBe(true);
 
-    expect(mqAddListenerSpy).toHaveBeenCalledOnce();
+    mqMatchesSpy.mockRestore();
+  });
 
-    mqAddListenerSpy.mockRestore();
+  it("should update the `isSmallScreen` property when the media query match changes", async () => {
+    const { appStore } = await import("..");
+
+    expect(get(appStore).isSmallScreen).toBe(false);
+
+    changeMediaQueryMatches("(max-width: 1024px)", true);
+
+    expect(get(appStore).isSmallScreen).toBe(true);
   });
 });

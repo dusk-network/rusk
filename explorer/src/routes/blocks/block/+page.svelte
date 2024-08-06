@@ -30,6 +30,7 @@
     $navigating.complete.then(updateData);
   }
 
+  $: ({ isSmallScreen } = $appStore);
   $: ({ data, error, isLoading } = $dataStore);
 </script>
 
@@ -45,8 +46,8 @@
         {error}
         loading={isLoading}
         isOnHomeScreen={false}
+        {isSmallScreen}
         displayTooltips={true}
-        {appStore}
       />
     </Rerender>
   </div>

@@ -27,8 +27,8 @@
   /** @type {Boolean} */
   export let displayTooltips = false;
 
-  /** @type {AppStore} */
-  export let appStore;
+  /** @type {boolean} */
+  export let isSmallScreen;
 
   $: classes = makeClassName(["latest-transactions-card", className]);
 </script>
@@ -48,7 +48,7 @@
       }
     : undefined}
 >
-  {#if $appStore.isSmallScreen}
+  {#if isSmallScreen}
     {#each txns as txn (txn)}
       <TransactionsList
         data={txn}
@@ -57,9 +57,6 @@
       />
     {/each}
   {:else}
-    <TransactionsTable
-      data={txns}
-      mode={isOnHomeScreen ? "compact" : "full"}
-    />
+    <TransactionsTable data={txns} mode={isOnHomeScreen ? "compact" : "full"} />
   {/if}
 </DataCard>
