@@ -189,17 +189,14 @@ impl<const N: usize> Kadcast<N> {
 
 #[async_trait]
 impl<const N: usize> crate::Network for Kadcast<N> {
-    async fn broadcast(&self, msg: &Message) -> anyhow::Result<()> {
+    async fn broadcast(&self, msg: &Message) {
         let height = match msg.metadata {
-            Some(Metadata { height: 0, .. }) => return Ok(()),
+            Some(Metadata { height: 0, .. }) => return,
             Some(Metadata { height, .. }) => Some(height - 1),
             None => None,
         };
 
-        let encoded = frame::Pdu::encode(msg, 0).map_err(|err| {
-            error!("could not encode message {msg:?}: {err}");
-            anyhow::anyhow!("failed to broadcast: {err}")
-        })?;
+        let encoded = frame::Pdu::encode(msg, 0);
 
         counter!("dusk_bytes_cast").increment(encoded.len() as u64);
         counter!(format!("dusk_outbound_{:?}_size", msg.topic()))
@@ -207,8 +204,6 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         trace!("broadcasting msg ({:?})", msg.topic());
         self.peer.broadcast(&encoded, height).await;
-
-        Ok(())
     }
 
     /// Broadcast a GetResource request.
@@ -229,7 +224,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg_inv: &Inv,
         ttl_as_sec: Option<u64>,
         hops_limit: u16,
-    ) -> anyhow::Result<()> {
+    ) {
         let ttl_as_sec = ttl_as_sec.map_or_else(
             || u64::MAX,
             |v| {
@@ -254,31 +249,19 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     }
 
     /// Sends an encoded message to a given peer.
-    async fn send_to_peer(
-        &self,
-        msg: &Message,
-        recv_addr: SocketAddr,
-    ) -> anyhow::Result<()> {
+    async fn send_to_peer(&self, msg: &Message, recv_addr: SocketAddr) {
         // rnd_count is added to bypass kadcast dupemap
         let rnd_count = self.counter.fetch_add(1, Ordering::SeqCst);
-        let encoded = frame::Pdu::encode(msg, rnd_count)
-            .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {err}"))?;
+        let encoded = frame::Pdu::encode(msg, rnd_count);
         let topic = msg.topic();
 
         info!("sending msg ({topic:?}) to peer {recv_addr}");
-        self.send_with_metrics(&encoded, recv_addr).await;
-
-        Ok(())
+        self.send_with_metrics(&encoded, recv_addr).await
     }
 
     /// Sends to random set of alive peers.
-    async fn send_to_alive_peers(
-        &self,
-        msg: &Message,
-        amount: usize,
-    ) -> anyhow::Result<()> {
-        let encoded = frame::Pdu::encode(msg, 0)
-            .map_err(|err| anyhow::anyhow!("failed to encode: {err}"))?;
+    async fn send_to_alive_peers(&self, msg: &Message, amount: usize) {
+        let encoded = frame::Pdu::encode(msg, 0);
         let topic = msg.topic();
 
         counter!(format!("dusk_requests_{:?}", topic)).increment(1);
@@ -287,8 +270,6 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             trace!("sending msg ({topic:?}) to peer {recv_addr}");
             self.send_with_metrics(&encoded, recv_addr).await;
         }
-
-        Ok(())
     }
 
     /// Route any message of the specified type to this queue.

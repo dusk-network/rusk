@@ -24,7 +24,7 @@ use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
 use tokio::time::Instant;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
@@ -122,15 +122,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             let get_blocks = Message::new_get_blocks(GetBlocks {
                 locator: last_finalized.header().hash,
             });
-            if let Err(e) = self
-                .network
+            self.network
                 .read()
                 .await
                 .send_to_alive_peers(&get_blocks, REDUNDANCY_PEER_FACTOR)
-                .await
-            {
-                warn!("Unable to request GetBlocks {e}");
-            }
+                .await;
         } else {
             error!("could not request blocks");
         }
@@ -674,14 +670,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let req = GetResource::new(inv, this_peer, u64::MAX, 1);
         debug!(event = "request block by height", ?req, ?peer_addr);
 
-        if let Err(err) = network
+        network
             .read()
             .await
             .send_to_peer(&Message::new_get_resource(req), peer_addr)
             .await
-        {
-            warn!("could not request block {err}")
-        }
     }
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
@@ -747,15 +740,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         // Request missing blocks from source peer
         let gb_msg = Message::new_get_blocks(GetBlocks { locator });
 
-        if let Err(e) = self
-            .network
+        self.network
             .read()
             .await
             .send_to_peer(&gb_msg, dest_addr)
-            .await
-        {
-            warn!("Unable to send GetBlocks: {e}")
-        };
+            .await;
 
         // add to the pool
         let key = blk.header().height;
@@ -873,12 +862,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 async fn flood_request<N: Network>(network: &Arc<RwLock<N>>, inv: &Inv) {
     debug!(event = "flood_request", ?inv);
 
-    if let Err(err) = network
+    network
         .read()
         .await
         .flood_request(inv, None, DEFAULT_HOPS_LIMIT)
-        .await
-    {
-        warn!("could not request block {err}")
-    };
+        .await;
 }

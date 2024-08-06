@@ -210,9 +210,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         };
                     }
 
-                    if let Err(e) = network.read().await.broadcast(&msg).await {
-                        warn!("Unable to re-route message {e}");
-                    }
+                    network.read().await.broadcast(&msg).await;
                 },
                 // Handles accept_block_timeout event
                 _ = sleep_until(timeout) => {

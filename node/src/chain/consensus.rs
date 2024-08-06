@@ -352,10 +352,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 metric.push_back(elapsed);
                 debug!(event = "avg_updated", ?step_name,  metric = ?metric);
 
-                let mut bytes = Vec::new();
-                metric.write(&mut bytes)?;
-
-                t.op_write(db_key, bytes)
+                t.op_write(db_key, metric.write_to_vec())
             })
             .map_err(Error::MetricsUpdate)?;
 

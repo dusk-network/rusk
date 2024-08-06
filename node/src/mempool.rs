@@ -15,7 +15,7 @@ use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
@@ -83,10 +83,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             continue;
                         }
 
-                        let network = network.read().await;
-                        if let Err(e) = network.broadcast(&msg).await {
-                            warn!("Unable to broadcast accepted tx: {e}")
-                        };
+                        network.read().await.broadcast(&msg).await;
                     }
                     _ => error!("invalid inbound message payload"),
                 }

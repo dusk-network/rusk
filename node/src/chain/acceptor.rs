@@ -1009,9 +1009,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 }
 
 async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
-    let _ = network.read().await.broadcast(msg).await.map_err(|err| {
-        warn!("Unable to broadcast msg: {:?} {err} ", msg.topic())
-    });
+    network.read().await.broadcast(msg).await
 }
 
 /// Performs full verification of block header against prev_block header where

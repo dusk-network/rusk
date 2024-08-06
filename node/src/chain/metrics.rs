@@ -82,8 +82,7 @@ mod tests {
         assert_eq!(metric.average().expect("positive number"), expected);
 
         // Marshal/Unmarshal
-        let mut buf = Vec::new();
-        metric.write(&mut buf).expect("all written");
+        let buf = metric.write_to_vec();
 
         assert_eq!(
             AverageElapsedTime::read(&mut &buf[..])

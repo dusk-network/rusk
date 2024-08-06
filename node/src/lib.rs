@@ -40,7 +40,7 @@ pub type BoxedFilter = Box<dyn Filter + Sync + Send>;
 #[async_trait]
 pub trait Network: Send + Sync + 'static {
     /// Broadcasts a fire-and-forget message.
-    async fn broadcast(&self, msg: &Message) -> anyhow::Result<()>;
+    async fn broadcast(&self, msg: &Message);
 
     /// Broadcasts a request message
     async fn flood_request(
@@ -48,21 +48,17 @@ pub trait Network: Send + Sync + 'static {
         msg_inv: &Inv,
         ttl_as_sec: Option<u64>,
         hops_limit: u16,
-    ) -> anyhow::Result<()>;
+    );
 
     /// Sends a message to a specified peer.
     async fn send_to_peer(
         &self,
         msg: &Message,
         peer_addr: std::net::SocketAddr,
-    ) -> anyhow::Result<()>;
+    );
 
     /// Sends to random set of alive peers.
-    async fn send_to_alive_peers(
-        &self,
-        msg: &Message,
-        amount: usize,
-    ) -> anyhow::Result<()>;
+    async fn send_to_alive_peers(&self, msg: &Message, amount: usize);
 
     /// Routes any message of the specified type to this queue.
     async fn add_route(

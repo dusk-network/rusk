@@ -290,19 +290,17 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         {
             let cf = self.ledger_cf;
 
-            let mut buf = vec![];
-            LightBlock {
+            let block = LightBlock {
                 header: header.clone(),
                 transactions_ids: txs
                     .iter()
                     .map(|t| t.inner.id())
                     .collect::<Vec<[u8; 32]>>(),
 
-                faults_ids: faults.iter().map(|f| f.hash()).collect::<Vec<_>>(),
-            }
-            .write(&mut buf)?;
+                faults_ids: faults.iter().map(|f| f.hash()).collect(),
+            };
 
-            self.put_cf(cf, header.hash, buf)?;
+            self.put_cf(cf, header.hash, block.write_to_vec())?;
         }
 
         // Update metadata values
@@ -315,8 +313,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
             // store all block transactions
             for tx in txs {
-                let mut d = vec![];
-                tx.write(&mut d)?;
+                let d = tx.write_to_vec();
                 self.put_cf(cf, tx.inner.id(), d)?;
             }
         }
@@ -327,9 +324,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
             // store all block faults
             for f in faults {
-                let mut d = vec![];
-                f.write(&mut d)?;
-                self.put_cf(cf, f.hash(), d)?;
+                let key = f.hash();
+                let value = f.write_to_vec();
+                self.put_cf(cf, key, value)?;
             }
         }
         self.store_block_label(header.height, &header.hash, label)?;
@@ -570,8 +567,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     /// Returns `Ok(())` if the block is successfully stored, or an error if the
     /// operation fails.
     fn store_candidate_block(&self, b: ledger::Block) -> Result<()> {
-        let mut serialized = vec![];
-        b.write(&mut serialized)?;
+        let serialized = b.write_to_vec();
 
         self.inner
             .put_cf(self.candidates_cf, b.header().hash, serialized)?;
@@ -681,10 +677,9 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     fn add_tx(&self, tx: &ledger::Transaction) -> Result<()> {
         // Map Hash to serialized transaction
-        let mut tx_data = vec![];
-        tx.write(&mut tx_data)?;
-
+        let tx_data = tx.write_to_vec();
         let hash = tx.id();
+
         self.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //

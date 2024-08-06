@@ -26,19 +26,17 @@ pub struct Header {
 }
 
 impl Pdu {
-    pub fn encode(msg: &Message, reserved: u64) -> io::Result<Vec<u8>> {
-        let mut payload_buf = vec![];
-        msg.write(&mut payload_buf)?;
+    pub fn encode(msg: &Message, reserved: u64) -> Vec<u8> {
+        let payload_buf = msg.write_to_vec();
 
-        let mut header_buf = vec![];
-        Header {
-            checksum: calc_checksum(&payload_buf[..]),
+        let header_buf = Header {
+            checksum: calc_checksum(&payload_buf),
             version: PROTOCOL_VERSION,
             reserved,
         }
-        .write(&mut header_buf)?;
+        .write_to_vec();
 
-        Ok([header_buf, payload_buf].concat())
+        [header_buf, payload_buf].concat()
     }
 
     pub fn decode<R: Read>(r: &mut R) -> io::Result<Self>

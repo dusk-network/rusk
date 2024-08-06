@@ -140,10 +140,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         // Send response
                         let net = network.read().await;
                         for msg in resp.msgs {
-                            let send = net.send_to_peer(&msg, resp.recv_peer);
-                            if let Err(e) = send.await {
-                                warn!("Unable to send_to_peer {e}")
-                            };
+                            net.send_to_peer(&msg, resp.recv_peer).await;
 
                             // Mitigate pressure on UDP buffers.
                             // Needed only in localnet.
