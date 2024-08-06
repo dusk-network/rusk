@@ -10,7 +10,7 @@ use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
-use node_data::events::Event;
+use node_data::events::{Event, TransactionEvent};
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
@@ -142,6 +142,8 @@ impl MempoolSrv {
             Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
         }
 
+        let mut events = vec![];
+
         // Try to add the transaction to the mempool
         db.read().await.update(|db| {
             let nullifiers: Vec<_> = tx
@@ -155,7 +157,9 @@ impl MempoolSrv {
             for m_tx_id in db.get_txs_by_nullifiers(&nullifiers) {
                 if let Some(m_tx) = db.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        db.delete_tx(m_tx_id)?;
+                        if db.delete_tx(m_tx_id)? {
+                            events.push(TransactionEvent::Removed(m_tx_id));
+                        };
                     } else {
                         return Err(
                             TxAcceptanceError::NullifierExistsInMempool.into(),
@@ -164,6 +168,7 @@ impl MempoolSrv {
                 }
             }
 
+            events.push(TransactionEvent::Included(tx));
             // Persist transaction in mempool storage
             db.add_tx(tx)
         })?;
@@ -172,6 +177,13 @@ impl MempoolSrv {
             event = "transaction accepted",
             hash = hex::encode(tx_id)
         );
+
+        for tx_event in events {
+            let node_event = tx_event.into();
+            if let Err(e) = self.event_sender.try_send(node_event) {
+                warn!("cannot notify mempool accepted transaction {e}")
+            };
+        }
 
         Ok(())
     }
