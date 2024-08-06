@@ -354,7 +354,7 @@ impl From<Vec<u8>> for RequestData {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ResponseData {
     data: DataType,
     header: serde_json::Map<String, serde_json::Value>,
@@ -414,11 +414,11 @@ impl Eq for DataType {}
 impl PartialEq for DataType {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Channel(_), Self::Channel(_)) => true,
             (Self::Text(a), Self::Text(b)) => a == b,
             (Self::Json(a), Self::Json(b)) => a == b,
             (Self::Binary(a), Self::Binary(b)) => a == b,
             (Self::None, Self::None) => true,
+            // Two mpsc::Receiver are always different
             _ => false,
         }
     }
@@ -742,6 +742,42 @@ pub struct RuesEventUri {
 
 pub const RUES_LOCATION_PREFIX: &str = "/on";
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RuesSubscription {
+    pub binary: bool,
+    pub uri: RuesEventUri,
+}
+
+// We won't to take into consideration the "binary" flag while inserting into
+// subscriptions_set
+impl core::hash::Hash for RuesSubscription {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.uri.hash(state);
+    }
+}
+
+impl PartialEq for RuesSubscription {
+    fn eq(&self, other: &Self) -> bool {
+        self.uri == other.uri
+    }
+}
+
+impl Eq for RuesSubscription {}
+
+impl RuesSubscription {
+    pub fn parse_from_req<B>(req: &Request<B>) -> Option<Self> {
+        let uri = RuesEventUri::parse_from_path(req.uri().path())?;
+        let binary = req
+            .headers()
+            .get(ACCEPT)
+            .and_then(|h| h.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+            .unwrap_or_default();
+
+        Some(Self { binary, uri })
+    }
+}
+
 impl Display for RuesEventUri {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let component = &self.component;
@@ -875,6 +911,10 @@ impl RuesEvent {
         bytes.extend(data_bytes);
 
         bytes
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&self.data).expect("Data to be json serializable")
     }
 }
 

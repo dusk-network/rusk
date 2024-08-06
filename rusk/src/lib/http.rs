@@ -17,7 +17,7 @@ mod stream;
 
 pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
-    RequestData, Target,
+    RequestData, RuesSubscription, Target,
 };
 
 use execution_core::Event;
@@ -424,8 +424,8 @@ where
 }
 
 enum SubscriptionAction {
-    Subscribe(RuesEventUri),
-    Unsubscribe(RuesEventUri),
+    Subscribe(RuesSubscription),
+    Unsubscribe(RuesSubscription),
     Dispatch { uri: RuesEventUri, body: Incoming },
 }
 
@@ -534,23 +534,19 @@ async fn handle_stream_rues<H: HandleRequest>(
                     },
                 };
 
-                // The event is subscribed to if it matches any of the subscriptions.
-                let mut is_subscribed = false;
-                for sub in &subscription_set {
-                    if sub.matches(&event) {
-                        is_subscribed = true;
-                        break;
-                    }
-                }
+                let subscription = subscription_set.iter().find(|s|s.uri.matches(&event));
 
                 // If the event is subscribed, we send it to the client.
-                if is_subscribed {
+                if let Some(subscription) = subscription {
                     event.add_header("Content-Location", event.uri.to_string());
-                    let event = event.to_bytes();
+                    let event = match subscription.binary {
+                        true  => Message::Binary(event.to_bytes()),
+                        false => Message::Text(event.to_json()),
+                    };
 
                     // If the event fails sending we close the socket on the client
                     // and stop processing further.
-                    if stream.send(Message::Binary(event)).await.is_err() {
+                    if stream.send(event).await.is_err() {
                         let _ = stream.close(Some(CloseFrame {
                             code: CloseCode::Error,
                             reason: Cow::from("Failed sending event"),
@@ -661,7 +657,7 @@ async fn handle_request_rues<H: HandleRequest>(
             Some(sid) => sid,
         };
 
-        let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
+        let subscription = match RuesSubscription::parse_from_req(&req) {
             None => {
                 return response(
                     StatusCode::NOT_FOUND,
@@ -682,10 +678,10 @@ async fn handle_request_rues<H: HandleRequest>(
         };
 
         let action = match *req.method() {
-            Method::GET => SubscriptionAction::Subscribe(uri),
-            Method::DELETE => SubscriptionAction::Unsubscribe(uri),
+            Method::GET => SubscriptionAction::Subscribe(subscription),
+            Method::DELETE => SubscriptionAction::Unsubscribe(subscription),
             Method::POST => SubscriptionAction::Dispatch {
-                uri,
+                uri: subscription.uri,
                 body: req.into_body(),
             },
             _ => {
@@ -811,7 +807,7 @@ mod tests {
     use std::{fs, thread};
 
     use super::*;
-    use event::Event as EventRequest;
+    use event::{Event as EventRequest, RuesEventUri};
 
     use crate::http::event::WrappedContractId;
     use execution_core::ContractId;
@@ -1101,6 +1097,7 @@ mod tests {
                 server.local_addr
             ))
             .header("Rusk-Session-Id", sid.to_string())
+            .header("Accept", "application/octet-stream".to_string())
             .send()
             .await
             .expect("Requesting should succeed");
@@ -1113,6 +1110,7 @@ mod tests {
                 server.local_addr
             ))
             .header("Rusk-Session-Id", sid.to_string())
+            .header("Accept", "application/octet-stream".to_string())
             .send()
             .await
             .expect("Requesting should succeed");
@@ -1167,11 +1165,13 @@ mod tests {
 
         assert_eq!(received_event, event, "Event should be the same");
 
+        let unsubscribe_location = format!(
+            "http://{}{}",
+            server.local_addr, at_first_received_event.uri
+        );
+
         let response = client
-            .delete(format!(
-                "http://{}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
-                server.local_addr
-            ))
+            .delete(unsubscribe_location)
             .header("Rusk-Session-Id", sid.to_string())
             .send()
             .await
