@@ -113,10 +113,57 @@ Of particular note are the pair of `deposit` and `withdraw`, allowing for Dusk t
 and withdrawn from a contract, respectively.
 
 #### `deposit(u64)`
+
+This function can be called by any contract and is used to collect the deposit a transaction may
+have left for it. Only the contract to which the deposit is destined may call this function, and the
+`value` argument must match the deposit amount.
+
+Depositors - i.e. transactions that perform a deposit - are expected to contain a call directly to
+the contract function handling deposits. This function is meant to be called by the contract
+*collecting* the deposit, not the depositor themselves.
+
+If it succeeds, the balance of the contract will be increased by the deposited value.
+
 #### `withdraw(Withdraw)`
+
+Withdraws can be called by any contract to allow a transactor to withdraw from their balance. The
+`withdraw` argument contains information about the contract to withdraw from, - which must match the
+contract calling this function - the value to withdraw, and the mode of withdrawal (Moonlight or
+Phoenix).
+
+Withdrawers - i.e. transaction that want to withdraw from a contract - are expect to contain a call
+directly to the contract function handling withdrawals. This function is meant to be called by the
+contract *allowing* the withdrawal, not the withdrawer themselves.
+
+If it succeeds, the balance of the contract will be decreased by the withdrawal value, and the same
+value is credited to the withdrawers mode of choice.
+
 #### `convert(Withdraw)`
+
+This function can be called by transactors to convert between Moonlight and Phoenix Dusk. It can be
+conceptualized as a simultaneous [`deposit`] to and a [`withdrawal`] from the transfer contract. In
+contrast to these two functions, however, it is meant to, and can only be, called directly by the
+transactor.
+
+If it succeeds the balance of the contract remains constant, and the value is converted from Phoenix
+to Moonlight or vice-versa.
+
+[`deposit`]: #depositu64
+[`withdrawal`]: #withdrawwithdraw
+
 #### `mint(Withdraw)`
+
+This function is designed to be called solely by the stake contract - another genesis contract - to
+allow it to be able to withdraw the rewards for participating in the consensus.
+
+If it succeeds the transactor will be credited with the `withdraw`n reward.
+
 #### `sub_contract_balance(ContractId, u64) -> Result<(), Error>`
+
+This function is designed to be called solely by the stake contract - another genesis contract - to
+allow it to be able to deduct from its own balance in the event of a slash.
+
+If it succeeds, the `contract` will have the given `value` deducted from their balance.
 
 ### Queries
 
