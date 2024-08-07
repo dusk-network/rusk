@@ -23,7 +23,8 @@
 
   /* Status */
 
-  --success: #16db93;
+  --success-500: #16db93;
+  --success-700: #0f9363;
   --warning: #ffcf23;
   --error: #ed254e;
   --info: #71b1ff;
