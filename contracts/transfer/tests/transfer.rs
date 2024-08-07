@@ -6,11 +6,10 @@
 
 pub mod common;
 
-use crate::common::{
-    account, contract_balance, create_moonlight_transaction,
-    create_phoenix_transaction, execute, filter_notes_owned_by,
-    leaves_from_height, leaves_from_pos, num_notes, owned_notes_value,
-    update_root,
+use crate::common::utils::{
+    account, contract_balance, create_phoenix_transaction, execute,
+    filter_notes_owned_by, leaves_from_height, leaves_from_pos, num_notes,
+    owned_notes_value, update_root,
 };
 
 use dusk_bytes::Serializable;
@@ -25,6 +24,7 @@ use execution_core::{
     },
     transfer::{
         contract_exec::{ContractCall, ContractExec},
+        moonlight::Transaction as MoonlightTransaction,
         phoenix::{
             Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
             ViewKey as PhoenixViewKey,
@@ -153,6 +153,8 @@ fn phoenix_transfer() {
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
     let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
     let phoenix_receiver_pk =
         PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
 
@@ -181,11 +183,13 @@ fn phoenix_transfer() {
     let transfer_value = 42;
     let is_obfuscated = true;
     let deposit = 0;
-    let contract_call = None;
+    let contract_call: Option<ContractCall> = None;
 
     let tx = create_phoenix_transaction(
+        rng,
         session,
         &phoenix_sender_sk,
+        &phoenix_change_pk,
         &phoenix_receiver_pk,
         gas_limit,
         gas_price,
@@ -261,7 +265,7 @@ fn moonlight_transfer() {
         "The receiver account should be empty"
     );
 
-    let transaction = create_moonlight_transaction(
+    let transaction = MoonlightTransaction::new(
         &moonlight_sender_sk,
         Some(moonlight_receiver_pk),
         TRANSFER_VALUE,
@@ -306,6 +310,8 @@ fn phoenix_alice_ping() {
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
     let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
@@ -330,8 +336,10 @@ fn phoenix_alice_ping() {
     });
 
     let tx = create_phoenix_transaction(
+        rng,
         session,
         &phoenix_sender_sk,
+        &phoenix_change_pk,
         &phoenix_sender_pk,
         gas_limit,
         gas_price,
@@ -388,7 +396,7 @@ fn moonlight_alice_ping() {
         "The account should have the genesis value"
     );
 
-    let transaction = create_moonlight_transaction(
+    let transaction = MoonlightTransaction::new(
         &moonlight_sk,
         None,
         0,
@@ -429,6 +437,8 @@ fn phoenix_deposit_and_withdraw() {
     let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
     let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
 
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
@@ -453,8 +463,10 @@ fn phoenix_deposit_and_withdraw() {
     });
 
     let tx = create_phoenix_transaction(
+        rng,
         session,
         &phoenix_sender_sk,
+        &phoenix_change_pk,
         &phoenix_sender_pk,
         gas_limit,
         gas_price,
@@ -477,9 +489,9 @@ fn phoenix_deposit_and_withdraw() {
     assert_eq!(
         PHOENIX_GENESIS_VALUE,
         transfer_value
-            + tx.payload().tx_skeleton.deposit
-            + tx.payload().tx_skeleton.max_fee
-            + tx.payload().tx_skeleton.outputs[1]
+            + tx.deposit()
+            + tx.max_fee()
+            + tx.outputs()[1]
                 .value(Some(&PhoenixViewKey::from(&phoenix_sender_sk)))
                 .unwrap()
     );
@@ -546,8 +558,10 @@ fn phoenix_deposit_and_withdraw() {
     });
 
     let tx = create_phoenix_transaction(
+        rng,
         session,
         &phoenix_sender_sk,
+        &phoenix_change_pk,
         &phoenix_sender_pk,
         gas_limit,
         gas_price,
@@ -579,16 +593,19 @@ fn phoenix_to_moonlight_swap() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let phoenix_sk = PhoenixSecretKey::random(rng);
-    let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
-    let phoenix_pk = PhoenixPublicKey::from(&phoenix_sk);
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
 
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
-    let mut session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+    let mut session =
+        &mut instantiate(rng, vm, &phoenix_sender_pk, &moonlight_pk);
 
     let swapper_account = account(&mut session, &moonlight_pk)
         .expect("Getting account should succeed");
@@ -601,7 +618,7 @@ fn phoenix_to_moonlight_swap() {
     let leaves = leaves_from_height(session, 0)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
-        phoenix_vk,
+        phoenix_sender_vk,
         leaves.into_iter().map(|leaf| leaf.note),
     );
 
@@ -613,7 +630,9 @@ fn phoenix_to_moonlight_swap() {
         TRANSFER_CONTRACT,
         SWAP_VALUE,
         WithdrawReceiver::Moonlight(moonlight_pk),
-        WithdrawReplayToken::Phoenix(vec![notes[0].gen_nullifier(&phoenix_sk)]),
+        WithdrawReplayToken::Phoenix(vec![
+            notes[0].gen_nullifier(&phoenix_sender_sk)
+        ]),
     );
 
     let contract_call = ContractCall {
@@ -625,14 +644,16 @@ fn phoenix_to_moonlight_swap() {
     };
 
     let tx = create_phoenix_transaction(
+        rng,
         session,
-        &phoenix_sk,
-        &phoenix_pk,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
         GAS_LIMIT,
         LUX,
         [0],
         0,
-        true,
+        false,
         SWAP_VALUE,
         Some(contract_call),
     );
@@ -656,15 +677,15 @@ fn phoenix_to_moonlight_swap() {
     let leaves = leaves_from_height(session, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
-        phoenix_vk,
+        phoenix_sender_vk,
         leaves.into_iter().map(|leaf| leaf.note),
     );
-    let notes_value = owned_notes_value(phoenix_vk, &notes);
+    let notes_value = owned_notes_value(phoenix_sender_vk, &notes);
 
     assert_eq!(
         notes.len(),
-        3,
-        "New notes should have been created as transfer to self, change, and refund"
+        2,
+        "New notes should have been created as change and refund (transparent notes with the value 0 are not appended to the tree)"
     );
     assert_eq!(
         notes_value,
@@ -729,7 +750,7 @@ fn moonlight_to_phoenix_swap() {
             .to_vec(),
     };
 
-    let tx = create_moonlight_transaction(
+    let tx = MoonlightTransaction::new(
         &moonlight_sk,
         None,
         0,
@@ -828,7 +849,7 @@ fn swap_wrong_contract_targeted() {
             .to_vec(),
     };
 
-    let tx = create_moonlight_transaction(
+    let tx = MoonlightTransaction::new(
         &moonlight_sk,
         None,
         0,

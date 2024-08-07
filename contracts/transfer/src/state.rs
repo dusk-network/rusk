@@ -92,18 +92,18 @@ impl TransferState {
 
         match withdraw.token() {
             WithdrawReplayToken::Phoenix(nullifiers) => {
-                let tx_payload = transitory::unwrap_phoenix_tx().payload();
+                let phoenix_tx = transitory::unwrap_phoenix_tx();
 
-                for n in &tx_payload.tx_skeleton.nullifiers {
+                for n in phoenix_tx.nullifiers() {
                     if !nullifiers.contains(n) {
                         panic!("Incorrect nullifiers signed");
                     }
                 }
             }
             WithdrawReplayToken::Moonlight(nonce) => {
-                let tx_payload = transitory::unwrap_moonlight_tx().payload();
+                let moonlight_tx = transitory::unwrap_moonlight_tx();
 
-                if nonce != &tx_payload.nonce {
+                if *nonce != moonlight_tx.nonce() {
                     panic!("Incorrect nonce signed");
                 }
             }
@@ -193,7 +193,7 @@ impl TransferState {
         let caller = rusk_abi::caller()
             .expect("A withdrawal must happen in the context of a transaction");
         if *contract != caller {
-            panic!("The \"withdraw\" function can only be called by the contract specified in the payload");
+            panic!("The \"withdraw\" function can only be called by the specified contract.");
         }
 
         let value = withdraw.value();
@@ -340,36 +340,34 @@ impl TransferState {
         tx: PhoenixTransaction,
     ) -> Result<Vec<u8>, ContractError> {
         transitory::put_transaction(tx);
-        let tx = transitory::unwrap_phoenix_tx();
-
-        let tx_skeleton = &tx.payload().tx_skeleton;
+        let phoenix_tx = transitory::unwrap_phoenix_tx();
 
         // panic if the root is invalid
-        if !self.root_exists(&tx_skeleton.root) {
+        if !self.root_exists(phoenix_tx.root()) {
             panic!("Root not found in the state!");
         }
 
         // panic if any of the given nullifiers already exist
-        if self.any_nullifier_exists(&tx_skeleton.nullifiers) {
+        if self.any_nullifier_exists(phoenix_tx.nullifiers()) {
             panic!("A provided nullifier already exists!");
         }
 
         // append the nullifiers to the nullifiers set
-        self.nullifiers.extend(&tx_skeleton.nullifiers);
+        self.nullifiers.extend(phoenix_tx.nullifiers());
 
         // verify the phoenix-circuit
-        if !verify_tx_proof(tx) {
+        if !verify_tx_proof(phoenix_tx) {
             panic!("Invalid transaction proof!");
         }
 
         // append the output notes to the phoenix-notes tree
         let block_height = rusk_abi::block_height();
         self.tree
-            .extend_notes(block_height, tx_skeleton.outputs.clone());
+            .extend_notes(block_height, phoenix_tx.outputs().clone());
 
         // perform contract call if present
         let mut result = Ok(Vec::new());
-        if let Some(call) = tx.call() {
+        if let Some(call) = phoenix_tx.call() {
             result =
                 rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
         }
@@ -398,16 +396,14 @@ impl TransferState {
         tx: MoonlightTransaction,
     ) -> Result<Vec<u8>, ContractError> {
         transitory::put_transaction(tx);
-        let tx = transitory::unwrap_moonlight_tx();
+        let moonlight_tx = transitory::unwrap_moonlight_tx();
 
         // check the signature is valid and made by `from`
-        let payload = tx.payload();
-        let signature = *tx.signature();
-
-        let from = payload.from;
-        let digest = tx.signature_message();
-
-        if !rusk_abi::verify_bls(digest, from, signature) {
+        if !rusk_abi::verify_bls(
+            moonlight_tx.signature_message(),
+            *moonlight_tx.from_account(),
+            *moonlight_tx.signature(),
+        ) {
             panic!("Invalid signature!");
         }
 
@@ -421,16 +417,17 @@ impl TransferState {
         // Afterwards, we simply deduct the total amount of the transaction from
         // the balance, increment the nonce, and rely on `refund` to be called
         // after a successful exit.
-        let from_bytes = from.to_bytes(); // TODO: this is expensive. maybe we should address the
-                                          //       fact that `AccountPublicKey` doesn't impl `Ord`
-                                          //       so we can just use it directly as a key in the
-                                          //       `BTreeMap`
+        //
+        // TODO: this is expensive, maybe we should address the fact that
+        //       `AccountPublicKey` doesn't `impl Ord` so we can just use it
+        //       directly as a key in the `BTreeMap`
+        let from_bytes = moonlight_tx.from_account().to_bytes();
 
         // the total value carried by a transaction is the sum of the value, the
         // deposit, and gas_limit * gas_price.
-        let total_value = payload.value
-            + payload.deposit
-            + payload.gas_limit * payload.gas_price;
+        let total_value = moonlight_tx.value()
+            + moonlight_tx.deposit()
+            + moonlight_tx.gas_limit() * moonlight_tx.gas_price();
 
         match self.accounts.get_mut(&from_bytes) {
             Some(account) => {
@@ -443,20 +440,20 @@ impl TransferState {
                 //       transactions. Since this number is so large, we also
                 //       skip overflow checks.
                 let incremented_nonce = account.nonce + 1;
-                if payload.nonce != incremented_nonce {
+                if moonlight_tx.nonce() != incremented_nonce {
                     panic!("Invalid nonce");
                 }
 
                 account.balance -= total_value;
-                account.nonce = payload.nonce;
+                account.nonce = moonlight_tx.nonce();
             }
             None => panic!("Account has no funds"),
         }
 
         // if there is a value carried by the transaction but no key specified
         // in the `to` field, we just give the value back to `from`.
-        if payload.value > 0 {
-            let key = match payload.to {
+        if moonlight_tx.value() > 0 {
+            let key = match moonlight_tx.to_account() {
                 Some(to) => to.to_bytes(),
                 None => from_bytes,
             };
@@ -464,12 +461,12 @@ impl TransferState {
             // if the key has no entry, we simply instantiate a new one with a
             // zero nonce and balance.
             let account = self.accounts.entry(key).or_insert(EMPTY_ACCOUNT);
-            account.balance += payload.value;
+            account.balance += moonlight_tx.value();
         }
 
         // perform contract call if present
         let mut result = Ok(Vec::new());
-        if let Some(call) = tx.call() {
+        if let Some(call) = moonlight_tx.call() {
             result =
                 rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
         }
@@ -502,9 +499,8 @@ impl TransferState {
         // 'key's balance gets increased.
         match tx {
             Transaction::Phoenix(tx) => {
-                let fee = &tx.payload().fee;
-
-                let remainder_note = fee.gen_remainder_note(gas_spent, deposit);
+                let remainder_note =
+                    tx.fee().gen_remainder_note(gas_spent, deposit);
 
                 let remainder_value = remainder_note
                     .value(None)
@@ -515,12 +511,10 @@ impl TransferState {
                 }
             }
             Transaction::Moonlight(tx) => {
-                let payload = tx.payload();
+                let from_bytes = tx.from_account().to_bytes();
 
-                let from_bytes = payload.from.to_bytes();
-
-                let remaining_gas = payload.gas_limit - gas_spent;
-                let remaining = remaining_gas * payload.gas_price
+                let remaining_gas = tx.gas_limit() - gas_spent;
+                let remaining = remaining_gas * tx.gas_price()
                     + deposit.unwrap_or_default();
 
                 let account = self.accounts.get_mut(&from_bytes).expect(
@@ -686,7 +680,7 @@ impl TransferState {
 
 fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
     // fetch the verifier data
-    let num_inputs = tx.payload().tx_skeleton.nullifiers.len();
+    let num_inputs = tx.nullifiers().len();
     let vd = verifier_data_execute(num_inputs)
         .expect("No circuit available for given number of inputs!")
         .to_vec();
