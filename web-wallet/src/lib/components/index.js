@@ -15,3 +15,4 @@ export { default as Send } from "./Send/Send.svelte";
 export { default as ScanQR } from "./ScanQR/ScanQR.svelte";
 export { default as Stake } from "./Stake/Stake.svelte";
 export { default as Transactions } from "./Transactions/Transactions.svelte";
+export { default as UsageIndicator } from "./UsageIndicator/UsageIndicator.svelte";

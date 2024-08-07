@@ -12,7 +12,8 @@
   --danger-color: var(--error);
   --error-color: var(--error);
   --info-color: var(--info);
-  --success-color: var(--success);
+  --success-color: var(--success-500);
+  --success-color-variant-dark: var(--success-700);
   --warning-color: var(--warning);
 
   --on-background-color: var(--smokey-black);
