@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use node_data::bls::PublicKey;
-use node_data::ledger::{Seed, StepVotes};
+use node_data::ledger::{to_str, Seed, StepVotes};
 use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
@@ -31,7 +31,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
-) -> Result<(QuorumResult, Vec<Voter>), StepSigError> {
+) -> anyhow::Result<(QuorumResult, Vec<Voter>)> {
     let round = header.round;
     let iteration = header.iteration;
 
@@ -65,11 +65,21 @@ pub async fn verify_step_votes(
     let committee = set.get(&cfg).expect("committee to be created");
 
     let (quorum_result, voters) =
-        verify_votes(header, step, vote, sv, committee)?;
+        verify_votes(header, step, vote, sv, committee)
+        .map_err(|e| anyhow::anyhow!(
+            "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
+            step,
+            vote,
+            header.round,
+            header.iteration,
+            to_str(seed.inner()),
+            sv,
+            e
+        ))?;
+
     Ok((quorum_result, voters))
 }
 
-#[derive(Default)]
 pub struct QuorumResult {
     pub total: usize,
     pub target_quorum: usize,
