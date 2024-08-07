@@ -13,7 +13,19 @@ the functions operate on, and describe the types of mutation to the state each o
 
 ## State
 
-TODO
+The state of the transfer contract consists of the state necessary to ensure the security of each
+transaction, as well as provide data for wallets wishing to create one.
+
+- Merkle tree of all Phoenix notes (UTXO)
+- Set of nullifiers
+- Roots of the merkle tree
+- Moonlight accounts
+- Contract balances
+
+These pieces of data are made available for querying via calls to the functions below. Mutations to
+this data are performed in the context of a transaction, whose entrypoint is [`spend_and_execute`].
+
+[`spend_and_execute`]: #spend_and_executetransaction---resultvecu8-contracterror
 
 ## Functions
 
@@ -34,7 +46,7 @@ meant to be called directly by the host. If called by another contract, includin
 contract itself, they will produce a panic.
 
 They are only callable by the host because they rely on guarantees that the contract itself is
-unable to provide on its own, such as the case of `spend_and_execute` and `refund`, that must be
+unable to provide on its own, such as the case of [`spend_and_execute`] and [`refund`], that must be
 called in sequence.
 
 #### `spend_and_execute(Transaction) -> Result<Vec<u8>, ContractError>`
@@ -49,6 +61,12 @@ The call may fail its execution for a myriad of reasons, the most common being i
 during execution or a panic by the called contract.
 If there is no call present, an empty vector of bytes is returned.
 
+When a transaction succeeds, the [state] of the contract is modified. In the case of a Phoenix
+transaction, the output notes are added to the merkle tree and the nullifiers are added to the set.
+In the case of a Moonlight transaction, the account which is performing the transaction gets the
+full amount carried by it deducted from their account, and the (optional) recipient gets the amount
+transferred to them credited to their account.
+
 If this function panics or runs out of gas, a transaction should be considered *invalid*, meaning it
 has no chance of ever being executed and should be discarded.
 
@@ -56,6 +74,7 @@ The gas spent during the execution of this function forms part of the gas that g
 transaction, the other part being a possible contract deployment. Since it spends all available
 funds, a subsequent call to [`refund`] is **required** to return unspent funds to the user.
 
+[state]: #state
 [`refund`]: #refundu64
 
 #### `refund(u64)`
@@ -66,8 +85,6 @@ Phoenix.
 
 It must be called after a successful [`spend_and_execute`] call. It is guaranteed to succeed if the
 passed `gas_spent` does not exceed a transaction's gas limit.
-
-[`spend_and_execute`]: #spend_and_executetransaction---resultvecu8-contracterror
 
 #### `push_note(u64, Note) -> Note`
 
@@ -171,18 +188,40 @@ Queries may be called by either contracts or the host, and are used to request i
 [state] managed by the transfer contract. They may be used by wallets to sync with the current state
 of the network, or by contracts wishing to do the same.
 
-[state]: #state
-
 <!-- Normal queries -->
 
 #### `root() -> BlsScalar`
+
+Returns the root of the merkle tree to the caller.
+
 #### `account(AccountPublicKey) -> AccountData`
+
+Returns the data for for the account of the given `public_key`.
+
 #### `contract_balance(ContractId) -> u64`
+
+Returns the balance of a given `contract`.
+
 #### `opening(u64) -> Opening<(), NOTES_TREE_DEPTH>`
-#### `existing_nullifiers(Vec<BlsScalar>) -> BlsScalar`
+
+Returns the merkle opening at the given `position`.
+
+#### `existing_nullifiers(Vec<BlsScalar>) -> Vec<BlsScalar>`
+
+Returns the nullifiers that already exist from the given `nullifiers`.
+
 #### `num_notes() -> u64`
+
+Returns the number of notes (UTXOs) included in the tree.
 
 <!-- Feeder queries -->
 
 #### `leaves_from_height(u64)`
+
+When called, it will stream - using events - the notes in the tree, starting from the given
+`block_height`. The notes will come in the form of `TreeLeaf`.
+
 #### `leaves_from_pos(u64)`
+
+When called, it will stream - using events - the notes in the tree, starting from the given
+`position`. The notes will come in the form of `TreeLeaf`.
