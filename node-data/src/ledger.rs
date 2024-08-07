@@ -32,16 +32,18 @@ use fake::{Dummy, Fake, Faker};
 
 /// Encode a byte array into a shortened HEX representation.
 pub fn to_str<const N: usize>(bytes: &[u8; N]) -> String {
-    let e = hex::encode(bytes);
-    if e.len() != bytes.len() * 2 {
-        return String::from("invalid hex");
+    const OFFSET: usize = 16;
+    let hex = hex::encode(bytes);
+    if N <= OFFSET {
+        return hex;
     }
 
-    const OFFSET: usize = 16;
-    let (first, last) = e.split_at(OFFSET);
-    let (_, second) = last.split_at(e.len() - 2 * OFFSET);
+    let len = hex.len();
 
-    first.to_owned() + "..." + second
+    let first = &hex[0..OFFSET];
+    let last = &hex[len - OFFSET..];
+
+    format!("{first}...{last}")
 }
 
 #[cfg(any(feature = "faker", test))]
