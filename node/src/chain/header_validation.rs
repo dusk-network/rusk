@@ -15,8 +15,7 @@ use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
-use node_data::bls::PublicKey;
-use node_data::ledger::{to_str, Fault, InvalidFault, Seed, Signature};
+use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
@@ -356,14 +355,10 @@ pub async fn verify_att(
     }
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
-    let mut result = (QuorumResult::default(), QuorumResult::default());
-
-    let validation_voters;
-    let ratification_voters;
-
     let vote = att.result.vote();
+
     // Verify validation
-    match verifiers::verify_step_votes(
+    let (val_result, validation_voters) = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.validation,
@@ -371,27 +366,10 @@ pub async fn verify_att(
         curr_seed,
         StepName::Validation,
     )
-    .await
-    {
-        Ok((validation_quorum_result, voters)) => {
-            result.0 = validation_quorum_result;
-            validation_voters = voters;
-        }
-        Err(e) => {
-            return Err(anyhow!(
-                "invalid validation, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
-                vote,
-                consensus_header.round,
-                consensus_header.iteration,
-                to_str(curr_seed.inner()),
-                att.validation,
-                e
-            ));
-        }
-    };
+    .await?;
 
     // Verify ratification
-    match verifiers::verify_step_votes(
+    let (rat_result, ratification_voters) = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.ratification,
@@ -399,36 +377,19 @@ pub async fn verify_att(
         curr_seed,
         StepName::Ratification,
     )
-    .await
-    {
-        Ok((ratification_quorum_result, voters)) => {
-            result.1 = ratification_quorum_result;
-            ratification_voters = voters;
-        }
-        Err(e) => {
-            return Err(anyhow!(
-                "invalid ratification, vote = {:?}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
-                vote,
-                consensus_header.round,
-                consensus_header.iteration,
-                to_str(curr_seed.inner()),
-                att.ratification,
-                e,
-            ));
-        }
-    }
+    .await?;
 
     let voters = merge_voters(validation_voters, ratification_voters);
-    Ok((result.0, result.1, voters))
+    Ok((val_result, rat_result, voters))
 }
 
 /// Merges two Vec<Voter>, summing up the usize values if the PublicKey is
 /// repeated
 fn merge_voters(v1: Vec<Voter>, v2: Vec<Voter>) -> Vec<Voter> {
-    let mut voter_map: BTreeMap<PublicKey, usize> = BTreeMap::new();
+    let mut voter_map = BTreeMap::new();
 
     for (pk, count) in v1.into_iter().chain(v2.into_iter()) {
-        let counter = voter_map.entry(pk).or_insert(0);
+        let counter = voter_map.entry(pk).or_default();
         *counter += count;
     }
 
