@@ -1,5 +1,10 @@
-// eslint-disable-next-line import/no-unresolved
+/* eslint-disable import/no-unresolved */
+
 import { sveltekit } from "@sveltejs/kit/vite";
+import { coverageConfigDefaults } from "vitest/config";
+
+/* eslint-enable import/no-unresolved */
+
 import { defineConfig, loadEnv } from "vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
@@ -72,7 +77,10 @@ export default defineConfig(({ mode }) => {
       alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
       coverage: {
         all: true,
-        exclude: ["**/*.d.ts", "src/routes/components-showcase/**"],
+        exclude: [
+          "src/routes/components-showcase/**",
+          ...coverageConfigDefaults.exclude,
+        ],
         include: ["src/**"],
         provider: "istanbul",
       },

@@ -1,0 +1,37 @@
+.dusk-exclusive-choice {
+  border-radius: var(--control-border-radius-size);
+  border-color: var(--control-tertiary-border-color);
+  border-style: solid;
+  border-width: var(--control-border-size);
+  overflow: hidden;
+}
+
+.dusk-exclusive-choice__label {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: inherit;
+  letter-spacing: inherit;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  background-color: var(--control-tertiary-bg-color);
+  color: var(--control-tertiary-text-color);
+  padding: var(--control-small-padding);
+}
+
+.dusk-exclusive-choice__radio:checked + .dusk-exclusive-choice__label {
+  background-color: var(--control-bg-color);
+  color: var(--control-text-color);
+}
+
+.dusk-exclusive-choice__radio:enabled:not(:checked)
+  + .dusk-exclusive-choice__label:hover {
+  background-color: var(--control-tertiary-bg-color-hover);
+  color: var(--control-text-color-hover);
+}
+
+.dusk-exclusive-choice__radio:disabled + .dusk-exclusive-choice__label {
+  opacity: 0.5;
+}

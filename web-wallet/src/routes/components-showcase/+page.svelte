@@ -8,6 +8,7 @@
   import Buttons from "./Buttons.svelte";
   import Cards from "./Cards.svelte";
   import Checkboxes from "./Checkboxes.svelte";
+  import ExclusiveChoices from "./ExclusiveChoices.svelte";
   import ProgressBars from "./ProgressBars.svelte";
   import Selects from "./Selects.svelte";
   import Steppers from "./Steppers.svelte";
@@ -26,6 +27,7 @@
     Buttons: Buttons,
     Cards: Cards,
     Checkboxes: Checkboxes,
+    "Exclusive Choices": ExclusiveChoices,
     "Progress bars": ProgressBars,
     Selects: Selects,
     Steppers: Steppers,

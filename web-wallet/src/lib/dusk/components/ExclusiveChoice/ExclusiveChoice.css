@@ -1,0 +1,15 @@
+.dusk-exclusive-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dusk-exclusive-choice__label {
+  flex: 1;
+}
+
+.dusk-exclusive-choice__radio {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+}
