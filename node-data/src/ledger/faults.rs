@@ -44,6 +44,8 @@ pub enum InvalidFault {
     Expired,
     #[error("Fault is from future")]
     Future,
+    #[error("Fault is from genesis block")]
+    Genesis,
     #[error("Previous hash mismatch")]
     PrevHashMismatch,
     #[error("Iteration mismatch")]
@@ -153,8 +155,12 @@ impl Fault {
             return Err(InvalidFault::Duplicated);
         }
 
+        if h1.round == 0 {
+            return Err(InvalidFault::Genesis);
+        }
+
         // Check that fault is not expired. A fault expires after an epoch
-        if h1.round < current_height - EPOCH {
+        if h1.round < current_height.saturating_sub(EPOCH) {
             return Err(InvalidFault::Expired);
         }
 
@@ -298,10 +304,10 @@ impl Serializable for Fault {
                 FaultData::read(r)?,
                 FaultData::read(r)?,
             ),
-            p => {
-                println!("{p}");
-                Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid faul"))?
-            }
+            p => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid fault: {p}"),
+            ))?,
         };
         Ok(fault)
     }

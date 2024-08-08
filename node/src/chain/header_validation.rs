@@ -302,6 +302,8 @@ pub async fn verify_faults<DB: database::DB>(
                 let prev_header = db
                     .fetch_block_header(&fault_header.prev_block_hash)?
                     .ok_or(anyhow::anyhow!("Slashing a non accepted header"))?;
+                // No overflow here, since the header has been already validated
+                // not to be 0
                 if prev_header.height != fault_header.round - 1 {
                     anyhow::bail!("Invalid height for fault");
                 }
@@ -309,8 +311,8 @@ pub async fn verify_faults<DB: database::DB>(
                 // FIX_ME: Instead of fetching all store faults, check the fault
                 // id directly This needs the fault id to be
                 // changed into "HEIGHT|TYPE|PROV_KEY"
-                let stored_faults =
-                    db.fetch_faults_by_block(fault_header.round - EPOCH)?;
+                let start_height = fault_header.round.saturating_sub(EPOCH);
+                let stored_faults = db.fetch_faults_by_block(start_height)?;
                 if stored_faults.iter().any(|other| f.same(other)) {
                     anyhow::bail!("Double fault detected");
                 }
