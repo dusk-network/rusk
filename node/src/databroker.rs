@@ -332,6 +332,11 @@ impl DataBrokerSrv {
         max_entries: usize,
         requester_addr: SocketAddr,
     ) -> Result<Message> {
+        let mut max_entries = max_entries;
+        if m.max_entries > 0 {
+            max_entries = min(max_entries, m.max_entries as usize);
+        }
+
         let inv = db.read().await.view(|t| {
             let mut inv = payload::Inv::default();
             for i in &m.inv_list {
