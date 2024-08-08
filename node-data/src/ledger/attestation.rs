@@ -4,11 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use serde::Serialize;
+
 use super::*;
 
 use crate::message::payload::RatificationResult;
 
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Serialize)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Attestation {
     pub result: RatificationResult,
@@ -16,7 +18,7 @@ pub struct Attestation {
     pub ratification: StepVotes,
 }
 
-#[derive(Debug, Default, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, Hash, PartialEq, Serialize)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct StepVotes {
     pub bitset: u64,
@@ -41,8 +43,10 @@ impl StepVotes {
 }
 
 /// a wrapper of 48-sized array to facilitate Signature
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
-pub struct Signature([u8; 48]);
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
+pub struct Signature(
+    #[serde(serialize_with = "crate::serialize_hex")] [u8; 48],
+);
 
 impl Signature {
     pub const EMPTY: [u8; 48] = [0u8; 48];
@@ -80,7 +84,8 @@ impl Default for Signature {
 pub type IterationInfo = (Attestation, PublicKeyBytes);
 
 /// Defines a set of attestations of any former iterations
-#[derive(Default, Eq, PartialEq, Clone)]
+#[derive(Default, Eq, PartialEq, Clone, Serialize)]
+#[serde(transparent)]
 pub struct IterationsInfo {
     /// Represents a list of attestations where position is the iteration
     /// number

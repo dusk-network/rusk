@@ -371,6 +371,7 @@ pub mod payload {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{ConsensusHeader, SignInfo};
+    use serde::Serialize;
 
     #[derive(Debug, Clone)]
     #[cfg_attr(
@@ -396,13 +397,15 @@ pub mod payload {
         pub sign_info: SignInfo,
     }
 
-    #[derive(Clone, Copy, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
+    #[derive(
+        Clone, Copy, Hash, Eq, PartialEq, Default, PartialOrd, Ord, Serialize,
+    )]
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     #[repr(u8)]
     pub enum Vote {
         NoCandidate = 0,
-        Valid(Hash) = 1,
-        Invalid(Hash) = 2,
+        Valid(#[serde(serialize_with = "crate::serialize_hex")] Hash) = 1,
+        Invalid(#[serde(serialize_with = "crate::serialize_hex")] Hash) = 2,
 
         #[default]
         NoQuorum = 3,
@@ -594,7 +597,8 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
+    #[serde(untagged)]
     #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     pub enum RatificationResult {
         Fail(Vote),
