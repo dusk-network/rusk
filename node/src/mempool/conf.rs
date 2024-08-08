@@ -9,13 +9,18 @@ use std::fmt::Formatter;
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Params {
+    /// Number of pending to be processed transactions
     pub max_queue_size: usize,
+
+    /// Maximum number of transactions that can be accepted/stored in mempool
+    pub max_mempool_txn_count: usize,
 }
 
 impl Default for Params {
     fn default() -> Self {
         Self {
             max_queue_size: 1000,
+            max_mempool_txn_count: 10_000,
         }
     }
 }

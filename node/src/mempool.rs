@@ -29,6 +29,8 @@ enum TxAcceptanceError {
     NullifierExistsInMempool,
     #[error("this transaction is invalid {0}")]
     VerificationFailed(String),
+    #[error("Maximum count of transactions exceeded {0}")]
+    MaxTxnCountExceeded(usize),
     #[error("A generic error occurred {0}")]
     Generic(anyhow::Error),
 }
@@ -41,6 +43,7 @@ impl From<anyhow::Error> for TxAcceptanceError {
 
 pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
+    conf: Params,
 }
 
 impl MempoolSrv {
@@ -51,6 +54,7 @@ impl MempoolSrv {
                 conf.max_queue_size,
                 "mempool_inbound",
             ),
+            conf,
         }
     }
 }
@@ -116,6 +120,11 @@ impl MempoolSrv {
 
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
+            let count = view.txs_count();
+            if count >= self.conf.max_mempool_txn_count {
+                return Err(TxAcceptanceError::MaxTxnCountExceeded(count));
+            }
+
             // ensure transaction does not exist in the mempool
             if view.get_tx_exists(tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInMempool);
