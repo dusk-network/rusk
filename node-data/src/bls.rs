@@ -11,6 +11,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
 use std::fmt::Debug;
@@ -104,8 +105,10 @@ impl std::fmt::Debug for PublicKey {
     }
 }
 /// a wrapper of 96-sized array
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
-pub struct PublicKeyBytes(pub [u8; PUBLIC_BLS_SIZE]);
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
+pub struct PublicKeyBytes(
+    #[serde(serialize_with = "crate::serialize_b58")] pub [u8; PUBLIC_BLS_SIZE],
+);
 
 impl Default for PublicKeyBytes {
     fn default() -> Self {
