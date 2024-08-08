@@ -883,6 +883,8 @@ impl From<execution_core::Event> for RuesEvent {
 #[cfg(feature = "node")]
 impl From<node_data::events::Event> for RuesEvent {
     fn from(value: node_data::events::Event) -> Self {
+        let data = value.data.map_or(DataType::None, DataType::Json);
+
         Self {
             subscription: RuesSubscription {
                 component: value.component.into(),
@@ -890,18 +892,7 @@ impl From<node_data::events::Event> for RuesEvent {
                 topic: value.topic.into(),
             },
 
-            data: ResponseData::new(value.data),
-        }
-    }
-}
-#[cfg(feature = "node")]
-impl From<node_data::events::EventData> for DataType {
-    fn from(value: node_data::events::EventData) -> Self {
-        match value {
-            node_data::events::EventData::Binary(b) => b.into(),
-            node_data::events::EventData::Json(j) => j.into(),
-            node_data::events::EventData::Text(t) => t.into(),
-            node_data::events::EventData::None => DataType::None,
+            data: ResponseData::new(data),
         }
     }
 }
