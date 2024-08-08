@@ -24,8 +24,8 @@ impl EventSource for TransactionEvent<'_> {
             Self::Included(_) => "included",
         }
     }
-    fn data(&self) -> EventData {
-        EventData::None
+    fn data(&self) -> Option<serde_json::Value> {
+        None
     }
     fn entity(&self) -> String {
         let hash = match self {

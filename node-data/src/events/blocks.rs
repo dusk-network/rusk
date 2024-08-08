@@ -16,26 +16,27 @@ impl EventSource for BlockEvent<'_> {
             Self::StateChange { .. } => "statechange",
         }
     }
-    fn data(&self) -> EventData {
-        match self {
+    fn data(&self) -> Option<serde_json::Value> {
+        let data = match self {
             Self::Accepted(b) => {
                 let header = b.header();
                 let header = serde_json::to_value(header)
                     .expect("json to be serialized");
                 let txs: Vec<_> =
                     b.txs().iter().map(|t| hex::encode(t.id())).collect();
-                EventData::Json(serde_json::json!({
+                serde_json::json!({
                     "header": header,
                     "transactions": txs,
-                }))
+                })
             }
             Self::StateChange { state, height, .. } => {
-                EventData::Json(serde_json::json!({
+                serde_json::json!({
                     "state": state,
                     "atHeight": height,
-                }))
+                })
             }
-        }
+        };
+        Some(data)
     }
     fn entity(&self) -> String {
         let hash = match self {

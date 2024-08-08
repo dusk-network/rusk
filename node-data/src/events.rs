@@ -15,7 +15,7 @@ pub struct Event {
     pub component: &'static str,
     pub topic: &'static str,
     pub entity: String,
-    pub data: EventData,
+    pub data: Option<serde_json::Value>,
 }
 
 pub trait EventSource {
@@ -23,7 +23,7 @@ pub trait EventSource {
 
     fn topic(&self) -> &'static str;
     fn entity(&self) -> String;
-    fn data(&self) -> EventData;
+    fn data(&self) -> Option<serde_json::Value>;
 }
 
 impl<ES: EventSource> From<ES> for Event {
@@ -35,12 +35,4 @@ impl<ES: EventSource> From<ES> for Event {
             component: ES::COMPONENT,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum EventData {
-    None,
-    Json(serde_json::Value),
-    Text(String),
-    Binary(Vec<u8>),
 }
