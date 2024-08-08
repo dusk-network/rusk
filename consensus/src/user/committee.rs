@@ -102,12 +102,9 @@ impl Committee {
 
         debug_assert!(self.members.len() <= mem::size_of_val(&bits) * 8);
 
-        for (pk, _) in voters.iter() {
-            for (pos, (member_pk, _)) in self.members.iter().enumerate() {
-                if member_pk.eq(pk) {
-                    bits |= 1 << pos; // flip the i-th bit to 1
-                    break;
-                }
+        for (pos, (member_pk, _)) in self.members.iter().enumerate() {
+            if voters.contains_key(member_pk) {
+                bits |= 1 << pos; // flip the i-th bit to 1
             }
         }
 
