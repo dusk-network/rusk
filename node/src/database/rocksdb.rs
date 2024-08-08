@@ -790,6 +790,12 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
         Ok(txs_list)
     }
+
+    fn txs_count(&self) -> usize {
+        self.inner
+            .iterator_cf(self.mempool_cf, IteratorMode::Start)
+            .count()
+    }
 }
 
 pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
@@ -1214,6 +1220,50 @@ mod tests {
                 }
                 assert_ne!(last_fee, u64::MAX, "No tx has been processed")
             });
+        });
+    }
+
+    #[test]
+    fn test_txs_count() {
+        TestWrapper::new("test_txs_count").run(|path| {
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
+
+            const N: usize = 100;
+            const D: usize = 50;
+
+            let txs: Vec<_> = (0..N)
+                .map(|i| ledger::faker::gen_dummy_tx(i as u64))
+                .collect();
+
+            db.update(|db| {
+                assert_eq!(db.txs_count(), 0);
+                txs.iter()
+                    .for_each(|t| db.add_tx(&t).expect("tx should be added"));
+                Ok(())
+            })
+            .unwrap();
+
+            db.update(|db| {
+                // Ensure txs count is equal to the number of added tx
+                assert_eq!(db.txs_count(), N);
+
+                txs.iter().take(D).for_each(|tx| {
+                    assert!(db
+                        .delete_tx(tx.id())
+                        .expect("transaction should be deleted"));
+                });
+
+                Ok(())
+            })
+            .unwrap();
+
+            // Ensure txs count is updated after the deletion
+            db.update(|db| {
+                assert_eq!(db.txs_count(), N - D);
+                Ok(())
+            })
+            .unwrap();
         });
     }
 

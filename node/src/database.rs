@@ -146,6 +146,9 @@ pub trait Mempool {
 
     /// Get all transactions hashes.
     fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>>;
+
+    /// Number of persisted transactions
+    fn txs_count(&self) -> usize;
 }
 
 pub trait Metadata {
