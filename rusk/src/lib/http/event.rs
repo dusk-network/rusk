@@ -732,7 +732,7 @@ impl SessionId {
 /// `transactions`, etc...) and an optional entity within the component that
 /// the event targets.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub struct RuesSubscription {
+pub struct RuesEventUri {
     pub component: String,
     pub entity: Option<String>,
     pub topic: String,
@@ -740,8 +740,8 @@ pub struct RuesSubscription {
 
 pub const RUES_LOCATION_PREFIX: &str = "/on";
 
-impl RuesSubscription {
-    pub fn to_location(&self) -> String {
+impl Display for RuesEventUri {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let component = &self.component;
         let entity = self
             .entity
@@ -750,10 +750,23 @@ impl RuesSubscription {
             .unwrap_or_default();
         let topic = &self.topic;
 
-        format!("{RUES_LOCATION_PREFIX}/{component}{entity}/{topic}")
+        write!(f, "{RUES_LOCATION_PREFIX}/{component}{entity}/{topic}")
     }
+}
 
-    pub fn parse_from_path_split(mut path_split: Split<char>) -> Option<Self> {
+impl RuesEventUri {
+    pub fn parse_from_path(path: &str) -> Option<Self> {
+        if !path.starts_with(RUES_LOCATION_PREFIX) {
+            return None;
+        }
+        // Skip '/on' since we already know its present
+        let path = &path[RUES_LOCATION_PREFIX.len()..];
+
+        let mut path_split = path.split('/');
+
+        // Skip first '/'
+        path_split.next()?;
+
         // If the segment contains a `:`, we split the string in two after the
         // first one - meaning entities with `:` are still possible.
         // If the segment doesn't contain a `:` then the segment is just a
@@ -778,7 +791,7 @@ impl RuesSubscription {
     }
 
     pub fn matches(&self, event: &RuesEvent) -> bool {
-        let event = &event.subscription;
+        let event = &event.uri;
         if self.component != event.component {
             return false;
         }
@@ -827,25 +840,29 @@ impl From<ContractEvent> for execution_core::Event {
 /// A RUES event
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RuesEvent {
-    pub subscription: RuesSubscription,
-    pub data: ResponseData,
+    pub uri: RuesEventUri,
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: DataType,
 }
 
 impl RuesEvent {
-    pub fn apply_location(&mut self) {
-        let location = self.subscription.to_location();
-        self.data.add_header("Content-Location", location);
+    pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
+        &mut self,
+        key: K,
+        value: V,
+    ) {
+        self.headers.insert(key.into(), value.into());
     }
 
     /// Serialize the event into a vector of bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        let headers_bytes = serde_json::to_vec(&self.data.header)
+        let headers_bytes = serde_json::to_vec(&self.headers)
             .expect("Serializing JSON should succeed");
 
         let headers_len = headers_bytes.len() as u32;
         let headers_len_bytes = headers_len.to_le_bytes();
 
-        let data_bytes = self.data.data.to_bytes();
+        let data_bytes = self.data.to_bytes();
 
         let len =
             headers_len_bytes.len() + headers_bytes.len() + data_bytes.len();
@@ -862,12 +879,13 @@ impl RuesEvent {
 impl From<ContractEvent> for RuesEvent {
     fn from(event: ContractEvent) -> Self {
         Self {
-            subscription: RuesSubscription {
+            uri: RuesEventUri {
                 component: "contracts".into(),
                 entity: Some(hex::encode(event.target.0.as_bytes())),
                 topic: event.topic,
             },
-            data: ResponseData::new(event.data),
+            data: event.data.into(),
+            headers: Default::default(),
         }
     }
 }
@@ -884,13 +902,13 @@ impl From<node_data::events::Event> for RuesEvent {
         let data = value.data.map_or(DataType::None, DataType::Json);
 
         Self {
-            subscription: RuesSubscription {
+            uri: RuesEventUri {
                 component: value.component.into(),
                 entity: Some(value.entity),
                 topic: value.topic.into(),
             },
-
-            data: ResponseData::new(data),
+            data,
+            headers: Default::default(),
         }
     }
 }

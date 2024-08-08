@@ -69,7 +69,7 @@ use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
 pub use self::event::{ContractEvent, RuesEvent, RUES_LOCATION_PREFIX};
-use self::event::{MessageRequest, ResponseData, RuesSubscription, SessionId};
+use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
@@ -424,12 +424,9 @@ where
 }
 
 enum SubscriptionAction {
-    Subscribe(RuesSubscription),
-    Unsubscribe(RuesSubscription),
-    Dispatch {
-        sub: RuesSubscription,
-        body: Incoming,
-    },
+    Subscribe(RuesEventUri),
+    Unsubscribe(RuesEventUri),
+    Dispatch { uri: RuesEventUri, body: Incoming },
 }
 
 async fn handle_stream_rues<H: HandleRequest>(
@@ -506,11 +503,11 @@ async fn handle_stream_rues<H: HandleRequest>(
                         subscription_set.remove(&subscription);
                     },
                     SubscriptionAction::Dispatch {
-                        sub,
+                        uri,
                         body
                     } => {
                         // TODO figure out if we should subscribe to the event we dispatch
-                        task::spawn(handle_dispatch(sub, body, handler.clone(), dispatch_sender.clone()));
+                        task::spawn(handle_dispatch(uri, body, handler.clone(), dispatch_sender.clone()));
                     }
                 }
             }
@@ -548,7 +545,7 @@ async fn handle_stream_rues<H: HandleRequest>(
 
                 // If the event is subscribed, we send it to the client.
                 if is_subscribed {
-                    event.apply_location();
+                    event.add_header("Content-Location", event.uri.to_string());
                     let event = event.to_bytes();
 
                     // If the event fails sending we close the socket on the client
@@ -570,7 +567,7 @@ async fn handle_stream_rues<H: HandleRequest>(
 }
 
 async fn handle_dispatch<H: HandleRequest>(
-    sub: RuesSubscription,
+    uri: RuesEventUri,
     body: Incoming,
     handler: Arc<H>,
     sender: mpsc::Sender<Result<RuesEvent, AnyhowError>>,
@@ -599,12 +596,9 @@ async fn handle_dispatch<H: HandleRequest>(
         }
     };
 
-    sender
-        .send(Ok(RuesEvent {
-            subscription: sub,
-            data: rsp,
-        }))
-        .await;
+    let (data, headers) = rsp.into_inner();
+
+    sender.send(Ok(RuesEvent { uri, data, headers })).await;
 }
 
 fn response(
@@ -656,11 +650,6 @@ async fn handle_request_rues<H: HandleRequest>(
         Ok(response.map(Into::into))
     } else {
         let headers = req.headers();
-        let mut path_split = req.uri().path().split('/');
-
-        // Skip '/on' since we already know its present
-        path_split.next();
-        path_split.next();
 
         let sid = match SessionId::parse_from_req(&req) {
             None => {
@@ -672,16 +661,15 @@ async fn handle_request_rues<H: HandleRequest>(
             Some(sid) => sid,
         };
 
-        let subscription =
-            match RuesSubscription::parse_from_path_split(path_split) {
-                None => {
-                    return response(
-                        StatusCode::NOT_FOUND,
-                        "{{\"error\":\"Invalid URL path\n\"}}",
-                    );
-                }
-                Some(s) => s,
-            };
+        let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
+            None => {
+                return response(
+                    StatusCode::NOT_FOUND,
+                    "{{\"error\":\"Invalid URL path\n\"}}",
+                );
+            }
+            Some(s) => s,
+        };
 
         let action_sender = match sockets_map.read().await.get(&sid) {
             Some(sender) => sender.clone(),
@@ -694,10 +682,10 @@ async fn handle_request_rues<H: HandleRequest>(
         };
 
         let action = match *req.method() {
-            Method::GET => SubscriptionAction::Subscribe(subscription),
-            Method::DELETE => SubscriptionAction::Unsubscribe(subscription),
+            Method::GET => SubscriptionAction::Subscribe(uri),
+            Method::DELETE => SubscriptionAction::Unsubscribe(uri),
             Method::POST => SubscriptionAction::Dispatch {
-                sub: subscription,
+                uri,
                 body: req.into_body(),
             },
             _ => {
@@ -1213,28 +1201,19 @@ mod tests {
     }
 
     pub fn from_bytes(data: &[u8]) -> anyhow::Result<RuesEvent> {
-        let (mut header, data) = crate::http::event::parse_header(data)?;
+        let (mut headers, data) = crate::http::event::parse_header(data)?;
 
-        let path = header
+        let path = headers
             .remove("Content-Location")
             .ok_or(anyhow::anyhow!("Content location is not set"))?
             .as_str()
             .ok_or(anyhow::anyhow!("Content location is not a string"))?
             .to_string();
 
-        let mut path_split = path.split('/');
-
-        // Skip '/on' since we already know its present
-        path_split.next();
-        path_split.next();
-
-        let subscription = RuesSubscription::parse_from_path_split(path_split)
+        let uri = RuesEventUri::parse_from_path(&path)
             .ok_or(anyhow::anyhow!("Invalid location"))?;
 
-        let mut data = ResponseData::new(data.to_vec());
-        for (key, value) in header {
-            data = data.with_header(key, value);
-        }
-        Ok(RuesEvent { data, subscription })
+        let data = data.to_vec().into();
+        Ok(RuesEvent { data, headers, uri })
     }
 }
