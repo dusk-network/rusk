@@ -93,20 +93,3 @@
   color: var(--control-text-color-hover);
   border-color: var(--control-secondary-border-color-hover);
 }
-
-.dusk-button:enabled:active,
-.dusk-anchor-button:active,
-.dusk-button--active {
-  scale: 0.98;
-}
-
-.dusk-anchor.dusk-icon-button:hover,
-.dusk-icon-button:not(:disabled):hover {
-  scale: 1.1;
-}
-
-.dusk-icon-button:enabled:active,
-.dusk-anchor-button.dusk-icon-button:active,
-.dusk-button--active {
-  scale: 0.9;
-}
