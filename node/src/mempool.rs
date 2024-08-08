@@ -111,11 +111,6 @@ impl MempoolSrv {
         vm: &Arc<RwLock<VM>>,
         tx: &Transaction,
     ) -> Result<(), TxAcceptanceError> {
-        // VM Preverify call
-        if let Err(e) = vm.read().await.preverify(tx) {
-            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
-        }
-
         let tx_id = tx.id();
 
         // Perform basic checks on the transaction
@@ -137,6 +132,11 @@ impl MempoolSrv {
 
             Ok(())
         })?;
+
+        // VM Preverify call
+        if let Err(e) = vm.read().await.preverify(tx) {
+            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
+        }
 
         // Try to add the transaction to the mempool
         db.read().await.update(|db| {
