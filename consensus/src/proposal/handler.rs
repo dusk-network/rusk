@@ -83,6 +83,11 @@ impl<D: Database> ProposalHandler<D> {
         expected_generator: &PublicKeyBytes,
     ) -> Result<(), ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
+
+        if expected_generator != p.sign_info.signer.bytes() {
+            return Err(ConsensusError::NotCommitteeMember);
+        }
+
         //  Verify new_block msg signature
         p.verify_signature()?;
 
@@ -102,10 +107,6 @@ impl<D: Database> ProposalHandler<D> {
         let fault_root = merkle_root(&fault_hashes[..]);
         if fault_root != p.candidate.header().faultroot {
             return Err(ConsensusError::InvalidBlock);
-        }
-
-        if expected_generator != p.sign_info.signer.bytes() {
-            return Err(ConsensusError::NotCommitteeMember);
         }
 
         Ok(())
