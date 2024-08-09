@@ -83,8 +83,10 @@ fn stake_withdraw_unstake() {
     });
 
     let tx = create_transaction(
+        rng,
         &mut session,
         &phoenix_sender_sk,
+        &phoenix_sender_pk,
         &phoenix_receiver_pk,
         gas_limit,
         gas_price,
@@ -211,8 +213,10 @@ fn stake_withdraw_unstake() {
     });
 
     let tx = create_transaction(
+        rng,
         &mut session,
         &phoenix_sender_sk,
+        &phoenix_sender_pk,
         &receiver_pk,
         gas_limit,
         gas_price,
@@ -322,8 +326,10 @@ fn stake_withdraw_unstake() {
     });
 
     let tx = create_transaction(
+        rng,
         &mut session,
         &phoenix_sender_sk,
+        &phoenix_sender_pk,
         &receiver_pk,
         gas_limit,
         gas_price,

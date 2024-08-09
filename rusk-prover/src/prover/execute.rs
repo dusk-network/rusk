@@ -8,7 +8,7 @@ use super::*;
 
 use execution_core::{
     transfer::phoenix::{
-        value_commitment, Sender, TxCircuit, TxInputNote, TxOutputNote,
+        value_commitment, InputNoteInfo, OutputNoteInfo, Sender, TxCircuit,
         NOTES_TREE_DEPTH,
     },
     JubJubAffine,
@@ -33,10 +33,10 @@ pub static EXEC_4_2_PROVER: Lazy<PlonkProver> =
 fn create_circuit<const I: usize>(
     utx: &UnprovenTransaction,
 ) -> Result<TxCircuit<NOTES_TREE_DEPTH, I>, ProverError> {
-    // Create the `TxInputNote`
+    // Create the `InputNoteInfo`
     let mut tx_input_notes = Vec::with_capacity(utx.inputs().len());
     utx.inputs.iter().for_each(|input| {
-        tx_input_notes.push(TxInputNote {
+        tx_input_notes.push(InputNoteInfo {
             merkle_opening: input.opening,
             note: input.note.clone(),
             note_pk_p: input.npk_prime.into(),
@@ -46,7 +46,7 @@ fn create_circuit<const I: usize>(
             signature: input.sig,
         });
     });
-    let tx_input_notes: [TxInputNote<NOTES_TREE_DEPTH>; I] = tx_input_notes
+    let tx_input_notes: [InputNoteInfo<NOTES_TREE_DEPTH>; I] = tx_input_notes
         .try_into()
         .expect("the numbers of input-notes should be as expected");
 
@@ -81,38 +81,39 @@ fn create_circuit<const I: usize>(
         }
     };
     let tx_output_notes = [
-        TxOutputNote::new(
-            *transfer_value,
-            transfer_value_commitment,
-            *transfer_value_blinder,
-            JubJubAffine::from(
+        OutputNoteInfo {
+            value: *transfer_value,
+            value_commitment: transfer_value_commitment,
+            value_blinder: *transfer_value_blinder,
+            note_pk: JubJubAffine::from(
                 transfer_note.stealth_address().note_pk().as_ref(),
             ),
-            *transfer_note_sender_enc,
-        ),
-        TxOutputNote::new(
-            *change_value,
-            change_value_commitment,
-            *change_value_blinder,
-            JubJubAffine::from(
+            sender_enc: *transfer_note_sender_enc,
+            sender_blinder: *transfer_sender_blinder,
+        },
+        OutputNoteInfo {
+            value: *change_value,
+            value_commitment: change_value_commitment,
+            value_blinder: *change_value_blinder,
+            note_pk: JubJubAffine::from(
                 change_note.stealth_address().note_pk().as_ref(),
             ),
-            *change_note_sender_enc,
-        ),
+            sender_enc: *change_note_sender_enc,
+            sender_blinder: *change_sender_blinder,
+        },
     ];
 
     // Build the circuit
-    let circuit: TxCircuit<NOTES_TREE_DEPTH, I> = TxCircuit::new(
-        tx_input_notes,
-        tx_output_notes,
-        utx.payload_hash(),
-        utx.payload.tx_skeleton.root,
-        utx.payload.tx_skeleton.deposit,
-        utx.payload.fee.max_fee(),
-        utx.sender_pk,
-        utx.signatures,
-        [*transfer_sender_blinder, *change_sender_blinder],
-    );
+    let circuit: TxCircuit<NOTES_TREE_DEPTH, I> = TxCircuit {
+        input_notes_info: tx_input_notes,
+        output_notes_info: tx_output_notes,
+        payload_hash: utx.payload_hash(),
+        root: utx.payload.tx_skeleton.root,
+        deposit: utx.payload.tx_skeleton.deposit,
+        max_fee: utx.payload.fee.max_fee(),
+        sender_pk: utx.sender_pk,
+        signatures: utx.signatures,
+    };
 
     Ok(circuit)
 }
