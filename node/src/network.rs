@@ -18,11 +18,9 @@ use node_data::message::Metadata;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use tracing::{error, info, trace, warn};
+use tracing::{error, info, trace};
 
 mod frame;
-
-const MAX_PENDING_SENDERS: u64 = 1000;
 
 /// Number of alive peers randomly selected which a `flood_request` is sent to
 const REDUNDANCY_PEER_COUNT: usize = 8;
@@ -33,35 +31,16 @@ type FilterList<const N: usize> = [Option<BoxedFilter>; N];
 pub struct Listener<const N: usize> {
     routes: Arc<RwLock<RoutesList<N>>>,
     filters: Arc<RwLock<FilterList<N>>>,
-
-    /// Number of awaiting senders.
-    pending_senders: Arc<AtomicU64>,
 }
 
 impl<const N: usize> Listener<N> {
-    fn reroute(&self, topic: u8, msg: Message) -> anyhow::Result<()> {
-        if self.pending_senders.fetch_add(1, Ordering::Relaxed)
-            >= MAX_PENDING_SENDERS
-        {
-            // High value of this field means either a message consumer is
-            // blocked or it's too slow on processing a wire msg
-            self.pending_senders.store(0, Ordering::Relaxed);
-            warn!("too many sender jobs: {}", MAX_PENDING_SENDERS);
-        }
-
-        let counter = self.pending_senders.clone();
+    fn reroute(&self, topic: u8, msg: Message) {
         let routes = self.routes.clone();
-
-        // Sender task
         tokio::spawn(async move {
             if let Some(Some(queue)) = routes.read().await.get(topic as usize) {
                 queue.try_send(msg);
             };
-
-            counter.fetch_sub(1, Ordering::Relaxed);
         });
-
-        Ok(())
     }
 
     fn call_filters(
@@ -104,9 +83,7 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 }
 
                 // Reroute message to the upper layer
-                if let Err(e) = self.reroute(msg.topic().into(), msg) {
-                    error!("could not reroute due to {e}");
-                }
+                self.reroute(msg.topic().into(), msg);
             }
             Err(err) => {
                 // Dump message blob and topic number
@@ -144,7 +121,6 @@ impl<const N: usize> Kadcast<N> {
         let listener = Listener {
             routes: routes.clone(),
             filters: filters.clone(),
-            pending_senders: Arc::new(AtomicU64::new(0)),
         };
         let peer = Peer::new(conf.clone(), listener)?;
         let public_addr = conf

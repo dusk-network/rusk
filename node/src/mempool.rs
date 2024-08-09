@@ -29,6 +29,8 @@ enum TxAcceptanceError {
     NullifierExistsInMempool,
     #[error("this transaction is invalid {0}")]
     VerificationFailed(String),
+    #[error("Maximum count of transactions exceeded {0}")]
+    MaxTxnCountExceeded(usize),
     #[error("A generic error occurred {0}")]
     Generic(anyhow::Error),
 }
@@ -41,6 +43,7 @@ impl From<anyhow::Error> for TxAcceptanceError {
 
 pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
+    conf: Params,
 }
 
 impl MempoolSrv {
@@ -51,6 +54,7 @@ impl MempoolSrv {
                 conf.max_queue_size,
                 "mempool_inbound",
             ),
+            conf,
         }
     }
 }
@@ -107,39 +111,18 @@ impl MempoolSrv {
         vm: &Arc<RwLock<VM>>,
         tx: &Transaction,
     ) -> Result<(), TxAcceptanceError> {
-        // VM Preverify call
-        if let Err(e) = vm.read().await.preverify(tx) {
-            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
-        }
-
         let tx_id = tx.id();
 
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
-            // ensure transaction does not exist in the mempool
-
-            if view.get_tx_exists(tx_id)? {
-                return Err(TxAcceptanceError::AlreadyExistsInMempool);
+            let count = view.txs_count();
+            if count >= self.conf.max_mempool_txn_count {
+                return Err(TxAcceptanceError::MaxTxnCountExceeded(count));
             }
 
-            let nullifiers: Vec<_> = tx
-                .inner
-                .nullifiers()
-                .iter()
-                .map(|nullifier| nullifier.to_bytes())
-                .collect();
-
-            // ensure nullifiers do not exist in the mempool
-            for m_tx_id in view.get_txs_by_nullifiers(&nullifiers) {
-                if let Some(m_tx) = view.get_tx(m_tx_id)? {
-                    if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        view.delete_tx(m_tx_id)?;
-                    } else {
-                        return Err(
-                            TxAcceptanceError::NullifierExistsInMempool,
-                        );
-                    }
-                }
+            // ensure transaction does not exist in the mempool
+            if view.get_tx_exists(tx_id)? {
+                return Err(TxAcceptanceError::AlreadyExistsInMempool);
             }
 
             // ensure transaction does not exist in the blockchain
@@ -150,13 +133,41 @@ impl MempoolSrv {
             Ok(())
         })?;
 
+        // VM Preverify call
+        if let Err(e) = vm.read().await.preverify(tx) {
+            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
+        }
+
+        // Try to add the transaction to the mempool
+        db.read().await.update(|db| {
+            let nullifiers: Vec<_> = tx
+                .inner
+                .nullifiers()
+                .iter()
+                .map(|nullifier| nullifier.to_bytes())
+                .collect();
+
+            // ensure nullifiers do not exist in the mempool
+            for m_tx_id in db.get_txs_by_nullifiers(&nullifiers) {
+                if let Some(m_tx) = db.get_tx(m_tx_id)? {
+                    if m_tx.inner.gas_price() < tx.inner.gas_price() {
+                        db.delete_tx(m_tx_id)?;
+                    } else {
+                        return Err(
+                            TxAcceptanceError::NullifierExistsInMempool.into(),
+                        );
+                    }
+                }
+            }
+
+            // Persist transaction in mempool storage
+            db.add_tx(tx)
+        })?;
+
         tracing::info!(
             event = "transaction accepted",
             hash = hex::encode(tx_id)
         );
-
-        // Add transaction to the mempool
-        db.read().await.update(|db| db.add_tx(tx))?;
 
         Ok(())
     }

@@ -6,7 +6,7 @@
 
 use node_data::message::Message;
 use node_data::Serializable;
-use std::io::{self, Read, Write};
+use std::io::{self, ErrorKind, Read, Write};
 
 const PROTOCOL_VERSION: [u8; 8] = [0, 0, 0, 0, 1, 0, 0, 0];
 
@@ -46,8 +46,15 @@ impl Pdu {
         Self: Sized,
     {
         let header = Header::read(r)?;
-        let payload = Message::read(r)?;
 
+        let mut payload_buf = vec![];
+        r.read_to_end(&mut payload_buf)?;
+
+        if header.checksum != calc_checksum(&payload_buf[..]) {
+            return Err(io::Error::new(ErrorKind::Other, "Checksum is wrong"));
+        }
+
+        let payload = Message::read(&mut &payload_buf[..])?;
         Ok(Pdu { header, payload })
     }
 }
