@@ -98,7 +98,7 @@ pub mod faker {
         phoenix::{
             Fee, Note, Payload as PhoenixPayload,
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            TxSkeleton,
+            Transaction as PhoenixTransaction, TxSkeleton,
         },
     };
     use execution_core::{BlsScalar, JubJubScalar};
@@ -161,6 +161,9 @@ pub mod faker {
         };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-        ProtocolTransaction::phoenix(payload, proof).into()
+        let tx: ProtocolTransaction =
+            PhoenixTransaction::from_payload_and_proof(payload, proof).into();
+
+        tx.into()
     }
 }
