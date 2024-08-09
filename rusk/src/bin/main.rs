@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config.chain.generation_timeout(),
             config.chain.gas_per_deploy_byte(),
             config.http.feeder_call_gas,
-            _event_sender,
+            _event_sender.clone(),
         )?;
 
         info!("Rusk VM loaded");
@@ -90,6 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_telemetry(config.telemetry.listen_addr())
             .with_chain_queue_size(config.chain.max_queue_size())
             .with_mempool(config.mempool.into())
+            .with_rues(_event_sender)
     };
     let mut _ws_server = None;
     if config.http.listen {

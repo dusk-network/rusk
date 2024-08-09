@@ -23,12 +23,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::commons::ConsensusError;
 pub use header_validation::verify_att;
+use node_data::events::Event;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 
 use tokio::time::{sleep_until, Instant};
@@ -51,6 +53,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     keys_path: String,
     acceptor: Option<Arc<RwLock<Acceptor<N, DB, VM>>>>,
     max_consensus_queue_size: usize,
+    event_sender: Sender<Event>,
 }
 
 #[async_trait]
@@ -79,6 +82,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             network,
             vm,
             self.max_consensus_queue_size,
+            self.event_sender.clone(),
         )
         .await?;
 
@@ -238,7 +242,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
-    pub fn new(keys_path: String, max_inbound_size: usize) -> Self {
+    pub fn new(
+        keys_path: String,
+        max_inbound_size: usize,
+        event_sender: Sender<Event>,
+    ) -> Self {
         info!(
             "ChainSrv::new with keys_path: {}, max_inbound_size: {}",
             keys_path, max_inbound_size
@@ -249,6 +257,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             keys_path,
             acceptor: None,
             max_consensus_queue_size: max_inbound_size,
+            event_sender,
         }
     }
 

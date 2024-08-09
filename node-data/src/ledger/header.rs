@@ -4,24 +4,31 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use serde::Serialize;
+
 use crate::message::ConsensusHeader;
 
 use super::*;
 
 pub type Seed = Signature;
-#[derive(Default, Eq, PartialEq, Clone)]
+#[derive(Default, Eq, PartialEq, Clone, Serialize)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Header {
     // Hashable fields
     pub version: u8,
     pub height: u64,
     pub timestamp: u64,
+    #[serde(serialize_with = "crate::serialize_hex")]
     pub prev_block_hash: Hash,
     pub seed: Seed,
+    #[serde(serialize_with = "crate::serialize_hex")]
     pub state_hash: Hash,
+    #[serde(serialize_with = "crate::serialize_hex")]
     pub event_hash: Hash,
     pub generator_bls_pubkey: PublicKeyBytes,
+    #[serde(serialize_with = "crate::serialize_hex")]
     pub txroot: Hash,
+    #[serde(serialize_with = "crate::serialize_hex")]
     pub faultroot: Hash,
     pub gas_limit: u64,
     pub iteration: u8,
@@ -29,9 +36,11 @@ pub struct Header {
     pub failed_iterations: IterationsInfo,
 
     // Block hash
+    #[serde(serialize_with = "crate::serialize_hex")]
     pub hash: Hash,
 
     // Non-hashable fields
+    #[serde(skip_serializing)]
     pub att: Attestation,
 }
 
