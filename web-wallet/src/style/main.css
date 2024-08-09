@@ -32,17 +32,33 @@
 @font-face {
   font-family: "Soehne";
   font-style: normal;
+  font-display: swap;
   font-weight: 400;
   src: url("/fonts/soehne-buch.woff2") format("woff2");
-  font-display: swap;
 }
 
 @font-face {
   font-family: "Soehne";
   font-style: normal;
+  font-display: swap;
   font-weight: 500;
   src: url("/fonts/soehne-kraftig.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Soehne Mono";
+  font-style: normal;
   font-display: swap;
+  font-weight: 400;
+  src: url("/fonts/soehne-mono-buch.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Soehne Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("/fonts/soehne-mono-kraftig.woff2") format("woff2");
 }
 
 * {

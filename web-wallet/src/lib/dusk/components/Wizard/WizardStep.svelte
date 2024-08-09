@@ -90,7 +90,7 @@
 {#if step === currentStep}
   <slot name="heading" />
   {#if showStepper}
-    <Stepper steps={stepsCount} activeStep={currentStep} />
+    <Stepper steps={stepsCount} activeStep={currentStep} variant="secondary" />
   {/if}
   <slot />
 
