@@ -135,7 +135,7 @@ impl VMExecution for Rusk {
             }
             ProtocolTransaction::Moonlight(tx) => {
                 let account_data =
-                    self.account(&tx.from_account()).map_err(|e| {
+                    self.account(tx.from_account()).map_err(|e| {
                         anyhow::anyhow!("Cannot check account: {e}")
                     })?;
 
