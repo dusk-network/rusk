@@ -175,7 +175,10 @@ pub struct UnprovenTransaction {
 impl UnprovenTransaction {
     /// Consumes self and a proof to generate a transaction.
     pub fn gen_transaction(self, proof: Proof) -> PhoenixTransaction {
-        PhoenixTransaction::new(self.payload, proof.to_bytes())
+        PhoenixTransaction::from_payload_and_proof(
+            self.payload,
+            proof.to_bytes().to_vec(),
+        )
     }
 
     /// Serialize the transaction to a variable length byte buffer.
