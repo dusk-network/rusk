@@ -84,11 +84,17 @@
   --anchor-color-hover: var(--secondary-color-variant-light);
   --anchor-color-active: var(--secondary-color-variant-light);
 
-  /* Progress-related components (Stepper, Progress Bar, etc */
+  /* Progress bars */
 
   --progress-bar-height: 0.3125em;
   --progress-bg-color: var(--primary-color);
   --progress-filler-color: var(--success-color);
+
+  /* Steppers */
+
+  --stepper-bar-height: 0.3125em;
+  --stepper-bg-color: var(--light-grey);
+  --stepper-filler-color: var(--success-color);
 
   /* Checkbox control */
 
