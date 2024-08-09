@@ -60,6 +60,7 @@ impl Eq for Transaction {}
 
 impl Transaction {
     /// Creates a new phoenix transaction given the [`Payload`] and proof.
+    #[must_use]
     pub fn from_payload_and_proof(payload: Payload, proof: Vec<u8>) -> Self {
         Self { payload, proof }
     }
@@ -825,6 +826,7 @@ pub struct TxCircuitVec {
 
 impl TxCircuitVec {
     /// Serialize a [`TxCircuitVec`] into a vector of bytes.
+    #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
         let input_len = self.input_notes_info.len();
 
@@ -834,10 +836,10 @@ impl TxCircuitVec {
         bytes.extend((input_len as u64).to_bytes());
 
         // then serialize the other fields
-        for info in self.input_notes_info.iter() {
+        for info in &self.input_notes_info {
             bytes.extend(info.to_var_bytes());
         }
-        for info in self.output_notes_info.iter() {
+        for info in &self.output_notes_info {
             bytes.extend(info.to_bytes());
         }
         bytes.extend(self.payload_hash.to_bytes());
@@ -859,6 +861,8 @@ impl TxCircuitVec {
     pub fn from_slice(bytes: &[u8]) -> Result<Self, BytesError> {
         let input_len = u64::from_slice(bytes)?;
 
+        // the input-len is smaller than a u32::MAX
+        #[allow(clippy::cast_possible_truncation)]
         if bytes.len() < Self::size(input_len as usize) {
             return Err(BytesError::BadLength {
                 found: bytes.len(),
