@@ -9,14 +9,10 @@
     TableRow,
   } from "$lib/components/table";
   import { AppAnchor } from "$lib/components";
-  import { Badge } from "$lib/dusk/components";
+  import { Badge, RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
-  import {
-    getRelativeTimeString,
-    makeClassName,
-    middleEllipsis,
-  } from "$lib/dusk/string";
+  import { makeClassName, middleEllipsis } from "$lib/dusk/string";
   import "./TransactionsTable.css";
 
   /** @type {string | Undefined} */
@@ -56,9 +52,7 @@
             href={`/transactions/transaction?id=${transaction.txid}`}
             >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</AppAnchor
           >
-          <small class="transaction__time"
-            >{getRelativeTimeString(transaction.date, "long")}</small
-          >
+          <RelativeTime className="transaction__time" date={transaction.date} />
         </TableCell>
         {#if mode === "full"}
           <TableCell>

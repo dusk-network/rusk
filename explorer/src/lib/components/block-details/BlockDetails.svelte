@@ -2,18 +2,12 @@
 
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
-  import {
-    AppAnchorButton,
-    DataCard,
-    ListItem,
-    Rerender,
-  } from "$lib/components";
-  import { ProgressBar } from "$lib/dusk/components";
+  import { AppAnchorButton, DataCard, ListItem } from "$lib/components";
+  import { ProgressBar, RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
     calculateAdaptiveCharCount,
-    getRelativeTimeString,
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
@@ -97,15 +91,15 @@
     <!-- TIMESTAMP -->
     <ListItem tooltipText="The date and time the block was created">
       <svelte:fragment slot="term">timestamp</svelte:fragment>
-      <time
-        datetime={data.header.date.toISOString()}
-        class="block-details__list-timestamp"
+      <RelativeTime
+        autoRefresh={true}
+        className="block-details__list-timestamp"
+        date={data.header.date}
         slot="definition"
+        ><svelte:fragment let:relativeTime
+          >{`${data.header.date.toUTCString()} (${relativeTime})`}</svelte:fragment
+        ></RelativeTime
       >
-        <Rerender>
-          {`${data.header.date.toUTCString()} (${getRelativeTimeString(data.header.date, "long")})`}
-        </Rerender>
-      </time>
     </ListItem>
 
     <!-- TRANSACTIONS -->

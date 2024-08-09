@@ -1,6 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { RelativeTime } from "$lib/dusk/components";
   import { AppAnchor } from "$lib/components";
   import {
     Table,
@@ -10,7 +11,7 @@
     TableRow,
   } from "$lib/components/table";
   import { luxToDusk } from "$lib/dusk/currency";
-  import { getRelativeTimeString, makeClassName } from "$lib/dusk/string";
+  import { makeClassName } from "$lib/dusk/string";
   import { createValueFormatter } from "$lib/dusk/value";
 
   import "./BlocksTable.css";
@@ -44,9 +45,7 @@
             href={`/blocks/block?id=${block.header.hash}`}
             >{numberFormatter(block.header.height)}</AppAnchor
           >
-          <small class="block__time"
-            >{getRelativeTimeString(block.header.date, "long")}</small
-          >
+          <RelativeTime className="block__time" date={block.header.date} />
         </TableCell>
         <TableCell>
           <b class="block__fee-avg-label">AVG:</b>

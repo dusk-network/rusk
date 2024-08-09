@@ -3,25 +3,24 @@
 <script>
   import { AppAnchor, DataGuard, DetailList, ListItem } from "$lib/components";
   import { createValueFormatter } from "$lib/dusk/value";
-  import {
-    calculateAdaptiveCharCount,
-    getRelativeTimeString,
-    middleEllipsis,
-  } from "$lib/dusk/string";
-  import { Badge } from "$lib/dusk/components";
+  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
+  import { Badge, RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { onMount } from "svelte";
 
   import "./TransactionsList.css";
 
+  /** @type {boolean} */
+  export let autoRefreshTime = false;
+
   /** @type {Transaction}*/
   export let data;
 
-  /** @type {"compact" | "full"} */
-  export let mode;
-
   /** @type {Boolean} */
   export let displayTooltips = false;
+
+  /** @type {"compact" | "full"} */
+  export let mode;
 
   /** @type {number} */
   let screenWidth = window.innerWidth;
@@ -64,13 +63,12 @@
       : ""}
   >
     <svelte:fragment slot="term">relative time</svelte:fragment>
-    <time
-      datetime={data.date.toISOString()}
-      class="transaction-details__list-timestamp"
+    <RelativeTime
+      autoRefresh={autoRefreshTime}
+      date={data.date}
+      className="transaction-details__list-timestamp"
       slot="definition"
-    >
-      {getRelativeTimeString(data.date, "long")}
-    </time>
+    />
   </ListItem>
 
   {#if mode === "full"}
