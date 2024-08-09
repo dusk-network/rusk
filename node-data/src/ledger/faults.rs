@@ -21,7 +21,6 @@ use execution_core::{
         MultisigSignature as BlsMultisigSignature,
     },
     stake::EPOCH,
-    BlsScalar,
 };
 use thiserror::Error;
 use tracing::error;
@@ -69,7 +68,7 @@ impl Fault {
     pub fn hash(&self) -> [u8; 32] {
         let mut b = vec![];
         self.write(&mut b).expect("Write to a vec shall not fail");
-        BlsScalar::hash_to_scalar(&b[..]).to_bytes()
+        sha3::Sha3_256::digest(&b[..]).into()
     }
 
     pub fn same(&self, other: &Fault) -> bool {
@@ -87,26 +86,20 @@ impl Fault {
         match self {
             Fault::DoubleCandidate(a, b) => {
                 let seed = Candidate::SIGN_SEED;
-                let a = BlsScalar::hash_to_scalar(&a.get_signed_data(seed)[..])
-                    .to_bytes();
-                let b = BlsScalar::hash_to_scalar(&b.get_signed_data(seed)[..])
-                    .to_bytes();
+                let a = sha3::Sha3_256::digest(a.get_signed_data(seed)).into();
+                let b = sha3::Sha3_256::digest(b.get_signed_data(seed)).into();
                 (a, b)
             }
             Fault::DoubleRatificationVote(a, b) => {
                 let seed = Ratification::SIGN_SEED;
-                let a = BlsScalar::hash_to_scalar(&a.get_signed_data(seed)[..])
-                    .to_bytes();
-                let b = BlsScalar::hash_to_scalar(&b.get_signed_data(seed)[..])
-                    .to_bytes();
+                let a = sha3::Sha3_256::digest(a.get_signed_data(seed)).into();
+                let b = sha3::Sha3_256::digest(b.get_signed_data(seed)).into();
                 (a, b)
             }
             Fault::DoubleValidationVote(a, b) => {
                 let seed = Validation::SIGN_SEED;
-                let a = BlsScalar::hash_to_scalar(&a.get_signed_data(seed)[..])
-                    .to_bytes();
-                let b = BlsScalar::hash_to_scalar(&b.get_signed_data(seed)[..])
-                    .to_bytes();
+                let a = sha3::Sha3_256::digest(a.get_signed_data(seed)).into();
+                let b = sha3::Sha3_256::digest(b.get_signed_data(seed)).into();
                 (a, b)
             }
         }
