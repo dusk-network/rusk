@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Statistics Panel labels for clarity [#2034]
 - Update font-display to swap for custom fonts to improve performance [#2025]
 
+### Fixed
+
+- Fix list items alignment on mobile [#2056]
+
 ## [0.1.0] - 2024-07-24
 
 ### Added
@@ -34,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2036]: https://github.com/dusk-network/rusk/issues/2036
 [#2037]: https://github.com/dusk-network/rusk/issues/2037
 [#2039]: https://github.com/dusk-network/rusk/issues/2039
+[#2056]: https://github.com/dusk-network/rusk/issues/2056
 
 <!-- VERSIONS -->
 
