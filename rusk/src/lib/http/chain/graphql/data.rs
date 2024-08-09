@@ -254,10 +254,10 @@ impl Transaction<'_> {
             map.insert("root".into(), json!(hex::encode(root.to_bytes())));
         }
 
-        if let Some(from) = tx.from() {
+        if let Some(from) = tx.from_account() {
             map.insert("from".into(), json!(hex::encode(from.to_bytes())));
         }
-        if let Some(to) = tx.to() {
+        if let Some(to) = tx.to_account() {
             map.insert("to".into(), json!(hex::encode(to.to_bytes())));
         }
         if let Some(value) = tx.value() {

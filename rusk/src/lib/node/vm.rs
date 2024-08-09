@@ -113,10 +113,8 @@ impl VMExecution for Rusk {
 
         match tx {
             ProtocolTransaction::Phoenix(tx) => {
-                let payload = tx.payload();
-
                 let existing_nullifiers = self
-                    .existing_nullifiers(&payload.tx_skeleton.nullifiers)
+                    .existing_nullifiers(&tx.nullifiers().to_vec())
                     .map_err(|e| {
                         anyhow::anyhow!("Cannot check nullifiers: {e}")
                     })?;
@@ -136,26 +134,23 @@ impl VMExecution for Rusk {
                 }
             }
             ProtocolTransaction::Moonlight(tx) => {
-                let payload = tx.payload();
-
                 let account_data =
-                    self.account(&payload.from).map_err(|e| {
+                    self.account(tx.from_account()).map_err(|e| {
                         anyhow::anyhow!("Cannot check account: {e}")
                     })?;
 
-                let max_value = payload.value
-                    + payload.deposit
-                    + payload.gas_limit * payload.gas_price;
+                let max_value =
+                    tx.value() + tx.deposit() + tx.gas_limit() * tx.gas_price();
                 if max_value > account_data.balance {
                     return Err(anyhow::anyhow!(
                         "Value spent larger than account holds"
                     ));
                 }
 
-                if payload.nonce <= account_data.nonce {
+                if tx.nonce() <= account_data.nonce {
                     let err = crate::Error::RepeatingNonce(
-                        payload.from.into(),
-                        payload.nonce,
+                        (*tx.from_account()).into(),
+                        tx.nonce(),
                     );
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
