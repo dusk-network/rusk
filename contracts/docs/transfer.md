@@ -4,21 +4,21 @@
 
 The transfer contract is one of Dusk's genesis smart contracts, and is responsible for defining the
 rules that a transaction must follow to be executed on the network. It serves as an entrypoint for
-every transaction, and can therefore be though as the definition of 'Dusk' as a cryptocurrency.
+every transaction, and can therefore be thought of as the definition of 'Dusk' as a cryptocurrency.
 
-Like any smart contract on Dusk, the transfer contract exposes a set of functions and maintains
+Like any smart contract on Dusk, the transfer contract exposes a set of functions and maintains a
 state. In this document we will go through the functions it exposes, and discuss their intended
 use, together with their arguments, returns, and calling convention. We will also specify the state
 the functions operate on, and describe the types of mutation to the state each of them may perform.
 
 ## State
 
-The state of the transfer contract consists of the state necessary to ensure the security of each
+The state of the transfer contract consists of the data necessary to ensure the security of each
 transaction, as well as provide data for wallets wishing to create one.
 
 - Merkle tree of all Phoenix notes (UTXO)
 - Set of nullifiers
-- Roots of the merkle tree
+- Roots of the Merkle tree
 - Moonlight accounts
 - Contract balances
 
@@ -62,7 +62,7 @@ during execution or a panic by the called contract.
 If there is no call present, an empty vector of bytes is returned.
 
 When a transaction succeeds, the [state] of the contract is modified. In the case of a Phoenix
-transaction, the output notes are added to the merkle tree and the nullifiers are added to the set.
+transaction, the output notes are added to the Merkle tree and the nullifiers are added to the set.
 In the case of a Moonlight transaction, the account which is performing the transaction gets the
 full amount carried by it deducted from their account, and the (optional) recipient gets the amount
 transferred to them credited to their account.
@@ -88,9 +88,9 @@ passed `gas_spent` does not exceed a transaction's gas limit.
 
 #### `push_note(u64, Note) -> Note`
 
-Inserts a `note` at the next position in merkle tree, with the given `block_height` attached. A
+Inserts a `note` at the next position in Merkle tree, with the given `block_height` attached. A
 sequence of calls to be function must be succeeded by a call to [`update_root`] to update the root
-of the merkle tree. The caller is responsible for ensuring that block height remains monotonically
+of the Merkle tree. The caller is responsible for ensuring that block height remains monotonically
 increasing in the tree.
 
 This function is primarily intended for inserting notes into the tree at genesis.
@@ -99,7 +99,7 @@ This function is primarily intended for inserting notes into the tree at genesis
 
 #### `update_root()`
 
-Updates the root of the merkle tree. Since merkle tree insertion is lazy, this function must be
+Updates the root of the Merkle tree. Since Merkle tree insertion is lazy, this function must be
 explicitly called after notes have been inserted in the tree.
 
 This means that it must be called once after every block ingestion, meaning after a sequence of
@@ -192,7 +192,7 @@ of the network, or by contracts wishing to do the same.
 
 #### `root() -> BlsScalar`
 
-Returns the root of the merkle tree to the caller.
+Returns the root of the Merkle tree to the caller.
 
 #### `account(AccountPublicKey) -> AccountData`
 
@@ -204,7 +204,7 @@ Returns the balance of a given `contract`.
 
 #### `opening(u64) -> Opening<(), NOTES_TREE_DEPTH>`
 
-Returns the merkle opening at the given `position`.
+Returns the Merkle opening at the given `position`.
 
 #### `existing_nullifiers(Vec<BlsScalar>) -> Vec<BlsScalar>`
 
