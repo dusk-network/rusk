@@ -356,7 +356,7 @@ impl TransferState {
         self.nullifiers.extend(phoenix_tx.nullifiers());
 
         // verify the phoenix-circuit
-        if !verify_tx_proof(&phoenix_tx) {
+        if !verify_tx_proof(phoenix_tx) {
             panic!("Invalid transaction proof!");
         }
 
