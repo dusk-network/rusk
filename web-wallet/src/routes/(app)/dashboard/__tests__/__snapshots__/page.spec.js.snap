@@ -333,10 +333,10 @@ exports[`Dashboard > should render a card when there is an error getting transac
   </article>
    
   <article
-    class="transactions svelte-1xfwm7e"
+    class="transactions svelte-mwi4ip"
   >
     <header
-      class="transactions__header svelte-1xfwm7e"
+      class="transactions__header svelte-mwi4ip"
     >
       <h3
         class="h4"
@@ -719,10 +719,10 @@ exports[`Dashboard > should render the dashboard page and show a throbber while 
   </article>
    
   <article
-    class="transactions svelte-1xfwm7e"
+    class="transactions svelte-mwi4ip"
   >
     <header
-      class="transactions__header svelte-1xfwm7e"
+      class="transactions__header svelte-mwi4ip"
     >
       <h3
         class="h4"
@@ -1110,10 +1110,10 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
   </article>
    
   <article
-    class="transactions svelte-1xfwm7e"
+    class="transactions svelte-mwi4ip"
   >
     <header
-      class="transactions__header svelte-1xfwm7e"
+      class="transactions__header svelte-mwi4ip"
     >
       <h3
         class="h4"

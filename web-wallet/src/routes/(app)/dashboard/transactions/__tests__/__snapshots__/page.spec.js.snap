@@ -66,10 +66,10 @@ exports[`Dashboard > should render the transactions page 1`] = `
   </article>
    
   <article
-    class="transactions svelte-1xfwm7e"
+    class="transactions svelte-mwi4ip"
   >
     <header
-      class="transactions__header svelte-1xfwm7e"
+      class="transactions__header svelte-mwi4ip"
     >
       <h3
         class="h4"
