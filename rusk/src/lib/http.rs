@@ -65,11 +65,11 @@ use anyhow::Error as AnyhowError;
 use hyper_util::rt::TokioIo;
 use rand::rngs::OsRng;
 
-use crate::http::event::{FullOrStreamBody, RuesEventData};
+use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
-pub use self::event::{ContractEvent, RuesEvent};
-use self::event::{MessageRequest, ResponseData, RuesSubscription, SessionId};
+pub use self::event::{ContractEvent, RuesEvent, RUES_LOCATION_PREFIX};
+use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
@@ -424,12 +424,9 @@ where
 }
 
 enum SubscriptionAction {
-    Subscribe(RuesSubscription),
-    Unsubscribe(RuesSubscription),
-    Dispatch {
-        sub: RuesSubscription,
-        body: Incoming,
-    },
+    Subscribe(RuesEventUri),
+    Unsubscribe(RuesEventUri),
+    Dispatch { uri: RuesEventUri, body: Incoming },
 }
 
 async fn handle_stream_rues<H: HandleRequest>(
@@ -506,17 +503,17 @@ async fn handle_stream_rues<H: HandleRequest>(
                         subscription_set.remove(&subscription);
                     },
                     SubscriptionAction::Dispatch {
-                        sub,
+                        uri,
                         body
                     } => {
                         // TODO figure out if we should subscribe to the event we dispatch
-                        task::spawn(handle_dispatch(sub, body, handler.clone(), dispatch_sender.clone()));
+                        task::spawn(handle_dispatch(uri, body, handler.clone(), dispatch_sender.clone()));
                     }
                 }
             }
 
             Some(event) = events.next() => {
-                let event = match event {
+                let mut event = match event {
                     Ok(event) => event,
                     Err(err) => match err {
                         Either::Left(_berr) => {
@@ -548,6 +545,7 @@ async fn handle_stream_rues<H: HandleRequest>(
 
                 // If the event is subscribed, we send it to the client.
                 if is_subscribed {
+                    event.add_header("Content-Location", event.uri.to_string());
                     let event = event.to_bytes();
 
                     // If the event fails sending we close the socket on the client
@@ -569,7 +567,7 @@ async fn handle_stream_rues<H: HandleRequest>(
 }
 
 async fn handle_dispatch<H: HandleRequest>(
-    sub: RuesSubscription,
+    uri: RuesEventUri,
     body: Incoming,
     handler: Arc<H>,
     sender: mpsc::Sender<Result<RuesEvent, AnyhowError>>,
@@ -598,48 +596,9 @@ async fn handle_dispatch<H: HandleRequest>(
         }
     };
 
-    let (data, header) = rsp.into_inner();
-    match data {
-        DataType::Binary(bytes) => {
-            let _ = sender
-                .send(Ok(RuesEvent {
-                    headers: req.headers.clone(),
-                    data: RuesEventData::Other(bytes.inner),
-                }))
-                .await;
-        }
-        DataType::Text(text) => {
-            let _ = sender
-                .send(Ok(RuesEvent {
-                    headers: req.headers.clone(),
-                    data: RuesEventData::Other(text.into_bytes()),
-                }))
-                .await;
-        }
-        DataType::Json(json) => {
-            let _ = sender
-                .send(
-                    serde_json::to_vec(&json)
-                        .map(|bytes| RuesEvent {
-                            headers: req.headers.clone(),
-                            data: RuesEventData::Other(bytes),
-                        })
-                        .map_err(Into::into),
-                )
-                .await;
-        }
-        DataType::Channel(channel) => {
-            for bytes in channel {
-                let _ = sender
-                    .send(Ok(RuesEvent {
-                        headers: req.headers.clone(),
-                        data: RuesEventData::Other(bytes),
-                    }))
-                    .await;
-            }
-        }
-        DataType::None => {}
-    }
+    let (data, headers) = rsp.into_inner();
+
+    sender.send(Ok(RuesEvent { uri, data, headers })).await;
 }
 
 fn response(
@@ -691,11 +650,6 @@ async fn handle_request_rues<H: HandleRequest>(
         Ok(response.map(Into::into))
     } else {
         let headers = req.headers();
-        let mut path_split = req.uri().path().split('/');
-
-        // Skip '/on' since we already know its present
-        path_split.next();
-        path_split.next();
 
         let sid = match SessionId::parse_from_req(&req) {
             None => {
@@ -707,16 +661,15 @@ async fn handle_request_rues<H: HandleRequest>(
             Some(sid) => sid,
         };
 
-        let subscription =
-            match RuesSubscription::parse_from_path_split(path_split) {
-                None => {
-                    return response(
-                        StatusCode::NOT_FOUND,
-                        "{{\"error\":\"Invalid URL path\n\"}}",
-                    );
-                }
-                Some(s) => s,
-            };
+        let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
+            None => {
+                return response(
+                    StatusCode::NOT_FOUND,
+                    "{{\"error\":\"Invalid URL path\n\"}}",
+                );
+            }
+            Some(s) => s,
+        };
 
         let action_sender = match sockets_map.read().await.get(&sid) {
             Some(sender) => sender.clone(),
@@ -729,10 +682,10 @@ async fn handle_request_rues<H: HandleRequest>(
         };
 
         let action = match *req.method() {
-            Method::GET => SubscriptionAction::Subscribe(subscription),
-            Method::DELETE => SubscriptionAction::Unsubscribe(subscription),
+            Method::GET => SubscriptionAction::Subscribe(uri),
+            Method::DELETE => SubscriptionAction::Unsubscribe(uri),
             Method::POST => SubscriptionAction::Dispatch {
-                sub: subscription,
+                uri,
                 body: req.into_body(),
             },
             _ => {
@@ -770,7 +723,7 @@ where
     let path = req.uri().path();
 
     // If the request is a RUES request, we handle it differently.
-    if path.starts_with("/on") {
+    if path.starts_with(RUES_LOCATION_PREFIX) {
         return handle_request_rues(
             req,
             sources.clone(),
@@ -1203,16 +1156,14 @@ mod tests {
         let message = stream.read().expect("Event should be received");
         let event_bytes = message.into_data();
 
-        let event = RuesEvent::from_bytes(&event_bytes)
-            .expect("Event should deserialize");
+        let event = from_bytes(&event_bytes).expect("Event should deserialize");
 
         assert_eq!(at_first_received_event, event, "Event should be the same");
 
         let message = stream.read().expect("Event should be received");
         let event_bytes = message.into_data();
 
-        let event = RuesEvent::from_bytes(&event_bytes)
-            .expect("Event should deserialize");
+        let event = from_bytes(&event_bytes).expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");
 
@@ -1241,11 +1192,28 @@ mod tests {
             .expect("Sending event should succeed");
 
         let message = stream.read().expect("Event should be received");
+
         let event_bytes = message.into_data();
 
-        let event = RuesEvent::from_bytes(&event_bytes)
-            .expect("Event should deserialize");
+        let event = from_bytes(&event_bytes).expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");
+    }
+
+    pub fn from_bytes(data: &[u8]) -> anyhow::Result<RuesEvent> {
+        let (mut headers, data) = crate::http::event::parse_header(data)?;
+
+        let path = headers
+            .remove("Content-Location")
+            .ok_or(anyhow::anyhow!("Content location is not set"))?
+            .as_str()
+            .ok_or(anyhow::anyhow!("Content location is not a string"))?
+            .to_string();
+
+        let uri = RuesEventUri::parse_from_path(&path)
+            .ok_or(anyhow::anyhow!("Invalid location"))?;
+
+        let data = data.to_vec().into();
+        Ok(RuesEvent { data, headers, uri })
     }
 }

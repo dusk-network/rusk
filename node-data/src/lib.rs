@@ -6,6 +6,7 @@
 
 pub mod bls;
 pub mod encoding;
+pub mod events;
 pub mod ledger;
 pub mod message;
 
@@ -88,4 +89,26 @@ impl Serializable for Hash {
     {
         Self::read_bytes(r)
     }
+}
+
+pub fn serialize_hex<const N: usize, S>(
+    t: &[u8; N],
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let hex = hex::encode(t);
+    serializer.serialize_str(&hex)
+}
+
+pub fn serialize_b58<const N: usize, S>(
+    t: &[u8; N],
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let hex = bs58::encode(t).into_string();
+    serializer.serialize_str(&hex)
 }

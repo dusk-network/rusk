@@ -354,6 +354,7 @@ impl From<Vec<u8>> for RequestData {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ResponseData {
     data: DataType,
     header: serde_json::Map<String, serde_json::Value>,
@@ -367,12 +368,20 @@ impl ResponseData {
         }
     }
 
+    pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
+        &mut self,
+        key: K,
+        value: V,
+    ) {
+        self.header.insert(key.into(), value.into());
+    }
+
     pub fn with_header<K: Into<String>, V: Into<serde_json::Value>>(
         mut self,
         key: K,
         value: V,
     ) -> Self {
-        self.header.insert(key.into(), value.into());
+        self.add_header(key, value);
         self
     }
 
@@ -380,6 +389,10 @@ impl ResponseData {
         self,
     ) -> (DataType, serde_json::Map<String, serde_json::Value>) {
         (self.data, self.header)
+    }
+
+    pub fn data(&self) -> &DataType {
+        &self.data
     }
 }
 
@@ -394,6 +407,43 @@ pub enum DataType {
     Channel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
+}
+
+impl Eq for DataType {}
+
+impl PartialEq for DataType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Channel(_), Self::Channel(_)) => true,
+            (Self::Text(a), Self::Text(b)) => a == b,
+            (Self::Json(a), Self::Json(b)) => a == b,
+            (Self::Binary(a), Self::Binary(b)) => a == b,
+            (Self::None, Self::None) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Clone for DataType {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Binary(b) => b.inner.clone().into(),
+            Self::Text(s) => s.clone().into(),
+            Self::Json(v) => v.clone().into(),
+            _ => Self::None,
+        }
+    }
+}
+
+impl DataType {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Binary(b) => b.inner.clone(),
+            Self::Text(s) => s.as_bytes().to_vec(),
+            Self::Json(s) => s.to_string().as_bytes().to_vec(),
+            _ => vec![],
+        }
+    }
 }
 
 impl From<serde_json::Value> for DataType {
@@ -421,7 +471,7 @@ impl From<mpsc::Receiver<Vec<u8>>> for DataType {
 }
 
 #[serde_with::serde_as]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct BinaryWrapper {
     #[serde_as(as = "serde_with::hex::Hex")]
@@ -493,7 +543,7 @@ fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
 }
 
 type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
+pub(crate) fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
     let (len, bytes) = parse_len(bytes)?;
     if bytes.len() < len {
         return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
@@ -682,14 +732,41 @@ impl SessionId {
 /// `transactions`, etc...) and an optional entity within the component that
 /// the event targets.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub struct RuesSubscription {
+pub struct RuesEventUri {
     pub component: String,
     pub entity: Option<String>,
     pub topic: String,
 }
 
-impl RuesSubscription {
-    pub fn parse_from_path_split(mut path_split: Split<char>) -> Option<Self> {
+pub const RUES_LOCATION_PREFIX: &str = "/on";
+
+impl Display for RuesEventUri {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let component = &self.component;
+        let entity = self
+            .entity
+            .as_ref()
+            .map(|e| format!(":{e}"))
+            .unwrap_or_default();
+        let topic = &self.topic;
+
+        write!(f, "{RUES_LOCATION_PREFIX}/{component}{entity}/{topic}")
+    }
+}
+
+impl RuesEventUri {
+    pub fn parse_from_path(path: &str) -> Option<Self> {
+        if !path.starts_with(RUES_LOCATION_PREFIX) {
+            return None;
+        }
+        // Skip '/on' since we already know its present
+        let path = &path[RUES_LOCATION_PREFIX.len()..];
+
+        let mut path_split = path.split('/');
+
+        // Skip first '/'
+        path_split.next()?;
+
         // If the segment contains a `:`, we split the string in two after the
         // first one - meaning entities with `:` are still possible.
         // If the segment doesn't contain a `:` then the segment is just a
@@ -714,25 +791,18 @@ impl RuesSubscription {
     }
 
     pub fn matches(&self, event: &RuesEvent) -> bool {
-        let event = match &event.data {
-            RuesEventData::Contract(event) => event,
-            _ => return false,
-        };
-
-        if self.component != "contracts" {
+        let event = &event.uri;
+        if self.component != event.component {
             return false;
         }
 
-        let target = hex::encode(event.target.0.as_bytes());
-
-        if self.entity != Some(target) {
+        if self.entity.is_some() && self.entity != event.entity {
             return false;
         }
 
         if self.topic != event.topic {
             return false;
         }
-
         true
     }
 }
@@ -768,13 +838,22 @@ impl From<ContractEvent> for execution_core::Event {
 }
 
 /// A RUES event
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RuesEvent {
+    pub uri: RuesEventUri,
     pub headers: serde_json::Map<String, serde_json::Value>,
-    pub data: RuesEventData,
+    pub data: DataType,
 }
 
 impl RuesEvent {
+    pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
+        &mut self,
+        key: K,
+        value: V,
+    ) {
+        self.headers.insert(key.into(), value.into());
+    }
+
     /// Serialize the event into a vector of bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         let headers_bytes = serde_json::to_vec(&self.headers)
@@ -795,35 +874,18 @@ impl RuesEvent {
 
         bytes
     }
-
-    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() < 4 {
-            return None;
-        }
-        let (headers_len_bytes, bytes) = bytes.split_at(4);
-
-        let mut headers_len_array = [0u8; 4];
-        headers_len_array.copy_from_slice(headers_len_bytes);
-
-        let headers_len = u32::from_le_bytes(headers_len_array) as usize;
-        if bytes.len() < headers_len {
-            return None;
-        }
-
-        let (headers_bytes, data_bytes) = bytes.split_at(headers_len);
-        let headers = serde_json::from_slice(headers_bytes).ok()?;
-
-        let data = RuesEventData::from_bytes(data_bytes)?;
-
-        Some(Self { headers, data })
-    }
 }
 
 impl From<ContractEvent> for RuesEvent {
     fn from(event: ContractEvent) -> Self {
         Self {
-            headers: serde_json::Map::new(),
-            data: RuesEventData::Contract(event),
+            uri: RuesEventUri {
+                component: "contracts".into(),
+                entity: Some(hex::encode(event.target.0.as_bytes())),
+                topic: event.topic,
+            },
+            data: event.data.into(),
+            headers: Default::default(),
         }
     }
 }
@@ -834,50 +896,19 @@ impl From<execution_core::Event> for RuesEvent {
     }
 }
 
-/// Types of event data that RUES supports.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RuesEventData {
-    /// A contract event.
-    Contract(ContractEvent),
-    /// An event whose provenance is unknown.
-    Other(Vec<u8>),
-}
+#[cfg(feature = "node")]
+impl From<node_data::events::Event> for RuesEvent {
+    fn from(value: node_data::events::Event) -> Self {
+        let data = value.data.map_or(DataType::None, DataType::Json);
 
-impl RuesEventData {
-    const CONTRACT_TAG: u8 = 1;
-    const OTHER_TAG: u8 = 255;
-
-    fn to_bytes(&self) -> Vec<u8> {
-        match self {
-            Self::Contract(event) => {
-                let mut bytes = serde_json::to_vec(event).expect(
-                    "Serializing contract event to JSON should succeed",
-                );
-                bytes.insert(0, Self::CONTRACT_TAG);
-                bytes
-            }
-            Self::Other(data) => {
-                let mut bytes = vec![0; data.len() + 1];
-                bytes[0] = Self::OTHER_TAG;
-                bytes[1..].copy_from_slice(data);
-                bytes
-            }
-        }
-    }
-
-    fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        let (tag, bytes) = bytes.split_first()?;
-
-        match *tag {
-            Self::CONTRACT_TAG => {
-                let event = serde_json::from_slice(bytes).ok()?;
-                Some(Self::Contract(event))
-            }
-            Self::OTHER_TAG => {
-                let data = bytes.to_vec();
-                Some(Self::Other(data))
-            }
-            _ => None,
+        Self {
+            uri: RuesEventUri {
+                component: value.component.into(),
+                entity: Some(value.entity),
+                topic: value.topic.into(),
+            },
+            data,
+            headers: Default::default(),
         }
     }
 }
