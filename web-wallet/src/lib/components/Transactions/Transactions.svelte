@@ -187,7 +187,7 @@
       }
 
       &__loading-container {
-        margin: 1em auto;
+        margin: 1.25em 0;
       }
 
       &__datum {
@@ -216,6 +216,7 @@
         flex-direction: column;
         align-items: center;
         gap: 0.5em;
+        margin: 1.25em 0;
       }
 
       &__badge {
