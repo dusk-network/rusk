@@ -1,9 +1,11 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
+import { get } from "svelte/store";
 
 import { duskAPI } from "$lib/services";
 import { transformBlock } from "$lib/chain-info";
 import { gqlBlock } from "$lib/mock-data";
+import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
 import BlockDetails from "../+page.svelte";
 
@@ -35,6 +37,21 @@ describe("Block Details", () => {
     await vi.advanceTimersByTimeAsync(1);
 
     // snapshot with received data from APIs
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("should render the Transaction section of the Block Details page with the mobile layout", async () => {
+    const { appStore } = await import("$lib/stores");
+    const { container } = render(BlockDetails);
+
+    changeMediaQueryMatches("(max-width: 1024px)", true);
+
+    expect(get(appStore).isSmallScreen).toBe(true);
+
+    expect(getBlockSpy).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+
     expect(container.firstChild).toMatchSnapshot();
   });
 });

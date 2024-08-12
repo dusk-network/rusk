@@ -17,6 +17,9 @@
   /** @type {Boolean} */
   export let loading;
 
+  /** @type {boolean} */
+  export let isSmallScreen;
+
   $: classes = makeClassName(["latest-blocks-card", className]);
 </script>
 
@@ -33,11 +36,11 @@
     label: "All Blocks",
   }}
 >
-  <BlocksTable data={blocks} className="mobile-hidden" />
-
-  <div class="desktop-hidden">
+  {#if isSmallScreen}
     {#each blocks as block (block)}
       <BlocksList data={block} />
     {/each}
-  </div>
+  {:else}
+    <BlocksTable data={blocks} />
+  {/if}
 </DataCard>

@@ -1,6 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 
+import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
+
 describe("appStore", () => {
   const originalTouchStart = window.ontouchstart;
   const originalMaxTouchPoints = navigator.maxTouchPoints;
@@ -40,6 +42,7 @@ describe("appStore", () => {
       darkMode: false,
       fetchInterval: Number(env.VITE_REFETCH_INTERVAL),
       hasTouchSupport: false,
+      isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
       network: expectedNetworks[0].value,
       networks: expectedNetworks,
@@ -100,5 +103,33 @@ describe("appStore", () => {
     appStore.setTheme(true);
 
     expect(get(appStore).darkMode).toBe(true);
+  });
+
+  it("should set the `isSmallScreen` property to `false` when the related media query doesn't match", async () => {
+    const { appStore } = await import("..");
+
+    expect(get(appStore).isSmallScreen).toBe(false);
+  });
+
+  it("should set the `isSmallScreen` property to `true` when the related media query matches", async () => {
+    const mqMatchesSpy = vi
+      .spyOn(MediaQueryList.prototype, "matches", "get")
+      .mockReturnValue(true);
+
+    const { appStore } = await import("..");
+
+    expect(get(appStore).isSmallScreen).toBe(true);
+
+    mqMatchesSpy.mockRestore();
+  });
+
+  it("should update the `isSmallScreen` property when the media query match changes", async () => {
+    const { appStore } = await import("..");
+
+    expect(get(appStore).isSmallScreen).toBe(false);
+
+    changeMediaQueryMatches("(max-width: 1024px)", true);
+
+    expect(get(appStore).isSmallScreen).toBe(true);
   });
 });

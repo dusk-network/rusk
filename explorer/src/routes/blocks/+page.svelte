@@ -19,7 +19,11 @@
   onDestroy(pollingDataStore.stop);
 
   $: ({ data, error, isLoading } = $pollingDataStore);
-  $: ({ blocksListEntries, network: currentNetwork } = $appStore);
+  $: ({
+    blocksListEntries,
+    isSmallScreen,
+    network: currentNetwork,
+  } = $appStore);
 </script>
 
 <section id="blocks">
@@ -28,5 +32,6 @@
     blocks={data}
     {error}
     loading={isLoading}
+    {isSmallScreen}
   />
 </section>

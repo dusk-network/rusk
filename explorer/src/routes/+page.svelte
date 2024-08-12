@@ -21,7 +21,7 @@
   onDestroy(pollingDataStore.stop);
 
   $: ({ data, error, isLoading } = $pollingDataStore);
-  $: ({ chainInfoEntries, network } = $appStore);
+  $: ({ chainInfoEntries, isSmallScreen, network } = $appStore);
 
   const retry = () => {
     pollingDataStore.start(network, chainInfoEntries);
@@ -38,6 +38,7 @@
     className="tables-layout"
     blocks={data?.blocks}
     {error}
+    {isSmallScreen}
     loading={isLoading}
   />
 
@@ -46,6 +47,7 @@
     className="tables-layout"
     txns={data?.transactions}
     {error}
+    {isSmallScreen}
     loading={isLoading}
   />
 </section>

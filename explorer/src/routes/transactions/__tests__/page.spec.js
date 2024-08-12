@@ -6,6 +6,7 @@ import { duskAPI } from "$lib/services";
 import { transformTransaction } from "$lib/chain-info";
 import { appStore } from "$lib/stores";
 import { gqlTransactions } from "$lib/mock-data";
+import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
 import Transactions from "../+page.svelte";
 
@@ -68,5 +69,24 @@ describe("Transactions page", () => {
     await vi.advanceTimersByTimeAsync(fetchInterval * 10);
 
     expect(getTransactionSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("should render the Transactions page with the mobile layout", async () => {
+    const { container } = render(Transactions);
+
+    changeMediaQueryMatches("(max-width: 1024px)", true);
+
+    expect(get(appStore).isSmallScreen).toBe(true);
+
+    expect(getTransactionSpy).toHaveBeenCalledTimes(1);
+    expect(getTransactionSpy).toHaveBeenNthCalledWith(
+      1,
+      network,
+      transactionsListEntries
+    );
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(container.firstChild).toMatchSnapshot();
   });
 });

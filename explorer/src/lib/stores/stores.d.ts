@@ -8,6 +8,7 @@ type AppStoreContent = {
   chainInfoEntries: number;
   darkMode: boolean;
   fetchInterval: number;
+  isSmallScreen: boolean;
   hasTouchSupport: boolean;
   marketDataFetchInterval: number;
   network: string;

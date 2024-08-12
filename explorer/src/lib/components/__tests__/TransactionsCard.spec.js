@@ -16,6 +16,7 @@ describe("Transactions Card", () => {
 
   const baseProps = {
     error: null,
+    isSmallScreen: false,
     loading: false,
     txns: null,
   };

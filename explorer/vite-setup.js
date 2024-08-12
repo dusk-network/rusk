@@ -8,7 +8,11 @@ import { readable } from "svelte/store";
 import { ResizeObserver } from "@juggle/resize-observer";
 import "jsdom-worker";
 
-import { IntersectionObserver } from "./src/lib/dusk/mocks";
+import {
+  IntersectionObserver,
+  MediaQueryList,
+  MediaQueryListEvent,
+} from "./src/lib/dusk/mocks";
 
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.
@@ -27,6 +31,8 @@ vi.mock("./src/lib/dusk/mocks/IntersectionObserver");
 
 global.IntersectionObserver = IntersectionObserver;
 global.ResizeObserver = ResizeObserver;
+global.MediaQueryListEvent = MediaQueryListEvent;
+global.MediaQueryList = MediaQueryList;
 
 const elementMethods = ["scrollBy", "scrollTo", "scrollIntoView"];
 
@@ -116,4 +122,10 @@ vi.mock("$app/stores", () => {
     page,
     updated,
   };
+});
+
+// Define matchMedia property
+Object.defineProperty(window, "matchMedia", {
+  value: (query) => new MediaQueryList(query, false),
+  writable: true,
 });

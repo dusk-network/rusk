@@ -4,7 +4,6 @@ import { compose, mapWith, take } from "lamb";
 
 import { gqlBlocks } from "$lib/mock-data";
 import { transformBlock } from "$lib/chain-info";
-
 import { BlocksCard } from "..";
 
 describe("Blocks Card", () => {
@@ -17,6 +16,7 @@ describe("Blocks Card", () => {
   const baseProps = {
     blocks: null,
     error: null,
+    isSmallScreen: false,
     loading: false,
   };
   const baseOptions = {
