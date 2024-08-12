@@ -34,6 +34,13 @@ type SelectOption = {
   value: string;
 };
 
+type StepperStep = {
+  iconPath?: string;
+  label: string;
+};
+
+type StepperVariant = "primary" | "secondary";
+
 type SuspenseErrorVariant = "alert" | "details";
 
 type TabItem = {

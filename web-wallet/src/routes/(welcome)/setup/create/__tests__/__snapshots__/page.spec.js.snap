@@ -19,53 +19,43 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 16.666666666666668%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 20%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -253,53 +243,43 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 33.333333333333336%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 40%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -661,53 +641,43 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 33.333333333333336%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 40%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -1098,53 +1068,43 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 33.333333333333336%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 40%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -1522,53 +1482,43 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 83.33333333333333%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 100%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-    </div>
+      2
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      5
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-medium"
@@ -1654,53 +1604,43 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 50%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 60%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -1847,53 +1787,43 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 50%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 60%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -2073,53 +2003,43 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 66.66666666666667%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 80%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      4
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <p>
     The ERC20 token swap functionality is currently disabled and will be provided
@@ -2227,53 +2147,43 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 33.333333333333336%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 40%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-default"
@@ -2641,53 +2551,43 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
   </h2>
    
   <div
-    class="dusk-stepper"
-    role="tablist"
+    class="dusk-stepper dusk-stepper--variant--secondary"
+    style="--columns: 6; --progress-width: 0%;"
   >
-    <div
-      class="dusk-stepper__progress-bar"
+    <span
+      aria-current="step"
+      class="dusk-stepper__step dusk-stepper__step--processed"
     >
-      <div
-        class="dusk-stepper__progress-filler"
-        style="width: 0%;"
-      />
-    </div>
-     
-    <div
-      class="dusk-stepper__steps"
+      1
+    </span>
+    <span
+      class="dusk-stepper__step"
     >
-      <div
-        aria-disabled="true"
-        aria-selected="true"
-        class="dusk-stepper__step dusk-stepper__step--processed"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-      <div
-        aria-disabled="true"
-        aria-selected="false"
-        class="dusk-stepper__step"
-      />
-    </div>
+      2
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      6
+    </span>
+    
   </div>
+  
    
   <div
     class="dusk-card dusk-card--gap-medium"

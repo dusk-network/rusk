@@ -1,38 +1,76 @@
 .dusk-stepper {
+  --step-size: 1.5em;
+
   position: relative;
   width: 100%;
-}
-
-.dusk-stepper__progress-bar {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 100%;
-  height: var(--progress-bar-height);
-  background-color: var(--progress-bg-color);
-  border-radius: var(--control-border-radius-size);
-  overflow: hidden;
-}
-
-.dusk-stepper__progress-filler {
-  height: 100%;
-  background-color: var(--progress-filler-color);
-}
-
-.dusk-stepper__steps {
-  display: flex;
+  display: grid;
+  row-gap: var(--default-gap);
+  grid-template-columns: repeat(var(--columns), 1fr);
   justify-content: space-between;
-  width: 100%;
+}
+
+.dusk-stepper::before,
+.dusk-stepper::after {
+  --left-offset: calc(50% / var(--columns));
+
+  content: "";
+  display: block;
+  position: absolute;
+  top: calc(var(--step-size) / 2);
+  left: var(--left-offset);
+  transform: translateY(-50%);
+  height: var(--stepper-bar-height);
+  border-radius: var(--control-border-radius-size);
+}
+
+.dusk-stepper::before {
+  width: calc(100% - var(--left-offset) * 2);
+  background-color: var(--stepper-rail-color);
+}
+
+.dusk-stepper--variant--secondary::before {
+  background-color: var(--stepper-rail-color-variant-secondary);
+}
+
+.dusk-stepper::after {
+  width: var(--progress-width);
+  background-color: var(--stepper-filler-color);
 }
 
 .dusk-stepper__step {
-  width: 0.625em;
-  height: 0.625em;
-  background-color: var(--progress-bg-color);
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--step-size);
+  height: var(--step-size);
+  font-family: var(--mono-font-family);
+  line-height: 1;
+  background-color: var(--stepper-rail-color);
+  color: var(--stepper-on-rail-color);
   border-radius: 50%;
   z-index: 1;
+  margin: 0 auto;
+}
+
+.dusk-stepper--variant--secondary
+  .dusk-stepper__step:not(.dusk-stepper__step--processed) {
+  background-color: var(--stepper-rail-color-variant-secondary);
+  color: var(--stepper-on-rail-variant-secondary-color);
 }
 
 .dusk-stepper__step--processed {
-  background-color: var(--progress-filler-color);
+  background-color: var(--stepper-filler-color);
+  color: var(--stepper-on-filler-color);
+}
+
+.dusk-stepper__step-label {
+  grid-row: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mono-font-family);
+  font-size: 0.5em;
+  text-transform: uppercase;
+  text-align: center;
 }
