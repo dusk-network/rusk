@@ -67,36 +67,33 @@ impl Serialize for Transaction {
         S: Serializer,
     {
         let mut state = serializer.serialize_struct("Transaction", 1)?;
-        let t = &self.inner;
-        match t {
-            ProtocolTransaction::Phoenix(_) => {
+        match &self.inner {
+            ProtocolTransaction::Phoenix(p) => {
                 state.serialize_field("type", "phoenix")?;
 
-                let root = t.root().expect("phoenix to have root");
-                state.serialize_field("root", &hex::encode(root.to_bytes()))?;
+                let root = p.root().to_bytes();
+                state.serialize_field("root", &hex::encode(root))?;
 
-                let nullifiers: Vec<_> = t
+                let nullifiers: Vec<_> = p
                     .nullifiers()
                     .iter()
                     .map(|n| hex::encode(n.to_bytes()))
                     .collect();
-                if !nullifiers.is_empty() {
-                    state.serialize_field("nullifiers", &nullifiers)?;
-                }
+                state.serialize_field("nullifiers", &nullifiers)?;
             }
-            ProtocolTransaction::Moonlight(_) => {
+            ProtocolTransaction::Moonlight(m) => {
                 state.serialize_field("type", "moonlight")?;
 
-                let from = t.from().expect("moonlight to have from");
+                let from = m.from_account();
                 let from = bs58::encode(from.to_bytes()).into_string();
                 state.serialize_field("from", &from)?;
 
-                let to = t.to().expect("moonlight to have to");
-                let to = bs58::encode(to.to_bytes()).into_string();
+                let to = m
+                    .to_account()
+                    .map(|to| bs58::encode(to.to_bytes()).into_string());
                 state.serialize_field("to", &to)?;
 
-                let value = t.value().expect("moonlight to have value");
-                state.serialize_field("value", &value)?;
+                state.serialize_field("value", &m.value())?;
             }
         }
 
@@ -107,7 +104,7 @@ impl Serialize for Transaction {
         let notes: Vec<Note> = tx.outputs().iter().map(|n| n.into()).collect();
 
         if !notes.is_empty() {
-            state.serialize_field("notes", &notes)?;
+            state.serialize_field("outputs", &notes)?;
         }
 
         let fee = {
