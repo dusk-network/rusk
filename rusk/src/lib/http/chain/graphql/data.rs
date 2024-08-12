@@ -242,7 +242,8 @@ impl Transaction<'_> {
     }
 
     pub async fn json(&self) -> String {
-        self.0.to_json().to_string()
+        let tx: &node_data::ledger::Transaction = &self.0;
+        serde_json::to_string(tx).unwrap_or_default()
     }
 
     pub async fn id(&self) -> String {
