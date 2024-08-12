@@ -9,6 +9,20 @@ use std::collections::HashMap;
 use super::*;
 use crate::ledger::{Hash, SpentTransaction, Transaction};
 
+/// Represents events related to transactions.
+///
+/// - `Removed(Hash)`
+///
+///     Indicates that a transaction has been removed from the mempool. The
+///     `Hash` represents the unique identifier of the removed transaction.
+///
+/// - `Included(&'t Transaction)`
+///
+///     A transaction has been included in the mempool.
+///
+/// - `Executed(&'t SpentTransaction)`
+///
+///     Denotes that a transaction has been executed into an accepted block.
 #[derive(Clone, Debug)]
 pub enum TransactionEvent<'t> {
     Removed(Hash),

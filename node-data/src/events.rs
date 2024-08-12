@@ -7,9 +7,16 @@
 mod blocks;
 mod transactions;
 
-pub use blocks::BlockEvent;
+pub use blocks::{BlockEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED};
 pub use transactions::TransactionEvent;
 
+/// Represents an event in the system, including its source (`component`),
+/// type (`topic`), associated entity (`entity`), and optional data (`data`).
+///
+/// - `component`: Source of the event (e.g., `"transaction"/"block"`).
+/// - `topic`: Type/category of the event (e.g., `"accepted"/"removed"`).
+/// - `entity`: Identifier for the related entity (e.g., `transaction hash`).
+/// - `data`: Optional JSON data with additional event details.
 #[derive(Clone, Debug)]
 pub struct Event {
     pub component: &'static str,
@@ -18,7 +25,7 @@ pub struct Event {
     pub data: Option<serde_json::Value>,
 }
 
-pub trait EventSource {
+trait EventSource {
     const COMPONENT: &'static str;
 
     fn topic(&self) -> &'static str;
