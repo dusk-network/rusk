@@ -11,7 +11,9 @@ use dusk_consensus::commons::{ConsensusError, TimeoutSet};
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
-use node_data::events::{BlockEvent, Event, TransactionEvent};
+use node_data::events::{
+    BlockEvent, Event, TransactionEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED,
+};
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
@@ -708,7 +710,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                         let event = BlockEvent::StateChange {
                             hash: *hash,
-                            state: "confirmed",
+                            state: BLOCK_CONFIRMED,
                             height: current_height,
                         };
                         events.push(event.into());
@@ -742,7 +744,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     label = Label::Final(finalized_after);
                     let event = BlockEvent::StateChange {
                         hash,
-                        state: "finalized",
+                        state: BLOCK_FINALIZED,
                         height: current_height,
                     };
                     events.push(event.into());
