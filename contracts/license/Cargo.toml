@@ -24,7 +24,7 @@ license-circuits = { version = "0.1", path = "../../circuits/license" }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 hex = "0.4"
 rand = "0.8"
-zk-citadel = "0.12.0-rc"
+zk-citadel = "0.13.0-rc"
 ff = { version = "0.13", default-features = false }
 
 [build-dependencies]

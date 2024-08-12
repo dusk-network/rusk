@@ -6,24 +6,25 @@
 
 use std::sync::mpsc;
 
-use poseidon_merkle::Opening as PoseidonOpening;
-use rand::rngs::StdRng;
-
 use execution_core::{
+    signatures::bls::PublicKey as AccountPublicKey,
     transfer::{
         contract_exec::ContractExec,
+        moonlight::AccountData,
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, TreeLeaf,
-            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
+            Note, PublicKey, SecretKey, Transaction as PhoenixTransaction,
+            TreeLeaf, ViewKey, NOTES_TREE_DEPTH,
         },
         Transaction, TRANSFER_CONTRACT,
     },
-    BlsScalar, ContractError,
+    BlsScalar, ContractError, ContractId,
 };
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 
-const POINT_LIMIT: u64 = 0x100000000;
+use poseidon_merkle::Opening as PoseidonOpening;
+use rand::rngs::StdRng;
+
+const GAS_LIMIT: u64 = 0x10_000_000;
 
 pub fn leaves_from_height(
     session: &mut Session,
@@ -35,7 +36,7 @@ pub fn leaves_from_height(
         TRANSFER_CONTRACT,
         "leaves_from_height",
         &height,
-        u64::MAX,
+        GAS_LIMIT,
         feeder,
     )?;
 
@@ -55,7 +56,7 @@ pub fn leaves_from_pos(
         TRANSFER_CONTRACT,
         "leaves_from_pos",
         &pos,
-        POINT_LIMIT,
+        GAS_LIMIT,
         feeder,
     )?;
 
@@ -65,15 +66,39 @@ pub fn leaves_from_pos(
         .collect())
 }
 
+pub fn num_notes(session: &mut Session) -> Result<u64, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
+        .map(|r| r.data)
+}
+
 pub fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
 pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
+        .map(|r| r.data)
+}
+
+pub fn account(
+    session: &mut Session,
+    pk: &AccountPublicKey,
+) -> Result<AccountData, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "account", pk, GAS_LIMIT)
+        .map(|r| r.data)
+}
+
+pub fn contract_balance(
+    session: &mut Session,
+    contract: ContractId,
+) -> Result<u64, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "contract_balance", &contract, GAS_LIMIT)
         .map(|r| r.data)
 }
 
@@ -82,28 +107,18 @@ pub fn opening(
     pos: u64,
 ) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>, PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
-    vk: PhoenixViewKey,
-    iter: I,
-) -> Vec<Note> {
-    iter.into_iter()
-        .filter(|note| vk.owns(note.stealth_address()))
-        .collect()
-}
-
-/// Executes a transaction, returning the call receipt
+/// Executes a transaction.
+/// Returns result containing gas spent.
 pub fn execute(
     session: &mut Session,
     tx: impl Into<Transaction>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     let tx = tx.into();
 
-    // Spend the inputs and execute the call. If this errors the transaction is
-    // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
@@ -116,9 +131,6 @@ pub fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
@@ -133,14 +145,37 @@ pub fn execute(
     Ok(receipt)
 }
 
+pub fn owned_notes_value<'a, I: IntoIterator<Item = &'a Note>>(
+    vk: ViewKey,
+    notes: I,
+) -> u64 {
+    notes.into_iter().fold(0, |acc, note| {
+        acc + if vk.owns(note.stealth_address()) {
+            note.value(Some(&vk)).unwrap()
+        } else {
+            0
+        }
+    })
+}
+
+/// Returns vector of notes owned by a given view key.
+pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
+    vk: ViewKey,
+    iter: I,
+) -> Vec<Note> {
+    iter.into_iter()
+        .filter(|note| vk.owns(note.stealth_address()))
+        .collect()
+}
+
 /// Generate a TxCircuit given the sender secret-key, receiver public-key, the
 /// input note positions in the transaction tree and the new output-notes.
-pub fn create_transaction<const I: usize>(
+pub fn create_phoenix_transaction<const I: usize>(
     rng: &mut StdRng,
     session: &mut Session,
-    sender_sk: &PhoenixSecretKey,
-    change_pk: &PhoenixPublicKey,
-    receiver_pk: &PhoenixPublicKey,
+    sender_sk: &SecretKey,
+    change_pk: &PublicKey,
+    receiver_pk: &PublicKey,
     gas_limit: u64,
     gas_price: u64,
     input_pos: [u64; I],
@@ -148,7 +183,7 @@ pub fn create_transaction<const I: usize>(
     obfuscated_transaction: bool,
     deposit: u64,
     exec: Option<impl Into<ContractExec>>,
-) -> Transaction {
+) -> PhoenixTransaction {
     // Get the root of the tree of phoenix-notes.
     let root = root(session).expect("Getting the anchor should be successful");
 
@@ -192,5 +227,4 @@ pub fn create_transaction<const I: usize>(
         gas_price,
         exec.map(Into::into),
     )
-    .into()
 }

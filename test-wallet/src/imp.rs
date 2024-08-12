@@ -19,7 +19,7 @@ use execution_core::{
     stake::{Stake, StakeData, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
         contract_exec::{ContractCall, ContractDeploy, ContractExec},
-        moonlight::{AccountData, Payload as MoonlightPayload},
+        moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
             Error as PhoenixError, Fee, Note, Payload as PhoenixPayload,
             PublicKey, SecretKey, TxSkeleton, ViewKey, OUTPUT_NOTES,
@@ -712,21 +712,10 @@ where
         }
         let nonce = account.nonce + 1;
 
-        let payload = MoonlightPayload {
-            from,
-            to,
-            value,
-            deposit,
-            gas_limit,
-            gas_price,
-            nonce,
-            exec: exec.map(Into::into),
-        };
-
-        let digest = payload.to_hash_input_bytes();
-        let signature = from_sk.sign(&digest);
-
-        Ok(Transaction::moonlight(payload, signature))
+        Ok(MoonlightTransaction::new(
+            &from_sk, to, value, deposit, gas_limit, gas_price, nonce, exec,
+        )
+        .into())
     }
 
     /// Gets the balance of a key.

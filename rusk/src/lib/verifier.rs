@@ -31,8 +31,7 @@ pub static VD_EXEC_4_2: LazyLock<Vec<u8>> =
 
 /// Verifies the proof of the incoming transaction.
 pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
-    let inputs_len = tx.payload().tx_skeleton.nullifiers.len();
-    let outputs_len = tx.payload().tx_skeleton.outputs.len();
+    let inputs_len = tx.nullifiers().len();
 
     let vd = match inputs_len {
         1 => &VD_EXEC_1_2,
@@ -40,7 +39,10 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
         3 => &VD_EXEC_3_2,
         4 => &VD_EXEC_4_2,
         _ => {
-            return Err(Error::InvalidCircuitArguments(inputs_len, outputs_len))
+            return Err(Error::InvalidCircuitArguments(
+                inputs_len,
+                tx.outputs().len(),
+            ))
         }
     };
 
@@ -55,13 +57,11 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
 /// Verifies the signature of the incoming transaction.
 pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
-    let payload = tx.payload();
-    let signature = tx.signature();
-
-    let digest = payload.to_hash_input_bytes();
-    let is_valid = rusk_abi::verify_bls(digest, payload.from, *signature);
-
-    Ok(is_valid)
+    Ok(rusk_abi::verify_bls(
+        tx.signature_message(),
+        *tx.from_account(),
+        *tx.signature(),
+    ))
 }
 
 fn fetch_verifier(circuit_name: &str) -> Vec<u8> {

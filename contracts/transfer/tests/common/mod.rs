@@ -4,7 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod assert;
-pub mod init;
 pub mod prove;
 pub mod utils;
