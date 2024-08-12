@@ -6,6 +6,7 @@
 
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use execution_core::BlsScalar;
+use serde::Serialize;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
@@ -24,7 +25,7 @@ impl From<ProtocolTransaction> for Transaction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SpentTransaction {
     pub inner: Transaction,
     pub block_height: u64,
