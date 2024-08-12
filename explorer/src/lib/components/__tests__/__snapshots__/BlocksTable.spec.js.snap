@@ -60,11 +60,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,454
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:54.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -119,11 +120,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,453
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:51.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -178,11 +180,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,452
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:47.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -237,11 +240,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,451
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:45.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -296,11 +300,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,450
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:42.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -355,11 +360,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,449
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:39.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -414,11 +420,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,448
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:35.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -473,11 +480,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,447
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:32.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -532,11 +540,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,446
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:29.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          
@@ -591,11 +600,12 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
             1,365,445
           </a>
            
-          <small
-            class="block__time"
+          <time
+            class="dusk-relative-time block__time"
+            datetime="2024-05-28T14:26:24.000Z"
           >
             yesterday
-          </small>
+          </time>
         </td>
         
          

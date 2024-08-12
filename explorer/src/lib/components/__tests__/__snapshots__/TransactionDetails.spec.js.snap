@@ -134,13 +134,12 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         class="details-list__definition"
       >
         <time
-          class="transaction-details__list-timestamp"
+          class="dusk-relative-time transaction-details__list-timestamp"
           datetime="2024-04-16T06:39:09.000Z"
           slot="definition"
         >
           Tue, 16 Apr 2024 06:39:09 GMT (last month)
           
-           
         </time>
       </dd>
       <dt
@@ -461,13 +460,12 @@ exports[`Transaction Details > renders the Transaction Details component with th
         class="details-list__definition"
       >
         <time
-          class="transaction-details__list-timestamp"
+          class="dusk-relative-time transaction-details__list-timestamp"
           datetime="2024-04-16T06:39:09.000Z"
           slot="definition"
         >
           Tue, 16 Apr 2024 06:39:09 GMT (last month)
           
-           
         </time>
       </dd>
       <dt

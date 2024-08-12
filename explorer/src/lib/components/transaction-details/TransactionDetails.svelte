@@ -6,10 +6,9 @@
     DataCard,
     DataGuard,
     ListItem,
-    Rerender,
     StaleDataNotice,
   } from "$lib/components";
-  import { Badge, Card, Switch } from "$lib/dusk/components";
+  import { Badge, Card, RelativeTime, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
     createCurrencyFormatter,
@@ -18,7 +17,6 @@
   } from "$lib/dusk/currency";
   import {
     calculateAdaptiveCharCount,
-    getRelativeTimeString,
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
@@ -115,15 +113,15 @@
     <!-- TIMESTAMP -->
     <ListItem tooltipText="The date and time the transaction was created">
       <svelte:fragment slot="term">timestamp</svelte:fragment>
-      <time
-        datetime={data.date.toISOString()}
-        class="transaction-details__list-timestamp"
+      <RelativeTime
+        autoRefresh={true}
+        className="transaction-details__list-timestamp"
+        date={data.date}
         slot="definition"
+        ><svelte:fragment let:relativeTime
+          >{`${data.date.toUTCString()} (${relativeTime})`}</svelte:fragment
+        ></RelativeTime
       >
-        <Rerender>
-          {`${data.date.toUTCString()} (${getRelativeTimeString(data.date, "long")})`}
-        </Rerender>
-      </time>
     </ListItem>
 
     <!-- TYPE -->

@@ -137,11 +137,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 070280c695...94efca2a0e
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:42:20.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -211,11 +212,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 534f753d5a...5153259c00
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:42:08.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -285,11 +287,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 c6f13af20c...fc68ebb102
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:41:58.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -359,11 +362,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 31c7dce26a...bf7bcb4c04
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:40:57.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -433,11 +437,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 4fa6e913c0...9e4dd5510d
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:40:28.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -507,11 +512,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 d1a7928a43...79ccdb2e04
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:39:59.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -581,11 +587,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 004ca8683c...cff9718b06
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:39:13.000Z"
               >
                 18 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -655,11 +662,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 b5a77063e4...4496253a05
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:01:59.000Z"
               >
                 19 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -729,11 +737,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 b263d9d594...9d80b06e0b
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:01:15.000Z"
               >
                 19 hours ago
-              </small>
+              </time>
             </td>
             
              
@@ -803,11 +812,12 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 b4525cb82f...f5275d7709
               </a>
                
-              <small
-                class="transaction__time"
+              <time
+                class="dusk-relative-time transaction__time"
+                datetime="2024-05-29T05:00:40.000Z"
               >
                 19 hours ago
-              </small>
+              </time>
             </td>
             
              

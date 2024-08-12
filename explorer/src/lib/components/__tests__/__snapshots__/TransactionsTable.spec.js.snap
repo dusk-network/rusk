@@ -67,11 +67,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             070280c695...94efca2a0e
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:42:20.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -141,11 +142,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             534f753d5a...5153259c00
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:42:08.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -215,11 +217,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             c6f13af20c...fc68ebb102
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:41:58.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -289,11 +292,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             31c7dce26a...bf7bcb4c04
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:40:57.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -363,11 +367,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             4fa6e913c0...9e4dd5510d
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:40:28.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -437,11 +442,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             d1a7928a43...79ccdb2e04
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:39:59.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -511,11 +517,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             004ca8683c...cff9718b06
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:39:13.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -585,11 +592,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             b5a77063e4...4496253a05
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:01:59.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -659,11 +667,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             b263d9d594...9d80b06e0b
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:01:15.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -733,11 +742,12 @@ exports[`Transactions Table > should pass additional class names to the rendered
             b4525cb82f...f5275d7709
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:00:40.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -860,11 +870,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             070280c695...94efca2a0e
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:42:20.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -913,11 +924,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             534f753d5a...5153259c00
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:42:08.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -966,11 +978,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             c6f13af20c...fc68ebb102
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:41:58.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1019,11 +1032,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             31c7dce26a...bf7bcb4c04
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:40:57.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1072,11 +1086,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             4fa6e913c0...9e4dd5510d
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:40:28.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1125,11 +1140,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             d1a7928a43...79ccdb2e04
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:39:59.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1178,11 +1194,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             004ca8683c...cff9718b06
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:39:13.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1231,11 +1248,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             b5a77063e4...4496253a05
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:01:59.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1284,11 +1302,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             b263d9d594...9d80b06e0b
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:01:15.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1337,11 +1356,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             b4525cb82f...f5275d7709
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:00:40.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1449,11 +1469,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             070280c695...94efca2a0e
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:42:20.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1523,11 +1544,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             534f753d5a...5153259c00
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:42:08.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1597,11 +1619,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             c6f13af20c...fc68ebb102
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:41:58.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1671,11 +1694,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             31c7dce26a...bf7bcb4c04
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:40:57.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1745,11 +1769,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             4fa6e913c0...9e4dd5510d
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:40:28.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1819,11 +1844,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             d1a7928a43...79ccdb2e04
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:39:59.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1893,11 +1919,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             004ca8683c...cff9718b06
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:39:13.000Z"
           >
             18 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -1967,11 +1994,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             b5a77063e4...4496253a05
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:01:59.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -2041,11 +2069,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             b263d9d594...9d80b06e0b
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:01:15.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          
@@ -2115,11 +2144,12 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             b4525cb82f...f5275d7709
           </a>
            
-          <small
-            class="transaction__time"
+          <time
+            class="dusk-relative-time transaction__time"
+            datetime="2024-05-29T05:00:40.000Z"
           >
             19 hours ago
-          </small>
+          </time>
         </td>
         
          

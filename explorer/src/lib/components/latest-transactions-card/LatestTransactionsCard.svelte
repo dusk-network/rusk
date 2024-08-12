@@ -51,6 +51,7 @@
   {#if isSmallScreen}
     {#each txns as txn (txn)}
       <TransactionsList
+        autoRefreshTime={!isOnHomeScreen}
         data={txn}
         mode={isOnHomeScreen ? "compact" : "full"}
         {displayTooltips}
