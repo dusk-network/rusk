@@ -37,6 +37,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 			
 clippy: ## Run clippy
+	$(MAKE) -C ./execution-core/ $@
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
@@ -49,6 +50,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./rusk/ $@
 
 doc: ## Run doc gen
+	$(MAKE) -C ./execution-core/ $@
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) -C ./consensus $@
 	$(MAKE) -j1 -C ./contracts $@
