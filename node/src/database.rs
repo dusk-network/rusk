@@ -120,7 +120,7 @@ pub trait Candidate {
 
 pub trait Mempool {
     /// Adds a transaction to the mempool.
-    fn add_tx(&self, tx: &ledger::Transaction) -> Result<()>;
+    fn add_tx(&self, tx: &ledger::Transaction, expiry: u64) -> Result<()>;
 
     /// Gets a transaction from the mempool.
     fn get_tx(&self, tx_id: [u8; 32]) -> Result<Option<ledger::Transaction>>;
@@ -146,6 +146,9 @@ pub trait Mempool {
 
     /// Get all transactions hashes.
     fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>>;
+
+    /// Get all expired transactions.
+    fn get_expired_txs(&self, timestamp: u64) -> Result<Vec<[u8; 32]>>;
 
     /// Number of persisted transactions
     fn txs_count(&self) -> usize;
