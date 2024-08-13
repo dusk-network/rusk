@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use serde::{Deserialize, Serialize};
-use std::fmt::Formatter;
+use std::{fmt::Formatter, time::Duration};
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Params {
@@ -14,6 +14,12 @@ pub struct Params {
 
     /// Maximum number of transactions that can be accepted/stored in mempool
     pub max_mempool_txn_count: usize,
+
+    /// Interval to check for expired transactions
+    pub idle_interval: Duration,
+
+    /// Duration after which a transaction is removed from the mempool
+    pub mempool_expiry: Duration,
 }
 
 impl Default for Params {
@@ -21,6 +27,8 @@ impl Default for Params {
         Self {
             max_queue_size: 1000,
             max_mempool_txn_count: 10_000,
+            idle_interval: Duration::from_secs(60),
+            mempool_expiry: Duration::from_secs(3 * 60 * 60 * 24), // 3 days
         }
     }
 }
