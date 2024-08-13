@@ -14,8 +14,9 @@ keys: ## Create the keys for the circuits
 state: keys wasm ## Create the network state
 	$(MAKE) -C ./rusk recovery-state
 
-wasm: setup-compiler ## Generate the WASM for all the contracts
+wasm: setup-compiler ## Generate the WASM for all the contracts and wallet-core
 	$(MAKE) -C ./contracts $@
+	$(MAKE) -C ./wallet-core $@
 
 allcircuits: ## Build circuit crates
 	$(MAKE) -j -C ./circuits all
@@ -34,6 +35,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./node-data $@
 	$(MAKE) -C ./consensus $@
 	$(MAKE) -C ./node $@
+	$(MAKE) -C ./wallet-core $@
 	$(MAKE) -C ./rusk/ $@
 			
 clippy: ## Run clippy
@@ -47,6 +49,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./node-data $@
 	$(MAKE) -C ./consensus $@
 	$(MAKE) -C ./node $@
+	$(MAKE) -C ./wallet-core $@
 	$(MAKE) -C ./rusk/ $@
 
 doc: ## Run doc gen
@@ -61,6 +64,7 @@ doc: ## Run doc gen
 	$(MAKE) -C ./rusk-profile $@
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./rusk-recovery $@
+	$(MAKE) -C ./wallet-core/ $@
 
 run: keys state web-wallet ## Run the server
 	$(MAKE) -C ./rusk/ $@

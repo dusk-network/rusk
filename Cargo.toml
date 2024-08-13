@@ -13,6 +13,7 @@ members = [
     "contracts/license",
 
     "execution-core",
+    "wallet-core",
 
     "rusk-prover",
 

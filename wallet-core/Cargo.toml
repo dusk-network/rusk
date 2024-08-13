@@ -1,0 +1,16 @@
+[package]
+name = "wallet-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dusk-bytes = "0.1"
+bytecheck = { version = "0.6", default-features = false }
+execution-core = { version = "0.1", path = "../execution-core/" }
+zeroize = { version = "1", default-features = false, features = ["derive"] }
+rand_chacha = { version = "0.3", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+
+[dev-dependencies]
+
+[features]
