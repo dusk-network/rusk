@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
+
 use wallet_core::keys::{
     derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };

@@ -12,5 +12,7 @@ rand_chacha = { version = "0.3", default-features = false }
 sha2 = { version = "0.10", default-features = false }
 
 [dev-dependencies]
+rand = "0.8"
+ff = { version = "0.13", default-features = false }
 
 [features]
