@@ -119,8 +119,8 @@ pub trait Candidate {
 }
 
 pub trait Mempool {
-    /// Adds a transaction to the mempool.
-    fn add_tx(&self, tx: &ledger::Transaction, expiry: u64) -> Result<()>;
+    /// Adds a transaction to the mempool with a timestamp.
+    fn add_tx(&self, tx: &ledger::Transaction, timestamp: u64) -> Result<()>;
 
     /// Gets a transaction from the mempool.
     fn get_tx(&self, tx_id: [u8; 32]) -> Result<Option<ledger::Transaction>>;

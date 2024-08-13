@@ -14,6 +14,7 @@ use node_data::events::{Event, TransactionEvent};
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
+use std::time::{self, UNIX_EPOCH};
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
@@ -81,22 +82,54 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        loop {
-            if let Ok(msg) = self.inbound.recv().await {
-                match &msg.payload {
-                    Payload::Transaction(tx) => {
-                        let accept = self.accept_tx::<DB, VM>(&db, &vm, tx);
-                        if let Err(e) = accept.await {
-                            error!("{}", e);
-                            continue;
-                        }
+        let mut on_idle_event = tokio::time::interval(self.conf.idle_interval);
 
-                        let network = network.read().await;
-                        if let Err(e) = network.broadcast(&msg).await {
-                            warn!("Unable to broadcast accepted tx: {e}")
-                        };
+        loop {
+            tokio::select! {
+                biased;
+                _ = on_idle_event.tick() => {
+                    info!("MempoolSrv is idle");
+
+                    let dur = time::SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("valid timestamp")
+                        .checked_sub(self.conf.mempool_expiry)
+                        .expect("valid duration");
+
+                    // Remove expired transactions from the mempool
+                    db.read().await.update(|db| {
+                        let expired_txs = db.get_expired_txs(dur.as_secs())?;
+                        for tx_id in expired_txs {
+                            info!(event = "expired_tx", hash = hex::encode(tx_id));
+                            if db.delete_tx(tx_id)? {
+                                let event = TransactionEvent::Removed(tx_id);
+                                if let Err(e) = self.event_sender.try_send(event.into()) {
+                                    warn!("cannot notify mempool removed transaction {e}")
+                                };
+                            }
+                        }
+                        Ok(())
+                    })?;
+
+                },
+                msg = self.inbound.recv() => {
+                    if let Ok(msg) = msg {
+                        match &msg.payload {
+                            Payload::Transaction(tx) => {
+                                let accept = self.accept_tx::<DB, VM>(&db, &vm, tx);
+                                if let Err(e) = accept.await {
+                                    error!("{}", e);
+                                    continue;
+                                }
+
+                                let network = network.read().await;
+                                if let Err(e) = network.broadcast(&msg).await {
+                                    warn!("Unable to broadcast accepted tx: {e}")
+                                };
+                            }
+                            _ => error!("invalid inbound message payload"),
+                        }
                     }
-                    _ => error!("invalid inbound message payload"),
                 }
             }
         }
@@ -170,7 +203,12 @@ impl MempoolSrv {
 
             events.push(TransactionEvent::Included(tx));
             // Persist transaction in mempool storage
-            db.add_tx(tx)
+
+            let now = time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("valid timestamp");
+
+            db.add_tx(tx, now.as_secs())
         })?;
 
         tracing::info!(

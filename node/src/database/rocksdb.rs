@@ -679,7 +679,7 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
-    fn add_tx(&self, tx: &ledger::Transaction, expiry: u64) -> Result<()> {
+    fn add_tx(&self, tx: &ledger::Transaction, timestamp: u64) -> Result<()> {
         // Map Hash to serialized transaction
         let mut tx_data = vec![];
         tx.write(&mut tx_data)?;
@@ -694,12 +694,16 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             self.put_cf(self.nullifiers_cf, key, hash)?;
         }
 
-        let value = expiry.to_be_bytes();
+        let timestamp = timestamp.to_be_bytes();
 
         // Map Fee_Hash to Expiry
         // Key pair is used to facilitate sort-by-fee
-        // Also, the expiry is used to remove expired transactions
-        self.put_cf(self.fees_cf, serialize_key(tx.gas_price(), hash)?, value)?;
+        // Also, the timestamp is used to remove expired transactions
+        self.put_cf(
+            self.fees_cf,
+            serialize_key(tx.gas_price(), hash)?,
+            timestamp,
+        )?;
 
         Ok(())
     }
@@ -781,7 +785,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             if let Some(key) = iter.key() {
                 let (_, tx_id) = deserialize_key(&mut &key.to_vec()[..])?;
 
-                let expiry = u64::from_be_bytes(
+                let tx_timestamp = u64::from_be_bytes(
                     iter.value()
                         .ok_or_else(|| {
                             io::Error::new(
@@ -798,7 +802,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                         })?,
                 );
 
-                if expiry <= timestamp {
+                if tx_timestamp <= timestamp {
                     txs_list.push(tx_id);
                 }
             }
