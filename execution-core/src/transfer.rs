@@ -8,6 +8,7 @@
 //! network.
 
 use alloc::vec::Vec;
+use core::fmt::Debug;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError};
@@ -66,7 +67,10 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         exec: Option<impl Into<ContractExec>>,
-    ) -> Self {
+    ) -> Self
+    where
+        <P as Prove>::Error: Debug,
+    {
         Self::Phoenix(PhoenixTransaction::new::<R, P>(
             rng,
             sender_sk,

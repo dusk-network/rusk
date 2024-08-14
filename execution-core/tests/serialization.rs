@@ -30,12 +30,14 @@ use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 struct RandomTestProver();
 
 impl Prove for RandomTestProver {
-    fn prove(_circuit: TxCircuitVec) -> Vec<u8> {
-        let mut proof = vec![0; 50_000_000];
+    type Error = ();
+
+    fn prove(_circuit: TxCircuitVec) -> Result<Vec<u8>, Self::Error> {
+        let mut proof = vec![0; 5_000];
         let mut rng = StdRng::seed_from_u64(42);
         rng.fill_bytes(&mut proof);
 
-        proof
+        Ok(proof)
     }
 }
 
