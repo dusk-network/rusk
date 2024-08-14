@@ -41,6 +41,14 @@ impl Default for Params {
 
 impl std::fmt::Display for Params {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "max_queue_size: {}", self.max_queue_size)
+        write!(
+            f,
+            "max_queue_size: {}, max_mempool_txn_count: {},
+         idle_interval: {:?}, mempool_expiry: {:?}",
+            self.max_queue_size,
+            self.max_mempool_txn_count,
+            self.idle_interval,
+            self.mempool_expiry
+        )
     }
 }

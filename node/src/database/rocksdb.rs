@@ -696,7 +696,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
         let timestamp = timestamp.to_be_bytes();
 
-        // Map Fee_Hash to Expiry
+        // Map Fee_Hash to Timestamp
         // Key pair is used to facilitate sort-by-fee
         // Also, the timestamp is used to remove expired transactions
         self.put_cf(
