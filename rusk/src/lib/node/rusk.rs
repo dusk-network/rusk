@@ -55,6 +55,7 @@ impl Rusk {
         dir: P,
         generation_timeout: Option<Duration>,
         gas_per_deploy_byte: Option<u64>,
+        block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
     ) -> Result<Self> {
@@ -90,6 +91,7 @@ impl Rusk {
             gas_per_deploy_byte,
             feeder_gas_limit,
             event_sender,
+            block_gas_limit,
         })
     }
 
@@ -102,7 +104,7 @@ impl Rusk {
         let started = Instant::now();
 
         let block_height = params.round;
-        let block_gas_limit = params.block_gas_limit;
+        let block_gas_limit = self.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let to_slash = params.to_slash.clone();
 
@@ -417,6 +419,10 @@ impl Rusk {
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
         task::spawn(delete_commits(self.vm.clone(), to_delete));
+    }
+
+    pub(crate) fn block_gas_limit(&self) -> u64 {
+        self.block_gas_limit
     }
 }
 

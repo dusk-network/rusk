@@ -214,6 +214,10 @@ impl VMExecution for Rusk {
 
         Ok(state_hash)
     }
+
+    fn get_block_gas_limit(&self) -> u64 {
+        self.block_gas_limit()
+    }
 }
 
 impl Rusk {
