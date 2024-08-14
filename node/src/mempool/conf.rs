@@ -7,6 +7,10 @@
 use serde::{Deserialize, Serialize};
 use std::{fmt::Formatter, time::Duration};
 
+/// Mempool configuration parameters
+pub const DEFAULT_EXPIRY_TIME: Duration = Duration::from_secs(3 * 60 * 60 * 24); /* 3 days */
+pub const DEFAULT_IDLE_INTERVAL: Duration = Duration::from_secs(60 * 60); /* 1 hour */
+
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Params {
     /// Number of pending to be processed transactions
@@ -16,10 +20,12 @@ pub struct Params {
     pub max_mempool_txn_count: usize,
 
     /// Interval to check for expired transactions
-    pub idle_interval: Duration,
+    #[serde(with = "humantime_serde")]
+    pub idle_interval: Option<Duration>,
 
     /// Duration after which a transaction is removed from the mempool
-    pub mempool_expiry: Duration,
+    #[serde(with = "humantime_serde")]
+    pub mempool_expiry: Option<Duration>,
 }
 
 impl Default for Params {
@@ -27,8 +33,8 @@ impl Default for Params {
         Self {
             max_queue_size: 1000,
             max_mempool_txn_count: 10_000,
-            idle_interval: Duration::from_secs(60),
-            mempool_expiry: Duration::from_secs(3 * 60 * 60 * 24), // 3 days
+            idle_interval: Some(DEFAULT_IDLE_INTERVAL),
+            mempool_expiry: Some(DEFAULT_EXPIRY_TIME),
         }
     }
 }

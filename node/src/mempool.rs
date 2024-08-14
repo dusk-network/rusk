@@ -10,6 +10,7 @@ use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
+use conf::{DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL};
 use node_data::events::{Event, TransactionEvent};
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
@@ -82,18 +83,24 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        let mut on_idle_event = tokio::time::interval(self.conf.idle_interval);
+        let idle_interval =
+            self.conf.idle_interval.unwrap_or(DEFAULT_IDLE_INTERVAL);
+
+        let mempool_expiry =
+            self.conf.mempool_expiry.unwrap_or(DEFAULT_EXPIRY_TIME);
+
+        let mut on_idle_event = tokio::time::interval(idle_interval);
 
         loop {
             tokio::select! {
                 biased;
                 _ = on_idle_event.tick() => {
-                    info!("MempoolSrv is idle");
+                    info!(event = "mempool_idle", interval = ?idle_interval);
 
                     let dur = time::SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("valid timestamp")
-                        .checked_sub(self.conf.mempool_expiry)
+                        .checked_sub(mempool_expiry)
                         .expect("valid duration");
 
                     // Remove expired transactions from the mempool
