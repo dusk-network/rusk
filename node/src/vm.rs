@@ -66,6 +66,9 @@ pub trait VMExecution: Send + Sync + 'static {
     /// Returns last finalized state root
     fn get_finalized_state_root(&self) -> anyhow::Result<[u8; 32]>;
 
+    /// Returns block gas limit
+    fn get_block_gas_limit(&self) -> u64;
+
     fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]>;
     fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]>;
 }

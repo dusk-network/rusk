@@ -6,6 +6,7 @@ db_path = '/tmp/rusk-harness/'
 consensus_keys_path = '/tmp/consensus_bls.keys'
 generation_timeout = '3s'
 max_queue_size = 5000
+block_gas_limit = 5000000000
 
 [chain.db_options]
 enable_debug = false
