@@ -9,8 +9,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 execution-core = { version = "0.1.0", path = "../../execution-core", features = ["zk"] }
 dusk-bytes = "0.1"
-dusk-poseidon = "0.39"
-poseidon-merkle = { version = "0.6", features = ["rkyv-impl", "zk", "size_32"] }
+dusk-poseidon = "0.40"
+poseidon-merkle = { version = "0.7", features = ["rkyv-impl", "zk", "size_32"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 
@@ -24,7 +24,7 @@ license-circuits = { version = "0.1", path = "../../circuits/license" }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 hex = "0.4"
 rand = "0.8"
-zk-citadel = "0.13.0-rc"
+zk-citadel = "0.14"
 ff = { version = "0.13", default-features = false }
 
 [build-dependencies]
