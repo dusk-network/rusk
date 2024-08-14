@@ -262,7 +262,7 @@ impl Circuit for TestCircuit {
             .a(six)
             .b(seven)
             .d(one)
-            .o(min_twenty);
+            .c(min_twenty);
         composer.append_gate(constraint);
 
         let constraint = Constraint::new()
@@ -273,7 +273,7 @@ impl Circuit for TestCircuit {
             .output(1)
             .a(min_twenty)
             .b(six)
-            .o(seven);
+            .c(seven);
         composer.append_gate(constraint);
 
         Ok(())

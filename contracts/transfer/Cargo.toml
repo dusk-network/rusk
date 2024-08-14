@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 execution-core = { version = "0.1.0", path = "../../execution-core" }
 dusk-bytes = "0.1"
-poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
+poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 ringbuffer = "0.15"
 

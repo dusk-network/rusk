@@ -6,7 +6,7 @@ autobins = false
 
 [dependencies]
 dusk-bytes = { version = "0.1" }
-poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
+poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
 rand_core = "0.6"
 
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
