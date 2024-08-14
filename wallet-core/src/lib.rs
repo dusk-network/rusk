@@ -22,9 +22,35 @@ pub const RNG_SEED: usize = 64;
 // phoenix-transaction
 const MAX_INPUT_NOTES: usize = 4;
 
+use alloc::collections::btree_map::BTreeMap;
 use alloc::vec::Vec;
 
-use execution_core::transfer::phoenix::{Note, ViewKey as PhoenixViewKey};
+use execution_core::{
+    transfer::phoenix::{
+        Note, SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+    },
+    BlsScalar,
+};
+
+/// Filter all notes that are owned by the given keys, mapped to their
+/// nullifiers.
+pub fn map_owned(
+    keys: impl AsRef<[PhoenixSecretKey]>,
+    notes: impl AsRef<[Note]>,
+) -> BTreeMap<BlsScalar, Note> {
+    notes
+        .as_ref()
+        .iter()
+        .fold(BTreeMap::new(), |mut notes_map, note| {
+            for sk in keys.as_ref() {
+                if sk.owns(note.stealth_address()) {
+                    let nullifier = note.gen_nullifier(sk);
+                    notes_map.insert(nullifier, note.clone());
+                }
+            }
+            notes_map
+        })
+}
 
 /// Calculate the sum for all the given [`Note`]s that belong to the given
 /// [`PhoenixViewKey`].

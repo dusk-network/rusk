@@ -6,8 +6,12 @@
 
 //! Utilities to derive keys from the seed.
 
+use alloc::vec::Vec;
+use core::ops::Range;
+
 use rand_chacha::{rand_core::SeedableRng, ChaCha12Rng};
 use sha2::{Digest, Sha256};
+use zeroize::Zeroize;
 
 use execution_core::{
     signatures::bls::SecretKey as BlsSecretKey,
@@ -16,7 +20,6 @@ use execution_core::{
         ViewKey as PhoenixViewKey,
     },
 };
-use zeroize::Zeroize;
 
 use crate::RNG_SEED;
 
@@ -38,6 +41,19 @@ pub fn derive_phoenix_sk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
     PhoenixSecretKey::random(&mut rng_with_index(seed, index, b"PSK"))
+}
+
+/// Generates multiple [`PhoenixSecretKey`] from a seed and a range of indices.
+///
+/// The randomness is generated using [`rng_with_index`].
+#[must_use]
+pub fn derive_multiple_phoenix_sk(
+    seed: &[u8; RNG_SEED],
+    index_range: Range<u8>,
+) -> Vec<PhoenixSecretKey> {
+    index_range
+        .map(|index| derive_phoenix_sk(seed, index))
+        .collect()
 }
 
 /// Generates a [`PheonixPublicKey`] from its seed and index.
