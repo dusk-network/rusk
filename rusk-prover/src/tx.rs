@@ -96,7 +96,7 @@ impl UnprovenTransactionInput {
         bytes
     }
 
-    /// Deserializes the the input from bytes.
+    /// Deserializes the input from bytes.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut bytes = buf;
 
