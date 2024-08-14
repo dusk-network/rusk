@@ -6,7 +6,7 @@
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    plonk::Prover as PlonkProver,
+    plonk::{Error as PlonkError, Prover as PlonkProver},
     transfer::phoenix::{Prove, TxCircuit, TxCircuitVec, NOTES_TREE_DEPTH},
 };
 use once_cell::sync::Lazy;
@@ -41,29 +41,24 @@ fn fetch_prover(circuit_name: &str) -> PlonkProver {
 pub struct CachedProver();
 
 impl Prove for CachedProver {
-    fn prove(circuit: TxCircuitVec) -> Vec<u8> {
+    type Error = PlonkError;
+
+    fn prove(circuit: TxCircuitVec) -> Result<Vec<u8>, Self::Error> {
         let rng = &mut StdRng::seed_from_u64(0xbeef);
 
         // fetch the prover from the cache and crate the circuit
         let (proof, _pi) = match circuit.input_notes_info.len() {
-            1 => PHOENIX_TX_1_2_PROVER
-                .prove(rng, &tx_circuit_1_2(circuit))
-                .expect("the circuit should be correct"),
-            2 => PHOENIX_TX_2_2_PROVER
-                .prove(rng, &tx_circuit_2_2(circuit))
-                .expect("the circuit should be correct"),
-            3 => PHOENIX_TX_3_2_PROVER
-                .prove(rng, &tx_circuit_3_2(circuit))
-                .expect("the circuit should be correct"),
-            4 => PHOENIX_TX_4_2_PROVER
-                .prove(rng, &tx_circuit_4_2(circuit))
-                .expect("the circuit should be correct"),
+            1 => PHOENIX_TX_1_2_PROVER.prove(rng, &tx_circuit_1_2(circuit))?,
+            2 => PHOENIX_TX_2_2_PROVER.prove(rng, &tx_circuit_2_2(circuit))?,
+            3 => PHOENIX_TX_3_2_PROVER.prove(rng, &tx_circuit_3_2(circuit))?,
+            4 => PHOENIX_TX_4_2_PROVER.prove(rng, &tx_circuit_4_2(circuit))?,
             _ => panic!(
                 "The `TxCircuit` is only implemented for 1,
             2, 3 or 4 input-notes."
             ),
         };
-        proof.to_bytes().to_vec()
+
+        Ok(proof.to_bytes().to_vec())
     }
 }
 
