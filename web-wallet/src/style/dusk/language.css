@@ -136,7 +136,7 @@
 
   /* Controls */
 
-  --non-button-control-bg-color: var(--smokey-black);
+  --non-button-control-bg-color: #000;
   --non-button-control-text-color: var(--light-grey);
 
   --control-bg-color: var(--light-grey);
