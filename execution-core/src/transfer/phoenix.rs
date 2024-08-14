@@ -8,6 +8,7 @@
 
 use alloc::vec::Vec;
 use core::cmp;
+use core::fmt::Debug;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
@@ -59,12 +60,6 @@ impl PartialEq for Transaction {
 impl Eq for Transaction {}
 
 impl Transaction {
-    /// Creates a new phoenix transaction given the [`Payload`] and proof.
-    #[must_use]
-    pub fn from_payload_and_proof(payload: Payload, proof: Vec<u8>) -> Self {
-        Self { payload, proof }
-    }
-
     /// Create a new phoenix transaction given the sender secret-key, receiver
     /// public-key, the input note positions in the transaction tree and the
     /// new output-notes.
@@ -92,7 +87,10 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         exec: Option<impl Into<ContractExec>>,
-    ) -> Self {
+    ) -> Self
+    where
+        <P as Prove>::Error: Debug,
+    {
         let sender_pk = PublicKey::from(sender_sk);
         let sender_vk = ViewKey::from(sender_sk);
 
@@ -261,8 +259,18 @@ impl Transaction {
 
         Self {
             payload,
-            proof: P::prove(circuit),
+            proof: P::prove(circuit).expect(
+                "The proof generation shouldn't fail with a valid circuit",
+            ),
         }
+    }
+
+    /// Creates a new phoenix transaction given the [`Payload`] and proof. Note
+    /// that this function doesn't guarantee that the proof matches the
+    /// payload, if possible use [`Self::new`] instead.
+    #[must_use]
+    pub fn from_payload_and_proof(payload: Payload, proof: Vec<u8>) -> Self {
+        Self { payload, proof }
     }
 
     /// The proof of the transaction.
@@ -910,7 +918,14 @@ impl<const I: usize> From<TxCircuit<NOTES_TREE_DEPTH, I>> for TxCircuitVec {
 /// This trait can be used to implement different methods to generate a proof
 /// from the circuit-input data.
 pub trait Prove {
+    /// The type returned in the event of an error during proof generation.
+    type Error;
+
     /// Generate a transaction proof from all the information needed to create a
     /// tx-circuit.
-    fn prove(circuit: TxCircuitVec) -> Vec<u8>;
+    ///
+    /// # Errors
+    /// This function errors in case of an incorrect circuit or of an
+    /// unobtainable prover-key.
+    fn prove(circuit: TxCircuitVec) -> Result<Vec<u8>, Self::Error>;
 }
