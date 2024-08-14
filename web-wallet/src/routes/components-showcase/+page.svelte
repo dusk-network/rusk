@@ -8,6 +8,7 @@
   import Buttons from "./Buttons.svelte";
   import Cards from "./Cards.svelte";
   import Checkboxes from "./Checkboxes.svelte";
+  import DashboardNavs from "./DashboardNavs.svelte";
   import ExclusiveChoices from "./ExclusiveChoices.svelte";
   import ProgressBars from "./ProgressBars.svelte";
   import Selects from "./Selects.svelte";
@@ -28,6 +29,7 @@
     Buttons: Buttons,
     Cards: Cards,
     Checkboxes: Checkboxes,
+    "Dashboard Navs": DashboardNavs,
     "Exclusive Choices": ExclusiveChoices,
     "Progress bars": ProgressBars,
     Selects: Selects,
