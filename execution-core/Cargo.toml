@@ -9,8 +9,8 @@ dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-im
 dusk-poseidon = "0.39"
 bls12_381-bls = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
 jubjub-schnorr = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.31.0-rc", default-features = false, features = ["rkyv-impl", "alloc"] }
-phoenix-circuits = { version = "0.3.0-rc", default-features = false }
+phoenix-core = { version = "0.31", default-features = false, features = ["rkyv-impl", "alloc"] }
+phoenix-circuits = { version = "0.3", default-features = false }
 poseidon-merkle = { version = "0.6", features = ["rkyv-impl"] }
 piecrust-uplink = { version = "0.16" }
 dusk-bytes = "0.1"
