@@ -7,7 +7,8 @@
 use dusk_bytes::Serializable;
 
 use wallet_core::keys::{
-    derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
+    derive_bls_sk, derive_multiple_phoenix_sk, derive_phoenix_pk,
+    derive_phoenix_sk, derive_phoenix_vk,
 };
 
 const SEED: [u8; 64] = [0; 64];
@@ -24,6 +25,29 @@ fn test_derive_phoenix_sk() {
         163, 0,
     ];
     assert_eq!(derive_phoenix_sk(&SEED, INDEX).to_bytes(), sk_bytes);
+}
+
+#[test]
+fn test_derive_multiple_phoenix_sk() {
+    // it is important that we always derive the same key from a fixed seed
+    let sk_bytes_0 = [
+        160, 210, 234, 8, 94, 23, 76, 60, 130, 143, 137, 225, 37, 83, 68, 218,
+        207, 192, 171, 235, 252, 130, 133, 62, 18, 232, 6, 49, 245, 123, 220,
+        12, 250, 111, 39, 88, 24, 41, 156, 174, 241, 14, 118, 173, 11, 53, 192,
+        126, 7, 119, 70, 69, 212, 230, 124, 79, 223, 140, 93, 153, 33, 147,
+        163, 0,
+    ];
+    let sk_bytes_1 = [
+        0, 229, 97, 222, 152, 25, 163, 173, 84, 216, 211, 69, 205, 122, 63,
+        227, 98, 234, 163, 66, 145, 71, 217, 221, 29, 78, 36, 77, 68, 29, 144,
+        2, 235, 80, 237, 21, 95, 54, 16, 89, 74, 200, 124, 248, 119, 216, 38,
+        167, 19, 129, 205, 138, 218, 57, 198, 4, 4, 202, 115, 62, 55, 213, 141,
+        0,
+    ];
+
+    let keys = derive_multiple_phoenix_sk(&SEED, INDEX..INDEX + 2);
+    assert_eq!(keys[0].to_bytes(), sk_bytes_0,);
+    assert_eq!(keys[1].to_bytes(), sk_bytes_1,);
 }
 
 #[test]
