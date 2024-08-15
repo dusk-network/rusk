@@ -48,6 +48,9 @@ build: ## Build rusk binary
 build-bench: ## Build the benchmarks
 	@cargo bench --features testwallet --no-run
 
+bench: ## Run the benchmarks
+	@cargo bench --features testwallet
+
 run:
 	@cargo r --release --bin rusk
 
@@ -66,4 +69,4 @@ recovery-state: ## Build network state
 		-- recovery-state \
 		--init $(INITFILE)
 
-.PHONY: test help clippy build build-bench recovery-keys recovery-state rusk
+.PHONY: test help clippy build build-bench bench recovery-keys recovery-state rusk
