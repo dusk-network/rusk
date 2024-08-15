@@ -10,6 +10,7 @@ use std::{fmt::Formatter, time::Duration};
 /// Mempool configuration parameters
 pub const DEFAULT_EXPIRY_TIME: Duration = Duration::from_secs(3 * 60 * 60 * 24); /* 3 days */
 pub const DEFAULT_IDLE_INTERVAL: Duration = Duration::from_secs(60 * 60); /* 1 hour */
+pub const DEFAULT_DOWNLOAD_REDUNDANCY: usize = 5;
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Params {
@@ -26,6 +27,9 @@ pub struct Params {
     /// Duration after which a transaction is removed from the mempool
     #[serde(with = "humantime_serde")]
     pub mempool_expiry: Option<Duration>,
+
+    /// max number of peers to request mempool from
+    pub mempool_download_redundancy: Option<usize>,
 }
 
 impl Default for Params {
@@ -35,6 +39,7 @@ impl Default for Params {
             max_mempool_txn_count: 10_000,
             idle_interval: Some(DEFAULT_IDLE_INTERVAL),
             mempool_expiry: Some(DEFAULT_EXPIRY_TIME),
+            mempool_download_redundancy: Some(DEFAULT_DOWNLOAD_REDUNDANCY),
         }
     }
 }
@@ -44,11 +49,12 @@ impl std::fmt::Display for Params {
         write!(
             f,
             "max_queue_size: {}, max_mempool_txn_count: {},
-         idle_interval: {:?}, mempool_expiry: {:?}",
+         idle_interval: {:?}, mempool_expiry: {:?}, mempool_download_redundancy: {:?}",
             self.max_queue_size,
             self.max_mempool_txn_count,
             self.idle_interval,
-            self.mempool_expiry
+            self.mempool_expiry,
+            self.mempool_download_redundancy
         )
     }
 }

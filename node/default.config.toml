@@ -53,3 +53,4 @@ max_queue_size = 5000
 max_mempool_txn_count = 10000
 idle_interval = '6h'
 mempool_expiry = '3d'
+mempool_download_redundancy = 5

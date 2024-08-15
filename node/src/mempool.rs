@@ -10,10 +10,12 @@ use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
-use conf::{DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL};
+use conf::{
+    DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
+};
 use node_data::events::{Event, TransactionEvent};
 use node_data::ledger::Transaction;
-use node_data::message::{AsyncQueue, Payload, Topics};
+use node_data::message::{payload, AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use std::time::{self, UNIX_EPOCH};
 use thiserror::Error;
@@ -83,14 +85,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
+        // Request mempool update from N alive peers
+        self.request_mempool(&network).await;
+
         let idle_interval =
             self.conf.idle_interval.unwrap_or(DEFAULT_IDLE_INTERVAL);
 
         let mempool_expiry =
             self.conf.mempool_expiry.unwrap_or(DEFAULT_EXPIRY_TIME);
 
+        // Mempool service loop
         let mut on_idle_event = tokio::time::interval(idle_interval);
-
         loop {
             tokio::select! {
                 biased;
@@ -231,5 +236,26 @@ impl MempoolSrv {
         }
 
         Ok(())
+    }
+
+    /// Requests full mempool data from N alive peers
+    ///
+    /// Message flow:
+    /// GetMempool -> Inv -> GetResource -> Tx
+    async fn request_mempool<N: Network>(&self, network: &Arc<RwLock<N>>) {
+        let max_peers = self
+            .conf
+            .mempool_download_redundancy
+            .unwrap_or(DEFAULT_DOWNLOAD_REDUNDANCY);
+
+        let payload = payload::GetMempool {};
+        if let Err(err) = network
+            .read()
+            .await
+            .send_to_alive_peers(&Message::new_get_mempool(payload), max_peers)
+            .await
+        {
+            error!("could not request mempool from network: {err}");
+        }
     }
 }
