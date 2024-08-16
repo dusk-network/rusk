@@ -123,6 +123,7 @@ pub enum ConsensusError {
     ChildTaskTerminated,
     Canceled(u64),
     VoteAlreadyCollected,
+    TooManyTransactions(usize),
 }
 
 impl From<StepSigError> for ConsensusError {

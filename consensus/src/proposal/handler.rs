@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::config::MAX_NUMBER_OF_TRANSACTIONS;
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -93,6 +94,12 @@ impl<D: Database> ProposalHandler<D> {
 
         if msg.header.prev_block_hash != p.candidate.header().prev_block_hash {
             return Err(ConsensusError::InvalidBlockHash);
+        }
+
+        if p.candidate.txs().len() >= MAX_NUMBER_OF_TRANSACTIONS {
+            return Err(ConsensusError::TooManyTransactions(
+                p.candidate.txs().len(),
+            ));
         }
 
         let tx_hashes: Vec<_> =
