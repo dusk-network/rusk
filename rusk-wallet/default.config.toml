@@ -1,0 +1,12 @@
+state = "https://nodes.dusk.network"
+prover = "https://provers.dusk.network"
+explorer = "https://explorer.dusk.network/transactions/transaction/?id="
+
+[network.devnet]
+state = "https://devnet.nodes.dusk.network"
+prover = "https://devnet.provers.dusk.network"
+explorer = "https://explorer.dusk.network/transactions/transaction/?id="
+
+[network.local]
+state = "http://127.0.0.1:8080"
+prover = "http://127.0.0.1:8080"
