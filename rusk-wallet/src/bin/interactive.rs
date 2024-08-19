@@ -104,7 +104,7 @@ pub(crate) async fn run_loop(
                                     // Wait for transaction confirmation from
                                     // network
                                     let gql = GraphQL::new(
-                                        &settings.state.to_string(),
+                                        settings.state.to_string(),
                                         io::status::interactive,
                                     );
                                     gql.wait_for(&tx_id).await?;
