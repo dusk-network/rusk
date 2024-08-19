@@ -59,6 +59,7 @@ impl<T: Operations> Generator<T> {
         info!(
             event = "gen_candidate",
             hash = &to_str(&candidate.header().hash),
+            gas_limit = candidate.header().gas_limit,
             state_hash = &to_str(&candidate.header().state_hash),
             dur = format!("{:?}ms", start.elapsed().as_millis()),
         );
