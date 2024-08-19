@@ -35,7 +35,7 @@ fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/stake.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot)
+    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
 // Creates the Rusk initial state for the tests below
@@ -43,7 +43,7 @@ fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/slash.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot)
+    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,

@@ -29,6 +29,8 @@ use tempfile::tempdir;
 
 use common::state::new_state;
 
+const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+
 fn load_phoenix_txs() -> Vec<Transaction> {
     // The file "phoenix-txs" can be generated using
     // `generate_phoenix_txs()` in "tests/rusk-state.rs".
@@ -164,7 +166,8 @@ pub fn accept_benchmark(c: &mut Criterion) {
     let snapshot = toml::from_str(include_str!("../tests/config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot).expect("Creating state should work");
+    let rusk = new_state(&tmp, &snapshot, BLOCK_GAS_LIMIT)
+        .expect("Creating state should work");
 
     let phoenix_txs = load_phoenix_txs();
     let moonlight_txs = load_moonlight_txs();
