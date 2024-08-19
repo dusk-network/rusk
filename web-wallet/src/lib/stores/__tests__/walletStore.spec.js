@@ -226,25 +226,39 @@ describe("walletStore", async () => {
     it("should expose a method to abort a sync that is in progress", async () => {
       await walletStore.init(wallet);
 
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+
       walletStore.abortSync();
 
-      await vi.advanceTimersToNextTimerAsync();
+      expect(abortControllerSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should set to `null` the current sync promise so that a new call to `sync` will start a new synchronization", async () => {
+      await walletStore.init(wallet);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+
+      walletStore.abortSync();
+
       expect(abortControllerSpy).toHaveBeenCalledTimes(1);
+
+      walletStore.sync();
+
+      expect(syncSpy).toHaveBeenCalledTimes(2);
+      expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
     });
 
     it("should do nothing if there is no sync in progress", async () => {
       walletStore.reset();
 
       await walletStore.init(wallet);
-      await vi.advanceTimersToNextTimerAsync();
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 
-      syncSpy.mockClear();
+      await vi.advanceTimersToNextTimerAsync();
 
       walletStore.abortSync();
 
