@@ -20,32 +20,42 @@
   import { createCurrencyFormatter } from "$lib/dusk/currency";
   import { logo } from "$lib/dusk/icons";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { settingsStore } from "$lib/stores";
+  import {
+    account,
+    accountBalance,
+    modal,
+    wagmiConfig,
+    walletDisconnect,
+  } from "$lib/migration/walletConnection";
+  import { switchChain } from "@wagmi/core";
+  import { bsc, mainnet } from "viem/chains";
 
-  const ERC_TOKEN = "ERC-20";
-  const BEP_TOKEN = "BEP-20";
+  const tokens = {
+    bnb: {
+      chainId: bsc.id,
+      name: "BEP-20",
+    },
+    eth: {
+      chainId: mainnet.id,
+      name: "ERC-20",
+    },
+  };
 
   const options = [
-    { disabled: false, label: ERC_TOKEN, value: ERC_TOKEN },
-    { disabled: false, label: BEP_TOKEN, value: BEP_TOKEN },
+    { disabled: false, label: tokens.eth.name, value: tokens.eth.name },
+    { disabled: false, label: tokens.bnb.name, value: tokens.bnb.name },
   ];
 
   /** @type {String} */
-  let selected = ERC_TOKEN;
+  let selected = tokens.eth.name;
 
   /** @type {Boolean} */
   const migrationInProgress = false;
 
-  /** @type {Boolean} */
-  let isWalletConnected = false;
-
-  /** @type {String} */
-  let connectedWalletAddress =
-    "6rmam3FisEHih84oJMEsmi2GGVetDPmcjw7H4heeVbm79DwZUPvPJTBeFriLx85Cy2Q2cGisz32BeSYX99kNXjD";
-
   /** @type {Number} */
-  let connectedWalletBalance = 10;
+  let connectedWalletBalance = 1;
 
   /** @type {Number | undefined} */
   let amount;
@@ -69,8 +79,9 @@
   let screenWidth = window.innerWidth;
 
   const { darkMode } = $settingsStore;
+  const minAmount = 1e-18;
 
-  const minAmount = 0.000000001;
+  $: ({ address, chainId, isConnected } = $account);
 
   $: maxSpendable = connectedWalletBalance - gasFee;
   $: isAmountValid =
@@ -79,11 +90,47 @@
       : false;
   $: ({ language } = $settingsStore);
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
-  $: if (selected) {
-    resetMigrationIfConnected();
+
+  /** @param {Number} id */
+  async function handleSwitchChain(id) {
+    try {
+      await switchChain(wagmiConfig, { chainId: id });
+    } catch (e) {
+      selected =
+        chainId === tokens.eth.chainId ? tokens.eth.name : tokens.bnb.name;
+    }
+  }
+
+  // @ts-ignore
+  function onNetworkChange(e) {
+    if (isConnected) {
+      if (e?.target?.value === tokens.bnb.name) {
+        handleSwitchChain(bsc.id);
+      } else {
+        handleSwitchChain(mainnet.id);
+      }
+    }
+  }
+
+  function switchNetwork() {
+    const currentChainId =
+      selected === tokens.eth.name ? tokens.eth.chainId : tokens.bnb.chainId;
+    if (chainId !== currentChainId) {
+      handleSwitchChain(currentChainId);
+    }
   }
 
   onMount(() => {
+    modal.subscribeEvents((e) => {
+      if (e.data.event === "CONNECT_SUCCESS") {
+        switchNetwork();
+
+        accountBalance(address).then((balance) => {
+          connectedWalletBalance = Number(balance.value);
+        });
+      }
+    });
+
     amountInput = document.querySelector(".migrate__input-field");
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -97,23 +144,11 @@
     return () => resizeObserver.disconnect();
   });
 
-  /**
-   * @param {Number} ms
-   */
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function resetMigrationIfConnected() {
-    if (isWalletConnected) {
-      isWalletConnected = false;
-      connectedWalletAddress = "";
-      connectedWalletBalance = 10;
-      amount = undefined;
-      isMigrationInitialized = false;
-      isMigrationBeingApproved = false;
+  onDestroy(async () => {
+    if (isConnected) {
+      await walletDisconnect();
     }
-  }
+  });
 </script>
 
 <article class="migrate">
@@ -151,14 +186,17 @@
 
   <div class="migrate__token">
     <p class="migrate__token-header">From:</p>
-    <ExclusiveChoice {options} bind:value={selected} />
-    {#if isWalletConnected}
+    <ExclusiveChoice
+      {options}
+      bind:value={selected}
+      on:change={onNetworkChange}
+    />
+    {#if isConnected}
       <p class="migrate__token-header">Connected Wallet:</p>
       <p class="migrate__token-address">
-        {middleEllipsis(
-          connectedWalletAddress,
-          calculateAdaptiveCharCount(screenWidth)
-        )}
+        {address
+          ? middleEllipsis(address, calculateAdaptiveCharCount(screenWidth))
+          : ""}
       </p>
       <div class="migrate__token-balance">
         Balance: <span
@@ -169,11 +207,11 @@
     {/if}
   </div>
 
-  {#if isWalletConnected}
+  {#if isConnected}
     <div class="migrate__amount">
       <div class="migrate__amount-header">
         <div class="migrate__amount-token">
-          {#if selected === ERC_TOKEN}
+          {#if selected === tokens.eth.name}
             <AppImage
               src={darkMode ? "/eth_dusk_light.svg" : "/eth_dusk.svg"}
               alt="Ethereum Dusk"
@@ -218,11 +256,11 @@
     </div>
   {/if}
 
-  {#if isWalletConnected && !isAmountValid && typeof amount === "number"}
+  {#if isConnected && !isAmountValid && typeof amount === "number"}
     <div class="migrate__amount-notice">Not enough balance</div>
   {/if}
 
-  {#if isWalletConnected && isAmountValid && isMigrationInitialized}
+  {#if isConnected && isAmountValid && isMigrationInitialized}
     <div class="migrate__information">
       <div class="migrate__information-header">
         <p class="migrate__information-time">
@@ -256,7 +294,6 @@
           nextButton={{
             action: async () => {
               isMigrationBeingApproved = true;
-              await delay(10000);
             },
             disabled: isMigrationBeingApproved,
             icon: null,
@@ -324,12 +361,12 @@
     </div>
   {/if}
 
-  {#if !isWalletConnected}
+  {#if !isConnected}
     <Button
       icon={{ path: mdiWalletOutline }}
-      text={`CONNECT TO  ${selected === ERC_TOKEN ? "ETHEREUM" : "BSC"}`}
+      text={`CONNECT TO  ${selected === tokens.eth.name ? "ETHEREUM" : "BSC"}`}
       on:click={() => {
-        isWalletConnected = true;
+        modal.open();
       }}
     />
   {:else if !isMigrationInitialized}
