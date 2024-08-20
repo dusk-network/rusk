@@ -291,11 +291,25 @@ impl DataBrokerSrv {
                     .header()
                     .height;
 
+                let mut prev_block_hash = m.locator;
+
                 loop {
                     locator += 1;
                     match t.fetch_block_hash_by_height(locator)? {
                         Some(bh) => {
+                            let header =
+                                t.fetch_block_header(&bh)?.ok_or_else(
+                                    || anyhow!("block header not found"),
+                                )?;
+
+                            if header.prev_block_hash != prev_block_hash {
+                                return Err(anyhow::anyhow!(
+                                    "inconsistent chain"
+                                ));
+                            }
+
                             inv.add_block_from_hash(bh);
+                            prev_block_hash = bh;
                         }
                         None => {
                             break;
