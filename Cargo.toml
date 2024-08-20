@@ -29,6 +29,7 @@ members = [
     # Test utils
     "test-wallet",
 ]
+exclude = ["rusk-wallet"]
 resolver = "2"
 
 [profile.dev.build-override]

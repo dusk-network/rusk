@@ -1,0 +1,75 @@
+[package]
+name = "dusk-wallet"
+version = "0.22.1"
+edition = "2021"
+autobins = false
+description = "A library providing functionalities to create wallets compatible with Dusk Network"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["wallet", "dusk", "cryptocurrency", "blockchain"]
+repository = "https://github.com/dusk-network/wallet-cli"
+license = "MPL-2.0"
+exclude = [".github/*", ".gitignore"]
+
+[[bin]]
+name = "rusk-wallet"
+path = "src/bin/main.rs"
+
+[dependencies]
+clap = { version = "3.1", features = ["derive", "env"] }
+thiserror = "1.0"
+anyhow = "1.0"
+tokio = { version = "1.15", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+url = { version = "2", features = ["serde"] }
+async-trait = "0.1"
+block-modes = "0.8"
+serde_json = "1.0"
+hex = "0.4"
+tiny-bip39 = "0.8"
+crossterm = "0.23"
+rand_core = "0.6"
+requestty = "0.5.0"
+futures = "0.3"
+base64 = "0.13"
+crypto = "0.3"
+whoami = "1.2"
+blake3 = "1.3"
+sha2 = "0.10.7"
+toml = "0.5"
+open = "2.1"
+dirs = "4.0"
+bs58 = "0.4"
+rand = "0.8"
+aes = "0.7"
+rocksdb = "0.22"
+flume = "0.10.14"
+reqwest = { version = "0.11", features = ["stream"] }
+
+dusk-wallet-core = "0.24.0-plonk.0.16-rc.2"
+dusk-bytes = "0.1"
+dusk-pki = "0.13"
+rusk-abi = { version = "0.12.0-rc", default-features = false }
+phoenix-core = { version = "0.21", features = ["alloc"] }
+dusk-schnorr = { version = "0.14", default-features = false }
+dusk-poseidon = "0.31"
+dusk-plonk = "0.16"
+dusk-bls12_381-sign = { version = "0.5", default-features = false }
+ff = { version = "0.13", default-features = false }
+poseidon-merkle = "0.3"
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.0", features = [
+  "fmt",
+  "env-filter",
+  "json",
+] }
+
+rkyv = { version = "=0.7.39", default-features = false }
+
+konst = "0.3"
+
+[dev-dependencies]
+tempfile = "3.2"
+
+[profile.release]
+overflow-checks = true
