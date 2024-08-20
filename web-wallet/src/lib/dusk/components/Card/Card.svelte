@@ -23,10 +23,16 @@
   class:dusk-card--on-surface={onSurface}
 >
   {#if $$slots.header}
-    <slot name="header" />
+    <div class="dusk-card__header-container">
+      <slot name="header" />
+    </div>
   {/if}
-  <slot />
+  <div class="dusk-card__body-container">
+    <slot />
+  </div>
   {#if $$slots.footer}
-    <slot name="footer" />
+    <div class="dusk-card__footer-container">
+      <slot name="footer" />
+    </div>
   {/if}
 </svelte:element>

@@ -11,6 +11,7 @@
     setKey,
     when,
   } from "lamb";
+  import { mdiArrowLeft } from "@mdi/js";
 
   import { createCurrencyFormatter } from "$lib/dusk/currency";
   import { getLastTransactionHash } from "$lib/transactions";
@@ -21,6 +22,7 @@
     walletStore,
   } from "$lib/stores";
   import {
+    AppAnchorButton,
     ContractOperations,
     ContractStatusesList,
     Stake,
@@ -129,6 +131,7 @@
 
 {#key currentOperation}
   <Suspense
+    gap="medium"
     errorMessage="Failed to retrieve stake info"
     errorVariant="details"
     waitFor={walletStore.getStakeInfo()}
@@ -166,5 +169,21 @@
         <ContractOperations items={operations} on:operationChange />
       {/if}
     </svelte:fragment>
+    <svelte:fragment slot="error-actions">
+      <AppAnchorButton
+        className="error-action"
+        href="/dashboard"
+        icon={{ path: mdiArrowLeft }}
+        text="Back"
+        variant="tertiary"
+      />
+    </svelte:fragment>
   </Suspense>
 {/key}
+
+<style>
+  :global(.error-action) {
+    width: 100%;
+    text-align: left;
+  }
+</style>

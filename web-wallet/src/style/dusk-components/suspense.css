@@ -9,6 +9,10 @@
     gap: var(--large-gap);
   }
 
+  &.dusk-suspense--medium-gap {
+    gap: var(--medium-gap);
+  }
+
   &.dusk-suspense--small-gap {
     gap: var(--small-gap);
   }

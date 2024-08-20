@@ -7,46 +7,54 @@ exports[`Forced logout page > should render the page alert the user about the fo
   <div
     class="dusk-card dusk-card--gap-default"
   >
-    <header
-      class="dusk-card__header"
-      slot="header"
+    <div
+      class="dusk-card__header-container"
     >
-      <div
-        class="dusk-card__header-title"
+      <header
+        class="dusk-card__header"
+        slot="header"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--default"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="dusk-card__heading-container"
         >
-          <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-          />
-        </svg>
-        
-         
-        <h3
-          class="h4"
-        >
-          You have been automatically logged out
-        </h3>
-      </div>
-    </header>
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            />
+          </svg>
+          
+           
+          <h3
+            class="h4"
+          >
+            You have been automatically logged out
+          </h3>
+        </div>
+      </header>
+    </div>
      
-    <div>
-      <p
-        class="svelte-u7eq0k"
-      >
-        Another tab or window unlocked a different wallet and replaced the local
+    <div
+      class="dusk-card__body-container"
+    >
+      <div>
+        <p
+          class="svelte-u7eq0k"
+        >
+          Another tab or window unlocked a different wallet and replaced the local
         cache.
-      </p>
-       
-      <p
-        class="svelte-u7eq0k"
-      >
-        When you log in again with the mnemonic you used in this session, you
+        </p>
+         
+        <p
+          class="svelte-u7eq0k"
+        >
+          When you log in again with the mnemonic you used in this session, you
         will need to wait for a full sync.
-      </p>
+        </p>
+      </div>
     </div>
      
   </div>

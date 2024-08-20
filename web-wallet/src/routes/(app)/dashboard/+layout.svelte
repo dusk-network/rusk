@@ -8,10 +8,10 @@
   } from "@mdi/js";
   import { Button, Icon, ProgressBar } from "$lib/dusk/components";
   import { settingsStore, walletStore } from "$lib/stores";
-  import { AppAnchorButton } from "$lib/components";
+  import { AddressPicker, AppAnchorButton, Balance } from "$lib/components";
 
-  $: ({ network } = $settingsStore);
-  $: ({ isSyncing, error } = $walletStore);
+  /** @type {import('./$types').LayoutData} */
+  export let data;
 
   /** @type {string} */
   let syncStatus = "";
@@ -22,6 +22,17 @@
   /** @type {string} */
   let iconVariant = "";
 
+  /** @type {number | undefined} */
+  let fiatPrice;
+
+  data.currentPrice.then((prices) => {
+    fiatPrice = prices[currency.toLowerCase()];
+  });
+
+  const { currency, language } = $settingsStore;
+
+  $: ({ network } = $settingsStore);
+  $: ({ balance, currentAddress, addresses, isSyncing, error } = $walletStore);
   $: if (isSyncing) {
     iconVariant = "warning";
     networkStatusIconPath = mdiTimerSand;
@@ -44,7 +55,21 @@
 />
 
 <section class="dashboard">
-  <slot />
+  <div class="dashboard-content">
+    <h2 class="sr-only">Dashboard</h2>
+
+    <AddressPicker {addresses} {currentAddress} />
+
+    <Balance
+      fiatCurrency={currency}
+      {fiatPrice}
+      locale={language}
+      tokenCurrency="DUSK"
+      tokens={balance.value}
+    />
+
+    <slot />
+  </div>
   <footer class="footer">
     <nav class="footer__navigation">
       <div class="footer__network-status">
@@ -101,6 +126,15 @@
     flex: 1;
     flex-direction: column;
     max-height: 100%;
+  }
+
+  .dashboard-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.375rem;
+    overflow-y: auto;
+    flex: 1;
   }
 
   .footer {

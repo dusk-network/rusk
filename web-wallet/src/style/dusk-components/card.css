@@ -1,27 +1,35 @@
 .dusk-card {
   background-color: var(--surface-color);
   border-radius: var(--control-border-radius-size);
-  padding: 1.3rem 2rem;
+}
+
+.dusk-card__header-container,
+.dusk-card__footer-container {
+  padding: 0.5rem 1.375rem;
+}
+
+.dusk-card__body-container {
   display: flex;
   flex-direction: column;
+  padding: 1rem 1.375rem;
 }
 
 .dusk-card--on-surface {
   background-color: var(--on-primary-color);
 }
 
-.dusk-card--gap-small {
+.dusk-card--gap-small > .dusk-card__body-container {
   gap: 0.5em;
 }
 
-.dusk-card--gap-default {
+.dusk-card--gap-default > .dusk-card__body-container {
   gap: 0.625em;
 }
 
-.dusk-card--gap-medium {
+.dusk-card--gap-medium > .dusk-card__body-container {
   gap: 1.25em;
 }
 
-.dusk-card--gap-large {
+.dusk-card--gap-large > .dusk-card__body-container {
   gap: 1.875em;
 }

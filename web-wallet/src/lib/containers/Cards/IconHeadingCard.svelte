@@ -14,13 +14,19 @@
 
   /** @type {boolean} */
   export let onSurface = false;
+
+  /** @type {boolean} */
+  export let reverse = false;
 </script>
 
 <Card {...$$restProps} {gap} {onSurface}>
   <header slot="header" class="dusk-card__header">
-    <div class="dusk-card__header-title">
+    <div
+      class="dusk-card__heading-container"
+      class:dusk-card__heading-container--reverse={reverse}
+    >
       {#if iconPath}
-        <Icon path={iconPath} />
+        <Icon className="dusk-card__heading-icon" path={iconPath} />
       {/if}
       <h3 class="h4">{heading}</h3>
     </div>

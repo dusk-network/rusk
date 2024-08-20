@@ -8,65 +8,73 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
     <div
       class="dusk-card dusk-card--gap-default"
     >
-      <header
-        class="dusk-card__header"
-        slot="header"
+      <div
+        class="dusk-card__header-container"
       >
-        <div
-          class="dusk-card__header-title"
+        <header
+          class="dusk-card__header"
+          slot="header"
         >
-          <svg
-            class="dusk-icon dusk-icon--size--default"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <div
+            class="dusk-card__heading-container"
           >
-            <path
-              d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
-            />
-          </svg>
-          
-           
-          <h3
-            class="h4"
-          >
-            Existing Wallet Detected
-          </h3>
-        </div>
-      </header>
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+              />
+            </svg>
+            
+             
+            <h3
+              class="h4"
+            >
+              Existing Wallet Detected
+            </h3>
+          </div>
+        </header>
+      </div>
        
-      <p>
-        Initializing a new wallet will replace your existing local wallet cache,
+      <div
+        class="dusk-card__body-container"
+      >
+        <p>
+          Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
       wallet's seed phrase to prevent loss. Proceeding without a backup can lead
       to irreversible loss of access to your assets.
-      </p>
-       
-      <div
-        class="actions svelte-3n8m2w"
-      >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
-          href="/some-base-path/setup"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            Back
-          </span>
-          
-        </a>
+        </p>
          
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
-          type="button"
+        <div
+          class="actions svelte-3n8m2w"
         >
-          <span
-            class="dusk-button__text"
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
+            href="/some-base-path/setup"
           >
-            Proceed
-          </span>
-        </button>
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Back
+            </span>
+            
+          </a>
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              Proceed
+            </span>
+          </button>
+        </div>
       </div>
        
     </div>
@@ -118,153 +126,161 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
   <div
     class="dusk-card dusk-card--gap-medium"
   >
-    <header
-      class="dusk-card__header"
-      slot="header"
+    <div
+      class="dusk-card__header-container"
     >
-      <div
-        class="dusk-card__header-title"
+      <header
+        class="dusk-card__header"
+        slot="header"
       >
-         
-        <h3
-          class="h4"
+        <div
+          class="dusk-card__heading-container"
         >
-          Enter your Mnemonic Phrase
-        </h3>
-      </div>
-    </header>
+           
+          <h3
+            class="h4"
+          >
+            Enter your Mnemonic Phrase
+          </h3>
+        </div>
+      </header>
+    </div>
      
     <div
-      class="dusk-mnemonic"
+      class="dusk-card__body-container"
     >
       <div
-        class="dusk-mnemonic__actions-wrapper"
+        class="dusk-mnemonic"
       >
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-          type="button"
+        <div
+          class="dusk-mnemonic__actions-wrapper"
         >
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-button__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+            type="button"
           >
-            <path
-              d="M19,20H5V4H7V7H17V4H19M12,2A1,1 0 0,1 13,3A1,1 0 0,1 12,4A1,1 0 0,1 11,3A1,1 0 0,1 12,2M19,2H14.82C14.4,0.84 13.3,0 12,0C10.7,0 9.6,0.84 9.18,2H5A2,2 0 0,0 3,4V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V4A2,2 0 0,0 19,2Z"
-            />
-          </svg>
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19,20H5V4H7V7H17V4H19M12,2A1,1 0 0,1 13,3A1,1 0 0,1 12,4A1,1 0 0,1 11,3A1,1 0 0,1 12,2M19,2H14.82C14.4,0.84 13.3,0 12,0C10.7,0 9.6,0.84 9.18,2H5A2,2 0 0,0 3,4V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V4A2,2 0 0,0 19,2Z"
+              />
+            </svg>
+            
+             
+            <span
+              class="dusk-button__text"
+            >
+              Paste seed phrase
+            </span>
+            
+          </button>
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+            disabled=""
+            type="button"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
+              />
+            </svg>
+            
+             
+            <span
+              class="dusk-button__text"
+            >
+              Undo
+            </span>
+            
+          </button>
+        </div>
+         
+        <ol
+          class="dusk-words"
+        >
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+          <li
+            class="dusk-words__word"
+          >
+            _____
+          </li>
+        </ol>
+         
+        <div
+          class="dusk-mnemonic__authenticate-actions-wrapper"
+        >
+          <input
+            class="dusk-textbox dusk-textbox-text"
+            maxlength="8"
+            placeholder="Enter word 1"
+            type="text"
+          />
           
            
-          <span
-            class="dusk-button__text"
-          >
-            Paste seed phrase
-          </span>
           
-        </button>
-         
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-          disabled=""
-          type="button"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-button__icon"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M10.5,7A6.5,6.5 0 0,0 4,13.5A6.5,6.5 0 0,0 10.5,20H14V18H10.5C8,18 6,16 6,13.5C6,11 8,9 10.5,9H16.17L13.09,12.09L14.5,13.5L20,8L14.5,2.5L13.08,3.91L16.17,7H10.5M18,18H16V20H18V18Z"
-            />
-          </svg>
-          
-           
-          <span
-            class="dusk-button__text"
-          >
-            Undo
-          </span>
-          
-        </button>
-      </div>
-       
-      <ol
-        class="dusk-words"
-      >
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-        <li
-          class="dusk-words__word"
-        >
-          _____
-        </li>
-      </ol>
-       
-      <div
-        class="dusk-mnemonic__authenticate-actions-wrapper"
-      >
-        <input
-          class="dusk-textbox dusk-textbox-text"
-          maxlength="8"
-          placeholder="Enter word 1"
-          type="text"
-        />
-        
-         
-        
+        </div>
       </div>
     </div>
      
@@ -340,62 +356,70 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
     <div
       class="dusk-card dusk-card--gap-default"
     >
-      <header
-        class="dusk-card__header"
-        slot="header"
+      <div
+        class="dusk-card__header-container"
       >
-        <div
-          class="dusk-card__header-title"
+        <header
+          class="dusk-card__header"
+          slot="header"
         >
-           
-          <h3
-            class="h4"
+          <div
+            class="dusk-card__heading-container"
           >
-            Terms & Privacy Policy
-          </h3>
-        </div>
-      </header>
-       
-      <p>
-        Our 
-        <a
-          class="dusk-anchor dusk-anchor--on-surface"
-          href="https://dusk.network/privacy-policy/"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Terms & Privacy Policy
-        </a>
-         govern your use of our services, including data handling and user responsibilities.
-      Your privacy and security are our top priorities.
-      </p>
+             
+            <h3
+              class="h4"
+            >
+              Terms & Privacy Policy
+            </h3>
+          </div>
+        </header>
+      </div>
        
       <div
-        class="actions svelte-3n8m2w"
+        class="dusk-card__body-container"
       >
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
-          href="/some-base-path/setup"
-        >
-          <span
-            class="dusk-anchor-button__text"
+        <p>
+          Our 
+          <a
+            class="dusk-anchor dusk-anchor--on-surface"
+            href="https://dusk.network/privacy-policy/"
+            rel="noopener noreferrer"
+            target="_blank"
           >
-            Cancel
-          </span>
-          
-        </a>
+            Terms & Privacy Policy
+          </a>
+           govern your use of our services, including data handling and user responsibilities.
+      Your privacy and security are our top priorities.
+        </p>
          
-        <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
-          type="button"
+        <div
+          class="actions svelte-3n8m2w"
         >
-          <span
-            class="dusk-button__text"
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default actions__action"
+            href="/some-base-path/setup"
           >
-            Accept
-          </span>
-        </button>
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Cancel
+            </span>
+            
+          </a>
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default actions__action"
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              Accept
+            </span>
+          </button>
+        </div>
       </div>
        
     </div>

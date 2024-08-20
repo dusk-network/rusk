@@ -1,34 +1,16 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { Balance, Transactions } from "$lib/components";
+  import { Transactions } from "$lib/components";
   import { settingsStore, walletStore } from "$lib/stores";
 
-  /** @type {import('./$types').PageData} */
-  export let data;
+  const { language } = $settingsStore;
 
-  /** @type {number | undefined} */
-  let fiatPrice;
-
-  const { currency, language } = $settingsStore;
-
-  data.currentPrice.then((prices) => {
-    fiatPrice = prices[currency.toLowerCase()];
-  });
-
-  $: ({ balance, isSyncing, error } = $walletStore);
+  $: ({ isSyncing, error } = $walletStore);
 </script>
 
 <div class="transactions">
   <h2 class="sr-only">Transactions</h2>
-
-  <Balance
-    fiatCurrency={currency}
-    {fiatPrice}
-    locale={language}
-    tokenCurrency="DUSK"
-    tokens={balance.value}
-  />
 
   <Transactions
     items={walletStore.getTransactionsHistory()}
