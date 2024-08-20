@@ -60,6 +60,17 @@ pub fn ratification_extra() -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_majorities() {
+        assert_eq!(majority(4), 3);
+        assert_eq!(majority(11), 6);
+        assert_eq!(majority(99), 50);
+        assert_eq!(supermajority(3), 2);
+        assert_eq!(supermajority(9), 6);
+        assert_eq!(supermajority(51), 34);
+    }
+
     #[test]
     fn test_quorums() {
         assert_eq!(majority(VALIDATION_COMMITTEE_CREDITS), 33);
