@@ -102,7 +102,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 _ = on_idle_event.tick() => {
                     info!(event = "mempool_idle", interval = ?idle_interval);
 
-                    let dur = time::SystemTime::now()
+                    let expiration_time = time::SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("valid timestamp")
                         .checked_sub(mempool_expiry)
@@ -110,7 +110,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                     // Remove expired transactions from the mempool
                     db.read().await.update(|db| {
-                        let expired_txs = db.get_expired_txs(dur.as_secs())?;
+                        let expired_txs = db.get_expired_txs(expiration_time.as_secs())?;
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
                             if db.delete_tx(tx_id)? {
