@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add DEVNET to the dropdown select on the navbar [#2159]
 - Add conditional rendering for layout changes based on screen size [#2061]
 - Add accessible name to the gas used progress bar [#2037]
 - Add accessible name to the nav bar button on mobile [#2036]
@@ -43,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2056]: https://github.com/dusk-network/rusk/issues/2056
 [#2059]: https://github.com/dusk-network/rusk/issues/2059
 [#2061]: https://github.com/dusk-network/rusk/issues/2061
+[#2159]: https://github.com/dusk-network/rusk/issues/2159
 
 <!-- VERSIONS -->
 

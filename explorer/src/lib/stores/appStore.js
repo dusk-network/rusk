@@ -4,6 +4,7 @@ import { browser } from "$app/environment";
 /** @type {NetworkOption[]}*/
 const networks = [
   { label: "Testnet", value: import.meta.env.VITE_DUSK_TESTNET_NODE },
+  { label: "Devnet", value: import.meta.env.VITE_DUSK_DEVNET_NODE },
 ];
 
 const maxWidthMediaQuery = window.matchMedia("(max-width: 1024px)");
