@@ -34,7 +34,18 @@ impl StepVotes {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.bitset == 0 || self.aggregate_signature.is_zeroed()
+        if self.bitset == 0 {
+            debug_assert!(
+                self.aggregate_signature.is_zeroed(),
+                "inconsistent struct, signature"
+            );
+        }
+
+        if self.aggregate_signature.is_zeroed() {
+            debug_assert_eq!(self.bitset, 0, "inconsistent struct, bitset");
+        }
+
+        self.bitset == 0 && self.aggregate_signature.is_zeroed()
     }
 
     pub fn aggregate_signature(&self) -> &Signature {
