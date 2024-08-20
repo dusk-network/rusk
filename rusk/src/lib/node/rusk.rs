@@ -16,9 +16,9 @@ use tracing::{debug, info, warn};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
-    ratification_committee_quorum, ratification_extra,
-    validation_committee_quorum, validation_extra,
-    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
+    ratification_extra, ratification_quorum, validation_extra,
+    validation_quorum, RATIFICATION_COMMITTEE_CREDITS,
+    VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use execution_core::{
@@ -773,7 +773,7 @@ fn calc_generator_extra_reward(
     let reward_per_quota = generator_extra_reward
         / (validation_extra() + ratification_extra()) as u64;
 
-    let sum = ratification_committee_quorum() + validation_committee_quorum();
+    let sum = ratification_quorum() + validation_quorum();
     credits.saturating_sub(sum as u64) * reward_per_quota
 }
 
