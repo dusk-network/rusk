@@ -65,10 +65,10 @@ impl Serializable for Block {
 
 impl Serializable for Transaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        //Write version
+        // Write version
         w.write_all(&self.version.to_le_bytes())?;
 
-        //Write TxType
+        // Write TxType
         w.write_all(&self.r#type.to_le_bytes())?;
 
         let data = self.inner.to_var_bytes();

@@ -42,7 +42,7 @@ impl StepVotes {
     }
 }
 
-/// a wrapper of 48-sized array to facilitate Signature
+/// A wrapper of 48-sized array to facilitate Signature
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
 pub struct Signature(
     #[serde(serialize_with = "crate::serialize_hex")] [u8; 48],
@@ -83,7 +83,7 @@ impl Default for Signature {
 /// generator
 pub type IterationInfo = (Attestation, PublicKeyBytes);
 
-/// Defines a set of attestations of any former iterations
+/// Defines a set of attestations of former iterations
 #[derive(Default, Eq, PartialEq, Clone, Serialize)]
 #[serde(transparent)]
 pub struct IterationsInfo {
