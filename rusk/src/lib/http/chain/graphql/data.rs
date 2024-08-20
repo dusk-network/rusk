@@ -260,16 +260,16 @@ impl Transaction<'_> {
 
     pub async fn call_data(&self) -> Option<CallData> {
         self.0.inner.call().map(|call| CallData {
-            contract: hex::encode(call.contract),
+            contract_id: hex::encode(call.contract),
             fn_name: call.fn_name.clone(),
-            fn_args: hex::encode(&call.fn_args),
+            data: hex::encode(&call.fn_args),
         })
     }
 }
 
 #[derive(SimpleObject)]
 pub struct CallData {
-    contract: String,
+    contract_id: String,
     fn_name: String,
-    fn_args: String,
+    data: String,
 }
