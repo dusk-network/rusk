@@ -6,7 +6,7 @@ on:
       dusk_blockchain_ref:
         description: "GIT branch, ref, or SHA to checkout"
         required: true
-        default: "main"
+        default: "master"
 
 defaults:
   run:
@@ -58,13 +58,13 @@ jobs:
 
       - name: Build Wallet
         shell: bash
-        working-directory: ./
+        working-directory: ./rusk-wallet
         run: ${{matrix.compiler}} b --release --verbose ${{matrix.flags}}
 
       - name: Get semver from wallet binary
         run: |
           ls -la target/release
-          export SEMVER=$(cargo pkgid | perl -lpe 's/.*\@(.*)/$1/')
+          export SEMVER=$(cargo pkgid --mainfest-path ./rusk-wallet/Cargo.toml | perl -lpe 's/.*\@(.*)/$1/')
           echo "SEMVER=$SEMVER" >> $GITHUB_ENV
 
       - name: "Pack binaries"
