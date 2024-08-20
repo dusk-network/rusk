@@ -55,7 +55,10 @@ const getCurrentAddress = () => get(walletStore).currentAddress;
 /** @type {(action: (...args: any[]) => Promise<any>) => Promise<void>} */
 const syncedAction = (action) => sync().then(action).finally(sync);
 
-const abortSync = () => syncPromise && syncController?.abort();
+const abortSync = () => {
+  syncPromise && syncController?.abort();
+  syncPromise = null;
+};
 
 /** @type {() => Promise<void>} */
 const clearLocalData = async () => walletInstance?.reset();

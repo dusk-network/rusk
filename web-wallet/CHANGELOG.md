@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix Receive tab content overflows [#1901]
 - Add missing "Soehne Mono" and its `@font-face` definition [#2071]
+- The sync promise should be set to `null` after aborting a sync [#2118]
 
 ## [0.5.0] - 2024-03-27
 
@@ -235,6 +236,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2026]: https://github.com/dusk-network/rusk/issues/2026
 [#2000]: https://github.com/dusk-network/rusk/issues/2000
 [#2071]: https://github.com/dusk-network/rusk/issues/2071
+[#2118]: https://github.com/dusk-network/rusk/issues/2118
 
 <!-- VERSIONS -->
 
