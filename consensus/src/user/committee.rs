@@ -8,7 +8,7 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 
 use super::cluster::Cluster;
-use crate::config;
+use crate::config::{majority, supermajority};
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
@@ -36,13 +36,10 @@ impl Committee {
     pub fn new(provisioners: &Provisioners, cfg: &sortition::Config) -> Self {
         // Generate committee using deterministic sortition.
         let extracted = provisioners.create_committee(cfg);
-        let committee_credits = cfg.committee_credits() as f64;
+        let committee_credits = cfg.committee_credits();
 
-        let super_majority = (committee_credits
-            * config::SUPERMAJORITY_THRESHOLD)
-            .ceil() as usize;
-        let majority =
-            (committee_credits * config::MAJORITY_THRESHOLD) as usize + 1;
+        let majority = majority(committee_credits);
+        let super_majority = supermajority(committee_credits);
 
         // Turn the raw vector into a hashmap where we map a pubkey to its
         // occurrences.

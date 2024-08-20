@@ -9,19 +9,10 @@ use std::time::Duration;
 /// Maximum number of iterations Consensus runs per a single round.
 pub const CONSENSUS_MAX_ITER: u8 = 50;
 
-/// Percentage number that determines quorums.
-pub const SUPERMAJORITY_THRESHOLD: f64 = 0.67;
-pub const MAJORITY_THRESHOLD: f64 = 0.5;
-
 /// Total credits of steps committees
 pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
 pub const VALIDATION_COMMITTEE_CREDITS: usize = 64;
-pub const VALIDATION_COMMITTEE_QUORUM: f64 =
-    VALIDATION_COMMITTEE_CREDITS as f64 * SUPERMAJORITY_THRESHOLD;
-
 pub const RATIFICATION_COMMITTEE_CREDITS: usize = 64;
-pub const RATIFICATION_COMMITTEE_QUORUM: f64 =
-    RATIFICATION_COMMITTEE_CREDITS as f64 * SUPERMAJORITY_THRESHOLD;
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
 
@@ -35,32 +26,45 @@ pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
 pub const MINIMUM_BLOCK_TIME: u64 = 10;
 
-/// Returns delta between full quorum and super_majority
+// Returns `floor(value/2) + 1`
+pub fn majority(value: usize) -> usize {
+    value / 2 + 1
+}
+
+// Returns `ceil( value/3*2 )`
+pub fn supermajority(value: usize) -> usize {
+    let sm = value as f32 / 3.0 * 2.0;
+    sm.ceil() as usize
+}
+
+/// Returns the quorum of a Ratification committee
+pub fn ratification_quorum() -> usize {
+    supermajority(RATIFICATION_COMMITTEE_CREDITS)
+}
+
+/// Returns the quorum of a Validation committee
+pub fn validation_quorum() -> usize {
+    supermajority(VALIDATION_COMMITTEE_CREDITS)
+}
+
+/// Returns the number of credits beyond the quorum for a Validation committee
 pub fn validation_extra() -> usize {
-    VALIDATION_COMMITTEE_CREDITS - validation_committee_quorum()
+    VALIDATION_COMMITTEE_CREDITS - validation_quorum()
 }
 
+/// Returns the number of credits beyond the quorum for a Ratification committee
 pub fn ratification_extra() -> usize {
-    RATIFICATION_COMMITTEE_CREDITS - ratification_committee_quorum()
-}
-
-/// Returns ceil of RATIFICATION_COMMITTEE_QUORUM
-pub fn ratification_committee_quorum() -> usize {
-    RATIFICATION_COMMITTEE_QUORUM.ceil() as usize
-}
-
-/// Returns ceil of VALIDATION_COMMITTEE_QUORUM
-pub fn validation_committee_quorum() -> usize {
-    VALIDATION_COMMITTEE_QUORUM.ceil() as usize
+    RATIFICATION_COMMITTEE_CREDITS - ratification_quorum()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn test_quorum_consts() {
-        assert_eq!(validation_committee_quorum(), 43);
-        assert_eq!(ratification_committee_quorum(), 43);
+    fn test_quorums() {
+        assert_eq!(majority(VALIDATION_COMMITTEE_CREDITS), 33);
+        assert_eq!(validation_quorum(), 43);
+        assert_eq!(ratification_quorum(), 43);
         assert_eq!(validation_extra(), 21);
         assert_eq!(ratification_extra(), 21);
     }
