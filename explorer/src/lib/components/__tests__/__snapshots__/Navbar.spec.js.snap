@@ -50,6 +50,12 @@ exports[`Navbar > renders the Navbar component 1`] = `
         Testnet
          
       </option>
+      <option
+        value="devnet.nodes.dusk.network"
+      >
+        Devnet
+         
+      </option>
       
     </select>
      

@@ -32,6 +32,7 @@ describe("appStore", () => {
     const { env } = import.meta;
     const expectedNetworks = [
       { label: "Testnet", value: env.VITE_DUSK_TESTNET_NODE },
+      { label: "Devnet", value: env.VITE_DUSK_DEVNET_NODE },
     ];
 
     expect(appStore).toHaveProperty("subscribe", expect.any(Function));
