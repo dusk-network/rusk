@@ -79,7 +79,7 @@ pub struct DataBrokerSrv {
 
 impl DataBrokerSrv {
     pub fn new(conf: conf::Params) -> Self {
-        info!("DataBrokerSrv::new with conf: {}", conf);
+        info!("DataBrokerSrv::new with conf: {conf:?}");
         Self {
             conf,
             inbound: AsyncQueue::bounded(
