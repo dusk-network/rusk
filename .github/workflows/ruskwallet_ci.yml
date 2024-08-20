@@ -28,6 +28,8 @@ jobs:
               - 'rusk-wallet/**'
               - '.github/workflows/ruskwallet_ci.yml'
   fmt:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
     name: Rustfmt
     runs-on: core
     steps:
@@ -36,6 +38,8 @@ jobs:
       - run: cargo fmt --all -- --check
 
   analyze:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
     name: Dusk Analyzer
     runs-on: core
     steps:
@@ -45,6 +49,8 @@ jobs:
       - run: cargo dusk-analyzer
 
   test_nightly-linux:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
     name: "[Linux] Nightly tests"
     runs-on: core
 
@@ -57,6 +63,8 @@ jobs:
         working-directory: ./rusk-wallet
 
   test_nightly-macintel:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
     name: "[Mac Intel] Nightly tests"
     runs-on: macos-latest
 
@@ -71,6 +79,8 @@ jobs:
         working-directory: ./rusk-wallet
 
   test_nightly-macm1:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
     name: "[Mac arm64] Nightly checks"
     runs-on: macos-latest
 
@@ -85,6 +95,8 @@ jobs:
         working-directory: ./rusk-wallet
 
   test_nightly-win:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
     name: "[Windows] Nightly tests"
     runs-on: windows-latest
 
