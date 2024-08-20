@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-11, windows-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-12, windows-latest]
         compiler: [cargo]
         include:
           - os: ubuntu-20.04
@@ -33,7 +33,7 @@ jobs:
             compiler: cargo
             target: macos-intel
 
-          - os: macos-11
+          - os: macos-12
             compiler: cargo
             target: macos-arm64
             flags: --target=aarch64-apple-darwin
@@ -54,7 +54,7 @@ jobs:
 
       - name: Add arm target for Apple Silicon build
         run: rustup target add aarch64-apple-darwin
-        if: ${{ matrix.os == 'macos-11' }}
+        if: ${{ matrix.os == 'macos-12' }}
 
       - name: Build Wallet
         shell: bash
