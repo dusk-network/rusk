@@ -83,6 +83,7 @@ const getTransactionsHistory = async () =>
     .then(uniquesById);
 
 function reset() {
+  abortSync();
   walletInstance = null;
   set(initialState);
 }
@@ -153,7 +154,13 @@ function sync() {
     syncController = new AbortController();
     syncPromise = walletInstance
       .sync({ signal: syncController.signal })
-      .then(updateAfterSync, (error) => {
+      .then(() => {
+        if (syncController.signal.aborted) {
+          throw new Error("Synchronization aborted");
+        }
+      })
+      .then(updateAfterSync)
+      .catch((error) => {
         set({ ...store, error, isSyncing: false });
       })
       .finally(() => {

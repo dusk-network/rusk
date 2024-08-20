@@ -11,7 +11,6 @@ import { walletStore } from "$lib/stores";
  * @returns {ReturnType<goto>}
  */
 const logout = (isForced) => {
-  walletStore.abortSync();
   walletStore.reset();
 
   return goto(`/${isForced ? "forced-logout" : ""}`);
