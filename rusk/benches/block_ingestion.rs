@@ -20,7 +20,7 @@ use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     transfer::Transaction as ProtocolTransaction,
 };
-use node_data::ledger::Transaction;
+use node_data::ledger::{Transaction, TransactionType};
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
@@ -42,11 +42,7 @@ fn load_phoenix_txs() -> Vec<Transaction> {
         let line = line.unwrap();
         let tx_bytes = hex::decode(line).unwrap();
         let tx = ProtocolTransaction::from_slice(&tx_bytes).unwrap();
-        txs.push(Transaction {
-            version: 1,
-            r#type: 0,
-            inner: tx,
-        });
+        txs.push(tx.into());
     }
 
     preverify(&txs);
@@ -65,11 +61,7 @@ fn load_moonlight_txs() -> Vec<Transaction> {
         let line = line.unwrap();
         let tx_bytes = hex::decode(line).unwrap();
         let tx = ProtocolTransaction::from_slice(&tx_bytes).unwrap();
-        txs.push(Transaction {
-            version: 1,
-            r#type: 0,
-            inner: tx,
-        });
+        txs.push(tx.into());
     }
 
     preverify(&txs);
@@ -80,7 +72,7 @@ fn load_moonlight_txs() -> Vec<Transaction> {
 fn preverify(txs: &[Transaction]) {
     for tx in txs {
         match &tx.inner {
-            ProtocolTransaction::Phoenix(tx) => {
+            TransactionType::Protocol(ProtocolTransaction::Phoenix(tx)) => {
                 match rusk::verifier::verify_proof(tx) {
                     Ok(true) => Ok(()),
                     Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
@@ -90,7 +82,7 @@ fn preverify(txs: &[Transaction]) {
                 }
                 .unwrap()
             }
-            ProtocolTransaction::Moonlight(tx) => {
+            TransactionType::Protocol(ProtocolTransaction::Moonlight(tx)) => {
                 match rusk::verifier::verify_signature(tx) {
                     Ok(true) => Ok(()),
                     Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
