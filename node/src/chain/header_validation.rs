@@ -226,9 +226,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
                 anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
 
+                let mut consensus_header =
+                    candidate_block.to_consensus_header();
+                consensus_header.iteration = iter as u8;
+
                 let (_, rat_quorum, _) = verify_att(
                     att,
-                    candidate_block.to_consensus_header(),
+                    consensus_header,
                     self.prev_header.seed,
                     self.provisioners.current(),
                     RatificationResult::Fail(Vote::default()),
