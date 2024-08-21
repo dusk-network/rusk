@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{get_current_timestamp, RoundUpdate};
+use crate::commons::RoundUpdate;
 use crate::operations::{CallParams, Operations, Voter};
 use node_data::ledger::{
     to_str, Attestation, Block, Fault, IterationsInfo, Seed, Slash,
@@ -15,9 +15,9 @@ use crate::merkle::merkle_root;
 
 use crate::config::MINIMUM_BLOCK_TIME;
 use dusk_bytes::Serializable;
-use node_data::ledger;
 use node_data::message::payload::Candidate;
 use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
+use node_data::{get_current_timestamp, ledger};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, info};
