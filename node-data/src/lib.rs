@@ -12,8 +12,6 @@ pub mod message;
 
 use std::io::{self, Read, Write};
 
-use ledger::Hash;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {
     Proposal = 0,
@@ -78,7 +76,7 @@ pub trait Serializable {
     }
 }
 
-impl Serializable for Hash {
+impl<const N: usize> Serializable for [u8; N] {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self[..])
     }
