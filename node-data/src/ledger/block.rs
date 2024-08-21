@@ -104,7 +104,7 @@ pub mod faker {
     use transaction::faker::gen_dummy_tx;
 
     impl<T> Dummy<T> for Block {
-        /// Creates a block with 3 transactions and random header.
+        /// Creates a block with 3 transactions and a random header.
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
             let txs = vec![
                 gen_dummy_tx(rng.gen()),

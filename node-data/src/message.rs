@@ -79,7 +79,7 @@ impl Message {
             Payload::Validation(v) => v.get_step(),
             Payload::Ratification(r) => r.get_step(),
             Payload::Quorum(_) => {
-                // This should be removed in future
+                // TODO: This should be removed in future
                 StepName::Ratification.to_step(self.header.iteration)
             }
             _ => StepName::Proposal.to_step(self.header.iteration),
@@ -353,7 +353,7 @@ pub enum Payload {
     GetResource(payload::GetResource),
 
     // Internal messages payload
-    /// Result message passed from Validation step to Ratification step
+    // Result message passed from Validation step to Ratification step
     ValidationResult(Box<payload::ValidationResult>),
 
     #[default]
@@ -1074,8 +1074,6 @@ pub enum Topics {
     Candidate = 16,
     Validation = 17,
     Ratification = 18,
-
-    // Consensus Quorum loop topics
     Quorum = 19,
 
     #[default]
@@ -1132,9 +1130,7 @@ impl<M: Clone> AsyncQueue<M> {
     ///
     /// `Label` sets a queue label for logging
     ///
-    /// Panics
-    /// Capacity must be a positive number. If cap is zero, this function will
-    /// panic.
+    /// Panics if `cap` is zero (Capacity must be a positive number).
     pub fn bounded(cap: usize, label: &'static str) -> Self {
         let (sender, receiver) = async_channel::bounded(cap);
         Self {

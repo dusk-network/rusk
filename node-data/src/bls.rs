@@ -61,8 +61,8 @@ impl PublicKey {
     }
 
     /// `bytes` returns a reference to the pk.to_bytes() initialized on
-    /// PublicKey::new call. NB Frequent use of `to_bytes()` creates a
-    /// noticeable perf overhead.
+    /// PublicKey::new call. NB: Frequent use of `to_bytes()` creates a
+    /// noticeable performance overhead.
     pub fn bytes(&self) -> &PublicKeyBytes {
         &self.as_bytes
     }
@@ -104,7 +104,7 @@ impl std::fmt::Debug for PublicKey {
         f.debug_struct("PublicKey").field("bs58", &bs).finish()
     }
 }
-/// a wrapper of 96-sized array
+/// A wrapper of 96-sized array
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
 pub struct PublicKeyBytes(
     #[serde(serialize_with = "crate::serialize_b58")] pub [u8; PUBLIC_BLS_SIZE],
@@ -141,8 +141,6 @@ impl Debug for PublicKeyBytes {
 }
 
 /// Loads consensus keys from an encrypted file.
-///
-/// Panics on any error.
 pub fn load_keys(
     path: String,
     pwd: String,
@@ -154,8 +152,6 @@ pub fn load_keys(
 }
 
 /// Fetches BLS public and secret keys from an encrypted consensus keys file.
-///
-/// Panics on any error.
 fn read_from_file(
     path: PathBuf,
     pwd: &str,
@@ -224,7 +220,7 @@ fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
 /// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded
 /// consensus keys.
 ///
-/// It reads RUSK_WALLET_PWD var to unlock wallet files.
+/// It reads $DUSK_CONSENSUS_KEYS_PASS var to unlock wallet files.
 pub fn load_provisioners_keys(n: usize) -> Vec<(BlsSecretKey, PublicKey)> {
     let mut keys = vec![];
 
