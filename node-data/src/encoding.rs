@@ -11,7 +11,7 @@ use execution_core::transfer::Transaction as ProtocolTransaction;
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
     Attestation, Block, Fault, Header, IterationsInfo, Label, SpentTransaction,
-    StepVotes, Transaction,
+    StepVotes, Transaction, TransactionType,
 };
 use crate::message::payload::{
     QuorumType, Ratification, RatificationResult, ValidationResult, Vote,
@@ -63,18 +63,54 @@ impl Serializable for Block {
     }
 }
 
+impl Serializable for TransactionType {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        match self {
+            TransactionType::Protocol(p) => {
+                //Write TxType
+                w.write_all(&[0u8])?;
+
+                // Write inner transaction
+                let data = p.to_var_bytes();
+                Self::write_var_le_bytes32(w, &data)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let t_type = Self::read_u8(r)?;
+        let inner = match t_type {
+            0 => {
+                let protocol_tx = Self::read_var_le_bytes32(r)?;
+                let inner = ProtocolTransaction::from_slice(&protocol_tx[..])
+                    .map_err(|_| {
+                    io::Error::from(io::ErrorKind::InvalidData)
+                })?;
+                Self::Protocol(inner)
+            }
+
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid TransactionType",
+            ))?,
+        };
+
+        Ok(inner)
+    }
+}
+
 impl Serializable for Transaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         //Write version
         w.write_all(&self.version.to_le_bytes())?;
 
-        //Write TxType
-        w.write_all(&self.r#type.to_le_bytes())?;
-
-        let data = self.inner.to_var_bytes();
-
         // Write inner transaction
-        Self::write_var_le_bytes32(w, &data)?;
+        self.inner.write(w)?;
 
         Ok(())
     }
@@ -84,17 +120,10 @@ impl Serializable for Transaction {
         Self: Sized,
     {
         let version = Self::read_u32_le(r)?;
-        let tx_type = Self::read_u32_le(r)?;
 
-        let protocol_tx = Self::read_var_le_bytes32(r)?;
-        let inner = ProtocolTransaction::from_slice(&protocol_tx[..])
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+        let inner = TransactionType::read(r)?;
 
-        Ok(Self {
-            inner,
-            version,
-            r#type: tx_type,
-        })
+        Ok(Self { inner, version })
     }
 }
 

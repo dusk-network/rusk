@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::ledger::{Hash, SpentTransaction, Transaction};
+use crate::ledger::{Hash, SpentTransaction, Transaction, TransactionType};
 
 /// Represents events related to transactions.
 ///
@@ -68,7 +68,7 @@ impl Serialize for Transaction {
     {
         let mut state = serializer.serialize_struct("Transaction", 1)?;
         match &self.inner {
-            ProtocolTransaction::Phoenix(p) => {
+            TransactionType::Protocol(ProtocolTransaction::Phoenix(p)) => {
                 state.serialize_field("type", "phoenix")?;
 
                 let root = p.root().to_bytes();
@@ -81,7 +81,7 @@ impl Serialize for Transaction {
                     .collect();
                 state.serialize_field("nullifiers", &nullifiers)?;
             }
-            ProtocolTransaction::Moonlight(m) => {
+            TransactionType::Protocol(ProtocolTransaction::Moonlight(m)) => {
                 state.serialize_field("type", "moonlight")?;
 
                 let from = m.from_account();
@@ -97,8 +97,7 @@ impl Serialize for Transaction {
             }
         }
 
-        let tx = &self.inner;
-
+        let TransactionType::Protocol(tx) = &self.inner;
         state.serialize_field("deposit", &tx.deposit())?;
 
         let notes: Vec<Note> = tx.outputs().iter().map(|n| n.into()).collect();

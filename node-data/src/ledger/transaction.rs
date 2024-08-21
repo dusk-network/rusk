@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use execution_core::transfer::contract_exec::ContractCall;
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use execution_core::BlsScalar;
 use serde::Serialize;
@@ -11,15 +12,42 @@ use serde::Serialize;
 #[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: u32,
-    pub r#type: u32,
-    pub inner: ProtocolTransaction,
+    pub inner: TransactionType,
+}
+
+#[derive(Debug, Clone)]
+pub enum TransactionType {
+    Protocol(ProtocolTransaction),
+}
+
+impl TransactionType {
+    pub fn nullifiers(&self) -> &[BlsScalar] {
+        match &self {
+            TransactionType::Protocol(inner) => inner.nullifiers(),
+        }
+    }
+    pub fn gas_price(&self) -> u64 {
+        match &self {
+            TransactionType::Protocol(inner) => inner.gas_price(),
+        }
+    }
+    pub fn gas_limit(&self) -> u64 {
+        match &self {
+            TransactionType::Protocol(inner) => inner.gas_limit(),
+        }
+    }
+
+    pub fn call(&self) -> Option<&ContractCall> {
+        match &self {
+            TransactionType::Protocol(inner) => inner.call(),
+        }
+    }
 }
 
 impl From<ProtocolTransaction> for Transaction {
     fn from(value: ProtocolTransaction) -> Self {
         Self {
-            inner: value,
-            r#type: 1,
+            inner: TransactionType::Protocol(value),
             version: 1,
         }
     }
@@ -42,7 +70,11 @@ impl Transaction {
     /// ### Returns
     /// An array of 32 bytes representing the hash of the transaction.
     pub fn hash(&self) -> [u8; 32] {
-        BlsScalar::hash_to_scalar(&self.inner.to_var_bytes()[..]).to_bytes()
+        match &self.inner {
+            TransactionType::Protocol(inner) => {
+                BlsScalar::hash_to_scalar(&inner.to_var_bytes()[..]).to_bytes()
+            }
+        }
     }
 
     /// Computes the transaction ID.
@@ -56,7 +88,9 @@ impl Transaction {
     /// ### Returns
     /// An array of 32 bytes representing the transaction ID.
     pub fn id(&self) -> [u8; 32] {
-        self.inner.hash().to_bytes()
+        match &self.inner {
+            TransactionType::Protocol(inner) => inner.hash().to_bytes(),
+        }
     }
 
     pub fn gas_price(&self) -> u64 {
@@ -74,9 +108,7 @@ impl Transaction {
 
 impl PartialEq<Self> for Transaction {
     fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.version == other.version
-            && self.id() == other.id()
+        self.version == other.version && self.id() == other.id()
     }
 }
 
