@@ -24,10 +24,10 @@ use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
-use node_data::{Serializable, StepName};
+use node_data::{get_current_timestamp, Serializable, StepName};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
-use std::time::{self, Duration, UNIX_EPOCH};
+use std::time::Duration;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
@@ -845,10 +845,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Delete any rocksdb record related to this block
                 t.delete_block(&b)?;
 
-                let now = time::SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|n| n.as_secs())
-                    .expect("valid timestamp");
+                let now = get_current_timestamp();
 
                 // Attempt to resubmit transactions back to mempool.
                 // An error here is not considered critical.

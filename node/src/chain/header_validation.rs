@@ -18,10 +18,9 @@ use execution_core::stake::EPOCH;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::ConsensusHeader;
-use node_data::{ledger, StepName};
+use node_data::{get_current_timestamp, ledger, StepName};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::info;
@@ -114,10 +113,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             return Err(anyhow!("block time is less than minimum block time"));
         }
 
-        let local_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|n| n.as_secs())
-            .expect("valid unix epoch");
+        let local_time = get_current_timestamp();
 
         if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
             return Err(anyhow!(
