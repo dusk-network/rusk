@@ -679,7 +679,7 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
-    fn add_tx(&self, tx: &ledger::Transaction) -> Result<()> {
+    fn add_tx(&self, tx: &ledger::Transaction, timestamp: u64) -> Result<()> {
         // Map Hash to serialized transaction
         let mut tx_data = vec![];
         tx.write(&mut tx_data)?;
@@ -694,11 +694,15 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             self.put_cf(self.nullifiers_cf, key, hash)?;
         }
 
-        // Map Fee_Hash to Null to facilitate sort-by-fee
+        let timestamp = timestamp.to_be_bytes();
+
+        // Map Fee_Hash to Timestamp
+        // Key pair is used to facilitate sort-by-fee
+        // Also, the timestamp is used to remove expired transactions
         self.put_cf(
             self.fees_cf,
             serialize_key(tx.gas_price(), hash)?,
-            vec![0],
+            timestamp,
         )?;
 
         Ok(())
@@ -769,6 +773,44 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf);
 
         Ok(Box::new(iter))
+    }
+
+    /// Get all expired transactions hashes.
+    fn get_expired_txs(&self, timestamp: u64) -> Result<Vec<[u8; 32]>> {
+        let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
+        iter.seek_to_first();
+        let mut txs_list = vec![];
+
+        while iter.valid() {
+            if let Some(key) = iter.key() {
+                let (_, tx_id) = deserialize_key(&mut &key.to_vec()[..])?;
+
+                let tx_timestamp = u64::from_be_bytes(
+                    iter.value()
+                        .ok_or_else(|| {
+                            io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "no value",
+                            )
+                        })?
+                        .try_into()
+                        .map_err(|_| {
+                            io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "invalid data",
+                            )
+                        })?,
+                );
+
+                if tx_timestamp <= timestamp {
+                    txs_list.push(tx_id);
+                }
+            }
+
+            iter.next();
+        }
+
+        Ok(txs_list)
     }
 
     fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>> {
@@ -1165,7 +1207,7 @@ mod tests {
                 Backend::create_or_open(path, DatabaseOptions::default());
             let t: ledger::Transaction = Faker.fake();
 
-            assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
+            assert!(db.update(|txn| { txn.add_tx(&t, 0) }).is_ok());
 
             db.view(|vq| {
                 assert!(Mempool::get_tx_exists(&vq, t.id()).unwrap());
@@ -1199,7 +1241,7 @@ mod tests {
             db.update(|txn| {
                 for _i in 0..10u32 {
                     let t: ledger::Transaction = Faker.fake();
-                    txn.add_tx(&t)?;
+                    txn.add_tx(&t, 0)?;
                 }
                 Ok(())
             })
@@ -1238,8 +1280,9 @@ mod tests {
 
             db.update(|db| {
                 assert_eq!(db.txs_count(), 0);
-                txs.iter()
-                    .for_each(|t| db.add_tx(&t).expect("tx should be added"));
+                txs.iter().for_each(|t| {
+                    db.add_tx(&t, 0).expect("tx should be added")
+                });
                 Ok(())
             })
             .unwrap();
@@ -1276,7 +1319,7 @@ mod tests {
             db.update(|txn| {
                 for i in 0..10u32 {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t)?;
+                    txn.add_tx(&t, 0)?;
                 }
                 Ok(())
             })
@@ -1291,6 +1334,41 @@ mod tests {
                     .sum::<u64>();
 
                 assert_eq!(txs, total_gas_price);
+            });
+        });
+    }
+
+    #[test]
+    fn test_get_expired_txs() {
+        TestWrapper::new("test_get_expired_txs").run(|path| {
+            let db: Backend =
+                Backend::create_or_open(path, DatabaseOptions::default());
+
+            let mut expiry_list = HashSet::new();
+            let _ = db.update(|txn| {
+                (1..101).for_each(|i| {
+                    let t = ledger::faker::gen_dummy_tx(i as u64);
+                    txn.add_tx(&t, i).expect("tx should be added");
+                    expiry_list.insert(t.id());
+                });
+
+                (1000..1100).for_each(|i| {
+                    let t = ledger::faker::gen_dummy_tx(i as u64);
+                    txn.add_tx(&t, i).expect("tx should be added");
+                });
+
+                Ok(())
+            });
+
+            db.view(|vq| {
+                let expired: HashSet<[u8; 32]> =
+                    Mempool::get_expired_txs(&vq, 100)
+                        .unwrap()
+                        .into_iter()
+                        .map(|id| id)
+                        .collect();
+
+                assert_eq!(expiry_list, expired);
             });
         });
     }

@@ -27,7 +27,7 @@ use node_data::message::payload::Vote;
 use node_data::{Serializable, StepName};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
-use std::time::Duration;
+use std::time::{self, Duration, UNIX_EPOCH};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
@@ -845,10 +845,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Delete any rocksdb record related to this block
                 t.delete_block(&b)?;
 
+                let now = time::SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|n| n.as_secs())
+                    .expect("valid timestamp");
+
                 // Attempt to resubmit transactions back to mempool.
                 // An error here is not considered critical.
+                // Txs timestamp is reset here
                 for tx in b.txs().iter() {
-                    if let Err(e) = Mempool::add_tx(t, tx) {
+                    if let Err(e) = Mempool::add_tx(t, tx, now) {
                         warn!("failed to resubmit transactions: {e}")
                     };
                 }
