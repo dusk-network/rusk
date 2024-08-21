@@ -32,7 +32,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         toml::from_str(include_str!("../config/multi_transfer.toml"))
             .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot)
+    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
 /// Executes three different transactions in the same block, expecting only two

@@ -14,8 +14,6 @@ pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
 pub const VALIDATION_COMMITTEE_CREDITS: usize = 64;
 pub const RATIFICATION_COMMITTEE_CREDITS: usize = 64;
 
-pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
-
 pub const RELAX_ITERATION_THRESHOLD: u8 = 8;
 
 /// Emergency mode is enabled after 16 iterations

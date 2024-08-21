@@ -66,6 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             state_dir,
             config.chain.generation_timeout(),
             config.chain.gas_per_deploy_byte(),
+            config.chain.block_gas_limit(),
             config.http.feeder_call_gas,
             _event_sender.clone(),
         )?;

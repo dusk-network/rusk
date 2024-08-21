@@ -9,6 +9,8 @@ use std::{path::PathBuf, time::Duration};
 use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};
 
+pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
+
 use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -19,11 +21,13 @@ pub(crate) struct ChainConfig {
     consensus_keys_path: Option<PathBuf>,
     #[serde(with = "humantime_serde")]
     generation_timeout: Option<Duration>,
-    // Note: changing the gas per deploy byte parameter is equivalent to
-    // forking the chain.
-    gas_per_deploy_byte: Option<u64>,
 
     max_queue_size: Option<usize>,
+
+    // NB: changing the gas_per_deploy_byte/block_gas_limit is equivalent to
+    // forking the chain.
+    gas_per_deploy_byte: Option<u64>,
+    block_gas_limit: Option<u64>,
 }
 
 impl ChainConfig {
@@ -77,5 +81,9 @@ impl ChainConfig {
 
     pub(crate) fn max_queue_size(&self) -> usize {
         self.max_queue_size.unwrap_or(10_000)
+    }
+
+    pub(crate) fn block_gas_limit(&self) -> u64 {
+        self.block_gas_limit.unwrap_or(DEFAULT_BLOCK_GAS_LIMIT)
     }
 }

@@ -361,4 +361,8 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         Ok(())
     }
+
+    async fn get_block_gas_limit(&self) -> u64 {
+        self.vm.read().await.get_block_gas_limit()
+    }
 }

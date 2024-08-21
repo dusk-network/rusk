@@ -11,7 +11,6 @@ use node_data::ledger::{
 };
 use std::cmp::max;
 
-use crate::config;
 use crate::merkle::merkle_root;
 
 use crate::config::MINIMUM_BLOCK_TIME;
@@ -60,6 +59,7 @@ impl<T: Operations> Generator<T> {
         info!(
             event = "gen_candidate",
             hash = &to_str(&candidate.header().hash),
+            gas_limit = candidate.header().gas_limit,
             state_hash = &to_str(&candidate.header().state_hash),
             dur = format!("{:?}ms", start.elapsed().as_millis()),
         );
@@ -97,7 +97,6 @@ impl<T: Operations> Generator<T> {
 
         let call_params = CallParams {
             round: ru.round,
-            block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             generator_pubkey: ru.pubkey_bls.clone(),
             to_slash,
             voters_pubkey: Some(voters.to_owned()),
@@ -105,6 +104,8 @@ impl<T: Operations> Generator<T> {
 
         let result =
             self.executor.execute_state_transition(call_params).await?;
+
+        let block_gas_limit = self.executor.get_block_gas_limit().await;
 
         let tx_hashes: Vec<_> =
             result.txs.iter().map(|t| t.inner.hash()).collect();
@@ -122,7 +123,7 @@ impl<T: Operations> Generator<T> {
             version: 0,
             height: ru.round,
             timestamp,
-            gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
+            gas_limit: block_gas_limit,
             prev_block_hash,
             seed,
             generator_bls_pubkey: *ru.pubkey_bls.bytes(),

@@ -50,7 +50,6 @@ impl From<InvalidFault> for Error {
 #[derive(Default, Clone, Debug)]
 pub struct CallParams {
     pub round: u64,
-    pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
     pub to_slash: Vec<Slash>,
     pub voters_pubkey: Option<Vec<Voter>>,
@@ -111,4 +110,6 @@ pub trait Operations: Send + Sync {
         step_name: StepName,
         elapsed: Duration,
     ) -> Result<(), Error>;
+
+    async fn get_block_gas_limit(&self) -> u64;
 }

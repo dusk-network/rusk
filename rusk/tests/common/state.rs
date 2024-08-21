@@ -30,7 +30,11 @@ use tracing::info;
 use crate::common::keys::STAKE_SK;
 
 // Creates a Rusk initial state in the given directory
-pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
+pub fn new_state<P: AsRef<Path>>(
+    dir: P,
+    snapshot: &Snapshot,
+    block_gas_limit: u64,
+) -> Result<Rusk> {
     let dir = dir.as_ref();
 
     let (_, commit_id) = state::deploy(dir, snapshot, |_| {})
@@ -38,7 +42,7 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk = Rusk::new(dir, None, None, u64::MAX, sender)
+    let rusk = Rusk::new(dir, None, None, block_gas_limit, u64::MAX, sender)
         .expect("Instantiating rusk should succeed");
 
     assert_eq!(
@@ -109,7 +113,6 @@ pub fn generator_procedure(
 
     let call_params = CallParams {
         round,
-        block_gas_limit,
         generator_pubkey,
         to_slash,
         voters_pubkey: None,

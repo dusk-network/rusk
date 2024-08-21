@@ -35,6 +35,7 @@ use tracing::info;
 use crate::common::state::new_state;
 
 const BLOCK_HEIGHT: u64 = 1;
+const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below
@@ -42,7 +43,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot)
+    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
 fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<TreeLeaf>> {
@@ -183,7 +184,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
     let snapshot = toml::from_str(include_str!("./config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot)?;
+    let rusk = new_state(&tmp, &snapshot, 100_000_000_000)?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
@@ -248,7 +249,7 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
     let snapshot = toml::from_str(include_str!("./config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot)?;
+    let rusk = new_state(&tmp, &snapshot, 100_000_000_000)?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));

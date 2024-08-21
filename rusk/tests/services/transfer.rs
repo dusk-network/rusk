@@ -29,7 +29,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot)
+    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
 /// Transacts between two accounts on the in the same wallet and produces a
