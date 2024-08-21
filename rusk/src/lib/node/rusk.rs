@@ -31,7 +31,9 @@ use execution_core::{
     },
     BlsScalar, ContractError, Dusk, Event,
 };
-use node_data::ledger::{Slash, SpentTransaction, Transaction};
+use node_data::ledger::{
+    Slash, SpentTransaction, Transaction, TransactionType,
+};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -122,6 +124,7 @@ impl Rusk {
         let mut event_hasher = Sha3_256::new();
 
         for unspent_tx in txs {
+            let TransactionType::Protocol(inner) = &unspent_tx.inner;
             if let Some(timeout) = self.generation_timeout {
                 if started.elapsed() > timeout {
                     info!("execute_transactions timeout triggered {timeout:?}");
@@ -134,11 +137,7 @@ impl Rusk {
                 continue;
             }
 
-            match execute(
-                &mut session,
-                &unspent_tx.inner,
-                self.gas_per_deploy_byte,
-            ) {
+            match execute(&mut session, inner, self.gas_per_deploy_byte) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -150,11 +149,13 @@ impl Rusk {
                         session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
+                            let TransactionType::Protocol(inner) =
+                                &spent_tx.inner.inner;
                             // We know these transactions were correctly
                             // executed before, so we don't bother checking.
                             let _ = execute(
                                 &mut session,
-                                &spent_tx.inner.inner,
+                                inner,
                                 self.gas_per_deploy_byte,
                             );
                         }
@@ -462,6 +463,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
+        let TransactionType::Protocol(tx) = tx;
         let receipt = execute(&mut session, tx, gas_per_deploy_byte)?;
 
         update_hasher(&mut event_hasher, &receipt.events);

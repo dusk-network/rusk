@@ -17,7 +17,7 @@ use execution_core::{
     transfer::Transaction as ProtocolTransaction,
 };
 use node::vm::VMExecution;
-use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, TransactionType};
 
 use super::Rusk;
 
@@ -110,6 +110,7 @@ impl VMExecution for Rusk {
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
         info!("Received preverify request");
         let tx = &tx.inner;
+        let TransactionType::Protocol(tx) = tx;
 
         match tx {
             ProtocolTransaction::Phoenix(tx) => {

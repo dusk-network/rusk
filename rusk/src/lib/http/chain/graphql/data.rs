@@ -8,6 +8,7 @@ use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
 use node::database::{Ledger, LightBlock, DB};
+use node_data::ledger::TransactionType;
 
 pub struct Block {
     header: node_data::ledger::Header,
@@ -238,7 +239,8 @@ impl SpentTransaction {
 #[Object]
 impl Transaction<'_> {
     pub async fn raw(&self) -> String {
-        hex::encode(self.0.inner.to_var_bytes())
+        let TransactionType::Protocol(inner) = &self.0.inner;
+        hex::encode(inner.to_var_bytes())
     }
 
     pub async fn json(&self) -> String {
