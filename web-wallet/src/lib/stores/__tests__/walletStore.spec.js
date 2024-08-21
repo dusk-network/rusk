@@ -1,12 +1,4 @@
-import {
-  afterAll,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { keys } from "lamb";
 import { Wallet } from "@dusk-network/dusk-wallet-js";
@@ -15,6 +7,7 @@ import { addresses, transactions } from "$lib/mock-data";
 import { rejectAfter, resolveAfter } from "$lib/dusk/test-helpers";
 
 import { walletStore } from "..";
+import { waitFor } from "@testing-library/svelte";
 
 const settleTime = 1000;
 
@@ -24,6 +17,7 @@ describe("walletStore", async () => {
   const balance = { maximum: 100, value: 1 };
   const wallet = new Wallet([]);
 
+  const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
   const getBalanceSpy = vi
     .spyOn(Wallet.prototype, "getBalance")
     .mockResolvedValue(balance);
@@ -76,7 +70,8 @@ describe("walletStore", async () => {
     price: 1,
   };
 
-  afterEach(() => {
+  beforeEach(() => {
+    abortControllerSpy.mockClear();
     getBalanceSpy.mockClear();
     getPsksSpy.mockClear();
     historySpy.mockClear();
@@ -87,9 +82,13 @@ describe("walletStore", async () => {
     transferSpy.mockClear();
     unstakeSpy.mockClear();
     withdrawRewardSpy.mockClear();
+    vi.runAllTimers();
+    walletStore.reset();
+    vi.clearAllTimers();
   });
 
   afterAll(() => {
+    abortControllerSpy.mockRestore();
     getBalanceSpy.mockRestore();
     getPsksSpy.mockRestore();
     historySpy.mockRestore();
@@ -105,6 +104,9 @@ describe("walletStore", async () => {
   describe("Initialization and sync", () => {
     it("should expose a `reset` method to bring back the store to its initial state", async () => {
       await walletStore.init(wallet);
+
+      expect(syncSpy).toHaveBeenCalledTimes(1);
+
       await vi.advanceTimersToNextTimerAsync();
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
@@ -112,6 +114,25 @@ describe("walletStore", async () => {
       walletStore.reset();
 
       expect(get(walletStore)).toStrictEqual(initialState);
+    });
+
+    it("should abort a sync in progress during the reset and set an error in the store", async () => {
+      walletStore.init(wallet);
+
+      await waitFor(() => syncSpy.mock.calls.length === 1);
+
+      walletStore.reset();
+
+      expect(abortControllerSpy).toHaveBeenCalledOnce();
+      expect(get(walletStore)).toStrictEqual(initialState);
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(get(walletStore)).toStrictEqual({
+        ...initializedStore,
+        balance: initialState.balance,
+        error: new Error("Synchronization aborted"),
+      });
     });
 
     it("should expose a method to initialize the store with a Wallet instance", async () => {
@@ -129,6 +150,9 @@ describe("walletStore", async () => {
       expect(getPsksSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
+
+      await vi.advanceTimersToNextTimerAsync();
+
       expect(getBalanceSpy).toHaveBeenCalledTimes(1);
       expect(getBalanceSpy).toHaveBeenCalledWith(addresses[0]);
 
@@ -138,8 +162,6 @@ describe("walletStore", async () => {
     });
 
     it("should set the sync error in the store if the sync fails", async () => {
-      walletStore.reset();
-
       const storeWhileLoading = {
         ...initialState,
         addresses: addresses,
@@ -168,19 +190,13 @@ describe("walletStore", async () => {
         error,
         isSyncing: false,
       });
-
-      walletStore.reset();
     });
 
     it("should throw an error when the synchronization is called without initializing the store first", async () => {
-      walletStore.reset();
-
       expect(() => walletStore.sync()).toThrow();
     });
 
     it("should return the pending sync promise if a sync is called while another one is in progress", async () => {
-      walletStore.reset();
-
       await walletStore.init(wallet);
       await vi.advanceTimersToNextTimerAsync();
 
@@ -207,22 +223,10 @@ describe("walletStore", async () => {
       expect(syncSpy).toHaveBeenCalledTimes(2);
 
       await syncPromise4;
-
-      walletStore.reset();
     });
   });
 
   describe("Abort sync", () => {
-    const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
-
-    afterEach(() => {
-      abortControllerSpy.mockClear();
-    });
-
-    afterAll(() => {
-      abortControllerSpy.mockRestore();
-    });
-
     it("should expose a method to abort a sync that is in progress", async () => {
       await walletStore.init(wallet);
 
@@ -251,14 +255,14 @@ describe("walletStore", async () => {
     });
 
     it("should do nothing if there is no sync in progress", async () => {
-      walletStore.reset();
-
       await walletStore.init(wallet);
 
       expect(syncSpy).toHaveBeenCalledTimes(1);
       expect(syncSpy).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) });
 
       await vi.advanceTimersToNextTimerAsync();
+
+      expect(get(walletStore)).toStrictEqual(initializedStore);
 
       walletStore.abortSync();
 
@@ -268,10 +272,6 @@ describe("walletStore", async () => {
 
   describe("Wallet store services", () => {
     const currentAddress = addresses[0];
-
-    afterEach(() => {
-      walletStore.reset();
-    });
 
     beforeEach(async () => {
       await walletStore.init(wallet);
@@ -287,7 +287,6 @@ describe("walletStore", async () => {
     });
 
     it("should expose a method to clear local data and then init the wallet", async () => {
-      walletStore.reset();
       getPsksSpy.mockClear();
       getBalanceSpy.mockClear();
       syncSpy
@@ -518,8 +517,6 @@ describe("walletStore", async () => {
         await vi.advanceTimersToNextTimerAsync();
 
         expect(get(walletStore).error).toBe(fakeSyncError);
-
-        walletStore.reset();
       });
     });
   });
