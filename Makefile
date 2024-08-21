@@ -66,6 +66,9 @@ doc: ## Run doc gen
 	$(MAKE) -C ./rusk-recovery $@
 	$(MAKE) -C ./wallet-core/ $@
 
+bench: keys wasm  ## Bench Rusk
+	$(MAKE) -C ./rusk bench
+
 run: keys state web-wallet ## Run the server
 	$(MAKE) -C ./rusk/ $@
 
@@ -79,4 +82,4 @@ COMPILER_VERSION=v0.2.0
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 
-.PHONY: all abi keys state wasm allcircuits contracts test run help rusk web-wallet setup-compiler
+.PHONY: all abi keys state wasm allcircuits contracts test bench run help rusk web-wallet setup-compiler

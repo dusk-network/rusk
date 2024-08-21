@@ -76,3 +76,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dsherret/rust-toolchain-file@v1
       - run: cargo fmt --all -- --check
+  benchmark:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+    name: Run Benchmarks
+    runs-on: core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1      
+      - run: make bench
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusk-benchmark-results
+          path: ./target/criterion
+          retention-days: 14
