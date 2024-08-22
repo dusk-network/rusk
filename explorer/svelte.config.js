@@ -1,7 +1,7 @@
 import adapter from "@sveltejs/adapter-static";
 import autoprefixer from "autoprefixer";
 import postCSSNested from "postcss-nested";
-import preprocess from "svelte-preprocess";
+import { sveltePreprocess } from "svelte-preprocess";
 import { loadEnv } from "vite";
 
 const env = loadEnv("", process.cwd());
@@ -17,7 +17,7 @@ const config = {
     },
   },
   preprocess: [
-    preprocess({
+    sveltePreprocess({
       postcss: {
         plugins: [autoprefixer, postCSSNested],
       },
