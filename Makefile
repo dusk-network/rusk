@@ -66,7 +66,8 @@ doc: ## Run doc gen
 	$(MAKE) -C ./rusk-recovery $@
 	$(MAKE) -C ./wallet-core/ $@
 
-bench: keys wasm  ## Bench Rusk
+bench: keys wasm  ## Bench Rusk & node
+	$(MAKE) -C ./node bench
 	$(MAKE) -C ./rusk bench
 
 run: keys state web-wallet ## Run the server
