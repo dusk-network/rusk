@@ -161,7 +161,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Phase::Proposal(proposal::step::ProposalStep::new(
                     executor.clone(),
                     db.clone(),
-                    proposal_handler.clone(),
+                    proposal_handler,
                 )),
                 Phase::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
@@ -179,7 +179,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let mut iter_ctx = IterationCtx::new(
                 ru.round,
                 iter,
-                proposal_handler,
                 validation_handler,
                 ratification_handler,
                 ru.base_timeouts.clone(),
