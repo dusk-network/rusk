@@ -11,6 +11,7 @@ pub mod ledger;
 pub mod message;
 
 use std::io::{self, Read, Write};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {
@@ -109,4 +110,11 @@ where
 {
     let hex = bs58::encode(t).into_string();
     serializer.serialize_str(&hex)
+}
+
+pub fn get_current_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|n| n.as_secs())
+        .expect("This is heavy.")
 }

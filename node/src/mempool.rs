@@ -14,10 +14,10 @@ use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
 };
 use node_data::events::{Event, TransactionEvent};
+use node_data::get_current_timestamp;
 use node_data::ledger::Transaction;
 use node_data::message::{payload, AsyncQueue, Payload, Topics};
 use std::sync::Arc;
-use std::time::{self, UNIX_EPOCH};
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
@@ -91,8 +91,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         let idle_interval =
             self.conf.idle_interval.unwrap_or(DEFAULT_IDLE_INTERVAL);
 
-        let mempool_expiry =
-            self.conf.mempool_expiry.unwrap_or(DEFAULT_EXPIRY_TIME);
+        let mempool_expiry = self
+            .conf
+            .mempool_expiry
+            .unwrap_or(DEFAULT_EXPIRY_TIME)
+            .as_secs();
 
         // Mempool service loop
         let mut on_idle_event = tokio::time::interval(idle_interval);
@@ -102,15 +105,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 _ = on_idle_event.tick() => {
                     info!(event = "mempool_idle", interval = ?idle_interval);
 
-                    let expiration_time = time::SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("valid timestamp")
+                    let expiration_time = get_current_timestamp()
                         .checked_sub(mempool_expiry)
                         .expect("valid duration");
 
                     // Remove expired transactions from the mempool
                     db.read().await.update(|db| {
-                        let expired_txs = db.get_expired_txs(expiration_time.as_secs())?;
+                        let expired_txs = db.get_expired_txs(expiration_time)?;
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
                             if db.delete_tx(tx_id)? {
@@ -216,11 +217,9 @@ impl MempoolSrv {
             events.push(TransactionEvent::Included(tx));
             // Persist transaction in mempool storage
 
-            let now = time::SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("valid timestamp");
+            let now = get_current_timestamp();
 
-            db.add_tx(tx, now.as_secs())
+            db.add_tx(tx, now)
         })?;
 
         tracing::info!(

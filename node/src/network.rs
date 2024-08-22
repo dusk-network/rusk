@@ -12,11 +12,10 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
+use node_data::get_current_timestamp;
 use node_data::message::payload::{GetResource, Inv};
-use node_data::message::AsyncQueue;
-use node_data::message::Metadata;
+use node_data::message::{AsyncQueue, Metadata};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tracing::{error, info, trace};
 
@@ -206,16 +205,8 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         ttl_as_sec: Option<u64>,
         hops_limit: u16,
     ) -> anyhow::Result<()> {
-        let ttl_as_sec = ttl_as_sec.map_or_else(
-            || u64::MAX,
-            |v| {
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs()
-                    + v
-            },
-        );
+        let ttl_as_sec = ttl_as_sec
+            .map_or_else(|| u64::MAX, |v| get_current_timestamp() + v);
 
         self.send_to_alive_peers(
             &Message::new_get_resource(GetResource::new(

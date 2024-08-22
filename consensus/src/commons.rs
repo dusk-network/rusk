@@ -11,7 +11,7 @@ use node_data::ledger::*;
 use node_data::message::payload::{QuorumType, Vote};
 use std::collections::HashMap;
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use thiserror::Error;
 
 use execution_core::signatures::bls::{
@@ -170,11 +170,4 @@ impl QuorumMsgSender {
 
         self.queue.try_send(msg);
     }
-}
-
-pub fn get_current_timestamp() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|n| n.as_secs())
-        .expect("This is heavy.")
 }

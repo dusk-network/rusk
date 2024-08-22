@@ -4,18 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{
-    get_current_timestamp, ConsensusError, Database, RoundUpdate,
-};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use std::marker::PhantomData;
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
-use node_data::message;
 use node_data::message::payload::{self, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
+use node_data::{get_current_timestamp, message};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

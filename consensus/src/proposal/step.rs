@@ -8,11 +8,12 @@ use crate::commons::{ConsensusError, Database};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
+use node_data::get_current_timestamp;
 use node_data::ledger::IterationsInfo;
 use node_data::message::Message;
 use std::cmp;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use tokio::sync::Mutex;
 
 use crate::config;
@@ -109,10 +110,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
 
     /// Waits until the next slot is reached
     async fn wait_until_next_slot(tip_timestamp: u64) {
-        let current_time_secs = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("valid unix epoch")
-            .as_secs();
+        let current_time_secs = get_current_timestamp();
 
         let next_slot_timestamp = tip_timestamp + MINIMUM_BLOCK_TIME;
         if current_time_secs >= next_slot_timestamp {

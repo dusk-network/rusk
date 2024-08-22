@@ -362,13 +362,12 @@ pub enum Payload {
 
 pub mod payload {
     use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
-    use crate::Serializable;
+    use crate::{get_current_timestamp, Serializable};
     use std::fmt;
     use std::io::{self, Read, Write};
     use std::net::{
         Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
     };
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{ConsensusHeader, SignInfo};
     use serde::Serialize;
@@ -946,11 +945,7 @@ pub mod payload {
         }
 
         pub fn is_expired(&self) -> bool {
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs()
-                > self.ttl_as_sec
+            get_current_timestamp() > self.ttl_as_sec
         }
     }
 
