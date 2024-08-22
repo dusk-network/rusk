@@ -18,6 +18,8 @@ describe("redirect", () => {
   });
 
   it("should add the defined base path to SvelteKit's `redirect` calls for absolute paths", () => {
+    expect.assertions(3);
+
     redirect(300, "/");
     redirect(301, "/foo/path");
 
@@ -26,7 +28,9 @@ describe("redirect", () => {
     expect(redirectMock).toHaveBeenNthCalledWith(2, 301, `${base}/foo/path`);
   });
 
-  it("should add nothing for relative paths and complete string URLs", async () => {
+  it("should add nothing for relative paths and complete string URLs", () => {
+    expect.assertions(3);
+
     redirect(300, "foo/bar");
     redirect(300, "http://example.com/");
 
@@ -35,7 +39,9 @@ describe("redirect", () => {
     expect(redirectMock).toHaveBeenNthCalledWith(2, 300, "http://example.com/");
   });
 
-  it("should do nothing if the received path is an URL object", async () => {
+  it("should do nothing if the received path is an URL object", () => {
+    expect.assertions(2);
+
     const url = new URL("http://www.example.com/");
 
     redirect(300, url);
