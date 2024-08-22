@@ -45,7 +45,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
     class="details-list__term details-list__term--table"
   >
      
-    average fee paid
+    average gas price
   </dt>
    
   <dd

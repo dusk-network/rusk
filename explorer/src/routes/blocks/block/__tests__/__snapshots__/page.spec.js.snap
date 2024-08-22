@@ -377,7 +377,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="dusk-icon dusk-icon--size--normal detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
+              data-tooltip-text="The average gas price for the transactions within the block"
               data-tooltip-type="info"
               role="graphics-symbol"
               viewBox="0 0 24 24"
@@ -388,7 +388,7 @@ exports[`Block Details > should render the Block Details page and query the nece
             </svg>
             
              
-            average fee paid
+            average gas price
           </dt>
            
           <dd
@@ -978,7 +978,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="dusk-icon dusk-icon--size--normal detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
-              data-tooltip-text="The average fee paid for the transactions within the block"
+              data-tooltip-text="The average gas price for the transactions within the block"
               data-tooltip-type="info"
               role="graphics-symbol"
               viewBox="0 0 24 24"
@@ -989,7 +989,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             </svg>
             
              
-            average fee paid
+            average gas price
           </dt>
            
           <dd

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix Average Fee Paid label [#2057]
 - Fix list items alignment on mobile [#2056]
 
 ## [0.1.0] - 2024-07-24
@@ -42,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2037]: https://github.com/dusk-network/rusk/issues/2037
 [#2039]: https://github.com/dusk-network/rusk/issues/2039
 [#2056]: https://github.com/dusk-network/rusk/issues/2056
+[#2057]: https://github.com/dusk-network/rusk/issues/2057
 [#2059]: https://github.com/dusk-network/rusk/issues/2059
 [#2061]: https://github.com/dusk-network/rusk/issues/2061
 [#2159]: https://github.com/dusk-network/rusk/issues/2159

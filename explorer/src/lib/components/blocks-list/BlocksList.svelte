@@ -51,13 +51,13 @@
     />
   </ListItem>
 
-  <!-- AVERAGE FEE PAID -->
+  <!-- AVERAGE GAS PRICE -->
   <ListItem
     tooltipText={displayTooltips
-      ? "The average fee paid for the transactions within the block"
+      ? "The average gas price for the transactions within the block"
       : ""}
   >
-    <svelte:fragment slot="term">average fee paid</svelte:fragment>
+    <svelte:fragment slot="term">average gas price</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(luxToDusk(data.transactions.stats.averageGasPrice))} DUSK
     </svelte:fragment>
