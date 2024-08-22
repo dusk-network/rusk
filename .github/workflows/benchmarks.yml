@@ -1,0 +1,40 @@
+name: Benchmark CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  # Job to run change detection
+  changes:
+    runs-on: core
+    permissions:
+      pull-requests: read
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'rusk/**/*
+              - 'node/**/*
+          predicate-quantifier: "any"
+
+  benchmark:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+    name: Run Benchmarks
+    runs-on: core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1      
+      - run: make bench
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusk-benchmark-results
+          path: ./target/criterion
+          retention-days: 14
