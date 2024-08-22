@@ -803,7 +803,7 @@ fn slash(session: &mut Session, slash: Vec<Slash>) -> Result<Vec<Event>> {
             node_data::ledger::SlashType::Hard => session.call::<_, ()>(
                 STAKE_CONTRACT,
                 "hard_slash",
-                &(provisioner, None::<u64>, None::<u64>),
+                &(provisioner, None::<u64>, None::<u8>),
                 u64::MAX,
             ),
             node_data::ledger::SlashType::HardWithSeverity(severity) => session
