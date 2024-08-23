@@ -20,6 +20,7 @@ use execution_core::{
     BlsScalar, ContractError, ContractId,
 };
 use rusk_abi::{CallReceipt, PiecrustError, Session};
+use rusk_prover::LocalProver;
 
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
@@ -213,7 +214,7 @@ pub fn create_phoenix_transaction<const I: usize>(
         inputs.push((note.clone(), opening));
     }
 
-    PhoenixTransaction::new::<StdRng, crate::common::prove::CachedProver>(
+    PhoenixTransaction::new::<StdRng, LocalProver>(
         rng,
         sender_sk,
         change_pk,
