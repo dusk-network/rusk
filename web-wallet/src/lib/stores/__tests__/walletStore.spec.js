@@ -500,7 +500,7 @@ describe("walletStore", async () => {
         walletStore.reset();
       });
 
-      it("should return a rejected promise with the operation error if an operation fails and try a sync afterwards nonetheless", async () => {
+      it("should return a rejected promise with the operation error if an operation fails and try a sync afterwards", async () => {
         await walletStore.init(wallet);
         await vi.advanceTimersToNextTimerAsync();
 

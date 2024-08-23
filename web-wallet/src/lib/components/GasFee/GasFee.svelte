@@ -7,9 +7,9 @@
 </script>
 
 <div class="gas-fee">
-  <span>Max Gas Fee:</span>
+  <span>Fee:</span>
   <div class="gas-fee__amount">
-    <span class="gas-fee__amount-value">{fee}</span>
+    <div class="gas-fee__amount-value"><span>max</span> <span>{fee}</span></div>
     <Icon
       className="dusk-amount__icon"
       path={logo}
@@ -35,6 +35,12 @@
 
     &__amount-value {
       font-weight: 600;
+      display: flex;
+      gap: var(--small-gap);
+
+      & > span:first-of-type {
+        font-weight: initial;
+      }
     }
   }
 

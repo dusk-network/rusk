@@ -14,4 +14,6 @@ const content = {
   isSyncing: false,
 };
 
-export default mockReadableStore(content);
+const mockedWalletStore = mockReadableStore(content);
+
+export default mockedWalletStore;

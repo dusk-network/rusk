@@ -11,9 +11,8 @@
     setKey,
     when,
   } from "lamb";
-
+  import { executeSend } from "$lib/contracts";
   import { createCurrencyFormatter } from "$lib/dusk/currency";
-  import { getLastTransactionHash } from "$lib/transactions";
   import {
     gasStore,
     operationsStore,
@@ -29,12 +28,6 @@
 
   /** @type {ContractDescriptor} */
   export let descriptor;
-
-  /** @type {(to: string, amount: number, gasPrice:number, gasLimit:number) => Promise<string>} */
-  const executeSend = (to, amount, gasPrice, gasLimit) =>
-    walletStore
-      .transfer(to, amount, gasPrice, gasLimit)
-      .then(getLastTransactionHash);
 
   const collectSettings = collect([
     pick(["gasLimit", "gasPrice"]),

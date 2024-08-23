@@ -1,0 +1,93 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Staking > should render the staking page 1`] = `
+<div
+  class="dusk-card dusk-card--gap-medium"
+>
+  <div
+    class="dusk-card__header-container"
+  >
+    <header
+      class="dusk-card__header"
+      slot="header"
+    >
+      <div
+        class="dusk-card__heading-container dusk-card__heading-container--reverse"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 3C7.58 3 4 4.79 4 7V17C4 19.21 7.59 21 12 21S20 19.21 20 17V7C20 4.79 16.42 3 12 3M18 17C18 17.5 15.87 19 12 19S6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16S16.39 15.55 18 14.77V17M18 12.45C16.7 13.4 14.42 14 12 14C9.58 14 7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11C14.39 11 16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5C15.87 5 18 6.5 18 7S15.87 9 12 9Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4"
+        >
+          Staking
+        </h3>
+      </div>
+    </header>
+  </div>
+   
+  <div
+    class="dusk-card__body-container"
+  >
+    <div
+      class="dusk-suspense dusk-suspense--medium-gap"
+    >
+      <details
+        class="dusk-error-details dusk-error-details__details dusk-suspense__error"
+      >
+        <summary
+          class="dusk-error-details__summary"
+        >
+          Failed to retrieve stake info
+        </summary>
+         
+        <pre
+          class="dusk-error-details__error"
+        >
+          			
+          No wallet instance to sync
+          
+		
+        </pre>
+      </details>
+      
+       
+       
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled error-action"
+        href="/some-base-path/dashboard"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
+        
+         
+        <span
+          class="dusk-anchor-button__text"
+        >
+          Back
+        </span>
+        
+        
+      </a>
+    </div>
+    
+  </div>
+   
+</div>
+`;

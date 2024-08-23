@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
+- Added allocation (shield/unshield) page and UI [#2196]
 
 ### Changed
 
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Transactions list design [#1922]
 - Update Buttons to match the design system [#1606]
 - Update `Stepper` component to new design [#2071]
+- Update dashboard to use routes instead of `Tabs` for navigation pattern [#2075]
 
 ### Fixed
 

@@ -31,6 +31,10 @@ type TransactionsStoreContent = { transactions: Transaction[] };
 
 type TransactionsStore = Readable<TransactionsStoreContent>;
 
+type OperationsStoreContent = { currentOperation: string };
+
+type OperationsStore = Writable<OperationsStoreContent>;
+
 type WalletStoreContent = {
   balance: {
     maximum: number;
