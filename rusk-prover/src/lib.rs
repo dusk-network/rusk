@@ -13,16 +13,14 @@ extern crate std;
 use alloc::format;
 use alloc::vec::Vec;
 
-use dusk_bytes::{Error as BytesError, Serializable};
+use dusk_bytes::Serializable;
 use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
 
-use execution_core::transfer::phoenix::{
-    Prove, TxCircuit, TxCircuitVec, NOTES_TREE_DEPTH,
+use execution_core::{
+    transfer::phoenix::{Prove, TxCircuit, TxCircuitVec, NOTES_TREE_DEPTH},
+    Error,
 };
-
-mod errors;
-pub use errors::ProverError;
 
 static TX_CIRCUIT_1_2_PROVER: Lazy<PlonkProver> =
     Lazy::new(|| fetch_prover("TxCircuitOneTwo"));
@@ -40,13 +38,8 @@ static TX_CIRCUIT_4_2_PROVER: Lazy<PlonkProver> =
 pub struct LocalProver;
 
 impl Prove for LocalProver {
-    type Error = ProverError;
-
-    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        let tx_circuit_vec = TxCircuitVec::from_slice(tx_circuit_vec_bytes)
-            .map_err(|e| {
-                ProverError::invalid_data("Invalid tx-circuit bytes", e)
-            })?;
+    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
+        let tx_circuit_vec = TxCircuitVec::from_slice(tx_circuit_vec_bytes)?;
 
         #[cfg(not(feature = "no_random"))]
         let rng = &mut rand::rngs::OsRng;
@@ -58,20 +51,18 @@ impl Prove for LocalProver {
 
         let (proof, _pi) = match tx_circuit_vec.input_notes_info.len() {
             1 => TX_CIRCUIT_1_2_PROVER
-                .prove(rng, &create_circuit::<1>(tx_circuit_vec)?)?,
+                .prove(rng, &create_circuit::<1>(tx_circuit_vec)?)
+                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
             2 => TX_CIRCUIT_2_2_PROVER
-                .prove(rng, &create_circuit::<2>(tx_circuit_vec)?)?,
+                .prove(rng, &create_circuit::<2>(tx_circuit_vec)?)
+                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
             3 => TX_CIRCUIT_3_2_PROVER
-                .prove(rng, &create_circuit::<3>(tx_circuit_vec)?)?,
+                .prove(rng, &create_circuit::<3>(tx_circuit_vec)?)
+                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
             4 => TX_CIRCUIT_4_2_PROVER
-                .prove(rng, &create_circuit::<4>(tx_circuit_vec)?)?,
-            _ => {
-                return Err(ProverError::from(format!(
-                    "Invalid I/O count: {}/{}",
-                    tx_circuit_vec.input_notes_info.len(),
-                    tx_circuit_vec.output_notes_info.len()
-                )))
-            }
+                .prove(rng, &create_circuit::<4>(tx_circuit_vec)?)
+                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
+            _ => return Err(Error::InvalidData),
         };
 
         Ok(proof.to_bytes().to_vec())
@@ -95,16 +86,12 @@ fn fetch_prover(circuit_name: &str) -> PlonkProver {
 
 fn create_circuit<const I: usize>(
     tx_circuit_vec: TxCircuitVec,
-) -> Result<TxCircuit<NOTES_TREE_DEPTH, I>, ProverError> {
+) -> Result<TxCircuit<NOTES_TREE_DEPTH, I>, Error> {
     Ok(TxCircuit {
-        input_notes_info: tx_circuit_vec.input_notes_info.try_into().map_err(
-            |_| {
-                ProverError::invalid_data(
-                    "invalid tx-circuit",
-                    BytesError::InvalidData,
-                )
-            },
-        )?,
+        input_notes_info: tx_circuit_vec
+            .input_notes_info
+            .try_into()
+            .map_err(|e| Error::PhoenixCircuit(format!("{e:?}")))?,
         output_notes_info: tx_circuit_vec.output_notes_info,
         payload_hash: tx_circuit_vec.payload_hash,
         root: tx_circuit_vec.root,
