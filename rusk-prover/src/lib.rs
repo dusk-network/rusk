@@ -10,21 +10,119 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+use alloc::format;
 use alloc::vec::Vec;
 
+use dusk_bytes::{Error as BytesError, Serializable};
+use dusk_plonk::prelude::Prover as PlonkProver;
+use once_cell::sync::Lazy;
+
+use execution_core::transfer::phoenix::{
+    Prove, TxCircuit, TxCircuitVec, NOTES_TREE_DEPTH,
+};
+
 mod errors;
-mod tx;
-
-#[cfg(feature = "local_prover")]
-pub mod prover;
-#[cfg(feature = "local_prover")]
-pub use crate::prover::LocalProver;
-
 pub use errors::ProverError;
-pub use tx::{UnprovenTransaction, UnprovenTransactionInput};
 
-pub type ProverResult = Result<Vec<u8>, ProverError>;
+static TX_CIRCUIT_1_2_PROVER: Lazy<PlonkProver> =
+    Lazy::new(|| fetch_prover("TxCircuitOneTwo"));
 
-pub trait Prover {
-    fn prove_execute(&self, utx_bytes: &[u8]) -> ProverResult;
+static TX_CIRCUIT_2_2_PROVER: Lazy<PlonkProver> =
+    Lazy::new(|| fetch_prover("TxCircuitTwoTwo"));
+
+static TX_CIRCUIT_3_2_PROVER: Lazy<PlonkProver> =
+    Lazy::new(|| fetch_prover("TxCircuitThreeTwo"));
+
+static TX_CIRCUIT_4_2_PROVER: Lazy<PlonkProver> =
+    Lazy::new(|| fetch_prover("TxCircuitFourTwo"));
+
+#[derive(Debug, Default)]
+pub struct LocalProver;
+
+impl Prove for LocalProver {
+    type Error = ProverError;
+
+    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Self::Error> {
+        let tx_circuit_vec = TxCircuitVec::from_slice(tx_circuit_vec_bytes)
+            .map_err(|e| {
+                ProverError::invalid_data("Invalid tx-circuit bytes", e)
+            })?;
+
+        #[cfg(not(feature = "no_random"))]
+        let rng = &mut rand::rngs::OsRng;
+
+        #[cfg(feature = "no_random")]
+        use rand::{rngs::StdRng, SeedableRng};
+        #[cfg(feature = "no_random")]
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+        let (proof, _pi) = match tx_circuit_vec.input_notes_info.len() {
+            1 => TX_CIRCUIT_1_2_PROVER
+                .prove(rng, &create_circuit::<1>(tx_circuit_vec)?)?,
+            2 => TX_CIRCUIT_2_2_PROVER
+                .prove(rng, &create_circuit::<2>(tx_circuit_vec)?)?,
+            3 => TX_CIRCUIT_3_2_PROVER
+                .prove(rng, &create_circuit::<3>(tx_circuit_vec)?)?,
+            4 => TX_CIRCUIT_4_2_PROVER
+                .prove(rng, &create_circuit::<4>(tx_circuit_vec)?)?,
+            _ => {
+                return Err(ProverError::from(format!(
+                    "Invalid I/O count: {}/{}",
+                    tx_circuit_vec.input_notes_info.len(),
+                    tx_circuit_vec.output_notes_info.len()
+                )))
+            }
+        };
+
+        Ok(proof.to_bytes().to_vec())
+    }
+}
+
+fn fetch_prover(circuit_name: &str) -> PlonkProver {
+    let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
+        .unwrap_or_else(|_| {
+            panic!(
+                "There should be tx-circuit data stored for {}",
+                circuit_name
+            )
+        });
+    let pk = circuit_profile.get_prover().unwrap_or_else(|_| {
+        panic!("there should be a prover key stored for {}", circuit_name)
+    });
+
+    PlonkProver::try_from_bytes(pk).expect("Prover key is expected to by valid")
+}
+
+fn create_circuit<const I: usize>(
+    tx_circuit_vec: TxCircuitVec,
+) -> Result<TxCircuit<NOTES_TREE_DEPTH, I>, ProverError> {
+    Ok(TxCircuit {
+        input_notes_info: tx_circuit_vec.input_notes_info.try_into().map_err(
+            |_| {
+                ProverError::invalid_data(
+                    "invalid tx-circuit",
+                    BytesError::InvalidData,
+                )
+            },
+        )?,
+        output_notes_info: tx_circuit_vec.output_notes_info,
+        payload_hash: tx_circuit_vec.payload_hash,
+        root: tx_circuit_vec.root,
+        deposit: tx_circuit_vec.deposit,
+        max_fee: tx_circuit_vec.max_fee,
+        sender_pk: tx_circuit_vec.sender_pk,
+        signatures: tx_circuit_vec.signatures,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_prove_tx_circuit() {
+        let tx_circuit_vec_bytes =
+            hex::decode(include_str!("../tests/tx_circuit_vec.hex")).unwrap();
+        let _proof = LocalProver::prove(&tx_circuit_vec_bytes).unwrap();
+    }
 }

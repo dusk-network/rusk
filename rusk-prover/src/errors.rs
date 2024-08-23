@@ -7,12 +7,15 @@
 use alloc::string::String;
 use core::fmt;
 
+use dusk_plonk::prelude::Error as PlonkError;
+
 #[derive(Debug)]
 pub enum ProverError {
     InvalidData {
         field: &'static str,
         inner: dusk_bytes::Error,
     },
+    Plonk(PlonkError),
     Other(String),
 }
 
@@ -37,12 +40,19 @@ impl std::error::Error for ProverError {
     }
 }
 
+impl From<PlonkError> for ProverError {
+    fn from(e: PlonkError) -> ProverError {
+        ProverError::Plonk(e)
+    }
+}
+
 impl fmt::Display for ProverError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ProverError::InvalidData { field, inner } => {
                 write!(f, "Invalid field '{field}': {inner:?}")
             }
+            ProverError::Plonk(plonk_error) => write!(f, "{:?}", plonk_error),
             ProverError::Other(context) => write!(f, "{context}"),
         }
     }
