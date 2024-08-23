@@ -299,7 +299,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
           class="dusk-icon dusk-icon--size--normal detail-list__help"
           data-tooltip-id="main-tooltip"
           data-tooltip-place="top"
-          data-tooltip-text="The average fee paid for the transactions within the block"
+          data-tooltip-text="The average gas price for the transactions within the block"
           data-tooltip-type="info"
           role="graphics-symbol"
           viewBox="0 0 24 24"
@@ -310,7 +310,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
         </svg>
         
          
-        average fee paid
+        average gas price
       </dt>
        
       <dd
