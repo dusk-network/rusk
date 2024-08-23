@@ -52,6 +52,7 @@ exports[`OperationResult > should accept a custom message for the failure state 
     </span>
     
   </a>
+   
 </div>
 `;
 
@@ -210,6 +211,7 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
     </span>
     
   </a>
+   
 </div>
 `;
 

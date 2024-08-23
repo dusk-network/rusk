@@ -4,12 +4,14 @@
   import { createEventDispatcher } from "svelte";
   import {
     mdiArrowDownBoldBoxOutline,
+    mdiArrowLeft,
     mdiArrowUpBoldBoxOutline,
     mdiDatabaseArrowDownOutline,
     mdiDatabaseOutline,
     mdiHelpCircleOutline,
   } from "@mdi/js";
 
+  import { AppAnchorButton } from "$lib/components";
   import { Button } from "$lib/dusk/components";
 
   /** @type {ContractOperation[]} */
@@ -44,6 +46,18 @@
       />
     </li>
   {/each}
+  <li class="contract-operations__operation">
+    <AppAnchorButton
+      className="contract-operations__operation-button"
+      href="/dashboard"
+      icon={{ path: mdiArrowLeft }}
+      on:click={() => {
+        dispatch("operationChange", "");
+      }}
+      text="Back"
+      variant="tertiary"
+    />
+  </li>
 </menu>
 
 <style lang="postcss">
@@ -57,7 +71,7 @@
 
     &__operation {
       & + & {
-        margin-top: var(--default-gap);
+        margin-top: 1.25rem;
       }
 
       & > :global(.contract-operations__operation-button) {

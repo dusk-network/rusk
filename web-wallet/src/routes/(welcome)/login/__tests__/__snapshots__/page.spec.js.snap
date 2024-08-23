@@ -25,58 +25,66 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
     <article
       class="dusk-card dusk-card--gap-medium"
     >
-      <header
-        class="dusk-card__header"
-        slot="header"
+      <div
+        class="dusk-card__header-container"
       >
-        <div
-          class="dusk-card__header-title"
+        <header
+          class="dusk-card__header"
+          slot="header"
         >
-          <svg
-            class="dusk-icon dusk-icon--size--default"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <div
+            class="dusk-card__heading-container"
           >
-            <path
-              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
-            />
-          </svg>
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+              />
+            </svg>
+            
+             
+            <h3
+              class="h4"
+            >
+              Mnemonic phrase
+            </h3>
+          </div>
+        </header>
+      </div>
+       
+      <div
+        class="dusk-card__body-container"
+      >
+        <form
+          class="login__form svelte-1h8yo9z"
+        >
+          <input
+            autocomplete="current-password"
+            class="dusk-textbox dusk-textbox-password"
+            name="mnemonic"
+            placeholder="Mnemonic phrase"
+            required=""
+            type="password"
+          />
           
            
-          <h3
-            class="h4"
+           
+          <button
+            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default"
+            type="submit"
           >
-            Mnemonic phrase
-          </h3>
-        </div>
-      </header>
-       
-      <form
-        class="login__form svelte-1h8yo9z"
-      >
-        <input
-          autocomplete="current-password"
-          class="dusk-textbox dusk-textbox-password"
-          name="mnemonic"
-          placeholder="Mnemonic phrase"
-          required=""
-          type="password"
-        />
-        
-         
-         
-        <button
-          class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default"
-          type="submit"
-        >
-          <span
-            class="dusk-button__text"
-          >
-            Unlock Wallet
-          </span>
-        </button>
-         
-      </form>
+            <span
+              class="dusk-button__text"
+            >
+              Unlock Wallet
+            </span>
+          </button>
+           
+        </form>
+      </div>
        
     </article>
     
@@ -138,70 +146,78 @@ exports[`Login > Password workflow > should show the password field and the link
     <article
       class="dusk-card dusk-card--gap-medium"
     >
-      <header
-        class="dusk-card__header"
-        slot="header"
+      <div
+        class="dusk-card__header-container"
       >
-        <div
-          class="dusk-card__header-title"
+        <header
+          class="dusk-card__header"
+          slot="header"
         >
-          <svg
-            class="dusk-icon dusk-icon--size--default"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <div
+            class="dusk-card__heading-container"
           >
-            <path
-              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
-            />
-          </svg>
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+              />
+            </svg>
+            
+             
+            <h3
+              class="h4"
+            >
+              Password
+            </h3>
+          </div>
+        </header>
+      </div>
+       
+      <div
+        class="dusk-card__body-container"
+      >
+        <form
+          class="login__form svelte-1h8yo9z"
+        >
+          <input
+            autocomplete="current-password"
+            class="dusk-textbox dusk-textbox-password"
+            name="password"
+            placeholder="Password"
+            required=""
+            type="password"
+          />
           
            
-          <h3
-            class="h4"
+           
+          <button
+            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default"
+            type="submit"
           >
-            Password
-          </h3>
-        </div>
-      </header>
-       
-      <form
-        class="login__form svelte-1h8yo9z"
-      >
-        <input
-          autocomplete="current-password"
-          class="dusk-textbox dusk-textbox-password"
-          name="password"
-          placeholder="Password"
-          required=""
-          type="password"
-        />
-        
-         
-         
-        <button
-          class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default"
-          type="submit"
-        >
-          <span
-            class="dusk-button__text"
+            <span
+              class="dusk-button__text"
+            >
+              Unlock Wallet
+            </span>
+          </button>
+           
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default"
+            href="/some-base-path/setup/restore"
           >
-            Unlock Wallet
-          </span>
-        </button>
-         
-        <a
-          aria-disabled="false"
-          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default"
-          href="/some-base-path/setup/restore"
-        >
-          <span
-            class="dusk-anchor-button__text"
-          >
-            Forgot Password?
-          </span>
-          
-        </a>
-      </form>
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Forgot Password?
+            </span>
+            
+          </a>
+        </form>
+      </div>
        
     </article>
     

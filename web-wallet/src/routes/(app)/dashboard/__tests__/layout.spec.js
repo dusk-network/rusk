@@ -7,22 +7,24 @@ import {
   it,
   vi,
 } from "vitest";
-import { act, cleanup } from "@testing-library/svelte";
-
-import { renderWithSimpleContent } from "$lib/dusk/test-helpers";
+import { act, cleanup, render } from "@testing-library/svelte";
+import { get } from "svelte/store";
+import { createCurrencyFormatter } from "$lib/dusk/currency";
 import mockedWalletStore from "../../__mocks__/mockedWalletStore";
 import Layout from "../+layout.svelte";
 import { load } from "../+layout.js";
 
 vi.mock("$lib/stores", async (importOriginal) => {
-  /** @type {WalletStore} */
+  /** @type {typeof import("$lib/stores")} */
   const original = await importOriginal();
 
   return {
     ...original,
-    walletStore: mockedWalletStore,
+    walletStore: { ...original.walletStore, ...mockedWalletStore },
   };
 });
+
+vi.useFakeTimers();
 
 describe("Dashboard Layout", () => {
   /**
@@ -146,15 +148,40 @@ describe("Dashboard Layout", () => {
     /* eslint-enable no-extra-parens */
   });
 
+  const usdPrice = 0.5;
+  const expectedFiat = get(mockedWalletStore).balance.value * usdPrice;
+  const formatter = createCurrencyFormatter("en", "usd", 2);
+  const baseProps = {
+    data: { currentPrice: Promise.resolve({ usd: usdPrice }) },
+  };
+
   it("should render the dashboard layout", () => {
-    const { container } = renderWithSimpleContent(Layout, {});
+    const { container } = render(Layout, baseProps);
 
     expect(getStatusWrapper(container, "success")).toBeTruthy();
+    expect(container).toMatchSnapshot();
+  });
+
+  it("should render the dashboard layout and show a throbber while balance is loading", async () => {
+    const { container } = render(Layout, baseProps);
+
+    expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
+
     expect(container.firstChild).toMatchSnapshot();
+
+    await vi.advanceTimersToNextTimerAsync();
+
+    expect(
+      container.querySelector(".dusk-balance__fiat--visible")
+    ).toBeTruthy();
+
+    expect(container.querySelector(".dusk-balance__fiat")).toHaveTextContent(
+      formatter(expectedFiat)
+    );
   });
 
   it("should render the dashboard layout in the sync state", async () => {
-    const { container } = renderWithSimpleContent(Layout, {});
+    const { container } = render(Layout, baseProps);
 
     expect(getStatusWrapper(container, "warning")).toBeNull();
 
@@ -166,17 +193,17 @@ describe("Dashboard Layout", () => {
     });
 
     expect(getStatusWrapper(container, "warning")).toBeTruthy();
-    expect(container.firstChild).toMatchSnapshot();
+    expect(container).toMatchSnapshot();
 
     await act(() => {
-      mockedWalletStore.setMockedStoreValue({ initialState });
+      mockedWalletStore.setMockedStoreValue(initialState);
     });
 
     expect(getStatusWrapper(container, "warning")).toBeNull();
   });
 
   it("should render the dashboard layout in the error state", async () => {
-    const { container } = renderWithSimpleContent(Layout, {});
+    const { container } = render(Layout, baseProps);
     const getRetryButton = () =>
       container.querySelector(".footer__actions-button--retry");
 
@@ -192,10 +219,10 @@ describe("Dashboard Layout", () => {
 
     expect(getStatusWrapper(container, "error")).toBeTruthy();
     expect(getRetryButton()).toBeTruthy();
-    expect(container.firstChild).toMatchSnapshot();
+    expect(container).toMatchSnapshot();
 
     await act(() => {
-      mockedWalletStore.setMockedStoreValue({ initialState });
+      mockedWalletStore.setMockedStoreValue(initialState);
     });
 
     expect(getStatusWrapper(container, "error")).toBeNull();

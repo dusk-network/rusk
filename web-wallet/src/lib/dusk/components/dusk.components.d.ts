@@ -22,7 +22,7 @@ type WizardButtonProps = {
   action?: () => void;
 };
 
-type GapSize = "small" | "default" | "large";
+type GapSize = "small" | "default" | "medium" | "large";
 
 type IconSize = "small" | "default" | "large";
 

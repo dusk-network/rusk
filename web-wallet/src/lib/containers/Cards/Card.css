@@ -1,11 +1,27 @@
 .dusk-card__header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dusk-card__header-title {
-  display: flex;
   gap: var(--small-gap);
   align-items: center;
+  width: 100%;
+}
+
+.dusk-card__heading-icon {
+  fill: var(--secondary-color-variant-dark);
+}
+
+.dark .dusk-card__heading-icon {
+  fill: var(--secondary-color-variant-light);
+}
+
+.dusk-card__heading-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.dusk-card__heading-container--reverse {
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  gap: 0;
 }

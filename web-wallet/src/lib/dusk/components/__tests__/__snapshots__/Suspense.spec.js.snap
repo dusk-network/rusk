@@ -39,6 +39,7 @@ exports[`Suspense > should accept a custom message for the failure state 1`] = `
     
   </div>
    
+   
 </div>
 `;
 
@@ -149,6 +150,7 @@ exports[`Suspense > should be able to render the \`Suspense\` in a failure state
     
   </div>
    
+   
 </div>
 `;
 
@@ -175,6 +177,7 @@ exports[`Suspense > should be able to render the \`Suspense\` in a failure state
     </pre>
   </details>
   
+   
    
 </div>
 `;

@@ -2,16 +2,46 @@
 
 exports[`ContractOperations > should be able to render the component without items 1`] = `
 <menu
-  class="contract-operations svelte-1v0rjcd"
-/>
+  class="contract-operations svelte-1iyylnh"
+>
+   
+  <li
+    class="contract-operations__operation svelte-1iyylnh"
+  >
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+      href="/some-base-path/dashboard"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+       
+      <span
+        class="dusk-anchor-button__text"
+      >
+        Back
+      </span>
+      
+      
+    </a>
+  </li>
+</menu>
 `;
 
 exports[`ContractOperations > should render the \`ContractOperations\` component 1`] = `
 <menu
-  class="contract-operations svelte-1v0rjcd"
+  class="contract-operations svelte-1iyylnh"
 >
   <li
-    class="contract-operations__operation svelte-1v0rjcd"
+    class="contract-operations__operation svelte-1iyylnh"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
@@ -35,10 +65,9 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-     
   </li>
   <li
-    class="contract-operations__operation svelte-1v0rjcd"
+    class="contract-operations__operation svelte-1iyylnh"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
@@ -62,10 +91,9 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-     
   </li>
   <li
-    class="contract-operations__operation svelte-1v0rjcd"
+    class="contract-operations__operation svelte-1iyylnh"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
@@ -90,10 +118,9 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-     
   </li>
   <li
-    class="contract-operations__operation svelte-1v0rjcd"
+    class="contract-operations__operation svelte-1iyylnh"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
@@ -117,10 +144,9 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-     
   </li>
   <li
-    class="contract-operations__operation svelte-1v0rjcd"
+    class="contract-operations__operation svelte-1iyylnh"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
@@ -144,17 +170,45 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       </span>
       
     </button>
-     
+  </li>
+   
+  <li
+    class="contract-operations__operation svelte-1iyylnh"
+  >
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+      href="/some-base-path/dashboard"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+       
+      <span
+        class="dusk-anchor-button__text"
+      >
+        Back
+      </span>
+      
+      
+    </a>
   </li>
 </menu>
 `;
 
 exports[`ContractOperations > should use a default icon if the operation is not on the known list 1`] = `
 <menu
-  class="contract-operations svelte-1v0rjcd"
+  class="contract-operations svelte-1iyylnh"
 >
   <li
-    class="contract-operations__operation svelte-1v0rjcd"
+    class="contract-operations__operation svelte-1iyylnh"
   >
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
@@ -178,7 +232,35 @@ exports[`ContractOperations > should use a default icon if the operation is not 
       </span>
       
     </button>
-     
+  </li>
+   
+  <li
+    class="contract-operations__operation svelte-1iyylnh"
+  >
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+      href="/some-base-path/dashboard"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+       
+      <span
+        class="dusk-anchor-button__text"
+      >
+        Back
+      </span>
+      
+      
+    </a>
   </li>
 </menu>
 `;
