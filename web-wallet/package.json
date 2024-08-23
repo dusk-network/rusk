@@ -38,12 +38,16 @@
     "@dusk-network/dusk-wallet-js": "0.4.2",
     "@floating-ui/dom": "1.6.5",
     "@mdi/js": "7.4.47",
+    "@wagmi/connectors": "5.1.6",
+    "@wagmi/core": "2.13.4",
+    "@web3modal/wagmi": "5.1.0",
     "bip39": "3.1.0",
     "css-doodle": "0.39.2",
     "lamb": "0.61.1",
     "qr-scanner": "1.4.2",
     "qrcode": "1.5.3",
-    "svelte-persisted-store": "0.11.0"
+    "svelte-persisted-store": "0.11.0",
+    "viem": "2.19.8"
   },
   "devDependencies": {
     "@dusk-network/eslint-config": "3.1.0",
