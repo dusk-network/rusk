@@ -209,13 +209,13 @@ impl Transaction {
             value_commitment(transfer_value, transfer_value_blinder);
         let transfer_note_sender_enc = match transfer_note.sender() {
             Sender::Encryption(enc) => enc,
-            Sender::ContractInfo(_) => panic!("The sender is encrypted"),
+            Sender::ContractInfo(_) => unreachable!("The sender is encrypted"),
         };
         let change_value_commitment =
             value_commitment(change_value, change_value_blinder);
         let change_note_sender_enc = match change_note.sender() {
             Sender::Encryption(enc) => enc,
-            Sender::ContractInfo(_) => panic!("The sender is encrypted"),
+            Sender::ContractInfo(_) => unreachable!("The sender is encrypted"),
         };
         let output_notes_info = [
             OutputNoteInfo {
@@ -246,22 +246,22 @@ impl Transaction {
         let schnorr_sk_b = SchnorrSecretKey::from(sender_sk.b());
         let sig_b = schnorr_sk_b.sign(rng, payload_hash);
 
-        let circuit = TxCircuitVec {
-            input_notes_info,
-            output_notes_info,
-            payload_hash,
-            root,
-            deposit,
-            max_fee,
-            sender_pk,
-            signatures: (sig_a, sig_b),
-        };
-
         Self {
             payload,
-            proof: P::prove(circuit).expect(
-                "The proof generation shouldn't fail with a valid circuit",
-            ),
+            proof: P::prove(
+                &TxCircuitVec {
+                    input_notes_info,
+                    output_notes_info,
+                    payload_hash,
+                    root,
+                    deposit,
+                    max_fee,
+                    sender_pk,
+                    signatures: (sig_a, sig_b),
+                }
+                .to_var_bytes(),
+            )
+            .expect("The proof generation shouldn't fail with a valid circuit"),
         }
     }
 
@@ -271,6 +271,13 @@ impl Transaction {
     #[must_use]
     pub fn from_payload_and_proof(payload: Payload, proof: Vec<u8>) -> Self {
         Self { payload, proof }
+    }
+
+    /// Replaces the inner `proof` bytes for a given `proof`.
+    /// Note: This method is likely to invalidate the transaction and should
+    /// only be used with care.
+    pub fn replace_proof(&mut self, proof: Vec<u8>) {
+        self.proof = proof;
     }
 
     /// The proof of the transaction.
@@ -878,6 +885,7 @@ impl TxCircuitVec {
             });
         }
 
+        let bytes = &bytes[u64::SIZE..];
         let circuit: TxCircuitVec = match input_len {
             1 => TxCircuit::<NOTES_TREE_DEPTH, 1>::from_slice(bytes)?.into(),
             2 => TxCircuit::<NOTES_TREE_DEPTH, 2>::from_slice(bytes)?.into(),
@@ -916,7 +924,7 @@ impl<const I: usize> From<TxCircuit<NOTES_TREE_DEPTH, I>> for TxCircuitVec {
 }
 
 /// This trait can be used to implement different methods to generate a proof
-/// from the circuit-input data.
+/// from the circuit-bytes.
 pub trait Prove {
     /// The type returned in the event of an error during proof generation.
     type Error;
@@ -927,5 +935,5 @@ pub trait Prove {
     /// # Errors
     /// This function errors in case of an incorrect circuit or of an
     /// unobtainable prover-key.
-    fn prove(circuit: TxCircuitVec) -> Result<Vec<u8>, Self::Error>;
+    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Self::Error>;
 }
