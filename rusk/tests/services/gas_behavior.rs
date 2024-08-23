@@ -29,6 +29,8 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 const GAS_LIMIT_0: u64 = 100_000_000;
 const GAS_LIMIT_1: u64 = 300_000_000;
+const GAS_PRICE: u64 = 1;
+const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -38,8 +40,8 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
-const SENDER_INDEX_0: u64 = 0;
-const SENDER_INDEX_1: u64 = 1;
+const SENDER_INDEX_0: u8 = 0;
+const SENDER_INDEX_1: u8 = 1;
 
 fn make_transactions(
     rusk: &Rusk,
@@ -77,11 +79,11 @@ fn make_transactions(
     let tx_0 = wallet
         .phoenix_execute(
             &mut rng,
-            ContractExec::Call(contract_call.clone()),
             SENDER_INDEX_0,
             GAS_LIMIT_0,
-            1,
-            0,
+            GAS_PRICE,
+            DEPOSIT,
+            ContractExec::Call(contract_call.clone()),
         )
         .expect("Making the transaction should succeed");
 
@@ -91,11 +93,11 @@ fn make_transactions(
     let tx_1 = wallet
         .phoenix_execute(
             &mut rng,
-            contract_call,
             SENDER_INDEX_1,
             GAS_LIMIT_1,
-            1,
-            0,
+            GAS_PRICE,
+            DEPOSIT,
+            contract_call,
         )
         .expect("Making the transaction should succeed");
 

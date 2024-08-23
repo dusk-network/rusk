@@ -14,12 +14,13 @@ use execution_core::{
     stake::{StakeAmount, STAKE_CONTRACT},
     transfer::contract_exec::ContractCall,
 };
+
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Store};
+use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::state::{generator_procedure, new_state};
@@ -29,6 +30,8 @@ use crate::common::*;
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const GAS_LIMIT: u64 = 10_000_000_000;
+const GAS_PRICE: u64 = 1;
+const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
 fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -68,11 +71,11 @@ fn wallet_stake(
             .expect("stakeinfo to be found")
             .amount
             .is_none(),
-        "stake amount to be found"
+        "stake amount not to be found"
     );
 
     let tx = wallet
-        .phoenix_stake(&mut rng, 0, 2, value, GAS_LIMIT, 1)
+        .phoenix_stake(&mut rng, 0, 2, value, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to create a stake transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -103,7 +106,7 @@ fn wallet_stake(
         .expect("stake amount to be found");
 
     let tx = wallet
-        .phoenix_unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
+        .phoenix_unstake(&mut rng, 0, 0, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to unstake");
     let spent_txs = generator_procedure(
         rusk,
@@ -121,7 +124,7 @@ fn wallet_stake(
     assert_eq!(stake.amount, None);
 
     let tx = wallet
-        .phoenix_withdraw(&mut rng, 0, 1, GAS_LIMIT, 1)
+        .phoenix_stake_withdraw(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
         .expect("failed to withdraw reward");
     generator_procedure(
         rusk,
@@ -189,7 +192,7 @@ fn wallet_reward(
 ) {
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let stake_sk = wallet.store().fetch_account_secret_key(2).unwrap();
+    let stake_sk = wallet.account_secret_key(2).unwrap();
     let stake_pk = BlsPublicKey::from(&stake_sk);
     let reward_calldata = (stake_pk, 6u32);
 
@@ -203,7 +206,14 @@ fn wallet_reward(
     )
     .expect("calldata should serialize");
     let tx = wallet
-        .phoenix_execute(&mut rng, contract_call, 0, GAS_LIMIT, 1, 0)
+        .phoenix_execute(
+            &mut rng,
+            0,
+            GAS_LIMIT,
+            GAS_PRICE,
+            DEPOSIT,
+            contract_call,
+        )
         .expect("Failed to create a reward transaction");
     let executed_txs = generator_procedure(
         rusk,

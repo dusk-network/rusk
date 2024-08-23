@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rusk_prover::{LocalProver, Prover};
+use execution_core::transfer::phoenix::Prove;
+use rusk_prover::LocalProver;
 
 use super::*;
 
@@ -20,7 +21,7 @@ impl HandleRequest for LocalProver {
     ) -> anyhow::Result<ResponseData> {
         let topic = request.event.topic.as_str();
         let response = match topic {
-            "prove_execute" => self.prove_execute(request.event_data())?,
+            "prove_tx_circuit" => LocalProver::prove(request.event_data())?,
             _ => anyhow::bail!("Unsupported"),
         };
         Ok(ResponseData::new(response))

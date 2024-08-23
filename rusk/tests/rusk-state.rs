@@ -204,12 +204,12 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut txs_file = std::fs::File::create("phoenix-txs")?;
 
-    for sender_index in 0..N_ADDRESSES as u64 {
+    for sender_index in 0..N_ADDRESSES as u8 {
         let wallet = wallet.clone();
         let mut rng = StdRng::seed_from_u64(0xdead);
 
-        let receiver_index = (sender_index + 1) % N_ADDRESSES as u64;
-        let receiver = wallet.public_key(receiver_index).unwrap();
+        let receiver_index = (sender_index + 1) % N_ADDRESSES as u8;
+        let receiver = wallet.phoenix_public_key(receiver_index).unwrap();
 
         let task = tokio::task::spawn_blocking(move || {
             wallet
@@ -269,10 +269,10 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut txs_file = std::fs::File::create("moonlight-txs")?;
 
-    for sender_index in 0..N_ADDRESSES as u64 {
+    for sender_index in 0..N_ADDRESSES as u8 {
         let wallet = wallet.clone();
 
-        let receiver_index = (sender_index + 1) % N_ADDRESSES as u64;
+        let receiver_index = (sender_index + 1) % N_ADDRESSES as u8;
         let receiver = wallet.account_public_key(receiver_index).unwrap();
 
         let task = tokio::task::spawn_blocking(move || {

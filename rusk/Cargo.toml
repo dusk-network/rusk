@@ -61,7 +61,7 @@ async-trait = "0.1"
 execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
-rusk-prover = { version = "0.3", path = "../rusk-prover", optional = true }
+rusk-prover = { version = "0.3", path = "../rusk-prover", features = ["std"], optional = true }
 
 ## node dependencies
 node = { version = "0.1", path = "../node", optional = true }

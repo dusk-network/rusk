@@ -43,7 +43,9 @@ fn wallet_transfer(
     amount: u64,
 ) {
     // Generate a receiver pk
-    let receiver = wallet.public_key(3).expect("Failed to get public key");
+    let receiver = wallet
+        .phoenix_public_key(3)
+        .expect("Failed to get public key");
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
