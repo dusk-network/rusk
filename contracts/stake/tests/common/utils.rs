@@ -22,6 +22,7 @@ use execution_core::{
     BlsScalar, ContractError,
 };
 use rusk_abi::{CallReceipt, PiecrustError, Session};
+use rusk_prover::LocalProver;
 
 const POINT_LIMIT: u64 = 0x100000000;
 
@@ -178,7 +179,7 @@ pub fn create_transaction<const I: usize>(
         inputs.push((note.clone(), opening));
     }
 
-    PhoenixTransaction::new::<StdRng, crate::common::prove::CachedProver>(
+    PhoenixTransaction::new::<StdRng, LocalProver>(
         rng,
         sender_sk,
         change_pk,
