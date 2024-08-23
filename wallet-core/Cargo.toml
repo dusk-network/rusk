@@ -6,13 +6,15 @@ edition = "2021"
 [dependencies]
 dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
-execution-core = { version = "0.1", path = "../execution-core/" }
 zeroize = { version = "1", default-features = false, features = ["derive"] }
 rand_chacha = { version = "0.3", default-features = false }
 sha2 = { version = "0.10", default-features = false }
+rand = { version = "0.8", default-features = false }
+ff = { version = "0.13", default-features = false }
+poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
+execution-core = { version = "0.1", path = "../execution-core/" }
 
 [dev-dependencies]
 rand = "0.8"
-ff = { version = "0.13", default-features = false }
 
 [features]
