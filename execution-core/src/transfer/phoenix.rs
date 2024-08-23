@@ -25,12 +25,12 @@ use crate::{
     transfer::contract_exec::{
         ContractBytecode, ContractCall, ContractDeploy, ContractExec,
     },
-    BlsScalar, JubJubAffine, JubJubScalar,
+    BlsScalar, Error, JubJubAffine, JubJubScalar,
 };
 
 // phoenix types
 pub use phoenix_core::{
-    value_commitment, Error, Note, PublicKey, SecretKey, Sender,
+    value_commitment, Error as CoreError, Note, PublicKey, SecretKey, Sender,
     StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
 };
 
@@ -64,13 +64,13 @@ impl Transaction {
     /// public-key, the input note positions in the transaction tree and the
     /// new output-notes.
     ///
-    /// # Panics
-    /// The creation of a transaction is not possible and will panic if:
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
     /// - one of the input-notes doesn't belong to the `sender_sk`
-    /// - the sum of value of the input-notes is smaller than:
-    /// `transfer_value` + `deposit` + `gas_limit` * `gas_price`
+    /// - the transaction input doesn't cover the transaction costs
     /// - the `inputs` vector is either empty or larger than 4 elements
-    #[must_use]
+    /// - the `inputs` vector contains duplicate `Note`s
+    /// - the `Prove` trait is implemented incorrectly
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::similar_names)]
@@ -87,23 +87,25 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         exec: Option<impl Into<ContractExec>>,
-    ) -> Self
-    where
-        <P as Prove>::Error: Debug,
-    {
+    ) -> Result<Self, Error> {
         let sender_pk = PublicKey::from(sender_sk);
         let sender_vk = ViewKey::from(sender_sk);
 
-        // get input note values and nullifiers
+        // get input note values, value-blinders and nullifiers
         let input_len = inputs.len();
         let mut input_values = Vec::with_capacity(input_len);
+        let mut input_value_blinders = Vec::with_capacity(input_len);
         let mut input_nullifiers = Vec::with_capacity(input_len);
         for (note, _opening) in &inputs {
-            input_nullifiers.push(note.gen_nullifier(sender_sk));
-            input_values.push(
-                note.value(Some(&sender_vk))
-                    .expect("Note should be belonging to the sender"),
-            );
+            let note_nullifier = note.gen_nullifier(sender_sk);
+            for nullifier in &input_nullifiers {
+                if note_nullifier == *nullifier {
+                    return Err(Error::Replay);
+                }
+            }
+            input_nullifiers.push(note_nullifier);
+            input_values.push(note.value(Some(&sender_vk))?);
+            input_value_blinders.push(note.value_blinder(Some(&sender_vk))?);
         }
         let input_value: u64 = input_values.iter().sum();
 
@@ -113,8 +115,11 @@ impl Transaction {
         let fee = Fee::new(rng, change_pk, gas_limit, gas_price);
         let max_fee = fee.max_fee();
 
+        if input_value < transfer_value + max_fee + deposit {
+            return Err(Error::InsufficientBalance);
+        }
+
         // Generate output notes:
-        assert!(input_value >= transfer_value + max_fee + deposit);
         let transfer_value_blinder = if obfuscated_transaction {
             JubJubScalar::random(&mut *rng)
         } else {
@@ -163,7 +168,7 @@ impl Transaction {
         // Now we can set the tx-skeleton, payload and get the payload-hash
         let tx_skeleton = TxSkeleton {
             root,
-            // we also need the nullifiers for the tx-circuit, hence the copy
+            // we also need the nullifiers for the tx-circuit, hence the clone
             nullifiers: input_nullifiers.clone(),
             outputs,
             max_fee,
@@ -184,25 +189,28 @@ impl Transaction {
             .into_iter()
             .zip(input_nullifiers)
             .zip(input_values)
-            .for_each(|(((note, merkle_opening), nullifier), value)| {
-                let value_blinder = note
-                    .value_blinder(Some(&sender_vk))
-                    .expect("the sender should own the input-notes");
-                let note_sk = sender_sk.gen_note_sk(note.stealth_address());
-                let note_pk_p = JubJubAffine::from(
-                    crate::GENERATOR_NUMS_EXTENDED * note_sk.as_ref(),
-                );
-                let signature = note_sk.sign_double(rng, payload_hash);
-                input_notes_info.push(InputNoteInfo {
-                    merkle_opening,
-                    note,
-                    note_pk_p,
-                    value,
+            .zip(input_value_blinders)
+            .for_each(
+                |(
+                    (((note, merkle_opening), nullifier), value),
                     value_blinder,
-                    nullifier,
-                    signature,
-                });
-            });
+                )| {
+                    let note_sk = sender_sk.gen_note_sk(note.stealth_address());
+                    let note_pk_p = JubJubAffine::from(
+                        crate::GENERATOR_NUMS_EXTENDED * note_sk.as_ref(),
+                    );
+                    let signature = note_sk.sign_double(rng, payload_hash);
+                    input_notes_info.push(InputNoteInfo {
+                        merkle_opening,
+                        note,
+                        note_pk_p,
+                        value,
+                        value_blinder,
+                        nullifier,
+                        signature,
+                    });
+                },
+            );
 
         // Create the information for the output-notes
         let transfer_value_commitment =
@@ -246,7 +254,7 @@ impl Transaction {
         let schnorr_sk_b = SchnorrSecretKey::from(sender_sk.b());
         let sig_b = schnorr_sk_b.sign(rng, payload_hash);
 
-        Self {
+        Ok(Self {
             payload,
             proof: P::prove(
                 &TxCircuitVec {
@@ -260,9 +268,8 @@ impl Transaction {
                     signatures: (sig_a, sig_b),
                 }
                 .to_var_bytes(),
-            )
-            .expect("The proof generation shouldn't fail with a valid circuit"),
-        }
+            )?,
+        })
     }
 
     /// Creates a new phoenix transaction given the [`Payload`] and proof. Note
@@ -274,9 +281,15 @@ impl Transaction {
     }
 
     /// Replaces the inner `proof` bytes for a given `proof`.
-    /// Note: This method is likely to invalidate the transaction and should
-    /// only be used with care.
-    pub fn replace_proof(&mut self, proof: Vec<u8>) {
+    ///
+    /// This can be used to delegate the proof generation after a
+    /// [`Transaction`] is created.
+    /// In order to do that, the transaction would be created using the
+    /// serialized circuit-bytes for the proof-field. Those bytes can be
+    /// sent to a 3rd-party prover-service that generates the proof-bytes
+    /// and sends them back. The proof-bytes will then replace the
+    /// circuit-bytes in the transaction using this function.
+    pub fn set_proof(&mut self, proof: Vec<u8>) {
         self.proof = proof;
     }
 
@@ -926,14 +939,11 @@ impl<const I: usize> From<TxCircuit<NOTES_TREE_DEPTH, I>> for TxCircuitVec {
 /// This trait can be used to implement different methods to generate a proof
 /// from the circuit-bytes.
 pub trait Prove {
-    /// The type returned in the event of an error during proof generation.
-    type Error;
-
     /// Generate a transaction proof from all the information needed to create a
     /// tx-circuit.
     ///
     /// # Errors
     /// This function errors in case of an incorrect circuit or of an
     /// unobtainable prover-key.
-    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Self::Error>;
+    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error>;
 }

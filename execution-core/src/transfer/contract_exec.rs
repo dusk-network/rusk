@@ -6,17 +6,17 @@
 
 //! Wrapper for a strip-able bytecode that we want to keep the integrity of.
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{
-    ser::serializers::AllocSerializer, Archive, Deserialize, Fallible,
-    Serialize,
+    ser::serializers::AllocSerializer, Archive, Deserialize, Serialize,
 };
 
-use crate::{ContractId, ARGBUF_LEN};
+use crate::{ContractId, Error, ARGBUF_LEN};
 
 /// Data for either contract call or contract deployment.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -128,11 +128,13 @@ impl ContractCall {
         contract: impl Into<ContractId>,
         fn_name: impl Into<String>,
         fn_args: &impl Serialize<AllocSerializer<ARGBUF_LEN>>,
-    ) -> Result<Self, <AllocSerializer<ARGBUF_LEN> as Fallible>::Error> {
+    ) -> Result<Self, Error> {
         Ok(Self {
             contract: contract.into(),
             fn_name: fn_name.into(),
-            fn_args: rkyv::to_bytes::<_, ARGBUF_LEN>(fn_args)?.to_vec(),
+            fn_args: rkyv::to_bytes::<_, ARGBUF_LEN>(fn_args)
+                .map_err(|e| Error::Rkyv(format!("{e:?}")))?
+                .to_vec(),
         })
     }
 

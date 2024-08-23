@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Error;
-use dusk_jubjub::JubJubScalar;
 use execution_core::{
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
@@ -21,6 +18,7 @@ use execution_core::{
         },
         Transaction,
     },
+    BlsScalar, Error, JubJubScalar,
 };
 use ff::Field;
 use poseidon_merkle::{Item, Tree};
@@ -32,9 +30,7 @@ struct TxCircuitVecProver();
 // use the serialized TxCircuitVec as proof. This way that serialization is also
 // tested.
 impl Prove for TxCircuitVecProver {
-    type Error = ();
-
-    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
         Ok(TxCircuitVec::from_slice(tx_circuit_vec_bytes)
             .expect("serialization should be ok")
             .to_var_bytes()
@@ -127,6 +123,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         gas_price,
         exec,
     )
+    .expect("transcaction generation should work")
 }
 
 fn new_moonlight_tx<R: RngCore + CryptoRng>(
