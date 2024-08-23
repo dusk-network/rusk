@@ -128,10 +128,10 @@ pub fn exec(keep_circuits: bool) -> Result<(), Box<dyn std::error::Error>> {
     // it is also possible to fetch a circuit by its ID, however that ID changes
     // when the circuit changes.
     let circuits = circuits_from_names(&[
-        "ExecuteCircuitOneTwo",
-        "ExecuteCircuitTwoTwo",
-        "ExecuteCircuitThreeTwo",
-        "ExecuteCircuitFourTwo",
+        "TxCircuitOneTwo",
+        "TxCircuitTwoTwo",
+        "TxCircuitThreeTwo",
+        "TxCircuitFourTwo",
         "LicenseCircuit",
     ])?;
 
