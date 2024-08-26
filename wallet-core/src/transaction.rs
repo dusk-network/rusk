@@ -7,7 +7,6 @@
 //! Implementations of basic wallet functionalities to create transactions.
 
 use alloc::vec::Vec;
-use core::fmt::Debug;
 
 use rand::{CryptoRng, RngCore};
 
@@ -28,45 +27,8 @@ use execution_core::{
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
         Transaction,
     },
-    BlsScalar, ContractId, JubJubScalar,
+    BlsScalar, ContractId, Error, JubJubScalar,
 };
-
-/// Create a [`Transaction`] that is paid in phoenix-notes.
-#[allow(clippy::too_many_arguments)]
-#[allow(clippy::module_name_repetitions)]
-pub fn proven_phoenix_transaction<R: RngCore + CryptoRng, P: Prove>(
-    rng: &mut R,
-    sender_sk: &PhoenixSecretKey,
-    change_pk: &PhoenixPublicKey,
-    receiver_pk: &PhoenixPublicKey,
-    inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
-    root: BlsScalar,
-    transfer_value: u64,
-    obfuscated_transaction: bool,
-    deposit: u64,
-    gas_limit: u64,
-    gas_price: u64,
-    exec: Option<impl Into<ContractExec>>,
-) -> Transaction
-where
-    <P as Prove>::Error: Debug,
-{
-    PhoenixTransaction::new::<R, P>(
-        rng,
-        sender_sk,
-        change_pk,
-        receiver_pk,
-        inputs,
-        root,
-        transfer_value,
-        obfuscated_transaction,
-        deposit,
-        gas_limit,
-        gas_price,
-        exec,
-    )
-    .into()
-}
 
 /// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
 /// the only difference being that it carries a serialized [`TxCircuitVec`]
@@ -78,9 +40,16 @@ where
 /// Once the proof is generated from the [`TxCircuitVec`] bytes, it can
 /// replace the serialized circuit in the transaction by calling
 /// [`Transaction::replace_proof`].
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
+/// - the transaction input doesn't cover the transaction costs
+/// - the `inputs` vector is either empty or larger than 4 elements
+/// - the `inputs` vector contains duplicate `Note`s
+/// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::module_name_repetitions)]
-pub fn phoenix_transaction<R: RngCore + CryptoRng>(
+pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     sender_sk: &PhoenixSecretKey,
     change_pk: &PhoenixPublicKey,
@@ -93,8 +62,8 @@ pub fn phoenix_transaction<R: RngCore + CryptoRng>(
     gas_limit: u64,
     gas_price: u64,
     exec: Option<impl Into<ContractExec>>,
-) -> PhoenixTransaction {
-    PhoenixTransaction::new::<R, UnprovenProver>(
+) -> Result<Transaction, Error> {
+    Ok(PhoenixTransaction::new::<R, P>(
         rng,
         sender_sk,
         change_pk,
@@ -107,26 +76,22 @@ pub fn phoenix_transaction<R: RngCore + CryptoRng>(
         gas_limit,
         gas_price,
         exec,
-    )
-}
-
-/// Implementation of the Prove trait that adds the serialized circuit instead
-/// of a proof. This way the proof creation can be delegated to a 3rd party.
-struct UnprovenProver();
-
-impl Prove for UnprovenProver {
-    // this implementation of the trait will never error.
-    type Error = ();
-
-    fn prove(circuit: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        Ok(circuit.to_vec())
-    }
+    )?
+    .into())
 }
 
 /// Create a [`Transaction`] to stake from phoenix-notes.
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
+/// - the transaction input doesn't cover the transaction costs
+/// - the `inputs` vector is either empty or larger than 4 elements
+/// - the `inputs` vector contains duplicate `Note`s
+/// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::missing_panics_doc)]
-pub fn phoenix_stake<R: RngCore + CryptoRng>(
+pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
@@ -136,7 +101,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng>(
     gas_price: u64,
     stake_value: u64,
     current_nonce: u64,
-) -> PhoenixTransaction {
+) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
 
@@ -146,10 +111,9 @@ pub fn phoenix_stake<R: RngCore + CryptoRng>(
 
     let stake = Stake::new(stake_sk, stake_value, current_nonce + 1);
 
-    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)
-        .expect("rkyv serialization of the stake struct should work.");
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
-    phoenix_transaction(
+    phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -167,9 +131,17 @@ pub fn phoenix_stake<R: RngCore + CryptoRng>(
 
 /// Create an unproven [`Transaction`] to withdraw stake rewards into a
 /// phoenix-note.
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
+/// - the transaction input doesn't cover the transaction costs
+/// - the `inputs` vector is either empty or larger than 4 elements
+/// - the `inputs` vector contains duplicate `Note`s
+/// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::missing_panics_doc)]
-pub fn phoenix_withdraw_stake_reward<R: RngCore + CryptoRng>(
+pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
@@ -178,7 +150,7 @@ pub fn phoenix_withdraw_stake_reward<R: RngCore + CryptoRng>(
     reward_amount: u64,
     gas_limit: u64,
     gas_price: u64,
-) -> PhoenixTransaction {
+) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
 
@@ -198,21 +170,15 @@ pub fn phoenix_withdraw_stake_reward<R: RngCore + CryptoRng>(
 
     let gas_payment_token = WithdrawReplayToken::Phoenix(nullifiers);
 
-    let withdraw = withdraw_to_phoenix(
+    let contract_call = stake_reward_to_phoenix(
         rng,
         phoenix_sender_sk,
-        STAKE_CONTRACT,
+        stake_sk,
         gas_payment_token,
         reward_amount,
-    );
+    )?;
 
-    let reward_withdraw = StakeWithdraw::new(stake_sk, withdraw);
-
-    let contract_call =
-        ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
-            .expect("rkyv should serialize the reward_withdraw correctly");
-
-    phoenix_transaction(
+    phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -229,9 +195,17 @@ pub fn phoenix_withdraw_stake_reward<R: RngCore + CryptoRng>(
 }
 
 /// Create an unproven [`Transaction`] to unstake into a phoenix-note.
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - one of the input-notes doesn't belong to the `sender_sk`
+/// - the transaction input doesn't cover the transaction costs
+/// - the `inputs` vector is either empty or larger than 4 elements
+/// - the `inputs` vector contains duplicate `Note`s
+/// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::missing_panics_doc)]
-pub fn phoenix_unstake<R: RngCore + CryptoRng>(
+pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
@@ -240,7 +214,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng>(
     unstake_value: u64,
     gas_limit: u64,
     gas_price: u64,
-) -> PhoenixTransaction {
+) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
 
@@ -260,20 +234,15 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng>(
 
     let gas_payment_token = WithdrawReplayToken::Phoenix(nullifiers);
 
-    let withdraw = withdraw_to_phoenix(
+    let contract_call = unstake_to_phoenix(
         rng,
         phoenix_sender_sk,
-        STAKE_CONTRACT,
+        stake_sk,
         gas_payment_token,
         unstake_value,
-    );
+    )?;
 
-    let unstake = StakeWithdraw::new(stake_sk, withdraw);
-
-    let contract_call = ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
-        .expect("unstake should serialize correctly");
-
-    phoenix_transaction(
+    phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -287,6 +256,46 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng>(
         gas_price,
         Some(contract_call),
     )
+}
+
+fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    phoenix_sender_sk: &PhoenixSecretKey,
+    stake_sk: &BlsSecretKey,
+    gas_payment_token: WithdrawReplayToken,
+    reward_amount: u64,
+) -> Result<ContractCall, Error> {
+    let withdraw = withdraw_to_phoenix(
+        rng,
+        phoenix_sender_sk,
+        STAKE_CONTRACT,
+        gas_payment_token,
+        reward_amount,
+    );
+
+    let reward_withdraw = StakeWithdraw::new(stake_sk, withdraw);
+
+    ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
+}
+
+fn unstake_to_phoenix<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    phoenix_sender_sk: &PhoenixSecretKey,
+    stake_sk: &BlsSecretKey,
+    gas_payment_token: WithdrawReplayToken,
+    unstake_value: u64,
+) -> Result<ContractCall, Error> {
+    let withdraw = withdraw_to_phoenix(
+        rng,
+        phoenix_sender_sk,
+        STAKE_CONTRACT,
+        gas_payment_token,
+        unstake_value,
+    );
+
+    let unstake = StakeWithdraw::new(stake_sk, withdraw);
+
+    ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
 }
 
 /// Create a [`Withdraw`] struct to be used to withdraw funds from a contract
