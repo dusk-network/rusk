@@ -228,4 +228,5 @@ pub fn create_phoenix_transaction<const I: usize>(
         gas_price,
         exec.map(Into::into),
     )
+    .expect("creating the creation shouldn't fail")
 }
