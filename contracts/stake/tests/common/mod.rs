@@ -6,5 +6,4 @@
 
 pub mod assert;
 pub mod init;
-pub mod prove;
 pub mod utils;

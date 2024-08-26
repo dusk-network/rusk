@@ -25,17 +25,17 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, ExecuteResult};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
-const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 11_000_000;
-const GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY: u64 = 12_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 10_000_000;
+const GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY: u64 = 11_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 1_200_000;
 const GAS_PRICE: u64 = 2;
 const POINT_LIMIT: u64 = 0x10000000;
-const SENDER_INDEX: u64 = 0;
+const SENDER_INDEX: u8 = 0;
 
 const ALICE_CONTRACT_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -107,7 +107,7 @@ fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
 
 fn make_and_execute_transaction_deploy(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
     bytecode: impl AsRef<[u8]>,
     gas_limit: u64,
     init_value: u8,
@@ -122,6 +122,10 @@ fn make_and_execute_transaction_deploy(
     let tx = wallet
         .phoenix_execute(
             &mut rng,
+            SENDER_INDEX,
+            gas_limit,
+            GAS_PRICE,
+            0u64,
             ContractExec::Deploy(ContractDeploy {
                 bytecode: ContractBytecode {
                     hash,
@@ -131,10 +135,6 @@ fn make_and_execute_transaction_deploy(
                 constructor_args,
                 nonce: 0,
             }),
-            SENDER_INDEX,
-            gas_limit,
-            GAS_PRICE,
-            0u64,
         )
         .expect("Making transaction should succeed");
 
@@ -168,7 +168,7 @@ fn make_and_execute_transaction_deploy(
 
 struct Fixture {
     pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient, TestProverClient>,
+    pub wallet: Wallet<TestStore, TestStateClient>,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
     pub path: PathBuf,
@@ -189,7 +189,6 @@ impl Fixture {
                 rusk: rusk.clone(),
                 cache,
             },
-            TestProverClient::default(),
         );
 
         let original_root = rusk.state_root();

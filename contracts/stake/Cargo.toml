@@ -19,6 +19,7 @@ rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 once_cell = { version = "1.9" }
 rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
 execution-core = { version = "0.1.0", path = "../../execution-core", features = ["zk"] }
+rusk-prover = { version = "0.3", path = "../../rusk-prover/" }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 hex = "0.4"
 rand = "0.8"

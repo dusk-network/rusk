@@ -6,7 +6,6 @@ help: ## Display this help screen
 
 test: $(SUBDIRS)
 	cargo test --release
-	cargo test --release --no-default-features
 			
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings

@@ -6,7 +6,7 @@
 
 use crate::error::Error;
 use crate::tree::Tree;
-use crate::verifier_data::*;
+use crate::verifier_data::tx_circuit_verifier;
 
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
@@ -681,7 +681,7 @@ impl TransferState {
 fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
     // fetch the verifier data
     let num_inputs = tx.nullifiers().len();
-    let vd = verifier_data_execute(num_inputs)
+    let vd = tx_circuit_verifier(num_inputs)
         .expect("No circuit available for given number of inputs!")
         .to_vec();
 

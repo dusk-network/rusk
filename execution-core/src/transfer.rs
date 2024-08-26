@@ -20,7 +20,7 @@ use crate::{
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
-    BlsScalar, ContractId,
+    BlsScalar, ContractId, Error,
 };
 
 pub mod contract_exec;
@@ -52,7 +52,14 @@ pub enum Transaction {
 
 impl Transaction {
     /// Create a new phoenix transaction.
-    #[must_use]
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - one of the input-notes doesn't belong to the `sender_sk`
+    /// - the transaction input doesn't cover the transaction costs
+    /// - the `inputs` vector is either empty or larger than 4 elements
+    /// - the `inputs` vector contains duplicate `Note`s
+    /// - the `Prove` trait is implemented incorrectly
     #[allow(clippy::too_many_arguments)]
     pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         rng: &mut R,
@@ -67,11 +74,8 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         exec: Option<impl Into<ContractExec>>,
-    ) -> Self
-    where
-        <P as Prove>::Error: Debug,
-    {
-        Self::Phoenix(PhoenixTransaction::new::<R, P>(
+    ) -> Result<Self, Error> {
+        Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
             rng,
             sender_sk,
             change_pk,
@@ -84,7 +88,7 @@ impl Transaction {
             gas_limit,
             gas_price,
             exec,
-        ))
+        )?))
     }
 
     /// Create a new moonlight transaction.

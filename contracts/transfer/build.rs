@@ -31,10 +31,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set the ID_[circuit_name] variables
     let circuits = [
-        rusk_profile::Circuit::from_name("ExecuteCircuitOneTwo")?,
-        rusk_profile::Circuit::from_name("ExecuteCircuitTwoTwo")?,
-        rusk_profile::Circuit::from_name("ExecuteCircuitThreeTwo")?,
-        rusk_profile::Circuit::from_name("ExecuteCircuitFourTwo")?,
+        rusk_profile::Circuit::from_name("TxCircuitOneTwo")?,
+        rusk_profile::Circuit::from_name("TxCircuitTwoTwo")?,
+        rusk_profile::Circuit::from_name("TxCircuitThreeTwo")?,
+        rusk_profile::Circuit::from_name("TxCircuitFourTwo")?,
     ];
     for circuit in circuits {
         set_id_env_var(&circuit);

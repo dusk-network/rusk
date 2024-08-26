@@ -18,16 +18,16 @@ use rusk_profile::Circuit as CircuitProfile;
 use std::sync::LazyLock;
 
 pub static VD_EXEC_1_2: LazyLock<Vec<u8>> =
-    LazyLock::new(|| fetch_verifier("ExecuteCircuitOneTwo"));
+    LazyLock::new(|| fetch_verifier("TxCircuitOneTwo"));
 
 pub static VD_EXEC_2_2: LazyLock<Vec<u8>> =
-    LazyLock::new(|| fetch_verifier("ExecuteCircuitTwoTwo"));
+    LazyLock::new(|| fetch_verifier("TxCircuitTwoTwo"));
 
 pub static VD_EXEC_3_2: LazyLock<Vec<u8>> =
-    LazyLock::new(|| fetch_verifier("ExecuteCircuitThreeTwo"));
+    LazyLock::new(|| fetch_verifier("TxCircuitThreeTwo"));
 
 pub static VD_EXEC_4_2: LazyLock<Vec<u8>> =
-    LazyLock::new(|| fetch_verifier("ExecuteCircuitFourTwo"));
+    LazyLock::new(|| fetch_verifier("TxCircuitFourTwo"));
 
 /// Verifies the proof of the incoming transaction.
 pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {

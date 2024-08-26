@@ -5,34 +5,19 @@ edition = "2021"
 autobins = false
 
 [dependencies]
-dusk-bytes = { version = "0.1" }
-poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
-rand_core = "0.6"
-
-rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
-bytecheck = { version = "0.6", default-features = false }
-
+dusk-bytes = "0.1"
+once_cell = { version = "1.9" }
+rand = { version = "0.8", default-features = false, features = ["getrandom"] }
+dusk-plonk = { version = "0.20", default-features = false, features = ["rkyv-impl", "alloc"] }
+rusk-profile = { version = "0.6", path = "../rusk-profile" }
 execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
-
-## feature local_prover
-once_cell = { version = "1.9", optional = true }
-rand = { version = "0.8", optional = true }
-rusk-profile = { version = "0.6", path = "../rusk-profile", optional = true }
 
 [dev-dependencies]
 hex = "0.4"
-tokio = { version = "1", features = ["full"] }
 rand = "0.8"
 
 [features]
-default = ["local_prover"]
-local_prover = [
-    "once_cell",
-    "rand",
-    "rusk-profile",
-    "std",
-]
 no_random = []
 std = [
-    "execution-core/std"
+    "dusk-plonk/std"
 ]

@@ -18,7 +18,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -37,12 +37,14 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 /// successfully.
 fn wallet_transfer(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
     amount: u64,
     block_height: u64,
 ) {
     // Generate a receiver pk
-    let receiver_pk = wallet.public_key(1).expect("Failed to get public key");
+    let receiver_pk = wallet
+        .phoenix_public_key(1)
+        .expect("Failed to get public key");
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -143,7 +145,6 @@ pub async fn wallet() -> Result<()> {
             rusk: rusk.clone(),
             cache: cache.clone(),
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();

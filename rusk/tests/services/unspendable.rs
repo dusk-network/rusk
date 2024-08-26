@@ -21,7 +21,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -30,6 +30,8 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 const GAS_LIMIT_0: u64 = 20_000_000; // Enough to spend, but OOG during ICC
 const GAS_LIMIT_1: u64 = 1_000; // Not enough to spend
 const GAS_LIMIT_2: u64 = 300_000_000; // All ok
+const GAS_PRICE: u64 = 1;
+const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -39,13 +41,13 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
-const SENDER_INDEX_0: u64 = 0;
-const SENDER_INDEX_1: u64 = 1;
-const SENDER_INDEX_2: u64 = 2;
+const SENDER_INDEX_0: u8 = 0;
+const SENDER_INDEX_1: u8 = 1;
+const SENDER_INDEX_2: u8 = 2;
 
 fn make_transactions(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
 ) {
     let initial_balance_0 = wallet
         .get_balance(SENDER_INDEX_0)
@@ -89,11 +91,11 @@ fn make_transactions(
     let tx_0 = wallet
         .phoenix_execute(
             &mut rng,
-            ContractExec::Call(contract_call.clone()),
             SENDER_INDEX_0,
             GAS_LIMIT_0,
-            1,
-            0,
+            GAS_PRICE,
+            DEPOSIT,
+            ContractExec::Call(contract_call.clone()),
         )
         .expect("Making the transaction should succeed");
 
@@ -103,11 +105,11 @@ fn make_transactions(
     let tx_1 = wallet
         .phoenix_execute(
             &mut rng,
-            ContractExec::Call(contract_call.clone()),
             SENDER_INDEX_1,
             GAS_LIMIT_1,
-            1,
-            0,
+            GAS_PRICE,
+            DEPOSIT,
+            ContractExec::Call(contract_call.clone()),
         )
         .expect("Making the transaction should succeed");
 
@@ -117,11 +119,11 @@ fn make_transactions(
     let tx_2 = wallet
         .phoenix_execute(
             &mut rng,
-            contract_call,
             SENDER_INDEX_2,
             GAS_LIMIT_2,
-            1,
-            0,
+            GAS_PRICE,
+            DEPOSIT,
+            contract_call,
         )
         .expect("Making the transaction should succeed");
 
@@ -177,7 +179,6 @@ pub async fn unspendable() -> Result<()> {
             rusk: rusk.clone(),
             cache,
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();

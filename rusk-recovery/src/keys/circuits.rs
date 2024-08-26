@@ -14,24 +14,20 @@ use execution_core::transfer::phoenix::{TxCircuit, NOTES_TREE_DEPTH};
 
 use license_circuits::LicenseCircuit;
 
-type ExecuteCircuitOneTwo = TxCircuit<NOTES_TREE_DEPTH, 1>;
-type ExecuteCircuitTwoTwo = TxCircuit<NOTES_TREE_DEPTH, 2>;
-type ExecuteCircuitThreeTwo = TxCircuit<NOTES_TREE_DEPTH, 3>;
-type ExecuteCircuitFourTwo = TxCircuit<NOTES_TREE_DEPTH, 4>;
+type TxCircuitOneTwo = TxCircuit<NOTES_TREE_DEPTH, 1>;
+type TxCircuitTwoTwo = TxCircuit<NOTES_TREE_DEPTH, 2>;
+type TxCircuitThreeTwo = TxCircuit<NOTES_TREE_DEPTH, 3>;
+type TxCircuitFourTwo = TxCircuit<NOTES_TREE_DEPTH, 4>;
 
 use rusk_profile::{Circuit as CircuitProfile, Theme};
 
 pub fn cache_all() -> io::Result<()> {
     // cache the circuit description, this only updates the circuit description
     // if the new circuit is different from a previously cached version
-    cache::<ExecuteCircuitOneTwo>(Some(String::from("ExecuteCircuitOneTwo")))?;
-    cache::<ExecuteCircuitTwoTwo>(Some(String::from("ExecuteCircuitTwoTwo")))?;
-    cache::<ExecuteCircuitThreeTwo>(Some(String::from(
-        "ExecuteCircuitThreeTwo",
-    )))?;
-    cache::<ExecuteCircuitFourTwo>(Some(String::from(
-        "ExecuteCircuitFourTwo",
-    )))?;
+    cache::<TxCircuitOneTwo>(Some(String::from("TxCircuitOneTwo")))?;
+    cache::<TxCircuitTwoTwo>(Some(String::from("TxCircuitTwoTwo")))?;
+    cache::<TxCircuitThreeTwo>(Some(String::from("TxCircuitThreeTwo")))?;
+    cache::<TxCircuitFourTwo>(Some(String::from("TxCircuitFourTwo")))?;
     cache::<LicenseCircuit>(Some(String::from("LicenseCircuit")))?;
 
     Ok(())

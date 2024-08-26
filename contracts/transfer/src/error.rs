@@ -5,17 +5,19 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::fmt;
-use execution_core::transfer::phoenix::Error as PhoenixError;
+use execution_core::Error as ExecutionError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Phoenix(PhoenixError),
+    /// Wrapper of execution-core error type.
+    Execution(ExecutionError),
+    /// A contract balance is not sufficient for the requested withdrawal
     NotEnoughBalance,
 }
 
-impl From<PhoenixError> for Error {
-    fn from(e: PhoenixError) -> Self {
-        Self::Phoenix(e)
+impl From<ExecutionError> for Error {
+    fn from(e: ExecutionError) -> Self {
+        Self::Execution(e)
     }
 }
 

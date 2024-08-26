@@ -19,6 +19,9 @@ pub mod license;
 pub mod stake;
 pub mod transfer;
 
+mod error;
+pub use error::Error;
+
 mod dusk;
 pub use dusk::{dusk, from_dusk, Dusk, LUX};
 

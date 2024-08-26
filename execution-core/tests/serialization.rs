@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Error;
-use dusk_jubjub::JubJubScalar;
 use execution_core::{
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
@@ -21,23 +18,23 @@ use execution_core::{
         },
         Transaction,
     },
+    BlsScalar, Error, JubJubScalar,
 };
 use ff::Field;
 use poseidon_merkle::{Item, Tree};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
-struct RandomTestProver();
+struct TxCircuitVecProver();
 
-impl Prove for RandomTestProver {
-    type Error = ();
-
-    fn prove(_circuit: TxCircuitVec) -> Result<Vec<u8>, Self::Error> {
-        let mut proof = vec![0; 5_000];
-        let mut rng = StdRng::seed_from_u64(42);
-        rng.fill_bytes(&mut proof);
-
-        Ok(proof)
+// use the serialized TxCircuitVec as proof. This way that serialization is also
+// tested.
+impl Prove for TxCircuitVecProver {
+    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
+        Ok(TxCircuitVec::from_slice(tx_circuit_vec_bytes)
+            .expect("serialization should be ok")
+            .to_var_bytes()
+            .to_vec())
     }
 }
 
@@ -112,7 +109,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
     let gas_limit = 50;
     let gas_price = 1;
 
-    Transaction::phoenix::<R, RandomTestProver>(
+    Transaction::phoenix::<R, TxCircuitVecProver>(
         rng,
         &sender_sk,
         change_pk,
@@ -126,6 +123,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         gas_price,
         exec,
     )
+    .expect("transcaction generation should work")
 }
 
 fn new_moonlight_tx<R: RngCore + CryptoRng>(

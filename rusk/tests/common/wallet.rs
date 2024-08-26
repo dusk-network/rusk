@@ -10,23 +10,20 @@ use std::sync::{Arc, RwLock};
 
 use crate::common::block::Block as BlockAwait;
 
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::Serializable;
 use execution_core::{
-    plonk::Proof,
     signatures::bls::PublicKey as BlsPublicKey,
     stake::StakeData,
     transfer::{
         moonlight::AccountData,
         phoenix::{Note, ViewKey, NOTES_TREE_DEPTH},
-        Transaction,
     },
     BlsScalar,
 };
 use futures::StreamExt;
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
-use rusk_prover::{LocalProver, Prover};
-use test_wallet::{self as wallet, Store, UnprovenTransaction};
+use test_wallet::{self as wallet, Store};
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -123,36 +120,6 @@ impl wallet::StateClient for TestStateClient {
     ) -> Result<AccountData, Self::Error> {
         let account = self.rusk.account(pk)?;
         Ok(account)
-    }
-}
-
-#[derive(Default)]
-pub struct TestProverClient {
-    pub prover: LocalProver,
-}
-
-impl Debug for TestProverClient {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ok(())
-    }
-}
-
-impl wallet::ProverClient for TestProverClient {
-    type Error = Error;
-    /// Requests that a node prove the given transaction and later propagates it
-    fn compute_proof_and_propagate(
-        &self,
-        utx: &UnprovenTransaction,
-    ) -> Result<Transaction, Self::Error> {
-        let utx_bytes = &utx.to_var_bytes()[..];
-        let proof = self.prover.prove_execute(utx_bytes)?;
-        info!("UTX: {}", hex::encode(utx_bytes));
-        let proof = Proof::from_slice(&proof).map_err(Error::Serialization)?;
-        let tx = utx.clone().gen_transaction(proof);
-
-        //Propagate is not required yet
-
-        Ok(tx.into())
     }
 }
 
