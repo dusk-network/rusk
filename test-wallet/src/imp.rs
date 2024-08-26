@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ProverClient, StateClient, Store};
+use crate::{StateClient, Store};
 
 use core::convert::Infallible;
 
@@ -27,20 +27,20 @@ use execution_core::{
         contract_exec::ContractExec,
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
-            Error as PhoenixError, Note, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-            NOTES_TREE_DEPTH,
+            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
         },
         Transaction,
     },
-    BlsScalar,
+    BlsScalar, Error as ExecutionError,
 };
+use rusk_prover::LocalProver;
 use wallet_core::{
     keys::{derive_bls_sk, derive_phoenix_sk},
     phoenix_balance,
     transaction::{
-        phoenix_stake, phoenix_transaction, phoenix_unstake,
-        phoenix_withdraw_stake_reward,
+        phoenix as phoenix_transaction, phoenix_stake, phoenix_stake_reward,
+        phoenix_unstake,
     },
     BalanceInfo,
 };
@@ -56,13 +56,11 @@ type SerializerError = CompositeSerializerError<
 /// The error type returned by this crate.
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
-pub enum Error<S: Store, SC: StateClient, PC: ProverClient> {
+pub enum Error<S: Store, SC: StateClient> {
     /// Underlying store error.
     Store(S::Error),
     /// Error originating from the state client.
     State(SC::Error),
-    /// Error originating from the prover client.
-    Prover(PC::Error),
     /// Rkyv serialization.
     Rkyv,
     /// Random number generator error.
@@ -71,10 +69,8 @@ pub enum Error<S: Store, SC: StateClient, PC: ProverClient> {
     Bytes(BytesError),
     /// Bytes were meant to be utf8 but aren't.
     Utf8(FromUtf8Error),
-    /// Originating from the phoenix transaction model.
-    Phoenix(PhoenixError),
-    /// Not enough balance to perform phoenix transaction.
-    NotEnoughBalance,
+    /// Originating from the execution-core error.
+    Execution(ExecutionError),
     /// Note combination for the given value is impossible given the maximum
     /// amount if inputs in a phoenix transaction.
     NoteCombinationProblem,
@@ -104,7 +100,7 @@ pub enum Error<S: Store, SC: StateClient, PC: ProverClient> {
     },
 }
 
-impl<S: Store, SC: StateClient, PC: ProverClient> Error<S, SC, PC> {
+impl<S: Store, SC: StateClient> Error<S, SC> {
     /// Returns an error from the underlying store error.
     pub fn from_store_err(se: S::Error) -> Self {
         Self::Store(se)
@@ -113,57 +109,43 @@ impl<S: Store, SC: StateClient, PC: ProverClient> Error<S, SC, PC> {
     pub fn from_state_err(se: SC::Error) -> Self {
         Self::State(se)
     }
-    /// Returns an error from the underlying prover client.
-    pub fn from_prover_err(pe: PC::Error) -> Self {
-        Self::Prover(pe)
-    }
 }
 
-impl<S: Store, SC: StateClient, PC: ProverClient> From<SerializerError>
-    for Error<S, SC, PC>
-{
+impl<S: Store, SC: StateClient> From<SerializerError> for Error<S, SC> {
     fn from(_: SerializerError) -> Self {
         Self::Rkyv
     }
 }
 
-impl<C, D, S: Store, SC: StateClient, PC: ProverClient>
-    From<CheckDeserializeError<C, D>> for Error<S, SC, PC>
+impl<C, D, S: Store, SC: StateClient> From<CheckDeserializeError<C, D>>
+    for Error<S, SC>
 {
     fn from(_: CheckDeserializeError<C, D>) -> Self {
         Self::Rkyv
     }
 }
 
-impl<S: Store, SC: StateClient, PC: ProverClient> From<RngError>
-    for Error<S, SC, PC>
-{
+impl<S: Store, SC: StateClient> From<RngError> for Error<S, SC> {
     fn from(re: RngError) -> Self {
         Self::Rng(re)
     }
 }
 
-impl<S: Store, SC: StateClient, PC: ProverClient> From<BytesError>
-    for Error<S, SC, PC>
-{
+impl<S: Store, SC: StateClient> From<BytesError> for Error<S, SC> {
     fn from(be: BytesError) -> Self {
         Self::Bytes(be)
     }
 }
 
-impl<S: Store, SC: StateClient, PC: ProverClient> From<FromUtf8Error>
-    for Error<S, SC, PC>
-{
+impl<S: Store, SC: StateClient> From<FromUtf8Error> for Error<S, SC> {
     fn from(err: FromUtf8Error) -> Self {
         Self::Utf8(err)
     }
 }
 
-impl<S: Store, SC: StateClient, PC: ProverClient> From<PhoenixError>
-    for Error<S, SC, PC>
-{
-    fn from(pe: PhoenixError) -> Self {
-        Self::Phoenix(pe)
+impl<S: Store, SC: StateClient> From<ExecutionError> for Error<S, SC> {
+    fn from(ee: ExecutionError) -> Self {
+        Self::Execution(ee)
     }
 }
 
@@ -171,20 +153,15 @@ impl<S: Store, SC: StateClient, PC: ProverClient> From<PhoenixError>
 ///
 /// This is responsible for holding the keys, and performing operations like
 /// creating transactions.
-pub struct Wallet<S, SC, PC> {
+pub struct Wallet<S, SC> {
     store: S,
     state: SC,
-    prover: PC,
 }
 
-impl<S, SC, PC> Wallet<S, SC, PC> {
+impl<S, SC> Wallet<S, SC> {
     /// Create a new wallet given the underlying store and node client.
-    pub const fn new(store: S, state: SC, prover: PC) -> Self {
-        Self {
-            store,
-            state,
-            prover,
-        }
+    pub const fn new(store: S, state: SC) -> Self {
+        Self { store, state }
     }
 
     /// Return the inner Store reference
@@ -196,24 +173,18 @@ impl<S, SC, PC> Wallet<S, SC, PC> {
     pub const fn state(&self) -> &SC {
         &self.state
     }
-
-    /// Return the inner Prover reference
-    pub const fn prover(&self) -> &PC {
-        &self.prover
-    }
 }
 
-impl<S, SC, PC> Wallet<S, SC, PC>
+impl<S, SC> Wallet<S, SC>
 where
     S: Store,
     SC: StateClient,
-    PC: ProverClient,
 {
     /// Retrieve the secret key with the given index.
     pub fn phoenix_secret_key(
         &self,
         index: u8,
-    ) -> Result<PhoenixSecretKey, Error<S, SC, PC>> {
+    ) -> Result<PhoenixSecretKey, Error<S, SC>> {
         self.store
             .phoenix_secret_key(index)
             .map_err(Error::from_store_err)
@@ -223,7 +194,7 @@ where
     pub fn phoenix_public_key(
         &self,
         index: u8,
-    ) -> Result<PhoenixPublicKey, Error<S, SC, PC>> {
+    ) -> Result<PhoenixPublicKey, Error<S, SC>> {
         self.store
             .phoenix_public_key(index)
             .map_err(Error::from_store_err)
@@ -233,7 +204,7 @@ where
     pub fn account_secret_key(
         &self,
         index: u8,
-    ) -> Result<BlsSecretKey, Error<S, SC, PC>> {
+    ) -> Result<BlsSecretKey, Error<S, SC>> {
         self.store
             .account_secret_key(index)
             .map_err(Error::from_store_err)
@@ -243,7 +214,7 @@ where
     pub fn account_public_key(
         &self,
         index: u8,
-    ) -> Result<BlsPublicKey, Error<S, SC, PC>> {
+    ) -> Result<BlsPublicKey, Error<S, SC>> {
         self.store
             .account_public_key(index)
             .map_err(Error::from_store_err)
@@ -254,7 +225,7 @@ where
     fn unspent_notes_and_nullifiers(
         &self,
         sk: &PhoenixSecretKey,
-    ) -> Result<Vec<(Note, BlsScalar)>, Error<S, SC, PC>> {
+    ) -> Result<Vec<(Note, BlsScalar)>, Error<S, SC>> {
         let vk = PhoenixViewKey::from(sk);
 
         let notes: Vec<Note> = self
@@ -291,7 +262,7 @@ where
         &self,
         sender_sk: &PhoenixSecretKey,
         transaction_cost: u64,
-    ) -> Result<Vec<(Note, BlsScalar)>, Error<S, SC, PC>> {
+    ) -> Result<Vec<(Note, BlsScalar)>, Error<S, SC>> {
         let sender_vk = PhoenixViewKey::from(sender_sk);
 
         // decrypt the value of all unspent note
@@ -302,13 +273,15 @@ where
 
         let mut accumulated_value = 0;
         for (note, nullifier) in unspent_notes_nullifiers {
-            let val = note.value(Some(&sender_vk))?;
+            let val = note
+                .value(Some(&sender_vk))
+                .map_err(|_| ExecutionError::PhoenixOwnership)?;
             accumulated_value += val;
             notes_values_nullifiers.push((note, val, nullifier));
         }
 
         if accumulated_value < transaction_cost {
-            return Err(Error::NotEnoughBalance);
+            return Err(ExecutionError::InsufficientBalance.into());
         }
 
         // pick the four smallest notes that cover the costs
@@ -330,7 +303,7 @@ where
         transaction_cost: u64,
     ) -> Result<
         Vec<(Note, Opening<(), NOTES_TREE_DEPTH>, BlsScalar)>,
-        Error<S, SC, PC>,
+        Error<S, SC>,
     > {
         let notes_and_nullifiers =
             self.input_notes_nullifiers(sender_sk, transaction_cost)?;
@@ -355,8 +328,7 @@ where
         &self,
         sender_sk: &PhoenixSecretKey,
         transaction_cost: u64,
-    ) -> Result<Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>, Error<S, SC, PC>>
-    {
+    ) -> Result<Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>, Error<S, SC>> {
         let notes_and_nullifiers =
             self.input_notes_nullifiers(sender_sk, transaction_cost)?;
 
@@ -383,7 +355,7 @@ where
         gas_price: u64,
         deposit: u64,
         exec: impl Into<ContractExec>,
-    ) -> Result<Transaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
         let receiver_pk = self.phoenix_public_key(sender_index)?;
         let change_pk = receiver_pk;
@@ -398,7 +370,7 @@ where
         let transfer_value = 0;
         let obfuscated_transaction = false;
 
-        let utx = phoenix_transaction(
+        let tx = phoenix_transaction::<Rng, LocalProver>(
             rng,
             &sender_sk,
             &change_pk,
@@ -411,12 +383,11 @@ where
             gas_limit,
             gas_price,
             Some(exec),
-        );
+        )?;
 
         sender_sk.zeroize();
 
-        PC::compute_proof_and_propagate(&utx)
-            .map_err(|e| Error::from_prover_err(e))
+        Ok(tx)
     }
 
     /// Transfer Dusk in the form of Phoenix notes from one key to another.
@@ -429,7 +400,7 @@ where
         transfer_value: u64,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<Transaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
         let change_pk = self.phoenix_public_key(sender_index)?;
 
@@ -445,7 +416,7 @@ where
 
         let exec: Option<ContractExec> = None;
 
-        let utx = phoenix_transaction(
+        let tx = phoenix_transaction::<Rng, LocalProver>(
             rng,
             &sender_sk,
             &change_pk,
@@ -458,12 +429,11 @@ where
             gas_limit,
             gas_price,
             exec,
-        );
+        )?;
 
         sender_sk.zeroize();
 
-        PC::compute_proof_and_propagate(&utx)
-            .map_err(|e| Error::from_prover_err(e))
+        Ok(tx)
     }
 
     /// Stakes an amount of Dusk using Phoenix notes.
@@ -476,7 +446,7 @@ where
         stake_value: u64,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<Transaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let mut phoenix_sender_sk = self.phoenix_secret_key(sender_index)?;
         let mut stake_sk = self.account_secret_key(staker_index)?;
 
@@ -495,7 +465,7 @@ where
             .map_err(Error::from_state_err)?
             .nonce;
 
-        let utx = phoenix_stake(
+        let tx = phoenix_stake::<Rng, LocalProver>(
             rng,
             &phoenix_sender_sk,
             &stake_sk,
@@ -505,13 +475,12 @@ where
             gas_price,
             stake_value,
             current_nonce,
-        );
+        )?;
 
         stake_sk.zeroize();
         phoenix_sender_sk.zeroize();
 
-        PC::compute_proof_and_propagate(&utx)
-            .map_err(|e| Error::from_prover_err(e))
+        Ok(tx)
     }
 
     /// Unstakes a key from the stake contract, using Phoenix notes.
@@ -522,7 +491,7 @@ where
         staker_index: u8,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<Transaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let mut phoenix_sender_sk = self.phoenix_secret_key(sender_index)?;
         let mut stake_sk = self.account_secret_key(staker_index)?;
 
@@ -548,7 +517,7 @@ where
             })?
             .value;
 
-        let utx = phoenix_unstake(
+        let tx = phoenix_unstake::<Rng, LocalProver>(
             rng,
             &phoenix_sender_sk,
             &stake_sk,
@@ -557,13 +526,12 @@ where
             staked_amount,
             gas_limit,
             gas_price,
-        );
+        )?;
 
         stake_sk.zeroize();
         phoenix_sender_sk.zeroize();
 
-        PC::compute_proof_and_propagate(&utx)
-            .map_err(|e| Error::from_prover_err(e))
+        Ok(tx)
     }
 
     /// Withdraw the accumulated staking reward for a key, into Phoenix notes.
@@ -575,7 +543,7 @@ where
         staker_index: u8,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<Transaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let mut phoenix_sender_sk = self.phoenix_secret_key(sender_index)?;
         let mut stake_sk = self.account_secret_key(staker_index)?;
 
@@ -594,7 +562,7 @@ where
             .map_err(Error::from_state_err)?
             .reward;
 
-        let utx = phoenix_withdraw_stake_reward(
+        let tx = phoenix_stake_reward::<Rng, LocalProver>(
             rng,
             &phoenix_sender_sk,
             &stake_sk,
@@ -603,13 +571,12 @@ where
             stake_reward,
             gas_limit,
             gas_price,
-        );
+        )?;
 
         stake_sk.zeroize();
         phoenix_sender_sk.zeroize();
 
-        PC::compute_proof_and_propagate(&utx)
-            .map_err(|e| Error::from_prover_err(e))
+        Ok(tx)
     }
 
     /// Transfer Dusk from one account to another using moonlight.
@@ -620,7 +587,7 @@ where
         value: u64,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<MoonlightTransaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let deposit = 0;
         let exec: Option<ContractExec> = None;
 
@@ -646,7 +613,7 @@ where
         gas_limit: u64,
         gas_price: u64,
         exec: Option<impl Into<ContractExec>>,
-    ) -> Result<MoonlightTransaction, Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut from_sk = derive_bls_sk(&seed, from_index);
         let from_account = BlsPublicKey::from(&from_sk);
@@ -660,7 +627,7 @@ where
         // the network with transactions that are unspendable.
         let max_value = value + deposit + gas_limit * gas_price;
         if max_value > account.balance {
-            return Err(Error::NotEnoughBalance);
+            return Err(ExecutionError::InsufficientBalance.into());
         }
         let nonce = account.nonce + 1;
 
@@ -679,7 +646,7 @@ where
     pub fn get_balance(
         &self,
         sk_index: u8,
-    ) -> Result<BalanceInfo, Error<S, SC, PC>> {
+    ) -> Result<BalanceInfo, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut phoenix_sk = derive_phoenix_sk(&seed, sk_index);
         let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
@@ -698,10 +665,7 @@ where
     }
 
     /// Gets the stake and the expiration of said stake for a key.
-    pub fn get_stake(
-        &self,
-        sk_index: u8,
-    ) -> Result<StakeData, Error<S, SC, PC>> {
+    pub fn get_stake(&self, sk_index: u8) -> Result<StakeData, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut account_sk = derive_bls_sk(&seed, sk_index);
 
@@ -722,7 +686,7 @@ where
     pub fn get_account(
         &self,
         sk_index: u8,
-    ) -> Result<AccountData, Error<S, SC, PC>> {
+    ) -> Result<AccountData, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut account_sk = derive_bls_sk(&seed, sk_index);
 

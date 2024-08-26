@@ -7,8 +7,6 @@ license = "MPL-2.0"
 
 [dependencies]
 rand_core = "^0.6"
-rand_chacha = { version = "^0.3", default-features = false }
-sha2 = { version = "^0.10", default-features = false }
 dusk-bytes = "^0.1"
 poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
 rkyv = { version = "0.7", default-features = false }
@@ -18,6 +16,7 @@ zeroize = { version = "1", default-features = false, features = ["derive"] }
 # rusk dependencies
 execution-core = { version = "0.1.0", path = "../execution-core" }
 wallet-core = { version = "0.1", path = "../wallet-core/" }
+rusk-prover = { version = "0.3", path = "../rusk-prover/" }
 
 [dev-dependencies]
 rand = "^0.8"

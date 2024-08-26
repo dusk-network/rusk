@@ -25,10 +25,8 @@ use execution_core::{
         moonlight::AccountData,
         phoenix::{
             Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
-            NOTES_TREE_DEPTH,
+            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
         },
-        Transaction,
     },
     BlsScalar,
 };
@@ -38,22 +36,6 @@ pub use wallet_core::keys::{
 };
 
 pub use imp::*;
-
-/// Types that are client of the prover.
-pub trait ProverClient {
-    /// Error returned by the node client.
-    type Error;
-
-    /// Requests that a node prove the given unproven [`PhoenixTransaction`] and
-    /// later propagates it.
-    ///
-    /// # Errors
-    /// This function will error if the proof can not be generated from the
-    /// unproven transaction.
-    fn compute_proof_and_propagate(
-        utx: &PhoenixTransaction,
-    ) -> Result<Transaction, Self::Error>;
-}
 
 /// Stores the cryptographic material necessary to derive cryptographic keys.
 pub trait Store {
