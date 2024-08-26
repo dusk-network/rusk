@@ -16,18 +16,13 @@ use execution_core::{
     stake::StakeData,
     transfer::{
         moonlight::AccountData,
-        phoenix::{
-            Note, Prove, Transaction as PhoenixTransaction, ViewKey,
-            NOTES_TREE_DEPTH,
-        },
-        Transaction,
+        phoenix::{Note, ViewKey, NOTES_TREE_DEPTH},
     },
     BlsScalar,
 };
 use futures::StreamExt;
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
-use rusk_prover::LocalProver;
 use test_wallet::{self as wallet, Store};
 use tracing::info;
 
@@ -125,33 +120,6 @@ impl wallet::StateClient for TestStateClient {
     ) -> Result<AccountData, Self::Error> {
         let account = self.rusk.account(pk)?;
         Ok(account)
-    }
-}
-
-#[derive(Default)]
-pub struct TestProverClient();
-
-impl Debug for TestProverClient {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ok(())
-    }
-}
-
-impl wallet::ProverClient for TestProverClient {
-    type Error = Error;
-    /// Requests that a node prove the given transaction and later propagates it
-    fn compute_proof_and_propagate(
-        utx: &PhoenixTransaction,
-    ) -> Result<Transaction, Self::Error> {
-        let circuit_bytes = &utx.proof()[..];
-        let proof_bytes = LocalProver::prove(circuit_bytes)?;
-        info!("circuit: {}", hex::encode(circuit_bytes));
-        let mut tx = utx.clone();
-        tx.replace_proof(proof_bytes);
-
-        //Propagate is not required yet
-
-        Ok(tx.into())
     }
 }
 

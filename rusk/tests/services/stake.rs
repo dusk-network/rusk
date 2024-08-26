@@ -24,7 +24,7 @@ use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -54,7 +54,7 @@ fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 /// stake and checking it is correctly withdrawn.
 fn wallet_stake(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
     value: u64,
 ) {
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -157,7 +157,6 @@ pub async fn stake() -> Result<()> {
             rusk: rusk.clone(),
             cache,
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();
@@ -188,7 +187,7 @@ pub async fn stake() -> Result<()> {
 /// fails
 fn wallet_reward(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
 ) {
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -251,7 +250,6 @@ pub async fn reward() -> Result<()> {
             rusk: rusk.clone(),
             cache,
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();
@@ -289,7 +287,6 @@ pub async fn slash() -> Result<()> {
             rusk: rusk.clone(),
             cache,
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();

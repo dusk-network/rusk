@@ -8,8 +8,8 @@ use std::{fmt, io};
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    transfer::phoenix::Error as PhoenixError, BlsScalar, Dusk,
+    signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
+    BlsScalar, Dusk, Error as ExecErr,
 };
 use rusk_abi::PiecrustError;
 
@@ -37,8 +37,10 @@ pub enum Error {
     OpeningNoteUndefined(u64),
     /// Bytes Serialization Errors
     Serialization(dusk_bytes::Error),
+    /// Originating from transaction-creation
+    Transaction(ExecErr),
     /// Originating from Phoenix.
-    Phoenix(PhoenixError),
+    Phoenix(CoreError),
     /// Piecrust VM internal Errors
     Vm(PiecrustError),
     /// IO Errors
@@ -47,9 +49,6 @@ pub enum Error {
     CoinbaseBlockHeight(u64, u64),
     /// Bad dusk spent in coinbase (got, expected).
     CoinbaseDuskSpent(Dusk, Dusk),
-    /// Proof creation error
-    #[cfg(feature = "prover")]
-    ProofCreation(rusk_prover::ProverError),
     /// Failed to produce proper state
     #[cfg(feature = "node")]
     InconsistentState(dusk_consensus::operations::VerificationOutput),
@@ -75,10 +74,39 @@ impl From<PiecrustError> for Error {
     }
 }
 
-#[cfg(feature = "prover")]
-impl From<rusk_prover::ProverError> for Error {
-    fn from(err: rusk_prover::ProverError) -> Self {
-        Error::ProofCreation(err)
+impl From<execution_core::Error> for Error {
+    fn from(err: ExecErr) -> Self {
+        match err {
+            ExecErr::InsufficientBalance => {
+                Self::Transaction(ExecErr::InsufficientBalance)
+            }
+            ExecErr::Replay => Self::Transaction(ExecErr::Replay),
+            ExecErr::PhoenixOwnership => {
+                Self::Transaction(ExecErr::PhoenixOwnership)
+            }
+            ExecErr::PhoenixCircuit(e) => {
+                Self::Transaction(ExecErr::PhoenixCircuit(e))
+            }
+            ExecErr::PhoenixProver(e) => {
+                Self::Transaction(ExecErr::PhoenixProver(e))
+            }
+            ExecErr::InvalidData => {
+                Self::Serialization(dusk_bytes::Error::InvalidData)
+            }
+            ExecErr::BadLength(found, expected) => {
+                Self::Serialization(dusk_bytes::Error::BadLength {
+                    found,
+                    expected,
+                })
+            }
+            ExecErr::InvalidChar(ch, index) => {
+                Self::Serialization(dusk_bytes::Error::InvalidChar {
+                    ch,
+                    index,
+                })
+            }
+            ExecErr::Rkyv(e) => Self::Transaction(ExecErr::Rkyv(e)),
+        }
     }
 }
 
@@ -88,8 +116,8 @@ impl From<dusk_bytes::Error> for Error {
     }
 }
 
-impl From<PhoenixError> for Error {
-    fn from(pe: PhoenixError) -> Self {
+impl From<CoreError> for Error {
+    fn from(pe: CoreError) -> Self {
         Self::Phoenix(pe)
     }
 }
@@ -123,6 +151,7 @@ impl fmt::Display for Error {
             }
             Error::Vm(err) => write!(f, "VM Error: {err}"),
             Error::Io(err) => write!(f, "IO Error: {err}"),
+            Error::Transaction(err) => write!(f, "Transaction Error: {err}"),
             Error::Phoenix(err) => write!(f, "Phoenix error: {err}"),
             Error::Other(err) => write!(f, "Other error: {err}"),
             Error::CoinbaseBlockHeight(got, expected) => write!(
@@ -144,10 +173,6 @@ impl fmt::Display for Error {
             }
             Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
-            }
-            #[cfg(feature = "prover")]
-            Error::ProofCreation(e) => {
-                write!(f, "Proof creation error: {e}")
             }
             #[cfg(feature = "node")]
             Error::InconsistentState(verification_output) => {

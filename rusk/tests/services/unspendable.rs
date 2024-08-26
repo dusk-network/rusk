@@ -21,7 +21,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -47,7 +47,7 @@ const SENDER_INDEX_2: u8 = 2;
 
 fn make_transactions(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
 ) {
     let initial_balance_0 = wallet
         .get_balance(SENDER_INDEX_0)
@@ -179,7 +179,6 @@ pub async fn unspendable() -> Result<()> {
             rusk: rusk.clone(),
             cache,
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();

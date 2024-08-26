@@ -25,7 +25,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, ExecuteResult};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -107,7 +107,7 @@ fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
 
 fn make_and_execute_transaction_deploy(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
     bytecode: impl AsRef<[u8]>,
     gas_limit: u64,
     init_value: u8,
@@ -168,7 +168,7 @@ fn make_and_execute_transaction_deploy(
 
 struct Fixture {
     pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient, TestProverClient>,
+    pub wallet: Wallet<TestStore, TestStateClient>,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
     pub path: PathBuf,
@@ -189,7 +189,6 @@ impl Fixture {
                 rusk: rusk.clone(),
                 cache,
             },
-            TestProverClient::default(),
         );
 
         let original_root = rusk.state_root();

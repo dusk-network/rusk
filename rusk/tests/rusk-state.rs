@@ -175,7 +175,7 @@ pub fn rusk_state_finalized() -> Result<()> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestProverClient, TestStateClient, TestStore};
+    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
 
     common::logger();
@@ -189,11 +189,8 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
-    let wallet = test_wallet::Wallet::new(
-        TestStore,
-        TestStateClient { rusk, cache },
-        TestProverClient::default(),
-    );
+    let wallet =
+        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
 
     const N_ADDRESSES: usize = 100;
 
@@ -240,7 +237,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestProverClient, TestStateClient, TestStore};
+    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
 
     common::logger();
@@ -254,11 +251,8 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
-    let wallet = test_wallet::Wallet::new(
-        TestStore,
-        TestStateClient { rusk, cache },
-        TestProverClient::default(),
-    );
+    let wallet =
+        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
 
     const N_ADDRESSES: usize = 100;
 

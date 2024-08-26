@@ -17,7 +17,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
+use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
@@ -39,7 +39,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 /// to be included due to exceeding the block gas limit
 fn wallet_transfer(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    wallet: &wallet::Wallet<TestStore, TestStateClient>,
     amount: u64,
 ) {
     // Generate a receiver pk
@@ -192,7 +192,6 @@ pub async fn multi_transfer() -> Result<()> {
             rusk: rusk.clone(),
             cache,
         },
-        TestProverClient::default(),
     );
 
     let original_root = rusk.state_root();
