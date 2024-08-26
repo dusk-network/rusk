@@ -36,7 +36,7 @@ impl Query {
         let block = match (height, hash) {
             (Some(height), None) => block_by_height(ctx, height).await,
             (None, Some(hash)) => block_by_hash(ctx, hash).await,
-            _ => Err(FieldError::new("Specify heigth or hash")),
+            _ => Err(FieldError::new("Specify height or hash")),
         };
         Ok(block?)
     }
