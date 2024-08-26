@@ -252,10 +252,9 @@ impl<DB: database::DB, VM: vm::VMExecution> Executor<DB, VM> {
 
 #[async_trait::async_trait]
 impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
-    async fn verify_block_header(
+    async fn verify_candidate_header(
         &self,
         candidate_header: &Header,
-        disable_winning_att_check: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error> {
         let validator = Validator::new(
             self.db.clone(),
@@ -264,7 +263,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         );
 
         validator
-            .execute_checks(candidate_header, disable_winning_att_check)
+            .execute_checks(candidate_header, true)
             .await
             .map_err(operations::Error::InvalidHeader)
     }

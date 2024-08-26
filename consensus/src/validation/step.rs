@@ -79,9 +79,8 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let candidate = candidate.expect("Candidate to be already checked");
         let header = candidate.header();
 
-        // Verify candidate header (all fields except the winning attestation)
-        // NB: Winning attestation is produced only on reaching consensus
-        let vote = match executor.verify_block_header(header, true).await {
+        // Verify candidate header
+        let vote = match executor.verify_candidate_header(header).await {
             Ok((_, voters, _)) => {
                 // Call Verify State Transition to make sure transactions set is
                 // valid

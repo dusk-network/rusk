@@ -81,10 +81,9 @@ impl fmt::Display for VerificationOutput {
 
 #[async_trait::async_trait]
 pub trait Operations: Send + Sync {
-    async fn verify_block_header(
+    async fn verify_candidate_header(
         &self,
         candidate_header: &Header,
-        disable_winning_att_check: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error>;
 
     async fn verify_faults(
