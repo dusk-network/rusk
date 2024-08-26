@@ -26,7 +26,7 @@ use tracing::{debug, info, warn};
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
     Topics::GetMempool as u8,
-    Topics::GetInv as u8,
+    Topics::Inv as u8,
     Topics::GetResource as u8,
 ];
 
@@ -203,8 +203,8 @@ impl DataBrokerSrv {
                 let msg = Self::handle_get_mempool(db).await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
-            // Handle GetInv requests
-            Payload::GetInv(m) => {
+            // Handle Inv messages
+            Payload::Inv(m) => {
                 let msg =
                     Self::handle_inv(db, m, conf.max_inv_entries, this_peer)
                         .await?;
