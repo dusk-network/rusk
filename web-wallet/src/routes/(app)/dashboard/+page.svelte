@@ -7,6 +7,7 @@
     mdiArrowTopRight,
     mdiContain,
     mdiDatabaseOutline,
+    mdiSwapHorizontal,
     mdiSwapVertical,
     mdiSync,
   } from "@mdi/js";
@@ -39,6 +40,9 @@
         break;
       case "transfer":
         icons = [{ path: mdiSwapVertical }];
+        break;
+      case "migrate":
+        icons = [{ path: mdiSwapHorizontal }];
         break;
       default:
         break;

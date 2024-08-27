@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Added allocation (shield/unshield) page and UI [#2196]
+- Added token migration contract bindings [#2014]
 
 ### Changed
 
@@ -242,6 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2071]: https://github.com/dusk-network/rusk/issues/2075
 [#2118]: https://github.com/dusk-network/rusk/issues/2118
 [#2118]: https://github.com/dusk-network/rusk/issues/2175
+[#2196]: https://github.com/dusk-network/rusk/issues/2196
+[#2014]: https://github.com/dusk-network/rusk/issues/2014
 
 <!-- VERSIONS -->
 

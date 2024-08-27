@@ -1,7 +1,13 @@
 import { createWeb3Modal, defaultWagmiConfig } from "@web3modal/wagmi";
-import { disconnect, getAccount, getBalance, watchAccount } from "@wagmi/core";
+import {
+  disconnect,
+  getAccount,
+  getBalance,
+  reconnect,
+  watchAccount,
+} from "@wagmi/core";
 import { readable } from "svelte/store";
-import { bsc, mainnet } from "viem/chains";
+import { bsc, mainnet, sepolia } from "viem/chains";
 
 // Required project metadata
 const projectId = "b5303e1c8374b100fbb7f181884fef28";
@@ -12,14 +18,15 @@ const metadata = {
   url: "https://127.0.0.1:5173/dashboard/",
 };
 
-/** @type {[import("viem").Chain, import("viem").Chain]} */
-const chains = [mainnet, bsc];
+/** @type {[import("viem").Chain, import("viem").Chain, import("viem").Chain]} */
+const chains = [sepolia, bsc, mainnet];
 
 export const wagmiConfig = defaultWagmiConfig({
   chains,
   metadata,
   projectId,
 });
+reconnect(wagmiConfig);
 
 // Create the Web3 modal with the WAGMI config
 export const modal = createWeb3Modal({
@@ -36,7 +43,7 @@ export const modal = createWeb3Modal({
 // of the app itself
 export const account = readable(getAccount(wagmiConfig), (set) => {
   watchAccount(wagmiConfig, {
-    onChange: (newAccount) => {
+    onChange(newAccount) {
       set(newAccount);
     },
   });
