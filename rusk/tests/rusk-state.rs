@@ -288,3 +288,78 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+// This code is used to generate the addresses for the config-toml files.
+// To generate:
+//   - uncomment the `#[test]' line
+//   - adjust the variables accordingly ("bench.toml" has each 100 phoenix and
+//     moonlight accounts)
+//   - run the test 'generate_bench_toml'
+//   - move the resulting "bench.toml" file under "tests/config/bench.toml"
+// The first phoenix and moonlight addresses in "bench.toml" are the same
+// across all the toml config files (moonlight addresses are equivalent to stake
+// addresses).
+#[allow(dead_code)]
+// #[test]
+fn generate_bench_toml() -> Result<(), Box<dyn std::error::Error>> {
+    use common::wallet::{TestStateClient, TestStore};
+    use dusk_bytes::Serializable;
+    use rusk_recovery_tools::state::Snapshot;
+    use std::io::Write;
+
+    const MAX_INDEX: u8 = 100;
+    const PHOENIX: bool = true;
+    const MOONLIGHT: bool = true;
+    let file_name = "bench.toml";
+
+    // create a dummy wallet for keys generation
+    let tmp = tempdir()?;
+    let rusk = new_state(&tmp, &Snapshot::default(), 0)?;
+    let cache =
+        Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
+    let wallet =
+        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+
+    // write the toml file
+    let mut toml_file = std::fs::File::create(file_name)?;
+    toml_file.write(b"[acl.stake]\nowners = []\nallowlist = []\n\n")?;
+
+    if PHOENIX {
+        for index in 0..MAX_INDEX {
+            let phoenix_pk = wallet
+                .phoenix_public_key(index)
+                .expect("key-generation should work");
+            toml_file.write(b"[[phoenix_balance]]\n")?;
+            toml_file.write(b"address = \"")?;
+            toml_file.write(
+                bs58::encode(phoenix_pk.to_bytes()).into_string().as_bytes(),
+            )?;
+            toml_file.write(b"\"\n")?;
+            toml_file.write(b"seed = 57005\n")?;
+            toml_file.write(b"notes = [10_000_000_000]\n")?;
+            if index < MAX_INDEX - 1 || MOONLIGHT {
+                toml_file.write(b"\n")?;
+            }
+        }
+    }
+
+    if MOONLIGHT {
+        for index in 0..MAX_INDEX {
+            let account_pk = wallet
+                .account_public_key(index)
+                .expect("key-generation should work");
+            toml_file.write(b"[[moonlight_account]]\n")?;
+            toml_file.write(b"address = \"")?;
+            toml_file.write(
+                bs58::encode(account_pk.to_bytes()).into_string().as_bytes(),
+            )?;
+            toml_file.write(b"\"\n")?;
+            toml_file.write(b"balance = 10_000_000_000\n")?;
+            if index < MAX_INDEX - 1 {
+                toml_file.write(b"\n")?;
+            }
+        }
+    }
+
+    Ok(())
+}

@@ -1,5 +1,5 @@
 [[phoenix_balance]]
-address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
+address = "5gZ7msthCUNu2YhpQQz51Fj3L4ppYW58yG7mzZGkdzAp8iLHxkMvQAQhweJ6jhTrBZwhpTkC9ubbi135ynakNj3z"
 seed = 57005
 notes = [
     10_000_000_000,
@@ -15,5 +15,5 @@ notes = [
 ]
 
 [[moonlight_account]]
-address = "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3"
+address = "zryQ5mBuLvhj3bypKnykqoZH2cmoboWL36q64oCWpxzpBFygCFRqwnAiy3ajPpVCqJqY64LY1RXLUFdSk82zENHEVsHsKS2yNoDXWdCcae3r9qbTwkxxXaAi3gUZakSeqnH"
 balance = 10_000_000_000
