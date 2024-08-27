@@ -50,8 +50,8 @@ impl EventSource for TransactionEvent<'_> {
     fn entity(&self) -> String {
         let hash = match self {
             Self::Removed(hash) => *hash,
-            Self::Executed(tx) => tx.inner.hash(),
-            Self::Included(tx) => tx.hash(),
+            Self::Executed(tx) => tx.inner.id(),
+            Self::Included(tx) => tx.id(),
         };
         hex::encode(hash)
     }
