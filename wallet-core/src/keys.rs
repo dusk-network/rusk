@@ -30,8 +30,7 @@ use crate::RNG_SEED;
 pub fn derive_bls_sk(seed: &[u8; RNG_SEED], index: u8) -> BlsSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
-    // NOTE: When breaking the keys, we will want to change the string too
-    BlsSecretKey::random(&mut rng_with_index(seed, index, b"SK"))
+    BlsSecretKey::random(&mut rng_with_index(seed, index, b"BSK"))
 }
 
 /// Generates a [`PhoenixSecretKey`] from a seed and index.
@@ -41,8 +40,7 @@ pub fn derive_bls_sk(seed: &[u8; RNG_SEED], index: u8) -> BlsSecretKey {
 pub fn derive_phoenix_sk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
-    // NOTE: When breaking the keys, we will want to change the string too
-    PhoenixSecretKey::random(&mut rng_with_index(seed, index, b"SSK"))
+    PhoenixSecretKey::random(&mut rng_with_index(seed, index, b"PSK"))
 }
 
 /// Generates multiple [`PhoenixSecretKey`] from a seed and a range of indices.
@@ -98,10 +96,6 @@ pub fn rng_with_index(
     index: u8,
     termination: &[u8],
 ) -> ChaCha12Rng {
-    // NOTE: to not break the test-keys, we cast to a u64 here. Once we are
-    // ready to use the new keys, the index should not be cast to a u64
-    // anymore.
-    let index = u64::from(index);
     let mut hash = Sha256::new();
 
     hash.update(seed);
