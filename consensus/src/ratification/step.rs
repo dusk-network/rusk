@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
-use std::marker::PhantomData;
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
@@ -19,12 +18,11 @@ use tokio::sync::Mutex;
 
 use tracing::{info, Instrument};
 
-pub struct RatificationStep<DB> {
+pub struct RatificationStep {
     handler: Arc<Mutex<handler::RatificationHandler>>,
-    marker: PhantomData<DB>,
 }
 
-impl<DB: Database> RatificationStep<DB> {
+impl RatificationStep {
     pub async fn try_vote(
         ru: &RoundUpdate,
         iteration: u8,
@@ -70,14 +68,11 @@ pub fn build_ratification_payload(
     ratification
 }
 
-impl<DB: Database> RatificationStep<DB> {
+impl RatificationStep {
     pub(crate) fn new(
         handler: Arc<Mutex<handler::RatificationHandler>>,
     ) -> Self {
-        Self {
-            handler,
-            marker: PhantomData,
-        }
+        Self { handler }
     }
 
     pub async fn reinitialize(
@@ -112,7 +107,7 @@ impl<DB: Database> RatificationStep<DB> {
 
     pub async fn run<T: Operations + 'static>(
         &mut self,
-        mut ctx: ExecutionCtx<'_, DB, T>,
+        mut ctx: ExecutionCtx<'_, T>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
             .get_current_committee()

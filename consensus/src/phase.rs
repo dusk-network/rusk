@@ -29,7 +29,7 @@ macro_rules! await_phase {
 pub enum Phase<T: Operations, D: Database> {
     Proposal(proposal::step::ProposalStep<T, D>),
     Validation(validation::step::ValidationStep<T>),
-    Ratification(ratification::step::RatificationStep<D>),
+    Ratification(ratification::step::RatificationStep),
 }
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
@@ -54,7 +54,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_, D, T>,
+        mut ctx: ExecutionCtx<'_, T>,
     ) -> Result<Message, ConsensusError> {
         ctx.set_start_time();
 

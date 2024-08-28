@@ -139,7 +139,6 @@ impl From<BlsSigError> for ConsensusError {
 #[async_trait::async_trait]
 pub trait Database: Send + Sync {
     fn store_candidate_block(&mut self, b: Block);
-    fn delete_candidate_blocks(&mut self);
 }
 
 #[derive(Clone)]

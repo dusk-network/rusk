@@ -211,19 +211,6 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
             }
         }
     }
-
-    fn delete_candidate_blocks(&mut self) {
-        match self.db.try_read() {
-            Ok(db) => {
-                if let Err(e) = db.update(|t| t.clear_candidates()) {
-                    warn!("Unable to cleare candidates: {e}");
-                };
-            }
-            Err(e) => {
-                warn!("Cannot acquire lock to clear_candidate: {e}");
-            }
-        }
-    }
 }
 
 /// Implements Executor trait to mock Contract Storage calls.
