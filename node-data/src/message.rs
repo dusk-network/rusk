@@ -1243,6 +1243,7 @@ impl StepMessage for Candidate {
     }
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
+        signable.extend_from_slice(Self::SIGN_SEED);
         let candidate_hash = self.candidate.header().hash.to_vec();
         signable.extend_from_slice(&candidate_hash);
         signable
