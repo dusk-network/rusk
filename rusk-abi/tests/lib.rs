@@ -32,6 +32,7 @@ use ff::Field;
 use rusk_abi::{ContractData, Session, VM};
 
 const POINT_LIMIT: u64 = 0x1000000;
+const CHAIN_ID: u8 = 0xFA;
 
 #[test]
 fn hash_host() {
@@ -62,7 +63,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
         "../../target/dusk/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let mut session = rusk_abi::new_genesis_session(vm);
+    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
 
     let contract_id = session
         .deploy(
@@ -74,7 +75,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
     let base = session.commit().expect("Committing should succeed");
 
-    let session = rusk_abi::new_session(vm, base, height)
+    let session = rusk_abi::new_session(vm, base, CHAIN_ID, height)
         .expect("Instantiating new session should succeed");
 
     (session, contract_id)
@@ -334,6 +335,22 @@ fn plonk_proof() {
         .data;
 
     assert!(!valid, "The proof should be invalid");
+}
+
+#[test]
+fn chain_id() {
+    const HEIGHT: u64 = 123;
+
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, HEIGHT);
+
+    let chain_id: u8 = session
+        .call(contract_id, "chain_id", &(), POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
+
+    assert_eq!(chain_id, CHAIN_ID);
 }
 
 #[test]

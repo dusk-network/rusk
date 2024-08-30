@@ -28,7 +28,7 @@ pub use piecrust_uplink::debug as piecrust_debug;
 mod abi;
 #[cfg(feature = "abi")]
 pub use abi::{
-    block_height, hash, owner, owner_raw, poseidon_hash, self_owner,
+    block_height, chain_id, hash, owner, owner_raw, poseidon_hash, self_owner,
     self_owner_raw, verify_bls, verify_proof, verify_schnorr,
 };
 
@@ -65,6 +65,7 @@ enum Metadata {}
 
 #[allow(dead_code)]
 impl Metadata {
+    pub const CHAIN_ID: &'static str = "chain_id";
     pub const BLOCK_HEIGHT: &'static str = "block_height";
 }
 
