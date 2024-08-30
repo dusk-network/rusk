@@ -20,6 +20,7 @@ use rusk_abi::{ContractData, Session, VM};
 use crate::common::utils::update_root;
 
 const OWNER: [u8; 32] = [0; 32];
+pub const CHAIN_ID: u8 = 0xFA;
 const POINT_LIMIT: u64 = 0x100_000_000;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
@@ -37,7 +38,7 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let mut session = rusk_abi::new_genesis_session(vm);
+    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
 
     session
         .deploy(
@@ -81,6 +82,6 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
 
-    rusk_abi::new_session(vm, base, 1)
+    rusk_abi::new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed")
 }

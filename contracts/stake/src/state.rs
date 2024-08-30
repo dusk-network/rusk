@@ -72,6 +72,10 @@ impl StakeState {
         let nonce = stake.nonce();
         let signature = *stake.signature();
 
+        if stake.chain_id() != self.chain_id() {
+            panic!("The stake must target the correct chain");
+        }
+
         let loaded_stake = self.load_or_create_stake_mut(&account);
 
         // ensure the stake is at least the minimum and that there isn't an
@@ -454,6 +458,10 @@ impl StakeState {
         for (stake_data, account) in self.stakes.values() {
             rusk_abi::feed((*account, *stake_data));
         }
+    }
+
+    fn chain_id(&self) -> u8 {
+        rusk_abi::chain_id()
     }
 
     fn deduct_contract_balance(amount: u64) {
