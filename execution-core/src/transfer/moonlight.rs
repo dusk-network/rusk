@@ -54,9 +54,11 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         nonce: u64,
+        chain_id: u8,
         exec: Option<impl Into<ContractExec>>,
     ) -> Self {
         let payload = Payload {
+            chain_id,
             from_account: AccountPublicKey::from(from_sk),
             to_account,
             value,
@@ -119,6 +121,12 @@ impl Transaction {
     #[must_use]
     pub fn nonce(&self) -> u64 {
         self.payload.nonce
+    }
+
+    /// Returns the chain ID of the transaction.
+    #[must_use]
+    pub fn chain_id(&self) -> u8 {
+        self.payload.chain_id
     }
 
     /// Return the contract call data, if there is any.
@@ -239,6 +247,8 @@ impl Transaction {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 struct Payload {
+    /// ID of the chain for this transaction to execute on.
+    pub chain_id: u8,
     /// Key of the sender of this transaction.
     pub from_account: AccountPublicKey,
     /// Key of the receiver of the funds.
@@ -265,7 +275,7 @@ impl Payload {
     /// Serialize the payload into a byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
+        let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.from_account.to_bytes());
 
@@ -309,6 +319,8 @@ impl Payload {
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
+        let chain_id = u8::from_reader(&mut buf)?;
+
         let from_account = AccountPublicKey::from_reader(&mut buf)?;
 
         // deserialize recipient
@@ -337,6 +349,7 @@ impl Payload {
         };
 
         Ok(Self {
+            chain_id,
             from_account,
             to_account,
             value,
@@ -354,7 +367,7 @@ impl Payload {
     /// for hashing and *cannot* be used to deserialize the payload again.
     #[must_use]
     pub fn signature_message(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
+        let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.from_account.to_bytes());
         if let Some(to) = &self.to_account {

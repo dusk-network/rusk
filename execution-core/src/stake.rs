@@ -43,6 +43,7 @@ pub const fn next_epoch(block_height: u64) -> u64 {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Stake {
+    chain_id: u8,
     account: BlsPublicKey,
     value: u64,
     nonce: u64,
@@ -50,12 +51,18 @@ pub struct Stake {
 }
 
 impl Stake {
-    const MESSAGE_SIZE: usize = BlsPublicKey::SIZE + u64::SIZE + u64::SIZE;
+    const MESSAGE_SIZE: usize = 1 + BlsPublicKey::SIZE + u64::SIZE + u64::SIZE;
 
     /// Create a new stake.
     #[must_use]
-    pub fn new(sk: &BlsSecretKey, value: u64, nonce: u64) -> Self {
+    pub fn new(
+        sk: &BlsSecretKey,
+        value: u64,
+        nonce: u64,
+        chain_id: u8,
+    ) -> Self {
         let mut stake = Stake {
+            chain_id,
             account: BlsPublicKey::from(sk),
             value,
             nonce,
@@ -91,6 +98,12 @@ impl Stake {
         self.nonce
     }
 
+    /// Returns the chain ID of the stake.
+    #[must_use]
+    pub fn chain_id(&self) -> u8 {
+        self.chain_id
+    }
+
     /// Signature of the stake.
     #[must_use]
     pub fn signature(&self) -> &BlsSignature {
@@ -102,7 +115,8 @@ impl Stake {
     pub fn signature_message(&self) -> [u8; Self::MESSAGE_SIZE] {
         let mut bytes = [0u8; Self::MESSAGE_SIZE];
 
-        let mut offset = 0;
+        bytes[0] = self.chain_id;
+        let mut offset = 1;
 
         bytes[offset..offset + BlsPublicKey::SIZE]
             .copy_from_slice(&self.account.to_bytes());

@@ -25,6 +25,8 @@ use poseidon_merkle::{Item, Tree};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
+const CHAIN_ID: u8 = 0xFA;
+
 struct TxCircuitVecProver();
 
 // use the serialized TxCircuitVec as proof. This way that serialization is also
@@ -121,6 +123,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         deposit,
         gas_limit,
         gas_price,
+        CHAIN_ID,
         exec,
     )
     .expect("transcaction generation should work")
@@ -141,7 +144,8 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     let nonce: u64 = rng.gen();
 
     Transaction::moonlight(
-        &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce, exec,
+        &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
+        CHAIN_ID, exec,
     )
 }
 
