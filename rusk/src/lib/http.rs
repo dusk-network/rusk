@@ -68,7 +68,9 @@ use rand::rngs::OsRng;
 use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
-pub use self::event::{ContractEvent, RuesEvent, RUES_LOCATION_PREFIX};
+pub use self::event::{
+    ContractEvent, RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX,
+};
 use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 
@@ -146,6 +148,24 @@ impl HandleRequest for DataSources {
             }
         }
         Err(anyhow::anyhow!("unsupported target type"))
+    }
+
+    fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
+        self.sources.iter().any(|s| s.can_handle_rues(event))
+    }
+
+    async fn handle_rues(
+        &self,
+        event: &RuesDispatchEvent,
+    ) -> anyhow::Result<ResponseData> {
+        info!("Received event at {}", event.uri);
+        event.check_rusk_version()?;
+        for h in &self.sources {
+            if h.can_handle_rues(event) {
+                return h.handle_rues(event).await;
+            }
+        }
+        Err(anyhow::anyhow!("unsupported location"))
     }
 }
 
@@ -626,10 +646,30 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
-        let event = RuesEvent::from_request(req).await?;
-        unimplemented!("Handle rues dispatch here");
-        // TODO: Handle rues dispatch
-        // handle_dispatch(uri, body, handler, sender)
+        let event = RuesDispatchEvent::from_request(req).await?;
+        let is_binary = event.is_binary();
+        let mut resp_headers = event.x_headers();
+        let (responder, mut receiver) = mpsc::unbounded_channel();
+        handle_execution_rues(handler, event, responder).await;
+
+        let execution_response = receiver
+            .recv()
+            .await
+            .expect("An execution should always return a response");
+        resp_headers.extend(execution_response.headers.clone());
+        let mut resp = execution_response.into_http(is_binary)?;
+
+        for (k, v) in resp_headers {
+            let k = HeaderName::from_str(&k)?;
+            let v = match v {
+                serde_json::Value::String(s) => HeaderValue::from_str(&s),
+                serde_json::Value::Null => HeaderValue::from_str(""),
+                _ => HeaderValue::from_str(&v.to_string()),
+            }?;
+            resp.headers_mut().append(k, v);
+        }
+
+        Ok(resp)
     } else {
         let headers = req.headers();
 
@@ -775,12 +815,47 @@ async fn handle_execution<H>(
     let _ = responder.send(rsp);
 }
 
+async fn handle_execution_rues<H>(
+    sources: Arc<H>,
+    event: RuesDispatchEvent,
+    responder: mpsc::UnboundedSender<EventResponse>,
+) where
+    H: HandleRequest,
+{
+    let mut rsp = sources
+        .handle_rues(&event)
+        .await
+        .map(|data| {
+            let (data, mut headers) = data.into_inner();
+            headers.append(&mut event.x_headers());
+            EventResponse {
+                data,
+                error: None,
+                headers,
+            }
+        })
+        .unwrap_or_else(|e| EventResponse {
+            headers: event.x_headers(),
+            data: DataType::None,
+            error: Some(e.to_string()),
+        });
+
+    rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
+    let _ = responder.send(rsp);
+}
+
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
     fn can_handle(&self, request: &MessageRequest) -> bool;
     async fn handle(
         &self,
         request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData>;
+
+    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
+    async fn handle_rues(
+        &self,
+        request: &RuesDispatchEvent,
     ) -> anyhow::Result<ResponseData>;
 }
 
@@ -810,6 +885,16 @@ mod tests {
     impl HandleRequest for TestHandle {
         fn can_handle(&self, _request: &MessageRequest) -> bool {
             true
+        }
+
+        fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
+            false
+        }
+        async fn handle_rues(
+            &self,
+            request: &RuesDispatchEvent,
+        ) -> anyhow::Result<ResponseData> {
+            unimplemented!()
         }
 
         async fn handle(

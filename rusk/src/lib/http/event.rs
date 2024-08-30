@@ -755,6 +755,14 @@ impl Display for RuesEventUri {
 }
 
 impl RuesEventUri {
+    pub fn inner(&self) -> (&str, Option<&String>, &str) {
+        (
+            self.component.as_ref(),
+            self.entity.as_ref(),
+            self.topic.as_ref(),
+        )
+    }
+
     pub fn parse_from_path(path: &str) -> Option<Self> {
         if !path.starts_with(RUES_LOCATION_PREFIX) {
             return None;
@@ -779,9 +787,9 @@ impl RuesEventUri {
                     None => (segment, None),
                 })?;
 
-        let component = component.to_string();
+        let component = component.to_string().to_lowercase();
         let entity = entity.map(ToString::to_string);
-        let topic = path_split.next()?.to_string();
+        let topic = path_split.next()?.to_string().to_lowercase();
 
         Some(Self {
             component,
@@ -845,7 +853,44 @@ pub struct RuesEvent {
     pub data: DataType,
 }
 
-impl RuesEvent {
+/// A RUES Dispatch request event
+#[derive(Debug)]
+pub struct RuesDispatchEvent {
+    pub uri: RuesEventUri,
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: RequestData,
+}
+
+impl RuesDispatchEvent {
+    pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
+        let mut h = self.headers.clone();
+        h.retain(|k, _| k.to_lowercase().starts_with("x-"));
+        h
+    }
+
+    pub fn header(&self, name: &str) -> Option<&serde_json::Value> {
+        self.headers
+            .iter()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
+    }
+
+    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
+            let req = match v.as_str() {
+                Some(v) => VersionReq::from_str(v),
+                None => VersionReq::from_str(&v.to_string()),
+            }?;
+
+            let current = Version::from_str(&crate::VERSION)?;
+            if !req.matches(&current) {
+                return Err(anyhow::anyhow!(
+                    "Mismatched rusk version: requested {req} - current {current}",
+                ));
+            }
+        }
+        Ok(())
+    }
+
     pub fn is_binary(&self) -> bool {
         self.headers
             .get(CONTENT_TYPE)
@@ -885,17 +930,28 @@ impl RuesEvent {
         let bytes = body.collect().await?.to_bytes().to_vec();
         let data = match content_type {
             CONTENT_TYPE_BINARY => bytes.into(),
-            _ => DataType::Text(
-                String::from_utf8(bytes)
-                    .map_err(|e| anyhow::anyhow!("Invalid utf8"))?,
-            ),
+            _ => {
+                let text = String::from_utf8(bytes)
+                    .map_err(|e| anyhow::anyhow!("Invalid utf8"))?;
+                if let Some(hex) = text.strip_prefix("0x") {
+                    if let Ok(bytes) = hex::decode(hex) {
+                        bytes.into()
+                    } else {
+                        text.into()
+                    }
+                } else {
+                    text.into()
+                }
+            }
         };
 
-        let ret = RuesEvent { headers, data, uri };
+        let ret = RuesDispatchEvent { headers, data, uri };
 
         Ok(ret)
     }
+}
 
+impl RuesEvent {
     pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
         &mut self,
         key: K,
