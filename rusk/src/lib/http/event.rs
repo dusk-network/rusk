@@ -846,6 +846,56 @@ pub struct RuesEvent {
 }
 
 impl RuesEvent {
+    pub fn is_binary(&self) -> bool {
+        self.headers
+            .get(CONTENT_TYPE)
+            .map(|h| h.to_string())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+            .unwrap_or_default()
+    }
+    pub async fn from_request(req: Request<Incoming>) -> anyhow::Result<Self> {
+        let (parts, body) = req.into_parts();
+
+        let uri = RuesEventUri::parse_from_path(parts.uri.path())
+            .ok_or(anyhow::anyhow!("Invalid URL path"))?;
+
+        let headers = parts
+            .headers
+            .iter()
+            .map(|(k, v)| {
+                let v = if v.is_empty() {
+                    serde_json::Value::Null
+                } else {
+                    serde_json::from_slice::<serde_json::Value>(v.as_bytes())
+                        .unwrap_or(serde_json::Value::String(
+                            v.to_str().unwrap().to_string(),
+                        ))
+                };
+                (k.to_string().to_lowercase(), v)
+            })
+            .collect();
+
+        // HTTP REQUEST
+        let content_type = parts
+            .headers
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or_default();
+
+        let bytes = body.collect().await?.to_bytes().to_vec();
+        let data = match content_type {
+            CONTENT_TYPE_BINARY => bytes.into(),
+            _ => DataType::Text(
+                String::from_utf8(bytes)
+                    .map_err(|e| anyhow::anyhow!("Invalid utf8"))?,
+            ),
+        };
+
+        let ret = RuesEvent { headers, data, uri };
+
+        Ok(ret)
+    }
+
     pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
         &mut self,
         key: K,
