@@ -156,6 +156,7 @@ pub mod faker {
             ContractCall::new([21; 32], "some_method", &()).unwrap();
 
         let payload = PhoenixPayload {
+            chain_id: 0xFA,
             tx_skeleton,
             fee,
             exec: Some(ContractExec::Call(contract_call)),
