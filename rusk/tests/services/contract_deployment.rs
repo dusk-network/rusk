@@ -44,6 +44,7 @@ const ALICE_CONTRACT_ID: ContractId = {
 };
 
 const OWNER: [u8; 32] = [1; 32];
+const CHAIN_ID: u8 = 0xFA;
 
 const BOB_ECHO_VALUE: u64 = 775;
 const BOB_INIT_VALUE: u8 = 5;
@@ -95,8 +96,9 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk = Rusk::new(dir, None, None, BLOCK_GAS_LIMIT, u64::MAX, sender)
-        .expect("Instantiating rusk should succeed");
+    let rusk =
+        Rusk::new(dir, CHAIN_ID, None, None, BLOCK_GAS_LIMIT, u64::MAX, sender)
+            .expect("Instantiating rusk should succeed");
     Ok(rusk)
 }
 
@@ -215,7 +217,7 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm = rusk_abi::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, 0)
+        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -233,7 +235,7 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm = rusk_abi::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, 0)
+        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,

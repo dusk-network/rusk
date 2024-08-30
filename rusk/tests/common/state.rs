@@ -29,6 +29,8 @@ use tracing::info;
 
 use crate::common::keys::STAKE_SK;
 
+const CHAIN_ID: u8 = 0xFA;
+
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(
     dir: P,
@@ -42,8 +44,9 @@ pub fn new_state<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk = Rusk::new(dir, None, None, block_gas_limit, u64::MAX, sender)
-        .expect("Instantiating rusk should succeed");
+    let rusk =
+        Rusk::new(dir, CHAIN_ID, None, None, block_gas_limit, u64::MAX, sender)
+            .expect("Instantiating rusk should succeed");
 
     assert_eq!(
         commit_id,

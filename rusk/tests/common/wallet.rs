@@ -121,6 +121,11 @@ impl wallet::StateClient for TestStateClient {
         let account = self.rusk.account(pk)?;
         Ok(account)
     }
+
+    fn fetch_chain_id(&self) -> Result<u8, Self::Error> {
+        let chain_id = self.rusk.chain_id()?;
+        Ok(chain_id)
+    }
 }
 
 #[derive(Default, Debug, Clone)]

@@ -53,6 +53,7 @@ const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
+        chain_id: u8,
         generation_timeout: Option<Duration>,
         gas_per_deploy_byte: Option<u64>,
         block_gas_limit: u64,
@@ -87,6 +88,7 @@ impl Rusk {
             tip,
             vm,
             dir: dir.into(),
+            chain_id,
             generation_timeout,
             gas_per_deploy_byte,
             feeder_gas_limit,
@@ -347,6 +349,11 @@ impl Rusk {
         self.query(TRANSFER_CONTRACT, "account", pk)
     }
 
+    /// Returns an account's information.
+    pub fn chain_id(&self) -> Result<u8> {
+        self.query(TRANSFER_CONTRACT, "chain_id", &())
+    }
+
     /// Fetches the previous state data for stake changes in the contract.
     ///
     /// Communicates with the stake contract to obtain information about the
@@ -396,7 +403,12 @@ impl Rusk {
             tip.current
         });
 
-        let session = rusk_abi::new_session(&self.vm, commit, block_height)?;
+        let session = rusk_abi::new_session(
+            &self.vm,
+            commit,
+            self.chain_id,
+            block_height,
+        )?;
 
         Ok(session)
     }
