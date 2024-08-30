@@ -40,6 +40,7 @@ pub const DEFAULT_SNAPSHOT: &str =
     include_str!("../config/testnet_remote.toml");
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
+const GENESIS_CHAIN_ID: u8 = 0xFA;
 
 pub static DUSK_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let addr = include_str!("../assets/dusk.address");
@@ -171,7 +172,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     let state_dir = state_dir.as_ref();
 
     let vm = rusk_abi::new_vm(state_dir)?;
-    let mut session = rusk_abi::new_genesis_session(&vm);
+    let mut session = rusk_abi::new_genesis_session(&vm, GENESIS_CHAIN_ID);
 
     let transfer_code = include_bytes!(
         "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -259,8 +260,12 @@ where
         None => generate_empty_state(state_dir, snapshot),
     }?;
 
-    let mut session =
-        rusk_abi::new_session(&vm, old_commit_id, GENESIS_BLOCK_HEIGHT)?;
+    let mut session = rusk_abi::new_session(
+        &vm,
+        old_commit_id,
+        GENESIS_CHAIN_ID,
+        GENESIS_BLOCK_HEIGHT,
+    )?;
 
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
