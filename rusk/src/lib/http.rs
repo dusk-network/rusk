@@ -426,7 +426,6 @@ where
 enum SubscriptionAction {
     Subscribe(RuesEventUri),
     Unsubscribe(RuesEventUri),
-    Dispatch { uri: RuesEventUri, body: Incoming },
 }
 
 async fn handle_stream_rues<H: HandleRequest>(
@@ -459,17 +458,8 @@ async fn handle_stream_rues<H: HandleRequest>(
     const DISPATCH_BUFFER_SIZE: usize = 16;
 
     let mut subscription_set = HashSet::new();
-    let (dispatch_sender, dispatch_events) =
-        mpsc::channel(DISPATCH_BUFFER_SIZE);
 
-    // Join the two event receivers together, allowing for reusing the exact
-    // same code when handling them either of them.
     let mut events = BroadcastStream::new(events);
-    let mut dispatch_events = ReceiverStream::new(dispatch_events);
-
-    let mut events = events
-        .map_err(Either::Left)
-        .merge(dispatch_events.map_err(Either::Right));
 
     loop {
         tokio::select! {
@@ -502,36 +492,23 @@ async fn handle_stream_rues<H: HandleRequest>(
                     SubscriptionAction::Unsubscribe(subscription) => {
                         subscription_set.remove(&subscription);
                     },
-                    SubscriptionAction::Dispatch {
-                        uri,
-                        body
-                    } => {
-                        // TODO figure out if we should subscribe to the event we dispatch
-                        task::spawn(handle_dispatch(uri, body, handler.clone(), dispatch_sender.clone()));
-                    }
                 }
             }
 
             Some(event) = events.next() => {
                 let mut event = match event {
                     Ok(event) => event,
-                    Err(err) => match err {
-                        Either::Left(_berr) => {
-                            // If the event channel is closed, it means the
-                            // server has stopped producing events, so we
-                            // should inform the client and stop.
-                            let _ = stream.close(Some(CloseFrame {
-                                code: CloseCode::Away,
-                                reason: Cow::from("Shutting down"),
-                            })).await;
-                            break;
+                    Err(err) => {
+                        // If the event channel is closed, it means the
+                        // server has stopped producing events, so we
+                        // should inform the client and stop.
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Away,
+                            reason: Cow::from("Shutting down"),
+                        })).await;
+                        break;
 
-                        }
-                        Either::Right(_eerr) => {
-                            // TODO handle execution error
-                            continue;
-                        },
-                    },
+                    }
                 };
 
                 // The event is subscribed to if it matches any of the subscriptions.
@@ -648,6 +625,11 @@ async fn handle_request_rues<H: HandleRequest>(
         ));
 
         Ok(response.map(Into::into))
+    } else if req.method() == Method::POST {
+        let event = RuesEvent::from_request(req).await?;
+        unimplemented!("Handle rues dispatch here");
+        // TODO: Handle rues dispatch
+        // handle_dispatch(uri, body, handler, sender)
     } else {
         let headers = req.headers();
 
@@ -684,10 +666,6 @@ async fn handle_request_rues<H: HandleRequest>(
         let action = match *req.method() {
             Method::GET => SubscriptionAction::Subscribe(uri),
             Method::DELETE => SubscriptionAction::Unsubscribe(uri),
-            Method::POST => SubscriptionAction::Dispatch {
-                uri,
-                body: req.into_body(),
-            },
             _ => {
                 return response(
                     StatusCode::METHOD_NOT_ALLOWED,
