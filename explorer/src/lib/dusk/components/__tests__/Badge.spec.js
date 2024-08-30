@@ -33,4 +33,15 @@ describe("Badge", () => {
 
     expect(container.firstChild).toMatchSnapshot();
   });
+
+  it("should pass additional class names and attributes to the root element", () => {
+    const props = {
+      ...baseProps,
+      className: "foo bar",
+      id: "some-id",
+    };
+    const { container } = render(Badge, { ...props });
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

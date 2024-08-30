@@ -17,4 +17,4 @@
   ]);
 </script>
 
-<span class={classes}>{text}</span>
+<span {...$$restProps} class={classes}>{text}</span>

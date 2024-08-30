@@ -7,6 +7,7 @@
     DataGuard,
     ListItem,
     StaleDataNotice,
+    TransactionStatus,
   } from "$lib/components";
   import { Badge, Card, RelativeTime, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -102,10 +103,10 @@
     <ListItem tooltipText="The transaction status">
       <svelte:fragment slot="term">Status</svelte:fragment>
       <svelte:fragment slot="definition"
-        ><Badge
+        ><TransactionStatus
           className="transaction-details__status explorer-badge"
-          variant={data.success ? "success" : "error"}
-          text={data.success ? "success" : "failed"}
+          errorMessage={data.txerror}
+          showErrorTooltip={true}
         /></svelte:fragment
       >
     </ListItem>

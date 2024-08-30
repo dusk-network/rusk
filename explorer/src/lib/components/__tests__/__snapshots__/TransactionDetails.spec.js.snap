@@ -104,7 +104,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
         class="details-list__definition"
       >
         <span
-          class="dusk-badge dusk-badge--variant-success transaction-details__status explorer-badge"
+          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
         >
           success
         </span>
@@ -430,7 +430,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         class="details-list__definition"
       >
         <span
-          class="dusk-badge dusk-badge--variant-success transaction-details__status explorer-badge"
+          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
         >
           success
         </span>
