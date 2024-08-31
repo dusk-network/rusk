@@ -86,6 +86,7 @@ impl Transaction {
         deposit: u64,
         gas_limit: u64,
         gas_price: u64,
+        chain_id: u8,
         exec: Option<impl Into<ContractExec>>,
     ) -> Result<Self, Error> {
         let sender_pk = PublicKey::from(sender_sk);
@@ -175,6 +176,7 @@ impl Transaction {
             deposit,
         };
         let payload = Payload {
+            chain_id,
             tx_skeleton,
             fee,
             exec: exec.map(Into::into),
@@ -354,6 +356,12 @@ impl Transaction {
     #[must_use]
     pub fn gas_price(&self) -> u64 {
         self.payload.fee.gas_price
+    }
+
+    /// Returns the chain ID of the transaction.
+    #[must_use]
+    pub fn chain_id(&self) -> u8 {
+        self.payload.chain_id
     }
 
     /// Returns the max fee to be spend by the transaction.
@@ -556,6 +564,8 @@ impl Transaction {
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Payload {
+    /// ID of the chain for this transaction to execute on.
+    pub chain_id: u8,
     /// Transaction skeleton used for the phoenix transaction.
     pub tx_skeleton: TxSkeleton,
     /// Data used to calculate the transaction fee.
@@ -576,7 +586,7 @@ impl Payload {
     /// Serialize the `Payload` into a variable length byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
+        let mut bytes = Vec::from([self.chain_id]);
 
         // serialize the tx-skeleton
         let skeleton_bytes = self.tx_skeleton.to_var_bytes();
@@ -609,6 +619,8 @@ impl Payload {
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
+        let chain_id = u8::from_reader(&mut buf)?;
+
         // deserialize the tx-skeleton
         #[allow(clippy::cast_possible_truncation)]
         let skeleton_len = usize::try_from(u64::from_reader(&mut buf)?)
@@ -630,6 +642,7 @@ impl Payload {
         };
 
         Ok(Self {
+            chain_id,
             tx_skeleton,
             fee,
             exec,
@@ -642,7 +655,9 @@ impl Payload {
     /// for hashing and *cannot* be used to deserialize the `Payload` again.
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
-        let mut bytes = self.tx_skeleton.to_hash_input_bytes();
+        let mut bytes = Vec::from([self.chain_id]);
+
+        bytes.extend(self.tx_skeleton.to_hash_input_bytes());
 
         match &self.exec {
             Some(ContractExec::Deploy(d)) => {

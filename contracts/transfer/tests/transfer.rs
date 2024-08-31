@@ -7,7 +7,7 @@
 pub mod common;
 
 use crate::common::utils::{
-    account, contract_balance, create_phoenix_transaction, execute,
+    account, chain_id, contract_balance, create_phoenix_transaction, execute,
     filter_notes_owned_by, leaves_from_height, leaves_from_pos, num_notes,
     owned_notes_value, update_root,
 };
@@ -53,6 +53,7 @@ const BOB_ID: ContractId = {
 };
 
 const OWNER: [u8; 32] = [0; 32];
+const CHAIN_ID: u8 = 0xFA;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note carrying the `GENESIS_VALUE` owned by the given public key.
@@ -72,7 +73,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     );
 
-    let mut session = rusk_abi::new_genesis_session(vm);
+    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
 
     session
         .deploy(
@@ -137,7 +138,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
 
-    rusk_abi::new_session(vm, base, 1)
+    rusk_abi::new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed")
 }
 
@@ -265,6 +266,9 @@ fn moonlight_transfer() {
         "The receiver account should be empty"
     );
 
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
     let transaction = MoonlightTransaction::new(
         &moonlight_sender_sk,
         Some(moonlight_receiver_pk),
@@ -273,6 +277,7 @@ fn moonlight_transfer() {
         GAS_LIMIT,
         LUX,
         sender_account.nonce + 1,
+        chain_id,
         None::<ContractExec>,
     );
 
@@ -396,6 +401,9 @@ fn moonlight_alice_ping() {
         "The account should have the genesis value"
     );
 
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
     let transaction = MoonlightTransaction::new(
         &moonlight_sk,
         None,
@@ -404,6 +412,7 @@ fn moonlight_alice_ping() {
         GAS_LIMIT,
         LUX,
         acc.nonce + 1,
+        chain_id,
         contract_call,
     );
 
@@ -750,6 +759,9 @@ fn moonlight_to_phoenix_swap() {
             .to_vec(),
     };
 
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
     let tx = MoonlightTransaction::new(
         &moonlight_sk,
         None,
@@ -758,6 +770,7 @@ fn moonlight_to_phoenix_swap() {
         GAS_LIMIT,
         LUX,
         nonce,
+        chain_id,
         Some(contract_call),
     );
 
@@ -849,6 +862,9 @@ fn swap_wrong_contract_targeted() {
             .to_vec(),
     };
 
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
     let tx = MoonlightTransaction::new(
         &moonlight_sk,
         None,
@@ -857,6 +873,7 @@ fn swap_wrong_contract_targeted() {
         GAS_LIMIT,
         LUX,
         nonce,
+        chain_id,
         Some(contract_call),
     );
 

@@ -55,6 +55,11 @@ pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
     host_query(Query::VERIFY_BLS, (msg, pk, sig))
 }
 
+/// Get the chain ID.
+pub fn chain_id() -> u8 {
+    meta_data(Metadata::CHAIN_ID).unwrap()
+}
+
 /// Get the current block height.
 pub fn block_height() -> u64 {
     meta_data(Metadata::BLOCK_HEIGHT).unwrap()

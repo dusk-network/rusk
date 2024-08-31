@@ -342,6 +342,10 @@ impl TransferState {
         transitory::put_transaction(tx);
         let phoenix_tx = transitory::unwrap_phoenix_tx();
 
+        if phoenix_tx.chain_id() != self.chain_id() {
+            panic!("The tx must target the correct chain");
+        }
+
         // panic if the root is invalid
         if !self.root_exists(phoenix_tx.root()) {
             panic!("Root not found in the state!");
@@ -397,6 +401,10 @@ impl TransferState {
     ) -> Result<Vec<u8>, ContractError> {
         transitory::put_transaction(tx);
         let moonlight_tx = transitory::unwrap_moonlight_tx();
+
+        if moonlight_tx.chain_id() != self.chain_id() {
+            panic!("The tx must target the correct chain");
+        }
 
         // check the signature is valid and made by `from`
         if !rusk_abi::verify_bls(
@@ -675,6 +683,10 @@ impl TransferState {
     fn push_note_current_height(&mut self, note: Note) -> Note {
         let block_height = rusk_abi::block_height();
         self.push_note(block_height, note)
+    }
+
+    pub fn chain_id(&self) -> u8 {
+        rusk_abi::chain_id()
     }
 }
 

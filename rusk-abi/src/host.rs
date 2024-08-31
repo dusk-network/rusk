@@ -32,20 +32,24 @@ use crate::{Metadata, Query};
 pub fn new_session(
     vm: &VM,
     base: [u8; 32],
+    chain_id: u8,
     block_height: u64,
 ) -> Result<Session, PiecrustError> {
     vm.session(
         SessionData::builder()
             .base(base)
+            .insert(Metadata::CHAIN_ID, chain_id)?
             .insert(Metadata::BLOCK_HEIGHT, block_height)?,
     )
 }
 
 /// Create a new genesis session based on the given `vm`. The vm *must* have
 /// been created using [`new_vm`] or [`new_ephemeral_vm`].
-pub fn new_genesis_session(vm: &VM) -> Session {
+pub fn new_genesis_session(vm: &VM, chain_id: u8) -> Session {
     vm.session(
         SessionData::builder()
+            .insert(Metadata::CHAIN_ID, chain_id)
+            .expect("Inserting chain ID in metadata should succeed")
             .insert(Metadata::BLOCK_HEIGHT, 0)
             .expect("Inserting block height in metadata should succeed"),
     )

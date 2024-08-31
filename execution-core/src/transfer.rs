@@ -73,6 +73,7 @@ impl Transaction {
         deposit: u64,
         gas_limit: u64,
         gas_price: u64,
+        chain_id: u8,
         exec: Option<impl Into<ContractExec>>,
     ) -> Result<Self, Error> {
         Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
@@ -87,6 +88,7 @@ impl Transaction {
             deposit,
             gas_limit,
             gas_price,
+            chain_id,
             exec,
         )?))
     }
@@ -102,11 +104,12 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         nonce: u64,
+        chain_id: u8,
         exec: Option<impl Into<ContractExec>>,
     ) -> Self {
         Self::Moonlight(MoonlightTransaction::new(
             from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-            exec,
+            chain_id, exec,
         ))
     }
 

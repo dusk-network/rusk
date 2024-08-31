@@ -370,6 +370,9 @@ where
         let transfer_value = 0;
         let obfuscated_transaction = false;
 
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
         let tx = phoenix_transaction::<Rng, LocalProver>(
             rng,
             &sender_sk,
@@ -382,6 +385,7 @@ where
             deposit,
             gas_limit,
             gas_price,
+            chain_id,
             Some(exec),
         )?;
 
@@ -416,6 +420,9 @@ where
 
         let exec: Option<ContractExec> = None;
 
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
         let tx = phoenix_transaction::<Rng, LocalProver>(
             rng,
             &sender_sk,
@@ -428,6 +435,7 @@ where
             deposit,
             gas_limit,
             gas_price,
+            chain_id,
             exec,
         )?;
 
@@ -465,6 +473,9 @@ where
             .map_err(Error::from_state_err)?
             .nonce;
 
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
         let tx = phoenix_stake::<Rng, LocalProver>(
             rng,
             &phoenix_sender_sk,
@@ -473,6 +484,7 @@ where
             root,
             gas_limit,
             gas_price,
+            chain_id,
             stake_value,
             current_nonce,
         )?;
@@ -517,6 +529,9 @@ where
             })?
             .value;
 
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
         let tx = phoenix_unstake::<Rng, LocalProver>(
             rng,
             &phoenix_sender_sk,
@@ -526,6 +541,7 @@ where
             staked_amount,
             gas_limit,
             gas_price,
+            chain_id,
         )?;
 
         stake_sk.zeroize();
@@ -562,6 +578,9 @@ where
             .map_err(Error::from_state_err)?
             .reward;
 
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
         let tx = phoenix_stake_reward::<Rng, LocalProver>(
             rng,
             &phoenix_sender_sk,
@@ -571,6 +590,7 @@ where
             stake_reward,
             gas_limit,
             gas_price,
+            chain_id,
         )?;
 
         stake_sk.zeroize();
@@ -631,9 +651,12 @@ where
         }
         let nonce = account.nonce + 1;
 
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
         let tx = MoonlightTransaction::new(
             &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-            exec,
+            chain_id, exec,
         );
 
         seed.zeroize();

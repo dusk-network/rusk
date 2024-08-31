@@ -35,6 +35,7 @@ use tracing::info;
 use crate::common::state::new_state;
 
 const BLOCK_HEIGHT: u64 = 1;
+const CHAIN_ID: u8 = 0xFA;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
@@ -83,7 +84,7 @@ where
     rusk.with_tip(|mut tip, vm| {
         let current_commit = tip.current;
         let mut session =
-            rusk_abi::new_session(vm, current_commit, BLOCK_HEIGHT)
+            rusk_abi::new_session(vm, current_commit, CHAIN_ID, BLOCK_HEIGHT)
                 .expect("current commit should exist");
 
         session

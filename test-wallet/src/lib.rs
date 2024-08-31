@@ -143,4 +143,7 @@ pub trait StateClient {
         &self,
         pk: &BlsPublicKey,
     ) -> Result<AccountData, Self::Error>;
+
+    /// Queries for the chain ID.
+    fn fetch_chain_id(&self) -> Result<u8, Self::Error>;
 }

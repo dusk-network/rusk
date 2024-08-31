@@ -112,6 +112,12 @@ pub fn opening(
         .map(|r| r.data)
 }
 
+pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)
+        .map(|r| r.data)
+}
+
 /// Executes a transaction.
 /// Returns result containing gas spent.
 pub fn execute(
@@ -214,6 +220,9 @@ pub fn create_phoenix_transaction<const I: usize>(
         inputs.push((note.clone(), opening));
     }
 
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
     PhoenixTransaction::new::<StdRng, LocalProver>(
         rng,
         sender_sk,
@@ -226,6 +235,7 @@ pub fn create_phoenix_transaction<const I: usize>(
         deposit,
         gas_limit,
         gas_price,
+        chain_id,
         exec.map(Into::into),
     )
     .expect("creating the creation shouldn't fail")
