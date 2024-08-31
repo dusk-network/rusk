@@ -196,11 +196,21 @@ impl Withdraw {
 pub struct StakeEvent {
     /// Account associated to the event.
     pub account: BlsPublicKey,
-    /// Value of the relevant operation, be it `stake`, `unstake`, `withdraw`,
-    /// `reward`, or `slash`.
+    /// Value of the relevant operation, be it `stake`, `reward` or `slash`.
+    ///
+    /// In case of `suspended` the amount refers to the next eligibility
     pub value: u64,
-    /// The receiver of the action, relevant in `withdraw` and `unstake`
-    /// operations.
+}
+
+/// Event emitted after a stake contract operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakeWithReceiverEvent {
+    /// Account associated to the event.
+    pub account: BlsPublicKey,
+    /// Value of the relevant operation, be it `unstake` or `withdraw`.
+    pub value: u64,
+    /// The receiver of the action
     pub receiver: Option<WithdrawReceiver>,
 }
 
@@ -268,7 +278,11 @@ impl StakeData {
     ) -> Self {
         let amount = match value {
             0 => None,
-            _ => Some(StakeAmount { value, eligibility }),
+            _ => Some(StakeAmount {
+                value,
+                eligibility,
+                locked: 0,
+            }),
         };
 
         Self {
@@ -371,6 +385,8 @@ impl Serializable<STAKE_DATA_SIZE> for StakeData {
 pub struct StakeAmount {
     /// The value staked.
     pub value: u64,
+    /// The amount that has been locked (due to a soft slash).
+    pub locked: u64,
     /// The eligibility of the stake.
     pub eligibility: u64,
 }
@@ -387,7 +403,11 @@ impl StakeAmount {
     /// the `eligibility`.
     #[must_use]
     pub const fn with_eligibility(value: u64, eligibility: u64) -> Self {
-        Self { value, eligibility }
+        Self {
+            value,
+            eligibility,
+            locked: 0,
+        }
     }
 
     /// Compute the eligibility of a stake from the starting block height.
@@ -396,9 +416,14 @@ impl StakeAmount {
         let maturity_blocks = EPOCH;
         next_epoch(block_height) + maturity_blocks
     }
+    /// Move `amount` to locked value
+    pub fn lock_amount(&mut self, amount: u64) {
+        self.value -= amount;
+        self.locked += amount;
+    }
 }
 
-const STAKE_AMOUNT_SIZE: usize = u64::SIZE + u64::SIZE;
+const STAKE_AMOUNT_SIZE: usize = u64::SIZE + u64::SIZE + u64::SIZE;
 
 impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
     type Error = dusk_bytes::Error;
@@ -410,9 +435,14 @@ impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
         let mut buf = &buf[..];
 
         let value = u64::from_reader(&mut buf)?;
+        let locked = u64::from_reader(&mut buf)?;
         let eligibility = u64::from_reader(&mut buf)?;
 
-        Ok(Self { value, eligibility })
+        Ok(Self {
+            value,
+            locked,
+            eligibility,
+        })
     }
 
     #[allow(unused_must_use)]
@@ -421,6 +451,7 @@ impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
         let mut writer = &mut buf[..];
 
         writer.write(&self.value.to_bytes());
+        writer.write(&self.locked.to_bytes());
         writer.write(&self.eligibility.to_bytes());
 
         buf
