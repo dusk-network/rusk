@@ -16,8 +16,8 @@ extern crate alloc;
 pub mod keys;
 pub mod transaction;
 
-/// Length of the seed of the generated rng.
-pub const RNG_SEED: usize = 64;
+mod error;
+pub use error::Error;
 
 // The maximum amount of input notes that can be spend in one
 // phoenix-transaction
