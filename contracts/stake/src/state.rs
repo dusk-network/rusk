@@ -337,12 +337,7 @@ impl StakeState {
         let to_slash = min(to_slash, stake_amount.value);
 
         if to_slash > 0 {
-            // Move the slash amount from stake to reward and deduct contract
-            // balance
-            stake_amount.value -= to_slash;
-            stake.reward += to_slash;
-
-            Self::deduct_contract_balance(to_slash);
+            stake_amount.lock_amount(to_slash);
 
             rusk_abi::emit(
                 "slash",

@@ -51,6 +51,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
         amount: Some(StakeAmount {
             value: stake_amount,
             eligibility: 0,
+            locked: 0,
         }),
         nonce: 0,
         faults: 0,
@@ -142,6 +143,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
         amount: Some(StakeAmount {
             value: stake_amount,
             eligibility: block_height,
+            locked: 0,
         }),
         nonce: 0,
         faults: 0,
