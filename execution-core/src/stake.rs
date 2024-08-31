@@ -196,11 +196,21 @@ impl Withdraw {
 pub struct StakeEvent {
     /// Account associated to the event.
     pub account: BlsPublicKey,
-    /// Value of the relevant operation, be it `stake`, `unstake`, `withdraw`,
-    /// `reward`, or `slash`.
+    /// Value of the relevant operation, be it `stake`, `reward` or `slash`.
+    ///
+    /// In case of `suspended` the amount refers to the next eligibility
     pub value: u64,
-    /// The receiver of the action, relevant in `withdraw` and `unstake`
-    /// operations.
+}
+
+/// Event emitted after a stake contract operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakeWithReceiverEvent {
+    /// Account associated to the event.
+    pub account: BlsPublicKey,
+    /// Value of the relevant operation, be it `unstake` or `withdraw`.
+    pub value: u64,
+    /// The receiver of the action
     pub receiver: Option<WithdrawReceiver>,
 }
 
