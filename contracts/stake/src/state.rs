@@ -12,8 +12,9 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
-        next_epoch, Stake, StakeAmount, StakeData, StakeEvent, Withdraw, EPOCH,
-        MINIMUM_STAKE, STAKE_CONTRACT, STAKE_WARNINGS,
+        next_epoch, Stake, StakeAmount, StakeData, StakeEvent,
+        StakeWithReceiverEvent, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
+        STAKE_WARNINGS,
     },
     transfer::TRANSFER_CONTRACT,
 };
@@ -114,14 +115,7 @@ impl StakeState {
         loaded_stake.amount =
             Some(StakeAmount::new(value, rusk_abi::block_height()));
 
-        rusk_abi::emit(
-            "stake",
-            StakeEvent {
-                account,
-                value,
-                receiver: None,
-            },
-        );
+        rusk_abi::emit("stake", StakeEvent { account, value });
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -170,7 +164,7 @@ impl StakeState {
 
         rusk_abi::emit(
             "unstake",
-            StakeEvent {
+            StakeWithReceiverEvent {
                 account,
                 value: staked_value,
                 receiver: Some(*transfer_withdraw.receiver()),
@@ -217,10 +211,9 @@ impl StakeState {
 
         // update the state accordingly
         loaded_stake.reward = 0;
-
         rusk_abi::emit(
             "withdraw",
-            StakeEvent {
+            StakeWithReceiverEvent {
                 account,
                 value,
                 receiver: Some(*transfer_withdraw.receiver()),
@@ -280,14 +273,8 @@ impl StakeState {
 
         stake.reward += value;
 
-        rusk_abi::emit(
-            "reward",
-            StakeEvent {
-                account: *account,
-                value,
-                receiver: None,
-            },
-        );
+        let account = *account;
+        rusk_abi::emit("reward", StakeEvent { account, value });
     }
 
     /// Total amount burned since the genesis
@@ -339,7 +326,6 @@ impl StakeState {
                 StakeEvent {
                     account: *account,
                     value: stake_amount.eligibility,
-                    receiver: None,
                 },
             );
         }
@@ -363,7 +349,6 @@ impl StakeState {
                 StakeEvent {
                     account: *account,
                     value: to_slash,
-                    receiver: None,
                 },
             );
         }
@@ -414,7 +399,6 @@ impl StakeState {
             StakeEvent {
                 account: *account,
                 value: stake_amount.eligibility,
-                receiver: None,
             },
         );
 
@@ -437,7 +421,6 @@ impl StakeState {
                 StakeEvent {
                     account: *account,
                     value: to_slash,
-                    receiver: None,
                 },
             );
         }
