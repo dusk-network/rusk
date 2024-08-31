@@ -154,9 +154,33 @@ impl IterationCtx {
         let iteration = self.iter;
         let step = step_name.to_step(iteration);
 
-        // Check if this committee has been already generated
+        // Check if we already generated the committee.
+        // This will be usually the case for all Proposal steps after
+        // iteration 0
         if self.committees.get_committee(step).is_some() {
             return;
+        }
+
+        // For Validation and Ratification steps we need the next-iteration
+        // generator for the exclusion list. So we extract, it if necessary.
+        //
+        // This is not necessary in the last iteration, so we skip it
+        if step_name != StepName::Proposal && iteration < CONSENSUS_MAX_ITER - 1
+        {
+            let prop = StepName::Proposal;
+            let next_prop_step = prop.to_step(iteration + 1);
+
+            // Check if this committee has been already generated.
+            // This will be typically the case when executing the Ratification
+            // step after the Validation one
+            if self.committees.get_committee(next_prop_step).is_none() {
+                let mut next_cfg =
+                    self.get_sortition_config(seed, prop, vec![]);
+                next_cfg.step = next_prop_step;
+
+                let next_generator = Committee::new(provisioners, &next_cfg);
+                self.committees.insert(next_prop_step, next_generator);
+            }
         }
 
         // Fill up exclusion list
@@ -175,7 +199,7 @@ impl IterationCtx {
                 exclusion_list.push(cur_generator);
 
                 // Exclude generator for next iteration
-                if iteration < CONSENSUS_MAX_ITER {
+                if iteration < CONSENSUS_MAX_ITER - 1 {
                     let next_generator =
                         self.get_generator(iteration + 1).expect(
                             "Next Proposal committee to be already generated",
@@ -196,20 +220,6 @@ impl IterationCtx {
             provisioners,
             &self.get_sortition_config(seed, step_name, exclusion),
         );
-
-        if let StepName::Proposal = step_name {
-            if iteration < CONSENSUS_MAX_ITER {
-                let mut cfg_next_iteration =
-                    self.get_sortition_config(seed, step_name, vec![]);
-                cfg_next_iteration.step =
-                    StepName::Proposal.to_step(iteration + 1);
-
-                let next_iteration_generator =
-                    Committee::new(provisioners, &cfg_next_iteration);
-                self.committees
-                    .insert(cfg_next_iteration.step, next_iteration_generator);
-            }
-        }
 
         debug!(
             event = "committee_generated",
