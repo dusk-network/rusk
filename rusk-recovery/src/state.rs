@@ -127,6 +127,7 @@ fn generate_stake_state(
         let amount = (staker.amount > 0).then(|| StakeAmount {
             value: staker.amount,
             eligibility: staker.eligibility.unwrap_or_default(),
+            locked: 0,
         });
 
         let stake = StakeData {
