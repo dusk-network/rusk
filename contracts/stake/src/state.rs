@@ -138,12 +138,13 @@ impl StakeState {
 
         // ensure there is a value staked, and that the withdrawal is exactly
         // the same amount
-        let staked_value = loaded_stake
+        let stake = loaded_stake
             .amount
-            .expect("There must be an amount to unstake")
-            .value;
+            .as_ref()
+            .expect("There must be an amount to unstake");
+        let withdrawal_value = stake.locked + stake.value;
 
-        if value != staked_value {
+        if value != withdrawal_value {
             panic!("Value withdrawn different from staked amount");
         }
 
@@ -166,7 +167,7 @@ impl StakeState {
             "unstake",
             StakeWithReceiverEvent {
                 account,
-                value: staked_value,
+                value: withdrawal_value,
                 receiver: Some(*transfer_withdraw.receiver()),
             },
         );
