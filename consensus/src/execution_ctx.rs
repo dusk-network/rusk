@@ -13,7 +13,6 @@ use crate::queue::MsgRegistry;
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
 
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Block;
@@ -104,10 +103,6 @@ impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
     /// Returns true if `my pubkey` is a member of [`committee`].
     pub(crate) fn am_member(&self, committee: &Committee) -> bool {
         committee.is_member(&self.round_update.pubkey_bls)
-    }
-
-    pub(crate) fn save_committee(&mut self, step: u8, committee: Committee) {
-        self.iter_ctx.committees.insert(step, committee);
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
@@ -454,19 +449,6 @@ impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
         }
 
         None
-    }
-
-    pub fn get_sortition_config(
-        &self,
-        exclusion: Vec<PublicKeyBytes>,
-    ) -> sortition::Config {
-        sortition::Config::new(
-            self.round_update.seed(),
-            self.round_update.round,
-            self.iteration,
-            self.step_name(),
-            exclusion,
-        )
     }
 
     /// Reports step elapsed time to the client
