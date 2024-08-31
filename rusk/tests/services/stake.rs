@@ -298,12 +298,14 @@ pub async fn slash() -> Result<()> {
         .expect("balance to exists");
     let to_slash = wallet.account_public_key(0).unwrap();
     let stake = wallet.get_stake(0).unwrap();
+    let initial_stake_value = dusk(20.0);
     assert_eq!(stake.reward, dusk(3.0));
     assert_eq!(
         stake.amount,
         Some(StakeAmount {
-            value: dusk(20.0),
-            eligibility: 0
+            value: initial_stake_value,
+            eligibility: 0,
+            locked: 0
         })
     );
 
@@ -334,7 +336,8 @@ pub async fn slash() -> Result<()> {
         prev.amount,
         Some(StakeAmount {
             value: dusk(20.0),
-            eligibility: 0
+            eligibility: 0,
+            locked: 0
         })
     );
 
@@ -342,25 +345,17 @@ pub async fn slash() -> Result<()> {
     let slashed_amount = prev_stake / 10;
 
     let after_slash = wallet.get_stake(0).unwrap();
-    assert_eq!(after_slash.reward, dusk(5.0));
-    assert_eq!(after_slash.reward, prev.reward + slashed_amount);
+    assert_eq!(after_slash.reward, dusk(3.0));
     assert_eq!(
         after_slash.amount,
         Some(StakeAmount {
             value: prev_stake - slashed_amount,
-            eligibility: 4320
-        })
-    );
-    assert_eq!(
-        after_slash.amount,
-        Some(StakeAmount {
-            value: dusk(18.0),
-            eligibility: 4320
+            eligibility: 4320,
+            locked: dusk(2.0)
         })
     );
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, contract_balance - slashed_amount);
-    let contract_balance = new_balance;
+    assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
         &rusk,
@@ -375,40 +370,42 @@ pub async fn slash() -> Result<()> {
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, dusk(5.0));
+    assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(
         prev.amount,
         Some(StakeAmount {
             value: dusk(18.0),
-            eligibility: 4320
+            eligibility: 4320,
+            locked: dusk(2.0)
         })
     );
 
     let prev_stake = prev.amount.unwrap().value;
+    let prev_locked = prev.amount.unwrap().locked;
     // 20% slash
     let slashed_amount = prev_stake / 10 * 2;
 
     let after_slash = wallet.get_stake(0).unwrap();
-    assert_eq!(after_slash.reward, dusk(8.6));
-    assert_eq!(after_slash.reward, prev.reward + slashed_amount);
+    assert_eq!(after_slash.reward, dusk(3.0));
     assert_eq!(
         after_slash.amount,
         Some(StakeAmount {
             value: prev_stake - slashed_amount,
-            eligibility: 6480
+            eligibility: 6480,
+            locked: prev_locked + slashed_amount
         })
     );
     assert_eq!(
         after_slash.amount,
         Some(StakeAmount {
             value: dusk(14.4),
-            eligibility: 6480
+            eligibility: 6480,
+            locked: dusk(20.0) - dusk(14.4)
         })
     );
 
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, contract_balance - slashed_amount);
-    let contract_balance = new_balance;
+    assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
         &rusk,
@@ -423,29 +420,33 @@ pub async fn slash() -> Result<()> {
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, dusk(8.6));
+    assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(
         prev.amount,
         Some(StakeAmount {
             value: dusk(14.4),
-            eligibility: 6480
+            eligibility: 6480,
+            locked: dusk(20.0) - dusk(14.4)
         })
     );
 
     let prev_stake = prev.amount.unwrap().value;
+    let prev_locked = prev.amount.unwrap().locked;
     // 30% slash
     let slashed_amount = prev_stake / 10 * 3;
     let after_slash = wallet.get_stake(0).unwrap();
-    assert_eq!(after_slash.reward, dusk(12.92));
+
+    assert_eq!(after_slash.reward, dusk(3.0));
     assert_eq!(
         after_slash.amount,
         Some(StakeAmount {
             value: dusk(10.08),
-            eligibility: 17280
+            eligibility: 17280,
+            locked: prev_locked + slashed_amount
         })
     );
     let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
-    assert_eq!(new_balance, contract_balance - slashed_amount);
+    assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
         &rusk,
@@ -461,12 +462,13 @@ pub async fn slash() -> Result<()> {
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed").clone();
     let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, dusk(8.6));
+    assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(
         prev.amount,
         Some(StakeAmount {
             value: dusk(14.4),
-            eligibility: 6480
+            eligibility: 6480,
+            locked: dusk(20.0) - dusk(14.4)
         })
     );
 
