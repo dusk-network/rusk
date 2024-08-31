@@ -194,8 +194,8 @@ impl StakeState {
             panic!("There is no reward available to withdraw");
         }
 
-        if value != loaded_stake.reward {
-            panic!("Value withdrawn different from available reward");
+        if value > loaded_stake.reward {
+            panic!("Value withdrawn higher than available reward");
         }
 
         // check signature is correct
@@ -211,7 +211,7 @@ impl StakeState {
                 .expect("Withdrawing reward should succeed");
 
         // update the state accordingly
-        loaded_stake.reward = 0;
+        loaded_stake.reward -= value;
         rusk_abi::emit(
             "withdraw",
             StakeWithReceiverEvent {
