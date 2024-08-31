@@ -92,6 +92,10 @@ svg {
   fill: currentColor;
 }
 
+fieldset {
+  border: none;
+}
+
 #outer-container {
   background-color: var(--background-color);
   width: 60%;

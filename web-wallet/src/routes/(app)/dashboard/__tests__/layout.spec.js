@@ -10,7 +10,7 @@ import {
 import { act, cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
-import mockedWalletStore from "../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
 import Layout from "../+layout.svelte";
 import { load } from "../+layout.js";
 

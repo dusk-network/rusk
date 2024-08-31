@@ -54,4 +54,19 @@ export default [
       },
     ],
   },
+  {
+    disabled:
+      import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED &&
+      import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED === "true",
+    id: "allocate",
+    label: "Shield / Unshield",
+    operations: [
+      {
+        disabled: false,
+        id: "send",
+        label: "send",
+        primary: true,
+      },
+    ],
+  },
 ];

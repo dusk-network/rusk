@@ -1,4 +1,5 @@
 export { default as AddressPicker } from "./AddressPicker/AddressPicker.svelte";
+export { default as Allocate } from "./Allocate/Allocate.svelte";
 export { default as AppAnchor } from "./AppAnchor/AppAnchor.svelte";
 export { default as AppAnchorButton } from "./AppAnchorButton/AppAnchorButton.svelte";
 export { default as AppImage } from "./AppImage/AppImage.svelte";

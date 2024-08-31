@@ -1,6 +1,9 @@
 import { writable } from "svelte/store";
 
-/** @type {import("svelte/store").Writable<{ currentOperation: string }>} */
-const count = writable({ currentOperation: "" });
+/** @type OperationsStoreContent */
+const initialState = { currentOperation: "" };
 
-export default count;
+/** @type OperationsStore */
+const store = writable(initialState);
+
+export default store;

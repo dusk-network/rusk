@@ -5,16 +5,8 @@
   import { mdiDatabaseOutline } from "@mdi/js";
   import { StakeContract } from "$lib/containers";
   import { IconHeadingCard } from "$lib/containers/Cards";
-  import { contractDescriptors } from "$lib/contracts";
-  import { operationsStore, settingsStore } from "$lib/stores";
-
-  /** @param {string} id */
-  function updateOperation(id) {
-    operationsStore.update((store) => ({
-      ...store,
-      currentOperation: id,
-    }));
-  }
+  import { contractDescriptors, updateOperation } from "$lib/contracts";
+  import { settingsStore } from "$lib/stores";
 
   /**
    * @param {keyof SettingsStoreContent} property
@@ -32,15 +24,17 @@
   });
 </script>
 
-<IconHeadingCard
-  gap="medium"
-  heading="Staking"
-  iconPath={mdiDatabaseOutline}
-  reverse
->
-  <StakeContract
-    descriptor={contractDescriptors[1]}
-    on:operationChange={({ detail }) => updateOperation(detail)}
-    on:suppressStakingNotice={() => updateSetting("hideStakingNotice", true)}
-  />
-</IconHeadingCard>
+{#if !!import.meta.env.VITE_CONTRACT_STAKE_DISABLED}
+  <IconHeadingCard
+    gap="medium"
+    heading="Staking"
+    iconPath={mdiDatabaseOutline}
+    reverse
+  >
+    <StakeContract
+      descriptor={contractDescriptors[1]}
+      on:operationChange={({ detail }) => updateOperation(detail)}
+      on:suppressStakingNotice={() => updateSetting("hideStakingNotice", true)}
+    />
+  </IconHeadingCard>
+{/if}

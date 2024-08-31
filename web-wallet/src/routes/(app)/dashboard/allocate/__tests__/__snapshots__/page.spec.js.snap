@@ -1,0 +1,291 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Allocate > should render the allocation page 1`] = `
+<div
+  class="dusk-card dusk-card--gap-default"
+>
+  <div
+    class="dusk-card__header-container"
+  >
+    <header
+      class="dusk-card__header"
+      slot="header"
+    >
+      <div
+        class="dusk-card__heading-container dusk-card__heading-container--reverse"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4"
+        >
+          Shield / Unshield
+        </h3>
+      </div>
+    </header>
+  </div>
+   
+  <div
+    class="dusk-card__body-container"
+  >
+    <div
+      class="operation svelte-1u9bchi"
+    >
+      <div
+        class="dusk-wizard"
+      >
+         
+         
+        <div
+          class="operation__send svelte-1u9bchi"
+        >
+          <p>
+            Edit the value to change the allocation of your Dusk between your
+          shielded or public account.
+          </p>
+           
+          <fieldset
+            class="operation__fieldset svelte-1u9bchi"
+          >
+            <div
+              class="operation__send-amount operation__label svelte-1u9bchi"
+            >
+              Shielded
+            </div>
+             
+            <div
+              class="operation__send-amount operation__address operation__space-between svelte-1u9bchi"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+                />
+              </svg>
+              
+               
+              
+            </div>
+             
+            <div
+              class="operation__send-amount operation__input svelte-1u9bchi"
+            >
+              <input
+                class="dusk-textbox dusk-textbox-number operation__input-field"
+                max="-0.02"
+                min="1e-9"
+                required=""
+                step="0.000000001"
+                type="number"
+              />
+              
+               
+              <svg
+                class="dusk-icon dusk-icon--size--default"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="DUSK"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+                />
+              </svg>
+              
+            </div>
+             
+            <hr
+              class="glyph svelte-1u9bchi"
+            />
+             
+            <div
+              class="operation__send-amount operation__label svelte-1u9bchi"
+            >
+              Unshielded
+            </div>
+             
+            <div
+              class="operation__send-amount operation__address operation__space-between svelte-1u9bchi"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+                />
+              </svg>
+              
+               
+              
+            </div>
+             
+            <div
+              class="operation__send-amount operation__input svelte-1u9bchi"
+            >
+              <input
+                class="dusk-textbox dusk-textbox-number operation__input-field"
+                id="unshielded-amount"
+                max="-0.02"
+                min="1e-9"
+                required=""
+                step="0.000000001"
+                type="number"
+              />
+              
+               
+              <svg
+                class="dusk-icon dusk-icon--size--default"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="DUSK"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+                />
+              </svg>
+              
+            </div>
+          </fieldset>
+           
+          <div
+            class="gas-settings svelte-1daay07"
+          >
+            <dl
+              class="gas-settings__edit svelte-1daay07"
+            >
+              <div
+                class="gas-fee svelte-1c6b481"
+              >
+                <span>
+                  Fee:
+                </span>
+                 
+                <div
+                  class="gas-fee__amount svelte-1c6b481"
+                >
+                  <div
+                    class="gas-fee__amount-value svelte-1c6b481"
+                  >
+                    <span
+                      class="svelte-1c6b481"
+                    >
+                      max
+                    </span>
+                     
+                    <span
+                      class="svelte-1c6b481"
+                    >
+                      0.020000000
+                    </span>
+                  </div>
+                   
+                  <svg
+                    class="dusk-icon dusk-icon--size--default dusk-amount__icon"
+                    data-tooltip-id="main-tooltip"
+                    data-tooltip-text="DUSK"
+                    role="graphics-symbol"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+                    />
+                  </svg>
+                  
+                </div>
+              </div>
+              <dd>
+                <button
+                  class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--small"
+                  type="button"
+                >
+                  <span
+                    class="dusk-button__text"
+                  >
+                    EDIT
+                  </span>
+                </button>
+              </dd>
+            </dl>
+             
+          </div>
+        </div>
+         
+        <div
+          class="dusk-wizard__step-navigation"
+        >
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+            href="/some-base-path/dashboard"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+              />
+            </svg>
+            
+             
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Back
+            </span>
+            
+            
+          </a>
+          
+           
+          <button
+            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              Next
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default dusk-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"
+              />
+            </svg>
+            
+          </button>
+        </div>
+        
+        
+         
+        
+         
+        
+      </div>
+    </div>
+  </div>
+   
+</div>
+`;

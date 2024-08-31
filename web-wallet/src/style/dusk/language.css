@@ -109,9 +109,15 @@
   --checkbox-control-border-color: var(--smokey-black);
   --checkbox-control-checked-bg-color: var(--smokey-black);
 
+  /* Fieldset */
+  --fieldset-background-color: var(--light-grey);
+  --fieldset-border-radius: 1.5em;
+
   /* Dividers */
 
-  --divider-color-primary: var(--taupe-grey);
+  --divider-color-primary: var(--smokey-black);
+  --divider-background-color: var(--light-gray);
+  --divider-border-color: var(--smokey-black);
 
   /* Home animation */
 
@@ -151,6 +157,16 @@
 
   --checkbox-control-border-color: var(--light-grey);
   --checkbox-control-checked-bg-color: var(--light-grey);
+
+  /* Fieldset */
+
+  --fieldset-background-color: var(--smokey-black);
+
+  /* Dividers */
+
+  --divider-color-primary: var(--magnolia);
+  --divider-background-color: var(--smokey-black);
+  --divider-border-color: var(--magnolia);
 
   /* Home animation */
 
