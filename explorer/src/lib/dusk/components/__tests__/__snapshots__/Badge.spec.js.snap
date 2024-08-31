@@ -1,5 +1,14 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Badge > should pass additional class names and attributes to the root element 1`] = `
+<span
+  class="dusk-badge dusk-badge--variant-neutral foo bar"
+  id="some-id"
+>
+  Badge
+</span>
+`;
+
 exports[`Badge > should render the Badge component using the type "error" variant 1`] = `
 <span
   class="dusk-badge dusk-badge--variant-error"

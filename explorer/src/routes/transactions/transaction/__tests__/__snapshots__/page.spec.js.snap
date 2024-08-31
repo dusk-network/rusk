@@ -142,7 +142,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
           class="details-list__definition"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success transaction-details__status explorer-badge"
+            class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
           >
             success
           </span>

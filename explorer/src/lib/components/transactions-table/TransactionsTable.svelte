@@ -8,7 +8,7 @@
     TableHead,
     TableRow,
   } from "$lib/components/table";
-  import { AppAnchor } from "$lib/components";
+  import { AppAnchor, TransactionStatus } from "$lib/components";
   import { Badge, RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -64,9 +64,9 @@
         {/if}
         <TableCell>{numberFormatter(luxToDusk(transaction.feepaid))}</TableCell>
         <TableCell>
-          <Badge
-            variant={transaction.success ? "success" : "error"}
-            text={transaction.success ? "success" : "failed"}
+          <TransactionStatus
+            errorMessage={transaction.txerror}
+            showErrorTooltip={false}
           />
         </TableCell>
         <TableCell
