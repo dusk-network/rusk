@@ -314,7 +314,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: flex-start;
-      gap: var(--gap-medium);
+      gap: var(--medium-gap);
       align-self: stretch;
 
       border-radius: var(--fieldset-border-radius);

@@ -10,22 +10,17 @@ export default [
     disabled:
       import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED &&
       import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED === "true",
-    id: "transfer",
-    label: "Transact",
-    operations: [
-      {
-        disabled: false,
-        id: "send",
-        label: "Send",
-        primary: true,
-      },
-      {
-        disabled: false,
-        id: "receive",
-        label: "Receive",
-        primary: false,
-      },
-    ],
+    id: "send",
+    label: "Send",
+    operations: [],
+  },
+  {
+    disabled:
+      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED &&
+      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED === "true",
+    id: "receive",
+    label: "Receive",
+    operations: [],
   },
   {
     disabled:

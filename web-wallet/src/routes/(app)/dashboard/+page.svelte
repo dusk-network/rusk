@@ -3,6 +3,8 @@
 <script>
   import { filterWith, hasKeyValue } from "lamb";
   import {
+    mdiArrowBottomLeft,
+    mdiArrowTopRight,
     mdiContain,
     mdiDatabaseOutline,
     mdiSwapVertical,
@@ -25,6 +27,12 @@
     switch (contract) {
       case "allocate":
         icons = [{ path: mdiSync }];
+        break;
+      case "receive":
+        icons = [{ path: mdiArrowBottomLeft }];
+        break;
+      case "send":
+        icons = [{ path: mdiArrowTopRight }];
         break;
       case "staking":
         icons = [{ path: mdiDatabaseOutline }];

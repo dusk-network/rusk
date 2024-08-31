@@ -1,0 +1,131 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Receive > should render the receive page 1`] = `
+<div
+  class="dusk-card dusk-card--gap-medium"
+>
+  <div
+    class="dusk-card__header-container"
+  >
+    <header
+      class="dusk-card__header"
+      slot="header"
+    >
+      <div
+        class="dusk-card__heading-container dusk-card__heading-container--reverse"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4"
+        >
+          Transfer
+        </h3>
+      </div>
+    </header>
+  </div>
+   
+  <div
+    class="dusk-card__body-container"
+  >
+    <div
+      class="receive svelte-cgsnw3"
+    >
+      <figure
+        class="receive__address-qr-figure svelte-cgsnw3"
+      >
+        <p>
+          Unable to get QR code
+        </p>
+         
+        <p>
+          Error: No input text
+        </p>
+        
+         
+        <figcaption
+          class="receive__address svelte-cgsnw3"
+        >
+          <samp>
+            
+          </samp>
+        </figcaption>
+      </figure>
+       
+      <div
+        class="receive__buttons svelte-cgsnw3"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled receive__button"
+          href="/some-base-path/dashboard"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Back
+          </span>
+          
+          
+        </a>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled receive__button"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-button__text"
+          >
+            Copy
+          </span>
+          
+        </button>
+        <iframe
+          aria-hidden="true"
+          src="about:blank"
+          style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: -1;"
+          tabindex="-1"
+        />
+      </div>
+      <iframe
+        aria-hidden="true"
+        src="about:blank"
+        style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: -1;"
+        tabindex="-1"
+      />
+    </div>
+  </div>
+   
+</div>
+`;

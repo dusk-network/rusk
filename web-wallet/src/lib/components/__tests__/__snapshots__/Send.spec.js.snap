@@ -317,12 +317,13 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
     <div
       class="dusk-wizard__step-navigation"
     >
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-        type="button"
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+        href="/some-base-path/dashboard"
       >
         <svg
-          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -333,12 +334,13 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         
          
         <span
-          class="dusk-button__text"
+          class="dusk-anchor-button__text"
         >
           Back
         </span>
         
-      </button>
+        
+      </a>
       
        
       <button

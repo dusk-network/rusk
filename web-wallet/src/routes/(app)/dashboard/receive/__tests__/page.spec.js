@@ -1,14 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
-import Transfer from "../+page.svelte";
+import Receive from "../+page.svelte";
 
 vi.useFakeTimers();
 
-describe("Transfer", () => {
+describe("Receive", () => {
   afterEach(cleanup);
 
-  it("should render the transfer page", async () => {
-    const { container } = render(Transfer);
+  it("should render the receive page", async () => {
+    const { container } = render(Receive);
+
+    await vi.advanceTimersToNextTimerAsync();
 
     expect(container.firstChild).toMatchSnapshot();
   });
