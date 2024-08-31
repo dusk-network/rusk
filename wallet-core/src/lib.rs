@@ -35,24 +35,27 @@ use execution_core::{
     BlsScalar,
 };
 
-/// Filter all notes that are owned by the given keys, mapped to their
-/// nullifiers.
+/// Tuple containing Note and block height
+pub type EnrichedNote = (Note, u64);
+
+/// Filter all notes and their block height that are owned by the given keys,
+/// mapped to their nullifiers.
 pub fn map_owned(
     keys: impl AsRef<[PhoenixSecretKey]>,
-    notes: impl AsRef<[Note]>,
-) -> BTreeMap<BlsScalar, Note> {
-    notes
-        .as_ref()
-        .iter()
-        .fold(BTreeMap::new(), |mut notes_map, note| {
+    notes: impl AsRef<[EnrichedNote]>,
+) -> BTreeMap<BlsScalar, EnrichedNote> {
+    notes.as_ref().iter().fold(
+        BTreeMap::new(),
+        |mut notes_map, enriched_note| {
             for sk in keys.as_ref() {
-                if sk.owns(note.stealth_address()) {
-                    let nullifier = note.gen_nullifier(sk);
-                    notes_map.insert(nullifier, note.clone());
+                if sk.owns(enriched_note.0.stealth_address()) {
+                    let nullifier = enriched_note.0.gen_nullifier(sk);
+                    notes_map.insert(nullifier, enriched_note.clone());
                 }
             }
             notes_map
-        })
+        },
+    )
 }
 
 /// Calculate the sum for all the given [`Note`]s that belong to the given
