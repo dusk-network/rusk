@@ -44,37 +44,37 @@ fn test_map_owned() {
         PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
 
     let value = 42;
-    let notes = vec![
-        gen_note(&mut rng, true, &owner_1_pks[0], value), // owner 1
-        gen_note(&mut rng, true, &owner_1_pks[1], value), // owner 1
-        gen_note(&mut rng, true, &owner_2_pks[0], value), // owner 2
-        gen_note(&mut rng, true, &owner_2_pks[1], value), // owner 2
-        gen_note(&mut rng, true, &owner_1_pks[2], value), // owner 1
-        gen_note(&mut rng, true, &owner_3_pk, value),     // owner 3
+    let enriched_notes = vec![
+        (gen_note(&mut rng, true, &owner_1_pks[0], value), 1), // owner 1
+        (gen_note(&mut rng, true, &owner_1_pks[1], value), 1), // owner 1
+        (gen_note(&mut rng, true, &owner_2_pks[0], value), 1), // owner 2
+        (gen_note(&mut rng, true, &owner_2_pks[1], value), 1), // owner 2
+        (gen_note(&mut rng, true, &owner_1_pks[2], value), 1), // owner 1
+        (gen_note(&mut rng, true, &owner_3_pk, value), 1),     // owner 3
     ];
 
     // notes with idx 0, 1 and 4 are owned by owner_1
-    let notes_by_1 = map_owned(&owner_1_sks, &notes);
+    let notes_by_1 = map_owned(&owner_1_sks, &enriched_notes);
     assert_eq!(notes_by_1.len(), 3);
-    let note = &notes[0];
+    let note = &enriched_notes[0].0;
     let nullifier = note.gen_nullifier(&owner_1_sks[0]);
-    assert_eq!(&notes_by_1[&nullifier], note);
-    let note = &notes[1];
+    assert_eq!(&notes_by_1[&nullifier].0, note);
+    let note = &enriched_notes[1].0;
     let nullifier = note.gen_nullifier(&owner_1_sks[1]);
-    assert_eq!(&notes_by_1[&nullifier], note);
-    let note = &notes[4];
+    assert_eq!(&notes_by_1[&nullifier].0, note);
+    let note = &enriched_notes[4].0;
     let nullifier = note.gen_nullifier(&owner_1_sks[2]);
-    assert_eq!(&notes_by_1[&nullifier], note);
+    assert_eq!(&notes_by_1[&nullifier].0, note);
 
     // notes with idx 2 and 3 are owned by owner_2
-    let notes_by_2 = map_owned(&owner_2_sks, &notes);
+    let notes_by_2 = map_owned(&owner_2_sks, &enriched_notes);
     assert_eq!(notes_by_2.len(), 2);
-    let note = &notes[2];
+    let note = &enriched_notes[2].0;
     let nullifier = note.gen_nullifier(&owner_2_sks[0]);
-    assert_eq!(&notes_by_2[&nullifier], note);
-    let note = &notes[3];
+    assert_eq!(&notes_by_2[&nullifier].0, note);
+    let note = &enriched_notes[3].0;
     let nullifier = note.gen_nullifier(&owner_2_sks[1]);
-    assert_eq!(&notes_by_2[&nullifier], note);
+    assert_eq!(&notes_by_2[&nullifier].0, note);
 }
 
 #[test]

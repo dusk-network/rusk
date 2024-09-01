@@ -31,8 +31,9 @@ use execution_core::{
     BlsScalar,
 };
 
-pub use wallet_core::keys::{
-    derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+pub use wallet_core::{
+    keys::{derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk},
+    EnrichedNote,
 };
 
 pub use imp::*;
@@ -103,9 +104,6 @@ pub trait Store {
         Ok(pk)
     }
 }
-
-/// Tuple containing Note and block height
-pub type EnrichedNote = (Note, u64);
 
 /// Types that are clients of the state API.
 pub trait StateClient {
