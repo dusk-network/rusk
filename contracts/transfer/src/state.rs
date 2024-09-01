@@ -557,8 +557,24 @@ impl TransferState {
     /// Feeds the host with the leaves in the tree, starting from the given
     /// position.
     pub fn leaves_from_pos(&self, pos: u64) {
-        for leaf in self.tree.leaves_pos(pos) {
-            rusk_abi::feed(leaf.clone());
+        self.sync(pos, 0)
+    }
+
+    /// Feeds the host with the leaves in the tree (up to `count_limit`
+    /// occurrences), starting from the given `from` position.
+    ///
+    /// If `count_limit` is 0 there is no occurrences limit`
+    pub fn sync(&self, from: u64, count_limit: u64) {
+        let iter = self.tree.leaves_pos(from);
+
+        if count_limit == 0 {
+            for leaf in iter {
+                rusk_abi::feed(leaf.clone());
+            }
+        } else {
+            for leaf in iter.take(count_limit as usize) {
+                rusk_abi::feed(leaf.clone());
+            }
         }
     }
 
