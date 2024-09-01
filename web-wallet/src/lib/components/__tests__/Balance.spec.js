@@ -66,7 +66,6 @@ describe("Balance", () => {
     const { container } = render(Balance, { ...baseOptions, props });
 
     expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
-
     expect(container.firstChild).toMatchSnapshot();
   });
 
@@ -75,7 +74,24 @@ describe("Balance", () => {
     const { container } = render(Balance, { ...baseOptions, props });
 
     expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
+    expect(container.firstChild).toMatchSnapshot();
+  });
 
+  it("should display the usage indicator if there are shielded tokens", () => {
+    const props = { ...baseProps, shieldedTokensPercentage: 50, tokens: 100 };
+    const { container } = render(Balance, { ...baseOptions, props });
+
+    expect(container.querySelector(".dusk-balance__usage")).toBeInTheDocument();
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("should not display the usage indicator if there are no shielded tokens", () => {
+    const props = { ...baseProps, tokens: 100 };
+    const { container } = render(Balance, { ...baseOptions, props });
+
+    expect(
+      container.querySelector(".dusk-balance__usage")
+    ).not.toBeInTheDocument();
     expect(container.firstChild).toMatchSnapshot();
   });
 });

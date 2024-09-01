@@ -1,4 +1,9 @@
 <script>
+  /**
+   * Note: shieldedTokensPercentage props in `` is passed the same balance twice.
+   * This is because we currently don't have the separate balances
+   * for phoenix and moonlight.
+   */
   import {
     mdiAlertOutline,
     mdiCogOutline,
@@ -66,6 +71,9 @@
       locale={language}
       tokenCurrency="DUSK"
       tokens={balance.value}
+      shieldedTokensPercentage={import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED
+        ? (balance.value / balance.value) * 100
+        : undefined}
     />
 
     <slot />

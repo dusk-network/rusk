@@ -78,7 +78,9 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         <header
           class="dusk-balance__header"
         >
-          <h2>
+          <h2
+            class="sr-only"
+          >
             Your Balance:
           </h2>
         </header>
@@ -90,39 +92,61 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             2,345.000000000
           </strong>
            
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-            data-tooltip-id="balance-tooltip"
-            data-tooltip-place="right"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+          <strong>
+            DUSK
+          </strong>
         </p>
          
         <p
           class="dusk-balance__fiat"
         >
           <strong>
-            (
             $0.00
-            )
           </strong>
         </p>
          
-         
         <div
-          aria-hidden="true"
-          class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-          id="balance-tooltip"
-          role="tooltip"
-          style="left: 0px; top: 0px;"
+          class="usage-indicator dusk-balance__usage"
         >
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+            />
+          </svg>
+          
+           
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="100"
+            aria-valuetext="You have put 100% of your funds in your shielded account"
+            class="usage-indicator__meter"
+            role="meter"
+          >
+            <div
+              aria-hidden="true"
+              class="usage-indicator__meter-bar"
+              style="width: 100%;"
+            />
+          </div>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+            />
+          </svg>
           
         </div>
       </article>
@@ -272,7 +296,9 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
       <header
         class="dusk-balance__header"
       >
-        <h2>
+        <h2
+          class="sr-only"
+        >
           Your Balance:
         </h2>
       </header>
@@ -284,39 +310,61 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
           2,345.000000000
         </strong>
          
-        <svg
-          class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-          data-tooltip-id="balance-tooltip"
-          data-tooltip-place="right"
-          data-tooltip-text="DUSK"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-          />
-        </svg>
-        
+        <strong>
+          DUSK
+        </strong>
       </p>
        
       <p
         class="dusk-balance__fiat"
       >
         <strong>
-          (
           $0.00
-          )
         </strong>
       </p>
        
-       
       <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="balance-tooltip"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
+        class="usage-indicator dusk-balance__usage"
       >
+        <svg
+          class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="You have put 100% of your funds in your shielded account"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+          />
+        </svg>
+        
+         
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          aria-valuenow="100"
+          aria-valuetext="You have put 100% of your funds in your shielded account"
+          class="usage-indicator__meter"
+          role="meter"
+        >
+          <div
+            aria-hidden="true"
+            class="usage-indicator__meter-bar"
+            style="width: 100%;"
+          />
+        </div>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="You have put 0% of your funds in your unshielded account"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+          />
+        </svg>
         
       </div>
     </article>
@@ -466,7 +514,9 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         <header
           class="dusk-balance__header"
         >
-          <h2>
+          <h2
+            class="sr-only"
+          >
             Your Balance:
           </h2>
         </header>
@@ -478,39 +528,61 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             2,345.000000000
           </strong>
            
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-            data-tooltip-id="balance-tooltip"
-            data-tooltip-place="right"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+          <strong>
+            DUSK
+          </strong>
         </p>
          
         <p
           class="dusk-balance__fiat dusk-balance__fiat--visible"
         >
           <strong>
-            (
             $1,172.50
-            )
           </strong>
         </p>
          
-         
         <div
-          aria-hidden="true"
-          class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-          id="balance-tooltip"
-          role="tooltip"
-          style="left: 0px; top: 0px;"
+          class="usage-indicator dusk-balance__usage"
         >
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+            />
+          </svg>
+          
+           
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="100"
+            aria-valuetext="You have put 100% of your funds in your shielded account"
+            class="usage-indicator__meter"
+            role="meter"
+          >
+            <div
+              aria-hidden="true"
+              class="usage-indicator__meter-bar"
+              style="width: 100%;"
+            />
+          </div>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+            />
+          </svg>
           
         </div>
       </article>
@@ -682,7 +754,9 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <header
           class="dusk-balance__header"
         >
-          <h2>
+          <h2
+            class="sr-only"
+          >
             Your Balance:
           </h2>
         </header>
@@ -694,39 +768,61 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             2,345.000000000
           </strong>
            
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-            data-tooltip-id="balance-tooltip"
-            data-tooltip-place="right"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+          <strong>
+            DUSK
+          </strong>
         </p>
          
         <p
           class="dusk-balance__fiat dusk-balance__fiat--visible"
         >
           <strong>
-            (
             $1,172.50
-            )
           </strong>
         </p>
          
-         
         <div
-          aria-hidden="true"
-          class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-          id="balance-tooltip"
-          role="tooltip"
-          style="left: 0px; top: 0px;"
+          class="usage-indicator dusk-balance__usage"
         >
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+            />
+          </svg>
+          
+           
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="100"
+            aria-valuetext="You have put 100% of your funds in your shielded account"
+            class="usage-indicator__meter"
+            role="meter"
+          >
+            <div
+              aria-hidden="true"
+              class="usage-indicator__meter-bar"
+              style="width: 100%;"
+            />
+          </div>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+            />
+          </svg>
           
         </div>
       </article>

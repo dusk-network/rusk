@@ -1,6 +1,7 @@
 .dusk-balance {
   display: flex;
   flex-direction: column;
+  text-align: center;
 }
 
 .dusk-balance__header > h2 {
@@ -13,6 +14,7 @@
   display: flex;
   align-items: center;
   gap: 0.5em;
+  justify-content: center;
 }
 
 .dusk-balance__dusk > strong {
@@ -28,14 +30,14 @@
   line-height: 150%;
   letter-spacing: -0.01em;
   visibility: hidden;
+  color: var(--muted-color);
 }
 
 .dusk-balance__fiat--visible > strong {
   visibility: unset;
 }
 
-.dusk-icon.dusk-balance__icon {
-  width: 1.3125em;
-  height: 1.3125em;
-  flex-shrink: 0;
+.dusk-balance__usage {
+  padding: 0.62em 0.75em;
+  margin-top: 0.62em;
 }

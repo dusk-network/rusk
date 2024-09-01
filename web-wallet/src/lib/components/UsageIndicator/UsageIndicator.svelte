@@ -9,7 +9,10 @@
   /** @type {string | undefined} */
   export let className = undefined;
 
-  /** @type {number} */
+  /**
+   * The percentage of shielded tokens
+   * @type {number}
+   * */
   export let value;
 
   $: classes = makeClassName(["usage-indicator", className]);
