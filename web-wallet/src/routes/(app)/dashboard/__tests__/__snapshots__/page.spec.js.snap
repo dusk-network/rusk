@@ -12,12 +12,12 @@ exports[`Dashboard > should render a card when there is an error getting transac
       <li>
         <a
           class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
-          href="transfer"
+          href="send"
         >
           <span
             class="dashboard-nav-item-label svelte-5szabu"
           >
-            Transact
+            Send
           </span>
            
           <span
@@ -30,7 +30,37 @@ exports[`Dashboard > should render a card when there is an error getting transac
               viewBox="0 0 24 24"
             >
               <path
-                d="M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z"
+                d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"
+              />
+            </svg>
+            
+          </span>
+          
+        </a>
+         
+      </li>
+      <li>
+        <a
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          href="receive"
+        >
+          <span
+            class="dashboard-nav-item-label svelte-5szabu"
+          >
+            Receive
+          </span>
+           
+          <span
+            class="dashboard-nav-item-icons svelte-5szabu"
+          >
+            
+            <svg
+              class="dusk-icon dusk-icon--size--default"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z"
               />
             </svg>
             
@@ -174,12 +204,12 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       <li>
         <a
           class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
-          href="transfer"
+          href="send"
         >
           <span
             class="dashboard-nav-item-label svelte-5szabu"
           >
-            Transact
+            Send
           </span>
            
           <span
@@ -192,7 +222,37 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
               viewBox="0 0 24 24"
             >
               <path
-                d="M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z"
+                d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"
+              />
+            </svg>
+            
+          </span>
+          
+        </a>
+         
+      </li>
+      <li>
+        <a
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          href="receive"
+        >
+          <span
+            class="dashboard-nav-item-label svelte-5szabu"
+          >
+            Receive
+          </span>
+           
+          <span
+            class="dashboard-nav-item-icons svelte-5szabu"
+          >
+            
+            <svg
+              class="dusk-icon dusk-icon--size--default"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z"
               />
             </svg>
             

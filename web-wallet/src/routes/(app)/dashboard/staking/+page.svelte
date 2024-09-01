@@ -32,7 +32,7 @@
     reverse
   >
     <StakeContract
-      descriptor={contractDescriptors[1]}
+      descriptor={contractDescriptors[2]}
       on:operationChange={({ detail }) => updateOperation(detail)}
       on:suppressStakingNotice={() => updateSetting("hideStakingNotice", true)}
     />

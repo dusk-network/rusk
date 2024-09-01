@@ -2,9 +2,8 @@
 
 <script>
   import { fade } from "svelte/transition";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { mdiArrowUpBoldBoxOutline, mdiWalletOutline } from "@mdi/js";
-
   import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { validateAddress } from "$lib/dusk/string";
@@ -61,14 +60,13 @@
 
   /** @type {boolean} */
   let isNextButtonDisabled = false;
+
+  /** @type {boolean} */
   let isGasValid = false;
 
   let { gasLimit, gasPrice } = gasSettings;
 
   const minAmount = 0.000000001;
-
-  const dispatch = createEventDispatcher();
-  const resetOperation = () => dispatch("operationChange", "");
 
   onMount(() => {
     amountInput = document.querySelector(".operation__input-field");
@@ -82,7 +80,6 @@
   $: totalLuxFee = luxFee + duskToLux(amount);
   $: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
-
   $: addressValidationResult = validateAddress(address);
 </script>
 
@@ -92,8 +89,9 @@
       step={0}
       {key}
       backButton={{
-        action: resetOperation,
         disabled: false,
+        href: "/dashboard",
+        isAnchor: true,
       }}
       nextButton={{ disabled: isNextButtonDisabled }}
     >
@@ -237,7 +235,6 @@
     <WizardStep step={3} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        onBeforeLeave={resetOperation}
         operation={execute(address, amount, gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
         successMessage="Transaction completed"
@@ -246,7 +243,6 @@
           {#if hash}
             <AppAnchorButton
               href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
-              on:click={resetOperation}
               text="VIEW ON BLOCK EXPLORER"
               rel="noopener noreferrer"
               target="_blank"
