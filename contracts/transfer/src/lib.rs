@@ -94,6 +94,13 @@ unsafe fn leaves_from_pos(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |pos| STATE.leaves_from_pos(pos))
 }
 
+#[no_mangle]
+unsafe fn sync(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(from, count_limint)| {
+        STATE.sync(from, count_limint)
+    })
+}
+
 // "Management" transactions
 
 #[no_mangle]
