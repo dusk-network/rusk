@@ -185,13 +185,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 ru.base_timeouts.clone(),
             );
 
-            // TODO: load save iteration
-            let saved_iter = 0;
+            let (prev_block_hash, saved_iter) =
+                db.lock().await.get_last_iter().await;
 
-            // If starting from `saved_iter`, we regenerate all committees
-            // in case they are needed to process past-iteration messages in
-            // Emergency Mode
-            if saved_iter != 0 {
+            if ru.hash() == prev_block_hash {
+                // If starting from `saved_iter`, we regenerate all committees
+                // in case they are needed to process past-iteration messages in
+                // Emergency Mode
                 while iter <= saved_iter {
                     iter_ctx.on_begin(iter);
                     iter_ctx.generate_committee(
@@ -217,6 +217,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             loop {
                 Self::consensus_delay().await;
+                db.lock().await.store_last_iter((ru.hash(), iter)).await;
 
                 iter_ctx.on_begin(iter);
 
