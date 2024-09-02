@@ -19,9 +19,9 @@ jobs:
         with:
           filters: |
             run-ci:
-              - 'rusk/**/*
-              - 'node/**/*
-          predicate-quantifier: 'some'
+              - 'rusk/**'
+              - 'node/**'
+              - '.github/workflows/benchmarks.yml'
 
   benchmark:
     needs: changes
