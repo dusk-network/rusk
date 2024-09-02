@@ -14,7 +14,7 @@ use dusk_consensus::operations::{
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
-use node_data::ledger::{Block, Fault, Header};
+use node_data::ledger::{Block, Fault, Hash, Header};
 use node_data::message::AsyncQueue;
 
 use tokio::sync::{oneshot, Mutex, RwLock};
@@ -24,7 +24,7 @@ use tracing::{debug, info, trace, warn};
 use crate::chain::header_validation::Validator;
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
-    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION,
+    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_LAST_ITER,
 };
 use metrics::gauge;
 use node_data::{ledger, Serializable, StepName};
@@ -209,6 +209,42 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
             Err(e) => {
                 warn!("Cannot acquire lock to store candidate block: {e}");
             }
+        }
+    }
+    async fn get_last_iter(&self) -> (Hash, u8) {
+        let data = self
+            .db
+            .read()
+            .await
+            .view(|t| t.op_read(MD_LAST_ITER))
+            .unwrap_or_else(|e| {
+                warn!("Cannot read last_iter from database {e:?}");
+                None
+            })
+            .filter(|v| v.len() == 33)
+            .unwrap_or_else(|| {
+                warn!("No last_iter saved, falling back to default");
+                [0u8; 33].to_vec()
+            });
+
+        let mut hash = [0u8; 32];
+        hash.copy_from_slice(&data[0..32]);
+
+        let iter = data[32];
+
+        (hash, iter)
+    }
+    async fn store_last_iter(&mut self, (hash, iter): (Hash, u8)) {
+        let mut to_store = hash.to_vec();
+        to_store.push(iter);
+
+        if let Err(e) = self
+            .db
+            .read()
+            .await
+            .update(|t| t.op_write(MD_LAST_ITER, to_store))
+        {
+            warn!("Cannot write last_iter to database {e:?}");
         }
     }
 }
