@@ -16,6 +16,22 @@ impl HandleRequest for LocalProver {
     fn can_handle(&self, request: &MessageRequest) -> bool {
         matches!(request.event.to_route(), (_, "rusk", topic) | (_, "prover", topic) if topic.starts_with("prove_"))
     }
+    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
+        matches!(request.uri.inner(), ("prover", _, "prove"))
+    }
+    async fn handle_rues(
+        &self,
+        request: &RuesDispatchEvent,
+    ) -> anyhow::Result<ResponseData> {
+        let data = request.data.as_bytes();
+        let response = match request.uri.inner() {
+            ("prover", _, "prove") => {
+                LocalProver::prove(data).map_err(|e| anyhow!(e))?
+            }
+            _ => anyhow::bail!("Unsupported"),
+        };
+        Ok(ResponseData::new(response))
+    }
 
     async fn handle(
         &self,
