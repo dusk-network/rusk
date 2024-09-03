@@ -11,10 +11,17 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
 
+#[cfg(target_family = "wasm")]
+#[global_allocator]
+static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+
 extern crate alloc;
 
 pub mod keys;
 pub mod transaction;
+
+#[cfg(target_family = "wasm")]
+mod ffi;
 
 /// Length of the seed of the generated rng.
 pub const RNG_SEED: usize = 64;
