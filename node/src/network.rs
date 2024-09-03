@@ -12,14 +12,11 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
-use node_data::get_current_timestamp;
 use node_data::message::payload::{GetResource, Inv};
 use node_data::message::{AsyncQueue, Metadata};
-use std::sync::atomic::{AtomicU64, Ordering};
+use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
 use tracing::{error, info, trace};
-
-mod frame;
 
 /// Number of alive peers randomly selected which a `flood_request` is sent to
 const REDUNDANCY_PEER_COUNT: usize = 8;
@@ -59,10 +56,8 @@ impl<const N: usize> Listener<N> {
 impl<const N: usize> kadcast::NetworkListen for Listener<N> {
     fn on_message(&self, blob: Vec<u8>, md: MessageInfo) {
         let msg_size = blob.len();
-        match frame::Pdu::decode(&mut &blob.to_vec()[..]) {
-            Ok(d) => {
-                let mut msg = d.payload;
-
+        match Message::read(&mut &blob.to_vec()[..]) {
+            Ok(mut msg) => {
                 counter!("dusk_bytes_recv").increment(msg_size as u64);
                 counter!(format!("dusk_inbound_{:?}_size", msg.topic()))
                     .increment(msg_size as u64);
@@ -99,8 +94,6 @@ pub struct Kadcast<const N: usize> {
     filters: Arc<RwLock<FilterList<N>>>,
     conf: Config,
 
-    counter: AtomicU64,
-
     /// Represents a parsed conf.public_addr
     public_addr: SocketAddr,
 }
@@ -132,7 +125,6 @@ impl<const N: usize> Kadcast<N> {
             filters,
             peer,
             conf,
-            counter: AtomicU64::new(0),
             public_addr,
         })
     }
@@ -171,7 +163,8 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             None => None,
         };
 
-        let encoded = frame::Pdu::encode(msg, 0).map_err(|err| {
+        let mut encoded = vec![];
+        msg.write(&mut encoded).map_err(|err| {
             error!("could not encode message {msg:?}: {err}");
             anyhow::anyhow!("failed to broadcast: {err}")
         })?;
@@ -224,9 +217,8 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         recv_addr: SocketAddr,
     ) -> anyhow::Result<()> {
-        // rnd_count is added to bypass kadcast dupemap
-        let rnd_count = self.counter.fetch_add(1, Ordering::SeqCst);
-        let encoded = frame::Pdu::encode(msg, rnd_count)
+        let mut encoded = vec![];
+        msg.write(&mut encoded)
             .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {err}"))?;
         let topic = msg.topic();
 
@@ -242,7 +234,8 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         amount: usize,
     ) -> anyhow::Result<()> {
-        let encoded = frame::Pdu::encode(msg, 0)
+        let mut encoded = vec![];
+        msg.write(&mut encoded)
             .map_err(|err| anyhow::anyhow!("failed to encode: {err}"))?;
         let topic = msg.topic();
 
