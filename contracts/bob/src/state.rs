@@ -10,6 +10,7 @@ use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+    transfer::ReceiveFromContract,
     ContractId,
 };
 use rkyv::{Archive, Deserialize, Serialize};
@@ -28,11 +29,16 @@ pub struct OwnerMessage {
 pub struct Bob {
     value: u8,
     nonce: u64,
+    total_dusk: u64,
 }
 
 impl Bob {
     pub const fn new() -> Self {
-        Self { value: 0, nonce: 0 }
+        Self {
+            value: 0,
+            nonce: 0,
+            total_dusk: 0,
+        }
     }
 
     #[allow(dead_code)]
@@ -90,5 +96,9 @@ impl Bob {
 
     pub fn nonce(&mut self) -> u64 {
         self.nonce
+    }
+
+    pub fn recv_transfer(&mut self, recv: ReceiveFromContract) {
+        self.total_dusk += recv.value;
     }
 }
