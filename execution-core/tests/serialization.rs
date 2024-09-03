@@ -13,15 +13,15 @@ use execution_core::{
             ContractBytecode, ContractCall, ContractDeploy, ContractExec,
         },
         phoenix::{
-            Note, Prove, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey, TxCircuitVec, NOTES_TREE_DEPTH,
+            Note, NoteTreeItem, NotesTree, Prove,
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            TxCircuitVec,
         },
         Transaction,
     },
     BlsScalar, Error, JubJubScalar,
 };
 use ff::Field;
-use poseidon_merkle::{Item, Tree};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
@@ -86,9 +86,9 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
     input_2.set_pos(2);
     let notes = vec![input_0, input_1, input_2];
 
-    let mut notes_tree = Tree::<(), NOTES_TREE_DEPTH>::new();
+    let mut notes_tree = NotesTree::new();
     for note in notes.iter() {
-        let item = Item {
+        let item = NoteTreeItem {
             hash: note.hash(),
             data: (),
         };

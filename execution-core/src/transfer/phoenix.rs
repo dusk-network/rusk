@@ -14,7 +14,6 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use dusk_poseidon::{Domain, Hash};
 use ff::Field;
-use poseidon_merkle::Opening;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -29,19 +28,36 @@ use crate::{
 };
 
 // phoenix types
+pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
 pub use phoenix_core::{
     value_commitment, Error as CoreError, Note, PublicKey, SecretKey, Sender,
     StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
 };
 
-pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
+/// The depth of the merkle tree of notes stored in the transfer-contract.
+pub const NOTES_TREE_DEPTH: usize = 17;
+/// The arity of the merkle tree of notes stored in the transfer-contract.
+pub use poseidon_merkle::ARITY as NOTES_TREE_ARITY;
+/// The merkle tree of notes stored in the transfer-contract.
+pub type NotesTree = poseidon_merkle::Tree<(), NOTES_TREE_DEPTH>;
+/// The merkle opening for a note-hash in the merkle tree of notes.
+pub type NoteOpening = poseidon_merkle::Opening<(), NOTES_TREE_DEPTH>;
+/// the tree item for the merkle-tree of notes stored in the transfer-contract.
+pub type NoteTreeItem = poseidon_merkle::Item<()>;
+
+/// A leaf of the merkle tree of notes stored in the transfer-contract.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct NoteLeaf {
+    /// The height of the block when the note was inserted in the tree.
+    pub block_height: u64,
+    /// The note inserted in the tree.
+    pub note: Note,
+}
 
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
-
-/// The depth of the transfer tree.
-pub const NOTES_TREE_DEPTH: usize = 17;
 
 /// Phoenix transaction.
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
@@ -79,7 +95,7 @@ impl Transaction {
         sender_sk: &SecretKey,
         change_pk: &PublicKey,
         receiver_pk: &PublicKey,
-        inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
+        inputs: Vec<(Note, NoteOpening)>,
         root: BlsScalar,
         transfer_value: u64,
         obfuscated_transaction: bool,
@@ -834,15 +850,6 @@ impl Serializable<SIZE> for Fee {
             sender,
         })
     }
-}
-/// A leaf of the transfer tree.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct TreeLeaf {
-    /// The height of the block when the note was inserted in the tree.
-    pub block_height: u64,
-    /// The note inserted in the tree.
-    pub note: Note,
 }
 
 /// This struct mimics the [`TxCircuit`] but is not generic over the amount of
