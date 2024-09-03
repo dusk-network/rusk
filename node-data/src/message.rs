@@ -53,6 +53,16 @@ pub struct Message {
     pub metadata: Option<Metadata>,
 }
 
+pub trait WireMessage: Into<Payload> {
+    const TOPIC: Topics;
+    fn consensus_header(&self) -> ConsensusHeader {
+        ConsensusHeader::default()
+    }
+    fn payload(self) -> Payload {
+        self.into()
+    }
+}
+
 impl Message {
     pub fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
         self.header
@@ -120,31 +130,17 @@ impl Serializable for Message {
     {
         // Read topic
         let topic = Topics::from(Self::read_u8(r)?);
-        let message = match topic {
-            Topics::Candidate => {
-                Message::new_candidate(payload::Candidate::read(r)?)
-            }
-            Topics::Validation => {
-                Message::new_validation(payload::Validation::read(r)?)
-            }
-            Topics::Ratification => {
-                Message::new_ratification(payload::Ratification::read(r)?)
-            }
-            Topics::Quorum => Message::new_quorum(payload::Quorum::read(r)?),
-            Topics::Block => Message::new_block(ledger::Block::read(r)?),
-            Topics::Tx => {
-                Message::new_transaction(ledger::Transaction::read(r)?)
-            }
-            Topics::GetResource => {
-                Message::new_get_resource(payload::GetResource::read(r)?)
-            }
-            Topics::GetBlocks => {
-                Message::new_get_blocks(payload::GetBlocks::read(r)?)
-            }
-            Topics::GetMempool => {
-                Message::new_get_mempool(payload::GetMempool::read(r)?)
-            }
-            Topics::Inv => Message::new_inv(payload::Inv::read(r)?),
+        let message: Message = match topic {
+            Topics::Candidate => payload::Candidate::read(r)?.into(),
+            Topics::Validation => payload::Validation::read(r)?.into(),
+            Topics::Ratification => payload::Ratification::read(r)?.into(),
+            Topics::Quorum => payload::Quorum::read(r)?.into(),
+            Topics::Block => ledger::Block::read(r)?.into(),
+            Topics::Tx => ledger::Transaction::read(r)?.into(),
+            Topics::GetResource => payload::GetResource::read(r)?.into(),
+            Topics::GetBlocks => payload::GetBlocks::read(r)?.into(),
+            Topics::GetMempool => payload::GetMempool::read(r)?.into(),
+            Topics::Inv => payload::Inv::read(r)?.into(),
             Topics::Unknown => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -157,110 +153,74 @@ impl Serializable for Message {
     }
 }
 
+impl<W: WireMessage> From<W> for Message {
+    fn from(wire_msg: W) -> Self {
+        Self {
+            header: wire_msg.consensus_header(),
+            topic: W::TOPIC,
+            payload: wire_msg.payload(),
+            ..Default::default()
+        }
+    }
+}
+
+impl WireMessage for Candidate {
+    const TOPIC: Topics = Topics::Candidate;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for Validation {
+    const TOPIC: Topics = Topics::Validation;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for Ratification {
+    const TOPIC: Topics = Topics::Ratification;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for payload::Quorum {
+    const TOPIC: Topics = Topics::Quorum;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for payload::GetMempool {
+    const TOPIC: Topics = Topics::GetMempool;
+}
+
+impl WireMessage for payload::Inv {
+    const TOPIC: Topics = Topics::Inv;
+}
+
+impl WireMessage for payload::GetBlocks {
+    const TOPIC: Topics = Topics::GetBlocks;
+}
+
+impl WireMessage for payload::GetResource {
+    const TOPIC: Topics = Topics::GetResource;
+}
+
+impl WireMessage for ledger::Block {
+    const TOPIC: Topics = Topics::Block;
+}
+
+impl WireMessage for ledger::Transaction {
+    const TOPIC: Topics = Topics::Tx;
+}
+
+impl WireMessage for payload::ValidationResult {
+    const TOPIC: Topics = Topics::Unknown;
+}
+
 impl Message {
-    /// Creates topics.Candidate message
-    pub fn new_candidate(payload: payload::Candidate) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Candidate,
-            payload: Payload::Candidate(Box::new(payload)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Ratification message
-    pub fn new_ratification(payload: payload::Ratification) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Ratification,
-            payload: Payload::Ratification(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Validation message
-    pub fn new_validation(payload: payload::Validation) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Validation,
-            payload: Payload::Validation(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Quorum message
-    pub fn new_quorum(payload: payload::Quorum) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Quorum,
-            payload: Payload::Quorum(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Block message
-    pub fn new_block(payload: ledger::Block) -> Message {
-        Self {
-            topic: Topics::Block,
-            payload: Payload::Block(Box::new(payload)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Inv (inventory) message
-    pub fn new_inv(p: payload::Inv) -> Message {
-        Self {
-            topic: Topics::Inv,
-            payload: Payload::Inv(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetResource  message
-    pub fn new_get_resource(p: payload::GetResource) -> Message {
-        Self {
-            topic: Topics::GetResource,
-            payload: Payload::GetResource(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetMempool message
-    pub fn new_get_mempool(p: payload::GetMempool) -> Message {
-        Self {
-            topic: Topics::GetMempool,
-            payload: Payload::GetMempool(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetBlocks  message
-    pub fn new_get_blocks(p: payload::GetBlocks) -> Message {
-        Self {
-            topic: Topics::GetBlocks,
-            payload: Payload::GetBlocks(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Tx  message
-    pub fn new_transaction(tx: ledger::Transaction) -> Message {
-        Self {
-            topic: Topics::Tx,
-            payload: Payload::Transaction(Box::new(tx)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates a message with a validation_result
-    pub fn from_validation_result(p: payload::ValidationResult) -> Message {
-        Self {
-            topic: Topics::default(),
-            payload: Payload::ValidationResult(Box::new(p)),
-            ..Default::default()
-        }
-    }
-
     /// Creates a unknown message with empty payload
     pub fn empty() -> Message {
         Self {
@@ -358,6 +318,65 @@ pub enum Payload {
 
     #[default]
     Empty,
+}
+
+impl From<payload::Ratification> for Payload {
+    fn from(value: payload::Ratification) -> Self {
+        Self::Ratification(value)
+    }
+}
+
+impl From<payload::Validation> for Payload {
+    fn from(value: payload::Validation) -> Self {
+        Self::Validation(value)
+    }
+}
+
+impl From<payload::Candidate> for Payload {
+    fn from(value: payload::Candidate) -> Self {
+        Self::Candidate(Box::new(value))
+    }
+}
+impl From<payload::Quorum> for Payload {
+    fn from(value: payload::Quorum) -> Self {
+        Self::Quorum(value)
+    }
+}
+impl From<ledger::Block> for Payload {
+    fn from(value: ledger::Block) -> Self {
+        Self::Block(Box::new(value))
+    }
+}
+impl From<ledger::Transaction> for Payload {
+    fn from(value: ledger::Transaction) -> Self {
+        Self::Transaction(Box::new(value))
+    }
+}
+impl From<payload::GetMempool> for Payload {
+    fn from(value: payload::GetMempool) -> Self {
+        Self::GetMempool(value)
+    }
+}
+impl From<payload::Inv> for Payload {
+    fn from(value: payload::Inv) -> Self {
+        Self::Inv(value)
+    }
+}
+impl From<payload::GetBlocks> for Payload {
+    fn from(value: payload::GetBlocks) -> Self {
+        Self::GetBlocks(value)
+    }
+}
+impl From<payload::GetResource> for Payload {
+    fn from(value: payload::GetResource) -> Self {
+        Self::GetResource(value)
+    }
+}
+
+impl From<payload::ValidationResult> for Payload {
+    fn from(value: payload::ValidationResult) -> Self {
+        Self::ValidationResult(Box::new(value))
+    }
 }
 
 pub mod payload {
@@ -711,7 +730,7 @@ pub mod payload {
     }
 
     #[derive(Debug, Clone, Default)]
-    pub struct GetMempool {}
+    pub struct GetMempool;
 
     impl Serializable for GetMempool {
         fn write<W: Write>(&self, _w: &mut W) -> io::Result<()> {
@@ -722,7 +741,7 @@ pub mod payload {
         where
             Self: Sized,
         {
-            Ok(GetMempool::default())
+            Ok(GetMempool)
         }
     }
 
