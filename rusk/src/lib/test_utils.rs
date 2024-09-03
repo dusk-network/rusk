@@ -20,13 +20,12 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeData, STAKE_CONTRACT},
     transfer::{
-        phoenix::{Note, TreeLeaf, ViewKey, NOTES_TREE_DEPTH},
+        phoenix::{Note, NoteLeaf, NoteOpening, ViewKey},
         TRANSFER_CONTRACT,
     },
     BlsScalar, ContractId,
 };
 use parking_lot::RwLockWriteGuard;
-use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::VM;
 
 pub type StoredNote = (Note, u64);
@@ -62,10 +61,7 @@ impl Rusk {
     }
 
     /// Returns the opening of the transfer tree at the given position.
-    pub fn tree_opening(
-        &self,
-        pos: u64,
-    ) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>> {
+    pub fn tree_opening(&self, pos: u64) -> Result<Option<NoteOpening>> {
         self.query(TRANSFER_CONTRACT, "opening", &pos)
     }
 
@@ -111,7 +107,7 @@ impl Rusk {
         // expected output
         let stream =
             tokio_stream::iter(receiver.into_iter().filter_map(move |bytes| {
-                let leaf = rkyv::from_bytes::<TreeLeaf>(&bytes)
+                let leaf = rkyv::from_bytes::<NoteLeaf>(&bytes)
                     .expect("The contract should always return valid leaves");
                 match &vk {
                     Some(vk) => vk
