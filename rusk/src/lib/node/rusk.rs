@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
@@ -124,6 +125,9 @@ impl Rusk {
 
         let mut event_hasher = Sha3_256::new();
 
+        let mut pending = HashMap::new();
+        let mut last_tx_account = None;
+
         for unspent_tx in txs {
             if let Some(timeout) = self.generation_timeout {
                 if started.elapsed() > timeout {
@@ -169,6 +173,11 @@ impl Rusk {
                     let err = receipt.data.err().map(|e| format!("{e}"));
                     info!("Tx {tx_id} executed with {gas_spent} gas and err {err:?}");
 
+                    last_tx_account = unspent_tx
+                        .inner
+                        .from_account()
+                        .map(|s| s.to_raw_bytes());
+
                     update_hasher(&mut event_hasher, &receipt.events);
 
                     block_gas_left -= gas_spent;
@@ -190,6 +199,15 @@ impl Rusk {
 
                     // TODO: Try to process the transaction as soon as the
                     // nonce is unlocked
+                    if let ProtocolTransaction::Moonlight(m) = &unspent_tx.inner
+                    {
+                        let sender = m.from_account();
+                        let nonce = m.nonce();
+                        let account_queue = pending
+                            .entry(sender.to_raw_bytes())
+                            .or_insert(BTreeMap::new());
+                        account_queue.insert(nonce, unspent_tx);
+                    }
                 }
                 Err(e) => {
                     info!("discard tx {tx_id} due to {e:?}");
