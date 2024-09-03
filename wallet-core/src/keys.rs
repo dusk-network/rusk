@@ -14,7 +14,7 @@ use sha2::{Digest, Sha256};
 use zeroize::Zeroize;
 
 use execution_core::{
-    signatures::bls::SecretKey as BlsSecretKey,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     transfer::phoenix::{
         PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
         ViewKey as PhoenixViewKey,
@@ -32,6 +32,18 @@ pub fn derive_bls_sk(seed: &[u8; RNG_SEED], index: u8) -> BlsSecretKey {
     // generated keys will become invalid
     // NOTE: When breaking the keys, we will want to change the string too
     BlsSecretKey::random(&mut rng_with_index(seed, index, b"SK"))
+}
+
+/// Generates a [`BlsPublicKey`] from a seed and index.
+///
+/// The randomness is generated using [`rng_with_index`].
+#[must_use]
+pub fn derive_bls_pk(seed: &[u8; RNG_SEED], index: u8) -> BlsPublicKey {
+    let mut sk = derive_bls_sk(seed, index);
+    let pk = BlsPublicKey::from(&sk);
+    sk.zeroize();
+
+    pk
 }
 
 /// Generates a [`PhoenixSecretKey`] from a seed and index.
