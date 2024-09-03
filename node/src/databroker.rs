@@ -268,7 +268,7 @@ impl DataBrokerSrv {
             })
             .map_err(|e| anyhow::anyhow!(e))?;
 
-        Ok(Message::new_inv(inv))
+        Ok(inv.into())
     }
 
     /// Handles GetBlocks message request.
@@ -316,7 +316,7 @@ impl DataBrokerSrv {
             })
             .map_err(|e| anyhow::anyhow!(e))?;
 
-        Ok(Message::new_inv(inv))
+        Ok(inv.into())
     }
 
     /// Handles inventory message request.
@@ -391,12 +391,7 @@ impl DataBrokerSrv {
         // Send GetResource request with disabled rebroadcast (hops_limit = 1),
         // Inv message is part of one-to-one messaging flows
         // (GetBlocks/Mempool) so it should not be treated as flooding request
-        Ok(Message::new_get_resource(GetResource::new(
-            inv,
-            requester_addr,
-            u64::MAX,
-            1,
-        )))
+        Ok(GetResource::new(inv, requester_addr, u64::MAX, 1).into())
     }
 
     /// Handles GetResource message request.
@@ -424,7 +419,7 @@ impl DataBrokerSrv {
                             Ledger::fetch_block_by_height(&t, *height)
                                 .ok()
                                 .flatten()
-                                .map(Message::new_block)
+                                .map(Message::from)
                         } else {
                             None
                         }
@@ -434,7 +429,7 @@ impl DataBrokerSrv {
                             Ledger::fetch_block(&t, hash)
                                 .ok()
                                 .flatten()
-                                .map(Message::new_block)
+                                .map(Message::from)
                         } else {
                             None
                         }
@@ -449,7 +444,7 @@ impl DataBrokerSrv {
                                         .ok()
                                         .flatten()
                                 })
-                                .map(Message::new_block)
+                                .map(Message::from)
                         } else {
                             None
                         }
@@ -459,7 +454,7 @@ impl DataBrokerSrv {
                             Mempool::get_tx(&t, *tx_id)
                                 .ok()
                                 .flatten()
-                                .map(Message::new_transaction)
+                                .map(Message::from)
                         } else {
                             None
                         }

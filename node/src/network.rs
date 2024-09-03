@@ -208,16 +208,14 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         let ttl_as_sec = ttl_as_sec
             .map_or_else(|| u64::MAX, |v| get_current_timestamp() + v);
 
-        self.send_to_alive_peers(
-            &Message::new_get_resource(GetResource::new(
-                msg_inv.clone(),
-                self.public_addr,
-                ttl_as_sec,
-                hops_limit,
-            )),
-            REDUNDANCY_PEER_COUNT,
+        let msg = GetResource::new(
+            msg_inv.clone(),
+            self.public_addr,
+            ttl_as_sec,
+            hops_limit,
         )
-        .await
+        .into();
+        self.send_to_alive_peers(&msg, REDUNDANCY_PEER_COUNT).await
     }
 
     /// Sends an encoded message to a given peer.

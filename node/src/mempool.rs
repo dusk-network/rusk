@@ -247,11 +247,11 @@ impl MempoolSrv {
             .mempool_download_redundancy
             .unwrap_or(DEFAULT_DOWNLOAD_REDUNDANCY);
 
-        let payload = payload::GetMempool {};
+        let msg = payload::GetMempool.into();
         if let Err(err) = network
             .read()
             .await
-            .send_to_alive_peers(&Message::new_get_mempool(payload), max_peers)
+            .send_to_alive_peers(&msg, max_peers)
             .await
         {
             error!("could not request mempool from network: {err}");

@@ -119,9 +119,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             self.blacklisted_blocks.write().await.clear();
 
             // Request missing blocks since my last finalized block
-            let get_blocks = Message::new_get_blocks(GetBlocks {
+            let get_blocks = GetBlocks {
                 locator: last_finalized.header().hash,
-            });
+            }
+            .into();
             if let Err(e) = self
                 .network
                 .read()
@@ -674,11 +675,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let req = GetResource::new(inv, this_peer, u64::MAX, 1);
         debug!(event = "request block by height", ?req, ?peer_addr);
 
-        if let Err(err) = network
-            .read()
-            .await
-            .send_to_peer(&Message::new_get_resource(req), peer_addr)
-            .await
+        let req = req.into();
+        if let Err(err) =
+            network.read().await.send_to_peer(&req, peer_addr).await
         {
             warn!("could not request block {err}")
         }
@@ -745,7 +744,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         );
 
         // Request missing blocks from source peer
-        let gb_msg = Message::new_get_blocks(GetBlocks { locator });
+        let gb_msg = GetBlocks { locator }.into();
 
         if let Err(e) = self
             .network
