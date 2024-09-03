@@ -6,9 +6,12 @@
 
 use dusk_bytes::Serializable;
 
-use wallet_core::keys::{
-    derive_bls_sk, derive_multiple_phoenix_sk, derive_phoenix_pk,
-    derive_phoenix_sk, derive_phoenix_vk,
+use wallet_core::{
+    keys::{
+        derive_bls_sk, derive_multiple_phoenix_sk, derive_phoenix_pk,
+        derive_phoenix_sk, derive_phoenix_vk, seed_from_mnemonic,
+    },
+    Error,
 };
 
 const SEED: [u8; 64] = [0; 64];
@@ -85,4 +88,32 @@ fn test_derive_bls_sk() {
         86,
     ];
     assert_eq!(derive_bls_sk(&SEED, INDEX).to_bytes(), sk_bytes);
+}
+
+#[test]
+fn test_seed_from_mnemonic() -> Result<(), Error> {
+    let phrase = "park remain person kitchen mule spell knee armed position rail grid ankle";
+    let seed = seed_from_mnemonic(phrase)?;
+
+    let expected = [
+        104, 198, 132, 173, 250, 171, 90, 57, 70, 89, 159, 147, 207, 142, 133,
+        101, 48, 182, 157, 50, 109, 9, 34, 245, 93, 239, 191, 96, 248, 217,
+        146, 204, 136, 50, 182, 115, 192, 152, 85, 232, 62, 33, 90, 52, 137,
+        80, 206, 214, 90, 82, 64, 61, 252, 21, 236, 26, 124, 114, 93, 91, 137,
+        19, 255, 112,
+    ];
+    assert_eq!(seed, expected);
+
+    let invalid_phrase = "Now I need a drink alcoholic of course after the heavy chapters involving quantum mechanics";
+    assert_eq!(
+        seed_from_mnemonic(invalid_phrase).unwrap_err(),
+        Error::InvalidMnemonicPhrase
+    );
+
+    assert_eq!(
+        seed_from_mnemonic("").unwrap_err(),
+        Error::InvalidMnemonicPhrase
+    );
+
+    Ok(())
 }

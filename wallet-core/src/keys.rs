@@ -9,6 +9,9 @@
 use alloc::vec::Vec;
 use core::ops::Range;
 
+#[cfg(feature = "std")]
+use bip39::{Language, Mnemonic};
+
 use rand_chacha::{rand_core::SeedableRng, ChaCha12Rng};
 use sha2::{Digest, Sha256};
 use zeroize::Zeroize;
@@ -21,13 +24,17 @@ use execution_core::{
     },
 };
 
-use crate::RNG_SEED;
+/// Length of the seed of the generated rng.
+const RNG_SEED: usize = 64;
+
+/// The seed used to generate the keys.
+pub type Seed = [u8; RNG_SEED];
 
 /// Generates a [`BlsSecretKey`] from a seed and index.
 ///
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
-pub fn derive_bls_sk(seed: &[u8; RNG_SEED], index: u8) -> BlsSecretKey {
+pub fn derive_bls_sk(seed: &Seed, index: u8) -> BlsSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
     // NOTE: When breaking the keys, we will want to change the string too
@@ -38,7 +45,7 @@ pub fn derive_bls_sk(seed: &[u8; RNG_SEED], index: u8) -> BlsSecretKey {
 ///
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
-pub fn derive_phoenix_sk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixSecretKey {
+pub fn derive_phoenix_sk(seed: &Seed, index: u8) -> PhoenixSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
     // NOTE: When breaking the keys, we will want to change the string too
@@ -50,7 +57,7 @@ pub fn derive_phoenix_sk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixSecretKey {
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
 pub fn derive_multiple_phoenix_sk(
-    seed: &[u8; RNG_SEED],
+    seed: &Seed,
     index_range: Range<u8>,
 ) -> Vec<PhoenixSecretKey> {
     index_range
@@ -64,7 +71,7 @@ pub fn derive_multiple_phoenix_sk(
 /// the public key is generated from it and the secret key is erased from
 /// memory.
 #[must_use]
-pub fn derive_phoenix_pk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixPublicKey {
+pub fn derive_phoenix_pk(seed: &Seed, index: u8) -> PhoenixPublicKey {
     let mut sk = derive_phoenix_sk(seed, index);
     let pk = PhoenixPublicKey::from(&sk);
     sk.zeroize();
@@ -77,7 +84,7 @@ pub fn derive_phoenix_pk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixPublicKey {
 /// First the [`PhoenixSecretKey`] is derived with [`derive_phoenix_sk`], then
 /// the view key is generated from it and the secret key is erased from memory.
 #[must_use]
-pub fn derive_phoenix_vk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixViewKey {
+pub fn derive_phoenix_vk(seed: &Seed, index: u8) -> PhoenixViewKey {
     let mut sk = derive_phoenix_sk(seed, index);
     let vk = PhoenixViewKey::from(&sk);
     sk.zeroize();
@@ -93,11 +100,7 @@ pub fn derive_phoenix_vk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixViewKey {
 /// resulting hash is then used to seed a `ChaCha12` CSPRNG, which is
 /// subsequently used to generate the key.
 #[must_use]
-pub fn rng_with_index(
-    seed: &[u8; RNG_SEED],
-    index: u8,
-    termination: &[u8],
-) -> ChaCha12Rng {
+fn rng_with_index(seed: &Seed, index: u8, termination: &[u8]) -> ChaCha12Rng {
     // NOTE: to not break the test-keys, we cast to a u64 here. Once we are
     // ready to use the new keys, the index should not be cast to a u64
     // anymore.
@@ -110,4 +113,29 @@ pub fn rng_with_index(
 
     let hash = hash.finalize().into();
     ChaCha12Rng::from_seed(hash)
+}
+
+/// Creates a new seed derived from a valid BIP39 mnemonic phrase.
+#[cfg(feature = "std")]
+pub fn seed_from_mnemonic<P>(phrase: P) -> Result<Seed, crate::Error>
+where
+    P: Into<String>,
+{
+    // generate mnemonic
+    let phrase: String = phrase.into();
+    let try_mnem = Mnemonic::from_phrase(&phrase, Language::English);
+
+    if let Ok(mnemonic) = try_mnem {
+        // derive the mnemonic seed
+        let bip39_seed = bip39::Seed::new(&mnemonic, "");
+
+        // Generate a Seed type from the mnemonic Seed bytes
+        let mut seed = [0u8; RNG_SEED];
+        seed.copy_from_slice(bip39_seed.as_bytes());
+
+        // return new wallet instance
+        Ok(seed)
+    } else {
+        Err(crate::Error::InvalidMnemonicPhrase)
+    }
 }

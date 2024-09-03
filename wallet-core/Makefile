@@ -15,6 +15,7 @@ wasm: ## Build the WASM files
 	CARGO_TARGET_DIR=$(TARGET_DIR) \
 	cargo +dusk build \
 		--release \
+		--no-default-features \
 		--color=always \
 		-Z build-std=core,alloc \
 		--target wasm64-unknown-unknown
