@@ -7,6 +7,7 @@
 pub mod contract_deployment;
 pub mod gas_behavior;
 pub mod multi_transfer;
+pub mod owner_calls;
 pub mod stake;
 pub mod transfer;
 pub mod unspendable;
