@@ -6,16 +6,15 @@
 
 use std::sync::mpsc;
 
-use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 
 use execution_core::{
     transfer::{
         contract_exec::ContractExec,
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, TreeLeaf,
-            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
+            Note, NoteLeaf, NoteOpening, NoteTreeItem,
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
         },
         Transaction, TRANSFER_CONTRACT,
     },
@@ -29,7 +28,7 @@ const POINT_LIMIT: u64 = 0x100000000;
 pub fn leaves_from_height(
     session: &mut Session,
     height: u64,
-) -> Result<Vec<TreeLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -49,7 +48,7 @@ pub fn leaves_from_height(
 pub fn leaves_from_pos(
     session: &mut Session,
     pos: u64,
-) -> Result<Vec<TreeLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -81,7 +80,7 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>, PiecrustError> {
+) -> Result<Option<NoteOpening>, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
         .map(|r| r.data)
@@ -177,10 +176,7 @@ pub fn create_transaction<const I: usize>(
             .expect("An opening should exist for a note in the tree");
 
         // sanity check of the merkle opening
-        assert!(opening.verify(poseidon_merkle::Item::new(
-            rusk_abi::poseidon_hash(note.hash_inputs().to_vec()),
-            ()
-        )));
+        assert!(opening.verify(NoteTreeItem::new(note.hash(), ())));
 
         inputs.push((note.clone(), opening));
     }
