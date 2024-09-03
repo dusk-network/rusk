@@ -19,7 +19,6 @@ use execution_core::{
             PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
         },
     },
-    transfer::phoenix::PublicKey as PhoenixPublicKey,
     BlsScalar,
 };
 
@@ -72,11 +71,11 @@ impl HostFnTest {
         rusk_abi::block_height()
     }
 
-    pub fn owner(&self) -> PhoenixPublicKey {
+    pub fn owner(&self) -> BlsPublicKey {
         rusk_abi::self_owner()
     }
 
-    pub fn owner_raw(&self) -> [u8; PhoenixPublicKey::SIZE] {
+    pub fn owner_raw(&self) -> [u8; BlsPublicKey::SIZE] {
         rusk_abi::self_owner_raw()
     }
 }
