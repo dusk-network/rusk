@@ -33,7 +33,7 @@ impl RatificationStep {
         let ratification =
             self::build_ratification_payload(ru, iteration, result);
 
-        let msg = Message::new_ratification(ratification);
+        let msg = Message::from(ratification);
 
         // Publish ratification vote
         info!(event = "send_vote", validation_bitset = result.sv().bitset);

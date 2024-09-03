@@ -202,7 +202,7 @@ impl AttInfoRegistry {
 
         let payload = payload::Quorum { header, att };
 
-        Message::new_quorum(payload)
+        payload.into()
     }
 
     pub(crate) fn get_failed_atts(&self, to: u8) -> Vec<Option<IterationInfo>> {
