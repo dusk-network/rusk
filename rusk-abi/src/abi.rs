@@ -14,7 +14,6 @@ use execution_core::{
             PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
         },
     },
-    transfer::phoenix::PublicKey as PhoenixPublicKey,
     BlsScalar, ContractId,
 };
 use piecrust_uplink::{host_query, meta_data};
@@ -68,27 +67,26 @@ pub fn block_height() -> u64 {
 /// Query owner of a given contract.
 /// Returns none if contract is not found.
 /// Panics if owner is not a valid public key (should never happen).
-pub fn owner(contract: ContractId) -> Option<PhoenixPublicKey> {
+pub fn owner(contract: ContractId) -> Option<BlsPublicKey> {
     owner_raw(contract).map(|buf| {
-        PhoenixPublicKey::from_bytes(&buf)
+        BlsPublicKey::from_bytes(&buf)
             .expect("Owner should deserialize correctly")
     })
 }
 
 /// Query self owner of a given contract.
 /// Panics if owner is not a valid public key (should never happen).
-pub fn self_owner() -> PhoenixPublicKey {
+pub fn self_owner() -> BlsPublicKey {
     let buf = self_owner_raw();
-    PhoenixPublicKey::from_bytes(&buf)
-        .expect("Owner should deserialize correctly")
+    BlsPublicKey::from_bytes(&buf).expect("Owner should deserialize correctly")
 }
 
 /// Query raw "to_bytes" serialization of the owner of a given contract.
-pub fn owner_raw(contract: ContractId) -> Option<[u8; PhoenixPublicKey::SIZE]> {
+pub fn owner_raw(contract: ContractId) -> Option<[u8; BlsPublicKey::SIZE]> {
     piecrust_uplink::owner(contract)
 }
 
 /// Query raw "to_bytes" serialization of the self owner.
-pub fn self_owner_raw() -> [u8; PhoenixPublicKey::SIZE] {
+pub fn self_owner_raw() -> [u8; BlsPublicKey::SIZE] {
     piecrust_uplink::self_owner()
 }
