@@ -10,7 +10,9 @@ use super::{
 use anyhow::Result;
 use std::cell::RefCell;
 
-use node_data::ledger::{self, Fault, Header, Label, SpentTransaction};
+use node_data::ledger::{
+    self, Fault, Header, Label, SpendingId, SpentTransaction,
+};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -750,11 +752,13 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(false)
     }
 
-    fn get_txs_by_nullifiers(&self, n: &[[u8; 32]]) -> HashSet<[u8; 32]> {
+    fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]> {
         n.iter()
-            .filter_map(|n| match self.snapshot.get_cf(self.nullifiers_cf, n) {
-                Ok(Some(tx_id)) => tx_id.try_into().ok(),
-                _ => None,
+            .filter_map(|n| {
+                match self.snapshot.get_cf(self.nullifiers_cf, n.to_bytes()) {
+                    Ok(Some(tx_id)) => tx_id.try_into().ok(),
+                    _ => None,
+                }
             })
             .collect()
     }
