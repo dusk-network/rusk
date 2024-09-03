@@ -28,7 +28,7 @@ use execution_core::{
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
         },
-        Transaction, TRANSFER_CONTRACT,
+        Transaction, PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractError, ContractId,
 };
@@ -432,8 +432,11 @@ impl TransferState {
                 //       transactions. Since this number is so large, we also
                 //       skip overflow checks.
                 let incremented_nonce = account.nonce + 1;
-                if moonlight_tx.nonce() != incremented_nonce {
-                    panic!("Invalid nonce");
+                if moonlight_tx.nonce() < incremented_nonce {
+                    panic!("Already used nonce");
+                }
+                if moonlight_tx.nonce() > incremented_nonce {
+                    panic!("{PANIC_NONCE_NOT_READY}",);
                 }
 
                 account.balance -= total_value;
