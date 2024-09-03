@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use execution_core::transfer::Transaction as ProtocolTransaction;
 use node::database::rocksdb::{Backend, DBTransaction};
 use node::database::{Mempool, DB};
 use node::network::Kadcast;
@@ -153,10 +154,10 @@ impl RuskNode {
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
-        let tx = execution_core::transfer::Transaction::from_slice(tx)
+        let tx: Transaction = ProtocolTransaction::from_slice(tx)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
             .into();
-        let tx_message = Message::new_transaction(tx);
+        let tx_message = tx.into();
 
         let network = self.network();
         network.read().await.route_internal(tx_message);
