@@ -7,7 +7,9 @@
 //! Types related to Dusk's transfer contract that are shared across the
 //! network.
 
+use alloc::string::String;
 use alloc::vec::Vec;
+
 use core::fmt::Debug;
 
 use bytecheck::CheckBytes;
@@ -315,4 +317,32 @@ impl From<MoonlightTransaction> for Transaction {
     fn from(tx: MoonlightTransaction) -> Self {
         Self::Moonlight(tx)
     }
+}
+
+/// The payload sent by a contract to the transfer contract to transfer some of
+/// its funds to another contract.
+#[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToContract {
+    /// Contract to transfer funds to.
+    pub contract: ContractId,
+    /// Amount to send to the contract.
+    pub value: u64,
+    /// Function name to call on the contract.
+    pub fn_name: String,
+    /// Extra data sent along with [`ReceiveFromContract`]
+    pub data: Vec<u8>,
+}
+
+/// The payload sent by the transfer contract to a contract receiving funds from
+/// another contract.
+#[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ReceiveFromContract {
+    /// Contract that sent the funds.
+    pub contract: ContractId,
+    /// Amount sent by the contract.
+    pub value: u64,
+    /// Extra data sent by the sender.
+    pub data: Vec<u8>,
 }
