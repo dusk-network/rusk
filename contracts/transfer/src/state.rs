@@ -304,44 +304,51 @@ impl TransferState {
 
     /// The top level transaction execution function.
     ///
-    /// Delegates to [`Self::spend_and_execute_phoenix`] and
-    /// [`Self::spend_and_execute_moonlight`], depending on if the transaction
+    /// This will emplace the deposit in the state, if it exists - making it
+    /// available for any contracts called.
+    ///
+    /// [`refund`] **must** be called if this function doesn't panic, otherwise
+    /// we will have an inconsistent state.
+    ///
+    /// It delegate the spending phase to [`Self::spend_phoenix`] and
+    /// [`Self::spend_moonlight`], depending on if the transaction
     /// uses the Phoenix or the Moonlight models, respectively.
+    ///
+    /// Finally executes the contract call if present.
+    ///
+    /// # Panics
+    /// Any failure while spending will result in a panic. The contract expects
+    /// the environment to roll back any change in state.
+    ///
+    /// [`refund`]: [`TransferState::refund`]
     pub fn spend_and_execute(
         &mut self,
         tx: Transaction,
     ) -> Result<Vec<u8>, ContractError> {
+        transitory::put_transaction(tx);
+        let tx = transitory::unwrap_tx();
         match tx {
-            Transaction::Phoenix(tx) => self.spend_and_execute_phoenix(tx),
-            Transaction::Moonlight(tx) => self.spend_and_execute_moonlight(tx),
+            Transaction::Phoenix(tx) => self.spend_phoenix(tx),
+            Transaction::Moonlight(tx) => self.spend_moonlight(tx),
+        }
+        match tx.call() {
+            Some(call) => {
+                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
+            }
+            None => Ok(Vec::new()),
         }
     }
 
     /// Spends the inputs and creates the given UTXO within the given phoenix
-    /// transaction, and executes the contract call if present. It performs
-    /// all checks necessary to ensure the transaction is valid - hash
-    /// matches, anchor has been a root of the tree, proof checks out,
-    /// etc...
-    ///
-    /// This will emplace the deposit in the state, if it exists - making it
-    /// available for any contracts called.
-    ///
-    /// [`refund`] **must** be called if this function succeeds, otherwise we
-    /// will have an inconsistent state.
+    /// transaction. It performs all checks necessary to ensure the transaction
+    /// is valid - hash matches, anchor has been a root of the tree, proof
+    /// checks out, etc...
     ///
     /// # Panics
     /// Any failure in the checks performed in processing the transaction will
     /// result in a panic. The contract expects the environment to roll back any
     /// change in state.
-    ///
-    /// [`refund`]: [`TransferState::refund`]
-    fn spend_and_execute_phoenix(
-        &mut self,
-        tx: PhoenixTransaction,
-    ) -> Result<Vec<u8>, ContractError> {
-        transitory::put_transaction(tx);
-        let phoenix_tx = transitory::unwrap_phoenix_tx();
-
+    fn spend_phoenix(&mut self, phoenix_tx: &PhoenixTransaction) {
         if phoenix_tx.chain_id() != self.chain_id() {
             panic!("The tx must target the correct chain");
         }
@@ -368,40 +375,17 @@ impl TransferState {
         let block_height = rusk_abi::block_height();
         self.tree
             .extend_notes(block_height, phoenix_tx.outputs().clone());
-
-        // perform contract call if present
-        let mut result = Ok(Vec::new());
-        if let Some(call) = phoenix_tx.call() {
-            result =
-                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
-        }
-
-        result
     }
 
-    /// Spends the amount available to the moonlight transaction, and executes
-    /// the contract call if present. It performs all checks necessary to ensure
-    /// the transaction is valid - signature check, available funds, etc...
-    ///
-    /// This will emplace the deposit in the state, if it exists - making it
-    /// available for any contracts called.
-    ///
-    /// [`refund`] **must** be called if this function succeeds, otherwise we
-    /// will have an inconsistent state.
+    /// Spends the amount available to the moonlight transaction. It performs
+    /// all checks necessary to ensure the transaction is valid - signature
+    /// check, available funds, etc...
     ///
     /// # Panics
     /// Any failure in the checks performed in processing the transaction will
     /// result in a panic. The contract expects the environment to roll back any
     /// change in state.
-    ///
-    /// [`refund`]: [`TransferState::refund`]
-    fn spend_and_execute_moonlight(
-        &mut self,
-        tx: MoonlightTransaction,
-    ) -> Result<Vec<u8>, ContractError> {
-        transitory::put_transaction(tx);
-        let moonlight_tx = transitory::unwrap_moonlight_tx();
-
+    fn spend_moonlight(&mut self, moonlight_tx: &MoonlightTransaction) {
         if moonlight_tx.chain_id() != self.chain_id() {
             panic!("The tx must target the correct chain");
         }
@@ -471,15 +455,6 @@ impl TransferState {
             let account = self.accounts.entry(key).or_insert(EMPTY_ACCOUNT);
             account.balance += moonlight_tx.value();
         }
-
-        // perform contract call if present
-        let mut result = Ok(Vec::new());
-        if let Some(call) = moonlight_tx.call() {
-            result =
-                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
-        }
-
-        result
     }
 
     /// Refund the previously performed transaction, taking into account the
