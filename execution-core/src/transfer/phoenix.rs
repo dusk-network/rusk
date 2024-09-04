@@ -55,6 +55,12 @@ pub struct NoteLeaf {
     pub note: Note,
 }
 
+impl AsRef<Note> for NoteLeaf {
+    fn as_ref(&self) -> &Note {
+        &self.note
+    }
+}
+
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
