@@ -1,0 +1,15 @@
+# Temporary fix to avoid Makefile just for wasm, until we figure out how to
+# run `cargo test` for the host machine with the default target `wasm32`
+#
+# See: <https://github.com/rust-lang/cargo/issues/6784>
+[alias]
+wasm = "build --release --target wasm32-unknown-unknown -Z build-std=core,alloc,panic_abort -Z build-std-features=panic_immediate_abort"
+wasm-debug = "build --release --target wasm32-unknown-unknown -Z build-std=core,alloc,panic_abort"
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true

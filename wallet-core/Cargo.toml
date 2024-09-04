@@ -3,6 +3,9 @@ name = "wallet-core"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
@@ -13,6 +16,9 @@ rand = { version = "0.8", default-features = false }
 ff = { version = "0.13", default-features = false }
 poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
 execution-core = { version = "0.1", path = "../execution-core/" }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+dlmalloc = { version = "0.2", features = ["global"] }
 
 [dev-dependencies]
 rand = "0.8"
