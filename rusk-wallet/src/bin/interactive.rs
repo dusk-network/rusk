@@ -5,11 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use bip39::{Language, Mnemonic, MnemonicType};
-use dusk_wallet::currency::Dusk;
-use dusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
-use dusk_wallet::gas;
-use dusk_wallet::{Address, Error, Wallet, WalletPath, MAX_ADDRESSES};
 use requestty::Question;
+use rusk_wallet::{
+    currency::Dusk,
+    dat::{DatFileVersion, LATEST_VERSION},
+    gas, Address, Error, Wallet, WalletPath, MAX_ADDRESSES,
+};
 
 use crate::command::DEFAULT_STAKE_GAS_LIMIT;
 use crate::io;

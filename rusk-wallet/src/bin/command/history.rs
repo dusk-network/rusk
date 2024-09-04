@@ -8,7 +8,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use dusk_wallet::DecodedNote;
+use rusk_wallet::DecodedNote;
 
 use execution_core::{dusk, from_dusk, transfer::Transaction};
 

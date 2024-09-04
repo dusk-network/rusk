@@ -15,15 +15,13 @@ use crossterm::{
 
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
-use dusk_wallet::{dat::DatFileVersion, Error};
 use requestty::Question;
 
-use dusk_wallet::Address;
-
-use dusk_wallet::gas;
-use dusk_wallet::{
+use rusk_wallet::gas;
+use rusk_wallet::{
     currency::{Dusk, Lux},
-    MAX_CONVERTIBLE, MIN_CONVERTIBLE,
+    dat::DatFileVersion,
+    Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
 };
 use sha2::{Digest, Sha256};
 

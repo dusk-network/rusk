@@ -13,13 +13,12 @@ use crate::io::prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
-use dusk_wallet::currency::Dusk;
-
-use dusk_wallet::gas::{Gas, DEFAULT_LIMIT, DEFAULT_PRICE};
-use dusk_wallet::{
-    currency::Lux, Address, Error, Wallet, EPOCH, MAX_ADDRESSES,
-};
 use execution_core::{stake::StakeData, BlsScalar};
+use rusk_wallet::{
+    currency::{Dusk, Lux},
+    gas::{Gas, DEFAULT_LIMIT, DEFAULT_PRICE},
+    Address, Error, Wallet, EPOCH, MAX_ADDRESSES,
+};
 use wallet_core::BalanceInfo;
 
 pub use history::TransactionHistory;
