@@ -753,6 +753,13 @@ where
         .await;
     }
 
+    if path == "/static/drivers/wallet-core.wasm" {
+        let wallet_wasm = include_bytes!(
+            "../../../target/wasm32-unknown-unknown/release/wallet_core.wasm"
+        );
+        return Ok(Response::new(Full::from(wallet_wasm.to_vec()).into()));
+    }
+
     if hyper_tungstenite::is_upgrade_request(&req) {
         let target = req.uri().path().try_into()?;
 
