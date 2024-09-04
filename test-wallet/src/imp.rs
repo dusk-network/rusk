@@ -26,7 +26,7 @@ use execution_core::{
         contract_exec::ContractExec,
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
-            Note, NoteOpening, PublicKey as PhoenixPublicKey,
+            Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
         },
         Transaction,
@@ -224,30 +224,30 @@ where
     fn unspent_notes_and_nullifiers(
         &self,
         sk: &PhoenixSecretKey,
-    ) -> Result<Vec<(Note, BlsScalar)>, Error<S, SC>> {
+    ) -> Result<Vec<(NoteLeaf, BlsScalar)>, Error<S, SC>> {
         let vk = PhoenixViewKey::from(sk);
 
-        let notes: Vec<Note> = self
-            .state
-            .fetch_notes(&vk)
-            .map_err(Error::from_state_err)?
-            .into_iter()
-            .map(|(note, _bh)| note)
-            .collect();
+        let note_leaves =
+            self.state.fetch_notes(&vk).map_err(Error::from_state_err)?;
 
-        let nullifiers: Vec<_> =
-            notes.iter().map(|n| n.gen_nullifier(sk)).collect();
+        let nullifiers: Vec<_> = note_leaves
+            .iter()
+            .map(|(note, _bh)| note.gen_nullifier(sk))
+            .collect();
 
         let existing_nullifiers = self
             .state
             .fetch_existing_nullifiers(&nullifiers)
             .map_err(Error::from_state_err)?;
 
-        let unspent_notes_and_nullifiers = notes
+        let unspent_notes_and_nullifiers = note_leaves
             .into_iter()
             .zip(nullifiers.into_iter())
             .filter(|(_note, nullifier)| {
                 !existing_nullifiers.contains(nullifier)
+            })
+            .map(|((note, block_height), nullifier)| {
+                (NoteLeaf { note, block_height }, nullifier)
             })
             .collect();
 
@@ -271,12 +271,13 @@ where
             Vec::with_capacity(unspent_notes_nullifiers.len());
 
         let mut accumulated_value = 0;
-        for (note, nullifier) in unspent_notes_nullifiers {
-            let val = note
+        for (note_leaf, nullifier) in unspent_notes_nullifiers {
+            let val = note_leaf
+                .note
                 .value(Some(&sender_vk))
                 .map_err(|_| ExecutionError::PhoenixOwnership)?;
             accumulated_value += val;
-            notes_values_nullifiers.push((note, val, nullifier));
+            notes_values_nullifiers.push((note_leaf.note, val, nullifier));
         }
 
         if accumulated_value < transaction_cost {
@@ -670,12 +671,12 @@ where
         let mut phoenix_sk = derive_phoenix_sk(&seed, sk_index);
         let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
 
-        let unspent_notes: Vec<Note> = self
+        let unspent_notes: Vec<NoteLeaf> = self
             .unspent_notes_and_nullifiers(&phoenix_sk)?
             .into_iter()
-            .map(|(note, _nullifier)| note)
+            .map(|(note_leaf, _nul)| note_leaf)
             .collect();
-        let balance = phoenix_balance(&phoenix_vk, unspent_notes);
+        let balance = phoenix_balance(&phoenix_vk, unspent_notes.iter());
 
         seed.zeroize();
         phoenix_sk.zeroize();

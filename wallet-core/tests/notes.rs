@@ -6,11 +6,12 @@
 
 use ff::Field;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 
 use execution_core::{
     transfer::phoenix::{
-        Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+        Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+        SecretKey as PhoenixSecretKey,
     },
     JubJubScalar,
 };
@@ -44,37 +45,37 @@ fn test_map_owned() {
         PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
 
     let value = 42;
-    let enriched_notes = vec![
-        (gen_note(&mut rng, true, &owner_1_pks[0], value), 1), // owner 1
-        (gen_note(&mut rng, true, &owner_1_pks[1], value), 1), // owner 1
-        (gen_note(&mut rng, true, &owner_2_pks[0], value), 1), // owner 2
-        (gen_note(&mut rng, true, &owner_2_pks[1], value), 1), // owner 2
-        (gen_note(&mut rng, true, &owner_1_pks[2], value), 1), // owner 1
-        (gen_note(&mut rng, true, &owner_3_pk, value), 1),     // owner 3
+    let note_leaves = vec![
+        gen_note(&mut rng, true, &owner_1_pks[0], value), // owner 1
+        gen_note(&mut rng, true, &owner_1_pks[1], value), // owner 1
+        gen_note(&mut rng, true, &owner_2_pks[0], value), // owner 2
+        gen_note(&mut rng, true, &owner_2_pks[1], value), // owner 2
+        gen_note(&mut rng, true, &owner_1_pks[2], value), // owner 1
+        gen_note(&mut rng, true, &owner_3_pk, value),     // owner 3
     ];
 
     // notes with idx 0, 1 and 4 are owned by owner_1
-    let notes_by_1 = map_owned(&owner_1_sks, &enriched_notes);
+    let notes_by_1 = map_owned(&owner_1_sks, &note_leaves);
     assert_eq!(notes_by_1.len(), 3);
-    let note = &enriched_notes[0].0;
+    let note = &note_leaves[0].note;
     let nullifier = note.gen_nullifier(&owner_1_sks[0]);
-    assert_eq!(&notes_by_1[&nullifier].0, note);
-    let note = &enriched_notes[1].0;
+    assert_eq!(&notes_by_1[&nullifier].note, note);
+    let note = &note_leaves[1].note;
     let nullifier = note.gen_nullifier(&owner_1_sks[1]);
-    assert_eq!(&notes_by_1[&nullifier].0, note);
-    let note = &enriched_notes[4].0;
+    assert_eq!(&notes_by_1[&nullifier].note, note);
+    let note = &note_leaves[4].note;
     let nullifier = note.gen_nullifier(&owner_1_sks[2]);
-    assert_eq!(&notes_by_1[&nullifier].0, note);
+    assert_eq!(&notes_by_1[&nullifier].note, note);
 
     // notes with idx 2 and 3 are owned by owner_2
-    let notes_by_2 = map_owned(&owner_2_sks, &enriched_notes);
+    let notes_by_2 = map_owned(&owner_2_sks, &note_leaves);
     assert_eq!(notes_by_2.len(), 2);
-    let note = &enriched_notes[2].0;
+    let note = &note_leaves[2].note;
     let nullifier = note.gen_nullifier(&owner_2_sks[0]);
-    assert_eq!(&notes_by_2[&nullifier].0, note);
-    let note = &enriched_notes[3].0;
+    assert_eq!(&notes_by_2[&nullifier].note, note);
+    let note = &note_leaves[3].note;
     let nullifier = note.gen_nullifier(&owner_2_sks[1]);
-    assert_eq!(&notes_by_2[&nullifier].0, note);
+    assert_eq!(&notes_by_2[&nullifier].note, note);
 }
 
 #[test]
@@ -90,7 +91,7 @@ fn test_balance() {
     for value in 0..=10 {
         // we want to test with a mix of transparent and obfuscated notes so we
         // make every 10th note transparent
-        let obfuscated_note = if value % 10 == 0 { false } else { true };
+        let obfuscated_note = value % 10 != 0;
 
         notes.push(gen_note(&mut rng, obfuscated_note, &owner_pk, value));
 
@@ -115,7 +116,7 @@ fn test_balance() {
     };
 
     assert_eq!(
-        phoenix_balance(&(&owner_sk).into(), notes),
+        phoenix_balance(&(&owner_sk).into(), notes.iter()),
         expected_balance
     );
 }
@@ -125,7 +126,7 @@ fn gen_note(
     obfuscated_note: bool,
     owner_pk: &PhoenixPublicKey,
     value: u64,
-) -> Note {
+) -> NoteLeaf {
     let sender_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
 
     let value_blinder = JubJubScalar::random(&mut *rng);
@@ -134,15 +135,27 @@ fn gen_note(
         JubJubScalar::random(&mut *rng),
     ];
     if obfuscated_note {
-        Note::obfuscated(
-            rng,
-            &sender_pk,
-            &owner_pk,
-            value,
-            value_blinder,
-            sender_blinder,
-        )
+        NoteLeaf {
+            note: Note::obfuscated(
+                rng,
+                &sender_pk,
+                &owner_pk,
+                value,
+                value_blinder,
+                sender_blinder,
+            ),
+            block_height: rng.gen(),
+        }
     } else {
-        Note::transparent(rng, &sender_pk, &owner_pk, value, sender_blinder)
+        NoteLeaf {
+            note: Note::transparent(
+                rng,
+                &sender_pk,
+                &owner_pk,
+                value,
+                sender_blinder,
+            ),
+            block_height: rng.gen(),
+        }
     }
 }
