@@ -9,6 +9,7 @@ use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
 use std::{fs, io};
 
+use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
@@ -179,6 +180,16 @@ impl Rusk {
                         block_height,
                         err,
                     });
+                }
+                Err(PiecrustError::Panic(val))
+                    if val == PANIC_NONCE_NOT_READY =>
+                {
+                    // If the transaction panic due to a not yet valid nonce,
+                    // we should not discard the transactions since it can be
+                    // included in future.
+
+                    // TODO: Try to process the transaction as soon as the
+                    // nonce is unlocked
                 }
                 Err(e) => {
                     info!("discard tx {tx_id} due to {e:?}");

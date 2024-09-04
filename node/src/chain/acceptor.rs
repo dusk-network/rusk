@@ -564,8 +564,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         events.push(TransactionEvent::Removed(tx_id).into());
                     }
 
-                    let nullifiers = tx.to_nullifiers();
-                    for orphan_tx in t.get_txs_by_nullifiers(&nullifiers) {
+                    let spend_ids = tx.to_spend_ids();
+                    for orphan_tx in t.get_txs_by_spendable_ids(&spend_ids) {
                         let deleted = Mempool::delete_tx(t, orphan_tx)
                             .map_err(|e| {
                                 warn!("Error while deleting orphan_tx: {e}")

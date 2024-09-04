@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_bytes::Serializable;
+use execution_core::signatures::bls;
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use execution_core::BlsScalar;
 use serde::Serialize;
@@ -63,12 +65,17 @@ impl Transaction {
         self.inner.gas_price()
     }
 
-    pub fn to_nullifiers(&self) -> Vec<[u8; 32]> {
-        self.inner
-            .nullifiers()
-            .iter()
-            .map(|n| n.to_bytes())
-            .collect()
+    pub fn to_spend_ids(&self) -> Vec<SpendingId> {
+        match &self.inner {
+            ProtocolTransaction::Phoenix(p) => p
+                .nullifiers()
+                .iter()
+                .map(|n| SpendingId::Nullifier(n.to_bytes()))
+                .collect(),
+            ProtocolTransaction::Moonlight(m) => {
+                vec![SpendingId::AccountNonce(*m.from_account(), m.nonce())]
+            }
+        }
     }
 }
 
@@ -89,6 +96,24 @@ impl PartialEq<Self> for SpentTransaction {
 }
 
 impl Eq for SpentTransaction {}
+
+pub enum SpendingId {
+    Nullifier([u8; 32]),
+    AccountNonce(bls::PublicKey, u64),
+}
+
+impl SpendingId {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            SpendingId::Nullifier(n) => n.to_vec(),
+            SpendingId::AccountNonce(account, nonce) => {
+                let mut id = account.to_bytes().to_vec();
+                id.extend_from_slice(&nonce.to_le_bytes());
+                id
+            }
+        }
+    }
+}
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {

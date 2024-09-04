@@ -31,6 +31,9 @@ pub mod withdraw;
 /// ID of the genesis transfer contract
 pub const TRANSFER_CONTRACT: ContractId = crate::reserved(0x1);
 
+/// Panic of "Nonce not ready to be used yet"
+pub const PANIC_NONCE_NOT_READY: &str = "Nonce not ready to be used yet";
+
 use contract_exec::{ContractCall, ContractDeploy, ContractExec};
 use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{
