@@ -57,11 +57,17 @@ pub(crate) struct StalledChainFSM<DB: database::DB, N: Network, VM: VMExecution>
 }
 
 impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
-    pub(crate) fn new(
+    pub(crate) async fn new_with_acc(
         acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
-        latest_finalized: Block,
-        tip: Block,
     ) -> Self {
+        let tip = acc.read().await.get_curr_tip().await;
+        let latest_finalized = acc
+            .read()
+            .await
+            .get_latest_final_block()
+            .await
+            .expect("latest final block should exist");
+
         let mut sm = Self {
             state: State::Running,
             recovery_blocks: BTreeMap::new(),
@@ -70,7 +76,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             acc,
         };
 
-        sm.update_tip(tip);
+        sm.update_tip(tip.inner().clone());
         sm
     }
 

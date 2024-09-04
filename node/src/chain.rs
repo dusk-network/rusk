@@ -111,7 +111,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         acc.write().await.spawn_task().await;
 
         // Start-up FSM instance
-        let mut fsm = SimpleFSM::new(acc.clone(), network.clone());
+        let mut fsm = SimpleFSM::new(acc.clone(), network.clone()).await;
 
         let outbound_chan = acc.read().await.get_outbound_chan().await;
         let result_chan = acc.read().await.get_result_chan().await;

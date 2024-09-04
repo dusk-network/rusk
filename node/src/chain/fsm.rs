@@ -87,27 +87,25 @@ pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
-    pub fn new(
+    pub async fn new(
         acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
         network: Arc<RwLock<N>>,
     ) -> Self {
         let blacklisted_blocks = Arc::new(RwLock::new(HashSet::new()));
+        let stalled_sm = StalledChainFSM::new_with_acc(acc.clone()).await;
+        let curr = State::InSync(InSyncImpl::<DB, VM, N>::new(
+            acc.clone(),
+            network.clone(),
+            blacklisted_blocks.clone(),
+        ));
 
         Self {
-            curr: State::InSync(InSyncImpl::<DB, VM, N>::new(
-                acc.clone(),
-                network.clone(),
-                blacklisted_blocks.clone(),
-            )),
-            acc: acc.clone(),
+            curr,
+            acc,
             network: network.clone(),
             blacklisted_blocks,
             attestations_cache: Default::default(),
-            stalled_sm: StalledChainFSM::new(
-                acc,
-                Block::default(),
-                Block::default(), /* TODO: */
-            ),
+            stalled_sm,
         }
     }
 
@@ -222,7 +220,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
             // Process block event in the context of stalled chain FSM
             if let stall_chain_fsm::State::StalledOnFork =
-                self.stalled_sm.on_block_received(&blk).await
+                self.stalled_sm.on_block_received(blk).await
             {
                 info!(
                     event = "stalled on fork",
