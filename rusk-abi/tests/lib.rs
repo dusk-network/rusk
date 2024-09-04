@@ -23,15 +23,12 @@ use execution_core::{
             PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
         },
     },
-    transfer::phoenix::{
-        PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-    },
     BlsScalar, ContractId,
 };
 use ff::Field;
 use rusk_abi::{ContractData, Session, VM};
 
-const POINT_LIMIT: u64 = 0x1000000;
+const POINT_LIMIT: u64 = 0x4000000;
 const CHAIN_ID: u8 = 0xFA;
 
 #[test]
@@ -369,11 +366,11 @@ fn block_height() {
     assert_eq!(height, HEIGHT);
 }
 
-fn get_owner() -> &'static PhoenixPublicKey {
-    static OWNER: OnceLock<PhoenixPublicKey> = OnceLock::new();
+fn get_owner() -> &'static BlsPublicKey {
+    static OWNER: OnceLock<BlsPublicKey> = OnceLock::new();
     OWNER.get_or_init(|| {
-        let sk = PhoenixSecretKey::random(&mut OsRng);
-        PhoenixPublicKey::from(&sk)
+        let sk = BlsSecretKey::random(&mut OsRng);
+        BlsPublicKey::from(&sk)
     })
 }
 
@@ -383,7 +380,7 @@ fn owner_raw() {
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
-    let owner: [u8; 64] = session
+    let owner: [u8; 96] = session
         .call(contract_id, "contract_owner_raw", get_owner(), POINT_LIMIT)
         .expect("Query should succeed")
         .data;
@@ -397,7 +394,7 @@ fn owner() {
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
-    let owner: PhoenixPublicKey = session
+    let owner: BlsPublicKey = session
         .call(contract_id, "contract_owner", get_owner(), POINT_LIMIT)
         .expect("Query should succeed")
         .data;
