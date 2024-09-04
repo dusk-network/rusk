@@ -60,7 +60,7 @@ pub(crate) enum RevertTarget {
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// The tip
-    tip: RwLock<BlockWithLabel>,
+    pub(crate) tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
     pub(crate) provisioners_list: RwLock<ContextProvisioners>,
@@ -70,7 +70,7 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
 
     pub(crate) db: Arc<RwLock<DB>>,
     pub(crate) vm: Arc<RwLock<VM>>,
-    network: Arc<RwLock<N>>,
+    pub(crate) network: Arc<RwLock<N>>,
 
     event_sender: Sender<Event>,
 }
@@ -952,6 +952,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.tip.read().await.inner().header().iteration
     }
 
+    pub(crate) async fn get_curr_tip(&self) -> BlockWithLabel {
+        self.tip.read().await.clone()
+    }
+
     pub(crate) async fn get_result_chan(
         &self,
     ) -> AsyncQueue<Result<(), ConsensusError>> {
@@ -1055,6 +1059,49 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         histogram!("dusk_slashed_count").record(slashed_count as f64);
 
         histogram!("dusk_block_disk_size").record(block_size_on_disk as f64);
+    }
+
+    /// Verifies if a block with header `local` can be replaced with a block
+    /// with header `new`
+    pub(crate) async fn verify_header_against_local(
+        &self,
+        local: &ledger::Header,
+        new: &ledger::Header,
+    ) -> Result<()> {
+        let prev_header = self.db.read().await.view(|t| {
+            let prev_hash = &local.prev_block_hash;
+            t.fetch_block_header(prev_hash)?.ok_or(anyhow::anyhow!(
+                "Unable to find block with hash {}",
+                to_str(prev_hash)
+            ))
+        })?;
+
+        let provisioners_list = self
+            .vm
+            .read()
+            .await
+            .get_provisioners(prev_header.state_hash)?;
+
+        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
+
+        let changed_provisioners = self
+            .vm
+            .read()
+            .await
+            .get_changed_provisioners(prev_header.state_hash)?;
+        provisioners_list.apply_changes(changed_provisioners);
+
+        // Ensure header of the new block is valid according to prev_block
+        // header
+        let _ = verify_block_header(
+            self.db.clone(),
+            &prev_header,
+            &provisioners_list,
+            new,
+        )
+        .await?;
+
+        Ok(())
     }
 }
 

@@ -82,7 +82,8 @@ pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Attestations cached from received Quorum messages
     attestations_cache: HashMap<[u8; 32], (Attestation, Instant)>,
 
-    stalled_chain_fsm: StalledChainFSM,
+    /// State machine to detect a stalled state of the chain
+    stalled_sm: StalledChainFSM<DB, N, VM>,
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
@@ -98,11 +99,15 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 network.clone(),
                 blacklisted_blocks.clone(),
             )),
-            acc,
-            network,
+            acc: acc.clone(),
+            network: network.clone(),
             blacklisted_blocks,
             attestations_cache: Default::default(),
-            stalled_chain_fsm: StalledChainFSM::new(),
+            stalled_sm: StalledChainFSM::new(
+                acc,
+                Block::default(),
+                Block::default(), /* TODO: */
+            ),
         }
     }
 
@@ -121,8 +126,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
             // Clear up all blacklisted blocks
             self.blacklisted_blocks.write().await.clear();
-
-            self.stalled_chain_fsm.on_accept_block_timeout();
 
             // Request missing blocks since my last finalized block
             let get_blocks = Message::new_get_blocks(GetBlocks {
@@ -163,32 +166,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         metadata: Option<Metadata>,
     ) -> anyhow::Result<Option<Block>> {
         let block_hash = &blk.header().hash;
-
-        if let stall_chain_fsm::State::StalledOnFork =
-            self.stalled_chain_fsm.on_block_received(&blk)
-        {
-            info!(
-                event = "stalled on fork",
-                hash = to_str(&blk.header().hash),
-                height = blk.header().height,
-                iter = blk.header().iteration,
-            );
-
-            let mut acc = self.acc.write().await;
-            match acc.try_revert(RevertTarget::LastFinalizedState).await {
-                Ok(_) => {
-                    counter!("dusk_revert_count").increment(1);
-
-                    for blk in self.stalled_chain_fsm.recovery_blocks() {
-                        acc.try_accept_block(&blk, true).await?;
-                    }
-                }
-                Err(e) => {
-                    error!(event = "revert failed", err = format!("{:?}", e));
-                    return Ok(None);
-                }
-            }
-        }
 
         // Filter out blocks that have already been marked as
         // blacklisted upon successful fallback execution.
@@ -242,6 +219,44 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     }
                 }
             }
+
+            // Process block event in the context of stalled chain FSM
+            if let stall_chain_fsm::State::StalledOnFork =
+                self.stalled_sm.on_block_received(&blk).await
+            {
+                info!(
+                    event = "stalled on fork",
+                    hash = to_str(&blk.header().hash),
+                    height = blk.header().height,
+                    iter = blk.header().iteration,
+                );
+
+                let mut acc = self.acc.write().await;
+                match acc.try_revert(RevertTarget::LastFinalizedState).await {
+                    Ok(_) => {
+                        counter!("dusk_revert_count").increment(1);
+
+                        info!(event = "reverted to last finalized");
+
+                        for blk in self.stalled_sm.recovery_blocks() {
+                            info!(
+                                event = "recovery block",
+                                height = blk.header().height,
+                                hash = to_str(&blk.header().hash),
+                            );
+
+                            acc.try_accept_block(&blk, true).await?;
+                        }
+                    }
+                    Err(e) => {
+                        error!(
+                            event = "revert failed",
+                            err = format!("{:?}", e)
+                        );
+                        return Ok(None);
+                    }
+                }
+            }
         }
         // FIXME: The block should return only if accepted. The current issue is
         // that the impl of State::on_block_event doesn't return always the
@@ -249,12 +264,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         //
         // Due to this issue, we reset the outer timeout even if we are not
         // accepting the received block
-
-        // TODO: Ensure block returned is the one that was accepted
-        let is_final = false; // TODO:
-        if let Some(blk) = blk.as_ref() {
-            self.stalled_chain_fsm.on_block_accepted(blk, is_final);
-        }
 
         Ok(blk)
     }
