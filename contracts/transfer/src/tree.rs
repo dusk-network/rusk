@@ -6,42 +6,38 @@
 
 use alloc::vec::Vec;
 
-use poseidon_merkle::{
-    Item as PoseidonItem, Opening as PoseidonOpening, Tree as PoseidonTree,
-};
-
 use execution_core::{
-    transfer::phoenix::{Note, TreeLeaf, NOTES_TREE_DEPTH},
+    transfer::phoenix::{Note, NoteLeaf, NoteOpening, NoteTreeItem, NotesTree},
     BlsScalar,
 };
 
 pub struct Tree {
-    tree: PoseidonTree<(), NOTES_TREE_DEPTH>,
+    tree: NotesTree,
     // Since `dusk-merkle` does not include data blocks with the tree, we do it
     // here.
-    leaves: Vec<TreeLeaf>,
+    leaves: Vec<NoteLeaf>,
 }
 
 impl Tree {
     pub const fn new() -> Self {
         Self {
-            tree: PoseidonTree::new(),
+            tree: NotesTree::new(),
             leaves: Vec::new(),
         }
     }
 
-    pub fn get(&self, pos: u64) -> Option<TreeLeaf> {
+    pub fn get(&self, pos: u64) -> Option<NoteLeaf> {
         self.leaves.get(pos as usize).cloned()
     }
 
-    pub fn push(&mut self, mut leaf: TreeLeaf) -> u64 {
+    pub fn push(&mut self, mut leaf: NoteLeaf) -> u64 {
         // update the position before computing the hash
         let pos = self.leaves.len() as u64;
         leaf.note.set_pos(pos);
 
         // compute the item that goes in the leaf of the tree
         let hash = rusk_abi::poseidon_hash(leaf.note.hash_inputs().to_vec());
-        let item = PoseidonItem { hash, data: () };
+        let item = NoteTreeItem { hash, data: () };
 
         self.tree.insert(pos, item);
         self.leaves.push(leaf);
@@ -57,7 +53,7 @@ impl Tree {
         for note in notes {
             // skip transparent notes with a value of 0
             if !note.value(None).is_ok_and(|value| value == 0) {
-                self.push(TreeLeaf { block_height, note });
+                self.push(NoteLeaf { block_height, note });
             }
         }
     }
@@ -68,7 +64,7 @@ impl Tree {
 
     /// Return an iterator through the leaves in the tree, starting from a given
     /// `height`.
-    pub fn leaves(&self, height: u64) -> impl Iterator<Item = &TreeLeaf> {
+    pub fn leaves(&self, height: u64) -> impl Iterator<Item = &NoteLeaf> {
         // We can do this since we know the leaves are strictly increasing in
         // block height. If this ever changes - such as in the case of a
         // sparsely populated tree - we should annotate the tree and use
@@ -80,7 +76,7 @@ impl Tree {
 
     /// Return an iterator through the leaves in the tree, starting from a given
     /// `position`.
-    pub fn leaves_pos(&self, pos: u64) -> impl Iterator<Item = &TreeLeaf> {
+    pub fn leaves_pos(&self, pos: u64) -> impl Iterator<Item = &NoteLeaf> {
         // We can do this since we know the leaves are strictly increasing in
         // block height. If this ever changes - such as in the case of a
         // sparsely populated tree - we should annotate the tree and use
@@ -92,10 +88,7 @@ impl Tree {
         self.leaves[pos..].iter()
     }
 
-    pub fn opening(
-        &self,
-        pos: u64,
-    ) -> Option<PoseidonOpening<(), NOTES_TREE_DEPTH>> {
+    pub fn opening(&self, pos: u64) -> Option<NoteOpening> {
         self.tree.opening(pos)
     }
 

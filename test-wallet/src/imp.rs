@@ -12,7 +12,6 @@ use alloc::string::FromUtf8Error;
 use alloc::vec::Vec;
 
 use dusk_bytes::Error as BytesError;
-use poseidon_merkle::Opening;
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
     AllocScratchError, CompositeSerializerError, SharedSerializeMapError,
@@ -27,8 +26,8 @@ use execution_core::{
         contract_exec::ContractExec,
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
+            Note, NoteOpening, PublicKey as PhoenixPublicKey,
+            SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
         },
         Transaction,
     },
@@ -301,10 +300,7 @@ where
         &self,
         sender_sk: &PhoenixSecretKey,
         transaction_cost: u64,
-    ) -> Result<
-        Vec<(Note, Opening<(), NOTES_TREE_DEPTH>, BlsScalar)>,
-        Error<S, SC>,
-    > {
+    ) -> Result<Vec<(Note, NoteOpening, BlsScalar)>, Error<S, SC>> {
         let notes_and_nullifiers =
             self.input_notes_nullifiers(sender_sk, transaction_cost)?;
 
@@ -328,7 +324,7 @@ where
         &self,
         sender_sk: &PhoenixSecretKey,
         transaction_cost: u64,
-    ) -> Result<Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>, Error<S, SC>> {
+    ) -> Result<Vec<(Note, NoteOpening)>, Error<S, SC>> {
         let notes_and_nullifiers =
             self.input_notes_nullifiers(sender_sk, transaction_cost)?;
 

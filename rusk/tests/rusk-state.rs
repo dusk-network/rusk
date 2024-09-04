@@ -15,8 +15,8 @@ use std::sync::{mpsc, Arc};
 use execution_core::{
     transfer::{
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            TreeLeaf,
+            Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+            SecretKey as PhoenixSecretKey,
         },
         TRANSFER_CONTRACT,
     },
@@ -47,7 +47,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
-fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<TreeLeaf>> {
+fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
     let (sender, receiver) = mpsc::channel();
     rusk.leaves_from_height(height, sender)?;
     Ok(receiver

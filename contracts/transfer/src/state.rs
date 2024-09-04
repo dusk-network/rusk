@@ -13,7 +13,6 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use poseidon_merkle::Opening as PoseidonOpening;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
 use execution_core::{
@@ -22,8 +21,8 @@ use execution_core::{
     transfer::{
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
-            Note, Sender, Transaction as PhoenixTransaction, TreeLeaf,
-            NOTES_TREE_DEPTH,
+            Note, NoteLeaf, NoteOpening, Sender,
+            Transaction as PhoenixTransaction,
         },
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
@@ -517,7 +516,7 @@ impl TransferState {
     /// Note: the method `update_root` needs to be called after the last note is
     /// pushed.
     pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
-        let tree_leaf = TreeLeaf { block_height, note };
+        let tree_leaf = NoteLeaf { block_height, note };
         let pos = self.tree.push(tree_leaf.clone());
         rusk_abi::emit("TREE_LEAF", (pos, tree_leaf));
         self.get_note(pos)
@@ -573,10 +572,7 @@ impl TransferState {
     }
 
     /// Get the opening
-    pub fn opening(
-        &self,
-        pos: u64,
-    ) -> Option<PoseidonOpening<(), NOTES_TREE_DEPTH>> {
+    pub fn opening(&self, pos: u64) -> Option<NoteOpening> {
         self.tree.opening(pos)
     }
 

@@ -11,7 +11,6 @@ use alloc::vec::Vec;
 use rand::{CryptoRng, RngCore};
 
 use ff::Field;
-use poseidon_merkle::Opening;
 use zeroize::Zeroize;
 
 use execution_core::{
@@ -20,9 +19,8 @@ use execution_core::{
     transfer::{
         contract_exec::{ContractCall, ContractExec},
         phoenix::{
-            Note, Prove, PublicKey as PhoenixPublicKey,
+            Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
-            NOTES_TREE_DEPTH,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
         Transaction,
@@ -54,7 +52,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     sender_sk: &PhoenixSecretKey,
     change_pk: &PhoenixPublicKey,
     receiver_pk: &PhoenixPublicKey,
-    inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
+    inputs: Vec<(Note, NoteOpening)>,
     root: BlsScalar,
     transfer_value: u64,
     obfuscated_transaction: bool,
@@ -97,7 +95,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
-    inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
+    inputs: Vec<(Note, NoteOpening)>,
     root: BlsScalar,
     gas_limit: u64,
     gas_price: u64,
@@ -149,7 +147,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
-    inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>, BlsScalar)>,
+    inputs: Vec<(Note, NoteOpening, BlsScalar)>,
     root: BlsScalar,
     reward_amount: u64,
     gas_limit: u64,
@@ -215,7 +213,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
-    inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>, BlsScalar)>,
+    inputs: Vec<(Note, NoteOpening, BlsScalar)>,
     root: BlsScalar,
     unstake_value: u64,
     gas_limit: u64,
