@@ -12,7 +12,7 @@ jubjub-schnorr = { version = "0.5", default-features = false, features = ["rkyv-
 phoenix-core = { version = "0.32", default-features = false, features = ["rkyv-impl", "alloc"] }
 phoenix-circuits = { version = "0.4", default-features = false }
 poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
-piecrust-uplink = { version = "0.16" }
+piecrust-uplink = { version = "0.17" }
 dusk-bytes = "0.1"
 rkyv = { version = "0.7", default-features = false,  features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
