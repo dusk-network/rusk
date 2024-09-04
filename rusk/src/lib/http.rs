@@ -753,6 +753,7 @@ where
         .await;
     }
 
+    #[cfg(feature = "http-wasm")]
     if path == "/static/drivers/wallet-core.wasm" {
         let wallet_wasm = include_bytes!(
             "../../../target/wasm32-unknown-unknown/release/wallet_core.wasm"
