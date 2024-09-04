@@ -114,6 +114,7 @@ fn bench_accept(
 ) {
     const BLOCK_HEIGHT: u64 = 1;
     const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+    const BLOCK_HASH: [u8; 32] = [0u8; 32];
 
     let generator = {
         let mut rng = StdRng::seed_from_u64(0xbeef);
@@ -137,6 +138,7 @@ fn bench_accept(
                     rusk.accept_transactions(
                         BLOCK_HEIGHT,
                         BLOCK_GAS_LIMIT,
+                        BLOCK_HASH,
                         generator,
                         txs,
                         None,

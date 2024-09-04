@@ -34,7 +34,9 @@ use execution_core::{
     },
     BlsScalar, ContractError, Dusk, Event,
 };
-use node_data::ledger::{Slash, SpentTransaction, Transaction};
+#[cfg(feature = "archive")]
+use node_data::archive::{ArchivalData, ContractEvent};
+use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -66,6 +68,9 @@ impl Rusk {
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
+        #[cfg(feature = "archive")] archive_sender: mpsc::SyncSender<
+            ArchivalData,
+        >,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -101,6 +106,8 @@ impl Rusk {
             min_deployment_gas_price,
             feeder_gas_limit,
             event_sender,
+            #[cfg(feature = "archive")]
+            archive_sender,
             block_gas_limit,
         })
     }
@@ -306,6 +313,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
+        _archive_block_hash: Hash,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
@@ -336,7 +344,23 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
+        // Convert vm events to ContractEvent and sent to archive
+        #[cfg(feature = "archive")]
+        {
+            let _ = self.archive_sender.send(ArchivalData::ArchivedEvents(
+                block_height,
+                _archive_block_hash,
+                events
+                    .clone()
+                    .into_iter()
+                    .map(|event| ContractEvent::from(event))
+                    .collect(),
+            ));
+        }
+
         for event in events {
+            // Send VN event to RUES
+            let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event.into());
         }
 

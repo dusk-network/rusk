@@ -12,6 +12,9 @@ mod config;
 mod ephemeral;
 mod log;
 
+#[cfg(feature = "archive")]
+use std::sync::mpsc;
+
 use clap::Parser;
 
 use log::Log;
@@ -23,6 +26,8 @@ use rusk::http::{DataSources, HttpServer};
 use rusk::Result;
 
 use tokio::sync::broadcast;
+#[cfg(feature = "archive")]
+use tokio::sync::Mutex;
 
 use tracing::info;
 
@@ -55,7 +60,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let channel_cap = config.http.ws_event_channel_cap;
+
+    // Broadcast channel used for RUES (node events & VM events)
     let (_event_sender, event_receiver) = broadcast::channel(channel_cap);
+
+    // MPSC channel used for VM events (& in the future maybe other data) sent
+    // to the archivist
+    #[cfg(feature = "archive")]
+    let (archive_sender, archive_receiver) =
+        mpsc::sync_channel(10000);
 
     #[cfg(feature = "node")]
     let mut node_builder = {
@@ -71,6 +84,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config.chain.block_gas_limit(),
             config.http.feeder_call_gas,
             _event_sender.clone(),
+            #[cfg(feature = "archive")]
+            archive_sender.clone(),
         )?;
 
         info!("Rusk VM loaded");
@@ -84,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(feature = "ephemeral"))]
         let db_path = config.chain.db_path();
 
-        RuskNodeBuilder::new(rusk)
+        let node_builder = RuskNodeBuilder::new(rusk)
             .with_db_path(db_path)
             .with_db_options(config.chain.db_options())
             .with_kadcast(config.kadcast)
@@ -93,8 +108,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_telemetry(config.telemetry.listen_addr())
             .with_chain_queue_size(config.chain.max_queue_size())
             .with_mempool(config.mempool.into())
-            .with_rues(_event_sender)
+            .with_rues(_event_sender);
+
+        #[cfg(feature = "archive")]
+        let node_builder =
+            node_builder.with_archivist(Mutex::new(archive_receiver));
+
+        node_builder
     };
+
     let mut _ws_server = None;
     if config.http.listen {
         info!("Configuring HTTP");
@@ -129,10 +151,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    // Build & run the Node
     #[cfg(feature = "node")]
-    if let Err(e) = node_builder.build_and_run().await {
-        tracing::error!("node terminated with err: {}", e);
-        return Err(e.into());
+    {
+        let (mut node, service_list) = node_builder.build().await?;
+        if let Err(e) = node.run(service_list).await {
+            tracing::error!("node terminated with err: {}", e);
+            return Err(e.into());
+        }
     }
 
     #[cfg(not(feature = "node"))]

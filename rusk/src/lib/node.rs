@@ -15,7 +15,11 @@ use std::time::Duration;
 use events::ChainEventStreamer;
 use execution_core::{dusk, Dusk};
 use kadcast::config::Config as KadcastConfig;
+#[cfg(feature = "archive")]
+use node::archivist::ArchivistSrv;
 use node::chain::ChainSrv;
+#[cfg(feature = "archive")]
+use node::database::archive::SQLiteArchive;
 use node::database::rocksdb::{self, Backend};
 use node::database::{DatabaseOptions, DB};
 use node::databroker::conf::Params as BrokerParam;
@@ -25,8 +29,12 @@ use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
+#[cfg(feature = "archive")]
+use node_data::archive::ArchivalData;
 use parking_lot::RwLock;
 use rusk_abi::VM;
+#[cfg(feature = "archive")]
+use tokio::sync::Mutex;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::http::{HandleRequest, RuesEvent};
@@ -51,6 +59,8 @@ pub struct Rusk {
     pub(crate) feeder_gas_limit: u64,
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
+    #[cfg(feature = "archive")]
+    pub(crate) archive_sender: std::sync::mpsc::SyncSender<ArchivalData>,
 }
 
 type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
@@ -59,7 +69,19 @@ pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
 }
 
-#[derive(Clone)]
+impl RuskNode {
+    /// Run the RuskNode
+    pub async fn run(
+        &mut self,
+        mut service_list: Vec<Box<Services>>,
+    ) -> anyhow::Result<()> {
+        self.inner.initialize(&mut service_list).await?;
+        self.inner.spawn_all(service_list).await?;
+
+        Ok(())
+    }
+}
+
 pub struct RuskNodeBuilder {
     consensus_keys_path: String,
     databroker: BrokerParam,
@@ -73,6 +95,8 @@ pub struct RuskNodeBuilder {
     node: Option<node::Node<Kadcast<255>, Backend, Rusk>>,
     rusk: Rusk,
     rues_sender: Option<broadcast::Sender<RuesEvent>>,
+    #[cfg(feature = "archive")]
+    archive_receiver: Option<Mutex<std::sync::mpsc::Receiver<ArchivalData>>>,
 }
 
 impl RuskNodeBuilder {
@@ -128,6 +152,15 @@ impl RuskNodeBuilder {
         self
     }
 
+    #[cfg(feature = "archive")]
+    pub fn with_archivist(
+        mut self,
+        archive_receiver: Mutex<std::sync::mpsc::Receiver<ArchivalData>>,
+    ) -> Self {
+        self.archive_receiver = Some(archive_receiver);
+        self
+    }
+
     pub fn with_chain_queue_size(mut self, max_queue_size: usize) -> Self {
         self.max_chain_queue_size = max_queue_size;
         self
@@ -146,6 +179,8 @@ impl RuskNodeBuilder {
             node: None,
             rusk,
             rues_sender: None,
+            #[cfg(feature = "archive")]
+            archive_receiver: None,
         }
     }
 
@@ -174,28 +209,45 @@ impl RuskNodeBuilder {
         })
     }
 
-    pub async fn build_and_run(mut self) -> anyhow::Result<()> {
+    /// Build the RuskNode and corresponding services
+    pub async fn build(
+        mut self,
+    ) -> anyhow::Result<(RuskNode, Vec<Box<Services>>)> {
         let node = self.get_or_create_node()?;
-        let (sender, node_receiver) = mpsc::channel(1000);
+
+        let (node_sender, node_receiver) = mpsc::channel(1000);
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool, sender.clone())),
+            Box::new(MempoolSrv::new(self.mempool, node_sender.clone())), /* Note: transaction events are fired in Mempool service for moonlight/phoenix */
             Box::new(ChainSrv::new(
                 self.consensus_keys_path,
                 self.max_chain_queue_size,
-                sender.clone(),
+                node_sender.clone(),
             )),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];
+        
         if let Some(rues_sender) = self.rues_sender {
             service_list.push(Box::new(ChainEventStreamer {
                 rues_sender,
                 node_receiver,
             }))
         }
-        node.inner.initialize(&mut service_list).await?;
-        node.inner.spawn_all(service_list).await?;
-        Ok(())
+
+        #[cfg(feature = "archive")]
+        if let Some(archive_receiver) = self.archive_receiver {
+            let archivist =
+                SQLiteArchive::create_or_open(self.db_path.clone()).await;
+
+            service_list.push(Box::new(ArchivistSrv {
+                archive_receiver,
+                archivist,
+            }));
+        } else {
+            panic!("archive feature set but archivist not set")
+        }
+
+        Ok((node, service_list))
     }
 }
 

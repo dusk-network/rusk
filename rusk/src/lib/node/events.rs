@@ -34,6 +34,10 @@ impl<N: Network, DB: database::DB, VM: node::vm::VMExecution>
         loop {
             if let Some(msg) = self.node_receiver.recv().await {
                 if let Err(e) = self.rues_sender.send(msg.into()) {
+                    // NB: This service receives all events and forwards them to
+                    // RUES. We can forward them here to the
+                    // ArchivistSrv too and directly be able to store all
+                    // events.
                     error!("Cannot send to rues {e:?}");
                 }
             }
