@@ -15,7 +15,7 @@ sha2 = { version = "0.10", default-features = false }
 rand = { version = "0.8", default-features = false }
 ff = { version = "0.13", default-features = false }
 poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
-execution-core = { version = "0.1", path = "../execution-core/" }
+execution-core = { version = "0.1", path = "../execution-core/", default-features = false }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 dlmalloc = { version = "0.2", features = ["global"] }

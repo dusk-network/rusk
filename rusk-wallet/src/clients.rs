@@ -153,7 +153,6 @@ impl State {
         let status = self.status;
         let prover = &self.prover;
         let mut utx = utx;
-        let tx_bytes = utx.to_var_bytes();
 
         if let Transaction::Phoenix(tx) = &mut utx {
             let status = self.status;
@@ -172,6 +171,8 @@ impl State {
 
             status("Proving sucesss!");
         }
+
+        let tx_bytes = utx.to_var_bytes();
 
         status("Attempt to preverify tx...");
         let preverify_req = RuskRequest::new("preverify", tx_bytes.clone());
