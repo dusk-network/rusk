@@ -10,7 +10,6 @@
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
-
 #[cfg(target_family = "wasm")]
 #[global_allocator]
 static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
@@ -37,45 +36,44 @@ use dusk_bytes::{DeserializableSlice, Serializable, Write};
 
 use execution_core::{
     transfer::phoenix::{
-        Note, SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+        Note, NoteLeaf, SecretKey as PhoenixSecretKey,
+        ViewKey as PhoenixViewKey,
     },
     BlsScalar,
 };
-
-/// Tuple containing Note and block height
-pub type EnrichedNote = (Note, u64);
 
 /// Filter all notes and their block height that are owned by the given keys,
 /// mapped to their nullifiers.
 pub fn map_owned(
     keys: impl AsRef<[PhoenixSecretKey]>,
-    notes: impl AsRef<[EnrichedNote]>,
-) -> BTreeMap<BlsScalar, EnrichedNote> {
-    notes.as_ref().iter().fold(
-        BTreeMap::new(),
-        |mut notes_map, enriched_note| {
+    notes: impl AsRef<[NoteLeaf]>,
+) -> BTreeMap<BlsScalar, NoteLeaf> {
+    notes
+        .as_ref()
+        .iter()
+        .fold(BTreeMap::new(), |mut notes_map, note_leaf| {
             for sk in keys.as_ref() {
-                if sk.owns(enriched_note.0.stealth_address()) {
-                    let nullifier = enriched_note.0.gen_nullifier(sk);
-                    notes_map.insert(nullifier, enriched_note.clone());
+                if sk.owns(note_leaf.note.stealth_address()) {
+                    let nullifier = note_leaf.note.gen_nullifier(sk);
+                    notes_map.insert(nullifier, note_leaf.clone());
                 }
             }
             notes_map
-        },
-    )
+        })
 }
 
 /// Calculate the sum for all the given [`Note`]s that belong to the given
 /// [`PhoenixViewKey`].
-pub fn phoenix_balance(
+pub fn phoenix_balance<T>(
     phoenix_vk: &PhoenixViewKey,
-    unspent_notes: impl AsRef<[Note]>,
-) -> BalanceInfo {
-    let mut values: Vec<u64> = Vec::new();
-    let unspent_notes = unspent_notes.as_ref();
-    for note in unspent_notes {
-        values.push(note.value(Some(phoenix_vk)).unwrap_or_default());
-    }
+    notes: impl Iterator<Item = T>,
+) -> BalanceInfo
+where
+    T: AsRef<Note>,
+{
+    let mut values: Vec<u64> = notes
+        .filter_map(|note| note.as_ref().value(Some(phoenix_vk)).ok())
+        .collect();
 
     values.sort_by(|a, b| b.cmp(a));
 
