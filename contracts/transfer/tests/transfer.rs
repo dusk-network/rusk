@@ -30,7 +30,7 @@ use execution_core::{
             ViewKey as PhoenixViewKey,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        TRANSFER_CONTRACT,
+        TransferToContract, TRANSFER_CONTRACT,
     },
     ContractId, JubJubScalar, LUX,
 };
@@ -70,7 +70,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     );
     let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
@@ -96,7 +96,10 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     session
         .deploy(
             bob_bytecode,
-            ContractData::builder().owner(OWNER).contract_id(BOB_ID),
+            ContractData::builder()
+                .owner(OWNER)
+                .contract_id(BOB_ID)
+                .constructor_arg(&1u8),
             GAS_LIMIT,
         )
         .expect("Deploying the bob contract should succeed");
@@ -903,4 +906,149 @@ fn swap_wrong_contract_targeted() {
     );
 
     assert!(notes.is_empty(), "A new note should not been created");
+}
+
+/// In this test we deposit some Dusk to the Alice contract, and subsequently
+/// proceed to call Alice's `transfer_to_contract` function, targetting Bob as
+/// the receiver of the transfer.
+#[test]
+fn transfer_to_contract() {
+    const DEPOSIT_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
+    const TRANSFER_VALUE: u64 = DEPOSIT_VALUE / 2;
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    let bob_balance = contract_balance(session, BOB_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance, MOONLIGHT_GENESIS_VALUE,
+        "The depositer account should have the genesis value"
+    );
+    assert_eq!(
+        alice_balance, 0,
+        "Alice must have an initial balance of zero"
+    );
+    assert_eq!(bob_balance, 0, "Bob must have an initial balance of zero");
+
+    let fn_args = rkyv::to_bytes::<_, 256>(&DEPOSIT_VALUE)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("deposit"),
+        fn_args,
+    });
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        DEPOSIT_VALUE,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    );
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_deposit = receipt.gas_spent;
+
+    println!("MOONLIGHT DEPOSIT: {:?}", receipt.data);
+    println!("MOONLIGHT DEPOSIT: {gas_spent_deposit} gas");
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    let bob_balance = contract_balance(session, BOB_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE - gas_spent_deposit - DEPOSIT_VALUE,
+        "The account should decrease by the amount spent and the deposit sent"
+    );
+    assert_eq!(
+        alice_balance, DEPOSIT_VALUE,
+        "Alice must have the deposit in their balance"
+    );
+    assert_eq!(bob_balance, 0, "Bob must have a balance of zero");
+
+    let transfer = TransferToContract {
+        contract: BOB_ID,
+        value: TRANSFER_VALUE,
+        fn_name: String::from("recv_transfer"),
+        data: vec![],
+    };
+    let fn_args = rkyv::to_bytes::<_, 256>(&transfer)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("transfer_to_contract"),
+        fn_args,
+    });
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        0,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    );
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_send = receipt.gas_spent;
+
+    println!("MOONLIGHT SEND_TO_CONTRACT: {:?}", receipt.data);
+    println!("MOONLIGHT SEND_TO_CONTRACT: {gas_spent_send} gas");
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    let bob_balance = contract_balance(session, BOB_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE
+            - gas_spent_deposit
+            - gas_spent_send
+            - DEPOSIT_VALUE,
+        "The account should decrease by the amount spent and the deposit sent"
+    );
+    assert_eq!(
+        alice_balance, DEPOSIT_VALUE - TRANSFER_VALUE,
+        "Alice must have the deposit minus the transferred amount in their balance"
+    );
+    assert_eq!(
+        bob_balance, TRANSFER_VALUE,
+        "Bob must have the transfer value as balance"
+    );
 }

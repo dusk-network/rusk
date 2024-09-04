@@ -54,4 +54,9 @@ mod wasm {
     unsafe fn nonce(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |()| STATE.nonce())
     }
+
+    #[no_mangle]
+    unsafe fn recv_transfer(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |arg| STATE.recv_transfer(arg))
+    }
 }

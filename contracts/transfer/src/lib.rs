@@ -43,6 +43,11 @@ unsafe fn convert(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| STATE.convert(arg))
 }
 
+#[no_mangle]
+unsafe fn transfer_to_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_contract(arg))
+}
+
 // Queries
 
 #[no_mangle]

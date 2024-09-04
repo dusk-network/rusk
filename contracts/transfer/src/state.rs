@@ -27,7 +27,8 @@ use execution_core::{
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
         },
-        Transaction, PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
+        ReceiveFromContract, Transaction, TransferToContract,
+        PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractError, ContractId,
 };
@@ -299,6 +300,56 @@ impl TransferState {
             }
             Deposit::None => panic!("There is no deposit in the transaction"),
         }
+    }
+
+    /// Transfer funds from one contract's balance to another.
+    ///
+    /// Contracts can call the function and expect that if it succeeds the funds
+    /// are succesfully transferred to the contract they specify. Contracts
+    /// receiving funds are expected to expose the function specified by the
+    /// sender, which is called using a [`ReceiveFromContract`] as argument. It
+    /// is recommended that the receiving contract check that the call
+    /// originates from the transfer contract, and subsequently run any logic it
+    /// may wish to handle the transfer - including panicking, which will
+    /// effectively reject the transfer.
+    ///
+    /// # Panics
+    /// The function will panic if it is not being called by a contract (or if
+    /// it is called by the transfer contract itself), if the call to the
+    /// receiving contract fails, or if the sending contract doesn't have enough
+    /// funds.
+    pub fn transfer_to_contract(&mut self, transfer: TransferToContract) {
+        let from = rusk_abi::caller()
+            .expect("A transfer to a contract must happen in the context of a transaction");
+
+        if from == TRANSFER_CONTRACT {
+            panic!("Cannot be called directly by the transfer contract");
+        }
+
+        let from_balance = self
+            .contract_balances
+            .get_mut(&from)
+            .expect("Caller must have a balance");
+
+        if *from_balance < transfer.value {
+            panic!("Caller must have enough balance");
+        }
+
+        *from_balance -= transfer.value;
+
+        let to_balance =
+            self.contract_balances.entry(transfer.contract).or_insert(0);
+
+        *to_balance += transfer.value;
+
+        let receive = ReceiveFromContract {
+            contract: from,
+            value: transfer.value,
+            data: transfer.data,
+        };
+
+        rusk_abi::call(transfer.contract, &transfer.fn_name, &receive)
+            .expect("Calling receiver should succeed")
     }
 
     /// The top level transaction execution function.

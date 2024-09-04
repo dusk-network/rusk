@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::transfer::{withdraw::Withdraw, TRANSFER_CONTRACT};
+use execution_core::transfer::{
+    withdraw::Withdraw, TransferToContract, TRANSFER_CONTRACT,
+};
 
 /// Alice contract.
 #[derive(Debug, Clone)]
@@ -22,6 +24,15 @@ impl Alice {
 
     pub fn deposit(&mut self, value: u64) {
         let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &value)
-            .expect("Transparent withdrawal transaction should succeed");
+            .expect("Transparent deposit transaction should succeed");
+    }
+
+    pub fn transfer_to_contract(&mut self, transfer: TransferToContract) {
+        let _: () = rusk_abi::call(
+            TRANSFER_CONTRACT,
+            "transfer_to_contract",
+            &transfer,
+        )
+        .expect("Transferring to contract should succeed");
     }
 }
