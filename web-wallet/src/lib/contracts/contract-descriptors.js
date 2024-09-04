@@ -64,4 +64,19 @@ export default [
       },
     ],
   },
+  {
+    disabled:
+      import.meta.env.VITE_CONTRACT_MIGRATE_DISABLED &&
+      import.meta.env.VITE_CONTRACT_MIGRATE_DISABLED === "true",
+    id: "migrate",
+    label: "Migrate",
+    operations: [
+      {
+        disabled: false,
+        id: "connect",
+        label: "Connect",
+        primary: true,
+      },
+    ],
+  },
 ];
