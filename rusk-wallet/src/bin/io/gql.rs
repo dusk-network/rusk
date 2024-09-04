@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_wallet_core::Transaction;
+use execution_core::transfer::Transaction;
 use tokio::time::{sleep, Duration};
 
 use dusk_wallet::{Error, RuskHttpClient, RuskRequest};
@@ -177,7 +177,7 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     let block_txs = gql.txs_for_block(90).await?;
     block_txs.into_iter().for_each(|(t, chain_txid, _)| {
-        let hash = rusk_abi::hash::Hasher::digest(t.to_hash_input_bytes());
+        let hash = t.hash();
         let tx_id = hex::encode(hash.to_bytes());
         assert_eq!(chain_txid, tx_id);
         println!("txid: {tx_id}");

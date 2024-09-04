@@ -25,8 +25,8 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
+use dusk_wallet::{currency::Dusk, SecureWalletFile, Wallet, WalletPath};
 use dusk_wallet::{dat, Error};
-use dusk_wallet::{Dusk, SecureWalletFile, Wallet, WalletPath};
 
 use config::Config;
 use io::{prompt, status};
@@ -83,7 +83,7 @@ where
 
     // check for connection errors
     match con {
-        Err(Error::RocksDB(e)) => panic!{"Invalid cache {e}"},
+        Err(Error::RocksDB(e)) => panic!{"Please reset the cache! {e}"},
         Err(e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
         _ => {}
     }
@@ -314,7 +314,7 @@ async fn exec() -> anyhow::Result<()> {
                     println!("{}", Dusk::from(info.reward));
                 } else {
                     let staked_amount = match info.amount {
-                        Some((staked, ..)) => staked,
+                        Some(info) => info.value,
                         None => 0,
                     };
                     println!("{}", Dusk::from(staked_amount));

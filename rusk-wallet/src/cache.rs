@@ -4,18 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::cmp::Ordering;
-use std::collections::BTreeSet;
 use std::path::Path;
+use std::{cmp::Ordering, collections::BTreeSet};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::PublicSpendKey;
-use dusk_plonk::prelude::BlsScalar;
-use dusk_wallet_core::Store;
-use phoenix_core::Note;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
-use crate::{error::Error, store::LocalStore, MAX_ADDRESSES};
+use super::*;
+
+use crate::error::Error;
 
 type DB = DBWithThreadMode<MultiThreaded>;
 
@@ -30,21 +27,9 @@ impl Cache {
     /// Returns a new cache instance.
     pub(crate) fn new<T: AsRef<Path>>(
         path: T,
-        store: &LocalStore,
+        cfs: Vec<String>,
         status: fn(&str),
     ) -> Result<Self, Error> {
-        let cfs: Vec<_> = (0..MAX_ADDRESSES)
-            .flat_map(|i| {
-                let ssk =
-                    store.retrieve_ssk(i as u64).expect("ssk to be available");
-                let psk = ssk.public_spend_key();
-
-                let live = format!("{:?}", psk);
-                let spent = format!("spent_{:?}", psk);
-                [live, spent]
-            })
-            .collect();
-
         status("Opening notes database");
 
         let mut opts = Options::default();
@@ -59,16 +44,16 @@ impl Cache {
         Ok(Self { db })
     }
 
-    // We store a column family named by hex representation of the psk.
+    // We store a column family named by hex representation of the pk.
     // We store the nullifier of the note as key and the value is the bytes
     // representation of the tuple (NoteHeight, Note)
     pub(crate) fn insert(
         &self,
-        psk: &PublicSpendKey,
+        pk: &PhoenixPublicKey,
         height: u64,
         note_data: (Note, BlsScalar),
     ) -> Result<(), Error> {
-        let cf_name = format!("{:?}", psk);
+        let cf_name = format!("{:?}", pk);
 
         let cf = self
             .db
@@ -85,16 +70,16 @@ impl Cache {
         Ok(())
     }
 
-    // We store a column family named by hex representation of the psk.
+    // We store a column family named by hex representation of the pk.
     // We store the nullifier of the note as key and the value is the bytes
     // representation of the tuple (NoteHeight, Note)
     pub(crate) fn insert_spent(
         &self,
-        psk: &PublicSpendKey,
+        pk: &PhoenixPublicKey,
         height: u64,
         note_data: (Note, BlsScalar),
     ) -> Result<(), Error> {
-        let cf_name = format!("spent_{:?}", psk);
+        let cf_name = format!("spent_{:?}", pk);
 
         let cf = self
             .db
@@ -113,14 +98,14 @@ impl Cache {
 
     pub(crate) fn spend_notes(
         &self,
-        psk: &PublicSpendKey,
+        pk: &PhoenixPublicKey,
         nullifiers: &[BlsScalar],
     ) -> Result<(), Error> {
         if nullifiers.is_empty() {
             return Ok(());
         }
-        let cf_name = format!("{:?}", psk);
-        let spent_cf_name = format!("spent_{:?}", psk);
+        let cf_name = format!("{:?}", pk);
+        let spent_cf_name = format!("spent_{:?}", pk);
 
         let cf = self
             .db
@@ -160,12 +145,12 @@ impl Cache {
         }))
     }
 
-    /// Returns an iterator over all unspent notes nullifier for the given PSK.
+    /// Returns an iterator over all unspent notes nullifier for the given pk.
     pub(crate) fn unspent_notes_id(
         &self,
-        psk: &PublicSpendKey,
+        pk: &PhoenixPublicKey,
     ) -> Result<Vec<BlsScalar>, Error> {
-        let cf_name = format!("{:?}", psk);
+        let cf_name = format!("{:?}", pk);
         let mut notes = vec![];
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
@@ -183,13 +168,13 @@ impl Cache {
         Ok(notes)
     }
 
-    /// Returns an iterator over all unspent notes inserted for the given PSK,
+    /// Returns an iterator over all unspent notes inserted for the given pk,
     /// in order of note position.
     pub(crate) fn notes(
         &self,
-        psk: &PublicSpendKey,
+        pk: &PhoenixPublicKey,
     ) -> Result<BTreeSet<NoteData>, Error> {
-        let cf_name = format!("{:?}", psk);
+        let cf_name = format!("{:?}", pk);
         let mut notes = BTreeSet::<NoteData>::new();
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
@@ -208,13 +193,13 @@ impl Cache {
         Ok(notes)
     }
 
-    /// Returns an iterator over all notes inserted for the given PSK, in order
+    /// Returns an iterator over all notes inserted for the given pk, in order
     /// of block height.
     pub(crate) fn spent_notes(
         &self,
-        psk: &PublicSpendKey,
+        pk: &PhoenixPublicKey,
     ) -> Result<Vec<(BlsScalar, NoteData)>, Error> {
-        let cf_name = format!("spent_{:?}", psk);
+        let cf_name = format!("spent_{:?}", pk);
         let mut notes = vec![];
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
@@ -249,7 +234,7 @@ impl PartialOrd for NoteData {
 }
 
 impl Ord for NoteData {
-    fn cmp(&self, other: &Self) -> Ordering {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.note.pos().cmp(other.note.pos())
     }
 }

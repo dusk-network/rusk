@@ -4,17 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::clients::StateStore;
-use crate::store::LocalStore;
-use phoenix_core::Error as PhoenixError;
 use rand_core::Error as RngError;
 use std::io;
 use std::str::Utf8Error;
 
-use super::clients;
 /// Wallet core error
-pub(crate) type CoreError =
-    dusk_wallet_core::Error<LocalStore, StateStore, clients::Prover>;
+pub(crate) type CoreError = execution_core::Error;
 
 /// Errors returned by this library
 #[derive(Debug, thiserror::Error)]
@@ -52,9 +47,6 @@ pub enum Error {
     /// Random number generator errors
     #[error(transparent)]
     Rng(#[from] RngError),
-    /// Transaction model errors
-    #[error("An error occurred in Phoenix: {0:?}")]
-    Phoenix(PhoenixError),
     /// Not enough balance to perform transaction
     #[error("Insufficient balance to perform this operation")]
     NotEnoughBalance,
@@ -124,6 +116,9 @@ pub enum Error {
     /// The cache database couldn't find column family required
     #[error("Cache database corrupted")]
     CacheDatabaseCorrupted,
+    /// Prover errors from execution-core
+    #[error("Prover Error")]
+    ProverError(String),
 }
 
 impl From<dusk_bytes::Error> for Error {
@@ -140,19 +135,21 @@ impl From<block_modes::InvalidKeyIvLength> for Error {
 
 impl From<CoreError> for Error {
     fn from(e: CoreError) -> Self {
-        use dusk_wallet_core::Error::*;
+        use execution_core::Error::*;
+
         match e {
-            Store(err) | State(err) | Prover(err) => err,
-            Rkyv => Self::Rkyv,
-            Rng(err) => Self::Rng(err),
-            Bytes(err) => Self::Bytes(err),
-            Phoenix(err) => Self::Phoenix(err),
-            NotEnoughBalance => Self::NotEnoughBalance,
-            NoteCombinationProblem => Self::NoteCombinationProblem,
-            AlreadyStaked { .. } => Self::AlreadyStaked,
-            NotStaked { .. } => Self::NotStaked,
-            NoReward { .. } => Self::NoReward,
-            Utf8(err) => Self::Utf8(err.utf8_error()),
+            InsufficientBalance => Self::NotEnoughBalance,
+            Replay => Self::Transaction("Replay".to_string()),
+            PhoenixOwnership => Self::AddressNotOwned,
+            PhoenixCircuit(s) | PhoenixProver(s) => Self::ProverError(s),
+            InvalidData => Self::Bytes(dusk_bytes::Error::InvalidData),
+            BadLength(found, expected) => {
+                Self::Bytes(dusk_bytes::Error::BadLength { found, expected })
+            }
+            InvalidChar(ch, index) => {
+                Self::Bytes(dusk_bytes::Error::InvalidChar { ch, index })
+            }
+            Rkyv(_) => Self::Rkyv,
         }
     }
 }

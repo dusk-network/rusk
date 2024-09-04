@@ -44,24 +44,16 @@ aes = "0.7"
 rocksdb = "0.22"
 flume = "0.10.14"
 reqwest = { version = "0.11", features = ["stream"] }
-
-dusk-wallet-core = "0.24.0-plonk.0.16-rc.2"
 dusk-bytes = "0.1"
-dusk-pki = "0.13"
-rusk-abi = { version = "0.12.0-rc", default-features = false }
-phoenix-core = { version = "0.21", features = ["alloc"] }
-dusk-schnorr = { version = "0.14", default-features = false }
-dusk-poseidon = "0.31"
-dusk-plonk = "0.16"
-dusk-bls12_381-sign = { version = "0.5", default-features = false }
-ff = { version = "0.13", default-features = false }
-poseidon-merkle = "0.3"
+
+wallet-core = { path = "../wallet-core" }
+execution-core = { path = "../execution-core" }
 
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = [
-  "fmt",
-  "env-filter",
-  "json",
+    "fmt",
+    "env-filter",
+    "json",
 ] }
 
 rkyv = { version = "=0.7.39", default-features = false }
