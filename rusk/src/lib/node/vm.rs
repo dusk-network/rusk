@@ -90,6 +90,7 @@ impl VMExecution for Rusk {
             .accept_transactions(
                 blk.header().height,
                 blk.header().gas_limit,
+                blk.header().hash,
                 generator,
                 blk.txs().clone(),
                 Some(VerificationOutput {

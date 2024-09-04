@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod archive;
 pub mod bls;
 pub mod encoding;
 pub mod events;

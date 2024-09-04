@@ -819,6 +819,8 @@ impl RuesEventUri {
 #[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ContractEvent {
+    // TODO: Move this into node-data and merge it with the ContractEvent used
+    // for archival so that all events are handled in the same way
     pub target: WrappedContractId,
     pub topic: String,
     #[serde_as(as = "serde_with::hex::Hex")]

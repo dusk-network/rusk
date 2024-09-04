@@ -7,10 +7,19 @@
 use std::collections::HashSet;
 use std::path::Path;
 
+#[cfg(feature = "archive")]
+pub mod archive;
 pub mod rocksdb;
 
 use anyhow::Result;
+#[cfg(feature = "archive")]
+use node_data::archive::ContractEvent;
+#[cfg(feature = "archive")]
+use node_data::ledger::Hash;
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
+
+#[cfg(feature = "archive")]
+use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use serde::{Deserialize, Serialize};
 
 pub struct LightBlock {
@@ -206,4 +215,25 @@ impl Default for DatabaseOptions {
             enable_debug: false,
         }
     }
+}
+
+/// The Archivist is responsible for storing the events and potentially other
+/// ephemeral data forever in the archive DB.
+///
+/// Example:
+/// - The block does not store the events, only the hash of the events. The
+///   archivist will store the events.
+#[cfg(feature = "archive")]
+pub(crate) trait Archivist {
+    async fn store_vm_events(
+        &self,
+        block_height: u64,
+        block_hash: Hash,
+        events: Vec<ContractEvent>,
+    ) -> Result<()>;
+
+    async fn fetch_vm_events(
+        &self,
+        block_height: u64,
+    ) -> Result<Vec<ContractEvent>>;
 }
