@@ -194,7 +194,7 @@ impl MempoolSrv {
         db.read().await.update(|db| {
             let spend_ids = tx.to_spend_ids();
 
-            // ensure nullifiers do not exist in the mempool
+            // ensure spend_ids do not exist in the mempool
             for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
                 if let Some(m_tx) = db.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
