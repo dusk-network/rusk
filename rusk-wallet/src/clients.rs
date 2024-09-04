@@ -17,20 +17,23 @@ use wallet_core::{
     input::try_input_notes,
     keys::{derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk},
 };
+use zeroize::Zeroize;
 
-use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 use self::sync::sync_db;
 
-use super::block::Block;
-use super::cache::Cache;
-use super::*;
+use super::{block::Block, cache::Cache, *};
 
-use crate::cache::NoteData;
-use crate::rusk::{RuskHttpClient, RuskRequest};
-use crate::store::LocalStore;
-use crate::{Error, MAX_ADDRESSES};
+use crate::{
+    cache::NoteData,
+    rusk::{RuskHttpClient, RuskRequest},
+    store::LocalStore,
+    Error, MAX_ADDRESSES,
+};
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";
@@ -107,24 +110,18 @@ impl State {
 
         let cache = self.cache();
         let status = self.status;
-        let client = Arc::new(self.client.clone());
-        let addresses = Arc::new(self.store.addresses());
-        let sender = Arc::new(sync_tx);
+        let client = self.client.clone();
+        let store = self.store.clone();
 
         status("Starting Sync..");
 
         tokio::spawn(async move {
             loop {
-                let sender = Arc::clone(&sender);
-                let client = Arc::clone(&client);
-                let _ = sender.send("Syncing..".to_string());
+                let _ = sync_tx.send("Syncing..".to_string());
 
-                let sync_status =
-                    sync_db(client.as_ref(), &cache, &addresses, status).await;
-
-                let _ = match sync_status {
-                    Ok(_) => sender.send("Syncing Complete".to_string()),
-                    Err(e) => sender.send(format!("Error during sync:.. {e}")),
+                let _ = match sync_db(&client, &cache, &store, status).await {
+                    Ok(_) => sync_tx.send("Syncing Complete".to_string()),
+                    Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
                 };
 
                 sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)).await;
@@ -135,13 +132,7 @@ impl State {
     }
 
     pub async fn sync(&self) -> Result<(), Error> {
-        sync_db(
-            &self.client,
-            &self.cache(),
-            &self.store().addresses(),
-            self.status,
-        )
-        .await
+        sync_db(&self.client, &self.cache(), &self.store, self.status).await
     }
 
     /// Requests that a node prove the given transaction and later propagates it
@@ -194,7 +185,7 @@ impl State {
         target: u64,
     ) -> Result<Vec<(Note, NoteOpening, BlsScalar)>, Error> {
         let vk = derive_phoenix_vk(self.store().get_seed(), index);
-        let sk = derive_phoenix_sk(self.store().get_seed(), index);
+        let mut sk = derive_phoenix_sk(self.store().get_seed(), index);
         let pk = derive_phoenix_pk(self.store().get_seed(), index);
 
         let inputs: Result<Vec<_>, Error> = self
@@ -210,14 +201,18 @@ impl State {
             })
             .collect();
 
-        try_input_notes(inputs?, target)
+        let inputs = try_input_notes(inputs?, target)
             .into_iter()
             .map(|(note, scalar)| {
                 let opening = self.fetch_opening(&note)?;
 
                 Ok((note, opening, scalar))
             })
-            .collect()
+            .collect();
+
+        sk.zeroize();
+
+        inputs
     }
 
     pub(crate) fn fetch_notes(

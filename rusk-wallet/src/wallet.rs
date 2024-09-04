@@ -40,18 +40,23 @@ use execution_core::{
     },
 };
 
+use zeroize::Zeroize;
+
 use super::*;
 
-use crate::cache::NoteData;
-use crate::clients::{Prover, State};
-use crate::crypto::encrypt;
-use crate::currency::Dusk;
-use crate::dat::{
-    self, version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC,
-    RESERVED,
+use crate::{
+    cache::NoteData,
+    clients::{Prover, State},
+    crypto::encrypt,
+    currency::Dusk,
+    dat::{
+        self, version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC,
+        RESERVED,
+    },
+    store::LocalStore,
+    Error, RuskHttpClient,
 };
-use crate::store::LocalStore;
-use crate::{Error, RuskHttpClient};
+
 use gas::Gas;
 
 /// The interface to the Dusk Network
@@ -410,7 +415,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let mut rng = StdRng::from_entropy();
         let sender_index = sender.index()?;
-        let sender_sk = derive_phoenix_sk(seed, sender_index);
+        let mut sender_sk = derive_phoenix_sk(seed, sender_index);
 
         let inputs = state
             .inputs(sender_index, deposit + gas.limit * gas.price)?
@@ -437,7 +442,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             exec,
         )?;
 
-        state.prove_and_propagate(tx)
+        let tx = state.prove_and_propagate(tx);
+
+        sender_sk.zeroize();
+
+        tx
     }
 
     /// Transfers funds between addresses
@@ -469,7 +478,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let seed = self.store.get_seed();
 
-        let sender_sk = derive_phoenix_sk(seed, sender_index);
+        let mut sender_sk = derive_phoenix_sk(seed, sender_index);
         let change_pk = sender.pk();
         let reciever_pk = rcvr.pk();
 
@@ -498,8 +507,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             None::<ContractCall>,
         )?;
 
-        // transfer
-        state.prove_and_propagate(tx)
+        let tx = state.prove_and_propagate(tx);
+
+        sender_sk.zeroize();
+
+        tx
     }
 
     /// Stakes Dusk
@@ -528,8 +540,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut rng = StdRng::from_entropy();
         let amt = *amt;
         let sender_index = addr.index()?;
-        let sender_sk = derive_phoenix_sk(seed, sender_index);
-        let stake_sk = derive_bls_sk(seed, sender_index);
+        let mut sender_sk = derive_phoenix_sk(seed, sender_index);
+        let mut stake_sk = derive_bls_sk(seed, sender_index);
 
         let nonce = state
             .fetch_stake(&AccountPublicKey::from(&stake_sk))?
@@ -550,7 +562,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price, chain_id, amt, nonce,
         )?;
 
-        state.prove_and_propagate(stake)
+        let tx = state.prove_and_propagate(stake);
+
+        sender_sk.zeroize();
+        stake_sk.zeroize();
+
+        tx
     }
 
     /// Obtains stake information for a given address
@@ -584,8 +601,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let state = self.state()?;
 
-        let sender_sk = derive_phoenix_sk(seed, index);
-        let stake_sk = derive_bls_sk(seed, index);
+        let mut sender_sk = derive_phoenix_sk(seed, index);
+        let mut stake_sk = derive_bls_sk(seed, index);
 
         let unstake_value = state
             .fetch_stake(&AccountPublicKey::from(&stake_sk))?
@@ -598,7 +615,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root()?;
         let chain_id = state.fetch_chain_id()?;
 
-        let stake = phoenix_unstake::<_, Prover>(
+        let unstake = phoenix_unstake::<_, Prover>(
             &mut rng,
             &sender_sk,
             &stake_sk,
@@ -610,7 +627,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             chain_id,
         )?;
 
-        state.prove_and_propagate(stake)
+        let tx = state.prove_and_propagate(unstake);
+
+        sender_sk.zeroize();
+        stake_sk.zeroize();
+
+        tx
     }
 
     /// Withdraw accumulated staking reward for a given address
@@ -629,7 +651,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let index = addr.index()?;
         let seed = self.store.get_seed();
 
-        let sender_sk = derive_phoenix_sk(seed, index);
+        let mut sender_sk = derive_phoenix_sk(seed, index);
         let stake_sk = derive_bls_sk(seed, index);
 
         let inputs = state.inputs(index, gas.limit * gas.price)?;
@@ -654,7 +676,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             chain_id,
         )?;
 
-        state.prove_and_propagate(withdraw)
+        let tx = state.prove_and_propagate(withdraw);
+
+        sender_sk.zeroize();
+
+        tx
     }
 
     /// Returns bls key pair for provisioner nodes

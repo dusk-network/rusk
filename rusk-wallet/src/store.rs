@@ -4,16 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{clients::State, MAX_ADDRESSES};
+use crate::clients::State;
 
 use dusk_bytes::{Error as BytesError, Serializable};
 
 use wallet_core::keys::{self, RNG_SEED};
-
-use super::*;
-
-pub(crate) type SecretAddress =
-    (PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey);
 
 #[derive(Clone)]
 pub struct Seed(keys::Seed);
@@ -58,22 +53,5 @@ impl State {
     /// Retrieves the seed used to derive keys.
     pub fn get_seed(&self) -> &[u8; Seed::SIZE] {
         self.store().get_seed()
-    }
-}
-
-impl LocalStore {
-    pub(crate) fn addresses(&self) -> Vec<SecretAddress> {
-        let seed = self.get_seed();
-
-        (0..MAX_ADDRESSES)
-            .map(|i| {
-                let i = i as u8;
-                (
-                    derive_phoenix_sk(seed, i),
-                    derive_phoenix_vk(seed, i),
-                    derive_phoenix_pk(seed, i),
-                )
-            })
-            .collect()
     }
 }

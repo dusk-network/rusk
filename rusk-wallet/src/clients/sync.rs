@@ -11,7 +11,6 @@ use futures::StreamExt;
 use crate::block::Block;
 use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::rusk::RuskHttpClient;
-use crate::store::SecretAddress;
 use crate::{Error, RuskRequest};
 
 use super::*;
@@ -21,9 +20,23 @@ const TREE_LEAF: usize = size_of::<ArchivedNoteLeaf>();
 pub(crate) async fn sync_db(
     client: &RuskHttpClient,
     cache: &Cache,
-    addresses: &Vec<SecretAddress>,
+    store: &LocalStore,
     status: fn(&str),
 ) -> Result<(), Error> {
+    let seed = store.get_seed();
+
+    let addresses: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> =
+        (0..MAX_ADDRESSES)
+            .map(|i| {
+                let i = i as u8;
+                (
+                    derive_phoenix_sk(seed, i),
+                    derive_phoenix_vk(seed, i),
+                    derive_phoenix_pk(seed, i),
+                )
+            })
+            .collect();
+
     status("Getting cached note position...");
 
     let last_pos = cache.last_pos()?;
@@ -94,16 +107,19 @@ pub(crate) async fn sync_db(
     }
 
     // Remove spent nullifiers from live notes
-    for (_, _, pk) in addresses {
-        let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(pk)?;
+    // zerorize all the secret keys
+    for (mut sk, _, pk) in addresses {
+        let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(&pk)?;
 
         if !nullifiers.is_empty() {
             let existing =
                 fetch_existing_nullifiers_remote(client, nullifiers.as_slice())
                     .wait()?;
 
-            cache.spend_notes(pk, existing.as_slice())?;
+            cache.spend_notes(&pk, existing.as_slice())?;
         }
+
+        sk.zeroize();
     }
 
     Ok(())

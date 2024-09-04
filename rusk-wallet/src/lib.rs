@@ -47,10 +47,6 @@ use execution_core::{
     BlsScalar,
 };
 
-use wallet_core::keys::{
-    derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
-};
-
 use currency::Dusk;
 
 /// The largest amount of Dusk that is possible to convert
