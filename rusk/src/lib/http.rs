@@ -758,7 +758,13 @@ where
         let wallet_wasm = include_bytes!(
             "../../../target/wasm32-unknown-unknown/release/wallet_core.wasm"
         );
-        return Ok(Response::new(Full::from(wallet_wasm.to_vec()).into()));
+        let mut response =
+            Response::new(Full::from(wallet_wasm.to_vec()).into());
+        response.headers_mut().append(
+            "Content-Type",
+            HeaderValue::from_static("application/wasm"),
+        );
+        return Ok(response);
     }
 
     if hyper_tungstenite::is_upgrade_request(&req) {
