@@ -35,7 +35,7 @@ use wallet_core::{
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     transfer::{
-        contract_exec::{ContractCall, ContractExec},
+        data::{ContractCall, TransactionData},
         Transaction,
     },
 };
@@ -401,7 +401,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender: &Address,
         reciever: &Address,
         deposit: Dusk,
-        exec: Option<impl Into<ContractExec>>,
+        data: Option<impl Into<TransactionData>>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         // make sure we own the sender address
@@ -445,7 +445,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
-            exec,
+            data,
         )?;
 
         let tx = state.prove_and_propagate(tx);

@@ -116,6 +116,9 @@ pub enum Error {
     /// Prover errors from execution-core
     #[error("Prover Error")]
     ProverError(String),
+    /// Memo provided is too large
+    #[error("Memo too large {0}")]
+    MemoTooLarge(usize),
 }
 
 impl From<dusk_bytes::Error> for Error {
@@ -147,6 +150,7 @@ impl From<execution_core::Error> for Error {
                 Self::Bytes(dusk_bytes::Error::InvalidChar { ch, index })
             }
             Rkyv(_) => Self::Rkyv,
+            MemoTooLarge(m) => Self::MemoTooLarge(m),
         }
     }
 }
