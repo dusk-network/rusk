@@ -14,7 +14,7 @@ use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
 use node_data::message::payload::{GetResource, Inv, Nonce};
-use node_data::message::{AsyncQueue, Metadata};
+use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
 use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
 use tracing::{error, info, trace};
@@ -102,7 +102,7 @@ pub struct Kadcast<const N: usize> {
 }
 
 impl<const N: usize> Kadcast<N> {
-    pub fn new(conf: Config) -> Result<Self, AddrParseError> {
+    pub fn new(mut conf: Config) -> Result<Self, AddrParseError> {
         const INIT: Option<AsyncQueue<Message>> = None;
         let routes = Arc::new(RwLock::new([INIT; N]));
 
@@ -117,6 +117,8 @@ impl<const N: usize> Kadcast<N> {
             routes: routes.clone(),
             filters: filters.clone(),
         };
+        conf.version = format!("{PROTOCOL_VERSION}");
+        conf.version_match = format!("{PROTOCOL_VERSION}");
         let peer = Peer::new(conf.clone(), listener)?;
         let public_addr = conf
             .public_address
