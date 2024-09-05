@@ -44,7 +44,7 @@ pub struct Rusk {
     dir: PathBuf,
     pub(crate) chain_id: u8,
     pub(crate) generation_timeout: Option<Duration>,
-    pub(crate) gas_per_deploy_byte: Option<u64>,
+    pub(crate) charge_per_deploy_byte: Option<u64>,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,

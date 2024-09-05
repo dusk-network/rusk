@@ -24,9 +24,9 @@ pub(crate) struct ChainConfig {
 
     max_queue_size: Option<usize>,
 
-    // NB: changing the gas_per_deploy_byte/block_gas_limit is equivalent to
+    // NB: changing the charge_per_deploy_byte/block_gas_limit is equivalent to
     // forking the chain.
-    gas_per_deploy_byte: Option<u64>,
+    charge_per_deploy_byte: Option<u64>,
     block_gas_limit: Option<u64>,
 }
 
@@ -75,8 +75,8 @@ impl ChainConfig {
         self.generation_timeout
     }
 
-    pub(crate) fn gas_per_deploy_byte(&self) -> Option<u64> {
-        self.gas_per_deploy_byte
+    pub(crate) fn charge_per_deploy_byte(&self) -> Option<u64> {
+        self.charge_per_deploy_byte
     }
 
     pub(crate) fn max_queue_size(&self) -> usize {

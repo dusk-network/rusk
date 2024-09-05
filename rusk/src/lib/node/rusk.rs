@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::cmp::max;
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
@@ -49,14 +50,14 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
         .expect("Dusk consensus public key to be valid")
 });
 
-const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
+const DEFAULT_CHARGE_PER_DEPLOY_BYTE: u64 = 200000;
 
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
         generation_timeout: Option<Duration>,
-        gas_per_deploy_byte: Option<u64>,
+        charge_per_deploy_byte: Option<u64>,
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
@@ -91,7 +92,7 @@ impl Rusk {
             dir: dir.into(),
             chain_id,
             generation_timeout,
-            gas_per_deploy_byte,
+            charge_per_deploy_byte,
             feeder_gas_limit,
             event_sender,
             block_gas_limit,
@@ -140,7 +141,7 @@ impl Rusk {
             match execute(
                 &mut session,
                 &unspent_tx.inner,
-                self.gas_per_deploy_byte,
+                self.charge_per_deploy_byte,
             ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
@@ -158,7 +159,7 @@ impl Rusk {
                             let _ = execute(
                                 &mut session,
                                 &spent_tx.inner.inner,
-                                self.gas_per_deploy_byte,
+                                self.charge_per_deploy_byte,
                             );
                         }
 
@@ -243,7 +244,7 @@ impl Rusk {
             txs,
             slashing,
             voters,
-            self.gas_per_deploy_byte,
+            self.charge_per_deploy_byte,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -274,7 +275,7 @@ impl Rusk {
             &txs[..],
             slashing,
             voters,
-            self.gas_per_deploy_byte,
+            self.charge_per_deploy_byte,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -466,7 +467,7 @@ fn accept(
     txs: &[Transaction],
     slashing: Vec<Slash>,
     voters: Option<&[Voter]>,
-    gas_per_deploy_byte: Option<u64>,
+    charge_per_deploy_byte: Option<u64>,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -485,7 +486,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let receipt = execute(&mut session, tx, gas_per_deploy_byte)?;
+        let receipt = execute(&mut session, tx, charge_per_deploy_byte)?;
 
         update_hasher(&mut event_hasher, &receipt.events);
         events.extend(receipt.events);
@@ -532,13 +533,17 @@ fn accept(
     ))
 }
 
-// Returns gas charge for bytecode deployment.
+// Returns (economic) charge and gas charge for a given bytecode deployment.
 fn bytecode_charge(
     bytecode: &ContractBytecode,
-    gas_per_deploy_byte: &Option<u64>,
-) -> u64 {
-    bytecode.bytes.len() as u64
-        * gas_per_deploy_byte.unwrap_or(DEFAULT_GAS_PER_DEPLOY_BYTE)
+    charge_per_deploy_byte: &Option<u64>,
+    gas_price: u64,
+) -> (u64, u64) {
+    let charge = bytecode.bytes.len() as u64
+        * charge_per_deploy_byte.unwrap_or(DEFAULT_CHARGE_PER_DEPLOY_BYTE);
+    assert_ne!(gas_price, 0);
+    let gas_charge = max(charge / gas_price, 1);
+    (charge, gas_charge)
 }
 
 // Contract deployment will fail and charge full gas limit in the
@@ -554,11 +559,13 @@ fn contract_deploy(
     session: &mut Session,
     deploy: &ContractDeploy,
     gas_limit: u64,
-    gas_per_deploy_byte: Option<u64>,
+    gas_price: u64,
+    charge_per_deploy_byte: Option<u64>,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
 ) {
-    let deploy_charge = bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
-    let min_gas_limit = receipt.gas_spent + deploy_charge;
+    let (_, deploy_gas_charge) =
+        bytecode_charge(&deploy.bytecode, &charge_per_deploy_byte, gas_price);
+    let min_gas_limit = receipt.gas_spent + deploy_gas_charge;
     let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
     if gas_limit < min_gas_limit {
         receipt.data = Err(ContractError::OutOfGas);
@@ -578,7 +585,7 @@ fn contract_deploy(
             gas_limit - receipt.gas_spent,
         );
         match result {
-            Ok(_) => receipt.gas_spent += deploy_charge,
+            Ok(_) => receipt.gas_spent += deploy_gas_charge,
             Err(err) => {
                 info!("Tx caused deployment error {err:?}");
                 receipt.data =
@@ -624,14 +631,17 @@ fn contract_deploy(
 fn execute(
     session: &mut Session,
     tx: &ProtocolTransaction,
-    gas_per_deploy_byte: Option<u64>,
+    charge_per_deploy_byte: Option<u64>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     if let Some(deploy) = tx.deploy() {
-        let deploy_charge =
-            bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
-        if tx.gas_limit() < deploy_charge {
+        let (deploy_charge, _) = bytecode_charge(
+            &deploy.bytecode,
+            &charge_per_deploy_byte,
+            tx.gas_price(),
+        );
+        if tx.gas_limit() * tx.gas_price() < deploy_charge {
             return Err(PiecrustError::Panic(
                 "not enough gas to deploy".into(),
             ));
@@ -655,7 +665,8 @@ fn execute(
                 session,
                 deploy,
                 tx.gas_limit(),
-                gas_per_deploy_byte,
+                tx.gas_price(),
+                charge_per_deploy_byte,
                 &mut receipt,
             );
         }
