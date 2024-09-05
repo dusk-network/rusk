@@ -164,15 +164,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let state_root = vm.read().await.get_state_root()?;
 
         info!(
-            event = "VM state loaded",
+            event = "VM finalized state loaded",
             state_root = hex::encode(state_root),
         );
 
-        // Detect a consistency issue between VM and Ledger states.
         if tip_height > 0 && tip_state_hash != state_root {
-            info!("revert to last finalized state");
-            // Revert to last known finalized state.
-            acc.try_revert(RevertTarget::LastFinalizedState).await?;
+            if let Err(error) = vm.read().await.move_to_commit(tip_state_hash) {
+                warn!(
+                    event = "Cannot move to tip_state_hash",
+                    ?error,
+                    state_root = hex::encode(tip_state_hash)
+                );
+
+                info!("revert to last finalized state");
+                // Revert to last known finalized state.
+                acc.try_revert(RevertTarget::LastFinalizedState).await?;
+            } else {
+                info!(
+                    event = "VM accepted state loaded",
+                    state_root = hex::encode(tip_state_hash),
+                );
+            }
         }
 
         Ok(acc)
