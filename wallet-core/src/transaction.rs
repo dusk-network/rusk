@@ -17,7 +17,7 @@ use execution_core::{
     signatures::bls::SecretKey as BlsSecretKey,
     stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
-        contract_exec::{ContractCall, ContractExec},
+        data::{ContractCall, TransactionData},
         phoenix::{
             Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
@@ -60,7 +60,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
-    exec: Option<impl Into<ContractExec>>,
+    data: Option<impl Into<TransactionData>>,
 ) -> Result<Transaction, Error> {
     Ok(PhoenixTransaction::new::<R, P>(
         rng,
@@ -75,7 +75,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         gas_limit,
         gas_price,
         chain_id,
-        exec,
+        data,
     )?
     .into())
 }
