@@ -15,13 +15,14 @@ use crossterm::{
 
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
-use dusk_wallet::{dat::DatFileVersion, Error};
 use requestty::Question;
 
-use dusk_wallet::{Address, Dusk, Lux};
-
-use dusk_wallet::gas;
-use dusk_wallet::{MAX_CONVERTIBLE, MIN_CONVERTIBLE};
+use rusk_wallet::gas;
+use rusk_wallet::{
+    currency::{Dusk, Lux},
+    dat::DatFileVersion,
+    Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
+};
 use sha2::{Digest, Sha256};
 
 /// Request the user to authenticate with a password
@@ -244,6 +245,7 @@ pub(crate) fn request_token_amt(
         .build();
 
     let a = requestty::prompt_one(question)?;
+
     Ok(a.as_float().expect("answer to be a float").into())
 }
 

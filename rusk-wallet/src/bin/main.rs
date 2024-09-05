@@ -12,7 +12,6 @@ mod menu;
 mod settings;
 
 pub(crate) use command::{Command, RunResult};
-use dusk_wallet::dat::LATEST_VERSION;
 pub(crate) use menu::Menu;
 
 use clap::Parser;
@@ -25,8 +24,11 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
-use dusk_wallet::{dat, Error};
-use dusk_wallet::{Dusk, SecureWalletFile, Wallet, WalletPath};
+use rusk_wallet::{currency::Dusk, SecureWalletFile, Wallet, WalletPath};
+use rusk_wallet::{
+    dat::{self, LATEST_VERSION},
+    Error,
+};
 
 use config::Config;
 use io::{prompt, status};
@@ -83,7 +85,7 @@ where
 
     // check for connection errors
     match con {
-        Err(Error::RocksDB(e)) => panic!{"Invalid cache {e}"},
+        Err(Error::RocksDB(e)) => panic!{"Please reset the cache! {e}"},
         Err(e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
         _ => {}
     }
@@ -121,7 +123,7 @@ async fn exec() -> anyhow::Result<()> {
     // Finally complete the settings by setting the network
     let settings = settings_builder
         .network(cfg.network)
-        .map_err(|_| dusk_wallet::Error::NetworkNotFound)?;
+        .map_err(|_| rusk_wallet::Error::NetworkNotFound)?;
 
     // generate a subscriber with the desired log level
     //
@@ -314,7 +316,7 @@ async fn exec() -> anyhow::Result<()> {
                     println!("{}", Dusk::from(info.reward));
                 } else {
                     let staked_amount = match info.amount {
-                        Some((staked, ..)) => staked,
+                        Some(info) => info.value,
                         None => 0,
                     };
                     println!("{}", Dusk::from(staked_amount));

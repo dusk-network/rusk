@@ -11,7 +11,7 @@ use std::num::ParseFloatError;
 use std::ops::{Add, Deref, Div, Mul, Sub};
 use std::str::FromStr;
 
-use rusk_abi::dusk;
+use super::*;
 
 /// The underlying unit of Dusk
 pub type Lux = u64;
@@ -24,7 +24,7 @@ impl Dusk {
     /// The smallest value that can be represented by Dusk currency
     pub const MIN: Dusk = Dusk(0);
     /// The largest value that can be represented by Dusk currency
-    pub const MAX: Dusk = Dusk(dusk::dusk(f64::MAX / dusk::dusk(1.0) as f64));
+    pub const MAX: Dusk = Dusk(dusk(f64::MAX / dusk(1.0) as f64));
 
     /// Returns a new Dusk based on the [Lux] given
     pub const fn new(lux: Lux) -> Dusk {
@@ -70,18 +70,18 @@ impl Sub<Lux> for Dusk {
 impl Mul for Dusk {
     type Output = Self;
     fn mul(self, other: Self) -> Self {
-        let a = dusk::from_dusk(self.0);
-        let b = dusk::from_dusk(other.0);
-        Self(dusk::dusk(a * b))
+        let a = from_dusk(self.0);
+        let b = from_dusk(other.0);
+        Self(dusk(a * b))
     }
 }
 
 impl Mul<Lux> for Dusk {
     type Output = Self;
     fn mul(self, other: Lux) -> Self {
-        let a = dusk::from_dusk(self.0);
-        let b = dusk::from_dusk(other);
-        Self(dusk::dusk(a * b))
+        let a = from_dusk(self.0);
+        let b = from_dusk(other);
+        Self(dusk(a * b))
     }
 }
 
@@ -89,14 +89,14 @@ impl Mul<Lux> for Dusk {
 impl Div for Dusk {
     type Output = Self;
     fn div(self, other: Self) -> Self {
-        Self(dusk::dusk(self.0 as f64 / other.0 as f64))
+        Self(dusk(self.0 as f64 / other.0 as f64))
     }
 }
 
 impl Div<Lux> for Dusk {
     type Output = Self;
     fn div(self, other: Lux) -> Self {
-        Self(dusk::dusk(self.0 as f64 / other as f64))
+        Self(dusk(self.0 as f64 / other as f64))
     }
 }
 
@@ -118,7 +118,7 @@ impl PartialEq<Lux> for Dusk {
 }
 impl PartialEq<f64> for Dusk {
     fn eq(&self, other: &f64) -> bool {
-        self.0 == dusk::dusk(*other)
+        self.0 == dusk(*other)
     }
 }
 
@@ -141,7 +141,7 @@ impl PartialOrd<Lux> for Dusk {
 }
 impl PartialOrd<f64> for Dusk {
     fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
-        self.0.partial_cmp(&dusk::dusk(*other))
+        self.0.partial_cmp(&dusk(*other))
     }
 }
 
@@ -154,13 +154,13 @@ impl From<f64> for Dusk {
         if val < 0.0 {
             panic!("Dusk type does not support negative values");
         }
-        Self(dusk::dusk(val))
+        Self(dusk(val))
     }
 }
 
 impl From<Dusk> for f64 {
     fn from(val: Dusk) -> f64 {
-        dusk::from_dusk(*val)
+        from_dusk(*val)
     }
 }
 
