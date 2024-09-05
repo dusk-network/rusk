@@ -120,7 +120,7 @@ pub mod faker {
     use super::*;
     use crate::ledger::Dummy;
     use execution_core::transfer::{
-        contract_exec::{ContractCall, ContractExec},
+        data::{ContractCall, TransactionData},
         phoenix::{
             Fee, Note, Payload as PhoenixPayload,
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -184,7 +184,7 @@ pub mod faker {
             chain_id: 0xFA,
             tx_skeleton,
             fee,
-            exec: Some(ContractExec::Call(contract_call)),
+            data: Some(TransactionData::Call(contract_call)),
         };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
