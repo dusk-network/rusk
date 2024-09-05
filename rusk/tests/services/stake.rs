@@ -12,7 +12,7 @@ use execution_core::{
     dusk,
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeAmount, STAKE_CONTRACT},
-    transfer::contract_exec::ContractCall,
+    transfer::data::ContractCall,
 };
 
 use rand::prelude::*;

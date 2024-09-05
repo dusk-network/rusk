@@ -9,7 +9,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use execution_core::transfer::{
-    contract_exec::{ContractCall, ContractExec},
+    data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
 };
 use rand::prelude::*;
@@ -95,7 +95,7 @@ fn make_transactions(
             GAS_LIMIT_0,
             GAS_PRICE,
             DEPOSIT,
-            ContractExec::Call(contract_call.clone()),
+            TransactionData::Call(contract_call.clone()),
         )
         .expect("Making the transaction should succeed");
 
@@ -109,7 +109,7 @@ fn make_transactions(
             GAS_LIMIT_1,
             GAS_PRICE,
             DEPOSIT,
-            ContractExec::Call(contract_call.clone()),
+            TransactionData::Call(contract_call.clone()),
         )
         .expect("Making the transaction should succeed");
 

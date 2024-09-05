@@ -58,6 +58,8 @@ pub enum Error {
     CommitNotFound([u8; 32]),
     /// Invalid credits count
     InvalidCreditsCount(u64, usize),
+    /// Memo too large
+    MemoTooLarge(usize),
 }
 
 impl std::error::Error for Error {}
@@ -106,6 +108,7 @@ impl From<execution_core::Error> for Error {
                 })
             }
             ExecErr::Rkyv(e) => Self::Transaction(ExecErr::Rkyv(e)),
+            ExecErr::MemoTooLarge(size) => Self::MemoTooLarge(size),
         }
     }
 }
@@ -190,6 +193,9 @@ impl fmt::Display for Error {
                     "Invalid credits count, height = {}, credits = {}",
                     height, credits
                 )
+            }
+            Error::MemoTooLarge(size) => {
+                write!(f, "The memo size {size} is too large")
             }
         }
     }
