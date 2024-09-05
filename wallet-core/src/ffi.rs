@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::keys::{derive_bls_pk, derive_phoenix_pk};
-use crate::RNG_SEED;
+use crate::keys::{derive_bls_pk, derive_phoenix_pk, RNG_SEED};
 use core::ptr;
 use dusk_bytes::Serializable;
 use execution_core::{
