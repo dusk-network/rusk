@@ -53,14 +53,14 @@ pub trait Network: Send + Sync + 'static {
     /// Sends a message to a specified peer.
     async fn send_to_peer(
         &self,
-        msg: &Message,
+        msg: Message,
         peer_addr: std::net::SocketAddr,
     ) -> anyhow::Result<()>;
 
     /// Sends to random set of alive peers.
     async fn send_to_alive_peers(
         &self,
-        msg: &Message,
+        msg: Message,
         amount: usize,
     ) -> anyhow::Result<()>;
 

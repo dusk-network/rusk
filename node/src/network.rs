@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::net::{AddrParseError, SocketAddr};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::{BoxedFilter, Message};
@@ -12,7 +13,7 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
-use node_data::message::payload::{GetResource, Inv};
+use node_data::message::payload::{GetResource, Inv, Nonce};
 use node_data::message::{AsyncQueue, Metadata};
 use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
@@ -96,6 +97,8 @@ pub struct Kadcast<const N: usize> {
 
     /// Represents a parsed conf.public_addr
     public_addr: SocketAddr,
+
+    counter: AtomicU64,
 }
 
 impl<const N: usize> Kadcast<N> {
@@ -120,12 +123,15 @@ impl<const N: usize> Kadcast<N> {
             .parse::<SocketAddr>()
             .expect("valid kadcast public address");
 
+        let nonce = Nonce::from(public_addr.ip());
+
         Ok(Kadcast {
             routes,
             filters,
             peer,
             conf,
             public_addr,
+            counter: AtomicU64::new(nonce.into()),
         })
     }
 
@@ -206,17 +212,22 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             self.public_addr,
             ttl_as_sec,
             hops_limit,
-        )
-        .into();
-        self.send_to_alive_peers(&msg, REDUNDANCY_PEER_COUNT).await
+        );
+        self.send_to_alive_peers(msg.into(), REDUNDANCY_PEER_COUNT)
+            .await
     }
 
     /// Sends an encoded message to a given peer.
     async fn send_to_peer(
         &self,
-        msg: &Message,
+        mut msg: Message,
         recv_addr: SocketAddr,
     ) -> anyhow::Result<()> {
+        // rnd_count is added to bypass kadcast dupemap
+        let rnd_count = self.counter.fetch_add(1, Ordering::SeqCst);
+
+        msg.payload.set_nonce(rnd_count);
+
         let mut encoded = vec![];
         msg.write(&mut encoded)
             .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {err}"))?;
@@ -231,9 +242,14 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     /// Sends to random set of alive peers.
     async fn send_to_alive_peers(
         &self,
-        msg: &Message,
+        mut msg: Message,
         amount: usize,
     ) -> anyhow::Result<()> {
+        // rnd_count is added to bypass kadcast dupemap
+        let rnd_count = self.counter.fetch_add(1, Ordering::SeqCst);
+
+        msg.payload.set_nonce(rnd_count);
+
         let mut encoded = vec![];
         msg.write(&mut encoded)
             .map_err(|err| anyhow::anyhow!("failed to encode: {err}"))?;
