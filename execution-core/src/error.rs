@@ -30,6 +30,11 @@ pub enum Error {
     InvalidChar(char, usize),
     /// Rkyv serialization.
     Rkyv(String),
+    /// The provided memo is too large. Contains the memo size used. The max
+    /// size is [`MAX_MEMO_SIZE`].
+    ///
+    /// [`MAX_MEMO_SIZE`]: crate::transfer::data::MAX_MEMO_SIZE
+    MemoTooLarge(usize),
 }
 
 impl fmt::Display for Error {

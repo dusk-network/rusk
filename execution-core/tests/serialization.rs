@@ -9,8 +9,8 @@ use execution_core::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
     transfer::{
-        contract_exec::{
-            ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+        data::{
+            ContractBytecode, ContractCall, ContractDeploy, TransactionData,
         },
         phoenix::{
             Note, NoteTreeItem, NotesTree, Prove,
@@ -42,7 +42,7 @@ impl Prove for TxCircuitVecProver {
 
 fn new_phoenix_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
-    exec: Option<ContractExec>,
+    data: Option<TransactionData>,
 ) -> Transaction {
     // generate the keys
     let sender_sk = PhoenixSecretKey::random(rng);
@@ -124,14 +124,14 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         gas_limit,
         gas_price,
         CHAIN_ID,
-        exec,
+        data,
     )
-    .expect("transcaction generation should work")
+    .expect("transaction generation should work")
 }
 
 fn new_moonlight_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
-    exec: Option<ContractExec>,
+    data: Option<TransactionData>,
 ) -> Transaction {
     let from_sk = AccountSecretKey::random(rng);
     let to_account =
@@ -145,8 +145,9 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
 
     Transaction::moonlight(
         &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-        CHAIN_ID, exec,
+        CHAIN_ID, data,
     )
+    .expect("transaction generation should work")
 }
 
 #[test]
@@ -180,7 +181,8 @@ fn phoenix_with_call() -> Result<(), Error> {
         fn_args,
     };
 
-    let transaction = new_phoenix_tx(&mut rng, Some(ContractExec::Call(call)));
+    let transaction =
+        new_phoenix_tx(&mut rng, Some(TransactionData::Call(call)));
 
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
@@ -217,7 +219,36 @@ fn phoenix_with_deploy() -> Result<(), Error> {
     };
 
     let transaction =
-        new_phoenix_tx(&mut rng, Some(ContractExec::Deploy(deploy)));
+        new_phoenix_tx(&mut rng, Some(TransactionData::Deploy(deploy)));
+
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
+    assert_eq!(transaction, deserialized);
+
+    Ok(())
+}
+
+#[test]
+fn phoenix_with_memo() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    // build a contract deployment
+    let mut hash = [0; 32];
+    rng.fill_bytes(&mut hash);
+    let mut bytes = vec![0; 100];
+    rng.fill_bytes(&mut bytes);
+
+    let mut owner = [0; 32].to_vec();
+    rng.fill_bytes(&mut owner);
+
+    let mut constructor_args = vec![0; 20];
+    rng.fill_bytes(&mut constructor_args);
+
+    let memo = vec![1u8; 512];
+
+    let transaction =
+        new_phoenix_tx(&mut rng, Some(TransactionData::Memo(memo)));
 
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
@@ -259,7 +290,7 @@ fn moonlight_with_call() -> Result<(), Error> {
     };
 
     let transaction =
-        new_moonlight_tx(&mut rng, Some(ContractExec::Call(call)));
+        new_moonlight_tx(&mut rng, Some(TransactionData::Call(call)));
 
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
@@ -295,7 +326,35 @@ fn moonlight_with_deploy() -> Result<(), Error> {
     };
 
     let transaction =
-        new_moonlight_tx(&mut rng, Some(ContractExec::Deploy(deploy)));
+        new_moonlight_tx(&mut rng, Some(TransactionData::Deploy(deploy)));
+
+    let transaction_bytes = transaction.to_var_bytes();
+    let deserialized = Transaction::from_slice(&transaction_bytes)?;
+
+    assert_eq!(transaction, deserialized);
+
+    Ok(())
+}
+
+#[test]
+fn moonlight_with_memo() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let mut hash = [0; 32];
+    rng.fill_bytes(&mut hash);
+    let mut bytes = vec![0; 100];
+    rng.fill_bytes(&mut bytes);
+
+    let mut owner = [0; 32].to_vec();
+    rng.fill_bytes(&mut owner);
+
+    let mut constructor_args = vec![0; 20];
+    rng.fill_bytes(&mut constructor_args);
+
+    let memo = vec![1u8; 512];
+
+    let transaction =
+        new_moonlight_tx(&mut rng, Some(TransactionData::Memo(memo)));
 
     let transaction_bytes = transaction.to_var_bytes();
     let deserialized = Transaction::from_slice(&transaction_bytes)?;
