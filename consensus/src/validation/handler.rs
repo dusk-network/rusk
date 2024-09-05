@@ -26,7 +26,7 @@ fn final_result(
     quorum: QuorumType,
 ) -> HandleMsgOutput {
     let p = payload::ValidationResult::new(sv, vote, quorum);
-    let msg = Message::from_validation_result(p);
+    let msg = Message::from(p);
 
     HandleMsgOutput::Ready(msg)
 }

@@ -119,14 +119,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             self.blacklisted_blocks.write().await.clear();
 
             // Request missing blocks since my last finalized block
-            let get_blocks = Message::new_get_blocks(GetBlocks {
-                locator: last_finalized.header().hash,
-            });
+            let locator = last_finalized.header().hash;
+            let get_blocks = GetBlocks::new(locator).into();
             if let Err(e) = self
                 .network
                 .read()
                 .await
-                .send_to_alive_peers(&get_blocks, REDUNDANCY_PEER_FACTOR)
+                .send_to_alive_peers(get_blocks, REDUNDANCY_PEER_FACTOR)
                 .await
             {
                 warn!("Unable to request GetBlocks {e}");
@@ -187,7 +186,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                             self.acc.clone(),
                             self.network.clone(),
                         );
-                        next.on_entering(&b, peer_addr).await;
+                        next.on_entering(b, peer_addr).await;
                         self.curr = State::OutOfSync(next);
                     }
                 }
@@ -677,7 +676,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         if let Err(err) = network
             .read()
             .await
-            .send_to_peer(&Message::new_get_resource(req), peer_addr)
+            .send_to_peer(req.into(), peer_addr)
             .await
         {
             warn!("could not request block {err}")
@@ -730,7 +729,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
     }
     /// performed when entering the OutOfSync state
-    async fn on_entering(&mut self, blk: &Block, dest_addr: SocketAddr) {
+    async fn on_entering(&mut self, blk: Block, peer_addr: SocketAddr) {
         let (curr_height, locator) = {
             let acc = self.acc.read().await;
             (acc.get_curr_height().await, acc.get_curr_hash().await)
@@ -745,13 +744,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         );
 
         // Request missing blocks from source peer
-        let gb_msg = Message::new_get_blocks(GetBlocks { locator });
+        let gb_msg = GetBlocks::new(locator).into();
 
         if let Err(e) = self
             .network
             .read()
             .await
-            .send_to_peer(&gb_msg, dest_addr)
+            .send_to_peer(gb_msg, peer_addr)
             .await
         {
             warn!("Unable to send GetBlocks: {e}")
@@ -760,15 +759,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         // add to the pool
         let key = blk.header().height;
         self.pool.clear();
-        self.pool.insert(key, blk.clone());
-        self.peer_addr = dest_addr;
+        self.pool.insert(key, blk);
+        self.peer_addr = peer_addr;
 
-        info!(
-            event = "entering out-of-sync",
-            from = self.range.0,
-            to = self.range.1,
-            peer = format!("{:?}", dest_addr),
-        );
+        let (from, to) = &self.range;
+        info!(event = "entering out-of-sync", from, to, ?peer_addr);
     }
 
     /// performed when exiting the state

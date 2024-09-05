@@ -80,7 +80,7 @@ impl<T: Operations> Generator<T> {
 
         candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        Ok(Message::new_candidate(candidate))
+        Ok(candidate.into())
     }
 
     async fn generate_block(
