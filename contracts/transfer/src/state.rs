@@ -27,8 +27,8 @@ use execution_core::{
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
         },
-        ReceiveFromContract, Transaction, TransferToContract,
-        PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
+        ReceiveFromContract, Transaction, TransferToAccount,
+        TransferToContract, PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractError, ContractId,
 };
@@ -350,6 +350,41 @@ impl TransferState {
 
         rusk_abi::call(transfer.contract, &transfer.fn_name, &receive)
             .expect("Calling receiver should succeed")
+    }
+
+    /// Transfer funds from a contract balance to a Moonlight account.
+    ///
+    /// Contracts can call the function and expect that if it succeeds the funds
+    /// are successfully transferred to the account they specify.
+    ///
+    /// # Panics
+    /// The function will panic if it is not being called by a contract, if it
+    /// is called by the transfer contract itself, or if the calling contract
+    /// doesn't have enough funds.
+    pub fn transfer_to_account(&mut self, transfer: TransferToAccount) {
+        let from = rusk_abi::caller()
+            .expect("A transfer to an account must happen in the context of a transaction");
+
+        if from == TRANSFER_CONTRACT {
+            panic!("Cannot be called directly by the transfer contract");
+        }
+
+        let from_balance = self
+            .contract_balances
+            .get_mut(&from)
+            .expect("Caller must have a balance");
+
+        if *from_balance < transfer.value {
+            panic!("Caller must have enough balance");
+        }
+
+        let account = self
+            .accounts
+            .entry(transfer.account.to_bytes())
+            .or_insert(EMPTY_ACCOUNT);
+
+        *from_balance -= transfer.value;
+        account.balance += transfer.value;
     }
 
     /// The top level transaction execution function.
