@@ -16,6 +16,7 @@ use crate::bls::PublicKey;
 use crate::ledger::{to_str, Hash, Signature};
 use crate::StepName;
 use crate::{bls, ledger, Serializable};
+use core::fmt;
 use std::cmp::Ordering;
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
@@ -25,7 +26,46 @@ use async_channel::TrySendError;
 use self::payload::{Candidate, Ratification, Validation};
 
 /// Topic field position in the message binary representation
-pub const TOPIC_FIELD_POS: usize = 8 + 8 + 4;
+pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
+pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
+
+#[derive(Debug, Clone)]
+/// Represent version (major, minor, patch)
+pub struct Version(pub u8, pub u16, pub u16);
+
+impl Default for Version {
+    fn default() -> Self {
+        PROTOCOL_VERSION
+    }
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Version(maj, min, patch) = self;
+        write!(f, "{maj}.{min}.{patch}")
+    }
+}
+
+impl crate::Serializable for Version {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        let Version(maj, min, patch) = self;
+        w.write_all(&[*maj])?;
+        w.write_all(&min.to_le_bytes())?;
+        w.write_all(&patch.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let maj = Self::read_u8(r)?;
+        let min = Self::read_u16_le(r)?;
+        let patch = Self::read_u16_le(r)?;
+        Ok(Self(maj, min, patch))
+    }
+}
 
 pub enum Status {
     Past,
@@ -46,6 +86,7 @@ impl From<Ordering> for Status {
 /// Message definition
 #[derive(Debug, Default, Clone)]
 pub struct Message {
+    pub version: Version,
     topic: Topics,
     pub header: ConsensusHeader,
     pub payload: Payload,
@@ -95,6 +136,15 @@ impl Message {
             _ => StepName::Proposal.to_step(self.header.iteration),
         }
     }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn with_version(mut self, v: Version) -> Self {
+        self.version = v;
+        self
+    }
 }
 
 /// Defines a transport-related properties that determines how the message
@@ -107,6 +157,7 @@ pub struct Metadata {
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.version.write(w)?;
         w.write_all(&[self.topic as u8])?;
 
         match &self.payload {
@@ -128,6 +179,8 @@ impl Serializable for Message {
     where
         Self: Sized,
     {
+        let version = Version::read(r)?;
+
         // Read topic
         let topic = Topics::from(Self::read_u8(r)?);
         let message: Message = match topic {
@@ -149,7 +202,7 @@ impl Serializable for Message {
             }
         };
 
-        Ok(message)
+        Ok(message.with_version(version))
     }
 }
 
