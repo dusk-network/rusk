@@ -25,6 +25,8 @@ jobs:
         with:
           filters: |
             run-ci:
+              - 'wallet-core/**'
+              - 'execution-core/**'
               - 'rusk-wallet/**'
               - '.github/workflows/ruskwallet_ci.yml'
   fmt:
