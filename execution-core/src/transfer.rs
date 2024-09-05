@@ -358,3 +358,14 @@ pub struct ReceiveFromContract {
     /// Extra data sent by the sender.
     pub data: Vec<u8>,
 }
+
+/// The payload sent by a contract to the transfer contract to transfer some of
+/// its funds to an account.
+#[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToAccount {
+    /// Account to transfer funds to.
+    pub account: AccountPublicKey,
+    /// Amount to send to the account.
+    pub value: u64,
+}
