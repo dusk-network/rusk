@@ -1,12 +1,18 @@
+# Dusk account
+
 [[phoenix_balance]]
 address = '68UiBbsJ4PumJyVpS91VbffhKgq9p6QaLC8QCqzgLiKBX71mvCswmeViTHDsBJ3RMwsVcxBSkZ3HbjHAL9qCNxh'
 seed = 0xdead_beef
 notes = [1_000_000_000_000]
 
+# Faucet wallet
+
 [[phoenix_balance]]
 address = '4LULsDGr3CkeZcVDSfM9UtNr1Xa9DF7HqCEnfnbsDH2HXkkoCfdQWKpEwKwPF6enrSVoTTfb2bGCB8v2VyHHFoUJ'
 seed = 0xdead_beef
 notes = [500_000_000_000_000_000]
+
+# Faucet wallets (Fulvio)
 
 [[phoenix_balance]]
 address = '9Qary8ZQHYRZos3jmk4FBqo35mjJVqzsLwFthRB2vDY3wNnFTNaKcVrw66aeF8X2nYf5YqSq6BDs4TfsbBEnGjd'
@@ -57,6 +63,8 @@ notes = [10_000_000_000_000_000]
 address = '33GGzrthCdzCT98ZvHSoXGbQVKkYPXkRfTuxxcTVDW44fJpzTdgoaZYj8tDADmfQX44Cdz9je9dvLrfa6a76Qkq9'
 seed = 0xdead_beef
 notes = [10_000_000_000_000_000]
+
+# 30 Dusk network provisioners
 
 [[stake]]
 address = 'pFPEcfxidLvwmFKRQoifrSyWmmVY9UDEThoRFvGXddXRLZ8hB7xfWDYQYwHhTvZvXeL1p5Ygcnsuuxm1X8nHFJH6tEgK3cS76squcFVFSejaKJGMorYZdTup5uscNq6eDU2'
@@ -1843,6 +1851,8 @@ reward = 52315800000000
 address = '271zWxBm6QnM2qjfypWjE2h2RP7yYmc7nUqsozWCoZewDCUaBs86y7rmqCN6ejwoc6BPzrdu3erPBAev1yNRGdnVtemubxAQPPjzKK6bsHZrwKLPTHCJ8bZKXByaD4F9MFrk'
 amount = 0
 reward = 8331482328410616
+
+# Test moonlight accounts (Milosz)
 
 [[moonlight_account]]
 address = '21QVDgB74QDYPy8n7SFnfhKaJfQi72eHh9XWJeXV33zKN7rjSGP1dgrVyn7FDGyz5QSH3HeRm73JZxAykoF51Cxn92hpvcad6XAS22R9H9CypYs5w3XuQdzw66MRJNmncSXv'
