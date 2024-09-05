@@ -14,7 +14,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::sync::RwLock;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::{
     database::{self, Ledger},
@@ -96,14 +96,15 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             }
 
             self.update_tip(tip.inner().clone());
-            self.state = State::Running;
+
+            self.state_transition(State::Running);
         }
 
         let curr = self.state;
-        self.state = match curr {
+        match curr {
             State::Running => self.on_running().await,
             State::Stalled => self.on_stalled(blk).await,
-            State::StalledOnFork => curr,
+            State::StalledOnFork => warn!("Stalled on fork"),
         };
 
         self.state
@@ -115,7 +116,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     /// Handles a running state
-    async fn on_running(&self) -> State {
+    async fn on_running(&mut self) {
         if self.tip.1 + STALLED_TIMEOUT
             < SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -125,14 +126,12 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             // While we are still receiving blocks, no block
             // has been accepted for a long time (tip has not changed
             // recently)
-            return self.on_accept_block_timeout().await;
+            self.on_accept_block_timeout().await
         }
-
-        State::Running
     }
 
     /// Handles block from wire in the `Stalled` state
-    async fn on_stalled(&mut self, new_blk: &Block) -> State {
+    async fn on_stalled(&mut self, new_blk: &Block) {
         let key = new_blk.header().height;
         self.recovery_blocks
             .entry(key)
@@ -140,7 +139,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
 
         if self.recovery_blocks.len() < CONSECUTIVE_BLOCKS_THRESHOLD {
             // Not enough consecutive blocks collected yet
-            return State::Stalled;
+            return;
         }
 
         // Check recovery blocks contains at most N consecutive blocks
@@ -154,13 +153,13 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
 
         if !consecutive {
             // recovery blocks are missing
-            return State::Stalled;
+            return;
         }
-
-        let db = &self.acc.read().await.db;
 
         // Detect if collected blocks are valid
         for (_, blk) in self.recovery_blocks.iter() {
+            let db: Arc<RwLock<DB>> = self.acc.read().await.db.clone();
+
             let exists = db
                 .read()
                 .await
@@ -186,12 +185,12 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
                     err = format!("could not find prev block")
                 );
 
-                return State::Stalled;
+                return;
             }
 
             // If we are here, most probably this is a block from the main
             // branch
-            match self
+            let res = self
                 .acc
                 .read()
                 .await
@@ -199,9 +198,13 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
                     local_blk.as_ref().unwrap(),
                     blk.header(),
                 )
-                .await
-            {
-                Ok(_) => return State::StalledOnFork,
+                .await;
+
+            match res {
+                Ok(_) => {
+                    self.state_transition(State::StalledOnFork);
+                    return;
+                }
                 Err(err) => {
                     // Block is invalid
                     error!(
@@ -212,20 +215,18 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
                 }
             }
         }
-
-        State::Stalled
     }
 
     /// Handles block acceptance timeout
     ///
     /// Request missing blocks since last finalized block
-    async fn on_accept_block_timeout(&self) -> State {
+    async fn on_accept_block_timeout(&mut self) {
         // Request missing blocks since my last finalized block
         let get_blocks = Message::new_get_blocks(GetBlocks {
             locator: self.latest_finalized.header().hash,
         });
 
-        let network = &self.acc.read().await.network;
+        let network = self.acc.read().await.network.clone();
         if let Err(e) = network
             .read()
             .await
@@ -233,10 +234,10 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             .await
         {
             warn!("Unable to request GetBlocks {e}");
-            return State::Running;
+            return;
         }
 
-        State::Stalled
+        self.state_transition(State::Stalled);
     }
 
     fn update_tip(&mut self, tip: Block) {
@@ -245,5 +246,34 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
+    }
+
+    /// Changes curr state and logs the transition event
+    fn state_transition(&mut self, state: State) -> State {
+        if state == self.state {
+            return state;
+        }
+
+        self.state = state;
+
+        let state_str: &str = match state {
+            State::Running => "running",
+            State::Stalled => "stalled",
+            State::StalledOnFork => "stalled_on_fork",
+        };
+
+        let hdr = self.tip.0.header();
+        info!(
+            event = format!("chain.{}", state_str),
+            tip_hash = to_str(&hdr.hash),
+            tip_height = hdr.height,
+            tip_iter = hdr.iteration,
+            tip_updated_at = self.tip.1,
+            recovery_blocks = self.recovery_blocks.len(),
+            final_block = to_str(&self.latest_finalized.header().hash),
+            final_block_height = self.latest_finalized.header().height,
+        );
+
+        state
     }
 }
