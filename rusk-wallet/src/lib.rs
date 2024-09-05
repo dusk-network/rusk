@@ -14,12 +14,13 @@
 
 #![deny(missing_docs)]
 
+/// module to help with currency conversions
+pub mod currency;
+
 mod block;
 mod cache;
 mod clients;
 mod crypto;
-
-mod currency;
 mod error;
 mod rusk;
 mod store;
@@ -30,10 +31,23 @@ pub mod dat;
 
 pub use rusk::{RuskHttpClient, RuskRequest};
 
-pub use currency::{Dusk, Lux};
 pub use error::Error;
 pub use wallet::gas;
 pub use wallet::{Address, DecodedNote, SecureWalletFile, Wallet, WalletPath};
+
+use execution_core::{
+    dusk, from_dusk,
+    signatures::bls::PublicKey as AccountPublicKey,
+    stake::StakeData,
+    transfer::phoenix::{
+        ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening,
+        PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+        ViewKey as PhoenixViewKey,
+    },
+    BlsScalar,
+};
+
+use currency::Dusk;
 
 /// The largest amount of Dusk that is possible to convert
 pub const MAX_CONVERTIBLE: Dusk = Dusk::MAX;
@@ -44,7 +58,7 @@ pub const EPOCH: u64 = 2160;
 /// Max addresses the wallet can store
 pub const MAX_ADDRESSES: usize = get_max_addresses();
 
-const DEFAULT_MAX_ADDRESSES: usize = 25;
+const DEFAULT_MAX_ADDRESSES: usize = 1;
 
 const fn get_max_addresses() -> usize {
     match option_env!("WALLET_MAX_ADDR") {

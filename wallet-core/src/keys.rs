@@ -21,7 +21,11 @@ use execution_core::{
     },
 };
 
-use crate::RNG_SEED;
+/// The seed bytes buffer which is used at multiple places
+pub type Seed = [u8; RNG_SEED];
+
+/// Length of the seed of the generated rng.
+pub const RNG_SEED: usize = 64;
 
 /// Generates a [`BlsSecretKey`] from a seed and index.
 ///

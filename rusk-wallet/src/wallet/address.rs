@@ -4,25 +4,27 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Error;
-use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
-use dusk_pki::PublicSpendKey;
 use std::fmt;
 use std::hash::Hasher;
 use std::str::FromStr;
+
+use super::*;
+use crate::Error;
+
+use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 
 #[derive(Clone, Eq)]
 /// A public address within the Dusk Network
 pub struct Address {
     pub(crate) index: Option<u8>,
-    pub(crate) psk: PublicSpendKey,
+    pub(crate) pk: PhoenixPublicKey,
 }
 
 impl Address {
-    pub(crate) fn new(index: u8, psk: PublicSpendKey) -> Self {
+    pub(crate) fn new(index: u8, pk: PhoenixPublicKey) -> Self {
         Self {
             index: Some(index),
-            psk,
+            pk,
         }
     }
 
@@ -31,8 +33,8 @@ impl Address {
         self.index.is_some()
     }
 
-    pub(crate) fn psk(&self) -> &PublicSpendKey {
-        &self.psk
+    pub(crate) fn pk(&self) -> &PhoenixPublicKey {
+        &self.pk
     }
 
     pub(crate) fn index(&self) -> Result<u8, Error> {
@@ -41,7 +43,7 @@ impl Address {
 
     /// A trimmed version of the address to display as preview
     pub fn preview(&self) -> String {
-        let addr = bs58::encode(self.psk.to_bytes()).into_string();
+        let addr = bs58::encode(self.pk.to_bytes()).into_string();
         format!("{}...{}", &addr[..7], &addr[addr.len() - 7..])
     }
 }
@@ -52,10 +54,10 @@ impl FromStr for Address {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = bs58::decode(s).into_vec()?;
 
-        let psk = PublicSpendKey::from_reader(&mut &bytes[..])
+        let pk = PhoenixPublicKey::from_reader(&mut &bytes[..])
             .map_err(|_| Error::BadAddress)?;
 
-        let addr = Address { index: None, psk };
+        let addr = Address { index: None, pk };
 
         Ok(addr)
     }
@@ -69,15 +71,15 @@ impl TryFrom<String> for Address {
     }
 }
 
-impl TryFrom<&[u8; PublicSpendKey::SIZE]> for Address {
+impl TryFrom<&[u8; PhoenixPublicKey::SIZE]> for Address {
     type Error = Error;
 
     fn try_from(
-        bytes: &[u8; PublicSpendKey::SIZE],
+        bytes: &[u8; PhoenixPublicKey::SIZE],
     ) -> Result<Self, Self::Error> {
         let addr = Address {
             index: None,
-            psk: dusk_pki::PublicSpendKey::from_bytes(bytes)?,
+            pk: PhoenixPublicKey::from_bytes(bytes)?,
         };
         Ok(addr)
     }
@@ -85,26 +87,26 @@ impl TryFrom<&[u8; PublicSpendKey::SIZE]> for Address {
 
 impl PartialEq for Address {
     fn eq(&self, other: &Self) -> bool {
-        self.index == other.index && self.psk == other.psk
+        self.index == other.index && self.pk == other.pk
     }
 }
 
 impl std::hash::Hash for Address {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.index.hash(state);
-        self.psk.to_bytes().hash(state);
+        self.pk.to_bytes().hash(state);
     }
 }
 
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", bs58::encode(self.psk.to_bytes()).into_string())
+        write!(f, "{}", bs58::encode(self.pk.to_bytes()).into_string())
     }
 }
 
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", bs58::encode(self.psk.to_bytes()).into_string())
+        write!(f, "{}", bs58::encode(self.pk.to_bytes()).into_string())
     }
 }
 

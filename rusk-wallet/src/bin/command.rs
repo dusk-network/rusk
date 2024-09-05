@@ -7,17 +7,19 @@
 mod history;
 
 use clap::Subcommand;
-use dusk_plonk::prelude::BlsScalar;
-use rusk_abi::hash::Hasher;
 use std::{fmt, path::PathBuf};
 
 use crate::io::prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
-use dusk_wallet::gas::{Gas, DEFAULT_LIMIT, DEFAULT_PRICE};
-use dusk_wallet::{Address, Dusk, Lux, Wallet, EPOCH, MAX_ADDRESSES};
-use dusk_wallet_core::{BalanceInfo, StakeInfo};
+use execution_core::{stake::StakeData, BlsScalar};
+use rusk_wallet::{
+    currency::{Dusk, Lux},
+    gas::{Gas, DEFAULT_LIMIT, DEFAULT_PRICE},
+    Address, Error, Wallet, EPOCH, MAX_ADDRESSES,
+};
+use wallet_core::BalanceInfo;
 
 pub use history::TransactionHistory;
 
@@ -230,7 +232,7 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
                 let tx = wallet.transfer(sender, &rcvr, amt, gas).await?;
-                Ok(RunResult::Tx(Hasher::digest(tx.to_hash_input_bytes())))
+                Ok(RunResult::Tx(tx.hash()))
             }
             Command::Stake {
                 addr,
@@ -246,14 +248,16 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
                 let tx = wallet.stake(addr, amt, gas).await?;
-                Ok(RunResult::Tx(Hasher::digest(tx.to_hash_input_bytes())))
+                Ok(RunResult::Tx(tx.hash()))
             }
             Command::StakeInfo { addr, reward } => {
                 let addr = match addr {
                     Some(addr) => wallet.claim_as_address(addr)?,
                     None => wallet.default_address(),
                 };
-                let si = wallet.stake_info(addr).await?;
+                let si =
+                    wallet.stake_info(addr).await?.ok_or(Error::NotStaked)?;
+
                 Ok(RunResult::StakeInfo(si, reward))
             }
             Command::Unstake {
@@ -270,7 +274,7 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
                 let tx = wallet.unstake(addr, gas).await?;
-                Ok(RunResult::Tx(Hasher::digest(tx.to_hash_input_bytes())))
+                Ok(RunResult::Tx(tx.hash()))
             }
             Command::Withdraw {
                 addr,
@@ -286,7 +290,7 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
                 let tx = wallet.withdraw_reward(addr, gas).await?;
-                Ok(RunResult::Tx(Hasher::digest(tx.to_hash_input_bytes())))
+                Ok(RunResult::Tx(tx.hash()))
             }
             Command::Export { addr, dir, name } => {
                 let addr = match addr {
@@ -329,7 +333,7 @@ impl Command {
 pub enum RunResult {
     Tx(BlsScalar),
     Balance(BalanceInfo, bool),
-    StakeInfo(StakeInfo, bool),
+    StakeInfo(StakeData, bool),
     Address(Box<Address>),
     Addresses(Vec<Address>),
     ExportedKeys(PathBuf, PathBuf),
@@ -366,13 +370,13 @@ impl fmt::Display for RunResult {
                 let hash = hex::encode(hash.to_bytes());
                 write!(f, "> Transaction sent: {hash}",)
             }
-            StakeInfo(si, _) => {
-                let stake_str = match si.amount {
-                    Some((value, eligibility)) => format!(
+            StakeInfo(data, _) => {
+                let stake_str = match data.amount {
+                    Some(amt) => format!(
                         "Current stake amount is: {} DUSK\n> Stake eligibility from block #{} (Epoch {})",
-                        Dusk::from(value),
-                        eligibility,
-                        eligibility / EPOCH
+                        Dusk::from(amt.value),
+                        amt.eligibility,
+                        amt.eligibility / EPOCH
                     ),
                     None => "No active stake found for this key".to_string(),
                 };
@@ -380,7 +384,7 @@ impl fmt::Display for RunResult {
                     f,
                     "> {}\n> Accumulated reward is: {} DUSK",
                     stake_str,
-                    Dusk::from(si.reward)
+                    Dusk::from(data.reward)
                 )
             }
             ExportedKeys(pk, kp) => {

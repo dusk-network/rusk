@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_wallet_core::Transaction;
+use execution_core::transfer::Transaction;
 use tokio::time::{sleep, Duration};
 
-use dusk_wallet::{Error, RuskHttpClient, RuskRequest};
+use rusk_wallet::{Error, RuskHttpClient, RuskRequest};
 use serde::Deserialize;
 
 /// GraphQL is a helper struct that aggregates all queries done
@@ -129,7 +129,7 @@ impl GraphQL {
 pub enum GraphQLError {
     /// Generic errors
     #[error("Error fetching data from the node: {0}")]
-    Generic(dusk_wallet::Error),
+    Generic(Error),
     /// Failed to fetch transaction status
     #[error("Failed to obtain transaction status")]
     TxStatus,
@@ -137,8 +137,8 @@ pub enum GraphQLError {
     BlockInfo,
 }
 
-impl From<dusk_wallet::Error> for GraphQLError {
-    fn from(e: dusk_wallet::Error) -> Self {
+impl From<Error> for GraphQLError {
+    fn from(e: Error) -> Self {
         Self::Generic(e)
     }
 }
@@ -150,10 +150,7 @@ impl From<serde_json::Error> for GraphQLError {
 }
 
 impl GraphQL {
-    pub async fn query(
-        &self,
-        query: &str,
-    ) -> Result<Vec<u8>, dusk_wallet::Error> {
+    pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
         let request = RuskRequest::new("gql", query.as_bytes().to_vec());
         self.client.call(2, "Chain", &request).await
     }
@@ -177,7 +174,7 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     let block_txs = gql.txs_for_block(90).await?;
     block_txs.into_iter().for_each(|(t, chain_txid, _)| {
-        let hash = rusk_abi::hash::Hasher::digest(t.to_hash_input_bytes());
+        let hash = t.hash();
         let tx_id = hex::encode(hash.to_bytes());
         assert_eq!(chain_txid, tx_id);
         println!("txid: {tx_id}");

@@ -5,20 +5,48 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use ff::Field;
-use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::{rngs::StdRng, CryptoRng, RngCore, SeedableRng};
 
 use execution_core::{
     transfer::phoenix::{
         Note, NoteLeaf, PublicKey as PhoenixPublicKey,
         SecretKey as PhoenixSecretKey,
     },
-    JubJubScalar,
+    BlsScalar, JubJubScalar,
 };
 
 use wallet_core::{
-    keys::derive_multiple_phoenix_sk, map_owned, phoenix_balance, BalanceInfo,
+    input::try_input_notes, keys::derive_multiple_phoenix_sk, map_owned,
+    phoenix_balance, BalanceInfo,
 };
+
+/// Generate a note, useful for testing purposes
+pub fn gen_note<T: RngCore + CryptoRng>(
+    rng: &mut T,
+    obfuscated_note: bool,
+    owner_pk: &PhoenixPublicKey,
+    value: u64,
+) -> Note {
+    let sender_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let value_blinder = JubJubScalar::random(&mut *rng);
+    let sender_blinder = [
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
+    ];
+    if obfuscated_note {
+        Note::obfuscated(
+            rng,
+            &sender_pk,
+            owner_pk,
+            value,
+            value_blinder,
+            sender_blinder,
+        )
+    } else {
+        Note::transparent(rng, &sender_pk, owner_pk, value, sender_blinder)
+    }
+}
 
 #[test]
 fn test_map_owned() {
@@ -45,7 +73,7 @@ fn test_map_owned() {
         PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
 
     let value = 42;
-    let note_leaves = vec![
+    let note_leaves: Vec<Note> = vec![
         gen_note(&mut rng, true, &owner_1_pks[0], value), // owner 1
         gen_note(&mut rng, true, &owner_1_pks[1], value), // owner 1
         gen_note(&mut rng, true, &owner_2_pks[0], value), // owner 2
@@ -53,6 +81,14 @@ fn test_map_owned() {
         gen_note(&mut rng, true, &owner_1_pks[2], value), // owner 1
         gen_note(&mut rng, true, &owner_3_pk, value),     // owner 3
     ];
+
+    let note_leaves: Vec<NoteLeaf> = note_leaves
+        .into_iter()
+        .map(|note| NoteLeaf {
+            note,
+            block_height: 0,
+        })
+        .collect();
 
     // notes with idx 0, 1 and 4 are owned by owner_1
     let notes_by_1 = map_owned(&owner_1_sks, &note_leaves);
@@ -115,47 +151,73 @@ fn test_balance() {
         spendable: 34,
     };
 
+    let notes: Vec<NoteLeaf> = notes
+        .into_iter()
+        .map(|note| NoteLeaf {
+            note,
+            block_height: 0,
+        })
+        .collect();
+
     assert_eq!(
         phoenix_balance(&(&owner_sk).into(), notes.iter()),
         expected_balance
     );
 }
 
-fn gen_note(
-    rng: &mut StdRng,
-    obfuscated_note: bool,
-    owner_pk: &PhoenixPublicKey,
-    value: u64,
-) -> NoteLeaf {
-    let sender_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+#[test]
+fn knapsack_works() {
+    use rand::SeedableRng;
 
-    let value_blinder = JubJubScalar::random(&mut *rng);
-    let sender_blinder = [
-        JubJubScalar::random(&mut *rng),
-        JubJubScalar::random(&mut *rng),
-    ];
-    if obfuscated_note {
-        NoteLeaf {
-            note: Note::obfuscated(
-                rng,
-                &sender_pk,
-                &owner_pk,
-                value,
-                value_blinder,
-                sender_blinder,
-            ),
-            block_height: rng.gen(),
-        }
-    } else {
-        NoteLeaf {
-            note: Note::transparent(
-                rng,
-                &sender_pk,
-                &owner_pk,
-                value,
-                sender_blinder,
-            ),
-            block_height: rng.gen(),
-        }
-    }
+    let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0xbeef);
+
+    // sanity check
+    assert_eq!(try_input_notes(vec![], 70), Vec::new(),);
+
+    let sk = PhoenixSecretKey::random(&mut rng);
+    let pk = PhoenixPublicKey::from(&sk);
+
+    // basic check
+    let note = gen_note(&mut rng, true, &pk, 100);
+    let n = note.gen_nullifier(&sk);
+    let available = vec![(note, 100, n)];
+    let inputs_notes: Vec<(Note, BlsScalar)> = available
+        .clone()
+        .into_iter()
+        .map(|(a, _, b)| (a, b))
+        .collect();
+    let input = try_input_notes(available, 70);
+    assert_eq!(input, inputs_notes);
+
+    // out of balance basic check
+    let note = gen_note(&mut rng, true, &pk, 100);
+    let available = vec![(note, 100, n)];
+    assert_eq!(try_input_notes(available, 101), Vec::new());
+
+    // multiple inputs check
+    // note: this test is checking a naive, simple order-based output
+
+    let note1 = gen_note(&mut rng, true, &pk, 100);
+    let note2 = gen_note(&mut rng, true, &pk, 500);
+    let note3 = gen_note(&mut rng, true, &pk, 300);
+
+    let available = vec![(note1, 100, n), (note2, 500, n), (note3, 300, n)];
+
+    let result: Vec<(Note, BlsScalar)> = available
+        .clone()
+        .into_iter()
+        .map(|(a, _, b)| (a, b))
+        .collect();
+
+    assert_eq!(try_input_notes(available.clone(), 600), result);
+
+    let note1 = gen_note(&mut rng, true, &pk, 100);
+    let note2 = gen_note(&mut rng, true, &pk, 500);
+    let note3 = gen_note(&mut rng, true, &pk, 300);
+
+    let n = note1.gen_nullifier(&sk);
+
+    let available = vec![(note1, 100, n), (note2, 500, n), (note3, 300, n)];
+
+    assert_eq!(try_input_notes(available, 901), Vec::new());
 }

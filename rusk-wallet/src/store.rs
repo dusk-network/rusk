@@ -4,18 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::clients::StateStore;
-use crate::Error;
+use crate::clients::State;
 
 use dusk_bytes::{Error as BytesError, Serializable};
-use dusk_wallet_core::Store;
+
+use wallet_core::keys::{self, RNG_SEED};
 
 #[derive(Clone)]
-pub struct Seed([u8; 64]);
+pub struct Seed(keys::Seed);
 
 impl Default for Seed {
     fn default() -> Self {
-        Self([0u8; 64])
+        Self([0u8; RNG_SEED])
     }
 }
 
@@ -36,27 +36,22 @@ pub(crate) struct LocalStore {
     seed: Seed,
 }
 
-impl Store for LocalStore {
-    type Error = Error;
-
-    /// Retrieves the seed used to derive keys.
-    fn get_seed(&self) -> Result<[u8; Seed::SIZE], Self::Error> {
-        Ok(self.seed.to_bytes())
-    }
-}
-
-impl Store for StateStore {
-    type Error = Error;
-
-    /// Retrieves the seed used to derive keys.
-    fn get_seed(&self) -> Result<[u8; Seed::SIZE], Self::Error> {
-        Ok(self.store.seed.to_bytes())
-    }
-}
-
 impl LocalStore {
-    /// Creates a new store from a known seed
-    pub(crate) fn new(seed: Seed) -> Self {
-        LocalStore { seed }
+    /// Retrieves the seed used to derive keys.
+    pub fn get_seed(&self) -> &[u8; Seed::SIZE] {
+        &self.seed.0
+    }
+}
+
+impl From<[u8; Seed::SIZE]> for LocalStore {
+    fn from(seed: [u8; Seed::SIZE]) -> Self {
+        LocalStore { seed: Seed(seed) }
+    }
+}
+
+impl State {
+    /// Retrieves the seed used to derive keys.
+    pub fn get_seed(&self) -> &[u8; Seed::SIZE] {
+        self.store().get_seed()
     }
 }

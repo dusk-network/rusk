@@ -16,18 +16,18 @@ static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 
 extern crate alloc;
 
-pub mod keys;
-pub mod transaction;
-
 #[cfg(target_family = "wasm")]
 mod ffi;
 
-/// Length of the seed of the generated rng.
-pub const RNG_SEED: usize = 64;
+pub mod input;
+pub mod keys;
+pub mod transaction;
 
-// The maximum amount of input notes that can be spend in one
-// phoenix-transaction
-const MAX_INPUT_NOTES: usize = 4;
+pub mod prelude {
+    //! Re-export of the most commonly used types and traits.
+    pub use crate::keys;
+    pub use crate::{input::MAX_INPUT_NOTES, keys::RNG_SEED};
+}
 
 use alloc::collections::btree_map::BTreeMap;
 use alloc::vec::Vec;
@@ -77,8 +77,9 @@ where
 
     values.sort_by(|a, b| b.cmp(a));
 
-    let spendable = values.iter().take(MAX_INPUT_NOTES).sum();
-    let value = spendable + values.iter().skip(MAX_INPUT_NOTES).sum::<u64>();
+    let spendable = values.iter().take(input::MAX_INPUT_NOTES).sum();
+    let value =
+        spendable + values.iter().skip(input::MAX_INPUT_NOTES).sum::<u64>();
 
     BalanceInfo { value, spendable }
 }
