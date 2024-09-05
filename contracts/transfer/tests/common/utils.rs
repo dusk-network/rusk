@@ -9,7 +9,7 @@ use std::sync::mpsc;
 use execution_core::{
     signatures::bls::PublicKey as AccountPublicKey,
     transfer::{
-        contract_exec::ContractExec,
+        data::TransactionData,
         moonlight::AccountData,
         phoenix::{
             Note, NoteLeaf, NoteOpening, NoteTreeItem, PublicKey, SecretKey,
@@ -188,7 +188,7 @@ pub fn create_phoenix_transaction<const I: usize>(
     transfer_value: u64,
     obfuscated_transaction: bool,
     deposit: u64,
-    exec: Option<impl Into<ContractExec>>,
+    data: Option<impl Into<TransactionData>>,
 ) -> PhoenixTransaction {
     // Get the root of the tree of phoenix-notes.
     let root = root(session).expect("Getting the anchor should be successful");
@@ -232,7 +232,7 @@ pub fn create_phoenix_transaction<const I: usize>(
         gas_limit,
         gas_price,
         chain_id,
-        exec.map(Into::into),
+        data.map(Into::into),
     )
     .expect("creating the creation shouldn't fail")
 }

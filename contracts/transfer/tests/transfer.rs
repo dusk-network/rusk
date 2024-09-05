@@ -23,7 +23,7 @@ use execution_core::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
     transfer::{
-        contract_exec::{ContractCall, ContractExec},
+        data::{ContractCall, TransactionData},
         moonlight::Transaction as MoonlightTransaction,
         phoenix::{
             Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -281,8 +281,9 @@ fn moonlight_transfer() {
         LUX,
         sender_account.nonce + 1,
         chain_id,
-        None::<ContractExec>,
-    );
+        None::<TransactionData>,
+    )
+    .expect("Creating moonlight transaction should succeed");
 
     let gas_spent = execute(session, transaction)
         .expect("Transaction should succeed")
@@ -417,7 +418,8 @@ fn moonlight_alice_ping() {
         acc.nonce + 1,
         chain_id,
         contract_call,
-    );
+    )
+    .expect("Creating moonlight transaction should succeed");
 
     let gas_spent = execute(session, transaction)
         .expect("Transaction should succeed")
@@ -775,7 +777,8 @@ fn moonlight_to_phoenix_swap() {
         nonce,
         chain_id,
         Some(contract_call),
-    );
+    )
+    .expect("Creating moonlight transaction should succeed");
 
     let gas_spent = execute(&mut session, tx)
         .expect("Executing transaction should succeed")
@@ -878,7 +881,8 @@ fn swap_wrong_contract_targeted() {
         nonce,
         chain_id,
         Some(contract_call),
-    );
+    )
+    .expect("Creating moonlight transaction should succeed");
 
     let receipt = execute(&mut session, tx)
         .expect("Executing transaction should succeed");
@@ -967,7 +971,8 @@ fn transfer_to_contract() {
         acc.nonce + 1,
         chain_id,
         contract_call,
-    );
+    )
+    .expect("Creating moonlight transaction should succeed");
 
     let receipt =
         execute(session, transaction).expect("Transaction should succeed");
@@ -1019,7 +1024,8 @@ fn transfer_to_contract() {
         acc.nonce + 1,
         chain_id,
         contract_call,
-    );
+    )
+    .expect("Creating moonlight transaction should succeed");
 
     let receipt =
         execute(session, transaction).expect("Transaction should succeed");
