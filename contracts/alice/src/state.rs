@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use execution_core::transfer::{
-    withdraw::Withdraw, TransferToContract, TRANSFER_CONTRACT,
+    withdraw::Withdraw, TransferToAccount, TransferToContract,
+    TRANSFER_CONTRACT,
 };
 
 /// Alice contract.
@@ -34,5 +35,14 @@ impl Alice {
             &transfer,
         )
         .expect("Transferring to contract should succeed");
+    }
+
+    pub fn transfer_to_account(&mut self, transfer: TransferToAccount) {
+        rusk_abi::call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "transfer_to_account",
+            &transfer,
+        )
+        .expect("Transferring to account should succeed");
     }
 }
