@@ -10,6 +10,7 @@ use execution_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,
 };
+use payload::Nonce;
 use tracing::{error, warn};
 
 use crate::bls::PublicKey;
@@ -373,6 +374,16 @@ pub enum Payload {
     Empty,
 }
 
+impl Payload {
+    pub fn set_nonce<N: Into<Nonce>>(&mut self, nonce: N) {
+        match self {
+            Payload::GetMempool(p) => p.set_nonce(nonce),
+            Payload::GetBlocks(p) => p.set_nonce(nonce),
+            _ => {}
+        }
+    }
+}
+
 impl From<payload::Ratification> for Payload {
     fn from(value: payload::Ratification) -> Self {
         Self::Ratification(value)
@@ -438,7 +449,7 @@ pub mod payload {
     use std::fmt;
     use std::io::{self, Read, Write};
     use std::net::{
-        Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
+        IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
     };
 
     use super::{ConsensusHeader, SignInfo};
@@ -781,20 +792,89 @@ pub mod payload {
             })
         }
     }
-
     #[derive(Debug, Clone, Default)]
-    pub struct GetMempool;
+    pub struct Nonce([u8; 8]);
 
-    impl Serializable for GetMempool {
-        fn write<W: Write>(&self, _w: &mut W) -> io::Result<()> {
-            Ok(())
+    impl Serializable for Nonce {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            w.write_all(&self.0)
         }
 
-        fn read<R: Read>(_r: &mut R) -> io::Result<Self>
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
         {
-            Ok(GetMempool)
+            let nonce = Self::read_bytes(r)?;
+            Ok(Self(nonce))
+        }
+    }
+
+    impl From<Nonce> for u64 {
+        fn from(value: Nonce) -> Self {
+            u64::from_le_bytes(value.0)
+        }
+    }
+
+    impl From<u64> for Nonce {
+        fn from(value: u64) -> Self {
+            Self(value.to_le_bytes())
+        }
+    }
+
+    impl From<IpAddr> for Nonce {
+        fn from(value: IpAddr) -> Self {
+            match value {
+                IpAddr::V4(v4) => v4.into(),
+                IpAddr::V6(v6) => v6.into(),
+            }
+        }
+    }
+
+    impl From<Ipv4Addr> for Nonce {
+        fn from(value: Ipv4Addr) -> Self {
+            let num = u32::from_le_bytes(value.octets());
+            (num as u64).into()
+        }
+    }
+
+    impl From<Ipv6Addr> for Nonce {
+        fn from(value: Ipv6Addr) -> Self {
+            let mut ret = [0u8; 8];
+            let value = value.octets();
+            let (a, b) = value.split_at(8);
+            a.iter()
+                .zip(b)
+                .map(|(a, b)| a.wrapping_add(*b))
+                .enumerate()
+                .for_each(|(idx, v)| ret[idx] = v);
+
+            Self(ret)
+        }
+    }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct GetMempool {
+        pub(crate) nonce: Nonce,
+    }
+
+    impl GetMempool {
+        pub fn set_nonce<N: Into<Nonce>>(&mut self, nonce: N) {
+            self.nonce = nonce.into()
+        }
+    }
+
+    impl Serializable for GetMempool {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            self.nonce.write(w)?;
+            Ok(())
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let nonce = Nonce::read(r)?;
+            Ok(GetMempool { nonce })
         }
     }
 
@@ -944,9 +1024,22 @@ pub mod payload {
         }
     }
 
-    #[derive(Clone, Default)]
+    #[derive(Clone)]
     pub struct GetBlocks {
         pub locator: [u8; 32],
+        pub(crate) nonce: Nonce,
+    }
+
+    impl GetBlocks {
+        pub fn new(locator: [u8; 32]) -> Self {
+            Self {
+                locator,
+                nonce: Nonce::default(),
+            }
+        }
+        pub fn set_nonce<N: Into<Nonce>>(&mut self, nonce: N) {
+            self.nonce = nonce.into()
+        }
     }
 
     impl fmt::Debug for GetBlocks {
@@ -957,7 +1050,9 @@ pub mod payload {
 
     impl Serializable for GetBlocks {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            w.write_all(&self.locator[..])
+            w.write_all(&self.locator[..])?;
+            self.nonce.write(w)?;
+            Ok(())
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
@@ -965,7 +1060,8 @@ pub mod payload {
             Self: Sized,
         {
             let locator = Self::read_bytes(r)?;
-            Ok(Self { locator })
+            let nonce = Nonce::read(r)?;
+            Ok(Self { locator, nonce })
         }
     }
 
