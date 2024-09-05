@@ -21,8 +21,9 @@ use crate::{
     signatures::schnorr::{
         SecretKey as SchnorrSecretKey, Signature as SchnorrSignature,
     },
-    transfer::contract_exec::{
-        ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+    transfer::data::{
+        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+        MAX_MEMO_SIZE,
     },
     BlsScalar, Error, JubJubAffine, JubJubScalar,
 };
@@ -93,6 +94,7 @@ impl Transaction {
     /// - the `inputs` vector is either empty or larger than 4 elements
     /// - the `inputs` vector contains duplicate `Note`s
     /// - the `Prove` trait is implemented incorrectly
+    /// - the memo, if given, is too large
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::similar_names)]
@@ -109,8 +111,16 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         chain_id: u8,
-        exec: Option<impl Into<ContractExec>>,
+        data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
+        let data = data.map(Into::into);
+
+        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
+            if memo.len() > MAX_MEMO_SIZE {
+                return Err(Error::MemoTooLarge(memo.len()));
+            }
+        }
+
         let sender_pk = PublicKey::from(sender_sk);
         let sender_vk = ViewKey::from(sender_sk);
 
@@ -201,7 +211,7 @@ impl Transaction {
             chain_id,
             tx_skeleton,
             fee,
-            exec: exec.map(Into::into),
+            data,
         };
         let payload_hash = payload.hash();
 
@@ -402,8 +412,8 @@ impl Transaction {
     #[must_use]
     pub fn call(&self) -> Option<&ContractCall> {
         #[allow(clippy::match_wildcard_for_single_variants)]
-        match self.exec()? {
-            ContractExec::Call(ref c) => Some(c),
+        match self.data()? {
+            TransactionData::Call(ref c) => Some(c),
             _ => None,
         }
     }
@@ -412,16 +422,25 @@ impl Transaction {
     #[must_use]
     pub fn deploy(&self) -> Option<&ContractDeploy> {
         #[allow(clippy::match_wildcard_for_single_variants)]
-        match self.exec()? {
-            ContractExec::Deploy(ref d) => Some(d),
+        match self.data()? {
+            TransactionData::Deploy(ref d) => Some(d),
             _ => None,
         }
     }
 
-    /// Returns the contract execution, if it exists.
+    /// Returns the memo used with the transaction, if any.
     #[must_use]
-    fn exec(&self) -> Option<&ContractExec> {
-        self.payload.exec.as_ref()
+    pub fn memo(&self) -> Option<&[u8]> {
+        match self.data()? {
+            TransactionData::Memo(memo) => Some(memo),
+            _ => None,
+        }
+    }
+
+    /// Returns the transaction data, if it exists.
+    #[must_use]
+    fn data(&self) -> Option<&TransactionData> {
+        self.payload.data.as_ref()
     }
 
     /// Creates a modified clone of this transaction if it contains data for
@@ -431,7 +450,7 @@ impl Transaction {
     pub fn strip_off_bytecode(&self) -> Option<Self> {
         let deploy = self.deploy()?;
 
-        let stripped_deploy = ContractExec::Deploy(ContractDeploy {
+        let stripped_deploy = TransactionData::Deploy(ContractDeploy {
             owner: deploy.owner.clone(),
             constructor_args: deploy.constructor_args.clone(),
             bytecode: ContractBytecode {
@@ -442,7 +461,7 @@ impl Transaction {
         });
 
         let mut stripped_transaction = self.clone();
-        stripped_transaction.payload.exec = Some(stripped_deploy);
+        stripped_transaction.payload.data = Some(stripped_deploy);
 
         Some(stripped_transaction)
     }
@@ -592,8 +611,8 @@ pub struct Payload {
     pub tx_skeleton: TxSkeleton,
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
-    /// Data to do a contract call or deployment.
-    pub exec: Option<ContractExec>,
+    /// Data to do a contract call, deployment, or insert a memo.
+    pub data: Option<TransactionData>,
 }
 
 impl PartialEq for Payload {
@@ -618,15 +637,20 @@ impl Payload {
         // serialize the fee
         bytes.extend(self.fee.to_bytes());
 
-        // serialize the contract call/deployment
-        match &self.exec {
-            Some(ContractExec::Deploy(deploy)) => {
+        // serialize the contract call, deployment or memo, if present.
+        match &self.data {
+            Some(TransactionData::Call(call)) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
+            }
+            Some(TransactionData::Deploy(deploy)) => {
                 bytes.push(2);
                 bytes.extend(deploy.to_var_bytes());
             }
-            Some(ContractExec::Call(call)) => {
-                bytes.push(1);
-                bytes.extend(call.to_var_bytes());
+            Some(TransactionData::Memo(memo)) => {
+                bytes.push(3);
+                bytes.extend((memo.len() as u64).to_bytes());
+                bytes.extend(memo);
             }
             _ => bytes.push(0),
         }
@@ -653,11 +677,25 @@ impl Payload {
         // deserialize fee
         let fee = Fee::from_reader(&mut buf)?;
 
-        // deserialize contract call/deploy data
-        let exec = match u8::from_reader(&mut buf)? {
+        // deserialize contract call, deploy data, or memo, if present
+        let data = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
-            2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
+            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
+            2 => {
+                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+            }
+            3 => {
+                // we only build for 64-bit so this truncation is impossible
+                #[allow(clippy::cast_possible_truncation)]
+                let size = u64::from_reader(&mut buf)? as usize;
+
+                if buf.len() != size || size > MAX_MEMO_SIZE {
+                    return Err(BytesError::InvalidData);
+                }
+
+                let memo = buf[..size].to_vec();
+                Some(TransactionData::Memo(memo))
+            }
             _ => {
                 return Err(BytesError::InvalidData);
             }
@@ -667,7 +705,7 @@ impl Payload {
             chain_id,
             tx_skeleton,
             fee,
-            exec,
+            data,
         })
     }
 
@@ -681,20 +719,23 @@ impl Payload {
 
         bytes.extend(self.tx_skeleton.to_hash_input_bytes());
 
-        match &self.exec {
-            Some(ContractExec::Deploy(d)) => {
+        match &self.data {
+            Some(TransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
                 bytes.extend(&d.owner);
                 if let Some(constructor_args) = &d.constructor_args {
                     bytes.extend(constructor_args);
                 }
             }
-            Some(ContractExec::Call(c)) => {
+            Some(TransactionData::Call(c)) => {
                 bytes.extend(c.contract.as_bytes());
                 bytes.extend(c.fn_name.as_bytes());
                 bytes.extend(&c.fn_args);
             }
-            _ => {}
+            Some(TransactionData::Memo(m)) => {
+                bytes.extend(m);
+            }
+            None => {}
         }
 
         bytes

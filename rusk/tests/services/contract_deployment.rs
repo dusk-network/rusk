@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use execution_core::{
-    transfer::contract_exec::{ContractBytecode, ContractDeploy, ContractExec},
+    transfer::data::{ContractBytecode, ContractDeploy, TransactionData},
     ContractId,
 };
 use rand::prelude::*;
@@ -128,7 +128,7 @@ fn make_and_execute_transaction_deploy(
             gas_limit,
             GAS_PRICE,
             0u64,
-            ContractExec::Deploy(ContractDeploy {
+            TransactionData::Deploy(ContractDeploy {
                 bytecode: ContractBytecode {
                     hash,
                     bytes: bytecode.as_ref().to_vec(),

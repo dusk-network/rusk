@@ -48,10 +48,10 @@ signatures::{
     }
 }
 transfer::{
-    contract_exec::{
+    data::{
         ContractBytecode;
         ContractCall;
-        ContractExec;
+        TransactionData;
     };
     moonlight::{
         AccountData;

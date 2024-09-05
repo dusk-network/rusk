@@ -10,7 +10,7 @@ use rand::rngs::StdRng;
 
 use execution_core::{
     transfer::{
-        contract_exec::ContractExec,
+        data::TransactionData,
         phoenix::{
             Note, NoteLeaf, NoteOpening, NoteTreeItem,
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -153,7 +153,7 @@ pub fn create_transaction<const I: usize>(
     transfer_value: u64,
     obfuscated_transaction: bool,
     deposit: u64,
-    exec: Option<impl Into<ContractExec>>,
+    data: Option<impl Into<TransactionData>>,
 ) -> Transaction {
     // Get the root of the tree of phoenix-notes.
     let root = root(session).expect("Getting the anchor should be successful");
@@ -197,7 +197,7 @@ pub fn create_transaction<const I: usize>(
         gas_limit,
         gas_price,
         chain_id,
-        exec.map(Into::into),
+        data.map(Into::into),
     )
     .expect("creating the creation shouldn't fail")
     .into()

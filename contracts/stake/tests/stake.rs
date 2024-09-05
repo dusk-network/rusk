@@ -15,7 +15,7 @@ use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::{Stake, StakeData, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
-        contract_exec::ContractCall,
+        data::ContractCall,
         phoenix::{
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
             ViewKey as PhoenixViewKey,

@@ -25,7 +25,7 @@ use crate::{
     BlsScalar, ContractId, Error,
 };
 
-pub mod contract_exec;
+pub mod data;
 pub mod moonlight;
 pub mod phoenix;
 pub mod withdraw;
@@ -36,7 +36,7 @@ pub const TRANSFER_CONTRACT: ContractId = crate::reserved(0x1);
 /// Panic of "Nonce not ready to be used yet"
 pub const PANIC_NONCE_NOT_READY: &str = "Nonce not ready to be used yet";
 
-use contract_exec::{ContractCall, ContractDeploy, ContractExec};
+use data::{ContractCall, ContractDeploy, TransactionData};
 use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{
     Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -79,7 +79,7 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         chain_id: u8,
-        exec: Option<impl Into<ContractExec>>,
+        data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
         Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
             rng,
@@ -94,12 +94,15 @@ impl Transaction {
             gas_limit,
             gas_price,
             chain_id,
-            exec,
+            data,
         )?))
     }
 
     /// Create a new moonlight transaction.
-    #[must_use]
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - the memo, if given, is too large
     #[allow(clippy::too_many_arguments)]
     pub fn moonlight(
         from_sk: &AccountSecretKey,
@@ -110,12 +113,12 @@ impl Transaction {
         gas_price: u64,
         nonce: u64,
         chain_id: u8,
-        exec: Option<impl Into<ContractExec>>,
-    ) -> Self {
-        Self::Moonlight(MoonlightTransaction::new(
+        data: Option<impl Into<TransactionData>>,
+    ) -> Result<Self, Error> {
+        Ok(Self::Moonlight(MoonlightTransaction::new(
             from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-            chain_id, exec,
-        ))
+            chain_id, data,
+        )?))
     }
 
     /// Return the sender of the account for Moonlight transactions.
@@ -234,6 +237,15 @@ impl Transaction {
         match self {
             Self::Phoenix(tx) => tx.deploy(),
             Self::Moonlight(tx) => tx.deploy(),
+        }
+    }
+
+    /// Returns the memo used with the transaction, if any.
+    #[must_use]
+    pub fn memo(&self) -> Option<&[u8]> {
+        match self {
+            Self::Phoenix(tx) => tx.memo(),
+            Self::Moonlight(tx) => tx.memo(),
         }
     }
 

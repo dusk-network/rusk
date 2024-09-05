@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Wrapper for a strip-able bytecode that we want to keep the integrity of.
+//! Extra data that may be sent with the `data` field of either transaction
+//! type.
 
 use alloc::format;
 use alloc::string::String;
@@ -18,25 +19,32 @@ use rkyv::{
 
 use crate::{ContractId, Error, ARGBUF_LEN};
 
+/// The maximum size of a memo.
+pub const MAX_MEMO_SIZE: usize = 512;
+
 /// Data for either contract call or contract deployment.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub enum ContractExec {
+#[allow(clippy::large_enum_variant)]
+pub enum TransactionData {
     /// Data for a contract call.
     Call(ContractCall),
     /// Data for a contract deployment.
     Deploy(ContractDeploy),
+    /// Additional data added to a transaction, that is not a deployment or a
+    /// call.
+    Memo(Vec<u8>),
 }
 
-impl From<ContractCall> for ContractExec {
+impl From<ContractCall> for TransactionData {
     fn from(c: ContractCall) -> Self {
-        ContractExec::Call(c)
+        TransactionData::Call(c)
     }
 }
 
-impl From<ContractDeploy> for ContractExec {
+impl From<ContractDeploy> for TransactionData {
     fn from(d: ContractDeploy) -> Self {
-        ContractExec::Deploy(d)
+        TransactionData::Deploy(d)
     }
 }
 

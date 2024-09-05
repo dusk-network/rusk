@@ -26,7 +26,7 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeData, STAKE_CONTRACT},
     transfer::{
-        contract_exec::{ContractBytecode, ContractDeploy},
+        data::{ContractBytecode, ContractDeploy},
         moonlight::AccountData,
         Transaction as ProtocolTransaction, TRANSFER_CONTRACT,
     },
