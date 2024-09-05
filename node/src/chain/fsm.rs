@@ -206,7 +206,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
             // Try to detect a stalled chain
             // Generally speaking, if a node is receiving future blocks from the
-            // network but it could not accept a new block for long time, then
+            // network but it cannot accept a new block for long time, then
             // it might be a sign of a getting stalled on non-main branch.
             if let stall_chain_fsm::State::StalledOnFork =
                 self.stalled_sm.on_block_received(blk).await

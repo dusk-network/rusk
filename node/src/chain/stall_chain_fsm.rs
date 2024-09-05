@@ -26,8 +26,7 @@ use super::acceptor::Acceptor;
 
 use super::fsm::REDUNDANCY_PEER_FACTOR;
 
-const CONSECUTIVE_BLOCKS_THRESHOLD: usize = 5;
-const STALLED_TIMEOUT: u64 = 30; // seconds
+const STALLED_TIMEOUT: u64 = 60; // seconds
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum State {
@@ -96,14 +95,17 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             }
 
             self.update_tip(tip.inner().clone());
-
             self.state_transition(State::Running);
         }
 
         let curr = self.state;
         match curr {
             State::Running => self.on_running().await,
-            State::Stalled => self.on_stalled(blk).await,
+            State::Stalled => {
+                if let Err(err) = self.on_stalled(blk).await {
+                    error!("Error while processing block: {:?}", err);
+                }
+            }
             State::StalledOnFork => warn!("Stalled on fork"),
         };
 
@@ -131,29 +133,20 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     /// Handles block from wire in the `Stalled` state
-    async fn on_stalled(&mut self, new_blk: &Block) {
+    async fn on_stalled(&mut self, new_blk: &Block) -> anyhow::Result<()> {
         let key = new_blk.header().height;
         self.recovery_blocks
             .entry(key)
             .or_insert_with(|| new_blk.clone());
 
-        if self.recovery_blocks.len() < CONSECUTIVE_BLOCKS_THRESHOLD {
-            // Not enough consecutive blocks collected yet
-            return;
-        }
-
-        // Check recovery blocks contains at most N consecutive blocks
-        let mut prev = self.latest_finalized.header().height;
-
-        let consecutive = self.recovery_blocks.keys().all(|&key| {
-            let is_consecutive: bool = key == prev + 1;
-            prev = key;
-            is_consecutive
-        });
-
-        if !consecutive {
-            // recovery blocks are missing
-            return;
+        // Ensure all blocks from local_final until current_tip are
+        // collected
+        let from = self.latest_finalized.header().height;
+        let to = self.tip.0.header().height + 1;
+        for height in from..to {
+            if !self.recovery_blocks.contains_key(&height) {
+                return Ok(()); // wait for more blocks
+            }
         }
 
         // Detect if collected blocks are valid
@@ -163,10 +156,9 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             let exists = db
                 .read()
                 .await
-                .view(|t| t.get_block_exists(&blk.header().hash))
-                .unwrap(); // TODO:
+                .view(|t| t.get_block_exists(&blk.header().hash))?;
 
-            if !exists {
+            if exists {
                 // Block already exists in ledger
                 continue;
             }
@@ -174,19 +166,24 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             let local_blk = db
                 .read()
                 .await
-                .view(|t| t.fetch_block_header(&blk.header().prev_block_hash))
-                .unwrap();
+                .view(|t| t.fetch_block_by_height(blk.header().height))?;
 
-            if local_blk.is_none() {
-                // Block is invalid
-                error!(
-                    event = "revert failed",
-                    hash = to_str(&blk.header().hash),
-                    err = format!("could not find prev block")
-                );
+            let local_blk = match local_blk {
+                Some(blk) => blk,
+                None => {
+                    error!(
+                        event = "recovery failed",
+                        hash = to_str(&blk.header().hash),
+                        err = format!(
+                            "could not find local block at height {}",
+                            blk.header().height
+                        )
+                    );
+                    return Ok(());
+                }
+            };
 
-                return;
-            }
+            let main_branch_blk = blk;
 
             // If we are here, most probably this is a block from the main
             // branch
@@ -195,26 +192,25 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
                 .read()
                 .await
                 .verify_header_against_local(
-                    local_blk.as_ref().unwrap(),
-                    blk.header(),
+                    local_blk.header(),
+                    main_branch_blk.header(),
                 )
                 .await;
 
-            match res {
-                Ok(_) => {
-                    self.state_transition(State::StalledOnFork);
-                    return;
-                }
-                Err(err) => {
-                    // Block is invalid
-                    error!(
-                        event = "revert failed", // TODO:
-                        hash = to_str(&blk.header().hash),
-                        err = format!("{:?}", err)
-                    );
-                }
+            if let Err(err) = res {
+                error!(
+                    event = "recovery failed",
+                    local_hash = to_str(&local_blk.header().hash),
+                    remote_hash = to_str(&blk.header().hash),
+                    err = format!("verification err: {:?}", err)
+                );
+            } else {
+                self.state_transition(State::StalledOnFork);
+                return Ok(());
             }
         }
+
+        Ok(())
     }
 
     /// Handles block acceptance timeout
