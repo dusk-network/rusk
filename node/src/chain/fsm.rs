@@ -124,20 +124,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
             // Clear up all blacklisted blocks
             self.blacklisted_blocks.write().await.clear();
-
-            // Request missing blocks since my last finalized block
-            let get_blocks = Message::new_get_blocks(GetBlocks {
-                locator: last_finalized.header().hash,
-            });
-            if let Err(e) = self
-                .network
-                .read()
-                .await
-                .send_to_alive_peers(&get_blocks, REDUNDANCY_PEER_FACTOR)
-                .await
-            {
-                warn!("Unable to request GetBlocks {e}");
-            }
         } else {
             error!("could not request blocks");
         }
@@ -218,17 +204,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 }
             }
 
-            // Process block event in the context of stalled chain FSM
+            // Try to detect a stalled chain
+            // Generally speaking, if a node is receiving future blocks from the
+            // network but it could not accept a new block for long time, then
+            // it might be a sign of a getting stalled on non-main branch.
             if let stall_chain_fsm::State::StalledOnFork =
                 self.stalled_sm.on_block_received(blk).await
             {
-                info!(
-                    event = "stalled on fork",
-                    hash = to_str(&blk.header().hash),
-                    height = blk.header().height,
-                    iter = blk.header().iteration,
-                );
-
                 let mut acc = self.acc.write().await;
                 match acc.try_revert(RevertTarget::LastFinalizedState).await {
                     Ok(_) => {
