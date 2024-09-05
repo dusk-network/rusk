@@ -23,7 +23,7 @@ use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::StakeData,
     transfer::{
-        contract_exec::ContractExec,
+        data::TransactionData,
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
             Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
@@ -351,7 +351,7 @@ where
         gas_limit: u64,
         gas_price: u64,
         deposit: u64,
-        exec: impl Into<ContractExec>,
+        data: impl Into<TransactionData>,
     ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
         let receiver_pk = self.phoenix_public_key(sender_index)?;
@@ -383,7 +383,7 @@ where
             gas_limit,
             gas_price,
             chain_id,
-            Some(exec),
+            Some(data),
         )?;
 
         sender_sk.zeroize();
@@ -415,7 +415,7 @@ where
         let obfuscated_transaction = true;
         let deposit = 0;
 
-        let exec: Option<ContractExec> = None;
+        let data: Option<TransactionData> = None;
 
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
@@ -433,7 +433,7 @@ where
             gas_limit,
             gas_price,
             chain_id,
-            exec,
+            data,
         )?;
 
         sender_sk.zeroize();
@@ -606,7 +606,7 @@ where
         gas_price: u64,
     ) -> Result<Transaction, Error<S, SC>> {
         let deposit = 0;
-        let exec: Option<ContractExec> = None;
+        let data: Option<TransactionData> = None;
 
         self.moonlight_transaction(
             from_index,
@@ -615,7 +615,7 @@ where
             deposit,
             gas_limit,
             gas_price,
-            exec,
+            data,
         )
     }
 
@@ -629,7 +629,7 @@ where
         deposit: u64,
         gas_limit: u64,
         gas_price: u64,
-        exec: Option<impl Into<ContractExec>>,
+        data: Option<impl Into<TransactionData>>,
     ) -> Result<Transaction, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut from_sk = derive_bls_sk(&seed, from_index);
@@ -653,8 +653,8 @@ where
 
         let tx = MoonlightTransaction::new(
             &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-            chain_id, exec,
-        );
+            chain_id, data,
+        )?;
 
         seed.zeroize();
         from_sk.zeroize();
