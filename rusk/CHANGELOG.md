@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow state transitions to be executed in parallel with queries [#970]
 - Change dependencies declarations enforce bytecheck [#1371]
 - Fixed tests passing incorrect arguments [#1371]
+- Adjusted deployment charging [#2207]
 
 ### Added
 
@@ -211,6 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#2207]: https://github.com/dusk-network/rusk/issues/2207
 [#1884]: https://github.com/dusk-network/rusk/issues/1884
 [#1882]: https://github.com/dusk-network/rusk/issues/1882
 [#1675]: https://github.com/dusk-network/rusk/issues/1675

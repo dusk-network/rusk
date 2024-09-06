@@ -31,9 +31,8 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const GAS_LIMIT: u64 = 200_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 10_000_000;
-const GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY: u64 = 11_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 1_200_000;
-const GAS_PRICE: u64 = 2;
+const GAS_PRICE: u64 = 2000;
 const POINT_LIMIT: u64 = 0x10000000;
 const SENDER_INDEX: u8 = 0;
 
@@ -96,9 +95,17 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk =
-        Rusk::new(dir, CHAIN_ID, None, None, BLOCK_GAS_LIMIT, u64::MAX, sender)
-            .expect("Instantiating rusk should succeed");
+    let rusk = Rusk::new(
+        dir,
+        CHAIN_ID,
+        None,
+        None,
+        None,
+        BLOCK_GAS_LIMIT,
+        u64::MAX,
+        sender,
+    )
+    .expect("Instantiating rusk should succeed");
     Ok(rusk)
 }
 
@@ -115,6 +122,7 @@ fn make_and_execute_transaction_deploy(
     init_value: u8,
     should_fail: bool,
     should_discard: bool,
+    gas_price: u64,
 ) {
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
@@ -126,7 +134,7 @@ fn make_and_execute_transaction_deploy(
             &mut rng,
             SENDER_INDEX,
             gas_limit,
-            GAS_PRICE,
+            gas_price,
             0u64,
             TransactionData::Deploy(ContractDeploy {
                 bytecode: ContractBytecode {
@@ -282,6 +290,7 @@ pub async fn contract_deploy() {
         BOB_INIT_VALUE,
         false,
         false,
+        GAS_PRICE,
     );
     let after_balance = f.wallet_balance();
     f.assert_bob_contract_is_deployed();
@@ -307,6 +316,7 @@ pub async fn contract_already_deployed() {
         BOB_INIT_VALUE,
         true,
         false,
+        GAS_PRICE,
     );
     let after_balance = f.wallet_balance();
     let funds_spent = before_balance - after_balance;
@@ -334,6 +344,7 @@ pub async fn contract_deploy_corrupted_bytecode() {
         BOB_INIT_VALUE,
         true,
         false,
+        GAS_PRICE,
     );
     let after_balance = f.wallet_balance();
     let funds_spent = before_balance - after_balance;
@@ -360,6 +371,7 @@ pub async fn contract_deploy_charge() {
         BOB_INIT_VALUE,
         false,
         false,
+        GAS_PRICE,
     );
     let after_bob_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
@@ -370,6 +382,7 @@ pub async fn contract_deploy_charge() {
         0,
         false,
         false,
+        GAS_PRICE,
     );
     let after_license_balance = f.wallet_balance();
     let bob_deployment_cost = before_balance - after_bob_balance;
@@ -396,6 +409,7 @@ pub async fn contract_deploy_not_enough_to_spend() {
         BOB_INIT_VALUE,
         false,
         true,
+        GAS_PRICE,
     );
     let after_balance = f.wallet_balance();
     f.assert_bob_contract_is_not_deployed();
@@ -403,12 +417,11 @@ pub async fn contract_deploy_not_enough_to_spend() {
     assert_eq!(funds_spent, 0);
 }
 
-/// We deploy a contract with insufficient gas limit.
-/// The limit is such that it is enough to spend but not enough to deploy.
-/// Transaction won't be discarded and all limit will be spent by the wallet.
-/// Wallet will spend GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY x GAS_PRICE of funds.
+/// We deploy a contract with insufficient gas price.
+/// Transaction will be discarded.
 #[tokio::test(flavor = "multi_thread")]
-pub async fn contract_deploy_not_enough_to_spend_and_deploy() {
+pub async fn contract_deploy_gas_price_too_low() {
+    const LOW_GAS_PRICE: u64 = 10;
     logger();
     let f = Fixture::build(false);
 
@@ -418,25 +431,23 @@ pub async fn contract_deploy_not_enough_to_spend_and_deploy() {
         &f.rusk,
         &f.wallet,
         f.bob_bytecode.clone(),
-        GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY,
+        GAS_LIMIT,
         BOB_INIT_VALUE,
-        true,
         false,
+        true,
+        LOW_GAS_PRICE,
     );
     let after_balance = f.wallet_balance();
     f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
-    assert_eq!(
-        funds_spent,
-        GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY * GAS_PRICE
-    );
+    assert_eq!(funds_spent, 0);
 }
 
 /// We deploy a contract with insufficient gas limit.
 /// The limit is such that it is not enough to deploy.
 /// Transaction will be discarded and no funds will be spent by the wallet.
 #[tokio::test(flavor = "multi_thread")]
-pub async fn contract_deploy_not_enough_to_deploy() {
+pub async fn contract_deploy_gas_limit_too_low() {
     logger();
     let f = Fixture::build(false);
 
@@ -450,6 +461,7 @@ pub async fn contract_deploy_not_enough_to_deploy() {
         BOB_INIT_VALUE,
         false,
         true,
+        GAS_PRICE,
     );
     let after_balance = f.wallet_balance();
     f.assert_bob_contract_is_not_deployed();

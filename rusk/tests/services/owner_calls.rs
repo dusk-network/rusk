@@ -74,9 +74,17 @@ fn initial_state<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk =
-        Rusk::new(dir, CHAIN_ID, None, None, BLOCK_GAS_LIMIT, u64::MAX, sender)
-            .expect("Instantiating rusk should succeed");
+    let rusk = Rusk::new(
+        dir,
+        CHAIN_ID,
+        None,
+        None,
+        None,
+        BLOCK_GAS_LIMIT,
+        u64::MAX,
+        sender,
+    )
+    .expect("Instantiating rusk should succeed");
     Ok(rusk)
 }
 
