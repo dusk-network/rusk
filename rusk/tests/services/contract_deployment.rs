@@ -4,28 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
 
 use execution_core::{
     transfer::data::{ContractBytecode, ContractDeploy, TransactionData},
     ContractId,
 };
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::gen_id::gen_contract_id;
 use rusk::{Result, Rusk};
 use rusk_abi::{ContractData, PiecrustError};
 use rusk_recovery_tools::state;
+use rusk_wallet::{currency::Lux, gas::Gas, Wallet};
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, ExecuteResult};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -33,9 +29,9 @@ const GAS_LIMIT: u64 = 200_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_SPEND: u64 = 10_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_SPEND_AND_DEPLOY: u64 = 11_000_000;
 const GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY: u64 = 1_200_000;
-const GAS_PRICE: u64 = 2;
+const GAS_PRICE: Lux = 2;
 const POINT_LIMIT: u64 = 0x10000000;
-const SENDER_INDEX: u8 = 0;
+const DEPOSIT: u64 = 0;
 
 const ALICE_CONTRACT_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -81,7 +77,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                     bob_bytecode,
                     ContractData::builder()
                         .owner(OWNER)
-                        .constructor_arg(&BOB_INIT_VALUE)
+                        .init_arg(&BOB_INIT_VALUE)
                         .contract_id(gen_contract_id(
                             &bob_bytecode,
                             0u64,
@@ -107,27 +103,27 @@ fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
     ContractId::from_bytes(hash.into())
 }
 
-fn make_and_execute_transaction_deploy(
+async fn make_and_execute_transaction_deploy(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
+    wallet: &Wallet<WalletFile>,
     bytecode: impl AsRef<[u8]>,
     gas_limit: u64,
     init_value: u8,
     should_fail: bool,
     should_discard: bool,
 ) {
-    let mut rng = StdRng::seed_from_u64(0xcafe);
-
+    let sender_addr = wallet.default_address();
     let constructor_args = Some(vec![init_value]);
 
     let hash = bytecode_hash(bytecode.as_ref()).to_bytes();
     let tx = wallet
         .phoenix_execute(
-            &mut rng,
-            SENDER_INDEX,
-            gas_limit,
-            GAS_PRICE,
-            0u64,
+            sender_addr,
+            DEPOSIT.into(),
+            Gas {
+                limit: gas_limit,
+                price: GAS_PRICE,
+            },
             TransactionData::Deploy(ContractDeploy {
                 bytecode: ContractBytecode {
                     hash,
@@ -138,6 +134,7 @@ fn make_and_execute_transaction_deploy(
                 nonce: 0,
             }),
         )
+        .await
         .expect("Making transaction should succeed");
 
     let expected = ExecuteResult {
@@ -170,7 +167,7 @@ fn make_and_execute_transaction_deploy(
 
 struct Fixture {
     pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
+    pub wallet: Wallet<WalletFile>,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
     pub path: PathBuf,
@@ -183,15 +180,8 @@ impl Fixture {
         let rusk = initial_state(&tmp, deploy_bob)
             .expect("Initializing should succeed");
 
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
+        let wallet =
+            test_wallet().expect("test-wallet should be possible to create");
 
         let original_root = rusk.state_root();
 
@@ -255,9 +245,10 @@ impl Fixture {
         );
     }
 
-    pub fn wallet_balance(&self) -> u64 {
+    pub async fn wallet_balance(&self) -> u64 {
         self.wallet
-            .get_balance(0)
+            .get_balance(&self.wallet.addresses()[0])
+            .await
             .expect("Getting wallet's balance should succeed")
             .value
     }
@@ -273,7 +264,7 @@ pub async fn contract_deploy() {
     let f = Fixture::build(false);
 
     f.assert_bob_contract_is_not_deployed();
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -282,8 +273,9 @@ pub async fn contract_deploy() {
         BOB_INIT_VALUE,
         false,
         false,
-    );
-    let after_balance = f.wallet_balance();
+    )
+    .await;
+    let after_balance = f.wallet_balance().await;
     f.assert_bob_contract_is_deployed();
     let funds_spent = before_balance - after_balance;
     assert!(funds_spent < GAS_LIMIT * GAS_PRICE);
@@ -298,7 +290,7 @@ pub async fn contract_already_deployed() {
     let f = Fixture::build(true);
 
     f.assert_bob_contract_is_deployed();
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -307,8 +299,9 @@ pub async fn contract_already_deployed() {
         BOB_INIT_VALUE,
         true,
         false,
-    );
-    let after_balance = f.wallet_balance();
+    )
+    .await;
+    let after_balance = f.wallet_balance().await;
     let funds_spent = before_balance - after_balance;
     assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
@@ -325,7 +318,7 @@ pub async fn contract_deploy_corrupted_bytecode() {
     f.bob_bytecode = f.bob_bytecode[4..].to_vec();
 
     f.assert_bob_contract_is_not_deployed();
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -334,8 +327,9 @@ pub async fn contract_deploy_corrupted_bytecode() {
         BOB_INIT_VALUE,
         true,
         false,
-    );
-    let after_balance = f.wallet_balance();
+    )
+    .await;
+    let after_balance = f.wallet_balance().await;
     let funds_spent = before_balance - after_balance;
     assert_eq!(funds_spent, GAS_LIMIT * GAS_PRICE);
 }
@@ -351,7 +345,7 @@ pub async fn contract_deploy_charge() {
         "../../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -360,8 +354,9 @@ pub async fn contract_deploy_charge() {
         BOB_INIT_VALUE,
         false,
         false,
-    );
-    let after_bob_balance = f.wallet_balance();
+    )
+    .await;
+    let after_bob_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -370,8 +365,9 @@ pub async fn contract_deploy_charge() {
         0,
         false,
         false,
-    );
-    let after_license_balance = f.wallet_balance();
+    )
+    .await;
+    let after_license_balance = f.wallet_balance().await;
     let bob_deployment_cost = before_balance - after_bob_balance;
     let license_deployment_cost = after_bob_balance - after_license_balance;
     assert!(license_deployment_cost > bob_deployment_cost);
@@ -387,7 +383,7 @@ pub async fn contract_deploy_not_enough_to_spend() {
     let f = Fixture::build(false);
 
     f.assert_bob_contract_is_not_deployed();
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -396,8 +392,9 @@ pub async fn contract_deploy_not_enough_to_spend() {
         BOB_INIT_VALUE,
         false,
         true,
-    );
-    let after_balance = f.wallet_balance();
+    )
+    .await;
+    let after_balance = f.wallet_balance().await;
     f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
     assert_eq!(funds_spent, 0);
@@ -413,7 +410,7 @@ pub async fn contract_deploy_not_enough_to_spend_and_deploy() {
     let f = Fixture::build(false);
 
     f.assert_bob_contract_is_not_deployed();
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -422,8 +419,9 @@ pub async fn contract_deploy_not_enough_to_spend_and_deploy() {
         BOB_INIT_VALUE,
         true,
         false,
-    );
-    let after_balance = f.wallet_balance();
+    )
+    .await;
+    let after_balance = f.wallet_balance().await;
     f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
     assert_eq!(
@@ -441,7 +439,7 @@ pub async fn contract_deploy_not_enough_to_deploy() {
     let f = Fixture::build(false);
 
     f.assert_bob_contract_is_not_deployed();
-    let before_balance = f.wallet_balance();
+    let before_balance = f.wallet_balance().await;
     make_and_execute_transaction_deploy(
         &f.rusk,
         &f.wallet,
@@ -450,8 +448,9 @@ pub async fn contract_deploy_not_enough_to_deploy() {
         BOB_INIT_VALUE,
         false,
         true,
-    );
-    let after_balance = f.wallet_balance();
+    )
+    .await;
+    let after_balance = f.wallet_balance().await;
     f.assert_bob_contract_is_not_deployed();
     let funds_spent = before_balance - after_balance;
     assert_eq!(funds_spent, 0);

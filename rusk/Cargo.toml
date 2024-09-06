@@ -80,7 +80,7 @@ rusk-recovery = { version = "0.6", path = "../rusk-recovery", optional = true }
 futures = { version = "0.3", optional = true }
 
 [dev-dependencies]
-test-wallet = { version = "0.1.0", path = "../test-wallet" }
+rusk-wallet = { version = "0.1.0", path = "../rusk-wallet" }
 test-context = "0.1"
 reqwest = "0.12"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }

@@ -4,21 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, RwLock};
 
 use node_data::ledger::SpentTransaction;
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
+use rusk_wallet::{gas::Gas, Wallet};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -35,22 +31,19 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 /// Transacts between two accounts on the in the same wallet and produces a
 /// block with a single transaction, checking balances are transferred
 /// successfully.
-fn wallet_transfer(
+async fn wallet_transfer(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
+    wallet: &Wallet<WalletFile>,
     amount: u64,
     block_height: u64,
 ) {
-    // Generate a receiver pk
-    let receiver_pk = wallet
-        .phoenix_public_key(1)
-        .expect("Failed to get public key");
-
-    let mut rng = StdRng::seed_from_u64(0xdead);
+    let sender_addr_0 = &wallet.addresses()[0];
+    let sender_addr_1 = &wallet.addresses()[1];
 
     // Store the sender initial balance
     let sender_initial_balance = wallet
-        .get_balance(0)
+        .get_balance(sender_addr_0)
+        .await
         .expect("Failed to get the balance")
         .value;
 
@@ -64,7 +57,8 @@ fn wallet_transfer(
     // Check the receiver initial balance is zero
     assert_eq!(
         wallet
-            .get_balance(1)
+            .get_balance(sender_addr_1)
+            .await
             .expect("Failed to get the balance")
             .value,
         0,
@@ -72,8 +66,18 @@ fn wallet_transfer(
     );
 
     // Execute a transfer
+    let receiver_addr = sender_addr_1;
     let tx = wallet
-        .phoenix_transfer(&mut rng, 0, &receiver_pk, amount, 1_000_000_000, 2)
+        .phoenix_transfer(
+            sender_addr_0,
+            receiver_addr,
+            amount.into(),
+            Gas {
+                limit: 1_000_000_000,
+                price: 2,
+            },
+        )
+        .await
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
@@ -107,7 +111,8 @@ fn wallet_transfer(
     // Check the receiver's balance is changed accordingly
     assert_eq!(
         wallet
-            .get_balance(1)
+            .get_balance(&receiver_addr)
+            .await
             .expect("Failed to get the balance")
             .value,
         amount,
@@ -116,7 +121,8 @@ fn wallet_transfer(
 
     // Check the sender's balance is changed accordingly
     let sender_final_balance = wallet
-        .get_balance(0)
+        .get_balance(&sender_addr_0)
+        .await
         .expect("Failed to get the balance")
         .value;
     let fee = gas_spent * tx.inner.inner.gas_price();
@@ -136,22 +142,14 @@ pub async fn wallet() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: cache.clone(),
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    wallet_transfer(&rusk, &wallet, 1_000, 2);
+    wallet_transfer(&rusk, &wallet, 1_000, 2).await;
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
@@ -164,13 +162,12 @@ pub async fn wallet() -> Result<()> {
     // Revert the state
     rusk.revert_to_base_root()
         .expect("Reverting should succeed");
-    cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
     info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
     assert_eq!(original_root, rusk.state_root(), "Root be the same again");
 
-    wallet_transfer(&rusk, &wallet, 1_000, 2);
+    wallet_transfer(&rusk, &wallet, 1_000, 2).await;
 
     // Check the state's root is back to the original one
     info!(
