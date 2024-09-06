@@ -50,13 +50,16 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
 });
 
 const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
+const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
 
 impl Rusk {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
         generation_timeout: Option<Duration>,
         gas_per_deploy_byte: Option<u64>,
+        min_deployment_gas_price: Option<u64>,
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
@@ -92,6 +95,7 @@ impl Rusk {
             chain_id,
             generation_timeout,
             gas_per_deploy_byte,
+            min_deployment_gas_price,
             feeder_gas_limit,
             event_sender,
             block_gas_limit,
@@ -141,6 +145,7 @@ impl Rusk {
                 &mut session,
                 &unspent_tx.inner,
                 self.gas_per_deploy_byte,
+                self.min_deployment_gas_price,
             ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
@@ -159,6 +164,7 @@ impl Rusk {
                                 &mut session,
                                 &spent_tx.inner.inner,
                                 self.gas_per_deploy_byte,
+                                self.min_deployment_gas_price,
                             );
                         }
 
@@ -244,6 +250,7 @@ impl Rusk {
             slashing,
             voters,
             self.gas_per_deploy_byte,
+            self.min_deployment_gas_price,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -275,6 +282,7 @@ impl Rusk {
             slashing,
             voters,
             self.gas_per_deploy_byte,
+            self.min_deployment_gas_price,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -467,6 +475,7 @@ fn accept(
     slashing: Vec<Slash>,
     voters: Option<&[Voter]>,
     gas_per_deploy_byte: Option<u64>,
+    min_deployment_gas_price: Option<u64>,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -485,7 +494,12 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let receipt = execute(&mut session, tx, gas_per_deploy_byte)?;
+        let receipt = execute(
+            &mut session,
+            tx,
+            gas_per_deploy_byte,
+            min_deployment_gas_price,
+        )?;
 
         update_hasher(&mut event_hasher, &receipt.events);
         events.extend(receipt.events);
@@ -592,7 +606,8 @@ fn contract_deploy(
 /// The following steps are performed:
 ///
 /// 1. Check if the transaction contains contract deployment data, and if so,
-///    verifies if gas limit is enough for deployment. If gas limit is not
+///    verifies if gas limit is enough for deployment and if the gas price is
+///    sufficient for deployment. If either gas price or gas limit is not
 ///    sufficient for deployment, transaction is discarded.
 ///
 /// 2. Call the "spend_and_execute" function on the transfer contract with
@@ -625,12 +640,21 @@ fn execute(
     session: &mut Session,
     tx: &ProtocolTransaction,
     gas_per_deploy_byte: Option<u64>,
+    min_deployment_gas_price: Option<u64>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     if let Some(deploy) = tx.deploy() {
         let deploy_charge =
             bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
+        if tx.gas_price()
+            < min_deployment_gas_price
+                .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE)
+        {
+            return Err(PiecrustError::Panic(
+                "gas price too low to deploy".into(),
+            ));
+        }
         if tx.gas_limit() < deploy_charge {
             return Err(PiecrustError::Panic(
                 "not enough gas to deploy".into(),

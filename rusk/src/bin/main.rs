@@ -67,6 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config.kadcast.chain_id(),
             config.chain.generation_timeout(),
             config.chain.gas_per_deploy_byte(),
+            config.chain.min_deployment_gas_price(),
             config.chain.block_gas_limit(),
             config.http.feeder_call_gas,
             _event_sender.clone(),

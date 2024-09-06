@@ -45,6 +45,7 @@ pub struct Rusk {
     pub(crate) chain_id: u8,
     pub(crate) generation_timeout: Option<Duration>,
     pub(crate) gas_per_deploy_byte: Option<u64>,
+    pub(crate) min_deployment_gas_price: Option<u64>,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
