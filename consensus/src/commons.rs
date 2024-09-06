@@ -124,6 +124,7 @@ pub enum ConsensusError {
     Canceled(u64),
     VoteAlreadyCollected,
     TooManyTransactions(usize),
+    TooManyFaults(usize),
 }
 
 impl From<StepSigError> for ConsensusError {
