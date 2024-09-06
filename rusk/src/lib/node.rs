@@ -281,7 +281,7 @@ mod tests {
         dusk(3_913_869.888),  // Period 7
         dusk(1_956_998.016),  // Period 8
         dusk(978_498.752),    // Period 9
-        dusk(0.0),            // Period 9
+        dusk(0.0),            // After Period 9
     ];
 
     #[test]
