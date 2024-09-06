@@ -13,7 +13,10 @@ use rand::SeedableRng;
 use execution_core::{
     dusk,
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{Stake, StakeData, Withdraw as StakeWithdraw, STAKE_CONTRACT},
+    stake::{
+        Reward, RewardReason, Stake, StakeData, Withdraw as StakeWithdraw,
+        STAKE_CONTRACT,
+    },
     transfer::{
         data::ContractCall,
         phoenix::{
@@ -132,13 +135,14 @@ fn stake_withdraw_unstake() {
 
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
+    let rewards = vec![Reward {
+        account: stake_pk,
+        value: REWARD_AMOUNT,
+        reason: RewardReason::Other,
+    }];
+
     let receipt = session
-        .call::<_, ()>(
-            STAKE_CONTRACT,
-            "reward",
-            &(stake_pk, REWARD_AMOUNT),
-            POINT_LIMIT,
-        )
+        .call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, POINT_LIMIT)
         .expect("Rewarding a key should succeed");
 
     assert_event(&receipt.events, "reward", &stake_pk, REWARD_AMOUNT);

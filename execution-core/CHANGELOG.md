@@ -100,6 +100,8 @@ stake::{
     StakeData;
     StakeEvent;
     Withdraw;
+    Reward;
+    RewardReason;
     EPOCH;
     STAKE_CONTRACT;
     STAKE_WARNINGS;

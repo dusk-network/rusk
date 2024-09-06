@@ -5,6 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
+
 use core::cmp::min;
 
 use dusk_bytes::Serializable;
@@ -12,7 +14,7 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
-        next_epoch, Stake, StakeAmount, StakeData, StakeEvent,
+        next_epoch, Reward, Stake, StakeAmount, StakeData, StakeEvent,
         StakeWithReceiverEvent, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
         STAKE_WARNINGS,
     },
@@ -263,19 +265,23 @@ impl StakeState {
 
     /// Rewards a `account` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
-    pub fn reward(&mut self, account: &BlsPublicKey, value: u64) {
+    pub fn reward(&mut self, rewards: Vec<Reward>) {
+        // since we assure that reward is called at least once per block, this
+        // call is necessary to ensure that there are no inconsistencies in
+        // `prev_block_state`.
         self.check_new_block();
 
-        let stake = self.load_or_create_stake_mut(account);
+        for reward in &rewards {
+            let stake = self.load_or_create_stake_mut(&reward.account);
 
-        // Reset faults counters
-        stake.faults = 0;
-        stake.hard_faults = 0;
+            // Reset faults counters
+            stake.faults = 0;
+            stake.hard_faults = 0;
 
-        stake.reward += value;
+            stake.reward += reward.value;
+        }
 
-        let account = *account;
-        rusk_abi::emit("reward", StakeEvent { account, value });
+        rusk_abi::emit("reward", rewards);
     }
 
     /// Total amount burned since the genesis

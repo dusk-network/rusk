@@ -457,3 +457,30 @@ impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
         buf
     }
 }
+
+/// Used in a `reward` call to reward a given account with an amount of Dusk,
+/// and emitted as an event, once a reward succeeds.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Reward {
+    /// The account to be rewarded.
+    pub account: BlsPublicKey,
+    /// The amount to reward.
+    pub value: u64,
+    /// The reason for the reward.
+    pub reason: RewardReason,
+}
+
+/// The reason that a reward is issued.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum RewardReason {
+    /// The fixed amount awarded to a generator.
+    GeneratorFixed,
+    /// Extra amount awarded to a generator.
+    GeneratorExtra,
+    /// Amount awarded to a voter.
+    Voter,
+    /// Amount awarded for another reason, such as rewarding Dusk.
+    Other,
+}

@@ -9,7 +9,7 @@ use rkyv::{check_archived_root, Deserialize, Infallible};
 
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
-    stake::{StakeEvent, StakeWithReceiverEvent},
+    stake::{Reward, StakeEvent, StakeWithReceiverEvent},
     Event,
 };
 
@@ -37,6 +37,13 @@ pub fn assert_event<S>(
             .expect("Infallible");
         assert_eq!(staking_event_data.value, should_amount);
         assert_eq!(staking_event_data.account.to_bytes(), should_pk.to_bytes());
+    } else if topic == "reward" {
+        let reward_event_data = rkyv::from_bytes::<Vec<Reward>>(&event.data)
+            .expect("Reward event data should deserialize correctly");
+
+        assert!(reward_event_data.iter().any(|reward| {
+            &reward.account == should_pk && reward.value == should_amount
+        }))
     } else {
         let staking_event_data =
             check_archived_root::<StakeEvent>(event.data.as_slice())
