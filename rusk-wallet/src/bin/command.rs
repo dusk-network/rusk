@@ -231,7 +231,8 @@ impl Command {
                 };
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx = wallet.transfer(sender, &rcvr, amt, gas).await?;
+                let tx =
+                    wallet.phoenix_transfer(sender, &rcvr, amt, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::Stake {
@@ -247,7 +248,7 @@ impl Command {
                 };
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx = wallet.stake(addr, amt, gas).await?;
+                let tx = wallet.phoenix_stake(addr, amt, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::StakeInfo { addr, reward } => {
@@ -255,8 +256,10 @@ impl Command {
                     Some(addr) => wallet.claim_as_address(addr)?,
                     None => wallet.default_address(),
                 };
-                let si =
-                    wallet.stake_info(addr).await?.ok_or(Error::NotStaked)?;
+                let si = wallet
+                    .stake_info(addr.index)
+                    .await?
+                    .ok_or(Error::NotStaked)?;
 
                 Ok(RunResult::StakeInfo(si, reward))
             }
@@ -273,7 +276,7 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx = wallet.unstake(addr, gas).await?;
+                let tx = wallet.phoenix_unstake(addr, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::Withdraw {
@@ -289,7 +292,7 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx = wallet.withdraw_reward(addr, gas).await?;
+                let tx = wallet.phoenix_stake_withdraw(addr, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::Export { addr, dir, name } => {
@@ -305,7 +308,7 @@ impl Command {
                 )?;
 
                 let (pub_key, key_pair) =
-                    wallet.export_keys(addr, &dir, name, &pwd)?;
+                    wallet.export_provisioner_keys(addr, &dir, name, &pwd)?;
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
             }
