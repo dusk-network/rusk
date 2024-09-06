@@ -81,7 +81,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                     bob_bytecode,
                     ContractData::builder()
                         .owner(OWNER)
-                        .constructor_arg(&BOB_INIT_VALUE)
+                        .init_arg(&BOB_INIT_VALUE)
                         .contract_id(gen_contract_id(
                             &bob_bytecode,
                             0u64,
@@ -118,7 +118,7 @@ fn make_and_execute_transaction_deploy(
 ) {
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
-    let constructor_args = Some(vec![init_value]);
+    let init_args = Some(vec![init_value]);
 
     let hash = bytecode_hash(bytecode.as_ref()).to_bytes();
     let tx = wallet
@@ -134,7 +134,7 @@ fn make_and_execute_transaction_deploy(
                     bytes: bytecode.as_ref().to_vec(),
                 },
                 owner: OWNER.to_vec(),
-                constructor_args,
+                init_args,
                 nonce: 0,
             }),
         )

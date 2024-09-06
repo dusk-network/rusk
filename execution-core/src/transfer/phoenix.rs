@@ -452,7 +452,7 @@ impl Transaction {
 
         let stripped_deploy = TransactionData::Deploy(ContractDeploy {
             owner: deploy.owner.clone(),
-            constructor_args: deploy.constructor_args.clone(),
+            init_args: deploy.init_args.clone(),
             bytecode: ContractBytecode {
                 hash: deploy.bytecode.hash,
                 bytes: Vec::new(),
@@ -723,8 +723,8 @@ impl Payload {
             Some(TransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
                 bytes.extend(&d.owner);
-                if let Some(constructor_args) = &d.constructor_args {
-                    bytes.extend(constructor_args);
+                if let Some(init_args) = &d.init_args {
+                    bytes.extend(init_args);
                 }
             }
             Some(TransactionData::Call(c)) => {

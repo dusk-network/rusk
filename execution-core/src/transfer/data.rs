@@ -56,8 +56,8 @@ pub struct ContractDeploy {
     pub bytecode: ContractBytecode,
     /// Owner of the contract to be deployed.
     pub owner: Vec<u8>,
-    /// Constructor arguments of the deployed contract.
-    pub constructor_args: Option<Vec<u8>>,
+    /// Init method arguments of the deployed contract.
+    pub init_args: Option<Vec<u8>>,
     /// Nonce for contract id uniqueness and vanity
     pub nonce: u64,
 }
@@ -85,11 +85,11 @@ impl ContractDeploy {
         bytes.extend((self.owner.len() as u64).to_bytes());
         bytes.extend(&self.owner);
 
-        match &self.constructor_args {
-            Some(constructor_args) => {
+        match &self.init_args {
+            Some(init_args) => {
                 bytes.push(1);
-                bytes.extend((constructor_args.len() as u64).to_bytes());
-                bytes.extend(constructor_args);
+                bytes.extend((init_args.len() as u64).to_bytes());
+                bytes.extend(init_args);
             }
             None => bytes.push(0),
         }
@@ -110,7 +110,7 @@ impl ContractDeploy {
 
         let owner = crate::read_vec(&mut buf)?;
 
-        let constructor_args = match u8::from_reader(&mut buf)? {
+        let init_args = match u8::from_reader(&mut buf)? {
             0 => None,
             1 => Some(crate::read_vec(&mut buf)?),
             _ => return Err(BytesError::InvalidData),
@@ -121,7 +121,7 @@ impl ContractDeploy {
         Ok(Self {
             bytecode,
             owner,
-            constructor_args,
+            init_args,
             nonce,
         })
     }
