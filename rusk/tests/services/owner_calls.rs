@@ -64,7 +64,7 @@ fn initial_state<P: AsRef<Path>>(
                 bob_bytecode,
                 ContractData::builder()
                     .owner(owner.as_ref())
-                    .constructor_arg(&BOB_INIT_VALUE)
+                    .init_arg(&BOB_INIT_VALUE)
                     .contract_id(gen_contract_id(&bob_bytecode, 0u64, owner)),
                 POINT_LIMIT,
             )
@@ -74,9 +74,17 @@ fn initial_state<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk =
-        Rusk::new(dir, CHAIN_ID, None, None, BLOCK_GAS_LIMIT, u64::MAX, sender)
-            .expect("Instantiating rusk should succeed");
+    let rusk = Rusk::new(
+        dir,
+        CHAIN_ID,
+        None,
+        None,
+        None,
+        BLOCK_GAS_LIMIT,
+        u64::MAX,
+        sender,
+    )
+    .expect("Instantiating rusk should succeed");
     Ok(rusk)
 }
 
