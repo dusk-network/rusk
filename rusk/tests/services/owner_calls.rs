@@ -64,7 +64,7 @@ fn initial_state<P: AsRef<Path>>(
                 bob_bytecode,
                 ContractData::builder()
                     .owner(owner.as_ref())
-                    .constructor_arg(&BOB_INIT_VALUE)
+                    .init_arg(&BOB_INIT_VALUE)
                     .contract_id(gen_contract_id(&bob_bytecode, 0u64, owner)),
                 POINT_LIMIT,
             )

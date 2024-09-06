@@ -81,7 +81,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
                     bob_bytecode,
                     ContractData::builder()
                         .owner(OWNER)
-                        .constructor_arg(&BOB_INIT_VALUE)
+                        .init_arg(&BOB_INIT_VALUE)
                         .contract_id(gen_contract_id(
                             &bob_bytecode,
                             0u64,

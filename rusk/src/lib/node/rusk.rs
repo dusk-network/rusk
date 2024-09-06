@@ -15,7 +15,7 @@ use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::DeserializableSlice;
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, RATIFICATION_COMMITTEE_CREDITS,
@@ -24,7 +24,7 @@ use dusk_consensus::config::{
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
-    stake::{StakeData, STAKE_CONTRACT},
+    stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
     transfer::{
         data::{ContractBytecode, ContractDeploy},
         moonlight::AccountData,
@@ -699,12 +699,8 @@ fn reward_slash_and_update_root(
     slashing: Vec<Slash>,
     voters: Option<&[Voter]>,
 ) -> Result<Vec<Event>> {
-    let (
-        dusk_value,
-        generator_fixed_reward,
-        generator_extra_reward,
-        voters_reward,
-    ) = coinbase_value(block_height, dusk_spent);
+    let (dusk_value, generator_reward, generator_extra_reward, voters_reward) =
+        coinbase_value(block_height, dusk_spent);
 
     let credits = voters
         .unwrap_or_default()
@@ -716,40 +712,43 @@ fn reward_slash_and_update_root(
         return Err(InvalidCreditsCount(block_height, 0));
     }
 
-    let r = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(*DUSK_KEY, dusk_value),
-        u64::MAX,
-    )?;
-
-    let mut events = r.events;
-
-    debug!(
-        event = "Dusk rewarded",
-        voter = to_bs58(&DUSK_KEY),
-        reward = dusk_value
-    );
-
-    let generator_curr_extra_reward =
+    let generator_extra_reward =
         calc_generator_extra_reward(generator_extra_reward, credits);
 
-    let generator_reward = generator_fixed_reward + generator_curr_extra_reward;
-    let r = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(*generator, generator_reward),
-        u64::MAX,
-    )?;
-    events.extend(r.events);
+    // We first start with only the generator (fixed) and Dusk
+    let mut num_rewards = 2;
 
-    debug!(
-        event = "generator rewarded",
-        generator = to_bs58(generator),
-        total_reward = generator_reward,
-        extra_reward = generator_curr_extra_reward,
-        credits,
-    );
+    // If there is an extra reward we add it.
+    if generator_extra_reward != 0 {
+        num_rewards += 1;
+    }
+
+    // Additionally we also reward the voters.
+    if let Some(voters) = &voters {
+        num_rewards += voters.len();
+    }
+
+    let mut rewards = Vec::with_capacity(num_rewards);
+
+    rewards.push(Reward {
+        account: *generator,
+        value: generator_reward,
+        reason: RewardReason::GeneratorFixed,
+    });
+
+    rewards.push(Reward {
+        account: *DUSK_KEY,
+        value: dusk_value,
+        reason: RewardReason::Other,
+    });
+
+    if generator_extra_reward != 0 {
+        rewards.push(Reward {
+            account: *generator,
+            value: generator_extra_reward,
+            reason: RewardReason::GeneratorExtra,
+        });
+    }
 
     let credit_reward = voters_reward
         / (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
@@ -758,21 +757,17 @@ fn reward_slash_and_update_root(
     for (to_voter, credits) in voters.unwrap_or_default() {
         let voter = to_voter.inner();
         let voter_reward = *credits as u64 * credit_reward;
-        let r = session.call::<_, ()>(
-            STAKE_CONTRACT,
-            "reward",
-            &(*voter, voter_reward),
-            u64::MAX,
-        )?;
-        events.extend(r.events);
-
-        debug!(
-            event = "validator of prev block rewarded",
-            voter = to_bs58(voter),
-            credits = *credits,
-            reward = voter_reward
-        )
+        rewards.push(Reward {
+            account: *voter,
+            value: voter_reward,
+            reason: RewardReason::Voter,
+        });
     }
+
+    let r =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
+
+    let mut events = r.events;
 
     events.extend(slash(session, slashing)?);
 
@@ -804,12 +799,6 @@ fn calc_generator_extra_reward(
 
     let sum = ratification_quorum() + validation_quorum();
     credits.saturating_sub(sum as u64) * reward_per_quota
-}
-
-fn to_bs58(pk: &BlsPublicKey) -> String {
-    let mut pk = bs58::encode(&pk.to_bytes()).into_string();
-    pk.truncate(16);
-    pk
 }
 
 fn slash(session: &mut Session, slash: Vec<Slash>) -> Result<Vec<Event>> {
