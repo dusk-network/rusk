@@ -12,7 +12,7 @@ use rand::SeedableRng;
 use execution_core::{
     dusk,
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{StakeAmount, StakeData, STAKE_CONTRACT},
+    stake::{Reward, RewardReason, StakeAmount, StakeData, STAKE_CONTRACT},
     transfer::{
         phoenix::{
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -72,12 +72,14 @@ fn reward_slash() -> Result<(), PiecrustError> {
         u64::MAX,
     )?;
 
-    let receipt = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(stake_pk, reward_amount),
-        u64::MAX,
-    )?;
+    let rewards = vec![Reward {
+        account: stake_pk,
+        value: reward_amount,
+        reason: RewardReason::Other,
+    }];
+
+    let receipt =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
     assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     let receipt = session.call::<_, ()>(
@@ -197,12 +199,14 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
     assert_event(&receipt.events, "hard_slash", &stake_pk, hard_slash_amount);
     cur_balance -= hard_slash_amount;
 
-    let receipt = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(stake_pk, reward_amount),
-        u64::MAX,
-    )?;
+    let rewards = vec![Reward {
+        account: stake_pk,
+        value: reward_amount,
+        reason: RewardReason::Other,
+    }];
+
+    let receipt =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
     assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     // Simple hard fault post-reward (slash 10%)

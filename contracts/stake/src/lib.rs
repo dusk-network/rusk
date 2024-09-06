@@ -92,9 +92,9 @@ unsafe fn insert_stake(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn reward(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pk, value)| {
+    rusk_abi::wrap_call(arg_len, |arg| {
         assert_external_caller();
-        STATE.reward(&pk, value);
+        STATE.reward(arg);
     })
 }
 
