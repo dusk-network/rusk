@@ -237,38 +237,27 @@ const fn coinbase_value(
 
 /// The emission schedule works as follows:
 ///   - the emission follows a Bitcoin-like halving function
-///   - a total 500.000.000,256000 Dusk will be emitted over 36 years divided in
-///     9 periods of 4 years each
+///   - a total 500.000.000 Dusk will be emitted over 36 years divided in 9
+///     periods of 4 years each
 ///
 /// Considering the target block rate of 10 seconds, we assume a production of
 /// 8640 blocks per day, which corresponds to 12_614_400 blocks per period.
 
-// Target block production per day, assuming a block rate of 10 seconds
-const BLOCKS_PER_DAY: u64 = 8640;
-// Target block production per 4-year period
-const BLOCKS_PER_PERIOD: u64 = BLOCKS_PER_DAY * 365 * 4;
-// Block emission for each period, following the halving function
-const BLOCK_EMISSIONS: [u64; 9] = [
-    dusk(19.8574),
-    dusk(9.9287),
-    dusk(4.96435),
-    dusk(2.48218),
-    dusk(1.24109),
-    dusk(0.62054),
-    dusk(0.31027),
-    dusk(0.15514),
-    dusk(0.07757),
-];
-
-// Returns the block emission for a certain height
+// Returns the block emission for a certain height, following the halving
+// function
 pub const fn emission_amount(block_height: u64) -> Dusk {
-    if block_height == 0 {
-        return 0;
-    }
-
-    let period = (block_height - 1) / BLOCKS_PER_PERIOD;
-    match period {
-        0..=8 => BLOCK_EMISSIONS[period as usize],
+    match block_height {
+        0 => 0,                                     // Genesis
+        1..=12_614_400 => dusk(19.8574),            // Period 1
+        12_614_401..=25_228_800 => dusk(9.9287),    // Period 2
+        25_228_801..=37_843_200 => dusk(4.96435),   // Period 3
+        37_843_201..=50_457_600 => dusk(2.48218),   // Period 4
+        50_457_601..=63_072_000 => dusk(1.24109),   // Period 5
+        63_072_001..=75_686_400 => dusk(0.62054),   // Period 6
+        75_686_401..=88_300_800 => dusk(0.31027),   // Period 7
+        88_300_801..=100_915_200 => dusk(0.15514),  // Period 8
+        100_915_201..=113_529_596 => dusk(0.07757), // Period 9
+        113_529_597 => dusk(0.05428),               // Last mint
         _ => 0,
     }
 }
@@ -277,53 +266,12 @@ pub const fn emission_amount(block_height: u64) -> Dusk {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_emission_amount() {
-        // Test genesis block
-        let genesis_emission = emission_amount(0);
-        assert_eq!(
-            genesis_emission,
-            dusk(0.0),
-            "For genesis block expected emission 0.0, but got {}",
-            genesis_emission
-        );
+    // Target block production per day, assuming a block rate of 10 seconds
+    const BLOCKS_PER_DAY: u64 = 8640;
+    // Target block production per 4-year period
+    const BLOCKS_PER_PERIOD: u64 = BLOCKS_PER_DAY * 365 * 4;
 
-        // Block range and expected emission for each period
-        let test_cases = vec![
-            (0, 0, dusk(0.0)),                         // Genesis
-            (1, 12_614_400, dusk(19.8574)),            // Period 1
-            (12_614_401, 25_228_800, dusk(9.9287)),    // Period 2
-            (25_228_801, 37_843_200, dusk(4.96435)),   // Period 3
-            (37_843_201, 50_457_600, dusk(2.48218)),   // Period 4
-            (50_457_601, 63_072_000, dusk(1.24109)),   // Period 5
-            (63_072_001, 75_686_400, dusk(0.62054)),   // Period 6
-            (75_686_401, 88_300_800, dusk(0.31027)),   // Period 7
-            (88_300_801, 100_915_200, dusk(0.15514)),  // Period 8
-            (100_915_201, 113_529_600, dusk(0.07757)), // Period 9
-            (113_529_601, u64::MAX, dusk(0.0)),        // Beyond period 9
-        ];
-
-        // Test emission periods
-        for (start_block, end_block, expected_emission) in test_cases {
-            // Test the first block in the range
-            let emission_start = emission_amount(start_block);
-            assert_eq!(
-                emission_start, expected_emission,
-                "For block height {} expected emission {}, but got {}",
-                start_block, expected_emission, emission_start
-            );
-
-            // Test the last block in the range
-            let emission_end = emission_amount(end_block);
-            assert_eq!(
-                emission_end, expected_emission,
-                "For block height {} expected emission {}, but got {}",
-                end_block, expected_emission, emission_end
-            );
-        }
-    }
-
-    const EXPECTED_PERIOD_EMISSIONS: [u64; 9] = [
+    const EXPECTED_PERIOD_EMISSIONS: [u64; 10] = [
         dusk(250_489_186.56), // Period 1
         dusk(125_244_593.28), // Period 2
         dusk(62_622_296.64),  // Period 3
@@ -332,20 +280,26 @@ mod tests {
         dusk(7_827_739.776),  // Period 6
         dusk(3_913_869.888),  // Period 7
         dusk(1_956_998.016),  // Period 8
-        dusk(978_499.008),    // Period 9
+        dusk(978_498.752),    // Period 9
+        dusk(0.0),            // Period 9
     ];
 
     #[test]
     fn test_period_emissions() {
         // Check each period emission corresponds to the expected value
-        for (i, &expected) in EXPECTED_PERIOD_EMISSIONS.iter().enumerate() {
-            let block_emission = BLOCK_EMISSIONS[i];
-            let period_emission = block_emission * BLOCKS_PER_PERIOD;
+        for (period, &expected) in EXPECTED_PERIOD_EMISSIONS.iter().enumerate()
+        {
+            let start_block = (period as u64 * BLOCKS_PER_PERIOD) + 1;
+            let end_block = start_block + BLOCKS_PER_PERIOD;
+            let mut period_emission = 0;
+            for height in start_block..end_block {
+                period_emission += emission_amount(height);
+            }
             assert_eq!(
                 period_emission,
                 expected,
                 "Emission for period {} did not match: expected {}, got {}",
-                i + 1,
+                period + 1,
                 expected,
                 period_emission
             );
@@ -354,14 +308,13 @@ mod tests {
 
     #[test]
     fn test_total_emission() {
-        // Expected total emission based on the schedule
-        let expected_total = dusk(500_000_000.256);
-
-        // Loop through each block emission and calculate the total emission
         let mut total_emission = 0u64;
-        for &be in BLOCK_EMISSIONS.iter() {
-            total_emission += be * BLOCKS_PER_PERIOD;
+        // Loop through each block emission and calculate the total emission
+        for h in 0..=BLOCKS_PER_PERIOD * 10 {
+            total_emission += emission_amount(h)
         }
+        // Expected total emission based on the schedule
+        let expected_total = dusk(500_000_000.0);
 
         // Ensure the calculated total matches the expected total
         assert_eq!(
