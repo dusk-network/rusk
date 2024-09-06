@@ -239,6 +239,12 @@ impl Ord for NoteData {
     }
 }
 
+impl AsRef<Note> for NoteData {
+    fn as_ref(&self) -> &Note {
+        &self.note
+    }
+}
+
 impl Serializable<{ u64::SIZE + Note::SIZE }> for NoteData {
     type Error = dusk_bytes::Error;
     /// Converts a Note into a byte representation
