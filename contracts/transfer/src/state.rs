@@ -604,7 +604,7 @@ impl TransferState {
     pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
         let tree_leaf = NoteLeaf { block_height, note };
         let pos = self.tree.push(tree_leaf.clone());
-        rusk_abi::emit("TREE_LEAF", (pos, tree_leaf));
+        rusk_abi::emit("tree_leaf", (pos, tree_leaf));
         self.get_note(pos)
             .expect("There should be a note that was just inserted")
     }
