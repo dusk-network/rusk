@@ -18,8 +18,8 @@ use tracing::{debug, info, warn};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
-    validation_quorum, RATIFICATION_COMMITTEE_CREDITS,
-    VALIDATION_COMMITTEE_CREDITS,
+    validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
+    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use execution_core::{
@@ -131,6 +131,13 @@ impl Rusk {
                     break;
                 }
             }
+
+            // Limit execution to the block transactions limit
+            if spent_txs.len() >= MAX_NUMBER_OF_TRANSACTIONS {
+                info!("Maximum number of transactions reached");
+                break;
+            }
+
             let tx_id = hex::encode(unspent_tx.id());
             if unspent_tx.inner.gas_limit() > block_gas_left {
                 info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
