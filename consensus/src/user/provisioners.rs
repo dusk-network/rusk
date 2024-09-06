@@ -259,9 +259,14 @@ impl<'a> CommitteeGenerator<'a> {
                 .eligibles(round)
                 .map(|(p, stake)| (p, stake.clone()));
 
-            Self {
-                members: BTreeMap::from_iter(eligibles),
-            }
+            let members = BTreeMap::from_iter(eligibles);
+
+            debug_assert!(
+                !members.is_empty(),
+                "No provisioners are eligible for the committee"
+            );
+
+            Self { members }
         } else {
             Self { members }
         }
