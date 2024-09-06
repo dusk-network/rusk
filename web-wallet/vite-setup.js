@@ -27,7 +27,10 @@ Object.defineProperty(window, "litIssuedWarnings", {
 });
 
 // Mocking the Wallet
-vi.doMock("@dusk-network/dusk-wallet-js", () => ({ Wallet }));
+vi.doMock("@dusk-network/dusk-wallet-js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  Wallet,
+}));
 
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.

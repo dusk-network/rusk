@@ -101,7 +101,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
    
   <div
     class="dusk-stepper dusk-stepper--variant--secondary"
-    style="--columns: 3; --progress-width: 0%;"
+    style="--columns: 5; --progress-width: 0%;"
   >
     <span
       aria-current="step"
@@ -118,6 +118,16 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
       class="dusk-stepper__step"
     >
       3
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      4
+    </span>
+    <span
+      class="dusk-stepper__step"
+    >
+      5
     </span>
     
   </div>
@@ -340,6 +350,10 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
     </button>
   </div>
   
+  
+   
+  
+   
   
    
   

@@ -8,6 +8,7 @@
   import Buttons from "./Buttons.svelte";
   import Cards from "./Cards.svelte";
   import Checkboxes from "./Checkboxes.svelte";
+  import CopyField from "./CopyField.svelte";
   import DashboardNavs from "./DashboardNavs.svelte";
   import ExclusiveChoices from "./ExclusiveChoices.svelte";
   import MigrateContract from "./MigrateContract.svelte";
@@ -30,6 +31,7 @@
     Buttons: Buttons,
     Cards: Cards,
     Checkboxes: Checkboxes,
+    "Copy Field": CopyField,
     "Dashboard Navs": DashboardNavs,
     "Exclusive Choices": ExclusiveChoices,
     "Migrate Contract": MigrateContract,

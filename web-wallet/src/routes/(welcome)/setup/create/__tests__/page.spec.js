@@ -1,17 +1,17 @@
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { addresses } from "$lib/mock-data";
-import Create from "../+page.svelte";
 import { settingsStore, walletStore } from "$lib/stores";
-import { setKey } from "lamb";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
 import { getSeedFromMnemonic } from "$lib/wallet";
 import * as navigation from "$lib/navigation";
-import * as bip39 from "bip39";
 import * as walletService from "$lib/services/wallet";
-import * as shuffleArray from "$lib/dusk/array";
-import { tick } from "svelte";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
+import * as shuffleArray from "$lib/dusk/array";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { setKey } from "lamb";
+import { Wallet } from "@dusk-network/dusk-wallet-js";
+import * as bip39 from "bip39";
+import Create from "../+page.svelte";
 
 /**
  * @param {HTMLElement} input
@@ -50,6 +50,9 @@ describe("Create", async () => {
   const pwd = "passwordpassword";
   const seed = getSeedFromMnemonic(mnemonic);
   const userId = (await new Wallet(seed).getPsks())[0];
+  const blockHeightSpy = vi
+    .spyOn(Wallet, "networkBlockHeight", "get")
+    .mockResolvedValue(1536);
   const generateMnemonicSpy = vi
     .spyOn(bip39, "generateMnemonic")
     .mockReturnValue(mnemonic);
@@ -65,6 +68,7 @@ describe("Create", async () => {
     cleanup();
     settingsStore.reset();
     walletGetPsksSpy.mockClear();
+    blockHeightSpy.mockClear();
     generateMnemonicSpy.mockClear();
     shuffleArraySpy.mockClear();
     clearAndInitSpy.mockClear();
@@ -75,6 +79,7 @@ describe("Create", async () => {
 
   afterAll(() => {
     walletGetPsksSpy.mockRestore();
+    blockHeightSpy.mockRestore();
     generateMnemonicSpy.mockRestore();
     shuffleArraySpy.mockRestore();
     clearAndInitSpy.mockRestore();
@@ -300,7 +305,7 @@ describe("Create", async () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("ensures the All Done step renders as expected", async () => {
+  it("ensures the Network Syncing step renders as expected", async () => {
     const { container, getByRole, getAllByRole } = render(Create);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
@@ -323,10 +328,55 @@ describe("Create", async () => {
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
+    expect(blockHeightSpy).toHaveBeenCalledTimes(1);
+
     expect(container.firstChild).toMatchSnapshot();
   });
 
+  it("ensures the All Done step renders as expected", async () => {
+    vi.useFakeTimers();
+
+    const { container, getByRole, getAllByRole } = render(Create);
+
+    await fireEvent.click(getByRole("button", { name: "Accept" }));
+
+    await fireEvent.click(getAllByRole("checkbox")[0]);
+    await fireEvent.click(getAllByRole("checkbox")[1]);
+
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    const mnemonicSplit = mnemonic.split(" ");
+
+    mnemonicSplit.forEach(async (word) => {
+      await fireEvent.click(getByRole("button", { name: word }));
+    });
+
+    await tick();
+
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    expect(container.firstChild).toMatchSnapshot();
+
+    /*
+     * We wait for the sync promise to complete, because it
+     * sets the `userId` in the settingsStore.
+     * Without waiting for it, the setting of the `userId`
+     * happens after the `settingsStore.reset()` call in the
+     * `afterEach` hook and leaves the store "dirty" for
+     * subsequent tests.
+     */
+    await vi.runOnlyPendingTimersAsync();
+
+    vi.useRealTimers();
+  });
+
   it("should initialize the wallet without setting a password", async () => {
+    vi.useFakeTimers();
+
     const { getByRole, getAllByRole } = render(Create);
 
     // ToS step
@@ -359,6 +409,9 @@ describe("Create", async () => {
     // Swap ERC20 to Native Dusk step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
+    // Network Syncing step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
     // All Done step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
@@ -368,9 +421,21 @@ describe("Create", async () => {
     expect(getWalletSpy).toHaveBeenCalledTimes(1);
     expect(getWalletSpy).toHaveBeenCalledWith(seed);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
+    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), undefined);
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
+
+    /*
+     * We wait for the sync promise to complete, because it
+     * sets the `userId` in the settingsStore.
+     * Without waiting for it, the setting of the `userId`
+     * happens after the `settingsStore.reset()` call in the
+     * `afterEach` hook and leaves the store "dirty" for
+     * subsequent tests.
+     */
+    await vi.runOnlyPendingTimersAsync();
+
+    vi.useRealTimers();
   });
 
   it("should initialize the wallet encrypted mnemonic saved in localStorage", async () => {
@@ -416,6 +481,9 @@ describe("Create", async () => {
     // Swap ERC20 to Native Dusk step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
+    // Network Syncing step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
     // All Done step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
@@ -425,7 +493,7 @@ describe("Create", async () => {
     expect(getWalletSpy).toHaveBeenCalledTimes(1);
     expect(getWalletSpy).toHaveBeenCalledWith(seed);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
+    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), undefined);
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });

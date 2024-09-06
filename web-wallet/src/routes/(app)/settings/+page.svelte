@@ -64,7 +64,7 @@
   /** @type {Error | null} */
   let resetError = null;
 
-  $: ({ isSyncing } = $walletStore);
+  $: ({ syncStatus } = $walletStore);
 </script>
 
 <section class="settings">
@@ -187,8 +187,8 @@
       />
       <Button
         className="settings-group__button--state--danger"
-        disabled={isSyncing}
-        data-tooltip-disabled={!isSyncing}
+        disabled={syncStatus.isInProgress}
+        data-tooltip-disabled={!syncStatus.isInProgress}
         data-tooltip-id="main-tooltip"
         data-tooltip-text="Not allowed to reset while syncing"
         data-tooltip-type="warning"

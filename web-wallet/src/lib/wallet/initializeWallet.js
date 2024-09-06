@@ -1,20 +1,18 @@
 import { settingsStore, walletStore } from "$lib/stores";
 import { getSeedFromMnemonic } from "$lib/wallet";
 import { getWallet } from "$lib/services/wallet";
-import { setKey } from "lamb";
 
-/** @param {string[]} mnemonicPhrase */
-async function initializeWallet(mnemonicPhrase) {
+/**
+ * @param {string[]} mnemonicPhrase
+ * @param {number | undefined} syncFrom
+ */
+async function initializeWallet(mnemonicPhrase, syncFrom = undefined) {
   settingsStore.reset();
 
   const mnemonic = mnemonicPhrase.join(" ");
   const seed = getSeedFromMnemonic(mnemonic);
   const wallet = getWallet(seed);
-  const defaultAddress = (await wallet.getPsks())[0];
-
-  await walletStore.clearLocalDataAndInit(wallet);
-
-  settingsStore.update(setKey("userId", defaultAddress));
+  walletStore.clearLocalDataAndInit(wallet, syncFrom);
 }
 
 export default initializeWallet;

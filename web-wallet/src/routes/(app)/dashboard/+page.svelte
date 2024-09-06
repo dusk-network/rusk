@@ -62,7 +62,7 @@
   }));
   const hasNoEnabledContracts = enabledContracts.length === 0;
 
-  $: ({ isSyncing, error } = $walletStore);
+  $: ({ syncStatus } = $walletStore);
 </script>
 
 {#if hasNoEnabledContracts}
@@ -88,8 +88,8 @@
   items={walletStore.getTransactionsHistory()}
   {language}
   limit={dashboardTransactionLimit}
-  {isSyncing}
-  syncError={error}
+  isSyncing={syncStatus.isInProgress}
+  syncError={syncStatus.error}
 />
 
 <style lang="postcss">

@@ -1,13 +1,13 @@
 class Wallet {
-  constructor(seed, gasLimit = 2900000000, gasPrice = 1) {
-    this.gasLimit = gasLimit;
-    this.gasPrice = gasPrice;
+  constructor(seed) {
     this.seed = seed;
     this.wasm = {};
   }
 
-  gasLimit;
-  gasPrice;
+  static get networkBlockHeight() {
+    return Promise.resolve(0);
+  }
+
   seed;
   wasm;
 

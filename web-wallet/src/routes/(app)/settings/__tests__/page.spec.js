@@ -82,7 +82,7 @@ describe("Settings", () => {
     await act(() => {
       mockedWalletStore.setMockedStoreValue({
         ...initialWalletStoreState,
-        isSyncing: true,
+        syncStatus: { isInProgress: true },
       });
     });
 

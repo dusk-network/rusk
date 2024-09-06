@@ -88,9 +88,9 @@
 
   /* Progress bars */
 
-  --progress-bar-height: 0.3125em;
+  --progress-bar-height: 0.6125em;
   --progress-bg-color: var(--primary-color);
-  --progress-filler-color: var(--success-color);
+  --progress-filler-color: var(--secondary-color);
 
   /* Steppers */
 
