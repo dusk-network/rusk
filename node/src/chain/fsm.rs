@@ -34,7 +34,6 @@ const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 /// Maximum number of hops between the requester and the node that contains the
 /// requested resource
 const DEFAULT_HOPS_LIMIT: u16 = 16;
-pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
 
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
 

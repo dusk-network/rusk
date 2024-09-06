@@ -821,7 +821,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // The blockchain tip after reverting
         let (blk, (_, label)) = self.db.read().await.update(|t| {
             let mut height = curr_height;
-            while height != 0 {
+            loop {
                 let b = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
@@ -829,6 +829,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     t.fetch_block_label_by_height(h.height)?.ok_or_else(
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
+
+                // If we are at genesis block, we can stop here
+                if b.header().height == 0 {
+                    return Ok((b, label));
+                }
 
                 if h.state_hash == target_state_hash {
                     return Ok((b, label));
@@ -858,8 +863,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 height -= 1;
             }
-
-            Err(anyhow!("not found"))
         })?;
 
         if blk.header().state_hash != target_state_hash {

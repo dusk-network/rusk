@@ -6,10 +6,7 @@
 
 use node_data::{
     ledger::{to_str, Block},
-    message::{
-        payload::{GetBlocks, Inv},
-        Message,
-    },
+    message::payload::Inv,
 };
 use std::{
     collections::BTreeMap,
@@ -26,8 +23,6 @@ use crate::{
 };
 
 use super::acceptor::Acceptor;
-
-use super::fsm::REDUNDANCY_PEER_FACTOR;
 
 const STALLED_TIMEOUT: u64 = 60; // seconds
 
