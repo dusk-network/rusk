@@ -30,9 +30,9 @@ use execution_core::{
             ViewKey as PhoenixViewKey,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        TransferToContract, TRANSFER_CONTRACT,
+        TransferToAccount, TransferToContract, TRANSFER_CONTRACT,
     },
-    ContractId, JubJubScalar, LUX,
+    ContractError, ContractId, JubJubScalar, LUX,
 };
 use rusk_abi::{ContractData, Session, VM};
 
@@ -99,7 +99,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
             ContractData::builder()
                 .owner(OWNER)
                 .contract_id(BOB_ID)
-                .constructor_arg(&1u8),
+                .init_arg(&1u8),
             GAS_LIMIT,
         )
         .expect("Deploying the bob contract should succeed");
@@ -1056,5 +1056,358 @@ fn transfer_to_contract() {
     assert_eq!(
         bob_balance, TRANSFER_VALUE,
         "Bob must have the transfer value as balance"
+    );
+}
+
+/// In this test we deposit some Dusk from a moonlight account to the Alice
+/// contract, and subsequently call the Alice contract to trigger a transfer
+/// back to the same account.
+#[test]
+fn transfer_to_account() {
+    const DEPOSIT_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
+    const TRANSFER_VALUE: u64 = DEPOSIT_VALUE / 2;
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance, MOONLIGHT_GENESIS_VALUE,
+        "The depositer account should have the genesis value"
+    );
+    assert_eq!(
+        alice_balance, 0,
+        "Alice must have an initial balance of zero"
+    );
+
+    let fn_args = rkyv::to_bytes::<_, 256>(&DEPOSIT_VALUE)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("deposit"),
+        fn_args,
+    });
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        DEPOSIT_VALUE,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_deposit = receipt.gas_spent;
+
+    println!("MOONLIGHT DEPOSIT: {:?}", receipt.data);
+    println!("MOONLIGHT DEPOSIT: {gas_spent_deposit} gas");
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE - gas_spent_deposit - DEPOSIT_VALUE,
+        "The account should decrease by the amount spent and the deposit sent"
+    );
+    assert_eq!(
+        alice_balance, DEPOSIT_VALUE,
+        "Alice must have the deposit in their balance"
+    );
+
+    let transfer = TransferToAccount {
+        account: moonlight_pk,
+        value: TRANSFER_VALUE,
+    };
+    let fn_args = rkyv::to_bytes::<_, 256>(&transfer)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("transfer_to_account"),
+        fn_args,
+    });
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        0,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_send = receipt.gas_spent;
+
+    println!("MOONLIGHT SEND_TO_ACCOUNT: {:?}", receipt.data);
+    println!("MOONLIGHT SEND_TO_ACCOUNT: {gas_spent_send} gas");
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE
+            - gas_spent_deposit
+            - gas_spent_send
+            - DEPOSIT_VALUE
+            + TRANSFER_VALUE,
+        "The account should decrease by the amount spent and the deposit sent, \
+         and increase by the transfer"
+    );
+    assert_eq!(
+        alice_balance, DEPOSIT_VALUE - TRANSFER_VALUE,
+        "Alice must have the deposit minus the transferred amount in their balance"
+    );
+}
+
+/// In this test we try to transfer some Dusk from a contract to an account,
+/// when the contract doesn't have sufficient funds.
+#[test]
+fn transfer_to_account_insufficient_funds() {
+    // Transfer value larger than DEPOSIT
+    const DEPOSIT_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
+    const TRANSFER_VALUE: u64 = 2 * DEPOSIT_VALUE;
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance, MOONLIGHT_GENESIS_VALUE,
+        "The depositer account should have the genesis value"
+    );
+    assert_eq!(
+        alice_balance, 0,
+        "Alice must have an initial balance of zero"
+    );
+
+    let fn_args = rkyv::to_bytes::<_, 256>(&DEPOSIT_VALUE)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("deposit"),
+        fn_args,
+    });
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        DEPOSIT_VALUE,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_deposit = receipt.gas_spent;
+
+    println!("MOONLIGHT DEPOSIT: {:?}", receipt.data);
+    println!("MOONLIGHT DEPOSIT: {gas_spent_deposit} gas");
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE - gas_spent_deposit - DEPOSIT_VALUE,
+        "The account should decrease by the amount spent and the deposit sent"
+    );
+    assert_eq!(
+        alice_balance, DEPOSIT_VALUE,
+        "Alice must have the deposit in their balance"
+    );
+
+    let transfer = TransferToAccount {
+        account: moonlight_pk,
+        value: TRANSFER_VALUE,
+    };
+    let fn_args = rkyv::to_bytes::<_, 256>(&transfer)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("transfer_to_account"),
+        fn_args,
+    });
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        0,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_send = receipt.gas_spent;
+
+    println!(
+        "MOONLIGHT SEND_TO_ACCOUNT INSUFFICIENT FUNDS: {:?}",
+        receipt.data
+    );
+    println!(
+        "MOONLIGHT SEND_TO_ACCOUNT INSUFFICIENT_FUNDS: {gas_spent_send} gas"
+    );
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert!(
+        matches!(receipt.data, Err(_)),
+        "Alice should error because the transfer contract panics"
+    );
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE
+            - gas_spent_deposit
+            - gas_spent_send
+            - DEPOSIT_VALUE,
+        "The account should decrease by the amount spent and the deposit sent"
+    );
+    assert_eq!(
+        alice_balance, DEPOSIT_VALUE,
+        "Alice must have the deposit amount still in their balance"
+    );
+}
+
+/// In this test we try to call the function directly - i.e. not initiated by a
+/// contract, but by the transaction itself.
+#[test]
+fn transfer_to_account_direct_call() {
+    const TRANSFER_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_pk);
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+
+    assert_eq!(
+        acc.balance, MOONLIGHT_GENESIS_VALUE,
+        "The depositer account should have the genesis value"
+    );
+
+    let transfer = TransferToAccount {
+        account: moonlight_pk,
+        value: TRANSFER_VALUE,
+    };
+    let fn_args = rkyv::to_bytes::<_, 256>(&transfer)
+        .expect("Serializing should succeed")
+        .to_vec();
+    let contract_call = Some(ContractCall {
+        contract: TRANSFER_CONTRACT,
+        fn_name: String::from("transfer_to_account"),
+        fn_args,
+    });
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        0,
+        GAS_LIMIT,
+        LUX,
+        acc.nonce + 1,
+        chain_id,
+        contract_call,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let receipt =
+        execute(session, transaction).expect("Transaction should succeed");
+    let gas_spent_send = receipt.gas_spent;
+
+    println!("MOONLIGHT SEND_TO_ACCOUNT DIRECTLY: {:?}", receipt.data);
+    println!("MOONLIGHT SEND_TO_ACCOUNT DIRECTLY: {gas_spent_send} gas");
+
+    let acc = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+
+    assert!(
+        matches!(receipt.data, Err(ContractError::Panic(_))),
+        "The transfer contract should panic on a direct call"
+    );
+    assert_eq!(
+        acc.balance,
+        MOONLIGHT_GENESIS_VALUE - gas_spent_send,
+        "The account should decrease by the amount spent"
     );
 }

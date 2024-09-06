@@ -48,6 +48,9 @@ signatures::{
     }
 }
 transfer::{
+    TransferToContract;
+    ReceiveFromContract;
+    TransferToAccount;
     data::{
         ContractBytecode;
         ContractCall;
