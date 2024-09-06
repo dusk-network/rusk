@@ -206,15 +206,15 @@ fn phoenix_with_deploy() -> Result<(), Error> {
     let mut owner = [0; 32].to_vec();
     rng.fill_bytes(&mut owner);
 
-    let mut constructor_args = vec![0; 20];
-    rng.fill_bytes(&mut constructor_args);
+    let mut init_args = vec![0; 20];
+    rng.fill_bytes(&mut init_args);
 
     let nonce = rng.next_u64();
 
     let deploy = ContractDeploy {
         bytecode,
         owner,
-        constructor_args: Some(constructor_args),
+        init_args: Some(init_args),
         nonce,
     };
 
@@ -242,8 +242,8 @@ fn phoenix_with_memo() -> Result<(), Error> {
     let mut owner = [0; 32].to_vec();
     rng.fill_bytes(&mut owner);
 
-    let mut constructor_args = vec![0; 20];
-    rng.fill_bytes(&mut constructor_args);
+    let mut init_args = vec![0; 20];
+    rng.fill_bytes(&mut init_args);
 
     let memo = vec![1u8; 512];
 
@@ -313,15 +313,15 @@ fn moonlight_with_deploy() -> Result<(), Error> {
     let mut owner = [0; 32].to_vec();
     rng.fill_bytes(&mut owner);
 
-    let mut constructor_args = vec![0; 20];
-    rng.fill_bytes(&mut constructor_args);
+    let mut init_args = vec![0; 20];
+    rng.fill_bytes(&mut init_args);
 
     let nonce = rng.next_u64();
 
     let deploy = ContractDeploy {
         bytecode,
         owner,
-        constructor_args: Some(constructor_args),
+        init_args: Some(init_args),
         nonce,
     };
 
@@ -348,8 +348,8 @@ fn moonlight_with_memo() -> Result<(), Error> {
     let mut owner = [0; 32].to_vec();
     rng.fill_bytes(&mut owner);
 
-    let mut constructor_args = vec![0; 20];
-    rng.fill_bytes(&mut constructor_args);
+    let mut init_args = vec![0; 20];
+    rng.fill_bytes(&mut init_args);
 
     let memo = vec![1u8; 512];
 

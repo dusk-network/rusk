@@ -573,7 +573,7 @@ fn contract_deploy(
                 &deploy.owner,
             )),
             deploy.bytecode.bytes.as_slice(),
-            deploy.constructor_args.clone(),
+            deploy.init_args.clone(),
             deploy.owner.clone(),
             gas_limit - receipt.gas_spent,
         );
