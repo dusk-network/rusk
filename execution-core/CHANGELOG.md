@@ -51,6 +51,13 @@ transfer::{
     TransferToContract;
     ReceiveFromContract;
     TransferToAccount;
+    WithdrawEvent;
+    ConvertEvent;
+    DepositEvent;
+    TransferToContractEvent;
+    TransferToAccountEvent;
+    PhoenixTransactionEvent;
+    MoonlightTransactionEvent;
     data::{
         ContractBytecode;
         ContractCall;

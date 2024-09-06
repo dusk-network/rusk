@@ -22,6 +22,7 @@ use crate::{
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
+    transfer::withdraw::{Withdraw, WithdrawReceiver},
     BlsScalar, ContractId, Error,
 };
 
@@ -368,4 +369,120 @@ pub struct TransferToAccount {
     pub account: AccountPublicKey,
     /// Amount to send to the account.
     pub value: u64,
+}
+
+/// Event data emitted on a withdrawal from a contract.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawEvent {
+    /// The contract withdrawn from.
+    pub contract: ContractId,
+    /// The value withdrawn.
+    pub value: u64,
+    /// The receiver of the value.
+    pub receiver: WithdrawReceiver,
+}
+
+impl From<Withdraw> for WithdrawEvent {
+    fn from(w: Withdraw) -> Self {
+        Self {
+            contract: w.contract,
+            value: w.value,
+            receiver: w.receiver,
+        }
+    }
+}
+
+/// Event data emitted on a conversion from Phoenix to Moonlight, and
+/// vice-versa.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ConvertEvent {
+    /// The originator of the conversion, if it is possible to determine. From
+    /// Moonlight to Phoenix it is possible, but the same cannot be done the
+    /// other way round.
+    pub sender: Option<AccountPublicKey>,
+    /// The value converted.
+    pub value: u64,
+    /// The receiver of the value.
+    pub receiver: WithdrawReceiver,
+}
+
+impl ConvertEvent {
+    /// Convert a sender and a withdraw into a conversion event.
+    #[must_use]
+    pub fn from_withdraw_and_sender(
+        sender: Option<AccountPublicKey>,
+        withdraw: &Withdraw,
+    ) -> Self {
+        Self {
+            sender,
+            value: withdraw.value,
+            receiver: withdraw.receiver,
+        }
+    }
+}
+
+/// Event data emitted on a deposit to a contract.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct DepositEvent {
+    /// The originator of the deposit, if it is possible to determine. If the
+    /// depositor is using Moonlight this will be available. If they're using
+    /// Phoenix it will not.
+    pub sender: Option<AccountPublicKey>,
+    /// The value deposited.
+    pub value: u64,
+    /// The receiver of the value.
+    pub receiver: ContractId,
+}
+
+/// Event data emitted on a transfer from a contract to a contract.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToContractEvent {
+    /// The sender of the funds.
+    pub sender: ContractId,
+    /// The value transferred.
+    pub value: u64,
+    /// The receiver of the funds.
+    pub receiver: ContractId,
+}
+
+/// Event data emitted on a transfer from a contract to a Moonlight account.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToAccountEvent {
+    /// The sender of the funds.
+    pub sender: ContractId,
+    /// The value transferred.
+    pub value: u64,
+    /// The receiver of the funds.
+    pub receiver: AccountPublicKey,
+}
+
+/// Event data emitted on a phoenix transaction's completion.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct PhoenixTransactionEvent {
+    /// Nullifiers of the notes spent during the transaction.
+    pub nullifiers: Vec<BlsScalar>,
+    /// Notes produced during the transaction.
+    pub notes: Vec<Note>,
+    /// Gas spent by the transaction.
+    pub gas_spent: u64,
+}
+
+/// Event data emitted on a moonlight transaction's completion.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct MoonlightTransactionEvent {
+    /// The account that initiated the transaction.
+    pub from: AccountPublicKey,
+    /// The receiver of the funds if any were transferred.
+    pub to: Option<AccountPublicKey>,
+    /// Transfer amount
+    pub value: u64,
+    /// Gas spent by the transaction.
+    pub gas_spent: u64,
 }

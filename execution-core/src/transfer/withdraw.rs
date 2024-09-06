@@ -37,9 +37,9 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Withdraw {
-    contract: ContractId,
-    value: u64,
-    receiver: WithdrawReceiver,
+    pub(super) contract: ContractId,
+    pub(super) value: u64,
+    pub(super) receiver: WithdrawReceiver,
     token: WithdrawReplayToken,
     signature: WithdrawSignature,
 }
