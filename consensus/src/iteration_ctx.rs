@@ -7,15 +7,18 @@
 use crate::commons::{RoundUpdate, TimeoutSet};
 use std::cmp;
 
-use crate::config::{MAX_STEP_TIMEOUT, TIMEOUT_INCREASE};
+use crate::config::{CONSENSUS_MAX_ITER, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE};
 use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
 
 use crate::user::committee::Committee;
+use crate::user::provisioners::Provisioners;
+use crate::user::sortition;
 
 use crate::{ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
+use node_data::ledger::Seed;
 use node_data::message::Message;
 use std::collections::HashMap;
 use std::ops::Add;
@@ -129,6 +132,101 @@ impl IterationCtx {
             .timeouts
             .get(&step_name)
             .expect("valid timeout per step")
+    }
+
+    fn get_sortition_config(
+        &self,
+        seed: Seed,
+        step_name: StepName,
+        exclusion: Vec<PublicKeyBytes>,
+    ) -> sortition::Config {
+        sortition::Config::new(
+            seed, self.round, self.iter, step_name, exclusion,
+        )
+    }
+
+    pub(crate) fn generate_committee(
+        &mut self,
+        step_name: StepName,
+        provisioners: &Provisioners,
+        seed: Seed,
+    ) {
+        let iteration = self.iter;
+        let step = step_name.to_step(iteration);
+
+        // Check if we already generated the committee.
+        // This will be usually the case for all Proposal steps after
+        // iteration 0
+        if self.committees.get_committee(step).is_some() {
+            return;
+        }
+
+        // For Validation and Ratification steps we need the next-iteration
+        // generator for the exclusion list. So we extract, it if necessary.
+        //
+        // This is not necessary in the last iteration, so we skip it
+        if step_name != StepName::Proposal && iteration < CONSENSUS_MAX_ITER - 1
+        {
+            let prop = StepName::Proposal;
+            let next_prop_step = prop.to_step(iteration + 1);
+
+            // Check if this committee has been already generated.
+            // This will be typically the case when executing the Ratification
+            // step after the Validation one
+            if self.committees.get_committee(next_prop_step).is_none() {
+                let mut next_cfg =
+                    self.get_sortition_config(seed, prop, vec![]);
+                next_cfg.step = next_prop_step;
+
+                let next_generator = Committee::new(provisioners, &next_cfg);
+                self.committees.insert(next_prop_step, next_generator);
+            }
+        }
+
+        // Fill up exclusion list
+        //
+        // We exclude the generators for the current iteration and the next one
+        // to avoid conflict of interests
+        let exclusion = match step_name {
+            StepName::Proposal => vec![],
+            _ => {
+                let mut exclusion_list = vec![];
+                // Exclude generator for current iteration
+                let cur_generator = self
+                    .get_generator(iteration)
+                    .expect("Proposal committee to be already generated");
+
+                exclusion_list.push(cur_generator);
+
+                // Exclude generator for next iteration
+                if iteration < CONSENSUS_MAX_ITER - 1 {
+                    let next_generator =
+                        self.get_generator(iteration + 1).expect(
+                            "Next Proposal committee to be already generated",
+                        );
+
+                    exclusion_list.push(next_generator);
+                }
+
+                exclusion_list
+            }
+        };
+
+        // Generate the committee for the current step
+        // If the step is Proposal, the only extracted member is the generator
+        // For Validation and Ratification steps, extracted members are
+        // delegated to vote on the candidate block
+        let step_committee = Committee::new(
+            provisioners,
+            &self.get_sortition_config(seed, step_name, exclusion),
+        );
+
+        debug!(
+            event = "committee_generated",
+            members = format!("{}", &step_committee)
+        );
+
+        self.committees.insert(step, step_committee);
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {

@@ -53,6 +53,7 @@ pub const MD_STATE_ROOT_KEY: &[u8] = b"state_hash_key";
 pub const MD_AVG_VALIDATION: &[u8] = b"avg_validation_time";
 pub const MD_AVG_RATIFICATION: &[u8] = b"avg_ratification_time";
 pub const MD_AVG_PROPOSAL: &[u8] = b"avg_proposal_time";
+pub const MD_LAST_ITER: &[u8] = b"consensus_last_iter";
 
 #[derive(Clone)]
 pub struct Backend {

@@ -139,6 +139,8 @@ impl From<BlsSigError> for ConsensusError {
 #[async_trait::async_trait]
 pub trait Database: Send + Sync {
     fn store_candidate_block(&mut self, b: Block);
+    async fn get_last_iter(&self) -> (Hash, u8);
+    async fn store_last_iter(&mut self, data: (Hash, u8));
 }
 
 #[derive(Clone)]
