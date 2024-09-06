@@ -5,33 +5,30 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::Path;
-use std::sync::{Arc, RwLock};
 
 use execution_core::stake::MINIMUM_STAKE;
 use execution_core::{
     dusk,
-    signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeAmount, STAKE_CONTRACT},
-    transfer::data::ContractCall,
 };
+use rusk_wallet::{currency::Lux, gas::Gas, Wallet};
 
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use std::collections::HashMap;
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const GAS_LIMIT: u64 = 10_000_000_000;
-const GAS_PRICE: u64 = 1;
-const DEPOSIT: u64 = 0;
+const GAS_PRICE: Lux = 1;
+
+const SENDER_INDEX_0: u8 = 0;
+const SENDER_INDEX_1: u8 = 1;
+const SENDER_INDEX_2: u8 = 2;
 
 // Creates the Rusk initial state for the tests below
 fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -52,30 +49,38 @@ fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 /// Stakes an amount Dusk and produces a block with this single transaction,
 /// checking the stake is set successfully. It then proceeds to withdraw the
 /// stake and checking it is correctly withdrawn.
-fn wallet_stake(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-    value: u64,
-) {
-    let mut rng = StdRng::seed_from_u64(0xdead);
+async fn wallet_stake(rusk: &Rusk, wallet: &Wallet<WalletFile>, value: u64) {
+    let sender_addr_0 = &wallet.addresses()[SENDER_INDEX_0 as usize];
 
     wallet
-        .get_stake(0)
+        .stake_info(SENDER_INDEX_0)
+        .await
         .expect("stakeinfo to be found")
+        .expect("stake to be Some")
         .amount
         .expect("stake amount to be found");
 
     assert!(
         wallet
-            .get_stake(2)
+            .stake_info(SENDER_INDEX_2)
+            .await
             .expect("stakeinfo to be found")
+            .expect("stake to be Some")
             .amount
             .is_none(),
         "stake amount not to be found"
     );
 
     let tx = wallet
-        .phoenix_stake(&mut rng, 0, 2, value, GAS_LIMIT, GAS_PRICE)
+        .phoenix_stake(
+            sender_addr_0,
+            value.into(),
+            Gas {
+                limit: GAS_LIMIT,
+                price: GAS_PRICE,
+            },
+        )
+        .await
         .expect("Failed to create a stake transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -94,19 +99,32 @@ fn wallet_stake(
         panic!("Stake transaction failed due to {e}")
     }
 
-    let stake = wallet.get_stake(2).expect("stake to be found");
+    let stake = wallet
+        .stake_info(SENDER_INDEX_2)
+        .await
+        .expect("stake to be found")
+        .expect("stake to be Some");
     let stake_value = stake.amount.expect("stake should have an amount").value;
 
     assert_eq!(stake_value, value);
 
     wallet
-        .get_stake(0)
+        .stake_info(SENDER_INDEX_0)
+        .await
         .expect("stakeinfo to be found")
+        .expect("stake to be Some")
         .amount
         .expect("stake amount to be found");
 
     let tx = wallet
-        .phoenix_unstake(&mut rng, 0, 0, GAS_LIMIT, GAS_PRICE)
+        .phoenix_unstake(
+            sender_addr_0,
+            Gas {
+                limit: GAS_LIMIT,
+                price: GAS_PRICE,
+            },
+        )
+        .await
         .expect("Failed to unstake");
     let spent_txs = generator_procedure(
         rusk,
@@ -120,11 +138,23 @@ fn wallet_stake(
     let spent_tx = spent_txs.first().expect("Unstake tx to be included");
     assert_eq!(spent_tx.err, None, "unstake to be successfull");
 
-    let stake = wallet.get_stake(0).expect("stake should still be state");
+    let stake = wallet
+        .stake_info(SENDER_INDEX_0)
+        .await
+        .expect("stake should still be state")
+        .expect("stake to be Some");
     assert_eq!(stake.amount, None);
 
     let tx = wallet
-        .phoenix_stake_withdraw(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
+        .phoenix_stake_withdraw(
+            sender_addr_0,
+            1,
+            Gas {
+                limit: GAS_LIMIT,
+                price: GAS_PRICE,
+            },
+        )
+        .await
         .expect("failed to withdraw reward");
     generator_procedure(
         rusk,
@@ -136,7 +166,11 @@ fn wallet_stake(
     )
     .expect("generator procedure to succeed");
 
-    let stake = wallet.get_stake(1).expect("stake should still be state");
+    let stake = wallet
+        .stake_info(SENDER_INDEX_1)
+        .await
+        .expect("stake should still be state")
+        .expect("Stake to be some");
     assert_eq!(stake.reward, 0);
 }
 
@@ -148,23 +182,15 @@ pub async fn stake() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = stake_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_stake(&rusk, &wallet, MINIMUM_STAKE);
+    wallet_stake(&rusk, &wallet, MINIMUM_STAKE).await;
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
@@ -185,34 +211,19 @@ pub async fn stake() -> Result<()> {
 /// Attempt to submit a management transaction intending it to fail. Verify that
 /// the reward amount remains unchanged and confirm that the transaction indeed
 /// fails
-fn wallet_reward(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) {
-    let mut rng = StdRng::seed_from_u64(0xdead);
+async fn wallet_reward(rusk: &Rusk, wallet: &Wallet<WalletFile>) {
+    let sender_addr_0 = &wallet.addresses()[SENDER_INDEX_0 as usize];
 
-    let stake_sk = wallet.account_secret_key(2).unwrap();
-    let stake_pk = BlsPublicKey::from(&stake_sk);
-    let reward_calldata = (stake_pk, 6u32);
-
-    let stake = wallet.get_stake(2).expect("stake to be found");
-    assert_eq!(stake.reward, 0, "stake reward must be empty");
-
-    let contract_call = ContractCall::new(
-        STAKE_CONTRACT.to_bytes(),
-        "reward",
-        &reward_calldata,
-    )
-    .expect("calldata should serialize");
     let tx = wallet
-        .phoenix_execute(
-            &mut rng,
-            0,
-            GAS_LIMIT,
-            GAS_PRICE,
-            DEPOSIT,
-            contract_call,
+        .phoenix_stake_withdraw(
+            sender_addr_0,
+            SENDER_INDEX_2,
+            Gas {
+                limit: GAS_LIMIT,
+                price: GAS_PRICE,
+            },
         )
+        .await
         .expect("Failed to create a reward transaction");
     let executed_txs = generator_procedure(
         rusk,
@@ -229,7 +240,11 @@ fn wallet_reward(
         .err
         .as_ref()
         .expect("reward transaction to fail");
-    let stake = wallet.get_stake(2).expect("stake to be found");
+    let stake = wallet
+        .stake_info(SENDER_INDEX_2)
+        .await
+        .expect("stake to be found")
+        .expect("stake to be some");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 }
 
@@ -241,23 +256,15 @@ pub async fn reward() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = stake_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_reward(&rusk, &wallet);
+    wallet_reward(&rusk, &wallet).await;
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
@@ -278,16 +285,8 @@ pub async fn slash() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = slash_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
@@ -296,8 +295,8 @@ pub async fn slash() -> Result<()> {
     let contract_balance = rusk
         .contract_balance(STAKE_CONTRACT)
         .expect("balance to exists");
-    let to_slash = wallet.account_public_key(0).unwrap();
-    let stake = wallet.get_stake(0).unwrap();
+    let to_slash = wallet.bls_public_key(SENDER_INDEX_0);
+    let stake = wallet.stake_info(SENDER_INDEX_0).await.unwrap().unwrap();
     let initial_stake_value = dusk(20.0);
     assert_eq!(stake.reward, dusk(3.0));
     assert_eq!(
@@ -344,7 +343,7 @@ pub async fn slash() -> Result<()> {
     let prev_stake = prev.amount.unwrap().value;
     let slashed_amount = prev_stake / 10;
 
-    let after_slash = wallet.get_stake(0).unwrap();
+    let after_slash = wallet.stake_info(SENDER_INDEX_0).await.unwrap().unwrap();
     assert_eq!(after_slash.reward, dusk(3.0));
     assert_eq!(
         after_slash.amount,
@@ -385,7 +384,7 @@ pub async fn slash() -> Result<()> {
     // 20% slash
     let slashed_amount = prev_stake / 10 * 2;
 
-    let after_slash = wallet.get_stake(0).unwrap();
+    let after_slash = wallet.stake_info(SENDER_INDEX_0).await.unwrap().unwrap();
     assert_eq!(after_slash.reward, dusk(3.0));
     assert_eq!(
         after_slash.amount,
@@ -434,7 +433,7 @@ pub async fn slash() -> Result<()> {
     let prev_locked = prev.amount.unwrap().locked;
     // 30% slash
     let slashed_amount = prev_stake / 10 * 3;
-    let after_slash = wallet.get_stake(0).unwrap();
+    let after_slash = wallet.stake_info(SENDER_INDEX_0).await.unwrap().unwrap();
 
     assert_eq!(after_slash.reward, dusk(3.0));
     assert_eq!(
@@ -453,7 +452,7 @@ pub async fn slash() -> Result<()> {
         &[],
         9001,
         BLOCK_GAS_LIMIT,
-        vec![wallet.account_public_key(1).unwrap()],
+        vec![wallet.bls_public_key(SENDER_INDEX_1)],
         None,
     )
     .expect_err("Slashing a public key that never staked must fail");

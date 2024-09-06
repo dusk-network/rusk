@@ -4,24 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, RwLock};
 
 use execution_core::transfer::{
     data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
 };
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
+use rusk_wallet::{currency::Lux, gas::Gas, Wallet};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -30,7 +26,7 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 const GAS_LIMIT_0: u64 = 20_000_000; // Enough to spend, but OOG during ICC
 const GAS_LIMIT_1: u64 = 1_000; // Not enough to spend
 const GAS_LIMIT_2: u64 = 300_000_000; // All ok
-const GAS_PRICE: u64 = 1;
+const GAS_PRICE: Lux = 1;
 const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
@@ -45,22 +41,26 @@ const SENDER_INDEX_0: u8 = 0;
 const SENDER_INDEX_1: u8 = 1;
 const SENDER_INDEX_2: u8 = 2;
 
-fn make_transactions(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) {
+async fn make_transactions(rusk: &Rusk, wallet: &Wallet<WalletFile>) {
+    let sender_addr_0 = &wallet.addresses()[SENDER_INDEX_0 as usize];
+    let sender_addr_1 = &wallet.addresses()[SENDER_INDEX_1 as usize];
+    let sender_addr_2 = &wallet.addresses()[SENDER_INDEX_2 as usize];
+
     let initial_balance_0 = wallet
-        .get_balance(SENDER_INDEX_0)
+        .get_balance(sender_addr_0)
+        .await
         .expect("Getting initial balance should succeed")
         .value;
 
     let initial_balance_1 = wallet
-        .get_balance(SENDER_INDEX_1)
+        .get_balance(sender_addr_1)
+        .await
         .expect("Getting initial balance should succeed")
         .value;
 
     let initial_balance_2 = wallet
-        .get_balance(SENDER_INDEX_2)
+        .get_balance(sender_addr_2)
+        .await
         .expect("Getting initial balance should succeed")
         .value;
 
@@ -78,8 +78,6 @@ fn make_transactions(
         "The sender should have the given initial balance"
     );
 
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
     // The first transaction will be a `wallet.execute` to the transfer
     // contract, querying for the root of the tree. This will be given too
     // little gas to execute correctly and error, consuming all gas provided.
@@ -90,13 +88,15 @@ fn make_transactions(
     };
     let tx_0 = wallet
         .phoenix_execute(
-            &mut rng,
-            SENDER_INDEX_0,
-            GAS_LIMIT_0,
-            GAS_PRICE,
-            DEPOSIT,
+            sender_addr_0,
+            DEPOSIT.into(),
+            Gas {
+                limit: GAS_LIMIT_0,
+                price: GAS_PRICE,
+            },
             TransactionData::Call(contract_call.clone()),
         )
+        .await
         .expect("Making the transaction should succeed");
 
     // The second transaction will also be a `wallet.execute` to the transfer
@@ -104,13 +104,15 @@ fn make_transactions(
     // discarded
     let tx_1 = wallet
         .phoenix_execute(
-            &mut rng,
-            SENDER_INDEX_1,
-            GAS_LIMIT_1,
-            GAS_PRICE,
-            DEPOSIT,
+            sender_addr_1,
+            DEPOSIT.into(),
+            Gas {
+                limit: GAS_LIMIT_1,
+                price: GAS_PRICE,
+            },
             TransactionData::Call(contract_call.clone()),
         )
+        .await
         .expect("Making the transaction should succeed");
 
     // The third transaction transaction will also be a `wallet.execute` to the
@@ -118,13 +120,15 @@ fn make_transactions(
     // tested for gas cost.
     let tx_2 = wallet
         .phoenix_execute(
-            &mut rng,
-            SENDER_INDEX_2,
-            GAS_LIMIT_2,
-            GAS_PRICE,
-            DEPOSIT,
-            contract_call,
+            sender_addr_2,
+            DEPOSIT.into(),
+            Gas {
+                limit: GAS_LIMIT_2,
+                price: GAS_PRICE,
+            },
+            TransactionData::Call(contract_call),
         )
+        .await
         .expect("Making the transaction should succeed");
 
     let expected = ExecuteResult {
@@ -170,22 +174,14 @@ pub async fn unspendable() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    make_transactions(&rusk, &wallet);
+    make_transactions(&rusk, &wallet).await;
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

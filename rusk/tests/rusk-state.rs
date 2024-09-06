@@ -14,6 +14,7 @@ use std::sync::{mpsc, Arc};
 
 use execution_core::{
     transfer::{
+        data::TransactionData,
         phoenix::{
             Note, NoteLeaf, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey,
@@ -29,6 +30,7 @@ use rand::rngs::StdRng;
 use rusk::node::{Rusk, RuskTip};
 use rusk::Result;
 use rusk_abi::VM;
+use rusk_wallet::gas::Gas;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -176,22 +178,11 @@ pub fn rusk_state_finalized() -> Result<()> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
 
     common::logger();
 
-    let tmp = tempdir()?;
-    let snapshot = toml::from_str(include_str!("./config/bench.toml"))
-        .expect("Cannot deserialize config");
-
-    let rusk = new_state(&tmp, &snapshot, 100_000_000_000)?;
-
-    let cache =
-        Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
-
-    let wallet =
-        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+    let wallet = common::wallet::test_wallet()?;
 
     const N_ADDRESSES: usize = 100;
 
@@ -204,25 +195,24 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     for sender_index in 0..N_ADDRESSES as u8 {
         let wallet = wallet.clone();
-        let mut rng = StdRng::seed_from_u64(0xdead);
 
         let receiver_index = (sender_index + 1) % N_ADDRESSES as u8;
-        let receiver = wallet.phoenix_public_key(receiver_index).unwrap();
+        let sender_addr = wallet.addresses()[sender_index as usize].clone();
+        let receiver_addr = wallet.addresses()[receiver_index as usize].clone();
 
-        let task = tokio::task::spawn_blocking(move || {
-            wallet
-                .phoenix_transfer(
-                    &mut rng,
-                    sender_index,
-                    &receiver,
-                    TRANSFER_VALUE,
-                    GAS_LIMIT,
-                    LUX,
-                )
-                .expect("Making a transfer TX should succeed")
-        });
+        let tx = wallet
+            .phoenix_transfer(
+                &sender_addr,
+                &receiver_addr,
+                TRANSFER_VALUE.into(),
+                rusk_wallet::gas::Gas {
+                    limit: GAS_LIMIT,
+                    price: LUX,
+                },
+            )
+            .await
+            .expect("Making a transfer TX should succeed");
 
-        let tx = task.await.expect("Joining should succeed");
         txs_file.write(hex::encode(tx.to_var_bytes()).as_bytes())?;
         txs_file.write(b"\n")?;
     }
@@ -236,24 +226,13 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 //   - run the test 'generate_moonlight_txs'
 //   - move the resulting "moonlight-txs" file under "benches/moonlight-txs"
 #[allow(dead_code)]
-// #[tokio::test(flavor = "multi_thread")]
-async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestStateClient, TestStore};
+// #[test]
+fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
     use std::io::Write;
 
     common::logger();
 
-    let tmp = tempdir()?;
-    let snapshot = toml::from_str(include_str!("./config/bench.toml"))
-        .expect("Cannot deserialize config");
-
-    let rusk = new_state(&tmp, &snapshot, 100_000_000_000)?;
-
-    let cache =
-        Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
-
-    let wallet =
-        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+    let wallet = common::wallet::test_wallet()?;
 
     const N_ADDRESSES: usize = 100;
 
@@ -266,23 +245,25 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
 
     for sender_index in 0..N_ADDRESSES as u8 {
         let wallet = wallet.clone();
+        let sender = &wallet.addresses()[sender_index as usize];
 
         let receiver_index = (sender_index + 1) % N_ADDRESSES as u8;
-        let receiver = wallet.account_public_key(receiver_index).unwrap();
+        let receiver = wallet.bls_public_key(receiver_index);
 
-        let task = tokio::task::spawn_blocking(move || {
-            wallet
-                .moonlight_transfer(
-                    sender_index,
-                    receiver,
-                    TRANSFER_VALUE,
-                    GAS_LIMIT,
-                    LUX,
-                )
-                .expect("Making a transfer TX should succeed")
-        });
+        let tx = wallet
+            .moonlight_transaction(
+                sender,
+                Some(receiver),
+                TRANSFER_VALUE.into(),
+                0.into(),
+                Gas {
+                    limit: GAS_LIMIT,
+                    price: LUX,
+                },
+                None::<TransactionData>,
+            )
+            .expect("Making a transfer TX should succeed");
 
-        let tx = task.await.expect("Joining should succeed");
         txs_file.write(hex::encode(tx.to_var_bytes()).as_bytes())?;
         txs_file.write(b"\n")?;
     }

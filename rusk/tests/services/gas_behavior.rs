@@ -4,24 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, RwLock};
 
 use execution_core::transfer::{
     data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
 };
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
+use rusk_wallet::{currency::Lux, gas::Gas};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -29,7 +25,7 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 const GAS_LIMIT_0: u64 = 100_000_000;
 const GAS_LIMIT_1: u64 = 300_000_000;
-const GAS_PRICE: u64 = 1;
+const GAS_PRICE: Lux = 1;
 const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
@@ -43,17 +39,22 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 const SENDER_INDEX_0: u8 = 0;
 const SENDER_INDEX_1: u8 = 1;
 
-fn make_transactions(
+async fn make_transactions(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
+    wallet: &rusk_wallet::Wallet<WalletFile>,
 ) {
+    let sender_addr_0 = &wallet.addresses()[SENDER_INDEX_0 as usize];
+    let sender_addr_1 = &wallet.addresses()[SENDER_INDEX_1 as usize];
+
     let initial_balance_0 = wallet
-        .get_balance(SENDER_INDEX_0)
+        .get_balance(sender_addr_0)
+        .await
         .expect("Getting initial balance should succeed")
         .value;
 
     let initial_balance_1 = wallet
-        .get_balance(SENDER_INDEX_1)
+        .get_balance(sender_addr_1)
+        .await
         .expect("Getting initial balance should succeed")
         .value;
 
@@ -66,8 +67,6 @@ fn make_transactions(
         "The sender should have the given initial balance"
     );
 
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
     // The first transaction will be a `wallet.execute` to the transfer
     // contract, querying for the root of the tree. This will be given too
     // little gas to execute correctly and error, consuming all gas provided.
@@ -78,13 +77,15 @@ fn make_transactions(
     };
     let tx_0 = wallet
         .phoenix_execute(
-            &mut rng,
-            SENDER_INDEX_0,
-            GAS_LIMIT_0,
-            GAS_PRICE,
-            DEPOSIT,
+            sender_addr_0,
+            DEPOSIT.into(),
+            Gas {
+                limit: GAS_LIMIT_0,
+                price: GAS_PRICE,
+            },
             TransactionData::Call(contract_call.clone()),
         )
+        .await
         .expect("Making the transaction should succeed");
 
     // The second transaction will also be a `wallet.execute` to the transfer
@@ -92,13 +93,15 @@ fn make_transactions(
     // gas cost.
     let tx_1 = wallet
         .phoenix_execute(
-            &mut rng,
-            SENDER_INDEX_1,
-            GAS_LIMIT_1,
-            GAS_PRICE,
-            DEPOSIT,
-            contract_call,
+            sender_addr_1,
+            DEPOSIT.into(),
+            Gas {
+                limit: GAS_LIMIT_1,
+                price: GAS_PRICE,
+            },
+            TransactionData::Call(contract_call),
         )
+        .await
         .expect("Making the transaction should succeed");
 
     let spent_transactions = generator_procedure(
@@ -140,22 +143,14 @@ pub async fn erroring_tx_charged_full() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    make_transactions(&rusk, &wallet);
+    make_transactions(&rusk, &wallet).await;
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

@@ -4,20 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, RwLock};
 
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
+use rusk_wallet::{gas::Gas, Wallet};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
@@ -37,28 +33,29 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
 /// Executes three different transactions in the same block, expecting only two
 /// to be included due to exceeding the block gas limit
-fn wallet_transfer(
+async fn wallet_transfer(
     rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
+    wallet: &Wallet<WalletFile>,
     amount: u64,
 ) {
-    // Generate a receiver pk
-    let receiver = wallet
-        .phoenix_public_key(3)
-        .expect("Failed to get public key");
-
-    let mut rng = StdRng::seed_from_u64(0xdead);
+    let sender_addr_0 = &wallet.addresses()[0];
+    let sender_addr_1 = &wallet.addresses()[1];
+    let sender_addr_2 = &wallet.addresses()[2];
+    let receiver_addr = &wallet.addresses()[3];
 
     let initial_balance_0 = wallet
-        .get_balance(0)
+        .get_balance(sender_addr_0)
+        .await
         .expect("Failed to get the balance")
         .value;
     let initial_balance_1 = wallet
-        .get_balance(1)
+        .get_balance(sender_addr_1)
+        .await
         .expect("Failed to get the balance")
         .value;
     let initial_balance_2 = wallet
-        .get_balance(2)
+        .get_balance(sender_addr_2)
+        .await
         .expect("Failed to get the balance")
         .value;
 
@@ -79,7 +76,8 @@ fn wallet_transfer(
     // Check the receiver initial balance is zero
     assert_eq!(
         wallet
-            .get_balance(3)
+            .get_balance(receiver_addr)
+            .await
             .expect("Failed to get the balance")
             .value,
         0,
@@ -88,10 +86,19 @@ fn wallet_transfer(
 
     let mut txs = Vec::with_capacity(3);
 
-    for i in 0..3 {
+    for sender_addr in [sender_addr_0, sender_addr_1, sender_addr_2] {
         let tx = wallet
-            .phoenix_transfer(&mut rng, i, &receiver, amount, GAS_LIMIT, 1)
-            .expect("Failed to transfer");
+            .phoenix_transfer(
+                sender_addr,
+                receiver_addr,
+                amount.into(),
+                Gas {
+                    limit: GAS_LIMIT,
+                    price: 1,
+                },
+            )
+            .await
+            .expect("Failed to create transaction");
         txs.push(tx);
     }
 
@@ -113,7 +120,8 @@ fn wallet_transfer(
     // Check the receiver's balance is changed accordingly
     assert_eq!(
         wallet
-            .get_balance(3)
+            .get_balance(receiver_addr)
+            .await
             .expect("Failed to get the balance")
             .value,
         2 * amount,
@@ -121,7 +129,8 @@ fn wallet_transfer(
     );
 
     let final_balance_0 = wallet
-        .get_balance(0)
+        .get_balance(sender_addr_0)
+        .await
         .expect("Failed to get the balance")
         .value;
     let gas_limit_0 = txs[0].gas_limit();
@@ -129,7 +138,8 @@ fn wallet_transfer(
     let fee_0 = gas_limit_0 * gas_price_0;
 
     let final_balance_1 = wallet
-        .get_balance(1)
+        .get_balance(sender_addr_1)
+        .await
         .expect("Failed to get the balance")
         .value;
     let gas_limit_1 = txs[1].gas_limit();
@@ -167,7 +177,8 @@ fn wallet_transfer(
     // Check the discarded transaction didn't change the balance
     assert_eq!(
         wallet
-            .get_balance(2)
+            .get_balance(sender_addr_2)
+            .await
             .expect("Failed to get the balance")
             .value,
         initial_balance_2,
@@ -183,22 +194,14 @@ pub async fn multi_transfer() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = test_wallet()?;
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    wallet_transfer(&rusk, &wallet, 1_000);
+    wallet_transfer(&rusk, &wallet, 1_000).await;
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

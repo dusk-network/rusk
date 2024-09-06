@@ -10,9 +10,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
 
 use execution_core::{
     signatures::bls::{
@@ -25,13 +23,13 @@ use rusk::gen_id::gen_contract_id;
 use rusk::{Error, Result, Rusk};
 use rusk_abi::{CallReceipt, ContractData, Session};
 use rusk_recovery_tools::state;
+use rusk_wallet::Wallet;
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{test_wallet, WalletFile};
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const POINT_LIMIT: u64 = 0x10000000;
@@ -64,7 +62,7 @@ fn initial_state<P: AsRef<Path>>(
                 bob_bytecode,
                 ContractData::builder()
                     .owner(owner.as_ref())
-                    .constructor_arg(&BOB_INIT_VALUE)
+                    .init_arg(&BOB_INIT_VALUE)
                     .contract_id(gen_contract_id(&bob_bytecode, 0u64, owner)),
                 POINT_LIMIT,
             )
@@ -83,7 +81,7 @@ fn initial_state<P: AsRef<Path>>(
 #[allow(dead_code)]
 struct Fixture {
     pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
+    pub wallet: Wallet<WalletFile>,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
     pub path: PathBuf,
@@ -97,15 +95,8 @@ impl Fixture {
         let rusk = initial_state(&tmp, owner.as_ref())
             .expect("Initializing should succeed");
 
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
+        let wallet =
+            test_wallet().expect("test_wallet should be possible to generate");
 
         let original_root = rusk.state_root();
 

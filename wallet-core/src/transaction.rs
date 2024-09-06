@@ -14,10 +14,11 @@ use ff::Field;
 use zeroize::Zeroize;
 
 use execution_core::{
-    signatures::bls::SecretKey as BlsSecretKey,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
         data::{ContractCall, TransactionData},
+        moonlight::Transaction as MoonlightTransaction,
         phoenix::{
             Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
@@ -28,16 +29,27 @@ use execution_core::{
     BlsScalar, ContractId, Error, JubJubScalar,
 };
 
-/// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
-/// the only difference being that it carries a serialized [`TxCircuitVec`]
-/// instead of the proof bytes.
-/// This way it is possible to delegate the proof generation of the
-/// [`TxCircuitVec`] after the unproven transaction was created while at the
-/// same time ensuring non-malleability of the transaction, as the transaction's
-/// payload-hash is part of the public inputs of the circuit.
-/// Once the proof is generated from the [`TxCircuitVec`] bytes, it can
-/// replace the serialized circuit in the transaction by calling
-/// [`Transaction::replace_proof`].
+/// Generate a moonlight transaction
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight(
+    from_sk: &BlsSecretKey,
+    to_account: Option<BlsPublicKey>,
+    value: u64,
+    deposit: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    nonce: u64,
+    chain_id: u8,
+    data: Option<impl Into<TransactionData>>,
+) -> Result<Transaction, Error> {
+    Ok(MoonlightTransaction::new(
+        from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
+        chain_id, data,
+    )?
+    .into())
+}
+
+/// Generate a phoenix-transaction with a given prover.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:

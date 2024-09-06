@@ -8,7 +8,8 @@ mod sync;
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    transfer::{phoenix::Prove, Transaction},
+    signatures::bls::PublicKey as AccountPublicKey,
+    transfer::{moonlight::AccountData, phoenix::Prove, Transaction},
     Error as ExecutionCoreError,
 };
 use flume::Receiver;
@@ -139,15 +140,15 @@ impl State {
     /// Skips writing the proof for non phoenix transactions
     pub fn prove_and_propagate(
         &self,
-        utx: Transaction,
+        tx: Transaction,
     ) -> Result<Transaction, Error> {
         let status = self.status;
         let prover = &self.prover;
-        let mut utx = utx;
+        let mut tx = tx;
 
-        if let Transaction::Phoenix(tx) = &mut utx {
+        if let Transaction::Phoenix(utx) = &mut tx {
             let status = self.status;
-            let proof = tx.proof();
+            let proof = utx.proof();
 
             status("Attempt to prove tx...");
 
@@ -158,12 +159,12 @@ impl State {
                     ExecutionCoreError::PhoenixCircuit(e.to_string())
                 })?;
 
-            tx.set_proof(proof);
+            utx.set_proof(proof);
 
             status("Proving sucesss!");
         }
 
-        let tx_bytes = utx.to_var_bytes();
+        let tx_bytes = tx.to_var_bytes();
 
         status("Attempt to preverify tx...");
         let preverify_req = RuskRequest::new("preverify", tx_bytes.clone());
@@ -175,7 +176,7 @@ impl State {
         let _ = self.client.call(2, "Chain", &propagate_req).wait()?;
         status("Transaction propagated!");
 
-        Ok(utx)
+        Ok(tx)
     }
 
     /// Find notes for a view key, starting from the given block height.
@@ -213,6 +214,27 @@ impl State {
         sk.zeroize();
 
         inputs
+    }
+
+    pub(crate) fn fetch_account(
+        &self,
+        pk: &AccountPublicKey,
+    ) -> Result<AccountData, Error> {
+        let status = self.status;
+        status("Fetching account-data...");
+
+        let account = self
+            .client
+            .contract_query::<_, 1024>(TRANSFER_CONTRACT, "account", pk)
+            .wait()?;
+        let account = rkyv::from_bytes(&account).map_err(|_| Error::Rkyv)?;
+        status("account-data received!");
+
+        let account_address = pk.to_bytes().to_vec();
+        let account_address = bs58::encode(account_address).into_string();
+        println!("Account address: {}", account_address);
+
+        Ok(account)
     }
 
     pub(crate) fn fetch_notes(
