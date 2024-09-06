@@ -25,6 +25,8 @@ hex = "0.4"
 rand = "0.8"
 ff = { version = "0.13", default-features = false }
 criterion = "0.5"
+serde = "*"
+serde_json = "*"
 
 [[bench]]
 name = "get_provisioners"

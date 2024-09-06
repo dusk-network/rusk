@@ -38,12 +38,9 @@ pub fn assert_event<S>(
         assert_eq!(staking_event_data.value, should_amount);
         assert_eq!(staking_event_data.account.to_bytes(), should_pk.to_bytes());
     } else {
-        let staking_event_data =
-            check_archived_root::<StakeEvent>(event.data.as_slice())
+        let staking_event_data: StakeEvent =
+            serde_json::from_slice(&event.data)
                 .expect("Stake event data should deserialize correctly");
-        let staking_event_data: StakeEvent = staking_event_data
-            .deserialize(&mut Infallible)
-            .expect("Infallible");
         assert_eq!(staking_event_data.value, should_amount);
         assert_eq!(staking_event_data.account.to_bytes(), should_pk.to_bytes());
     }

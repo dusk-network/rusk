@@ -6,6 +6,8 @@
 
 //! Types used by Dusk's stake contract.
 
+mod events;
+
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
@@ -17,11 +19,13 @@ use crate::{
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
         Signature as BlsSignature,
     },
-    transfer::withdraw::{Withdraw as TransferWithdraw, WithdrawReceiver},
+    transfer::withdraw::Withdraw as TransferWithdraw,
     ContractId,
 };
 
 use crate::{dusk, Dusk};
+
+pub use events::*;
 
 /// ID of the genesis stake contract
 pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
@@ -188,30 +192,6 @@ impl Withdraw {
 
         bytes
     }
-}
-
-/// Event emitted after a stake contract operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct StakeEvent {
-    /// Account associated to the event.
-    pub account: BlsPublicKey,
-    /// Value of the relevant operation, be it `stake`, `reward` or `slash`.
-    ///
-    /// In case of `suspended` the amount refers to the next eligibility
-    pub value: u64,
-}
-
-/// Event emitted after a stake contract operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct StakeWithReceiverEvent {
-    /// Account associated to the event.
-    pub account: BlsPublicKey,
-    /// Value of the relevant operation, be it `unstake` or `withdraw`.
-    pub value: u64,
-    /// The receiver of the action
-    pub receiver: Option<WithdrawReceiver>,
 }
 
 /// The minimum amount of Dusk one can stake.

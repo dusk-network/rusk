@@ -40,6 +40,7 @@ pub use piecrust_uplink::{
     call_with_limit,
     caller,
     emit,
+    emit_raw,
     feed,
     limit,
     self_id,

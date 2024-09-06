@@ -115,7 +115,8 @@ impl StakeState {
         loaded_stake.amount =
             Some(StakeAmount::new(value, rusk_abi::block_height()));
 
-        rusk_abi::emit("stake", StakeEvent { account, value });
+        let event = StakeEvent { account, value };
+        rusk_abi::emit_raw("stake", event.to_json());
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -275,7 +276,8 @@ impl StakeState {
         stake.reward += value;
 
         let account = *account;
-        rusk_abi::emit("reward", StakeEvent { account, value });
+        let event = StakeEvent { account, value };
+        rusk_abi::emit_raw("reward", event.to_json());
     }
 
     /// Total amount burned since the genesis
@@ -322,13 +324,11 @@ impl StakeState {
             stake_amount.eligibility =
                 next_epoch(rusk_abi::block_height()) + to_shift;
 
-            rusk_abi::emit(
-                "suspended",
-                StakeEvent {
-                    account: *account,
-                    value: stake_amount.eligibility,
-                },
-            );
+            let event = StakeEvent {
+                account: *account,
+                value: stake_amount.eligibility,
+            };
+            rusk_abi::emit_raw("suspended", event.to_json());
         }
 
         // Slash the provided amount or calculate the percentage according to
@@ -340,13 +340,11 @@ impl StakeState {
         if to_slash > 0 {
             stake_amount.lock_amount(to_slash);
 
-            rusk_abi::emit(
-                "slash",
-                StakeEvent {
-                    account: *account,
-                    value: to_slash,
-                },
-            );
+            let event = StakeEvent {
+                account: *account,
+                value: to_slash,
+            };
+            rusk_abi::emit_raw("slash", event.to_json());
         }
 
         let key = account.to_bytes();
@@ -390,13 +388,11 @@ impl StakeState {
         stake_amount.eligibility =
             next_epoch(rusk_abi::block_height()) + to_shift;
 
-        rusk_abi::emit(
-            "suspended",
-            StakeEvent {
-                account: *account,
-                value: stake_amount.eligibility,
-            },
-        );
+        let event = StakeEvent {
+            account: *account,
+            value: stake_amount.eligibility,
+        };
+        rusk_abi::emit_raw("suspended", event.to_json());
 
         // Slash the provided amount or calculate the percentage according to
         // hard faults
@@ -412,13 +408,11 @@ impl StakeState {
             // Update the total burnt amount
             self.burnt_amount += to_slash;
 
-            rusk_abi::emit(
-                "hard_slash",
-                StakeEvent {
-                    account: *account,
-                    value: to_slash,
-                },
-            );
+            let event = StakeEvent {
+                account: *account,
+                value: to_slash,
+            };
+            rusk_abi::emit_raw("hard_slash", event.to_json());
         }
 
         let key = account.to_bytes();
