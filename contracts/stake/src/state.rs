@@ -79,6 +79,7 @@ impl StakeState {
             panic!("The stake must target the correct chain");
         }
 
+        let prev_stake = self.get_stake(&account).copied();
         let loaded_stake = self.load_or_create_stake_mut(&account);
 
         // ensure the stake is at least the minimum and that there isn't an
@@ -122,7 +123,7 @@ impl StakeState {
         let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((None, account));
+            .or_insert((prev_stake, account));
     }
 
     pub fn unstake(&mut self, unstake: Withdraw) {
