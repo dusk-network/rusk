@@ -31,6 +31,8 @@ use tokio::sync::{broadcast, mpsc};
 
 use crate::http::{HandleRequest, RuesEvent};
 
+pub use vm::ContractTxEvent;
+
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
     pub current: [u8; 32],
