@@ -13,7 +13,7 @@ use std::cmp::max;
 
 use crate::merkle::merkle_root;
 
-use crate::config::MINIMUM_BLOCK_TIME;
+use crate::config::{MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use dusk_bytes::Serializable;
 use node_data::message::payload::Candidate;
 use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
@@ -92,6 +92,13 @@ impl<T: Operations> Generator<T> {
         faults: &[Fault],
         voters: &[Voter],
     ) -> Result<Block, crate::operations::Error> {
+        // Limit number of faults in the block
+        let faults = if faults.len() > MAX_NUMBER_OF_FAULTS {
+            &faults[..MAX_NUMBER_OF_FAULTS]
+        } else {
+            faults
+        };
+
         let to_slash =
             Slash::from_iterations_and_faults(&failed_iterations, faults)?;
 

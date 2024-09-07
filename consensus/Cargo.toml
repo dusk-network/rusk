@@ -43,3 +43,8 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 base64 = "0.13"
 node-data = { version = "0.1", path = "../node-data", features = ["faker"]}
+criterion = "0.5"
+
+[[bench]]
+name = "merkle"
+harness = false

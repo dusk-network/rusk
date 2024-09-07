@@ -15,6 +15,8 @@ pub const VALIDATION_COMMITTEE_CREDITS: usize = 64;
 pub const RATIFICATION_COMMITTEE_CREDITS: usize = 64;
 
 pub const RELAX_ITERATION_THRESHOLD: u8 = 8;
+pub const MAX_NUMBER_OF_TRANSACTIONS: usize = 1_000;
+pub const MAX_NUMBER_OF_FAULTS: usize = 100;
 
 /// Emergency mode is enabled after 16 iterations
 pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
