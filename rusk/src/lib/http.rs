@@ -1293,4 +1293,18 @@ mod tests {
         let data = data.to_vec().into();
         Ok(RuesEvent { data, headers, uri })
     }
+
+    impl From<ContractEvent> for RuesEvent {
+        fn from(event: ContractEvent) -> Self {
+            Self {
+                uri: RuesEventUri {
+                    component: "contracts".into(),
+                    entity: Some(hex::encode(event.target.0.as_bytes())),
+                    topic: event.topic,
+                },
+                data: event.data.into(),
+                headers: Default::default(),
+            }
+        }
+    }
 }

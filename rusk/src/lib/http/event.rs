@@ -835,16 +835,6 @@ impl From<execution_core::Event> for ContractEvent {
     }
 }
 
-impl From<ContractEvent> for execution_core::Event {
-    fn from(event: ContractEvent) -> Self {
-        Self {
-            source: event.target.0,
-            topic: event.topic,
-            data: event.data,
-        }
-    }
-}
-
 /// A RUES event
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RuesEvent {
@@ -982,23 +972,23 @@ impl RuesEvent {
     }
 }
 
-impl From<ContractEvent> for RuesEvent {
-    fn from(event: ContractEvent) -> Self {
+#[cfg(feature = "node")]
+impl From<crate::node::ContractTxEvent> for RuesEvent {
+    fn from(tx_event: crate::node::ContractTxEvent) -> Self {
+        let mut headers = serde_json::Map::new();
+        if let Some(origin) = tx_event.origin {
+            headers.insert("Rusk-Origin".into(), hex::encode(origin).into());
+        }
+        let event = tx_event.event;
         Self {
             uri: RuesEventUri {
                 component: "contracts".into(),
-                entity: Some(hex::encode(event.target.0.as_bytes())),
+                entity: Some(hex::encode(event.source.as_bytes())),
                 topic: event.topic,
             },
             data: event.data.into(),
-            headers: Default::default(),
+            headers,
         }
-    }
-}
-
-impl From<execution_core::Event> for RuesEvent {
-    fn from(event: execution_core::Event) -> Self {
-        Self::from(ContractEvent::from(event))
     }
 }
 

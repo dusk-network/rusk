@@ -37,6 +37,7 @@ use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
+use super::vm::ContractTxEvent;
 use super::{coinbase_value, Rusk, RuskTip};
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
@@ -142,9 +143,10 @@ impl Rusk {
                 break;
             }
 
-            let tx_id = hex::encode(unspent_tx.id());
+            let tx_id = unspent_tx.id();
+            let tx_id_hex = hex::encode(unspent_tx.id());
             if unspent_tx.inner.gas_limit() > block_gas_left {
-                info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
+                info!("Skipping {tx_id_hex} due gas_limit greater than left: {block_gas_left}");
                 continue;
             }
 
@@ -180,9 +182,18 @@ impl Rusk {
 
                     // We're currently ignoring the result of successful calls
                     let err = receipt.data.err().map(|e| format!("{e}"));
-                    info!("Tx {tx_id} executed with {gas_spent} gas and err {err:?}");
+                    info!("Tx {tx_id_hex} executed with {gas_spent} gas and err {err:?}");
 
-                    update_hasher(&mut event_hasher, &receipt.events);
+                    let tx_events: Vec<_> = receipt
+                        .events
+                        .into_iter()
+                        .map(|event| ContractTxEvent {
+                            event,
+                            origin: Some(tx_id),
+                        })
+                        .collect();
+
+                    update_hasher(&mut event_hasher, &tx_events);
 
                     block_gas_left -= gas_spent;
                     let gas_price = unspent_tx.inner.gas_price();
@@ -205,7 +216,7 @@ impl Rusk {
                     // nonce is unlocked
                 }
                 Err(e) => {
-                    info!("discard tx {tx_id} due to {e:?}");
+                    info!("discard tx {tx_id_hex} due to {e:?}");
                     // An unspendable transaction should be discarded
                     discarded_txs.push(unspent_tx);
                     continue;
@@ -221,6 +232,14 @@ impl Rusk {
             to_slash,
             voters,
         )?;
+
+        let coinbase_events: Vec<_> = coinbase_events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event,
+                origin: None,
+            })
+            .collect();
         update_hasher(&mut event_hasher, &coinbase_events);
 
         let state_root = session.root();
@@ -487,7 +506,7 @@ fn accept(
     Vec<SpentTransaction>,
     VerificationOutput,
     Session,
-    Vec<Event>,
+    Vec<ContractTxEvent>,
 )> {
     let mut session = session;
 
@@ -501,6 +520,7 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
+        let tx_id = unspent_tx.id();
         let receipt = execute(
             &mut session,
             tx,
@@ -508,8 +528,17 @@ fn accept(
             min_deployment_gas_price,
         )?;
 
-        update_hasher(&mut event_hasher, &receipt.events);
-        events.extend(receipt.events);
+        let tx_events: Vec<_> = receipt
+            .events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event,
+                origin: Some(tx_id),
+            })
+            .collect();
+
+        update_hasher(&mut event_hasher, &tx_events);
+        events.extend(tx_events);
 
         let gas_spent = receipt.gas_spent;
 
@@ -536,6 +565,13 @@ fn accept(
         voters,
     )?;
 
+    let coinbase_events: Vec<_> = coinbase_events
+        .into_iter()
+        .map(|event| ContractTxEvent {
+            event,
+            origin: None,
+        })
+        .collect();
     update_hasher(&mut event_hasher, &coinbase_events);
     events.extend(coinbase_events);
 
@@ -714,8 +750,12 @@ fn execute(
     Ok(receipt)
 }
 
-fn update_hasher(hasher: &mut Sha3_256, events: &[Event]) {
-    for event in events {
+fn update_hasher(hasher: &mut Sha3_256, events: &[ContractTxEvent]) {
+    for tx_event in events {
+        if let Some(origin) = tx_event.origin {
+            hasher.update(origin);
+        }
+        let event = &tx_event.event;
         hasher.update(event.source.as_bytes());
         hasher.update(event.topic.as_bytes());
         hasher.update(&event.data);
