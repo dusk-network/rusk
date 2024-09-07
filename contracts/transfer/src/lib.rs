@@ -123,9 +123,9 @@ unsafe fn spend_and_execute(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn refund(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |gas_spent| {
+    rusk_abi::wrap_call(arg_len, |(gas_spent, deployed_contract)| {
         assert_external_caller();
-        STATE.refund(gas_spent)
+        STATE.refund(gas_spent, deployed_contract)
     })
 }
 

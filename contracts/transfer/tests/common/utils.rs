@@ -141,7 +141,7 @@ pub fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &receipt.gas_spent,
+            &(receipt.gas_spent, None::<ContractId>),
             u64::MAX,
         )
         .expect("Refunding must succeed");

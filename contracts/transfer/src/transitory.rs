@@ -21,7 +21,7 @@ use execution_core::{
     transfer::{
         moonlight::Transaction as MoonlightTransaction,
         phoenix::{Note, Transaction as PhoenixTransaction},
-        Transaction,
+        Transaction, TransactionOutput,
     },
     ContractId,
 };
@@ -78,6 +78,8 @@ pub struct OngoingTransaction {
     pub deposit: Deposit,
     /// The notes that have been inserted into the tree.
     pub notes: Vec<Note>,
+    /// The output of the transaction.
+    pub output: TransactionOutput,
 }
 
 static mut CURRENT_TX: Option<OngoingTransaction> = None;
@@ -115,6 +117,7 @@ pub fn put_transaction(tx: impl Into<Transaction>) {
             tx,
             deposit,
             notes: Vec::new(),
+            output: TransactionOutput::None,
         });
     }
 }
@@ -139,6 +142,17 @@ pub fn push_note(note: Note) {
             .expect("There must be an ongoing transaction")
             .notes;
         notes.push(note);
+    }
+}
+
+/// Sets the output of the ongoing transaction
+pub fn set_output(output: TransactionOutput) {
+    unsafe {
+        let o = &mut CURRENT_TX
+            .as_mut()
+            .expect("There must be an ongoing transaction")
+            .output;
+        *o = output;
     }
 }
 

@@ -29,9 +29,9 @@ use execution_core::{
         },
         ConvertEvent, DepositEvent, MoonlightTransactionEvent,
         PhoenixTransactionEvent, ReceiveFromContract, Transaction,
-        TransferToAccount, TransferToAccountEvent, TransferToContract,
-        TransferToContractEvent, WithdrawEvent, PANIC_NONCE_NOT_READY,
-        TRANSFER_CONTRACT,
+        TransactionOutput, TransferToAccount, TransferToAccountEvent,
+        TransferToContract, TransferToContractEvent, WithdrawEvent,
+        PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractError, ContractId,
 };
@@ -471,12 +471,21 @@ impl TransferState {
             Transaction::Moonlight(tx) => self.spend_moonlight(tx),
         }
 
-        match tx.call() {
-            Some(call) => {
-                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
-            }
-            None => Ok(Vec::new()),
+        let mut result = Ok(Vec::new());
+
+        if let Some(call) = tx.call() {
+            result =
+                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args);
+            transitory::set_output(TransactionOutput::Call(
+                result.as_ref().map(|_| {}).map_err(Clone::clone),
+            ));
         }
+
+        if let Some(memo) = tx.memo() {
+            transitory::set_output(TransactionOutput::Memo(memo.to_vec()));
+        }
+
+        result
     }
 
     /// Spends the inputs and creates the given UTXO within the given phoenix
@@ -612,7 +621,18 @@ impl TransferState {
     /// in the fee structure.
     ///
     /// This function guarantees that it will not panic.
-    pub fn refund(&mut self, gas_spent: u64) {
+    pub fn refund(
+        &mut self,
+        gas_spent: u64,
+        deployed_contract: Option<ContractId>,
+    ) {
+        // we can't set the deployed contract in `spend_and_execute`, since
+        // success in deployment is only known *after* its execution, so we set
+        // it here and `take_ongoing` afterwards.
+        if let Some(contract) = deployed_contract {
+            transitory::set_output(TransactionOutput::Deploy(contract));
+        }
+
         let ongoing = transitory::take_ongoing();
 
         // If there is a deposit still available on the call to this function,
@@ -650,6 +670,7 @@ impl TransferState {
                     PhoenixTransactionEvent {
                         nullifiers: tx.nullifiers().to_vec(),
                         notes,
+                        output: ongoing.output,
                         gas_spent,
                     },
                 );
@@ -673,6 +694,7 @@ impl TransferState {
                         from: *tx.from_account(),
                         to: tx.to_account().copied(),
                         value: tx.value(),
+                        output: ongoing.output,
                         gas_spent,
                     },
                 );
