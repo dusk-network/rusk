@@ -14,8 +14,8 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
-        next_epoch, Reward, Stake, StakeAmount, StakeData, StakeEvent,
-        StakeWithReceiverEvent, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
+        next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
+        StakeEvent, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
         STAKE_WARNINGS,
     },
     transfer::TRANSFER_CONTRACT,
@@ -165,14 +165,7 @@ impl StakeState {
         // update the state accordingly
         loaded_stake.amount = None;
 
-        rusk_abi::emit(
-            "unstake",
-            StakeWithReceiverEvent {
-                account,
-                value: withdrawal_value,
-                receiver: Some(*transfer_withdraw.receiver()),
-            },
-        );
+        rusk_abi::emit("unstake", StakeEvent { account, value });
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -214,14 +207,7 @@ impl StakeState {
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        rusk_abi::emit(
-            "withdraw",
-            StakeWithReceiverEvent {
-                account,
-                value,
-                receiver: Some(*transfer_withdraw.receiver()),
-            },
-        );
+        rusk_abi::emit("withdraw", StakeEvent { account, value });
     }
 
     /// Gets a reference to a stake.
@@ -327,14 +313,6 @@ impl StakeState {
 
             stake_amount.eligibility =
                 next_epoch(rusk_abi::block_height()) + to_shift;
-
-            rusk_abi::emit(
-                "suspended",
-                StakeEvent {
-                    account: *account,
-                    value: stake_amount.eligibility,
-                },
-            );
         }
 
         // Slash the provided amount or calculate the percentage according to
@@ -345,12 +323,15 @@ impl StakeState {
 
         if to_slash > 0 {
             stake_amount.lock_amount(to_slash);
+        }
 
+        if to_slash > 0 || effective_faults > 0 {
             rusk_abi::emit(
                 "slash",
-                StakeEvent {
+                SlashEvent {
                     account: *account,
                     value: to_slash,
+                    next_eligibility: stake_amount.eligibility,
                 },
             );
         }
@@ -393,16 +374,8 @@ impl StakeState {
         // The stake is shifted (aka suspended) for the rest of the current
         // epoch plus hard_faults epochs
         let to_shift = hard_faults * EPOCH;
-        stake_amount.eligibility =
-            next_epoch(rusk_abi::block_height()) + to_shift;
-
-        rusk_abi::emit(
-            "suspended",
-            StakeEvent {
-                account: *account,
-                value: stake_amount.eligibility,
-            },
-        );
+        let next_eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
+        stake_amount.eligibility = next_eligibility;
 
         // Slash the provided amount or calculate the percentage according to
         // hard faults
@@ -417,15 +390,16 @@ impl StakeState {
 
             // Update the total burnt amount
             self.burnt_amount += to_slash;
-
-            rusk_abi::emit(
-                "hard_slash",
-                StakeEvent {
-                    account: *account,
-                    value: to_slash,
-                },
-            );
         }
+
+        rusk_abi::emit(
+            "hard_slash",
+            SlashEvent {
+                account: *account,
+                value: to_slash,
+                next_eligibility,
+            },
+        );
 
         let key = account.to_bytes();
         self.previous_block_state
