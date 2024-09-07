@@ -30,7 +30,7 @@ use execution_core::{
         moonlight::AccountData,
         Transaction as ProtocolTransaction, TRANSFER_CONTRACT,
     },
-    BlsScalar, ContractError, Dusk, Event,
+    BlsScalar, ContractError, ContractId, Dusk, Event,
 };
 use node_data::ledger::{Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
@@ -613,36 +613,47 @@ fn contract_deploy(
     gas_limit: u64,
     gas_per_deploy_byte: Option<u64>,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
-) {
+) -> Option<ContractId> {
     let deploy_charge = bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
     let min_gas_limit = receipt.gas_spent + deploy_charge;
     let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
+
+    let mut deployed_id = None;
+
     if gas_limit < min_gas_limit {
         receipt.data = Err(ContractError::OutOfGas);
     } else if hash != deploy.bytecode.hash {
         receipt.data =
-            Err(ContractError::Panic("failed bytecode hash check".into()))
+            Err(ContractError::Panic("failed bytecode hash check".into()));
     } else {
+        let contract_id = gen_contract_id(
+            &deploy.bytecode.bytes,
+            deploy.nonce,
+            &deploy.owner,
+        );
+
         let result = session.deploy_raw(
-            Some(gen_contract_id(
-                &deploy.bytecode.bytes,
-                deploy.nonce,
-                &deploy.owner,
-            )),
+            Some(contract_id),
             deploy.bytecode.bytes.as_slice(),
             deploy.init_args.clone(),
             deploy.owner.clone(),
             gas_limit - receipt.gas_spent,
         );
+
         match result {
-            Ok(_) => receipt.gas_spent += deploy_charge,
+            Ok(_) => {
+                receipt.gas_spent += deploy_charge;
+                deployed_id = Some(contract_id);
+            }
             Err(err) => {
                 info!("Tx caused deployment error {err:?}");
                 receipt.data =
-                    Err(ContractError::Panic("failed deployment".into()))
+                    Err(ContractError::Panic("failed deployment".into()));
             }
         }
     }
+
+    deployed_id
 }
 
 /// Executes a transaction, returning the receipt of the call and the gas spent.
@@ -706,6 +717,8 @@ fn execute(
     }
 
     let tx_stripped = tx.strip_off_bytecode();
+    let mut deployed_id = None;
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
@@ -718,7 +731,7 @@ fn execute(
     // Deploy if this is a deployment transaction and spend part is successful.
     if let Some(deploy) = tx.deploy() {
         if receipt.data.is_ok() {
-            contract_deploy(
+            deployed_id = contract_deploy(
                 session,
                 deploy,
                 tx.gas_limit(),
@@ -740,7 +753,7 @@ fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &receipt.gas_spent,
+            &(receipt.gas_spent, deployed_id),
             u64::MAX,
         )
         .expect("Refunding must succeed");
