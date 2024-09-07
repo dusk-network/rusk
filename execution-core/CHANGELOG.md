@@ -58,6 +58,7 @@ transfer::{
     TransferToAccountEvent;
     PhoenixTransactionEvent;
     MoonlightTransactionEvent;
+    TransactionOutput;
     data::{
         ContractBytecode;
         ContractCall;

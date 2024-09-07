@@ -23,7 +23,7 @@ use crate::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
     transfer::withdraw::{Withdraw, WithdrawReceiver},
-    BlsScalar, ContractId, Error,
+    BlsScalar, ContractError, ContractId, Error,
 };
 
 pub mod data;
@@ -462,19 +462,21 @@ pub struct TransferToAccountEvent {
 }
 
 /// Event data emitted on a phoenix transaction's completion.
-#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct PhoenixTransactionEvent {
     /// Nullifiers of the notes spent during the transaction.
     pub nullifiers: Vec<BlsScalar>,
     /// Notes produced during the transaction.
     pub notes: Vec<Note>,
+    /// Output of the transaction.
+    pub output: TransactionOutput,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
 }
 
 /// Event data emitted on a moonlight transaction's completion.
-#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct MoonlightTransactionEvent {
     /// The account that initiated the transaction.
@@ -483,6 +485,24 @@ pub struct MoonlightTransactionEvent {
     pub to: Option<AccountPublicKey>,
     /// Transfer amount
     pub value: u64,
+    /// Output of the transaction.
+    pub output: TransactionOutput,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
+}
+
+/// The output of a transaction.
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum TransactionOutput {
+    /// The result of a contract call. The `Ok()` result omits the output of
+    /// the contract, since it may be too large to emit.
+    Call(Result<(), ContractError>),
+    /// The ID of the contract deployed.
+    Deploy(ContractId),
+    /// The memo used in the transaction.
+    Memo(Vec<u8>),
+    /// There is no output to the transaction. This means that there was no
+    /// contract call, deployment, or memo included in the transaction.
+    None,
 }
