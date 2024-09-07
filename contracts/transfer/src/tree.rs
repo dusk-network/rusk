@@ -26,11 +26,7 @@ impl Tree {
         }
     }
 
-    pub fn get(&self, pos: u64) -> Option<NoteLeaf> {
-        self.leaves.get(pos as usize).cloned()
-    }
-
-    pub fn push(&mut self, mut leaf: NoteLeaf) -> u64 {
+    pub fn push(&mut self, mut leaf: NoteLeaf) -> Note {
         // update the position before computing the hash
         let pos = self.leaves.len() as u64;
         leaf.note.set_pos(pos);
@@ -40,22 +36,27 @@ impl Tree {
         let item = NoteTreeItem { hash, data: () };
 
         self.tree.insert(pos, item);
-        self.leaves.push(leaf);
+        self.leaves.push(leaf.clone());
 
-        pos
+        leaf.note
     }
 
     pub fn extend_notes<I: IntoIterator<Item = Note>>(
         &mut self,
         block_height: u64,
         notes: I,
-    ) {
+    ) -> Vec<Note> {
+        let mut n = Vec::new();
+
         for note in notes {
             // skip transparent notes with a value of 0
             if !note.value(None).is_ok_and(|value| value == 0) {
-                self.push(NoteLeaf { block_height, note });
+                let note = self.push(NoteLeaf { block_height, note });
+                n.push(note);
             }
         }
+
+        n
     }
 
     pub fn root(&self) -> BlsScalar {
