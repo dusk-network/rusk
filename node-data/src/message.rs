@@ -1410,7 +1410,11 @@ impl StepMessage for Candidate {
         &mut self.sign_info
     }
     fn signable(&self) -> Vec<u8> {
-        self.candidate.header().hash.to_vec()
+        let mut signable = self.header.signable();
+        signable.extend_from_slice(Self::SIGN_SEED);
+        let candidate_hash = self.candidate.header().hash.to_vec();
+        signable.extend_from_slice(&candidate_hash);
+        signable
     }
     fn header(&self) -> &ConsensusHeader {
         &self.header
