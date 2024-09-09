@@ -498,13 +498,13 @@ impl TransferState {
             panic!("Root not found in the state!");
         }
 
-        // panic if any of the given nullifiers already exist
-        if self.any_nullifier_exists(phoenix_tx.nullifiers()) {
-            panic!("A provided nullifier already exists!");
+        // append the nullifiers to the set, and panic if an equal one has
+        // already been inserted
+        for nullifier in phoenix_tx.nullifiers() {
+            if !self.nullifiers.insert(*nullifier) {
+                panic!("A provided nullifier has already been spent");
+            }
         }
-
-        // append the nullifiers to the nullifiers set
-        self.nullifiers.extend(phoenix_tx.nullifiers());
 
         // verify the phoenix-circuit
         if !verify_tx_proof(phoenix_tx) {
@@ -814,16 +814,6 @@ impl TransferState {
 
             _ => Err(Error::NotEnoughBalance),
         }
-    }
-
-    fn any_nullifier_exists(&self, nullifiers: &[BlsScalar]) -> bool {
-        for nullifier in nullifiers {
-            if self.nullifiers.contains(nullifier) {
-                return true;
-            }
-        }
-
-        false
     }
 
     fn root_exists(&self, root: &BlsScalar) -> bool {
