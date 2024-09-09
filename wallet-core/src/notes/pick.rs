@@ -8,47 +8,10 @@
 
 use alloc::vec::Vec;
 
-use execution_core::transfer::phoenix::Note;
+use crate::notes::owned::NoteList;
+use crate::notes::MAX_INPUT_NOTES;
+use execution_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
 use execution_core::BlsScalar;
-
-/// The maximum amount of input notes that can be spend in one
-/// phoenix-transaction
-pub const MAX_INPUT_NOTES: usize = 4;
-
-/// Pick the notes to be used in a transaction from a vector of notes.
-///
-/// The resulting array is only 4 notes long, the argument of this function can
-/// be arbitary amount of notes.
-///
-/// # Errors
-///
-/// If the target sum is greater than the sum of the notes then an error is
-/// returned. If the notes vector is empty then an error is returned.
-///
-/// See `InputNotesError` type for possible errors
-/// this function can yield.
-#[must_use]
-pub fn try_input_notes(
-    nodes: Vec<(Note, u64, BlsScalar)>,
-    target_sum: u64,
-) -> Vec<(Note, BlsScalar)> {
-    if nodes.is_empty() {
-        return Vec::new();
-    }
-
-    let mut i = 0;
-    let mut sum = 0;
-    while sum < target_sum && i < nodes.len() {
-        sum = sum.saturating_add(nodes[i].1);
-        i += 1;
-    }
-
-    if sum < target_sum {
-        return Vec::new();
-    }
-
-    pick_notes(target_sum, nodes)
-}
 
 /// Pick the notes to be used in a transaction from a vector of notes.
 ///
@@ -59,20 +22,34 @@ pub fn try_input_notes(
 /// larger or equal to the given value. If such a slice is not found, an
 /// empty vector is returned.
 ///
-/// Note: it is presupposed that the input notes contain enough balance to
-/// cover the given `value`.
-fn pick_notes(
-    value: u64,
-    notes_and_values: Vec<(Note, u64, BlsScalar)>,
-) -> Vec<(Note, BlsScalar)> {
-    let mut notes_and_values = notes_and_values;
-    let len = notes_and_values.len();
+/// If the target sum is greater than the sum of the notes then an
+/// empty vector is returned.
+#[must_use]
+pub fn notes(vk: &PhoenixViewKey, notes: NoteList, value: u64) -> NoteList {
+    if notes.is_empty() {
+        return NoteList::default();
+    }
 
-    if len <= MAX_INPUT_NOTES {
-        return notes_and_values
-            .into_iter()
-            .map(|(note, _, b)| (note, b))
-            .collect();
+    let mut notes_and_values: Vec<(NoteLeaf, u64, BlsScalar)> = notes
+        .iter()
+        .filter_map(|(nullifier, leaf)| {
+            leaf.as_ref()
+                .value(Some(vk))
+                .ok()
+                .map(|value| (leaf.clone(), value, *nullifier))
+        })
+        .collect();
+
+    let sum: u64 = notes_and_values
+        .iter()
+        .fold(0, |sum, &(_, value, _)| sum.saturating_add(value));
+
+    if sum < value {
+        return NoteList::default();
+    }
+
+    if notes.len() <= MAX_INPUT_NOTES {
+        return notes;
     }
 
     notes_and_values.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
@@ -84,8 +61,9 @@ fn pick_notes(
             >= value
     })
     .map(|index| notes_and_values[index].clone())
-    .map(|(n, _, b)| (n, b))
+    .map(|(n, _, b)| (b, n))
     .to_vec()
+    .into()
 }
 
 fn pick_lexicographic<F: Fn(&[usize; MAX_INPUT_NOTES]) -> bool>(
