@@ -622,6 +622,11 @@ impl TransferState {
             _ => None,
         };
 
+        let mut memo = Vec::new();
+        if let Some(m) = ongoing.tx.memo() {
+            memo = m.to_vec();
+        }
+
         // in phoenix, a refund note is with the unspent amount to the stealth
         // address in the `Fee` structure, while in moonlight we simply refund
         // the `from` account for what it didn't spend
@@ -650,6 +655,7 @@ impl TransferState {
                     PhoenixTransactionEvent {
                         nullifiers: tx.nullifiers().to_vec(),
                         notes,
+                        memo,
                         gas_spent,
                     },
                 );
@@ -673,6 +679,7 @@ impl TransferState {
                         from: *tx.from_account(),
                         to: tx.to_account().copied(),
                         value: tx.value(),
+                        memo,
                         gas_spent,
                     },
                 );
