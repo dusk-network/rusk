@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod block;
-pub mod keys;
 pub mod state;
 pub mod wallet;
 
