@@ -79,7 +79,7 @@ jobs:
   copy_to_host:
     needs: test_nightly
     runs-on: core
-    if: needs.test_nightly.result == 'success' && github.base_ref == 'main'
+    if: needs.test_nightly.result == 'success' && github.base_ref == 'master'
     continue-on-error: true
     steps:
       - name: "Download Rusk Artifact"
