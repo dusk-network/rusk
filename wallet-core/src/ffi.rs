@@ -39,6 +39,10 @@ use zeroize::Zeroize;
 
 use rkyv::{from_bytes, to_bytes};
 
+/// The size of the scratch buffer used for parsing the notes.
+/// It can roughly contains less than 128 serialized notes.
+const NOTES_BUFFER_SIZE: usize = 96 * 1024;
+
 /// The alignment of the memory allocated by the FFI.
 ///
 /// This is 1 because we're not allocating any complex data structures, and
@@ -126,8 +130,8 @@ pub unsafe fn map_owned(
 
     keys.into_iter().for_each(|mut sk| sk.zeroize());
 
-    let bytes =
-        to_bytes::<_, 4096>(&owned).or(Err(ErrorCode::ArchivingError))?;
+    let bytes = to_bytes::<_, NOTES_BUFFER_SIZE>(&owned)
+        .or(Err(ErrorCode::ArchivingError))?;
 
     let len = bytes.len().to_le_bytes();
 
