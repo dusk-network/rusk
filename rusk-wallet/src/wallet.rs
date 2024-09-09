@@ -86,7 +86,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Returns phoenix key pair for a given address
     ///
     /// # Errors
-    /// -
+    ///
+    /// - If the Address provided is not a Phoenix address
+    /// - If the address is not owned
     pub fn phoenix_keys(
         &self,
         addr: &Address,

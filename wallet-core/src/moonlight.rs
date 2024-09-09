@@ -7,6 +7,8 @@
 //! Implementations of basic wallet functionalities to create moonlight
 //! transactions.
 
+#![allow(clippy::module_name_repetitions)]
+
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
@@ -51,10 +53,15 @@ pub fn moonlight(
     .into())
 }
 
-/// Stake through moonlight, the stake_nonce is the nonce of the stake
+/// Stake through moonlight, the `stake_nonce` is the nonce of the stake
 /// which is obtained via stake info query on the chain
 ///
 /// The `nonce` is the nonce of the moonlight transaction
+///
+/// # Errors
+///
+/// This function most likey not fail but if the `nonce` is incorrect
+/// or the `stake_nonce` the node will error and not accept the transcation
 pub fn moonlight_stake(
     from_sk: &BlsSecretKey,
     stake_value: u64,
@@ -88,6 +95,11 @@ pub fn moonlight_stake(
 }
 
 /// Unstake through moonlight
+///
+/// # Errors
+///
+/// This function most likey not fail but if the `nonce` is incorrect
+/// or the `stake_nonce` the node will error and not accept the transcation
 pub fn moonlight_unstake<R: RngCore + CryptoRng>(
     rng: &mut R,
     from_sk: &BlsSecretKey,
