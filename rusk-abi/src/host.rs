@@ -12,7 +12,10 @@ use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use execution_core::{
     plonk::{Proof, Verifier},
     signatures::{
-        bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+        bls::{
+            MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+            Signature as BlsSignature,
+        },
         schnorr::{
             PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
         },
@@ -78,6 +81,10 @@ fn register_host_queries(vm: &mut VM) {
     vm.register_host_query(Query::VERIFY_PROOF, host_verify_proof);
     vm.register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
     vm.register_host_query(Query::VERIFY_BLS, host_verify_bls);
+    vm.register_host_query(
+        Query::VERIFY_BLS_MULTISIG,
+        host_verify_bls_multisig,
+    );
 }
 
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
@@ -135,6 +142,12 @@ fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     })
 }
 
+fn host_verify_bls_multisig(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
+        verify_bls_multisig(msg, pk, sig)
+    })
+}
+
 /// Compute the blake2b hash of the given scalars, returning the resulting
 /// scalar. The hash is computed in such a way that it will always return a
 /// valid scalar.
@@ -174,5 +187,14 @@ pub fn verify_schnorr(
 
 /// Verify a BLS signature is valid for the given public key and message
 pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
+    pk.verify(&sig, &msg).is_ok()
+}
+
+/// Verify a BLS signature is valid for the given public key and message
+pub fn verify_bls_multisig(
+    msg: Vec<u8>,
+    pk: MultisigPublicKey,
+    sig: MultisigSignature,
+) -> bool {
     pk.verify(&sig, &msg).is_ok()
 }
