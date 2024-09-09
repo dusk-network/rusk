@@ -36,12 +36,4 @@ pub mod prelude {
     pub use crate::keys;
 }
 
-use alloc::vec::Vec;
-
-use dusk_bytes::{DeserializableSlice, Serializable, Write};
-
-use execution_core::transfer::phoenix::{Note, ViewKey as PhoenixViewKey};
-
-pub use notes::map_owned;
-
 pub use notes::{map_owned, phoenix_balance, BalanceInfo};
