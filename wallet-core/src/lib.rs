@@ -23,8 +23,9 @@ extern crate alloc;
 mod ffi;
 
 pub mod keys;
+pub mod moonlight;
 pub mod notes;
-pub mod transaction;
+pub mod phoenix;
 
 /// The seed used to generate the entropy for the keys
 pub type Seed = [u8; 64];

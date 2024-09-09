@@ -4,7 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Implementations of basic wallet functionalities to create transactions.
+//! Implementations of basic wallet functionalities to create phoenix
+//! transactions.
+
+#![allow(clippy::module_name_repetitions)]
 
 use alloc::vec::Vec;
 
@@ -29,16 +32,7 @@ use execution_core::{
     BlsScalar, ContractId, Error, JubJubScalar,
 };
 
-/// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
-/// the only difference being that it carries a serialized [`TxCircuitVec`]
-/// instead of the proof bytes.
-/// This way it is possible to delegate the proof generation of the
-/// [`TxCircuitVec`] after the unproven transaction was created while at the
-/// same time ensuring non-malleability of the transaction, as the transaction's
-/// payload-hash is part of the public inputs of the circuit.
-/// Once the proof is generated from the [`TxCircuitVec`] bytes, it can
-/// replace the serialized circuit in the transaction by calling
-/// [`Transaction::replace_proof`].
+/// Generate a phoenix-transaction with a given prover.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
@@ -48,6 +42,7 @@ use execution_core::{
 /// - the `inputs` vector contains duplicate `Note`s
 /// - the `Prove` trait is implemented incorrectly
 /// - the Memo provided with `data` is too large
+/// - the transaction-data is incorrect
 #[allow(clippy::too_many_arguments)]
 pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
