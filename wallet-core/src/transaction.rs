@@ -7,8 +7,6 @@
 //! Implementations of basic wallet functionalities to create phoenix
 //! transactions.
 
-#![allow(clippy::module_name_repetitions)]
-
 use alloc::vec::Vec;
 
 use rand::{CryptoRng, RngCore};
