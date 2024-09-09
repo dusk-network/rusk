@@ -10,14 +10,14 @@ use rand::{rngs::StdRng, CryptoRng, RngCore, SeedableRng};
 use execution_core::{
     transfer::phoenix::{
         Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-        SecretKey as PhoenixSecretKey,
+        SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
     },
-    BlsScalar, JubJubScalar,
+    JubJubScalar,
 };
 
 use wallet_core::{
-    input::try_input_notes, keys::derive_multiple_phoenix_sk,
-    keys::derive_phoenix_sk, map_owned, phoenix_balance, BalanceInfo, Seed,
+    keys::derive_multiple_phoenix_sk, keys::derive_phoenix_sk, map_owned,
+    notes::owned::NoteList, phoenix_balance, pick_notes, BalanceInfo, Seed,
 };
 
 /// Generate a note, useful for testing purposes
@@ -46,6 +46,19 @@ pub fn gen_note<T: RngCore + CryptoRng>(
     } else {
         Note::transparent(rng, &sender_pk, owner_pk, value, sender_blinder)
     }
+}
+
+/// Generate a note leaf, useful for testing purposes
+pub fn gen_note_leaf<T: RngCore + CryptoRng>(
+    rng: &mut T,
+    obfuscated_note: bool,
+    owner_pk: &PhoenixPublicKey,
+    value: u64,
+) -> NoteLeaf {
+    let block_height = 1;
+    let note = gen_note(rng, obfuscated_note, owner_pk, value);
+
+    NoteLeaf { note, block_height }
 }
 
 #[test]
@@ -164,53 +177,62 @@ fn knapsack_works() {
 
     let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0xbeef);
 
-    // sanity check
-    assert_eq!(try_input_notes(vec![], 70), Vec::new(),);
-
     let sk = PhoenixSecretKey::random(&mut rng);
+    let vk = PhoenixViewKey::from(&sk);
     let pk = PhoenixPublicKey::from(&sk);
 
+    // sanity check
+    assert!(pick_notes(&vk, NoteList::default(), 70).is_empty());
+
     // basic check
-    let note = gen_note(&mut rng, true, &pk, 100);
-    let n = note.gen_nullifier(&sk);
-    let available = vec![(note, 100, n)];
-    let inputs_notes: Vec<(Note, BlsScalar)> = available
-        .clone()
-        .into_iter()
-        .map(|(a, _, b)| (a, b))
-        .collect();
-    let input = try_input_notes(available, 70);
-    assert_eq!(input, inputs_notes);
+    let leaf = gen_note_leaf(&mut rng, true, &pk, 100);
+    let n = leaf.note.gen_nullifier(&sk);
+    let available = NoteList::from(vec![(n, leaf)]);
+
+    let input = pick_notes(&vk, available.clone(), 70);
+    assert_eq!(input, available);
 
     // out of balance basic check
-    let note = gen_note(&mut rng, true, &pk, 100);
-    let available = vec![(note, 100, n)];
-    assert_eq!(try_input_notes(available, 101), Vec::new());
+    let leaf = gen_note_leaf(&mut rng, true, &pk, 100);
+    let available = NoteList::from(vec![(n, leaf)]);
+    assert!(pick_notes(&vk, available, 101).is_empty());
 
     // multiple inputs check
     // note: this test is checking a naive, simple order-based output
 
-    let note1 = gen_note(&mut rng, true, &pk, 100);
-    let note2 = gen_note(&mut rng, true, &pk, 500);
-    let note3 = gen_note(&mut rng, true, &pk, 300);
+    let leaf = [
+        gen_note_leaf(&mut rng, true, &pk, 100),
+        gen_note_leaf(&mut rng, true, &pk, 500),
+        gen_note_leaf(&mut rng, true, &pk, 300),
+    ];
 
-    let available = vec![(note1, 100, n), (note2, 500, n), (note3, 300, n)];
-
-    let result: Vec<(Note, BlsScalar)> = available
-        .clone()
-        .into_iter()
-        .map(|(a, _, b)| (a, b))
+    let available: Vec<(_, _)> = leaf
+        .iter()
+        .map(|l| {
+            let n = l.note.gen_nullifier(&sk);
+            (n, l.clone())
+        })
         .collect();
 
-    assert_eq!(try_input_notes(available.clone(), 600), result);
+    let available = NoteList::from(available);
 
-    let note1 = gen_note(&mut rng, true, &pk, 100);
-    let note2 = gen_note(&mut rng, true, &pk, 500);
-    let note3 = gen_note(&mut rng, true, &pk, 300);
+    assert_eq!(pick_notes(&vk, available.clone(), 600), available);
 
-    let n = note1.gen_nullifier(&sk);
+    let leaf = [
+        gen_note_leaf(&mut rng, true, &pk, 100),
+        gen_note_leaf(&mut rng, true, &pk, 500),
+        gen_note_leaf(&mut rng, true, &pk, 300),
+    ];
 
-    let available = vec![(note1, 100, n), (note2, 500, n), (note3, 300, n)];
+    let available: Vec<(_, _)> = leaf
+        .iter()
+        .map(|l| {
+            let n = l.note.gen_nullifier(&sk);
+            (n, l.clone())
+        })
+        .collect();
 
-    assert_eq!(try_input_notes(available, 901), Vec::new());
+    let available = NoteList::from(available);
+
+    assert_eq!(pick_notes(&vk, available, 901), NoteList::default());
 }

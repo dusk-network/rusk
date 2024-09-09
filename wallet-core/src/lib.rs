@@ -22,7 +22,6 @@ extern crate alloc;
 #[macro_use]
 mod ffi;
 
-pub mod input;
 pub mod keys;
 pub mod notes;
 pub mod transaction;
@@ -32,8 +31,12 @@ pub type Seed = [u8; 64];
 
 pub mod prelude {
     //! Re-export of the most commonly used types and traits.
-    pub use crate::input::MAX_INPUT_NOTES;
     pub use crate::keys;
+    pub use crate::notes::MAX_INPUT_NOTES;
 }
 
-pub use notes::{map_owned, phoenix_balance, BalanceInfo};
+pub use notes::balance::{
+    calculate as phoenix_balance, TotalAmount as BalanceInfo,
+};
+pub use notes::owned::map as map_owned;
+pub use notes::pick::notes as pick_notes;

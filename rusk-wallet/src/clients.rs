@@ -11,11 +11,14 @@ use execution_core::{
     transfer::{phoenix::Prove, Transaction},
     Error as ExecutionCoreError,
 };
+
+use execution_core::transfer::phoenix::{Note, NoteLeaf};
+
 use flume::Receiver;
 use tokio::time::{sleep, Duration};
 use wallet_core::{
-    input::try_input_notes,
     keys::{derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk},
+    pick_notes,
 };
 use zeroize::Zeroize;
 
@@ -194,19 +197,19 @@ impl State {
             .into_iter()
             .map(|data| {
                 let note = data.note;
-                let nullifiers = note.gen_nullifier(&sk);
-                let value = note.value(Some(&vk)).unwrap();
-
-                Ok((note, value, nullifiers))
+                let block_height = data.height;
+                let nullifier = note.gen_nullifier(&sk);
+                let leaf = NoteLeaf { note, block_height };
+                Ok((nullifier, leaf))
             })
             .collect();
 
-        let inputs = try_input_notes(inputs?, target)
+        let inputs = pick_notes(&vk, inputs?.into(), target)
             .into_iter()
-            .map(|(note, scalar)| {
-                let opening = self.fetch_opening(&note)?;
+            .map(|(scalar, note)| {
+                let opening = self.fetch_opening(note.as_ref())?;
 
-                Ok((note, opening, scalar))
+                Ok((note.note.clone(), opening, *scalar))
             })
             .collect();
 

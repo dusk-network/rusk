@@ -126,7 +126,7 @@ pub unsafe fn map_owned(
     let notes: Vec<NoteLeaf> = from_bytes::<Vec<NoteLeaf>>(&notes)
         .or(Err(ErrorCode::UnarchivingError))?;
 
-    let owned = notes::map_owned(&keys, notes);
+    let owned = notes::owned::map(&keys, notes);
 
     keys.into_iter().for_each(|mut sk| sk.zeroize());
 
