@@ -42,7 +42,10 @@ pub fn assert_event<S>(
             .deserialize(&mut Infallible)
             .expect("Infallible");
         assert_eq!(staking_event_data.value, should_amount);
-        assert_eq!(staking_event_data.account.to_bytes(), should_pk.to_bytes());
+        assert_eq!(
+            staking_event_data.keys.account.to_bytes(),
+            should_pk.to_bytes()
+        );
     }
 }
 

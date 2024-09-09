@@ -15,7 +15,7 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
-        StakeEvent, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
+        StakeEvent, StakeKeys, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
         STAKE_WARNINGS,
     },
     transfer::TRANSFER_CONTRACT,
@@ -33,7 +33,7 @@ use crate::*;
 /// valid stake.
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
-    stakes: BTreeMap<[u8; BlsPublicKey::SIZE], (StakeData, BlsPublicKey)>,
+    stakes: BTreeMap<[u8; BlsPublicKey::SIZE], (StakeData, StakeKeys)>,
     burnt_amount: u64,
     previous_block_state:
         BTreeMap<[u8; BlsPublicKey::SIZE], (Option<StakeData>, BlsPublicKey)>,
@@ -71,7 +71,8 @@ impl StakeState {
         self.check_new_block();
 
         let value = stake.value();
-        let account = *stake.account();
+        let keys = *stake.keys();
+        let account = keys.account;
         let nonce = stake.nonce();
         let signature = *stake.signature();
 
@@ -80,7 +81,7 @@ impl StakeState {
         }
 
         let prev_stake = self.get_stake(&account).copied();
-        let loaded_stake = self.load_or_create_stake_mut(&account);
+        let loaded_stake = self.load_or_create_stake_mut(&keys);
 
         // ensure the stake is at least the minimum and that there isn't an
         // amount staked already
@@ -103,7 +104,9 @@ impl StakeState {
         }
 
         let digest = stake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(digest, account, signature) {
+        let pk = keys.multisig_pk().expect("Invalid MultisigPublicKey");
+
+        if !rusk_abi::verify_bls_multisig(digest, pk, signature) {
             panic!("Invalid signature!");
         }
 
@@ -118,7 +121,7 @@ impl StakeState {
         loaded_stake.amount =
             Some(StakeAmount::new(value, rusk_abi::block_height()));
 
-        rusk_abi::emit("stake", StakeEvent { account, value });
+        rusk_abi::emit("stake", StakeEvent { keys, value });
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -134,7 +137,7 @@ impl StakeState {
         let value = transfer_withdraw.value();
         let signature = *unstake.signature();
 
-        let loaded_stake = self
+        let (loaded_stake, keys) = self
             .get_stake_mut(&account)
             .expect("A stake should exist in the map to be unstaked!");
         let prev_stake = Some(*loaded_stake);
@@ -153,7 +156,9 @@ impl StakeState {
 
         // check signature is correct
         let digest = unstake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(digest, account, signature) {
+        let pk = keys.multisig_pk().expect("Invalid MultisigPublicKey");
+
+        if !rusk_abi::verify_bls_multisig(digest, pk, signature) {
             panic!("Invalid signature!");
         }
 
@@ -166,7 +171,7 @@ impl StakeState {
         // update the state accordingly
         loaded_stake.amount = None;
 
-        rusk_abi::emit("unstake", StakeEvent { account, value });
+        rusk_abi::emit("unstake", StakeEvent { keys: *keys, value });
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -176,12 +181,12 @@ impl StakeState {
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {
         let transfer_withdraw = withdraw.transfer_withdraw();
-        let account = *withdraw.account();
+        let account = withdraw.account();
         let value = transfer_withdraw.value();
         let signature = *withdraw.signature();
 
-        let loaded_stake = self
-            .get_stake_mut(&account)
+        let (loaded_stake, keys) = self
+            .get_stake_mut(account)
             .expect("A stake should exist in the map to be unstaked!");
 
         // ensure there is a non-zero reward, and that the withdrawal is exactly
@@ -196,7 +201,8 @@ impl StakeState {
 
         // check signature is correct
         let digest = withdraw.signature_message().to_vec();
-        if !rusk_abi::verify_bls(digest, account, signature) {
+        let pk = keys.multisig_pk().expect("Invalid MultisigPublicKey");
+        if !rusk_abi::verify_bls_multisig(digest, pk, signature) {
             panic!("Invalid signature!");
         }
 
@@ -208,7 +214,7 @@ impl StakeState {
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        rusk_abi::emit("withdraw", StakeEvent { account, value });
+        rusk_abi::emit("withdraw", StakeEvent { keys: *keys, value });
     }
 
     /// Gets a reference to a stake.
@@ -216,42 +222,46 @@ impl StakeState {
         self.stakes.get(&key.to_bytes()).map(|(s, _)| s)
     }
 
+    /// Gets the keys linked to to a stake.
+    pub fn get_stake_keys(&self, key: &BlsPublicKey) -> Option<&StakeKeys> {
+        self.stakes.get(&key.to_bytes()).map(|(_, k)| k)
+    }
+
     /// Gets a mutable reference to a stake.
     pub fn get_stake_mut(
         &mut self,
         key: &BlsPublicKey,
-    ) -> Option<&mut StakeData> {
-        self.stakes.get_mut(&key.to_bytes()).map(|(s, _)| s)
+    ) -> Option<&mut (StakeData, StakeKeys)> {
+        self.stakes.get_mut(&key.to_bytes())
     }
 
-    /// Pushes the given `stake` onto the state for a given `account`.
-    pub fn insert_stake(&mut self, account: BlsPublicKey, stake: StakeData) {
-        self.stakes.insert(account.to_bytes(), (stake, account));
+    /// Pushes the given `stake` onto the state for a given `keys`.
+    pub fn insert_stake(&mut self, keys: StakeKeys, stake: StakeData) {
+        self.stakes.insert(keys.account.to_bytes(), (stake, keys));
     }
 
-    /// Gets a mutable reference to the stake of a given key. If said stake
+    /// Gets a mutable reference to the stake of a given `keys`. If said stake
     /// doesn't exist, a default one is inserted and a mutable reference
     /// returned.
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
-        account: &BlsPublicKey,
+        keys: &StakeKeys,
     ) -> &mut StakeData {
-        let is_missing = self.stakes.get(&account.to_bytes()).is_none();
+        let key = keys.account.to_bytes();
+        let is_missing = self.stakes.get(&key).is_none();
 
         if is_missing {
             let stake = StakeData::EMPTY;
-            self.stakes.insert(account.to_bytes(), (stake, *account));
+            self.stakes.insert(key, (stake, *keys));
         }
 
         // SAFETY: unwrap is ok since we're sure we inserted an element
-        self.stakes
-            .get_mut(&account.to_bytes())
-            .map(|(s, _)| s)
-            .unwrap()
+        self.stakes.get_mut(&key).map(|(s, _)| s).unwrap()
     }
 
-    /// Rewards a `account` with the given `value`. If a stake does not exist
-    /// in the map for the key one will be created.
+    /// Rewards a `account` with the given `value`.
+    ///
+    /// *PANIC* If a stake does not exist in the map
     pub fn reward(&mut self, rewards: Vec<Reward>) {
         // since we assure that reward is called at least once per block, this
         // call is necessary to ensure that there are no inconsistencies in
@@ -259,7 +269,9 @@ impl StakeState {
         self.check_new_block();
 
         for reward in &rewards {
-            let stake = self.load_or_create_stake_mut(&reward.account);
+            let (stake, _) = self
+                .get_stake_mut(&reward.account)
+                .expect("Stake to exists to be rewarded");
 
             // Reset faults counters
             stake.faults = 0;
@@ -289,7 +301,7 @@ impl StakeState {
     pub fn slash(&mut self, account: &BlsPublicKey, to_slash: Option<u64>) {
         self.check_new_block();
 
-        let stake = self
+        let (stake, _) = self
             .get_stake_mut(account)
             .expect("The stake to slash should exist");
         let prev_stake = Some(*stake);
@@ -340,7 +352,7 @@ impl StakeState {
         let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_stake, *account));
+            .or_insert_with(|| (prev_stake, *account));
     }
 
     /// Slash the given `to_slash` amount from an `account`'s stake.
@@ -355,7 +367,7 @@ impl StakeState {
     ) {
         self.check_new_block();
 
-        let stake = self
+        let (stake, _) = self
             .get_stake_mut(account)
             .expect("The stake to slash should exist");
 
@@ -405,7 +417,7 @@ impl StakeState {
         let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_stake, *account));
+            .or_insert_with(|| (prev_stake, *account));
     }
 
     /// Sets the burnt amount
