@@ -1,7 +1,7 @@
 type Transaction = {
   amount: number;
   block_height: number;
-  direction: string;
+  direction: "In" | "Out";
   fee: number;
   id: string;
   tx_type: string;
