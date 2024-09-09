@@ -10,6 +10,8 @@
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
+#![feature(try_trait_v2)]
+
 #[cfg(target_family = "wasm")]
 #[global_allocator]
 static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
@@ -17,11 +19,16 @@ static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 extern crate alloc;
 
 #[cfg(target_family = "wasm")]
+#[macro_use]
 mod ffi;
 
 pub mod input;
 pub mod keys;
+pub mod notes;
 pub mod transaction;
+
+/// The seed used to generate the entropy for the keys
+pub type Seed = [u8; 64];
 
 pub mod prelude {
     //! Re-export of the most commonly used types and traits.
@@ -29,38 +36,13 @@ pub mod prelude {
     pub use crate::{input::MAX_INPUT_NOTES, keys::RNG_SEED};
 }
 
-use alloc::collections::btree_map::BTreeMap;
 use alloc::vec::Vec;
 
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 
-use execution_core::{
-    transfer::phoenix::{
-        Note, NoteLeaf, SecretKey as PhoenixSecretKey,
-        ViewKey as PhoenixViewKey,
-    },
-    BlsScalar,
-};
+use execution_core::transfer::phoenix::{Note, ViewKey as PhoenixViewKey};
 
-/// Filter all notes and their block height that are owned by the given keys,
-/// mapped to their nullifiers.
-pub fn map_owned(
-    keys: impl AsRef<[PhoenixSecretKey]>,
-    notes: impl AsRef<[NoteLeaf]>,
-) -> BTreeMap<BlsScalar, NoteLeaf> {
-    notes
-        .as_ref()
-        .iter()
-        .fold(BTreeMap::new(), |mut notes_map, note_leaf| {
-            for sk in keys.as_ref() {
-                if sk.owns(note_leaf.note.stealth_address()) {
-                    let nullifier = note_leaf.note.gen_nullifier(sk);
-                    notes_map.insert(nullifier, note_leaf.clone());
-                }
-            }
-            notes_map
-        })
-}
+pub use notes::map_owned;
 
 /// Calculate the sum for all the given [`Note`]s that belong to the given
 /// [`PhoenixViewKey`].
