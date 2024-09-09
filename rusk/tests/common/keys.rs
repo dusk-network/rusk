@@ -10,12 +10,21 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use tracing::info;
 
-use execution_core::signatures::bls::SecretKey as BlsSecretKey;
+use dusk_bytes::Serializable;
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
 
 #[allow(dead_code)]
 pub static STAKE_SK: LazyLock<BlsSecretKey> = LazyLock::new(|| {
     info!("Generating BlsSecretKey");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    BlsSecretKey::random(&mut rng)
+    let sk = BlsSecretKey::random(&mut rng);
+    let pk = BlsPublicKey::from(&sk);
+    info!(
+        "Generated BlsSecretKey for BlsPublicKey {}",
+        bs58::encode(pk.to_bytes()).into_string()
+    );
+    sk
 });

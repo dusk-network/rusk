@@ -9,6 +9,7 @@ use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
 use std::{fs, io};
 
+use execution_core::stake::StakeKeys;
 use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
@@ -396,12 +397,12 @@ impl Rusk {
     pub fn provisioners(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>> {
+    ) -> Result<impl Iterator<Item = (StakeKeys, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
-                "The contract should only return (pk, stake_data) tuples",
+            rkyv::from_bytes::<(StakeKeys, StakeData)>(&bytes).expect(
+                "The contract should only return (StakeKeys, StakeData) tuples",
             )
         }))
     }

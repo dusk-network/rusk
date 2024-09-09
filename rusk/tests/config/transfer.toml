@@ -1,3 +1,8 @@
+## Block generator address
+[[stake]]
+address = "owFNnhnMuPHhyQcZ1dAqC5wuScqnXGkrEZWRQvYBU9wwNFHmG32gRTFdZhYSgw98KzNqm7rpCBkwoL4nzCE6gqGB9BrjsDJx3UgfTk78CM8BBWsehXamPSPYcC9ynq8Pi3V"
+amount = 0
+
 [[phoenix_balance]]
 address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
 seed = 57005

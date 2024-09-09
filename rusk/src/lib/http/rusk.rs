@@ -137,7 +137,7 @@ impl Rusk {
             .provisioners(None)
             .expect("Cannot query state for provisioners")
             .map(|(key, stake)| {
-                let key = bs58::encode(key.to_bytes()).into_string();
+                let key = bs58::encode(key.account.to_bytes()).into_string();
                 let amount = stake.amount.unwrap_or_default();
 
                 Provisioner {

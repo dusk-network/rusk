@@ -17,6 +17,7 @@ use execution_core::{
     transfer::Transaction as ProtocolTransaction, Event,
 };
 use node::vm::VMExecution;
+use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
 use super::Rusk;
@@ -189,7 +190,7 @@ impl VMExecution for Rusk {
     fn get_changed_provisioners(
         &self,
         base_commit: [u8; 32],
-    ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>> {
+    ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
         self.query_provisioners_change(Some(base_commit))
     }
 
@@ -243,7 +244,7 @@ impl Rusk {
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
             .map(|(pk, stake)| {
-                (node_data::bls::PublicKey::new(pk), Self::to_stake(stake))
+                (PublicKey::new(pk.account), Self::to_stake(stake))
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
@@ -256,7 +257,7 @@ impl Rusk {
     fn query_provisioners_change(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>> {
+    ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
         info!("Received get_provisioners_change request");
         Ok(self
             .last_provisioners_change(base_commit)
@@ -264,12 +265,7 @@ impl Rusk {
                 anyhow::anyhow!("Cannot get provisioners change: {e}")
             })?
             .into_iter()
-            .map(|(pk, stake)| {
-                (
-                    node_data::bls::PublicKey::new(pk),
-                    stake.map(Self::to_stake),
-                )
-            })
+            .map(|(pk, stake)| (PublicKey::new(pk), stake.map(Self::to_stake)))
             .collect())
     }
 
