@@ -81,7 +81,11 @@ impl StakeState {
         }
 
         let prev_stake = self.get_stake(&account).copied();
-        let loaded_stake = self.load_or_create_stake_mut(&keys);
+        let (loaded_stake, loaded_keys) = self.load_or_create_stake_mut(&keys);
+
+        // Update the funds key with the newly provided one
+        // This operation will rollback if the signature is invalid
+        *loaded_keys = keys;
 
         // ensure the stake is at least the minimum and that there isn't an
         // amount staked already
@@ -246,7 +250,7 @@ impl StakeState {
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
         keys: &StakeKeys,
-    ) -> &mut StakeData {
+    ) -> &mut (StakeData, StakeKeys) {
         let key = keys.account.to_bytes();
         let is_missing = self.stakes.get(&key).is_none();
 
@@ -256,7 +260,7 @@ impl StakeState {
         }
 
         // SAFETY: unwrap is ok since we're sure we inserted an element
-        self.stakes.get_mut(&key).map(|(s, _)| s).unwrap()
+        self.stakes.get_mut(&key).unwrap()
     }
 
     /// Rewards a `account` with the given `value`.
