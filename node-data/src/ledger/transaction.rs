@@ -4,17 +4,35 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Serializable;
+use std::io;
+
+use dusk_bytes::Serializable as DuskSerializable;
 use execution_core::signatures::bls;
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use execution_core::BlsScalar;
 use serde::Serialize;
+
+use crate::Serializable;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: u32,
     pub r#type: u32,
     pub inner: ProtocolTransaction,
+    pub(crate) size: Option<usize>,
+}
+
+impl Transaction {
+    pub fn size(&self) -> io::Result<usize> {
+        match self.size {
+            Some(size) => Ok(size),
+            None => {
+                let mut buf = vec![];
+                self.write(&mut buf)?;
+                Ok(buf.len())
+            }
+        }
+    }
 }
 
 impl From<ProtocolTransaction> for Transaction {
@@ -23,6 +41,7 @@ impl From<ProtocolTransaction> for Transaction {
             inner: value,
             r#type: 1,
             version: 1,
+            size: None,
         }
     }
 }

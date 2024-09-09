@@ -15,7 +15,7 @@ use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
@@ -129,6 +129,9 @@ impl Rusk {
 
         let mut event_hasher = Sha3_256::new();
 
+        // We always write the faults len in a u32
+        let mut size_left = params.max_txs_bytes - u32::SIZE;
+
         for unspent_tx in txs {
             if let Some(timeout) = self.generation_timeout {
                 if started.elapsed() > timeout {
@@ -147,6 +150,18 @@ impl Rusk {
             let tx_id_hex = hex::encode(unspent_tx.id());
             if unspent_tx.inner.gas_limit() > block_gas_left {
                 info!("Skipping {tx_id_hex} due gas_limit greater than left: {block_gas_left}");
+                continue;
+            }
+
+            let tx_len = unspent_tx.size().unwrap_or_default();
+
+            if tx_len == 0 {
+                info!("Skipping {tx_id_hex} due to error while calculating the len");
+                continue;
+            }
+
+            if tx_len > size_left {
+                info!("Skipping {tx_id_hex} due size greater than bytes left: {size_left}");
                 continue;
             }
 
@@ -179,6 +194,8 @@ impl Rusk {
 
                         continue;
                     }
+
+                    size_left -= tx_len;
 
                     // We're currently ignoring the result of successful calls
                     let err = receipt.data.err().map(|e| format!("{e}"));

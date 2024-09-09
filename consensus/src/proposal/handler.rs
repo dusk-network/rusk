@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
-use crate::config::{MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS};
+use crate::config::{
+    MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
+};
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -87,6 +89,14 @@ impl<D: Database> ProposalHandler<D> {
 
         if expected_generator != p.sign_info.signer.bytes() {
             return Err(ConsensusError::NotCommitteeMember);
+        }
+
+        let candidate_size = p
+            .candidate
+            .size()
+            .map_err(|_| ConsensusError::UnknownBlockSize)?;
+        if candidate_size > MAX_BLOCK_SIZE {
+            return Err(ConsensusError::InvalidBlockSize(candidate_size));
         }
 
         //  Verify new_block msg signature

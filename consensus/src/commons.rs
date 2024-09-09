@@ -107,6 +107,7 @@ impl From<BlsSigError> for StepSigError {
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
+    InvalidBlockSize(usize),
     InvalidSignature(BlsSigError),
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
@@ -125,6 +126,7 @@ pub enum ConsensusError {
     VoteAlreadyCollected,
     TooManyTransactions(usize),
     TooManyFaults(usize),
+    UnknownBlockSize,
 }
 
 impl From<StepSigError> for ConsensusError {

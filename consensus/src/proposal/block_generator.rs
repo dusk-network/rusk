@@ -6,14 +6,12 @@
 
 use crate::commons::RoundUpdate;
 use crate::operations::{CallParams, Operations, Voter};
-use node_data::ledger::{
-    to_str, Attestation, Block, Fault, IterationsInfo, Seed, Slash,
-};
+use node_data::ledger::{to_str, Block, Fault, IterationsInfo, Seed, Slash};
 use std::cmp::max;
 
 use crate::merkle::merkle_root;
 
-use crate::config::{MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
+use crate::config::{MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use dusk_bytes::Serializable;
 use node_data::message::payload::Candidate;
 use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
@@ -99,52 +97,71 @@ impl<T: Operations> Generator<T> {
             faults
         };
 
+        let block_gas_limit = self.executor.get_block_gas_limit().await;
         let to_slash =
             Slash::from_iterations_and_faults(&failed_iterations, faults)?;
+
+        let prev_block_hash = ru.hash();
+        let mut blk_header = ledger::Header {
+            version: 0,
+            height: ru.round,
+            gas_limit: block_gas_limit,
+            prev_block_hash,
+            seed,
+            generator_bls_pubkey: *ru.pubkey_bls.bytes(),
+            prev_block_cert: *ru.att(),
+            iteration,
+            failed_iterations,
+            ..Default::default()
+        };
+
+        let header_size = blk_header.size().map_err(|e| {
+            crate::operations::Error::InvalidEST(anyhow::anyhow!(
+                "Cannot get header size {e}. This should be a bug"
+            ))
+        })?;
+
+        // We always write the faults len in a u32
+        let mut faults_size = u32::SIZE;
+        let faults_hashes: Vec<_> = faults
+            .iter()
+            .map(|f| {
+                faults_size += f.size();
+                f.hash()
+            })
+            .collect();
+
+        blk_header.faultroot = merkle_root(&faults_hashes);
+
+        // We know for sure that this operation cannot underflow
+        let max_txs_bytes = MAX_BLOCK_SIZE - header_size - faults_size;
 
         let call_params = CallParams {
             round: ru.round,
             generator_pubkey: ru.pubkey_bls.clone(),
             to_slash,
             voters_pubkey: Some(voters.to_owned()),
+            max_txs_bytes,
         };
 
         let result =
             self.executor.execute_state_transition(call_params).await?;
 
-        let block_gas_limit = self.executor.get_block_gas_limit().await;
+        blk_header.state_hash = result.verification_output.state_root;
+        blk_header.event_hash = result.verification_output.event_hash;
 
         let tx_hashes: Vec<_> =
             result.txs.iter().map(|t| t.inner.hash()).collect();
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
-        let txroot = merkle_root(&tx_hashes[..]);
+        blk_header.txroot = merkle_root(&tx_hashes[..]);
 
-        let faults = Vec::<Fault>::new();
-        let faults_hashes: Vec<_> = faults.iter().map(|f| f.hash()).collect();
-        let faultroot = merkle_root(&faults_hashes);
-        let timestamp =
+        blk_header.timestamp =
             max(ru.timestamp() + MINIMUM_BLOCK_TIME, get_current_timestamp());
 
-        let prev_block_hash = ru.hash();
-        let blk_header = ledger::Header {
-            version: 0,
-            height: ru.round,
-            timestamp,
-            gas_limit: block_gas_limit,
-            prev_block_hash,
-            seed,
-            generator_bls_pubkey: *ru.pubkey_bls.bytes(),
-            state_hash: result.verification_output.state_root,
-            event_hash: result.verification_output.event_hash,
-            hash: [0; 32],
-            att: Attestation::default(),
-            prev_block_cert: *ru.att(),
-            txroot,
-            faultroot,
-            iteration,
-            failed_iterations,
-        };
-
-        Ok(Block::new(blk_header, txs, faults).expect("block should be valid"))
+        Block::new(blk_header, txs, faults.to_vec()).map_err(|e| {
+            crate::operations::Error::InvalidEST(anyhow::anyhow!(
+                "Cannot create new block {e}",
+            ))
+        })
     }
 }
