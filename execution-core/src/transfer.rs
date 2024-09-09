@@ -469,6 +469,8 @@ pub struct PhoenixTransactionEvent {
     pub nullifiers: Vec<BlsScalar>,
     /// Notes produced during the transaction.
     pub notes: Vec<Note>,
+    /// The memo included in the transaction.
+    pub memo: Vec<u8>,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
 }
@@ -483,6 +485,8 @@ pub struct MoonlightTransactionEvent {
     pub to: Option<AccountPublicKey>,
     /// Transfer amount
     pub value: u64,
+    /// The memo included in the transaction.
+    pub memo: Vec<u8>,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
 }
