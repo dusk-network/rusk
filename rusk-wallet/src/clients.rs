@@ -230,10 +230,6 @@ impl State {
         let account = rkyv::from_bytes(&account).map_err(|_| Error::Rkyv)?;
         status("account-data received!");
 
-        let account_address = pk.to_bytes().to_vec();
-        let account_address = bs58::encode(account_address).into_string();
-        println!("Account address: {}", account_address);
-
         Ok(account)
     }
 

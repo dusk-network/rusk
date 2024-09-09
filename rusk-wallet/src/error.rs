@@ -119,6 +119,12 @@ pub enum Error {
     /// Memo provided is too large
     #[error("Memo too large {0}")]
     MemoTooLarge(usize),
+    /// Expected Bls Key
+    #[error("Expected Bls Public Key")]
+    ExpectedBlsPublicKey,
+    /// Expected Phoenix public key
+    #[error("Expected Phoenix public Key")]
+    ExpectedPhoenixPublicKey,
 }
 
 impl From<dusk_bytes::Error> for Error {
