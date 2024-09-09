@@ -63,12 +63,6 @@ impl Transaction {
     ) -> Result<Self, Error> {
         let data = data.map(Into::into);
 
-        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
-            if memo.len() > MAX_MEMO_SIZE {
-                return Err(Error::MemoTooLarge(memo.len()));
-            }
-        }
-
         let payload = Payload {
             chain_id,
             from_account: AccountPublicKey::from(from_sk),
@@ -80,6 +74,29 @@ impl Transaction {
             nonce,
             data,
         };
+
+        Self::sign_payload(from_sk, payload)
+    }
+
+    /// Create a transaction by signing a previously generated payload with a
+    /// given secret-key.
+    ///
+    /// Note that this transaction will be invalid if the secret-key used for
+    /// signing doesn't form a valid key-pair with the public-key of the
+    /// `from_account`.
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - the payload memo, if given, is too large
+    pub fn sign_payload(
+        from_sk: &AccountSecretKey,
+        payload: Payload,
+    ) -> Result<Self, Error> {
+        if let Some(TransactionData::Memo(memo)) = payload.data.as_ref() {
+            if memo.len() > MAX_MEMO_SIZE {
+                return Err(Error::MemoTooLarge(memo.len()));
+            }
+        }
 
         let digest = payload.signature_message();
         let signature = from_sk.sign(&digest);
@@ -267,7 +284,7 @@ impl Transaction {
 /// The payload for a moonlight transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-struct Payload {
+pub struct Payload {
     /// ID of the chain for this transaction to execute on.
     pub chain_id: u8,
     /// Key of the sender of this transaction.
