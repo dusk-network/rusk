@@ -36,12 +36,11 @@ use execution_core::{
 use rusk_prover::LocalProver;
 use wallet_core::{
     keys::{derive_bls_sk, derive_phoenix_sk},
-    phoenix_balance,
-    transaction::{
+    phoenix::{
         phoenix as phoenix_transaction, phoenix_stake, phoenix_stake_reward,
         phoenix_unstake,
     },
-    BalanceInfo,
+    phoenix_balance, BalanceInfo,
 };
 
 const MAX_INPUT_NOTES: usize = 4;

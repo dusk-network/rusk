@@ -15,11 +15,10 @@ use ff::Field;
 use zeroize::Zeroize;
 
 use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
+    signatures::bls::SecretKey as BlsSecretKey,
     stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
         data::{ContractCall, TransactionData},
-        moonlight::Transaction as MoonlightTransaction,
         phoenix::{
             Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,

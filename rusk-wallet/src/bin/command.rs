@@ -145,25 +145,6 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Start staking DUSK through moonlight
-    MoonlightStake {
-        /// Bls Address from which to stake DUSK [default: first address]
-        #[clap(short = 's', long)]
-        addr: Option<Address>,
-
-        /// Amount of DUSK to stake
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amt of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Check your stake information
     StakeInfo {
         /// Address used to stake [default: first address]
@@ -178,22 +159,6 @@ pub(crate) enum Command {
     /// Phoeinx Unstake a key's stake
     PhoenixUnstake {
         /// Phoenix Address from which your DUSK was staked [default: first
-        /// address]
-        #[clap(short, long)]
-        addr: Option<Address>,
-
-        /// Max amt of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Moonlight Unstake a key's stake
-    MoonlightUnstake {
-        /// Bls Address from which your DUSK was staked [default: first
         /// address]
         #[clap(short, long)]
         addr: Option<Address>,
@@ -346,23 +311,6 @@ impl Command {
                 let tx = wallet.phoenix_stake(addr, amt, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightStake {
-                addr,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                let addr = match addr {
-                    Some(addr) => wallet.claim_as_address(addr)?,
-                    None => wallet.default_address(),
-                };
-
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-
-                let tx = wallet.moonlight_stake(addr, amt, gas)?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
             Command::StakeInfo { addr, reward } => {
                 let addr = match addr {
                     Some(addr) => wallet.claim_as_address(addr)?,
@@ -389,20 +337,6 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
                 let tx = wallet.phoenix_unstake(addr, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightUnstake {
-                addr,
-                gas_limit,
-                gas_price,
-            } => {
-                let addr = match addr {
-                    Some(addr) => wallet.claim_as_address(addr)?,
-                    None => wallet.default_address(),
-                };
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let tx = wallet.moonlight_unstake(addr, gas).await?;
-
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::PhoenixWithdraw {
