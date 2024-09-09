@@ -125,4 +125,5 @@ impl RuskHttpClient {
             Ok(response)
         }
     }
+    
 }

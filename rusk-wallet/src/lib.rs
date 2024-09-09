@@ -58,7 +58,7 @@ pub const EPOCH: u64 = 2160;
 /// Max addresses the wallet can store
 pub const MAX_ADDRESSES: usize = get_max_addresses();
 
-const DEFAULT_MAX_ADDRESSES: usize = 1;
+const DEFAULT_MAX_ADDRESSES: usize = 2;
 
 const fn get_max_addresses() -> usize {
     match option_env!("WALLET_MAX_ADDR") {

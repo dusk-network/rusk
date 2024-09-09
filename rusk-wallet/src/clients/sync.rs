@@ -25,17 +25,17 @@ pub(crate) async fn sync_db(
 ) -> Result<(), Error> {
     let seed = store.get_seed();
 
-    let addresses: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> =
-        (0..MAX_ADDRESSES)
-            .map(|i| {
-                let i = i as u8;
-                (
-                    derive_phoenix_sk(seed, i),
-                    derive_phoenix_vk(seed, i),
-                    derive_phoenix_pk(seed, i),
-                )
-            })
-            .collect();
+    let keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> = (0
+        ..MAX_ADDRESSES)
+        .map(|i| {
+            let i = i as u8;
+            (
+                derive_phoenix_sk(seed, i),
+                derive_phoenix_vk(seed, i),
+                derive_phoenix_pk(seed, i),
+            )
+        })
+        .collect();
 
     status("Getting cached note position...");
 
@@ -87,7 +87,7 @@ pub(crate) async fn sync_db(
         buffer = leaf_chunk.remainder().to_vec();
     }
 
-    for (sk, vk, pk) in addresses.iter() {
+    for (sk, vk, pk) in keys.iter() {
         for (block_height, note) in note_data.iter() {
             if vk.owns(note.stealth_address()) {
                 let nullifier = note.gen_nullifier(sk);
@@ -108,7 +108,7 @@ pub(crate) async fn sync_db(
 
     // Remove spent nullifiers from live notes
     // zerorize all the secret keys
-    for (mut sk, _, pk) in addresses {
+    for (mut sk, _, pk) in keys {
         let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(&pk)?;
 
         if !nullifiers.is_empty() {
