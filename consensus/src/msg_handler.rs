@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Status};
 use node_data::StepName;
-use tracing::{debug, trace};
+use tracing::{debug, trace, warn};
 
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)
@@ -48,10 +48,10 @@ pub trait MsgHandler {
 
         trace!(event = "msg received", msg = format!("{:#?}", msg),);
 
+        let msg_tip = msg.header.prev_block_hash;
         match msg.compare(ru.round, iteration, step) {
             Status::Past => Err(ConsensusError::PastEvent),
             Status::Present => {
-                let msg_tip = msg.header.prev_block_hash;
                 if msg_tip != ru.hash() {
                     return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
                 }
@@ -66,7 +66,36 @@ pub trait MsgHandler {
                 // it is valid or not.
                 self.verify(msg, iteration, round_committees)
             }
-            Status::Future => Err(ConsensusError::FutureEvent),
+            Status::Future => {
+                // Pre-verify future messages for the current round
+                if msg.header.round == ru.round {
+                    if msg_tip != ru.hash() {
+                        return Err(ConsensusError::InvalidPrevBlockHash(
+                            msg_tip,
+                        ));
+                    }
+
+                    if let Some(future_committee) =
+                        round_committees.get_committee(msg.get_step())
+                    {
+                        // Ensure the message originates from a committee
+                        // member.
+                        if !future_committee.is_member(signer) {
+                            return Err(ConsensusError::NotCommitteeMember);
+                        }
+
+                        // Delegate message final verification to the phase
+                        // instance. It is the phase that knows
+                        // what message type to expect and if it
+                        // is valid or not.
+                        self.verify(msg, iteration, round_committees)?;
+                    } else {
+                        warn!("Future committee for iteration {iteration} not generated; skipping pre-verification for {:?} message", msg.topic());
+                    }
+                }
+
+                Err(ConsensusError::FutureEvent)
+            }
         }
     }
 
