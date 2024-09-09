@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Implementations of basic wallet functionalities to create transactions.
+//! Implementations of basic wallet functionalities to create phoenix
+//! transactions.
 
 use alloc::vec::Vec;
 
@@ -69,29 +70,6 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         data,
-    )?
-    .into())
-}
-
-/// Generate a moonlight transaction
-///
-/// # Errors
-/// - the transaction-data is incorrect
-#[allow(clippy::too_many_arguments)]
-pub fn moonlight(
-    from_sk: &BlsSecretKey,
-    to_account: Option<BlsPublicKey>,
-    value: u64,
-    deposit: u64,
-    gas_limit: u64,
-    gas_price: u64,
-    nonce: u64,
-    chain_id: u8,
-    data: Option<impl Into<TransactionData>>,
-) -> Result<Transaction, Error> {
-    Ok(MoonlightTransaction::new(
-        from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-        chain_id, data,
     )?
     .into())
 }

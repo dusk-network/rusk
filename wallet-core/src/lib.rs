@@ -21,7 +21,8 @@ mod ffi;
 
 pub mod input;
 pub mod keys;
-pub mod transaction;
+pub mod moonlight;
+pub mod phoenix;
 
 pub mod prelude {
     //! Re-export of the most commonly used types and traits.
