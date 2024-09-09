@@ -6,29 +6,7 @@
 
 use crate::clients::State;
 
-use dusk_bytes::{Error as BytesError, Serializable};
-
-use wallet_core::keys::{self, RNG_SEED};
-
-#[derive(Clone)]
-pub struct Seed(keys::Seed);
-
-impl Default for Seed {
-    fn default() -> Self {
-        Self([0u8; RNG_SEED])
-    }
-}
-
-impl Serializable<64> for Seed {
-    type Error = BytesError;
-
-    fn from_bytes(buff: &[u8; Seed::SIZE]) -> Result<Self, Self::Error> {
-        Ok(Self(*buff))
-    }
-    fn to_bytes(&self) -> [u8; Seed::SIZE] {
-        self.0
-    }
-}
+use wallet_core::Seed;
 
 /// Provides a valid wallet seed to dusk_wallet_core
 #[derive(Clone)]
@@ -38,20 +16,20 @@ pub(crate) struct LocalStore {
 
 impl LocalStore {
     /// Retrieves the seed used to derive keys.
-    pub fn get_seed(&self) -> &[u8; Seed::SIZE] {
-        &self.seed.0
+    pub fn get_seed(&self) -> &Seed {
+        &self.seed
     }
 }
 
-impl From<[u8; Seed::SIZE]> for LocalStore {
-    fn from(seed: [u8; Seed::SIZE]) -> Self {
-        LocalStore { seed: Seed(seed) }
+impl From<Seed> for LocalStore {
+    fn from(seed: Seed) -> Self {
+        LocalStore { seed }
     }
 }
 
 impl State {
     /// Retrieves the seed used to derive keys.
-    pub fn get_seed(&self) -> &[u8; Seed::SIZE] {
+    pub fn get_seed(&self) -> &Seed {
         self.store().get_seed()
     }
 }

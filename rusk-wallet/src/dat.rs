@@ -7,7 +7,7 @@
 use std::fs;
 use std::io::Read;
 
-use wallet_core::keys::Seed;
+use wallet_core::Seed;
 
 use crate::crypto::decrypt;
 use crate::Error;

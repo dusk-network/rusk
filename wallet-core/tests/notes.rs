@@ -16,8 +16,8 @@ use execution_core::{
 };
 
 use wallet_core::{
-    input::try_input_notes, keys::derive_multiple_phoenix_sk, map_owned,
-    phoenix_balance, BalanceInfo,
+    input::try_input_notes, keys::derive_multiple_phoenix_sk,
+    keys::derive_phoenix_sk, map_owned, phoenix_balance, BalanceInfo, Seed,
 };
 
 /// Generate a note, useful for testing purposes
@@ -50,36 +50,29 @@ pub fn gen_note<T: RngCore + CryptoRng>(
 
 #[test]
 fn test_map_owned() {
-    // Assuming this set of notes where the number used as suffix is the
-    // "owner":
-    // notes := [A1, B1, C2, D2, E1, F3]
-
     let mut rng = StdRng::seed_from_u64(0xdab);
-    const SEED_1: [u8; 64] = [1; 64];
-    const SEED_2: [u8; 64] = [2; 64];
+    const SEED: Seed = [1; 64];
 
-    let owner_1_sks = derive_multiple_phoenix_sk(&SEED_1, 0..3);
+    let owner_1_sks = derive_multiple_phoenix_sk(&SEED, 0..3);
     let owner_1_pks = [
         PhoenixPublicKey::from(&owner_1_sks[0]),
         PhoenixPublicKey::from(&owner_1_sks[1]),
         PhoenixPublicKey::from(&owner_1_sks[2]),
     ];
-    let owner_2_sks = derive_multiple_phoenix_sk(&SEED_2, 0..2);
+    let owner_2_sks = derive_multiple_phoenix_sk(&SEED, 3..5);
     let owner_2_pks = [
         PhoenixPublicKey::from(&owner_2_sks[0]),
         PhoenixPublicKey::from(&owner_2_sks[1]),
     ];
-    let owner_3_pk =
-        PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
+    let owner_3_pk = PhoenixPublicKey::from(&derive_phoenix_sk(&SEED, 5));
 
-    let value = 42;
-    let note_leaves: Vec<Note> = vec![
-        gen_note(&mut rng, true, &owner_1_pks[0], value), // owner 1
-        gen_note(&mut rng, true, &owner_1_pks[1], value), // owner 1
-        gen_note(&mut rng, true, &owner_2_pks[0], value), // owner 2
-        gen_note(&mut rng, true, &owner_2_pks[1], value), // owner 2
-        gen_note(&mut rng, true, &owner_1_pks[2], value), // owner 1
-        gen_note(&mut rng, true, &owner_3_pk, value),     // owner 3
+    let note_leaves = vec![
+        gen_note(&mut rng, true, &owner_1_pks[0], 12), // owner 1
+        gen_note(&mut rng, true, &owner_1_pks[1], 1),  // owner 1
+        gen_note(&mut rng, true, &owner_2_pks[0], 3),  // owner 2
+        gen_note(&mut rng, true, &owner_2_pks[1], 76), // owner 2
+        gen_note(&mut rng, true, &owner_1_pks[2], 6),  // owner 1
+        gen_note(&mut rng, true, &owner_3_pk, 42),     // owner 3
     ];
 
     let note_leaves: Vec<NoteLeaf> = note_leaves

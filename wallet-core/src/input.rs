@@ -8,8 +8,7 @@
 
 use alloc::vec::Vec;
 
-use super::{alloc, Note};
-
+use execution_core::transfer::phoenix::Note;
 use execution_core::BlsScalar;
 
 /// The maximum amount of input notes that can be spend in one
