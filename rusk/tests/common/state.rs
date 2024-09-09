@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
 use std::sync::LazyLock;
+use std::{path::Path, usize};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
@@ -127,6 +127,7 @@ pub fn generator_procedure(
         generator_pubkey,
         to_slash,
         voters_pubkey: None,
+        max_txs_bytes: usize::MAX,
     };
 
     let (transfer_txs, discarded, execute_output) =

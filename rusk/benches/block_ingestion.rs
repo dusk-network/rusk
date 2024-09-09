@@ -42,11 +42,7 @@ fn load_phoenix_txs() -> Vec<Transaction> {
         let line = line.unwrap();
         let tx_bytes = hex::decode(line).unwrap();
         let tx = ProtocolTransaction::from_slice(&tx_bytes).unwrap();
-        txs.push(Transaction {
-            version: 1,
-            r#type: 0,
-            inner: tx,
-        });
+        txs.push(tx.into());
     }
 
     preverify(&txs);
@@ -65,11 +61,7 @@ fn load_moonlight_txs() -> Vec<Transaction> {
         let line = line.unwrap();
         let tx_bytes = hex::decode(line).unwrap();
         let tx = ProtocolTransaction::from_slice(&tx_bytes).unwrap();
-        txs.push(Transaction {
-            version: 1,
-            r#type: 0,
-            inner: tx,
-        });
+        txs.push(tx.into());
     }
 
     preverify(&txs);
