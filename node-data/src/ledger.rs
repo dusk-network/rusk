@@ -8,7 +8,7 @@ mod header;
 pub use header::{Header, Seed};
 
 mod block;
-pub use block::{Block, BlockWithLabel, Hash, Label};
+pub use block::*;
 
 mod transaction;
 pub use transaction::{SpendingId, SpentTransaction, Transaction};

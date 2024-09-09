@@ -44,6 +44,14 @@ pub struct Header {
     pub att: Attestation,
 }
 
+impl Header {
+    pub fn size(&self) -> io::Result<usize> {
+        let mut buf = vec![];
+        self.write(&mut buf)?;
+        Ok(buf.len())
+    }
+}
+
 impl std::fmt::Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let timestamp =

@@ -87,6 +87,7 @@ impl Serializable for Transaction {
         let tx_type = Self::read_u32_le(r)?;
 
         let protocol_tx = Self::read_var_le_bytes32(r)?;
+        let tx_size = protocol_tx.len();
         let inner = ProtocolTransaction::from_slice(&protocol_tx[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -94,6 +95,7 @@ impl Serializable for Transaction {
             inner,
             version,
             r#type: tx_type,
+            size: Some(tx_size),
         })
     }
 }

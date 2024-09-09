@@ -493,6 +493,20 @@ pub mod payload {
         NoQuorum = 3,
     }
 
+    impl Vote {
+        pub fn size(&self) -> usize {
+            const ENUM_BYTE: usize = 1;
+
+            let data_size: usize = match &self {
+                Vote::NoCandidate => 0,
+                Vote::Valid(_) => 32,
+                Vote::Invalid(_) => 32,
+                Vote::NoQuorum => 0,
+            };
+            ENUM_BYTE + data_size
+        }
+    }
+
     impl fmt::Debug for Vote {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let (desc, hash) = match &self {

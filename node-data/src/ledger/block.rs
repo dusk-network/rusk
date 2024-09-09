@@ -65,6 +65,12 @@ impl Block {
     pub fn set_attestation(&mut self, att: Attestation) {
         self.header.att = att;
     }
+
+    pub fn size(&self) -> io::Result<usize> {
+        let mut buf = vec![];
+        self.write(&mut buf)?;
+        Ok(buf.len())
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
