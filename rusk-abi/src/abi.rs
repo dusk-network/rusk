@@ -9,7 +9,10 @@ use alloc::vec::Vec;
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::{
-        bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+        bls::{
+            MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+            Signature as BlsSignature,
+        },
         schnorr::{
             PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
         },
@@ -52,6 +55,15 @@ pub fn verify_schnorr(
 /// Verify a BLS signature is valid for the given public key and message
 pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
     host_query(Query::VERIFY_BLS, (msg, pk, sig))
+}
+
+/// Verify a BLS signature is valid for the given public key and message
+pub fn verify_bls_multisig(
+    msg: Vec<u8>,
+    pk: MultisigPublicKey,
+    sig: MultisigSignature,
+) -> bool {
+    host_query(Query::VERIFY_BLS_MULTISIG, (msg, pk, sig))
 }
 
 /// Get the chain ID.

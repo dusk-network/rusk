@@ -7,7 +7,9 @@
 use dusk_bytes::Serializable;
 use serde_derive::{Deserialize, Serialize};
 
-use execution_core::{signatures::bls::PublicKey as BlsPublicKey, Dusk};
+use execution_core::{
+    signatures::bls::PublicKey as BlsPublicKey, stake::StakeKeys, Dusk,
+};
 
 use super::wrapper::Wrapper;
 
@@ -22,5 +24,12 @@ pub struct GenesisStake {
 impl GenesisStake {
     pub fn address(&self) -> &BlsPublicKey {
         &self.address
+    }
+
+    pub fn to_stake_keys(&self) -> StakeKeys {
+        StakeKeys {
+            account: *self.address(),
+            funds: *self.address(),
+        }
     }
 }

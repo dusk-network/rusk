@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::LazyLock;
 use std::{path::Path, usize};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk::{Result, Rusk};
-use rusk_recovery_tools::state::{self, Snapshot};
+use rusk_recovery_tools::state::{self, Snapshot, DUSK_CONSENSUS_KEY};
 
 use dusk_consensus::operations::CallParams;
 use execution_core::{
@@ -26,8 +25,6 @@ use node_data::{
 
 use tokio::sync::broadcast;
 use tracing::info;
-
-use crate::common::keys::STAKE_SK;
 
 const CHAIN_ID: u8 = 0xFA;
 
@@ -99,8 +96,7 @@ pub fn generator_procedure(
         rusk.preverify(tx)?;
     }
 
-    let generator = BlsPublicKey::from(LazyLock::force(&STAKE_SK));
-    let generator_pubkey = node_data::bls::PublicKey::new(generator);
+    let generator_pubkey = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
     let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;
 

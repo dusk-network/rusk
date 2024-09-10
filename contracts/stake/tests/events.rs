@@ -13,7 +13,9 @@ use rand::SeedableRng;
 use execution_core::{
     dusk,
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{Reward, RewardReason, StakeAmount, StakeData, STAKE_CONTRACT},
+    stake::{
+        Reward, RewardReason, StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
+    },
     transfer::{
         phoenix::{
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -40,6 +42,10 @@ fn reward_slash() -> Result<(), PiecrustError> {
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
+    let stake_pks = StakeKeys {
+        account: stake_pk,
+        funds: stake_pk,
+    };
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -69,7 +75,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
-        &(stake_pk, stake_data),
+        &(stake_pks, stake_data),
         u64::MAX,
     )?;
 
@@ -130,6 +136,10 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
+    let stake_pks = StakeKeys {
+        account: stake_pk,
+        funds: stake_pk,
+    };
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -161,7 +171,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
-        &(stake_pk, stake_data),
+        &(stake_pks, stake_data),
         u64::MAX,
     )?;
 

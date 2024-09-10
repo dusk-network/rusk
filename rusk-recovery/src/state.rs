@@ -54,6 +54,12 @@ pub static FAUCET_KEY: Lazy<PublicKey> = Lazy::new(|| {
     PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
 });
 
+pub static DUSK_CONSENSUS_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
+    let dusk_cpk_bytes = include_bytes!("../../rusk/src/assets/dusk.cpk");
+    AccountPublicKey::from_slice(dusk_cpk_bytes)
+        .expect("Dusk consensus public key to be valid")
+});
+
 fn generate_transfer_state(
     session: &mut Session,
     snapshot: &Snapshot,
@@ -121,6 +127,18 @@ fn generate_stake_state(
     snapshot: &Snapshot,
 ) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
+    session
+        .call::<_, ()>(
+            STAKE_CONTRACT,
+            "insert_stake",
+            &(
+                *DUSK_CONSENSUS_KEY,
+                *DUSK_CONSENSUS_KEY,
+                StakeData::default(),
+            ),
+            u64::MAX,
+        )
+        .expect("stake to be inserted into the state");
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
 
@@ -142,7 +160,7 @@ fn generate_stake_state(
             .call::<_, ()>(
                 STAKE_CONTRACT,
                 "insert_stake",
-                &(*staker.address(), stake),
+                &(staker.to_stake_keys(), stake),
                 u64::MAX,
             )
             .expect("stake to be inserted into the state");
