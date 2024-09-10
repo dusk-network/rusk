@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dsherret/rust-toolchain-file@v1      
-      - run: make
+      - run: make rusk
   copy_to_host:
     needs:  build 
     runs-on: core
