@@ -38,7 +38,8 @@ use wallet_core::{
     keys::{derive_bls_sk, derive_phoenix_sk},
     phoenix_balance,
     transaction::{
-        moonlight_to_phoenix, phoenix as phoenix_transaction, phoenix_stake,
+        moonlight_stake, moonlight_stake_reward, moonlight_to_phoenix,
+        moonlight_unstake, phoenix as phoenix_transaction, phoenix_stake,
         phoenix_stake_reward, phoenix_to_moonlight, phoenix_unstake,
     },
     BalanceInfo,
@@ -711,6 +712,147 @@ where
         Ok(tx.into())
     }
 
+    /// Stakes an amount of Dusk using a Moonlight account.
+    #[allow(clippy::too_many_arguments)]
+    pub fn moonlight_stake(
+        &self,
+        sender_index: u8,
+        staker_index: u8,
+        stake_value: u64,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut sender_sk = self.account_secret_key(sender_index)?;
+        let sender_pk = self.account_public_key(sender_index)?;
+
+        let mut staker_sk = self.account_secret_key(staker_index)?;
+        let staker_pk = self.account_public_key(staker_index)?;
+
+        let sender_account = self
+            .state
+            .fetch_account(&sender_pk)
+            .map_err(Error::from_state_err)?;
+        let staker_data = self
+            .state
+            .fetch_stake(&staker_pk)
+            .map_err(Error::from_state_err)?;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = moonlight_stake(
+            &sender_sk,
+            &staker_sk,
+            stake_value,
+            gas_limit,
+            gas_price,
+            sender_account.nonce,
+            staker_data.nonce,
+            chain_id,
+        )?;
+
+        sender_sk.zeroize();
+        staker_sk.zeroize();
+
+        Ok(tx)
+    }
+
+    /// Unstakes a key from the stake contract, using a Moonlight account.
+    pub fn moonlight_unstake<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        sender_index: u8,
+        staker_index: u8,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut sender_sk = self.account_secret_key(sender_index)?;
+        let sender_pk = self.account_public_key(sender_index)?;
+
+        let mut staker_sk = self.account_secret_key(staker_index)?;
+        let staker_pk = self.account_public_key(staker_index)?;
+
+        let sender_account = self
+            .state
+            .fetch_account(&sender_pk)
+            .map_err(Error::from_state_err)?;
+        let staker_data = self
+            .state
+            .fetch_stake(&staker_pk)
+            .map_err(Error::from_state_err)?;
+
+        let unstake_value = staker_data
+            .amount
+            .ok_or(Error::NotStaked {
+                key: staker_pk,
+                stake: staker_data,
+            })?
+            .value;
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = moonlight_unstake(
+            rng,
+            &sender_sk,
+            &staker_sk,
+            unstake_value,
+            gas_limit,
+            gas_price,
+            sender_account.nonce,
+            chain_id,
+        )?;
+
+        sender_sk.zeroize();
+        staker_sk.zeroize();
+
+        Ok(tx)
+    }
+
+    /// Withdraw the accumulated staking reward for a key, into a Moonlight
+    /// notes. Rewards are accumulated by participating in the consensus.
+    pub fn moonlight_stake_withdraw<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        sender_index: u8,
+        staker_index: u8,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut sender_sk = self.account_secret_key(sender_index)?;
+        let sender_pk = self.account_public_key(sender_index)?;
+
+        let mut staker_sk = self.account_secret_key(staker_index)?;
+        let staker_pk = self.account_public_key(staker_index)?;
+
+        let sender_account = self
+            .state
+            .fetch_account(&sender_pk)
+            .map_err(Error::from_state_err)?;
+        let staker_data = self
+            .state
+            .fetch_stake(&staker_pk)
+            .map_err(Error::from_state_err)?;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = moonlight_stake_reward(
+            rng,
+            &sender_sk,
+            &staker_sk,
+            staker_data.reward,
+            gas_limit,
+            gas_price,
+            sender_account.nonce,
+            chain_id,
+        )?;
+
+        sender_sk.zeroize();
+        staker_sk.zeroize();
+
+        Ok(tx)
+    }
+
     /// Convert some Moonlight Dusk into Phoenix Dusk.
     pub fn moonlight_to_phoenix<Rng: RngCore + CryptoRng>(
         &self,
@@ -733,7 +875,7 @@ where
             .fetch_account(&moonlight_sender_pk)
             .map_err(Error::from_state_err)?;
 
-        let nonce = moonlight_sender_account.nonce + 1;
+        let nonce = moonlight_sender_account.nonce;
 
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
