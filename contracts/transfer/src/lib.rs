@@ -111,6 +111,27 @@ unsafe fn sync(arg_len: u32) -> u32 {
     })
 }
 
+#[no_mangle]
+unsafe fn sync_nullifiers(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(from, count_limint)| {
+        STATE.sync_nullifiers(from, count_limint)
+    })
+}
+
+#[no_mangle]
+unsafe fn sync_contract_balances(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(from, count_limint)| {
+        STATE.sync_contract_balances(from, count_limint)
+    })
+}
+
+#[no_mangle]
+unsafe fn sync_accounts(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(from, count_limint)| {
+        STATE.sync_accounts(from, count_limint)
+    })
+}
+
 // "Management" transactions
 
 #[no_mangle]
