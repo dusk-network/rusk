@@ -16,7 +16,9 @@ use crate::ledger::{
 use crate::message::payload::{
     QuorumType, Ratification, RatificationResult, ValidationResult, Vote,
 };
-use crate::message::{ConsensusHeader, SignInfo};
+use crate::message::{
+    ConsensusHeader, SignInfo, MESSAGE_MAX_FAILED_ITERATIONS,
+};
 use crate::Serializable;
 
 impl Serializable for Block {
@@ -280,6 +282,14 @@ impl Serializable for IterationsInfo {
         let mut att_list = vec![];
 
         let count = Self::read_u8(r)?;
+
+        // Iteration is 0-based
+        if count > MESSAGE_MAX_FAILED_ITERATIONS {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid iterations_info count {count})"),
+            ));
+        }
 
         for _ in 0..count {
             let opt = Self::read_u8(r)?;

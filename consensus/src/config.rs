@@ -6,15 +6,17 @@
 
 use std::time::Duration;
 
+use node_data::message::{MESSAGE_MAX_FAILED_ITERATIONS, MESSAGE_MAX_ITER};
+
 /// Maximum number of iterations Consensus runs per a single round.
-pub const CONSENSUS_MAX_ITER: u8 = 50;
+pub const CONSENSUS_MAX_ITER: u8 = MESSAGE_MAX_ITER;
 
 /// Total credits of steps committees
 pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
 pub const VALIDATION_COMMITTEE_CREDITS: usize = 64;
 pub const RATIFICATION_COMMITTEE_CREDITS: usize = 64;
 
-pub const RELAX_ITERATION_THRESHOLD: u8 = 8;
+pub const RELAX_ITERATION_THRESHOLD: u8 = MESSAGE_MAX_FAILED_ITERATIONS;
 pub const MAX_NUMBER_OF_TRANSACTIONS: usize = 1_000;
 pub const MAX_NUMBER_OF_FAULTS: usize = 100;
 

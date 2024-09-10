@@ -30,6 +30,12 @@ use self::payload::{Candidate, Ratification, Validation};
 pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
 pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
 
+/// Max value for iteration.
+pub const MESSAGE_MAX_ITER: u8 = 50;
+
+/// Max value for failed iterations.
+pub const MESSAGE_MAX_FAILED_ITERATIONS: u8 = 8;
+
 #[derive(Debug, Clone)]
 /// Represent version (major, minor, patch)
 pub struct Version(pub u8, pub u16, pub u16);
@@ -294,6 +300,7 @@ impl Message {
 pub struct ConsensusHeader {
     pub prev_block_hash: Hash,
     pub round: u64,
+    #[cfg_attr(any(feature = "faker", test), dummy(faker = "0..50"))]
     pub iteration: u8,
 }
 
@@ -323,6 +330,14 @@ impl Serializable for ConsensusHeader {
         let prev_block_hash = Self::read_bytes(r)?;
         let round = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
+
+        // Iteration is 0-based
+        if iteration >= MESSAGE_MAX_ITER {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid iteration {iteration})"),
+            ));
+        }
 
         Ok(ConsensusHeader {
             prev_block_hash,
