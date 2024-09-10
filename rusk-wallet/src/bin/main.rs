@@ -287,12 +287,15 @@ async fn exec() -> anyhow::Result<()> {
     // run command
     match cmd {
         Some(cmd) => match cmd.run(&mut wallet, &settings).await? {
-            RunResult::Balance(balance, spendable) => {
+            RunResult::PhoenixBalance(balance, spendable) => {
                 if spendable {
                     println!("{}", Dusk::from(balance.spendable));
                 } else {
                     println!("{}", Dusk::from(balance.value));
                 }
+            }
+            RunResult::MoonlightBalance(balance) => {
+                println!("Total: {}", balance);
             }
             RunResult::Address(addr) => {
                 println!("{addr}");
@@ -325,7 +328,7 @@ async fn exec() -> anyhow::Result<()> {
             RunResult::ExportedKeys(pub_key, key_pair) => {
                 println!("{},{}", pub_key.display(), key_pair.display())
             }
-            RunResult::History(transactions) => {
+            RunResult::PhoenixHistory(transactions) => {
                 println!("{}", TransactionHistory::header());
                 for th in transactions {
                     println!("{th}");
