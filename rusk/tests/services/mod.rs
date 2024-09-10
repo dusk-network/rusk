@@ -7,8 +7,9 @@
 pub mod contract_deployment;
 pub mod conversion;
 pub mod gas_behavior;
+pub mod moonlight_stake;
 pub mod multi_transfer;
 pub mod owner_calls;
-pub mod stake;
+pub mod phoenix_stake;
 pub mod transfer;
 pub mod unspendable;
