@@ -79,14 +79,18 @@ jobs:
   copy_to_host:
     needs: test_nightly
     runs-on: core
-    if: needs.test_nightly.result == 'success' && github.base_ref == 'master'
+    if: needs.test_nightly.result == 'success' && github.base_ref == 'main'
     continue-on-error: true
     steps:
-      - name: "Download Rusk Artifact"
-        uses: actions/download-artifact@v3
-        with:
-          name: rusk-artifact
-      - name: "Copy Rusk to host"
+      - name: "Check and Copy Rusk Artifact to Host"
         run: |
+          # Ensure the target directory exists
           mkdir -p /var/opt/rusk-artifacts
-          cp ./target/release/rusk /var/opt/rusk-artifacts
+          
+          # Check if the rusk artifact exists before copying
+          if [ -f ./target/release/rusk ]; then
+            echo "Rusk artifact found. Copying to host."
+            cp ./target/release/rusk /var/opt/rusk-artifacts
+          else
+            echo "Rusk artifact not found. Skipping copy."
+          fi
