@@ -46,6 +46,35 @@ impl StepVote for Validation {
 }
 
 impl ValidationHandler {
+    pub fn verify_stateless(
+        msg: &Message,
+        round_committees: &RoundCommittees,
+    ) -> Result<(), ConsensusError> {
+        match &msg.payload {
+            Payload::Validation(p) => {
+                p.verify_signature()?;
+
+                let signer = &p.sign_info.signer;
+                let committee = round_committees
+                    .get_committee(msg.get_step())
+                    .expect("committee to be created before run");
+
+                committee
+                    .votes_for(signer)
+                    .ok_or(ConsensusError::NotCommitteeMember)?;
+            }
+            Payload::Empty => (),
+            _ => {
+                info!("cannot verify in validation handler");
+                Err(ConsensusError::InvalidMsgType)?
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl ValidationHandler {
     pub(crate) fn new(sv_registry: SafeAttestationInfoRegistry) -> Self {
         Self {
             sv_registry,

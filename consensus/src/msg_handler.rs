@@ -6,7 +6,10 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::iteration_ctx::RoundCommittees;
+use crate::proposal;
+use crate::ratification::handler::RatificationHandler;
 use crate::user::committee::Committee;
+use crate::validation::handler::ValidationHandler;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Status};
@@ -84,11 +87,35 @@ pub trait MsgHandler {
                             return Err(ConsensusError::NotCommitteeMember);
                         }
 
-                        // Delegate message final verification to the phase
-                        // instance. It is the phase that knows
-                        // what message type to expect and if it
-                        // is valid or not.
-                        self.verify(msg, iteration, round_committees)?;
+                        match &msg.payload {
+                            node_data::message::Payload::Ratification(_) => {
+                                RatificationHandler::verify_stateless(
+                                    msg,
+                                    round_committees,
+                                )?;
+                            }
+                            node_data::message::Payload::Validation(_) => {
+                                ValidationHandler::verify_stateless(
+                                    msg,
+                                    round_committees,
+                                )?;
+                            }
+                            node_data::message::Payload::Candidate(c) => {
+                                proposal::handler::verify_stateless(
+                                    c,
+                                    round_committees,
+                                )?;
+                            }
+                            node_data::message::Payload::Quorum(_) => {}
+                            node_data::message::Payload::Block(_) => {}
+                            _ => {
+                                warn!(
+                                    "future message not repropagated {:?}",
+                                    msg.topic()
+                                );
+                                Err(ConsensusError::InvalidMsgType)?;
+                            }
+                        }
                     } else {
                         warn!("Future committee for iteration {iteration} not generated; skipping pre-verification for {:?} message", msg.topic());
                     }
