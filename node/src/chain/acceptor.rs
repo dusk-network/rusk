@@ -20,6 +20,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use core::panic;
 use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
@@ -60,7 +61,7 @@ pub(crate) enum RevertTarget {
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// The tip
-    tip: RwLock<BlockWithLabel>,
+    pub(crate) tip: RwLock<BlockWithLabel>,
 
     /// Provisioners needed to verify next block
     pub(crate) provisioners_list: RwLock<ContextProvisioners>,
@@ -70,7 +71,7 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
 
     pub(crate) db: Arc<RwLock<DB>>,
     pub(crate) vm: Arc<RwLock<VM>>,
-    network: Arc<RwLock<N>>,
+    pub(crate) network: Arc<RwLock<N>>,
 
     event_sender: Sender<Event>,
 }
@@ -833,7 +834,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // The blockchain tip after reverting
         let (blk, (_, label)) = self.db.read().await.update(|t| {
             let mut height = curr_height;
-            while height != 0 {
+            loop {
                 let b = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
@@ -844,6 +845,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 if h.state_hash == target_state_hash {
                     return Ok((b, label));
+                }
+
+                // the target_state_hash could not be found
+                if height == 0 {
+                    panic!("revert to genesis block failed");
                 }
 
                 info!(
@@ -870,8 +876,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 height -= 1;
             }
-
-            Err(anyhow!("not found"))
         })?;
 
         if blk.header().state_hash != target_state_hash {
@@ -931,7 +935,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn get_latest_final_block(&self) -> Result<Block> {
-        let tip = self.tip.read().await;
+        let tip: tokio::sync::RwLockReadGuard<'_, BlockWithLabel> =
+            self.tip.read().await;
         if tip.is_final() {
             return Ok(tip.inner().clone());
         }
@@ -960,8 +965,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         Ok(final_block)
     }
 
-    pub(crate) async fn get_curr_iteration(&self) -> u8 {
-        self.tip.read().await.inner().header().iteration
+    pub(crate) async fn get_curr_tip(&self) -> BlockWithLabel {
+        self.tip.read().await.clone()
     }
 
     pub(crate) async fn get_result_chan(
@@ -1067,6 +1072,49 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         histogram!("dusk_slashed_count").record(slashed_count as f64);
 
         histogram!("dusk_block_disk_size").record(block_size_on_disk as f64);
+    }
+
+    /// Verifies if a block with header `local` can be replaced with a block
+    /// with header `new`
+    pub(crate) async fn verify_header_against_local(
+        &self,
+        local: &ledger::Header,
+        new: &ledger::Header,
+    ) -> Result<()> {
+        let prev_header = self.db.read().await.view(|t| {
+            let prev_hash = &local.prev_block_hash;
+            t.fetch_block_header(prev_hash)?.ok_or(anyhow::anyhow!(
+                "Unable to find block with hash {}",
+                to_str(prev_hash)
+            ))
+        })?;
+
+        let provisioners_list = self
+            .vm
+            .read()
+            .await
+            .get_provisioners(prev_header.state_hash)?;
+
+        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
+
+        let changed_provisioners = self
+            .vm
+            .read()
+            .await
+            .get_changed_provisioners(prev_header.state_hash)?;
+        provisioners_list.apply_changes(changed_provisioners);
+
+        // Ensure header of the new block is valid according to prev_block
+        // header
+        let _ = verify_block_header(
+            self.db.clone(),
+            &prev_header,
+            &provisioners_list,
+            new,
+        )
+        .await?;
+
+        Ok(())
     }
 }
 

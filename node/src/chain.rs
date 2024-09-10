@@ -12,6 +12,7 @@ mod genesis;
 
 mod header_validation;
 mod metrics;
+mod stall_chain_fsm;
 
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
@@ -44,7 +45,6 @@ const TOPICS: &[u8] = &[
     Topics::Quorum as u8,
 ];
 
-const ACCEPT_BLOCK_TIMEOUT_SEC: Duration = Duration::from_secs(20);
 const HEARTBEAT_SEC: Duration = Duration::from_secs(1);
 
 pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
@@ -110,14 +110,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         acc.write().await.spawn_task().await;
 
         // Start-up FSM instance
-        let mut fsm = SimpleFSM::new(acc.clone(), network.clone());
+        let mut fsm = SimpleFSM::new(acc.clone(), network.clone()).await;
 
         let outbound_chan = acc.read().await.get_outbound_chan().await;
         let result_chan = acc.read().await.get_result_chan().await;
 
-        // Accept_Block timeout is activated when a node is unable to accept a
-        // valid block within a specified time frame.
-        let mut timeout = Self::next_timeout();
         let mut heartbeat = Instant::now().checked_add(HEARTBEAT_SEC).unwrap();
 
         // Message loop for Chain context
@@ -156,10 +153,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             // By disabling block broadcast, a block may be received from a peer
                             // only after explicit request (on demand).
                             match fsm.on_block_event(*blk, msg.metadata).await {
-                                Ok(None) => {}
-                                Ok(Some(_)) => {
-                                    timeout = Self::next_timeout();
-                                }
+                                Ok(_) => {}
                                 Err(err) => {
                                     error!(event = "fsm::on_event failed", src = "wire", err = ?err);
                                 }
@@ -181,11 +175,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 warn!("msg discarded: {e}");
                             }
                             match fsm.on_quorum_msg(payload, &msg).await {
-                                Ok(None) => {}
-                                Ok(Some(_)) => {
-                                    // block accepted, timeout reset
-                                    timeout = Self::next_timeout();
-                                }
+                                Ok(_) => {}
                                 Err(err) => {
                                     warn!(event = "quorum msg", ?err);
                                 }
@@ -203,11 +193,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     // the winner block will be compiled and redirected to the Acceptor.
                     if let Payload::Quorum(quorum) = &msg.payload {
                         match fsm.on_quorum_msg(quorum, &msg).await {
-                            Ok(None) => {}
-                            Ok(Some(_)) => {
-                                // block accepted, timeout reset
-                                timeout = Self::next_timeout();
-                            }
+                            Ok(_) => {}
                             Err(err) => {
                                 warn!(event = "handle quorum msg from internal consensus failed", ?err);
                             }
@@ -217,11 +203,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     if let Err(e) = network.read().await.broadcast(&msg).await {
                         warn!("Unable to re-route message {e}");
                     }
-                },
-                // Handles accept_block_timeout event
-                _ = sleep_until(timeout) => {
-                    fsm.on_idle(ACCEPT_BLOCK_TIMEOUT_SEC).await;
-                    timeout = Self::next_timeout();
                 },
                  // Handles heartbeat event
                 _ = sleep_until(heartbeat) => {
@@ -314,11 +295,5 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         );
 
         Ok(block)
-    }
-
-    fn next_timeout() -> Instant {
-        Instant::now()
-            .checked_add(ACCEPT_BLOCK_TIMEOUT_SEC)
-            .unwrap()
     }
 }

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::acceptor::{Acceptor, RevertTarget};
+use super::stall_chain_fsm::{self, StalledChainFSM};
 use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
@@ -33,7 +34,6 @@ const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 /// Maximum number of hops between the requester and the node that contains the
 /// requested resource
 const DEFAULT_HOPS_LIMIT: u16 = 16;
-pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
 
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
 
@@ -80,63 +80,32 @@ pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
 
     /// Attestations cached from received Quorum messages
     attestations_cache: HashMap<[u8; 32], (Attestation, Instant)>,
+
+    /// State machine to detect a stalled state of the chain
+    stalled_sm: StalledChainFSM<DB, N, VM>,
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
-    pub fn new(
+    pub async fn new(
         acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
         network: Arc<RwLock<N>>,
     ) -> Self {
         let blacklisted_blocks = Arc::new(RwLock::new(HashSet::new()));
+        let stalled_sm = StalledChainFSM::new_with_acc(acc.clone()).await;
+        let curr = State::InSync(InSyncImpl::<DB, VM, N>::new(
+            acc.clone(),
+            network.clone(),
+            blacklisted_blocks.clone(),
+        ));
 
         Self {
-            curr: State::InSync(InSyncImpl::<DB, VM, N>::new(
-                acc.clone(),
-                network.clone(),
-                blacklisted_blocks.clone(),
-            )),
+            curr,
             acc,
-            network,
+            network: network.clone(),
             blacklisted_blocks,
             attestations_cache: Default::default(),
+            stalled_sm,
         }
-    }
-
-    pub async fn on_idle(&mut self, timeout: Duration) {
-        let acc = self.acc.read().await;
-        let tip_height = acc.get_curr_height().await;
-        let iter = acc.get_curr_iteration().await;
-        if let Ok(last_finalized) = acc.get_latest_final_block().await {
-            info!(
-                event = "fsm::idle",
-                tip_height,
-                iter,
-                timeout_sec = timeout.as_secs(),
-                "finalized_height" = last_finalized.header().height,
-            );
-
-            // Clear up all blacklisted blocks
-            self.blacklisted_blocks.write().await.clear();
-
-            // Request missing blocks since my last finalized block
-            let locator = last_finalized.header().hash;
-            let get_blocks = GetBlocks::new(locator).into();
-            if let Err(e) = self
-                .network
-                .read()
-                .await
-                .send_to_alive_peers(get_blocks, REDUNDANCY_PEER_FACTOR)
-                .await
-            {
-                warn!("Unable to request GetBlocks {e}");
-            }
-        } else {
-            error!("could not request blocks");
-        }
-
-        let now = Instant::now();
-        self.attestations_cache
-            .retain(|_, (_, expiry)| *expiry > now);
     }
 
     pub async fn on_failed_consensus(&mut self) {
@@ -209,14 +178,88 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     }
                 }
             }
-        }
 
+            // Try to detect a stalled chain
+            // Generally speaking, if a node is receiving future blocks from the
+            // network but it cannot accept a new block for long time, then
+            // it might be a sign of a getting stalled on non-main branch.
+
+            let res = self.stalled_sm.on_block_received(blk).await.clone();
+
+            match res {
+                stall_chain_fsm::State::StalledOnFork(
+                    local_hash_at_fork,
+                    remote_blk,
+                ) => {
+                    info!(
+                        event = "stalled on fork",
+                        local_hash = to_str(&local_hash_at_fork),
+                        remote_hash = to_str(&remote_blk.header().hash),
+                        remote_height = remote_blk.header().height,
+                    );
+                    let mut acc = self.acc.write().await;
+
+                    let prev_local_state_root =
+                        acc.db.read().await.view(|t| {
+                            let local_blk = t
+                                .fetch_block_header(&local_hash_at_fork)?
+                                .expect("local hash should exist");
+
+                            let prev_blk = t
+                                .fetch_block_header(&local_blk.prev_block_hash)?
+                                .expect("prev block hash should exist");
+
+                            anyhow::Ok(prev_blk.state_hash)
+                        })?;
+
+                    match acc
+                        .try_revert(RevertTarget::Commit(prev_local_state_root))
+                        .await
+                    {
+                        Ok(_) => {
+                            counter!("dusk_revert_count").increment(1);
+                            info!(event = "reverted to last finalized");
+
+                            info!(
+                                event = "recovery block",
+                                height = remote_blk.header().height,
+                                hash = to_str(&remote_blk.header().hash),
+                            );
+
+                            acc.try_accept_block(&remote_blk, true).await?;
+
+                            // Black list the block hash to avoid accepting it
+                            // again due to fallback execution
+                            self.blacklisted_blocks
+                                .write()
+                                .await
+                                .insert(local_hash_at_fork);
+
+                            // Reset the stalled chain FSM
+                            self.stalled_sm.reset(remote_blk.header().clone());
+                        }
+                        Err(e) => {
+                            error!(
+                                event = "revert failed",
+                                err = format!("{:?}", e)
+                            );
+                            return Ok(None);
+                        }
+                    }
+                }
+                stall_chain_fsm::State::Stalled => {
+                    self.blacklisted_blocks.write().await.clear();
+                }
+                _ => {}
+            }
+        }
         // FIXME: The block should return only if accepted. The current issue is
         // that the impl of State::on_block_event doesn't return always the
         // accepted block, so we can't rely on them
         //
         // Due to this issue, we reset the outer timeout even if we are not
         // accepting the received block
+
         Ok(blk)
     }
 
@@ -250,6 +293,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         quorum: &payload::Quorum,
         msg: &Message,
     ) -> anyhow::Result<Option<Block>> {
+        // Clean up attestation cache
+        let now = Instant::now();
+        self.attestations_cache
+            .retain(|_, (_, expiry)| *expiry > now);
+
         // FIXME: We should return the whole outcome for this quorum
         // Basically we need to inform the upper layer if the received quorum is
         // valid (even if it's a FailedQuorum)
@@ -466,7 +514,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             }
 
             // Ensure that the block height is higher than the last finalized
-            // TODO: Retrieve the block from memory
             if remote_height
                 <= acc.get_latest_final_block().await?.header().height
             {

@@ -5,14 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use anyhow::{anyhow, Result};
-use dusk_consensus::user::provisioners::ContextProvisioners;
-use node_data::ledger::{to_str, Header};
+use node_data::ledger::Header;
 use std::cmp::Ordering;
 use tracing::info;
 
 use crate::{
-    chain::acceptor,
-    database::{self, Ledger},
+    database::{self},
     vm, Network,
 };
 
@@ -43,17 +41,6 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         remote: &Header,
         revert_target: RevertTarget,
     ) -> Result<()> {
-        self.verify_header(local, remote).await?;
-        self.acc.try_revert(revert_target).await
-    }
-
-    /// Verifies if a block with header `local` can be replaced with a block
-    /// with header `remote`
-    async fn verify_header(
-        &self,
-        local: &Header,
-        remote: &Header,
-    ) -> Result<()> {
         match (local.height, remote.iteration.cmp(&local.iteration)) {
             (0, _) => Err(anyhow!("cannot fallback over genesis block")),
             (_, Ordering::Greater) => Err(anyhow!(
@@ -68,14 +55,6 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             _ => Ok(()),
         }?;
 
-        let prev_header = self.acc.db.read().await.view(|t| {
-            let prev_hash = &local.prev_block_hash;
-            t.fetch_block_header(prev_hash)?.ok_or(anyhow::anyhow!(
-                "Unable to find block with hash {}",
-                to_str(prev_hash)
-            ))
-        })?;
-
         info!(
             event = "execute fallback checks",
             height = local.height,
@@ -83,33 +62,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             target_iter = remote.iteration,
         );
 
-        let provisioners_list = self
-            .acc
-            .vm
-            .read()
-            .await
-            .get_provisioners(prev_header.state_hash)?;
-
-        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
-
-        let changed_provisioners = self
-            .acc
-            .vm
-            .read()
-            .await
-            .get_changed_provisioners(prev_header.state_hash)?;
-        provisioners_list.apply_changes(changed_provisioners);
-
-        // Ensure header of the new block is valid according to prev_block
-        // header
-        let _ = acceptor::verify_block_header(
-            self.acc.db.clone(),
-            &prev_header,
-            &provisioners_list,
-            remote,
-        )
-        .await?;
-
-        Ok(())
+        self.acc.verify_header_against_local(local, remote).await?;
+        self.acc.try_revert(revert_target).await
     }
 }
