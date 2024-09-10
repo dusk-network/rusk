@@ -93,7 +93,7 @@ impl Transaction {
     /// - the transaction input doesn't cover the transaction costs
     /// - the `inputs` vector is either empty or larger than 4 elements
     /// - the `inputs` vector contains duplicate `Note`s
-    /// - the `Prove` trait is implemented incorrectly
+    /// - the `prover` is implemented incorrectly
     /// - the memo, if given, is too large
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::too_many_arguments)]
@@ -112,6 +112,7 @@ impl Transaction {
         gas_price: u64,
         chain_id: u8,
         data: Option<impl Into<TransactionData>>,
+        prover: &P,
     ) -> Result<Self, Error> {
         let data = data.map(Into::into);
 
@@ -290,7 +291,7 @@ impl Transaction {
 
         Ok(Self {
             payload,
-            proof: P::prove(
+            proof: prover.prove(
                 &TxCircuitVec {
                     input_notes_info,
                     output_notes_info,
@@ -1014,5 +1015,8 @@ pub trait Prove {
     /// # Errors
     /// This function errors in case of an incorrect circuit or of an
     /// unobtainable prover-key.
-    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error>;
+    //
+    // Note that the reference to `self` is needed to plug in a running client
+    // when delegating the proof generation.
+    fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error>;
 }

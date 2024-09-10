@@ -81,6 +81,7 @@ impl Transaction {
         gas_price: u64,
         chain_id: u8,
         data: Option<impl Into<TransactionData>>,
+        prover: &P,
     ) -> Result<Self, Error> {
         Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
             rng,
@@ -96,6 +97,7 @@ impl Transaction {
             gas_price,
             chain_id,
             data,
+            prover,
         )?))
     }
 
