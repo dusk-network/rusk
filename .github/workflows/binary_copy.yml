@@ -1,0 +1,50 @@
+name: Rusk binary copy 
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  # Job to run change detection
+  changes:
+    runs-on: core
+    permissions:
+      pull-requests: read
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'rusk/**'
+              - 'node/**'
+              - '.github/workflows/binary_copy.yml'
+  build:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+    name: Make rusk 
+    runs-on: core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1      
+      - run: make
+  copy_to_host:
+    needs:  build 
+    runs-on: core
+    continue-on-error: true
+    steps:
+      - name: "Check and Copy Rusk Artifact to Host"
+        run: |
+          # Ensure the target directory exists
+          mkdir -p /var/opt/rusk-artifacts
+          
+          # Check if the rusk artifact exists before copying
+          if [ -f ./target/release/rusk ]; then
+            echo "Rusk artifact found. Copying to host."
+            cp ./target/release/rusk /var/opt/rusk-artifacts
+          else
+            echo "Rusk artifact not found. Skipping copy."
+          fi
