@@ -38,8 +38,8 @@ use wallet_core::{
     keys::{derive_bls_sk, derive_phoenix_sk},
     phoenix_balance,
     transaction::{
-        phoenix as phoenix_transaction, phoenix_stake, phoenix_stake_reward,
-        phoenix_unstake,
+        moonlight_to_phoenix, phoenix as phoenix_transaction, phoenix_stake,
+        phoenix_stake_reward, phoenix_to_moonlight, phoenix_unstake,
     },
     BalanceInfo,
 };
@@ -596,6 +596,49 @@ where
         Ok(tx)
     }
 
+    /// Convert some Phoenix Dusk into Moonlight Dusk.
+    pub fn phoenix_to_moonlight<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        phoenix_sender_index: u8,
+        moonlight_receiver_index: u8,
+        convert_value: u64,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut phoenix_sender_sk =
+            self.phoenix_secret_key(phoenix_sender_index)?;
+        let mut moonlight_receiver_sk =
+            self.account_secret_key(moonlight_receiver_index)?;
+
+        let inputs = self.input_notes_openings_nullifiers(
+            &phoenix_sender_sk,
+            gas_limit * gas_price,
+        )?;
+
+        let root = self.state.fetch_root().map_err(Error::from_state_err)?;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = phoenix_to_moonlight::<Rng, LocalProver>(
+            rng,
+            &phoenix_sender_sk,
+            &moonlight_receiver_sk,
+            inputs,
+            root,
+            convert_value,
+            gas_limit,
+            gas_price,
+            chain_id,
+        )?;
+
+        phoenix_sender_sk.zeroize();
+        moonlight_receiver_sk.zeroize();
+
+        Ok(tx)
+    }
+
     /// Transfer Dusk from one account to another using moonlight.
     pub fn moonlight_transfer(
         &self,
@@ -660,6 +703,50 @@ where
         from_sk.zeroize();
 
         Ok(tx.into())
+    }
+
+    /// Convert some Moonlight Dusk into Phoenix Dusk.
+    pub fn moonlight_to_phoenix<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        moonlight_sender_index: u8,
+        phoenix_receiver_index: u8,
+        convert_value: u64,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut moonlight_sender_sk =
+            self.account_secret_key(moonlight_sender_index)?;
+        let moonlight_sender_pk =
+            self.account_public_key(moonlight_sender_index)?;
+        let mut phoenix_receiver_sk =
+            self.phoenix_secret_key(phoenix_receiver_index)?;
+
+        let moonlight_sender_account = self
+            .state
+            .fetch_account(&moonlight_sender_pk)
+            .map_err(Error::from_state_err)?;
+
+        let nonce = moonlight_sender_account.nonce + 1;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = moonlight_to_phoenix(
+            rng,
+            &moonlight_sender_sk,
+            &phoenix_receiver_sk,
+            convert_value,
+            gas_limit,
+            gas_price,
+            nonce,
+            chain_id,
+        )?;
+
+        moonlight_sender_sk.zeroize();
+        phoenix_receiver_sk.zeroize();
+
+        Ok(tx)
     }
 
     /// Gets the balance of a key.

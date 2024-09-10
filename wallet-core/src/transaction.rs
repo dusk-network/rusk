@@ -14,16 +14,17 @@ use ff::Field;
 use zeroize::Zeroize;
 
 use execution_core::{
-    signatures::bls::SecretKey as BlsSecretKey,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
         data::{ContractCall, TransactionData},
+        moonlight::Transaction as MoonlightTransaction,
         phoenix::{
             Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        Transaction,
+        Transaction, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractId, Error, JubJubScalar,
 };
@@ -46,6 +47,7 @@ use execution_core::{
 /// - the `inputs` vector is either empty or larger than 4 elements
 /// - the `inputs` vector contains duplicate `Note`s
 /// - the `Prove` trait is implemented incorrectly
+/// - the Memo provided with `data` is too large
 #[allow(clippy::too_many_arguments)]
 pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
@@ -74,6 +76,37 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         deposit,
         gas_limit,
         gas_price,
+        chain_id,
+        data,
+    )?
+    .into())
+}
+
+/// Creates a totally generic Moonlight transaction, all fields being variable
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - the Memo provided with `data` is too large
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight(
+    sender_sk: &BlsSecretKey,
+    receiver_pk: Option<BlsPublicKey>,
+    transfer_value: u64,
+    deposit: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    nonce: u64,
+    chain_id: u8,
+    data: Option<impl Into<TransactionData>>,
+) -> Result<Transaction, Error> {
+    Ok(MoonlightTransaction::new(
+        sender_sk,
+        receiver_pk,
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        nonce,
         chain_id,
         data,
     )?
@@ -264,6 +297,121 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     )
 }
 
+/// Create an unproven [`Transaction`] to convert Phoenix Dusk into Moonlight
+/// Dusk.
+///
+/// Note that ownership of both sender and receiver keys is required, and
+/// enforced by the protocol.
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - one of the input-notes doesn't belong to the `sender_sk`
+/// - the transaction input doesn't cover the transaction costs
+/// - the `inputs` vector is either empty or larger than 4 elements
+/// - the `inputs` vector contains duplicate `Note`s
+/// - the `Prove` trait is implemented incorrectly
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::missing_panics_doc)]
+pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
+    rng: &mut R,
+    phoenix_sender_sk: &PhoenixSecretKey,
+    moonlight_receiver_sk: &BlsSecretKey,
+    inputs: Vec<(Note, NoteOpening, BlsScalar)>,
+    root: BlsScalar,
+    convert_value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let change_pk = receiver_pk;
+
+    let transfer_value = 0;
+    let obfuscated_transaction = true;
+    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
+                                 // transfer contract
+
+    // split the input notes and openings from the nullifiers
+    let mut nullifiers = Vec::with_capacity(inputs.len());
+    let inputs = inputs
+        .into_iter()
+        .map(|(note, opening, nullifier)| {
+            nullifiers.push(nullifier);
+            (note, opening)
+        })
+        .collect();
+
+    let gas_payment_token = WithdrawReplayToken::Phoenix(nullifiers);
+
+    let contract_call = convert_to_moonlight(
+        rng,
+        moonlight_receiver_sk,
+        gas_payment_token,
+        convert_value,
+    )?;
+
+    phoenix::<R, P>(
+        rng,
+        phoenix_sender_sk,
+        &change_pk,
+        &receiver_pk,
+        inputs,
+        root,
+        transfer_value,
+        obfuscated_transaction,
+        deposit,
+        gas_limit,
+        gas_price,
+        chain_id,
+        Some(contract_call),
+    )
+}
+
+/// Create a [`Transaction`] to convert Moonlight Dusk into Phoenix Dusk.
+///
+/// Note that ownership of both sender and receiver keys is required, and
+/// enforced by the protocol.
+///
+/// # Errors
+/// The creation of this transaction doesn't error, but still returns a result
+/// for the sake of API consistency.
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    moonlight_sender_sk: &BlsSecretKey,
+    phoenix_receiver_sk: &PhoenixSecretKey,
+    convert_value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    nonce: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    let transfer_value = 0;
+    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
+                                 // transfer contract
+
+    let gas_payment_token = WithdrawReplayToken::Moonlight(nonce);
+
+    let contract_call = convert_to_phoenix(
+        rng,
+        phoenix_receiver_sk,
+        gas_payment_token,
+        convert_value,
+    )?;
+
+    moonlight(
+        moonlight_sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        nonce,
+        chain_id,
+        Some(contract_call),
+    )
+}
+
 fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
@@ -304,6 +452,44 @@ fn unstake_to_phoenix<R: RngCore + CryptoRng>(
     ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
 }
 
+fn convert_to_moonlight<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    moonlight_receiver_sk: &BlsSecretKey,
+    gas_payment_token: WithdrawReplayToken,
+    convert_value: u64,
+) -> Result<ContractCall, Error> {
+    ContractCall::new(
+        TRANSFER_CONTRACT,
+        "convert",
+        &withdraw_to_moonlight(
+            rng,
+            moonlight_receiver_sk,
+            TRANSFER_CONTRACT,
+            gas_payment_token,
+            convert_value,
+        ),
+    )
+}
+
+fn convert_to_phoenix<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    phoenix_receiver_sk: &PhoenixSecretKey,
+    gas_payment_token: WithdrawReplayToken,
+    convert_value: u64,
+) -> Result<ContractCall, Error> {
+    ContractCall::new(
+        TRANSFER_CONTRACT,
+        "convert",
+        &withdraw_to_phoenix(
+            rng,
+            phoenix_receiver_sk,
+            TRANSFER_CONTRACT,
+            gas_payment_token,
+            convert_value,
+        ),
+    )
+}
+
 /// Create a [`Withdraw`] struct to be used to withdraw funds from a contract
 /// into a phoenix-note.
 ///
@@ -332,4 +518,26 @@ fn withdraw_to_phoenix<R: RngCore + CryptoRng>(
     withdraw_note_sk.zeroize();
 
     withdraw
+}
+
+/// Create a [`Withdraw`] struct to be used to withdraw funds from a contract
+/// into a Moonlight account.
+///
+/// The gas payment can be done by either Phoenix or Moonlight by setting the
+/// `gas_payment_token` accordingly.
+fn withdraw_to_moonlight<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    receiver_sk: &BlsSecretKey,
+    contract: impl Into<ContractId>,
+    gas_payment_token: WithdrawReplayToken,
+    value: u64,
+) -> Withdraw {
+    Withdraw::new(
+        rng,
+        receiver_sk,
+        contract.into(),
+        value,
+        WithdrawReceiver::Moonlight(BlsPublicKey::from(receiver_sk)),
+        gas_payment_token,
+    )
 }
