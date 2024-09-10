@@ -7,24 +7,7 @@ on:
 
 jobs:
   # Job to run change detection
-  changes:
-    runs-on: core
-    permissions:
-      pull-requests: read
-    outputs:
-      run-ci: ${{ steps.filter.outputs.run-ci }}
-    steps:
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            run-ci:
-              - 'rusk/**'
-              - 'node/**'
-              - '.github/workflows/binary_copy.yml'
   build:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
     name: Make rusk 
     runs-on: core
     steps:
