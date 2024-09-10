@@ -21,9 +21,10 @@ describe("GasFee", () => {
     };
     const { container } = render(GasFee, baseProps);
 
-    expect(container.querySelector(".gas-fee__amount-value")?.innerHTML).toBe(
-      fee
-    );
+    expect(
+      container.querySelector(".gas-fee__amount-value span:nth-child(2)")
+        ?.innerHTML
+    ).toBe(fee);
 
     expect(container.firstChild).toMatchSnapshot();
   });

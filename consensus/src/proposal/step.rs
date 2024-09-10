@@ -53,7 +53,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_, D, T>,
+        mut ctx: ExecutionCtx<'_, T>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
             .get_current_committee()

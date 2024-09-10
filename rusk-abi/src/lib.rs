@@ -28,8 +28,9 @@ pub use piecrust_uplink::debug as piecrust_debug;
 mod abi;
 #[cfg(feature = "abi")]
 pub use abi::{
-    block_height, hash, owner, owner_raw, poseidon_hash, self_owner,
-    self_owner_raw, verify_bls, verify_proof, verify_schnorr,
+    block_height, chain_id, hash, owner, owner_raw, poseidon_hash, self_owner,
+    self_owner_raw, verify_bls, verify_bls_multisig, verify_proof,
+    verify_schnorr,
 };
 
 #[cfg(feature = "abi")]
@@ -40,6 +41,7 @@ pub use piecrust_uplink::{
     call_with_limit,
     caller,
     emit,
+    emit_raw,
     feed,
     limit,
     self_id,
@@ -53,7 +55,8 @@ mod host;
 #[cfg(feature = "host")]
 pub use host::{
     hash, new_ephemeral_vm, new_genesis_session, new_session, new_vm,
-    poseidon_hash, verify_bls, verify_proof, verify_schnorr,
+    poseidon_hash, verify_bls, verify_bls_multisig, verify_proof,
+    verify_schnorr,
 };
 #[cfg(feature = "host")]
 pub use piecrust::{
@@ -65,6 +68,7 @@ enum Metadata {}
 
 #[allow(dead_code)]
 impl Metadata {
+    pub const CHAIN_ID: &'static str = "chain_id";
     pub const BLOCK_HEIGHT: &'static str = "block_height";
 }
 
@@ -77,4 +81,5 @@ impl Query {
     pub const VERIFY_PROOF: &'static str = "verify_proof";
     pub const VERIFY_SCHNORR: &'static str = "verify_schnorr";
     pub const VERIFY_BLS: &'static str = "verify_bls";
+    pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
 }

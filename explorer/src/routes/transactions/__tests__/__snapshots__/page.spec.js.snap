@@ -127,11 +127,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -244,11 +243,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-error transaction-status explorer-badge"
             >
-              success
+              failed
             </span>
-            
           </dd>
            
           <dt
@@ -361,11 +359,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -478,11 +475,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -595,11 +591,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -712,11 +707,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -829,11 +823,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -946,11 +939,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1063,11 +1055,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1180,11 +1171,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1297,11 +1287,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1414,11 +1403,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1531,11 +1519,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1648,11 +1635,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1765,11 +1751,10 @@ exports[`Transactions page > should render the Transactions page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1986,7 +1971,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2061,9 +2046,9 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-error transaction-status"
                 >
-                  success
+                  failed
                 </span>
               </td>
               
@@ -2136,7 +2121,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2211,7 +2196,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2286,7 +2271,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2361,7 +2346,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2436,7 +2421,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2511,7 +2496,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2586,7 +2571,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2661,7 +2646,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2736,7 +2721,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2811,7 +2796,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2886,7 +2871,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -2961,7 +2946,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>
@@ -3036,7 +3021,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
                 class="table__data-cell"
               >
                 <span
-                  class="dusk-badge dusk-badge--variant-success"
+                  class="dusk-badge dusk-badge--variant-success transaction-status"
                 >
                   success
                 </span>

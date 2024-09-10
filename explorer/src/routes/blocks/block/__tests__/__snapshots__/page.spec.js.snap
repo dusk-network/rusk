@@ -565,7 +565,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                   class="table__data-cell"
                 >
                   <span
-                    class="dusk-badge dusk-badge--variant-success"
+                    class="dusk-badge dusk-badge--variant-success transaction-status"
                   >
                     success
                   </span>
@@ -640,7 +640,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                   class="table__data-cell"
                 >
                   <span
-                    class="dusk-badge dusk-badge--variant-success"
+                    class="dusk-badge dusk-badge--variant-success transaction-status"
                   >
                     success
                   </span>
@@ -1235,11 +1235,10 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt
@@ -1451,11 +1450,10 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition details-list__definition--table"
           >
             <span
-              class="dusk-badge dusk-badge--variant-success explorer-badge"
+              class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
             >
               success
             </span>
-            
           </dd>
            
           <dt

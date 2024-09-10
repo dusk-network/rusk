@@ -33,6 +33,8 @@ N.B. the current `0.1.2` version of the library has no option to pick the networ
 ```
 # can be empty string, must start with a slash otherwise, must not end with a slash
 VITE_BASE_PATH=""
+VITE_CONTRACT_ALLOCATE_DISABLED=true
+VITE_CONTRACT_MIGRATE_DISABLED=true
 VITE_CONTRACT_STAKE_DISABLED=false
 VITE_CONTRACT_TRANSFER_DISABLED=false
 VITE_CURRENT_NODE=${VITE_LOCAL_NODE}
@@ -44,6 +46,7 @@ VITE_GAS_PRICE_DEFAULT=1
 VITE_GAS_PRICE_LOWER=1
 VITE_LOCAL_NODE="https://localhost:5173/rusk/"
 VITE_MAINNET_NODE=""
+VITE_MIGRATE_CONTRACT=""
 VITE_MINIMUM_ALLOWED_STAKE=1000
 VITE_RKYV_TREE_LEAF_SIZE=632
 VITE_STAKE_CONTRACT="0200000000000000000000000000000000000000000000000000000000000000"
@@ -51,7 +54,6 @@ VITE_TESTNET_NODE="https://nodes.dusk.network/"
 VITE_TESTNET_PROVER_NODE="https://provers.dusk.network/"
 VITE_TRANSFER_CONTRACT="0100000000000000000000000000000000000000000000000000000000000000"
 VITE_GET_QUOTE_API_ENDPOINT="https://api.dusk.network/v1/quote"
-VITE_MOONLIGHT_DISABLED=true
 ```
 
 To run a local node different steps are needed, so please read the [related section](#running-a-local-rusk-node).

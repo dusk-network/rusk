@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::DeserializableSlice;
-
 use std::fs;
 use std::io::Read;
 
+use wallet_core::Seed;
+
 use crate::crypto::decrypt;
-use crate::store;
 use crate::Error;
 use crate::WalletPath;
 
@@ -51,7 +50,7 @@ pub(crate) fn get_seed_and_address(
     file: DatFileVersion,
     mut bytes: Vec<u8>,
     pwd: &[u8],
-) -> Result<(store::Seed, u8), Error> {
+) -> Result<(Seed, u8), Error> {
     match file {
         DatFileVersion::Legacy => {
             if bytes[1] == 0 && bytes[2] == 0 {
@@ -61,7 +60,8 @@ pub(crate) fn get_seed_and_address(
             bytes = decrypt(&bytes, pwd)?;
 
             // get our seed
-            let seed = store::Seed::from_reader(&mut &bytes[..])
+            let seed = bytes[..]
+                .try_into()
                 .map_err(|_| Error::WalletFileCorrupted)?;
 
             Ok((seed, 1))
@@ -69,23 +69,24 @@ pub(crate) fn get_seed_and_address(
         DatFileVersion::OldWalletCli((major, minor, _, _, _)) => {
             bytes.drain(..5);
 
-            let result: Result<(store::Seed, u8), Error> = match (major, minor)
-            {
+            let result: Result<(Seed, u8), Error> = match (major, minor) {
                 (1, 0) => {
                     let content = decrypt(&bytes, pwd)?;
-                    let mut buff = &content[..];
+                    let buff = &content[..];
 
-                    let seed = store::Seed::from_reader(&mut buff)
+                    let seed = buff
+                        .try_into()
                         .map_err(|_| Error::WalletFileCorrupted)?;
 
                     Ok((seed, 1))
                 }
                 (2, 0) => {
                     let content = decrypt(&bytes, pwd)?;
-                    let mut buff = &content[..];
+                    let buff = &content[..];
 
                     // extract seed
-                    let seed = store::Seed::from_reader(&mut buff)
+                    let seed = buff
+                        .try_into()
                         .map_err(|_| Error::WalletFileCorrupted)?;
 
                     // extract addresses count
@@ -102,7 +103,8 @@ pub(crate) fn get_seed_and_address(
                 let content = decrypt(rest, pwd)?;
 
                 if let Some(seed_buff) = content.get(0..65) {
-                    let seed = store::Seed::from_reader(&mut &seed_buff[0..64])
+                    let seed = seed_buff[0..64]
+                        .try_into()
                         .map_err(|_| Error::WalletFileCorrupted)?;
 
                     let count = &seed_buff[64..65];

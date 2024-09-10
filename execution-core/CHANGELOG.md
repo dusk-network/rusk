@@ -48,10 +48,20 @@ signatures::{
     }
 }
 transfer::{
-    contract_exec::{
+    TransferToContract;
+    ReceiveFromContract;
+    TransferToAccount;
+    WithdrawEvent;
+    ConvertEvent;
+    DepositEvent;
+    TransferToContractEvent;
+    TransferToAccountEvent;
+    PhoenixTransactionEvent;
+    MoonlightTransactionEvent;
+    data::{
         ContractBytecode;
         ContractCall;
-        ContractExec;
+        TransactionData;
     };
     moonlight::{
         AccountData;
@@ -97,6 +107,8 @@ stake::{
     StakeData;
     StakeEvent;
     Withdraw;
+    Reward;
+    RewardReason;
     EPOCH;
     STAKE_CONTRACT;
     STAKE_WARNINGS;

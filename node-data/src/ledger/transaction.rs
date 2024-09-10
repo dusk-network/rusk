@@ -4,15 +4,35 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::io;
+
+use dusk_bytes::Serializable as DuskSerializable;
+use execution_core::signatures::bls;
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use execution_core::BlsScalar;
 use serde::Serialize;
+
+use crate::Serializable;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: u32,
     pub r#type: u32,
     pub inner: ProtocolTransaction,
+    pub(crate) size: Option<usize>,
+}
+
+impl Transaction {
+    pub fn size(&self) -> io::Result<usize> {
+        match self.size {
+            Some(size) => Ok(size),
+            None => {
+                let mut buf = vec![];
+                self.write(&mut buf)?;
+                Ok(buf.len())
+            }
+        }
+    }
 }
 
 impl From<ProtocolTransaction> for Transaction {
@@ -21,6 +41,7 @@ impl From<ProtocolTransaction> for Transaction {
             inner: value,
             r#type: 1,
             version: 1,
+            size: None,
         }
     }
 }
@@ -63,12 +84,17 @@ impl Transaction {
         self.inner.gas_price()
     }
 
-    pub fn to_nullifiers(&self) -> Vec<[u8; 32]> {
-        self.inner
-            .nullifiers()
-            .iter()
-            .map(|n| n.to_bytes())
-            .collect()
+    pub fn to_spend_ids(&self) -> Vec<SpendingId> {
+        match &self.inner {
+            ProtocolTransaction::Phoenix(p) => p
+                .nullifiers()
+                .iter()
+                .map(|n| SpendingId::Nullifier(n.to_bytes()))
+                .collect(),
+            ProtocolTransaction::Moonlight(m) => {
+                vec![SpendingId::AccountNonce(*m.from_account(), m.nonce())]
+            }
+        }
     }
 }
 
@@ -90,12 +116,30 @@ impl PartialEq<Self> for SpentTransaction {
 
 impl Eq for SpentTransaction {}
 
+pub enum SpendingId {
+    Nullifier([u8; 32]),
+    AccountNonce(bls::PublicKey, u64),
+}
+
+impl SpendingId {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            SpendingId::Nullifier(n) => n.to_vec(),
+            SpendingId::AccountNonce(account, nonce) => {
+                let mut id = account.to_bytes().to_vec();
+                id.extend_from_slice(&nonce.to_le_bytes());
+                id
+            }
+        }
+    }
+}
+
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use super::*;
     use crate::ledger::Dummy;
     use execution_core::transfer::{
-        contract_exec::{ContractCall, ContractExec},
+        data::{ContractCall, TransactionData},
         phoenix::{
             Fee, Note, Payload as PhoenixPayload,
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -156,9 +200,10 @@ pub mod faker {
             ContractCall::new([21; 32], "some_method", &()).unwrap();
 
         let payload = PhoenixPayload {
+            chain_id: 0xFA,
             tx_skeleton,
             fee,
-            exec: Some(ContractExec::Call(contract_call)),
+            data: Some(TransactionData::Call(contract_call)),
         };
         let proof = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 

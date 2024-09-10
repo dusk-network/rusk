@@ -15,8 +15,8 @@ use std::sync::{mpsc, Arc};
 use execution_core::{
     transfer::{
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            TreeLeaf,
+            Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+            SecretKey as PhoenixSecretKey,
         },
         TRANSFER_CONTRACT,
     },
@@ -35,6 +35,7 @@ use tracing::info;
 use crate::common::state::new_state;
 
 const BLOCK_HEIGHT: u64 = 1;
+const CHAIN_ID: u8 = 0xFA;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
@@ -46,7 +47,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
 }
 
-fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<TreeLeaf>> {
+fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
     let (sender, receiver) = mpsc::channel();
     rusk.leaves_from_height(height, sender)?;
     Ok(receiver
@@ -83,7 +84,7 @@ where
     rusk.with_tip(|mut tip, vm| {
         let current_commit = tip.current;
         let mut session =
-            rusk_abi::new_session(vm, current_commit, BLOCK_HEIGHT)
+            rusk_abi::new_session(vm, current_commit, CHAIN_ID, BLOCK_HEIGHT)
                 .expect("current commit should exist");
 
         session

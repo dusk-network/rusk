@@ -14,31 +14,43 @@ use sha2::{Digest, Sha256};
 use zeroize::Zeroize;
 
 use execution_core::{
-    signatures::bls::SecretKey as BlsSecretKey,
+    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     transfer::phoenix::{
         PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
         ViewKey as PhoenixViewKey,
     },
 };
 
-use crate::RNG_SEED;
+use crate::Seed;
 
 /// Generates a [`BlsSecretKey`] from a seed and index.
 ///
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
-pub fn derive_bls_sk(seed: &[u8; RNG_SEED], index: u8) -> BlsSecretKey {
+pub fn derive_bls_sk(seed: &Seed, index: u8) -> BlsSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
     // NOTE: When breaking the keys, we will want to change the string too
     BlsSecretKey::random(&mut rng_with_index(seed, index, b"SK"))
 }
 
+/// Generates a [`BlsPublicKey`] from a seed and index.
+///
+/// The randomness is generated using [`rng_with_index`].
+#[must_use]
+pub fn derive_bls_pk(seed: &Seed, index: u8) -> BlsPublicKey {
+    let mut sk = derive_bls_sk(seed, index);
+    let pk = BlsPublicKey::from(&sk);
+    sk.zeroize();
+
+    pk
+}
+
 /// Generates a [`PhoenixSecretKey`] from a seed and index.
 ///
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
-pub fn derive_phoenix_sk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixSecretKey {
+pub fn derive_phoenix_sk(seed: &Seed, index: u8) -> PhoenixSecretKey {
     // note that if we change the string used for the rng, all previously
     // generated keys will become invalid
     // NOTE: When breaking the keys, we will want to change the string too
@@ -50,7 +62,7 @@ pub fn derive_phoenix_sk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixSecretKey {
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
 pub fn derive_multiple_phoenix_sk(
-    seed: &[u8; RNG_SEED],
+    seed: &Seed,
     index_range: Range<u8>,
 ) -> Vec<PhoenixSecretKey> {
     index_range
@@ -58,13 +70,13 @@ pub fn derive_multiple_phoenix_sk(
         .collect()
 }
 
-/// Generates a [`PheonixPublicKey`] from its seed and index.
+/// Generates a [`PhoenixPublicKey`] from its seed and index.
 ///
 /// First the [`PhoenixSecretKey`] is derived with [`derive_phoenix_sk`], then
 /// the public key is generated from it and the secret key is erased from
 /// memory.
 #[must_use]
-pub fn derive_phoenix_pk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixPublicKey {
+pub fn derive_phoenix_pk(seed: &Seed, index: u8) -> PhoenixPublicKey {
     let mut sk = derive_phoenix_sk(seed, index);
     let pk = PhoenixPublicKey::from(&sk);
     sk.zeroize();
@@ -77,7 +89,7 @@ pub fn derive_phoenix_pk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixPublicKey {
 /// First the [`PhoenixSecretKey`] is derived with [`derive_phoenix_sk`], then
 /// the view key is generated from it and the secret key is erased from memory.
 #[must_use]
-pub fn derive_phoenix_vk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixViewKey {
+pub fn derive_phoenix_vk(seed: &Seed, index: u8) -> PhoenixViewKey {
     let mut sk = derive_phoenix_sk(seed, index);
     let vk = PhoenixViewKey::from(&sk);
     sk.zeroize();
@@ -94,7 +106,7 @@ pub fn derive_phoenix_vk(seed: &[u8; RNG_SEED], index: u8) -> PhoenixViewKey {
 /// subsequently used to generate the key.
 #[must_use]
 pub fn rng_with_index(
-    seed: &[u8; RNG_SEED],
+    seed: &Seed,
     index: u8,
     termination: &[u8],
 ) -> ChaCha12Rng {

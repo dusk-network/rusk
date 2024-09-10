@@ -21,8 +21,6 @@ describe("getWallet", () => {
 			[
 			  "wasm",
 			  "seed",
-			  "gasLimit",
-			  "gasPrice",
 			  "constructor",
 			  "getBalance",
 			  "getPsks",

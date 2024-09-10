@@ -140,7 +140,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         // Send response
                         let net = network.read().await;
                         for msg in resp.msgs {
-                            let send = net.send_to_peer(&msg, resp.recv_peer);
+                            let send = net.send_to_peer(msg, resp.recv_peer);
                             if let Err(e) = send.await {
                                 warn!("Unable to send_to_peer {e}")
                             };
@@ -235,7 +235,7 @@ impl DataBrokerSrv {
                             let _ = network
                                 .read()
                                 .await
-                                .send_to_alive_peers(&msg, 1)
+                                .send_to_alive_peers(msg, 1)
                                 .await;
                         }
                         Err(err)
@@ -268,7 +268,7 @@ impl DataBrokerSrv {
             })
             .map_err(|e| anyhow::anyhow!(e))?;
 
-        Ok(Message::new_inv(inv))
+        Ok(inv.into())
     }
 
     /// Handles GetBlocks message request.
@@ -291,11 +291,25 @@ impl DataBrokerSrv {
                     .header()
                     .height;
 
+                let mut prev_block_hash = m.locator;
+
                 loop {
                     locator += 1;
                     match t.fetch_block_hash_by_height(locator)? {
                         Some(bh) => {
+                            let header =
+                                t.fetch_block_header(&bh)?.ok_or_else(
+                                    || anyhow!("block header not found"),
+                                )?;
+
+                            if header.prev_block_hash != prev_block_hash {
+                                return Err(anyhow::anyhow!(
+                                    "inconsistent chain"
+                                ));
+                            }
+
                             inv.add_block_from_hash(bh);
+                            prev_block_hash = bh;
                         }
                         None => {
                             break;
@@ -316,7 +330,7 @@ impl DataBrokerSrv {
             })
             .map_err(|e| anyhow::anyhow!(e))?;
 
-        Ok(Message::new_inv(inv))
+        Ok(inv.into())
     }
 
     /// Handles inventory message request.
@@ -391,12 +405,7 @@ impl DataBrokerSrv {
         // Send GetResource request with disabled rebroadcast (hops_limit = 1),
         // Inv message is part of one-to-one messaging flows
         // (GetBlocks/Mempool) so it should not be treated as flooding request
-        Ok(Message::new_get_resource(GetResource::new(
-            inv,
-            requester_addr,
-            u64::MAX,
-            1,
-        )))
+        Ok(GetResource::new(inv, requester_addr, u64::MAX, 1).into())
     }
 
     /// Handles GetResource message request.
@@ -424,7 +433,7 @@ impl DataBrokerSrv {
                             Ledger::fetch_block_by_height(&t, *height)
                                 .ok()
                                 .flatten()
-                                .map(Message::new_block)
+                                .map(Message::from)
                         } else {
                             None
                         }
@@ -434,7 +443,7 @@ impl DataBrokerSrv {
                             Ledger::fetch_block(&t, hash)
                                 .ok()
                                 .flatten()
-                                .map(Message::new_block)
+                                .map(Message::from)
                         } else {
                             None
                         }
@@ -449,7 +458,7 @@ impl DataBrokerSrv {
                                         .ok()
                                         .flatten()
                                 })
-                                .map(Message::new_block)
+                                .map(Message::from)
                         } else {
                             None
                         }
@@ -459,7 +468,7 @@ impl DataBrokerSrv {
                             Mempool::get_tx(&t, *tx_id)
                                 .ok()
                                 .flatten()
-                                .map(Message::new_transaction)
+                                .map(Message::from)
                         } else {
                             None
                         }

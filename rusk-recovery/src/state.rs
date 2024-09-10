@@ -40,6 +40,7 @@ pub const DEFAULT_SNAPSHOT: &str =
     include_str!("../config/testnet_remote.toml");
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
+const GENESIS_CHAIN_ID: u8 = 0xFA;
 
 pub static DUSK_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let addr = include_str!("../assets/dusk.address");
@@ -51,6 +52,12 @@ pub static FAUCET_KEY: Lazy<PublicKey> = Lazy::new(|| {
     let addr = include_str!("../assets/faucet.address");
     let bytes = bs58::decode(addr).into_vec().expect("valid hex");
     PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
+});
+
+pub static DUSK_CONSENSUS_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
+    let dusk_cpk_bytes = include_bytes!("../../rusk/src/assets/dusk.cpk");
+    AccountPublicKey::from_slice(dusk_cpk_bytes)
+        .expect("Dusk consensus public key to be valid")
 });
 
 fn generate_transfer_state(
@@ -120,12 +127,25 @@ fn generate_stake_state(
     snapshot: &Snapshot,
 ) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
+    session
+        .call::<_, ()>(
+            STAKE_CONTRACT,
+            "insert_stake",
+            &(
+                *DUSK_CONSENSUS_KEY,
+                *DUSK_CONSENSUS_KEY,
+                StakeData::default(),
+            ),
+            u64::MAX,
+        )
+        .expect("stake to be inserted into the state");
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
 
         let amount = (staker.amount > 0).then(|| StakeAmount {
             value: staker.amount,
             eligibility: staker.eligibility.unwrap_or_default(),
+            locked: 0,
         });
 
         let stake = StakeData {
@@ -140,7 +160,7 @@ fn generate_stake_state(
             .call::<_, ()>(
                 STAKE_CONTRACT,
                 "insert_stake",
-                &(*staker.address(), stake),
+                &(staker.to_stake_keys(), stake),
                 u64::MAX,
             )
             .expect("stake to be inserted into the state");
@@ -171,7 +191,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     let state_dir = state_dir.as_ref();
 
     let vm = rusk_abi::new_vm(state_dir)?;
-    let mut session = rusk_abi::new_genesis_session(&vm);
+    let mut session = rusk_abi::new_genesis_session(&vm, GENESIS_CHAIN_ID);
 
     let transfer_code = include_bytes!(
         "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -259,8 +279,12 @@ where
         None => generate_empty_state(state_dir, snapshot),
     }?;
 
-    let mut session =
-        rusk_abi::new_session(&vm, old_commit_id, GENESIS_BLOCK_HEIGHT)?;
+    let mut session = rusk_abi::new_session(
+        &vm,
+        old_commit_id,
+        GENESIS_CHAIN_ID,
+        GENESIS_BLOCK_HEIGHT,
+    )?;
 
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;

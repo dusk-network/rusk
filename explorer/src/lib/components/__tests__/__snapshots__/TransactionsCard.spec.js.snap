@@ -179,7 +179,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -254,9 +254,9 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-error transaction-status"
               >
-                success
+                failed
               </span>
             </td>
             
@@ -329,7 +329,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -404,7 +404,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -479,7 +479,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -554,7 +554,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -629,7 +629,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -704,7 +704,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -779,7 +779,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>
@@ -854,7 +854,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-success"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
                 success
               </span>

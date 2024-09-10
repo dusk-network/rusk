@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `piecrust-uplink` to `0.15`
 - Change dependencies declarations enforce bytecheck [#1371]
 - Update dusk dependencies [#1609]
+- Made owner methods compatible with BLS key [#2230]
 
 ## [0.11.0] - 2023-10-12
 
@@ -200,6 +201,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add LICENSE
 - Add README.md
 
+[#2230]: https://github.com/dusk-network/rusk/issues/2230
 [#1710]: https://github.com/dusk-network/rusk/issues/1710
 [#1630]: https://github.com/dusk-network/rusk/issues/1630
 [#1609]: https://github.com/dusk-network/rusk/issues/1609

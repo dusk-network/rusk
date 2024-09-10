@@ -31,8 +31,8 @@ enum TxAcceptanceError {
     AlreadyExistsInMempool,
     #[error("this transaction exists in the ledger")]
     AlreadyExistsInLedger,
-    #[error("this transaction's input(s) exists in the mempool")]
-    NullifierExistsInMempool,
+    #[error("this transaction's spendId exists in the mempool")]
+    SpendIdExistsInMempool,
     #[error("this transaction is invalid {0}")]
     VerificationFailed(String),
     #[error("Maximum count of transactions exceeded {0}")]
@@ -192,15 +192,10 @@ impl MempoolSrv {
 
         // Try to add the transaction to the mempool
         db.read().await.update(|db| {
-            let nullifiers: Vec<_> = tx
-                .inner
-                .nullifiers()
-                .iter()
-                .map(|nullifier| nullifier.to_bytes())
-                .collect();
+            let spend_ids = tx.to_spend_ids();
 
-            // ensure nullifiers do not exist in the mempool
-            for m_tx_id in db.get_txs_by_nullifiers(&nullifiers) {
+            // ensure spend_ids do not exist in the mempool
+            for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
                 if let Some(m_tx) = db.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
                         if db.delete_tx(m_tx_id)? {
@@ -208,7 +203,7 @@ impl MempoolSrv {
                         };
                     } else {
                         return Err(
-                            TxAcceptanceError::NullifierExistsInMempool.into(),
+                            TxAcceptanceError::SpendIdExistsInMempool.into()
                         );
                     }
                 }
@@ -246,12 +241,11 @@ impl MempoolSrv {
             .conf
             .mempool_download_redundancy
             .unwrap_or(DEFAULT_DOWNLOAD_REDUNDANCY);
-
-        let payload = payload::GetMempool {};
+        let msg = payload::GetMempool::default().into();
         if let Err(err) = network
             .read()
             .await
-            .send_to_alive_peers(&Message::new_get_mempool(payload), max_peers)
+            .send_to_alive_peers(msg, max_peers)
             .await
         {
             error!("could not request mempool from network: {err}");

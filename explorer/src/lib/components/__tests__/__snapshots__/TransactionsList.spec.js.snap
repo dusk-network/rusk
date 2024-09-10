@@ -67,11 +67,10 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
     class="details-list__definition details-list__definition--table"
   >
     <span
-      class="dusk-badge dusk-badge--variant-success explorer-badge"
+      class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
     >
       success
     </span>
-    
   </dd>
    
   <dt
@@ -186,11 +185,10 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
     class="details-list__definition details-list__definition--table"
   >
     <span
-      class="dusk-badge dusk-badge--variant-success explorer-badge"
+      class="dusk-badge dusk-badge--variant-success transaction-status explorer-badge"
     >
       success
     </span>
-    
   </dd>
    
   <dt

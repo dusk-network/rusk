@@ -14,10 +14,11 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
     signatures::bls::{
-        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-        Signature as BlsSignature,
+        Error as BlsError, MultisigPublicKey as BlsMultisigPublicKey,
+        MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
+        SecretKey as BlsSecretKey,
     },
-    transfer::withdraw::{Withdraw as TransferWithdraw, WithdrawReceiver},
+    transfer::withdraw::Withdraw as TransferWithdraw,
     ContractId,
 };
 
@@ -43,35 +44,56 @@ pub const fn next_epoch(block_height: u64) -> u64 {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Stake {
-    account: BlsPublicKey,
+    chain_id: u8,
+    keys: StakeKeys,
     value: u64,
     nonce: u64,
-    signature: BlsSignature,
+    signature: BlsMultisigSignature,
 }
 
 impl Stake {
-    const MESSAGE_SIZE: usize = BlsPublicKey::SIZE + u64::SIZE + u64::SIZE;
+    const MESSAGE_SIZE: usize =
+        1 + BlsPublicKey::SIZE + BlsPublicKey::SIZE + u64::SIZE + u64::SIZE;
 
     /// Create a new stake.
     #[must_use]
-    pub fn new(sk: &BlsSecretKey, value: u64, nonce: u64) -> Self {
+    pub fn new(
+        sk: &BlsSecretKey,
+        value: u64,
+        nonce: u64,
+        chain_id: u8,
+    ) -> Self {
+        let key = BlsPublicKey::from(sk);
+
         let mut stake = Stake {
-            account: BlsPublicKey::from(sk),
+            chain_id,
+            keys: StakeKeys {
+                account: key,
+                funds: key,
+            },
             value,
             nonce,
-            signature: BlsSignature::default(),
+            signature: BlsMultisigSignature::default(),
         };
 
         let msg = stake.signature_message();
-        stake.signature = sk.sign(&msg);
+
+        let first_sig = sk.sign_multisig(&key, &msg);
+        stake.signature = first_sig.aggregate(&[first_sig]);
 
         stake
     }
 
     /// Account to which the stake will belong.
     #[must_use]
+    pub fn keys(&self) -> &StakeKeys {
+        &self.keys
+    }
+
+    /// Account to which the stake will belong.
+    #[must_use]
     pub fn account(&self) -> &BlsPublicKey {
-        &self.account
+        &self.keys.account
     }
 
     /// Value to stake.
@@ -91,9 +113,15 @@ impl Stake {
         self.nonce
     }
 
+    /// Returns the chain ID of the stake.
+    #[must_use]
+    pub fn chain_id(&self) -> u8 {
+        self.chain_id
+    }
+
     /// Signature of the stake.
     #[must_use]
-    pub fn signature(&self) -> &BlsSignature {
+    pub fn signature(&self) -> &BlsMultisigSignature {
         &self.signature
     }
 
@@ -102,10 +130,15 @@ impl Stake {
     pub fn signature_message(&self) -> [u8; Self::MESSAGE_SIZE] {
         let mut bytes = [0u8; Self::MESSAGE_SIZE];
 
-        let mut offset = 0;
+        bytes[0] = self.chain_id;
+        let mut offset = 1;
 
         bytes[offset..offset + BlsPublicKey::SIZE]
-            .copy_from_slice(&self.account.to_bytes());
+            .copy_from_slice(&self.keys.account.to_bytes());
+        offset += BlsPublicKey::SIZE;
+
+        bytes[offset..offset + BlsPublicKey::SIZE]
+            .copy_from_slice(&self.keys.funds.to_bytes());
         offset += BlsPublicKey::SIZE;
 
         bytes[offset..offset + u64::SIZE]
@@ -127,21 +160,24 @@ impl Stake {
 pub struct Withdraw {
     account: BlsPublicKey,
     withdraw: TransferWithdraw,
-    signature: BlsSignature,
+    signature: BlsMultisigSignature,
 }
 
 impl Withdraw {
     /// Create a new withdraw call.
     #[must_use]
     pub fn new(sk: &BlsSecretKey, withdraw: TransferWithdraw) -> Self {
+        let account = BlsPublicKey::from(sk);
         let mut stake_withdraw = Withdraw {
-            account: BlsPublicKey::from(sk),
+            account,
             withdraw,
-            signature: BlsSignature::default(),
+            signature: BlsMultisigSignature::default(),
         };
 
         let msg = stake_withdraw.signature_message();
-        stake_withdraw.signature = sk.sign(&msg);
+
+        let first_sig = sk.sign_multisig(&account, &msg);
+        stake_withdraw.signature = first_sig.aggregate(&[first_sig]);
 
         stake_withdraw
     }
@@ -160,7 +196,7 @@ impl Withdraw {
 
     /// Signature of the withdraw.
     #[must_use]
-    pub fn signature(&self) -> &BlsSignature {
+    pub fn signature(&self) -> &BlsMultisigSignature {
         &self.signature
     }
 
@@ -180,14 +216,22 @@ impl Withdraw {
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct StakeEvent {
-    /// Account associated to the event.
-    pub account: BlsPublicKey,
-    /// Value of the relevant operation, be it `stake`, `unstake`, `withdraw`,
-    /// `reward`, or `slash`.
+    /// Keys associated to the event.
+    pub keys: StakeKeys,
+    /// Value of the relevant operation, be it `stake`, `unstake`,`withdraw`
     pub value: u64,
-    /// The receiver of the action, relevant in `withdraw` and `unstake`
-    /// operations.
-    pub receiver: Option<WithdrawReceiver>,
+}
+
+/// Event emitted after a slash operation is performed.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct SlashEvent {
+    /// Account slashed.
+    pub account: BlsPublicKey,
+    /// Slashed amount
+    pub value: u64,
+    /// New eligibility for the slashed account
+    pub next_eligibility: u64,
 }
 
 /// The minimum amount of Dusk one can stake.
@@ -226,6 +270,29 @@ pub struct StakeData {
     pub hard_faults: u8,
 }
 
+/// Keys that identify a stake
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
+)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakeKeys {
+    /// Key used for the consensus
+    pub account: BlsPublicKey,
+    /// Key used for handle funds (stake/unstake/withdraw)
+    pub funds: BlsPublicKey,
+}
+
+impl StakeKeys {
+    /// Return the `MultisigPublicKey` associated to this `StakeKeys`
+    ///
+    /// # Errors
+    ///
+    /// Look at `MultisigPublicKey::aggregate`
+    pub fn multisig_pk(&self) -> Result<BlsMultisigPublicKey, BlsError> {
+        BlsMultisigPublicKey::aggregate(&[self.account, self.funds])
+    }
+}
+
 impl StakeData {
     /// An empty stake.
     pub const EMPTY: Self = Self {
@@ -254,7 +321,11 @@ impl StakeData {
     ) -> Self {
         let amount = match value {
             0 => None,
-            _ => Some(StakeAmount { value, eligibility }),
+            _ => Some(StakeAmount {
+                value,
+                eligibility,
+                locked: 0,
+            }),
         };
 
         Self {
@@ -357,6 +428,8 @@ impl Serializable<STAKE_DATA_SIZE> for StakeData {
 pub struct StakeAmount {
     /// The value staked.
     pub value: u64,
+    /// The amount that has been locked (due to a soft slash).
+    pub locked: u64,
     /// The eligibility of the stake.
     pub eligibility: u64,
 }
@@ -373,7 +446,11 @@ impl StakeAmount {
     /// the `eligibility`.
     #[must_use]
     pub const fn with_eligibility(value: u64, eligibility: u64) -> Self {
-        Self { value, eligibility }
+        Self {
+            value,
+            eligibility,
+            locked: 0,
+        }
     }
 
     /// Compute the eligibility of a stake from the starting block height.
@@ -382,9 +459,14 @@ impl StakeAmount {
         let maturity_blocks = EPOCH;
         next_epoch(block_height) + maturity_blocks
     }
+    /// Move `amount` to locked value
+    pub fn lock_amount(&mut self, amount: u64) {
+        self.value -= amount;
+        self.locked += amount;
+    }
 }
 
-const STAKE_AMOUNT_SIZE: usize = u64::SIZE + u64::SIZE;
+const STAKE_AMOUNT_SIZE: usize = u64::SIZE + u64::SIZE + u64::SIZE;
 
 impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
     type Error = dusk_bytes::Error;
@@ -396,9 +478,14 @@ impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
         let mut buf = &buf[..];
 
         let value = u64::from_reader(&mut buf)?;
+        let locked = u64::from_reader(&mut buf)?;
         let eligibility = u64::from_reader(&mut buf)?;
 
-        Ok(Self { value, eligibility })
+        Ok(Self {
+            value,
+            locked,
+            eligibility,
+        })
     }
 
     #[allow(unused_must_use)]
@@ -407,8 +494,36 @@ impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
         let mut writer = &mut buf[..];
 
         writer.write(&self.value.to_bytes());
+        writer.write(&self.locked.to_bytes());
         writer.write(&self.eligibility.to_bytes());
 
         buf
     }
+}
+
+/// Used in a `reward` call to reward a given account with an amount of Dusk,
+/// and emitted as an event, once a reward succeeds.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Reward {
+    /// The account to be rewarded.
+    pub account: BlsPublicKey,
+    /// The amount to reward.
+    pub value: u64,
+    /// The reason for the reward.
+    pub reason: RewardReason,
+}
+
+/// The reason that a reward is issued.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub enum RewardReason {
+    /// The fixed amount awarded to a generator.
+    GeneratorFixed,
+    /// Extra amount awarded to a generator.
+    GeneratorExtra,
+    /// Amount awarded to a voter.
+    Voter,
+    /// Amount awarded for another reason, such as rewarding Dusk.
+    Other,
 }

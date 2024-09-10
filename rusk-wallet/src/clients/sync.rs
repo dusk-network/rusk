@@ -6,33 +6,36 @@
 
 use std::mem::size_of;
 
-use dusk_plonk::prelude::BlsScalar;
-use dusk_wallet_core::Store;
 use futures::StreamExt;
-use phoenix_core::transaction::{ArchivedTreeLeaf, TreeLeaf};
 
 use crate::block::Block;
 use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::rusk::RuskHttpClient;
-use crate::store::LocalStore;
-use crate::{Error, RuskRequest, MAX_ADDRESSES};
+use crate::{Error, RuskRequest};
 
-const RKYV_TREE_LEAF_SIZE: usize = size_of::<ArchivedTreeLeaf>();
+use super::*;
 
-pub(crate) async fn sync_db<F: Fn(&str)>(
+const TREE_LEAF: usize = size_of::<ArchivedNoteLeaf>();
+
+pub(crate) async fn sync_db(
     client: &RuskHttpClient,
-    store: &LocalStore,
     cache: &Cache,
-    status: F,
+    store: &LocalStore,
+    status: fn(&str),
 ) -> Result<(), Error> {
-    let addresses: Vec<_> = (0..MAX_ADDRESSES)
-        .flat_map(|i| store.retrieve_ssk(i as u64))
-        .map(|ssk| {
-            let vk = ssk.view_key();
-            let psk = vk.public_spend_key();
-            (ssk, vk, psk)
-        })
-        .collect();
+    let seed = store.get_seed();
+
+    let addresses: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> =
+        (0..MAX_ADDRESSES)
+            .map(|i| {
+                let i = i as u8;
+                (
+                    derive_phoenix_sk(seed, i),
+                    derive_phoenix_vk(seed, i),
+                    derive_phoenix_pk(seed, i),
+                )
+            })
+            .collect();
 
     status("Getting cached note position...");
 
@@ -63,51 +66,62 @@ pub(crate) async fn sync_db<F: Fn(&str)>(
     // This buffer is needed because `.bytes_stream();` introduce additional
     // spliting of chunks according to it's own buffer
     let mut buffer = vec![];
+    let mut note_data = Vec::new();
 
     while let Some(http_chunk) = stream.next().await {
         buffer.extend_from_slice(&http_chunk?);
 
-        let mut leaf_chunk = buffer.chunks_exact(RKYV_TREE_LEAF_SIZE);
+        let mut leaf_chunk = buffer.chunks_exact(TREE_LEAF);
 
         for leaf_bytes in leaf_chunk.by_ref() {
-            let TreeLeaf { block_height, note } =
+            let NoteLeaf { block_height, note } =
                 rkyv::from_bytes(leaf_bytes).map_err(|_| Error::Rkyv)?;
 
             last_pos = std::cmp::max(last_pos, *note.pos());
 
-            for (ssk, vk, psk) in addresses.iter() {
-                if vk.owns(&note) {
-                    let nullifier = note.gen_nullifier(ssk);
-                    let spent =
-                        fetch_existing_nullifiers_remote(client, &[nullifier])
-                            .wait()?
-                            .first()
-                            .is_some();
-                    let note = (note, nullifier);
-                    match spent {
-                        true => cache.insert_spent(psk, block_height, note),
-                        false => cache.insert(psk, block_height, note),
-                    }?;
-
-                    break;
-                }
-            }
-            cache.insert_last_pos(last_pos)?;
+            note_data.push((block_height, note));
         }
+
+        cache.insert_last_pos(last_pos)?;
 
         buffer = leaf_chunk.remainder().to_vec();
     }
 
+    for (sk, vk, pk) in addresses.iter() {
+        for (block_height, note) in note_data.iter() {
+            if vk.owns(note.stealth_address()) {
+                let nullifier = note.gen_nullifier(sk);
+                let spent =
+                    fetch_existing_nullifiers_remote(client, &[nullifier])
+                        .wait()?
+                        .first()
+                        .is_some();
+                let note = (note.clone(), nullifier);
+
+                match spent {
+                    true => cache.insert_spent(pk, *block_height, note),
+                    false => cache.insert(pk, *block_height, note),
+                }?;
+            }
+        }
+    }
+
     // Remove spent nullifiers from live notes
-    for (_, _, psk) in addresses {
-        let nullifiers = cache.unspent_notes_id(&psk)?;
+    // zerorize all the secret keys
+    for (mut sk, _, pk) in addresses {
+        let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(&pk)?;
 
         if !nullifiers.is_empty() {
             let existing =
-                fetch_existing_nullifiers_remote(client, &nullifiers).wait()?;
-            cache.spend_notes(&psk, &existing)?;
+                fetch_existing_nullifiers_remote(client, nullifiers.as_slice())
+                    .wait()?;
+
+            cache.spend_notes(&pk, existing.as_slice())?;
         }
+
+        sk.zeroize();
     }
+
     Ok(())
 }
 

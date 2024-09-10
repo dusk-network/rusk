@@ -107,6 +107,7 @@ impl From<BlsSigError> for StepSigError {
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
+    InvalidBlockSize(usize),
     InvalidSignature(BlsSigError),
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
@@ -123,6 +124,9 @@ pub enum ConsensusError {
     ChildTaskTerminated,
     Canceled(u64),
     VoteAlreadyCollected,
+    TooManyTransactions(usize),
+    TooManyFaults(usize),
+    UnknownBlockSize,
 }
 
 impl From<StepSigError> for ConsensusError {
@@ -139,7 +143,8 @@ impl From<BlsSigError> for ConsensusError {
 #[async_trait::async_trait]
 pub trait Database: Send + Sync {
     fn store_candidate_block(&mut self, b: Block);
-    fn delete_candidate_blocks(&mut self);
+    async fn get_last_iter(&self) -> (Hash, u8);
+    async fn store_last_iter(&mut self, data: (Hash, u8));
 }
 
 #[derive(Clone)]

@@ -15,6 +15,7 @@
   --success-color: var(--success-500);
   --success-color-variant-dark: var(--success-700);
   --warning-color: var(--warning);
+  --muted-color: var(--granite-grey);
 
   --on-background-color: var(--smokey-black);
   --on-primary-color: var(--light-grey);
@@ -87,9 +88,9 @@
 
   /* Progress bars */
 
-  --progress-bar-height: 0.3125em;
+  --progress-bar-height: 0.6125em;
   --progress-bg-color: var(--primary-color);
-  --progress-filler-color: var(--success-color);
+  --progress-filler-color: var(--secondary-color);
 
   /* Steppers */
 
@@ -109,9 +110,15 @@
   --checkbox-control-border-color: var(--smokey-black);
   --checkbox-control-checked-bg-color: var(--smokey-black);
 
+  /* Fieldset */
+  --fieldset-background-color: var(--light-grey);
+  --fieldset-border-radius: 1.5em;
+
   /* Dividers */
 
-  --divider-color-primary: var(--taupe-grey);
+  --divider-color-primary: var(--smokey-black);
+  --divider-background-color: var(--light-gray);
+  --divider-border-color: var(--smokey-black);
 
   /* Home animation */
 
@@ -151,6 +158,16 @@
 
   --checkbox-control-border-color: var(--light-grey);
   --checkbox-control-checked-bg-color: var(--light-grey);
+
+  /* Fieldset */
+
+  --fieldset-background-color: var(--smokey-black);
+
+  /* Dividers */
+
+  --divider-color-primary: var(--magnolia);
+  --divider-background-color: var(--smokey-black);
+  --divider-border-color: var(--magnolia);
 
   /* Home animation */
 

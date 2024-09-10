@@ -8,7 +8,7 @@ use crate::database;
 use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
-use dusk_consensus::config::MINIMUM_BLOCK_TIME;
+use dusk_consensus::config::{MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD};
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
@@ -205,12 +205,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     ) -> anyhow::Result<u8> {
         let mut failed_atts = 0u8;
 
-        for (iter, att) in candidate_block
-            .failed_iterations
-            .att_list
-            .iter()
-            .enumerate()
-        {
+        let att_list = &candidate_block.failed_iterations.att_list;
+
+        if att_list.len() > RELAX_ITERATION_THRESHOLD as usize {
+            anyhow::bail!("Too many failed iterations {}", att_list.len())
+        }
+
+        for (iter, att) in att_list.iter().enumerate() {
             if let Some((att, pk)) = att {
                 info!(event = "verify_att", att_type = "failed_att", iter);
 

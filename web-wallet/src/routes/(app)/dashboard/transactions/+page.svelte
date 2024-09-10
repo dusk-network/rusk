@@ -6,7 +6,7 @@
 
   const { language } = $settingsStore;
 
-  $: ({ isSyncing, error } = $walletStore);
+  $: ({ syncStatus } = $walletStore);
 </script>
 
 <div class="transactions">
@@ -15,8 +15,8 @@
   <Transactions
     items={walletStore.getTransactionsHistory()}
     {language}
-    {isSyncing}
-    syncError={error}
+    isSyncing={syncStatus.isInProgress}
+    syncError={syncStatus.error}
   />
 </div>
 

@@ -19,7 +19,6 @@ use execution_core::{
             PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
         },
     },
-    transfer::phoenix::PublicKey as PhoenixPublicKey,
     BlsScalar,
 };
 
@@ -64,15 +63,19 @@ impl HostFnTest {
         rusk_abi::verify_bls(msg, pk, sig)
     }
 
+    pub fn chain_id(&self) -> u8 {
+        rusk_abi::chain_id()
+    }
+
     pub fn block_height(&self) -> u64 {
         rusk_abi::block_height()
     }
 
-    pub fn owner(&self) -> PhoenixPublicKey {
+    pub fn owner(&self) -> BlsPublicKey {
         rusk_abi::self_owner()
     }
 
-    pub fn owner_raw(&self) -> [u8; PhoenixPublicKey::SIZE] {
+    pub fn owner_raw(&self) -> [u8; BlsPublicKey::SIZE] {
         rusk_abi::self_owner_raw()
     }
 }
@@ -106,6 +109,11 @@ unsafe fn verify_bls(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
         STATE.verify_bls(msg, pk, sig)
     })
+}
+
+#[no_mangle]
+unsafe fn chain_id(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.chain_id())
 }
 
 #[no_mangle]

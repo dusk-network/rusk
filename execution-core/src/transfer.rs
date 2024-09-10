@@ -7,7 +7,9 @@
 //! Types related to Dusk's transfer contract that are shared across the
 //! network.
 
+use alloc::string::String;
 use alloc::vec::Vec;
+
 use core::fmt::Debug;
 
 use bytecheck::CheckBytes;
@@ -20,10 +22,11 @@ use crate::{
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
+    transfer::withdraw::{Withdraw, WithdrawReceiver},
     BlsScalar, ContractId, Error,
 };
 
-pub mod contract_exec;
+pub mod data;
 pub mod moonlight;
 pub mod phoenix;
 pub mod withdraw;
@@ -31,7 +34,10 @@ pub mod withdraw;
 /// ID of the genesis transfer contract
 pub const TRANSFER_CONTRACT: ContractId = crate::reserved(0x1);
 
-use contract_exec::{ContractCall, ContractDeploy, ContractExec};
+/// Panic of "Nonce not ready to be used yet"
+pub const PANIC_NONCE_NOT_READY: &str = "Nonce not ready to be used yet";
+
+use data::{ContractCall, ContractDeploy, TransactionData};
 use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{
     Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -73,7 +79,8 @@ impl Transaction {
         deposit: u64,
         gas_limit: u64,
         gas_price: u64,
-        exec: Option<impl Into<ContractExec>>,
+        chain_id: u8,
+        data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
         Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
             rng,
@@ -87,12 +94,16 @@ impl Transaction {
             deposit,
             gas_limit,
             gas_price,
-            exec,
+            chain_id,
+            data,
         )?))
     }
 
     /// Create a new moonlight transaction.
-    #[must_use]
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - the memo, if given, is too large
     #[allow(clippy::too_many_arguments)]
     pub fn moonlight(
         from_sk: &AccountSecretKey,
@@ -102,12 +113,13 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         nonce: u64,
-        exec: Option<impl Into<ContractExec>>,
-    ) -> Self {
-        Self::Moonlight(MoonlightTransaction::new(
+        chain_id: u8,
+        data: Option<impl Into<TransactionData>>,
+    ) -> Result<Self, Error> {
+        Ok(Self::Moonlight(MoonlightTransaction::new(
             from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-            exec,
-        ))
+            chain_id, data,
+        )?))
     }
 
     /// Return the sender of the account for Moonlight transactions.
@@ -229,6 +241,15 @@ impl Transaction {
         }
     }
 
+    /// Returns the memo used with the transaction, if any.
+    #[must_use]
+    pub fn memo(&self) -> Option<&[u8]> {
+        match self {
+            Self::Phoenix(tx) => tx.memo(),
+            Self::Moonlight(tx) => tx.memo(),
+        }
+    }
+
     /// Creates a modified clone of this transaction if it contains data for
     /// deployment, clones all fields except for the bytecode' 'bytes' part.
     /// Returns none if the transaction is not a deployment transaction.
@@ -309,4 +330,163 @@ impl From<MoonlightTransaction> for Transaction {
     fn from(tx: MoonlightTransaction) -> Self {
         Self::Moonlight(tx)
     }
+}
+
+/// The payload sent by a contract to the transfer contract to transfer some of
+/// its funds to another contract.
+#[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToContract {
+    /// Contract to transfer funds to.
+    pub contract: ContractId,
+    /// Amount to send to the contract.
+    pub value: u64,
+    /// Function name to call on the contract.
+    pub fn_name: String,
+    /// Extra data sent along with [`ReceiveFromContract`]
+    pub data: Vec<u8>,
+}
+
+/// The payload sent by the transfer contract to a contract receiving funds from
+/// another contract.
+#[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ReceiveFromContract {
+    /// Contract that sent the funds.
+    pub contract: ContractId,
+    /// Amount sent by the contract.
+    pub value: u64,
+    /// Extra data sent by the sender.
+    pub data: Vec<u8>,
+}
+
+/// The payload sent by a contract to the transfer contract to transfer some of
+/// its funds to an account.
+#[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToAccount {
+    /// Account to transfer funds to.
+    pub account: AccountPublicKey,
+    /// Amount to send to the account.
+    pub value: u64,
+}
+
+/// Event data emitted on a withdrawal from a contract.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawEvent {
+    /// The contract withdrawn from.
+    pub contract: ContractId,
+    /// The value withdrawn.
+    pub value: u64,
+    /// The receiver of the value.
+    pub receiver: WithdrawReceiver,
+}
+
+impl From<Withdraw> for WithdrawEvent {
+    fn from(w: Withdraw) -> Self {
+        Self {
+            contract: w.contract,
+            value: w.value,
+            receiver: w.receiver,
+        }
+    }
+}
+
+/// Event data emitted on a conversion from Phoenix to Moonlight, and
+/// vice-versa.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ConvertEvent {
+    /// The originator of the conversion, if it is possible to determine. From
+    /// Moonlight to Phoenix it is possible, but the same cannot be done the
+    /// other way round.
+    pub sender: Option<AccountPublicKey>,
+    /// The value converted.
+    pub value: u64,
+    /// The receiver of the value.
+    pub receiver: WithdrawReceiver,
+}
+
+impl ConvertEvent {
+    /// Convert a sender and a withdraw into a conversion event.
+    #[must_use]
+    pub fn from_withdraw_and_sender(
+        sender: Option<AccountPublicKey>,
+        withdraw: &Withdraw,
+    ) -> Self {
+        Self {
+            sender,
+            value: withdraw.value,
+            receiver: withdraw.receiver,
+        }
+    }
+}
+
+/// Event data emitted on a deposit to a contract.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct DepositEvent {
+    /// The originator of the deposit, if it is possible to determine. If the
+    /// depositor is using Moonlight this will be available. If they're using
+    /// Phoenix it will not.
+    pub sender: Option<AccountPublicKey>,
+    /// The value deposited.
+    pub value: u64,
+    /// The receiver of the value.
+    pub receiver: ContractId,
+}
+
+/// Event data emitted on a transfer from a contract to a contract.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToContractEvent {
+    /// The sender of the funds.
+    pub sender: ContractId,
+    /// The value transferred.
+    pub value: u64,
+    /// The receiver of the funds.
+    pub receiver: ContractId,
+}
+
+/// Event data emitted on a transfer from a contract to a Moonlight account.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TransferToAccountEvent {
+    /// The sender of the funds.
+    pub sender: ContractId,
+    /// The value transferred.
+    pub value: u64,
+    /// The receiver of the funds.
+    pub receiver: AccountPublicKey,
+}
+
+/// Event data emitted on a phoenix transaction's completion.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct PhoenixTransactionEvent {
+    /// Nullifiers of the notes spent during the transaction.
+    pub nullifiers: Vec<BlsScalar>,
+    /// Notes produced during the transaction.
+    pub notes: Vec<Note>,
+    /// The memo included in the transaction.
+    pub memo: Vec<u8>,
+    /// Gas spent by the transaction.
+    pub gas_spent: u64,
+}
+
+/// Event data emitted on a moonlight transaction's completion.
+#[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct MoonlightTransactionEvent {
+    /// The account that initiated the transaction.
+    pub from: AccountPublicKey,
+    /// The receiver of the funds if any were transferred.
+    pub to: Option<AccountPublicKey>,
+    /// Transfer amount
+    pub value: u64,
+    /// The memo included in the transaction.
+    pub memo: Vec<u8>,
+    /// Gas spent by the transaction.
+    pub gas_spent: u64,
 }

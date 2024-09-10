@@ -18,7 +18,7 @@
       "blockHash": "6971e17e1603d0651b4145ce404f9c7eeaa72182d94ef8856da980d38530d800",
       "blockHeight": 1377411,
       "blockTimestamp": 1716961328,
-      "err": null,
+      "err": "Panic: failed deployment",
       "gasSpent": 215617,
       "id": "534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00",
       "tx": {

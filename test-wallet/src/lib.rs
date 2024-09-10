@@ -15,7 +15,6 @@ extern crate alloc;
 mod imp;
 
 use alloc::vec::Vec;
-use poseidon_merkle::Opening as PoseidonOpening;
 use zeroize::Zeroize;
 
 use execution_core::{
@@ -24,8 +23,8 @@ use execution_core::{
     transfer::{
         moonlight::AccountData,
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
+            Note, NoteOpening, PublicKey as PhoenixPublicKey,
+            SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
         },
     },
     BlsScalar,
@@ -104,9 +103,6 @@ pub trait Store {
     }
 }
 
-/// Tuple containing Note and block height
-pub type EnrichedNote = (Note, u64);
-
 /// Types that are clients of the state API.
 pub trait StateClient {
     /// Error returned by the node client.
@@ -116,7 +112,7 @@ pub trait StateClient {
     fn fetch_notes(
         &self,
         vk: &PhoenixViewKey,
-    ) -> Result<Vec<EnrichedNote>, Self::Error>;
+    ) -> Result<Vec<(Note, u64)>, Self::Error>;
 
     /// Fetch the current root of the state.
     fn fetch_root(&self) -> Result<BlsScalar, Self::Error>;
@@ -129,10 +125,7 @@ pub trait StateClient {
     ) -> Result<Vec<BlsScalar>, Self::Error>;
 
     /// Queries the node to find the opening for a specific note.
-    fn fetch_opening(
-        &self,
-        note: &Note,
-    ) -> Result<PoseidonOpening<(), NOTES_TREE_DEPTH>, Self::Error>;
+    fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Self::Error>;
 
     /// Queries the node for the stake of a key. If the key has no stake, a
     /// `Default` stake info should be returned.
@@ -143,4 +136,7 @@ pub trait StateClient {
         &self,
         pk: &BlsPublicKey,
     ) -> Result<AccountData, Self::Error>;
+
+    /// Queries for the chain ID.
+    fn fetch_chain_id(&self) -> Result<u8, Self::Error>;
 }

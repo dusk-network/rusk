@@ -16,12 +16,11 @@ use execution_core::{
     stake::StakeData,
     transfer::{
         moonlight::AccountData,
-        phoenix::{Note, ViewKey, NOTES_TREE_DEPTH},
+        phoenix::{Note, NoteOpening, ViewKey},
     },
     BlsScalar,
 };
 use futures::StreamExt;
-use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::{Error, Result, Rusk};
 use test_wallet::{self as wallet, Store};
 use tracing::info;
@@ -100,10 +99,7 @@ impl wallet::StateClient for TestStateClient {
     }
 
     /// Queries the node to find the opening for a specific note.
-    fn fetch_opening(
-        &self,
-        note: &Note,
-    ) -> Result<PoseidonOpening<(), NOTES_TREE_DEPTH>, Self::Error> {
+    fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Self::Error> {
         self.rusk
             .tree_opening(*note.pos())?
             .ok_or(Error::OpeningPositionNotFound(*note.pos()))
@@ -120,6 +116,11 @@ impl wallet::StateClient for TestStateClient {
     ) -> Result<AccountData, Self::Error> {
         let account = self.rusk.account(pk)?;
         Ok(account)
+    }
+
+    fn fetch_chain_id(&self) -> Result<u8, Self::Error> {
+        let chain_id = self.rusk.chain_id()?;
+        Ok(chain_id)
     }
 }
 

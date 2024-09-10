@@ -13,9 +13,12 @@ use rand::SeedableRng;
 use execution_core::{
     dusk,
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{Stake, StakeData, Withdraw as StakeWithdraw, STAKE_CONTRACT},
+    stake::{
+        Reward, RewardReason, Stake, StakeData, Withdraw as StakeWithdraw,
+        STAKE_CONTRACT,
+    },
     transfer::{
-        contract_exec::ContractCall,
+        data::ContractCall,
         phoenix::{
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
             ViewKey as PhoenixViewKey,
@@ -26,7 +29,7 @@ use execution_core::{
 };
 
 use crate::common::assert::assert_event;
-use crate::common::init::instantiate;
+use crate::common::init::{instantiate, CHAIN_ID};
 use crate::common::utils::*;
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
@@ -71,8 +74,11 @@ fn stake_withdraw_unstake() {
     let input_note_pos = 0;
     let deposit = INITIAL_STAKE;
 
+    let chain_id =
+        chain_id(&mut session).expect("Getting the chain ID should succeed");
+
     // Fashion a Stake struct
-    let stake = Stake::new(&stake_sk, deposit, 1);
+    let stake = Stake::new(&stake_sk, deposit, 1, chain_id);
     let stake_bytes = rkyv::to_bytes::<_, 1024>(&stake)
         .expect("Should serialize Stake correctly")
         .to_vec();
@@ -129,13 +135,14 @@ fn stake_withdraw_unstake() {
 
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
+    let rewards = vec![Reward {
+        account: stake_pk,
+        value: REWARD_AMOUNT,
+        reason: RewardReason::Other,
+    }];
+
     let receipt = session
-        .call::<_, ()>(
-            STAKE_CONTRACT,
-            "reward",
-            &(stake_pk, REWARD_AMOUNT),
-            POINT_LIMIT,
-        )
+        .call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, POINT_LIMIT)
         .expect("Rewarding a key should succeed");
 
     assert_event(&receipt.events, "reward", &stake_pk, REWARD_AMOUNT);
@@ -230,7 +237,7 @@ fn stake_withdraw_unstake() {
     // set different block height so that the new notes are easily located and
     // filtered
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, 2)
+    let mut session = rusk_abi::new_session(vm, base, CHAIN_ID, 2)
         .expect("Instantiating new session should succeed");
 
     let receipt =
@@ -344,7 +351,7 @@ fn stake_withdraw_unstake() {
     // filtered
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, 3)
+    let mut session = rusk_abi::new_session(vm, base, CHAIN_ID, 3)
         .expect("Instantiating new session should succeed");
 
     let receipt =

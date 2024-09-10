@@ -1,13 +1,33 @@
+<svelte:options immutable={true} />
+
 <script>
-  /** @type {number | undefined} */
+  import { tweened } from "svelte/motion";
+  /* eslint-disable import/no-unresolved */
+  import { expoOut } from "svelte/easing";
+  import { makeClassName } from "$lib/dusk/string";
+
+  /** @type {number|undefined} */
   export let currentPercentage = undefined;
+
+  /** @type {string|undefined} */
+  export let className = undefined;
+
+  /** @type {number} */
+  export let motionDuration = 400;
+
+  $: classes = makeClassName(["dusk-progress-bar", className]);
+
+  const progress = tweened(0, {
+    duration: motionDuration,
+    easing: expoOut,
+  });
+
+  $: currentPercentage !== undefined && progress.set(currentPercentage);
 </script>
 
-<div role="progressbar" class="dusk-progress-bar">
+<div role="progressbar" class={classes}>
   <div
-    style={currentPercentage !== undefined
-      ? `width: ${currentPercentage}%`
-      : undefined}
+    style={currentPercentage !== undefined ? `width: ${$progress}%` : undefined}
     class:dusk-progress-bar__filler--undetermined={currentPercentage ===
       undefined}
     class="dusk-progress-bar__filler"

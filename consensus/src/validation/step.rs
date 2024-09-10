@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::config;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{Operations, Voter};
@@ -124,7 +124,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         // Sign and construct validation message
         let validation = self::build_validation_payload(vote, ru, iteration);
         info!(event = "send_vote", vote = ?validation.vote);
-        let msg = Message::new_validation(validation);
+        let msg = Message::from(validation);
 
         // Publish
         outbound.try_send(msg.clone());
@@ -226,9 +226,9 @@ impl<T: Operations + 'static> ValidationStep<T> {
         )
     }
 
-    pub async fn run<DB: Database>(
+    pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_, DB, T>,
+        mut ctx: ExecutionCtx<'_, T>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
             .get_current_committee()

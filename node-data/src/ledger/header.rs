@@ -6,7 +6,7 @@
 
 use serde::Serialize;
 
-use crate::message::ConsensusHeader;
+use crate::message::{ConsensusHeader, MESSAGE_MAX_ITER};
 
 use super::*;
 
@@ -31,6 +31,7 @@ pub struct Header {
     #[serde(serialize_with = "crate::serialize_hex")]
     pub faultroot: Hash,
     pub gas_limit: u64,
+    #[cfg_attr(any(feature = "faker", test), dummy(faker = "0..50"))]
     pub iteration: u8,
     pub prev_block_cert: Attestation,
     pub failed_iterations: IterationsInfo,
@@ -42,6 +43,14 @@ pub struct Header {
     // Non-hashable fields
     #[serde(skip_serializing)]
     pub att: Attestation,
+}
+
+impl Header {
+    pub fn size(&self) -> io::Result<usize> {
+        let mut buf = vec![];
+        self.write(&mut buf)?;
+        Ok(buf.len())
+    }
 }
 
 impl std::fmt::Debug for Header {
@@ -117,6 +126,14 @@ impl Header {
         let faultroot = Self::read_bytes(r)?;
         let gas_limit = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
+
+        // Iteration is 0-based
+        if iteration >= MESSAGE_MAX_ITER {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid iteration {iteration})"),
+            ));
+        }
 
         let prev_block_cert = Attestation::read(r)?;
         let failed_iterations = IterationsInfo::read(r)?;

@@ -8,9 +8,9 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use dusk_wallet::DecodedNote;
-use dusk_wallet_core::Transaction;
-use rusk_abi::dusk;
+use rusk_wallet::DecodedNote;
+
+use execution_core::{dusk, from_dusk, transfer::Transaction};
 
 use crate::io::{self, GraphQL};
 use crate::settings::Settings;
@@ -35,17 +35,17 @@ impl TransactionHistory {
 
 impl Display for TransactionHistory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dusk = self.amount / dusk::dusk(1.0) as f64;
+        let dusk = self.amount / dusk(1.0) as f64;
         let contract = match self.tx.call() {
             None => "transfer",
-            Some((_, method, _)) => method,
+            Some(call) => &call.fn_name,
         };
 
         let fee = match self.direction {
             TransactionDirection::In => "".into(),
             TransactionDirection::Out => {
                 let fee = self.fee;
-                let fee = dusk::from_dusk(fee);
+                let fee = from_dusk(fee);
                 format!("{: >12.9}", fee)
             }
         };
@@ -95,8 +95,8 @@ pub(crate) async fn transaction_from_notes(
         let note_hash = decoded_note.note.hash();
         // Looking for the transaction which created the note
         let note_creator = txs.iter().find(|(t, _, _)| {
-            t.outputs().iter().any(|&n| n.hash().eq(&note_hash))
-                || t.nullifiers
+            t.outputs().iter().any(|n| n.hash().eq(&note_hash))
+                || t.nullifiers()
                     .iter()
                     .any(|tx_null| nullifiers.iter().any(|(n, _)| n == tx_null))
         });
@@ -114,13 +114,14 @@ pub(crate) async fn transaction_from_notes(
                 true => TransactionDirection::Out,
                 false => TransactionDirection::In,
             };
+
             match ret.iter_mut().find(|th| &th.id == tx_id) {
                 Some(tx) => tx.amount += note_amount,
                 None => ret.push(TransactionHistory {
                     direction,
                     height: decoded_note.block_height,
                     amount: note_amount - inputs_amount,
-                    fee: gas_spent * t.fee().gas_price,
+                    fee: gas_spent * t.gas_price(),
                     tx: t.clone(),
                     id: tx_id.clone(),
                 }),

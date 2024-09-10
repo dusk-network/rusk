@@ -1,9 +1,9 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { createEventDispatcher } from "svelte";
   import { mdiArrowLeft, mdiContentCopy } from "@mdi/js";
 
+  import { AppAnchorButton } from "$lib/components";
   import { Button, QrCode } from "$lib/dusk/components";
   import { toast } from "$lib/dusk/components/Toast/store";
 
@@ -20,8 +20,6 @@
   const COLUMN_WIDTH = 16;
   const BOTTOM_PADDING = 22;
 
-  const dispatch = createEventDispatcher();
-
   $: qrWidth =
     offsetHeight - buttonHeight - COLUMN_COUNT * COLUMN_WIDTH - BOTTOM_PADDING;
 </script>
@@ -37,12 +35,10 @@
 
   <div class="receive__buttons" bind:offsetHeight={buttonHeight}>
     {#if !hideBackButton}
-      <Button
+      <AppAnchorButton
         className="receive__button"
         icon={{ path: mdiArrowLeft }}
-        on:click={() => {
-          dispatch("operationChange", "");
-        }}
+        href="/dashboard"
         text="Back"
         variant="tertiary"
       />

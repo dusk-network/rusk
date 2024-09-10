@@ -18,10 +18,11 @@ use crate::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
         Signature as AccountSignature,
     },
-    transfer::contract_exec::{
-        ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+    transfer::data::{
+        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+        MAX_MEMO_SIZE,
     },
-    BlsScalar,
+    BlsScalar, Error,
 };
 
 /// A Moonlight account's information.
@@ -44,7 +45,10 @@ pub struct Transaction {
 
 impl Transaction {
     /// Create a new transaction.
-    #[must_use]
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - the memo, if given, is too large
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         from_sk: &AccountSecretKey,
@@ -54,9 +58,19 @@ impl Transaction {
         gas_limit: u64,
         gas_price: u64,
         nonce: u64,
-        exec: Option<impl Into<ContractExec>>,
-    ) -> Self {
+        chain_id: u8,
+        data: Option<impl Into<TransactionData>>,
+    ) -> Result<Self, Error> {
+        let data = data.map(Into::into);
+
+        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
+            if memo.len() > MAX_MEMO_SIZE {
+                return Err(Error::MemoTooLarge(memo.len()));
+            }
+        }
+
         let payload = Payload {
+            chain_id,
             from_account: AccountPublicKey::from(from_sk),
             to_account,
             value,
@@ -64,13 +78,13 @@ impl Transaction {
             gas_limit,
             gas_price,
             nonce,
-            exec: exec.map(Into::into),
+            data,
         };
 
         let digest = payload.signature_message();
         let signature = from_sk.sign(&digest);
 
-        Self { payload, signature }
+        Ok(Self { payload, signature })
     }
 
     /// The proof of the transaction.
@@ -121,12 +135,18 @@ impl Transaction {
         self.payload.nonce
     }
 
+    /// Returns the chain ID of the transaction.
+    #[must_use]
+    pub fn chain_id(&self) -> u8 {
+        self.payload.chain_id
+    }
+
     /// Return the contract call data, if there is any.
     #[must_use]
     pub fn call(&self) -> Option<&ContractCall> {
         #[allow(clippy::match_wildcard_for_single_variants)]
-        match self.exec()? {
-            ContractExec::Call(ref c) => Some(c),
+        match self.data()? {
+            TransactionData::Call(ref c) => Some(c),
             _ => None,
         }
     }
@@ -135,16 +155,25 @@ impl Transaction {
     #[must_use]
     pub fn deploy(&self) -> Option<&ContractDeploy> {
         #[allow(clippy::match_wildcard_for_single_variants)]
-        match self.exec()? {
-            ContractExec::Deploy(ref d) => Some(d),
+        match self.data()? {
+            TransactionData::Deploy(ref d) => Some(d),
             _ => None,
         }
     }
 
-    /// Returns the contract execution, if it exists.
+    /// Returns the memo used with the transaction, if any.
     #[must_use]
-    fn exec(&self) -> Option<&ContractExec> {
-        self.payload.exec.as_ref()
+    pub fn memo(&self) -> Option<&[u8]> {
+        match self.data()? {
+            TransactionData::Memo(memo) => Some(memo),
+            _ => None,
+        }
+    }
+
+    /// Returns the transaction data, if it exists.
+    #[must_use]
+    fn data(&self) -> Option<&TransactionData> {
+        self.payload.data.as_ref()
     }
 
     /// Creates a modified clone of this transaction if it contains data for
@@ -154,9 +183,9 @@ impl Transaction {
     pub fn strip_off_bytecode(&self) -> Option<Self> {
         let deploy = self.deploy()?;
 
-        let stripped_deploy = ContractExec::Deploy(ContractDeploy {
+        let stripped_deploy = TransactionData::Deploy(ContractDeploy {
             owner: deploy.owner.clone(),
-            constructor_args: deploy.constructor_args.clone(),
+            init_args: deploy.init_args.clone(),
             bytecode: ContractBytecode {
                 hash: deploy.bytecode.hash,
                 bytes: Vec::new(),
@@ -165,7 +194,7 @@ impl Transaction {
         });
 
         let mut stripped_transaction = self.clone();
-        stripped_transaction.payload.exec = Some(stripped_deploy);
+        stripped_transaction.payload.data = Some(stripped_deploy);
 
         Some(stripped_transaction)
     }
@@ -239,6 +268,8 @@ impl Transaction {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 struct Payload {
+    /// ID of the chain for this transaction to execute on.
+    pub chain_id: u8,
     /// Key of the sender of this transaction.
     pub from_account: AccountPublicKey,
     /// Key of the receiver of the funds.
@@ -257,15 +288,15 @@ struct Payload {
     ///
     /// The current nonce is queryable via the transfer contract.
     pub nonce: u64,
-    /// Data to do a contract call or deployment.
-    pub exec: Option<ContractExec>,
+    /// Data to do a contract call, deployment, or insert a memo.
+    pub data: Option<TransactionData>,
 }
 
 impl Payload {
     /// Serialize the payload into a byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
+        let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.from_account.to_bytes());
 
@@ -286,15 +317,20 @@ impl Payload {
         bytes.extend(self.gas_price.to_bytes());
         bytes.extend(self.nonce.to_bytes());
 
-        // serialize the contract call/deployment
-        match &self.exec {
-            Some(ContractExec::Deploy(deploy)) => {
+        // serialize the contract call, deployment or memo, if present.
+        match &self.data {
+            Some(TransactionData::Call(call)) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
+            }
+            Some(TransactionData::Deploy(deploy)) => {
                 bytes.push(2);
                 bytes.extend(deploy.to_var_bytes());
             }
-            Some(ContractExec::Call(call)) => {
-                bytes.push(1);
-                bytes.extend(call.to_var_bytes());
+            Some(TransactionData::Memo(memo)) => {
+                bytes.push(3);
+                bytes.extend((memo.len() as u64).to_bytes());
+                bytes.extend(memo);
             }
             _ => bytes.push(0),
         }
@@ -308,6 +344,8 @@ impl Payload {
     /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
+
+        let chain_id = u8::from_reader(&mut buf)?;
 
         let from_account = AccountPublicKey::from_reader(&mut buf)?;
 
@@ -326,17 +364,32 @@ impl Payload {
         let gas_price = u64::from_reader(&mut buf)?;
         let nonce = u64::from_reader(&mut buf)?;
 
-        // deserialize contract call/deploy data
-        let exec = match u8::from_reader(&mut buf)? {
+        // deserialize contract call, deploy data, or memo, if present
+        let data = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
-            2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
+            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
+            2 => {
+                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+            }
+            3 => {
+                // we only build for 64-bit so this truncation is impossible
+                #[allow(clippy::cast_possible_truncation)]
+                let size = u64::from_reader(&mut buf)? as usize;
+
+                if buf.len() != size || size > MAX_MEMO_SIZE {
+                    return Err(BytesError::InvalidData);
+                }
+
+                let memo = buf[..size].to_vec();
+                Some(TransactionData::Memo(memo))
+            }
             _ => {
                 return Err(BytesError::InvalidData);
             }
         };
 
         Ok(Self {
+            chain_id,
             from_account,
             to_account,
             value,
@@ -344,7 +397,7 @@ impl Payload {
             gas_limit,
             gas_price,
             nonce,
-            exec,
+            data,
         })
     }
 
@@ -354,7 +407,7 @@ impl Payload {
     /// for hashing and *cannot* be used to deserialize the payload again.
     #[must_use]
     pub fn signature_message(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
+        let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.from_account.to_bytes());
         if let Some(to) = &self.to_account {
@@ -366,20 +419,23 @@ impl Payload {
         bytes.extend(self.gas_price.to_bytes());
         bytes.extend(self.nonce.to_bytes());
 
-        match &self.exec {
-            Some(ContractExec::Deploy(d)) => {
+        match &self.data {
+            Some(TransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
                 bytes.extend(&d.owner);
-                if let Some(constructor_args) = &d.constructor_args {
-                    bytes.extend(constructor_args);
+                if let Some(init_args) = &d.init_args {
+                    bytes.extend(init_args);
                 }
             }
-            Some(ContractExec::Call(c)) => {
+            Some(TransactionData::Call(c)) => {
                 bytes.extend(c.contract.as_bytes());
                 bytes.extend(c.fn_name.as_bytes());
                 bytes.extend(&c.fn_args);
             }
-            _ => {}
+            Some(TransactionData::Memo(m)) => {
+                bytes.extend(m);
+            }
+            None => {}
         }
 
         bytes

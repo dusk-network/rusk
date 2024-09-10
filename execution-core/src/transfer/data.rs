@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Wrapper for a strip-able bytecode that we want to keep the integrity of.
+//! Extra data that may be sent with the `data` field of either transaction
+//! type.
 
 use alloc::format;
 use alloc::string::String;
@@ -18,25 +19,32 @@ use rkyv::{
 
 use crate::{ContractId, Error, ARGBUF_LEN};
 
+/// The maximum size of a memo.
+pub const MAX_MEMO_SIZE: usize = 512;
+
 /// Data for either contract call or contract deployment.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub enum ContractExec {
+#[allow(clippy::large_enum_variant)]
+pub enum TransactionData {
     /// Data for a contract call.
     Call(ContractCall),
     /// Data for a contract deployment.
     Deploy(ContractDeploy),
+    /// Additional data added to a transaction, that is not a deployment or a
+    /// call.
+    Memo(Vec<u8>),
 }
 
-impl From<ContractCall> for ContractExec {
+impl From<ContractCall> for TransactionData {
     fn from(c: ContractCall) -> Self {
-        ContractExec::Call(c)
+        TransactionData::Call(c)
     }
 }
 
-impl From<ContractDeploy> for ContractExec {
+impl From<ContractDeploy> for TransactionData {
     fn from(d: ContractDeploy) -> Self {
-        ContractExec::Deploy(d)
+        TransactionData::Deploy(d)
     }
 }
 
@@ -48,8 +56,8 @@ pub struct ContractDeploy {
     pub bytecode: ContractBytecode,
     /// Owner of the contract to be deployed.
     pub owner: Vec<u8>,
-    /// Constructor arguments of the deployed contract.
-    pub constructor_args: Option<Vec<u8>>,
+    /// Init method arguments of the deployed contract.
+    pub init_args: Option<Vec<u8>>,
     /// Nonce for contract id uniqueness and vanity
     pub nonce: u64,
 }
@@ -77,11 +85,11 @@ impl ContractDeploy {
         bytes.extend((self.owner.len() as u64).to_bytes());
         bytes.extend(&self.owner);
 
-        match &self.constructor_args {
-            Some(constructor_args) => {
+        match &self.init_args {
+            Some(init_args) => {
                 bytes.push(1);
-                bytes.extend((constructor_args.len() as u64).to_bytes());
-                bytes.extend(constructor_args);
+                bytes.extend((init_args.len() as u64).to_bytes());
+                bytes.extend(init_args);
             }
             None => bytes.push(0),
         }
@@ -102,7 +110,7 @@ impl ContractDeploy {
 
         let owner = crate::read_vec(&mut buf)?;
 
-        let constructor_args = match u8::from_reader(&mut buf)? {
+        let init_args = match u8::from_reader(&mut buf)? {
             0 => None,
             1 => Some(crate::read_vec(&mut buf)?),
             _ => return Err(BytesError::InvalidData),
@@ -113,7 +121,7 @@ impl ContractDeploy {
         Ok(Self {
             bytecode,
             owner,
-            constructor_args,
+            init_args,
             nonce,
         })
     }

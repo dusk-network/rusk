@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
-use std::sync::LazyLock;
+use std::{path::Path, usize};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk::{Result, Rusk};
-use rusk_recovery_tools::state::{self, Snapshot};
+use rusk_recovery_tools::state::{self, Snapshot, DUSK_CONSENSUS_KEY};
 
 use dusk_consensus::operations::CallParams;
 use execution_core::{
@@ -27,7 +26,7 @@ use node_data::{
 use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::common::keys::STAKE_SK;
+const CHAIN_ID: u8 = 0xFA;
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(
@@ -42,8 +41,17 @@ pub fn new_state<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
-    let rusk = Rusk::new(dir, None, None, block_gas_limit, u64::MAX, sender)
-        .expect("Instantiating rusk should succeed");
+    let rusk = Rusk::new(
+        dir,
+        CHAIN_ID,
+        None,
+        None,
+        None,
+        block_gas_limit,
+        u64::MAX,
+        sender,
+    )
+    .expect("Instantiating rusk should succeed");
 
     assert_eq!(
         commit_id,
@@ -88,8 +96,7 @@ pub fn generator_procedure(
         rusk.preverify(tx)?;
     }
 
-    let generator = BlsPublicKey::from(LazyLock::force(&STAKE_SK));
-    let generator_pubkey = node_data::bls::PublicKey::new(generator);
+    let generator_pubkey = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
     let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;
 
@@ -116,6 +123,7 @@ pub fn generator_procedure(
         generator_pubkey,
         to_slash,
         voters_pubkey: None,
+        max_txs_bytes: usize::MAX,
     };
 
     let (transfer_txs, discarded, execute_output) =

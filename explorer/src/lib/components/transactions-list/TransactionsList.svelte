@@ -1,7 +1,13 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { AppAnchor, DataGuard, DetailList, ListItem } from "$lib/components";
+  import {
+    AppAnchor,
+    DataGuard,
+    DetailList,
+    ListItem,
+    TransactionStatus,
+  } from "$lib/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { Badge, RelativeTime } from "$lib/dusk/components";
@@ -105,13 +111,11 @@
   <ListItem tooltipText={displayTooltips ? "The transaction status" : ""}>
     <svelte:fragment slot="term">Status</svelte:fragment>
     <svelte:fragment slot="definition">
-      <DataGuard data={data.success}>
-        <Badge
-          className="explorer-badge"
-          variant={data.success ? "success" : "error"}
-          text={data.success ? "success" : "failed"}
-        />
-      </DataGuard>
+      <TransactionStatus
+        className="explorer-badge"
+        errorMessage={data.txerror}
+        showErrorTooltip={autoRefreshTime}
+      />
     </svelte:fragment>
   </ListItem>
 

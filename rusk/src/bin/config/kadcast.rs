@@ -33,4 +33,8 @@ impl KadcastConfig {
             self.0.kadcast_id = Some(network_id)
         };
     }
+
+    pub fn chain_id(&self) -> u8 {
+        self.0.kadcast_id.unwrap_or_default()
+    }
 }

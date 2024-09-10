@@ -5,6 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::config::{
+    MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
+};
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -88,6 +91,14 @@ impl<D: Database> ProposalHandler<D> {
             return Err(ConsensusError::NotCommitteeMember);
         }
 
+        let candidate_size = p
+            .candidate
+            .size()
+            .map_err(|_| ConsensusError::UnknownBlockSize)?;
+        if candidate_size > MAX_BLOCK_SIZE {
+            return Err(ConsensusError::InvalidBlockSize(candidate_size));
+        }
+
         //  Verify new_block msg signature
         p.verify_signature()?;
 
@@ -95,11 +106,23 @@ impl<D: Database> ProposalHandler<D> {
             return Err(ConsensusError::InvalidBlockHash);
         }
 
+        if p.candidate.txs().len() > MAX_NUMBER_OF_TRANSACTIONS {
+            return Err(ConsensusError::TooManyTransactions(
+                p.candidate.txs().len(),
+            ));
+        }
+
         let tx_hashes: Vec<_> =
             p.candidate.txs().iter().map(|t| t.hash()).collect();
         let tx_root = merkle_root(&tx_hashes[..]);
         if tx_root != p.candidate.header().txroot {
             return Err(ConsensusError::InvalidBlock);
+        }
+
+        if p.candidate.faults().len() > MAX_NUMBER_OF_FAULTS {
+            return Err(ConsensusError::TooManyFaults(
+                p.candidate.faults().len(),
+            ));
         }
 
         let fault_hashes: Vec<_> =

@@ -755,6 +755,14 @@ impl Display for RuesEventUri {
 }
 
 impl RuesEventUri {
+    pub fn inner(&self) -> (&str, Option<&String>, &str) {
+        (
+            self.component.as_ref(),
+            self.entity.as_ref(),
+            self.topic.as_ref(),
+        )
+    }
+
     pub fn parse_from_path(path: &str) -> Option<Self> {
         if !path.starts_with(RUES_LOCATION_PREFIX) {
             return None;
@@ -779,9 +787,9 @@ impl RuesEventUri {
                     None => (segment, None),
                 })?;
 
-        let component = component.to_string();
+        let component = component.to_string().to_lowercase();
         let entity = entity.map(ToString::to_string);
-        let topic = path_split.next()?.to_string();
+        let topic = path_split.next()?.to_string().to_lowercase();
 
         Some(Self {
             component,
@@ -827,22 +835,110 @@ impl From<execution_core::Event> for ContractEvent {
     }
 }
 
-impl From<ContractEvent> for execution_core::Event {
-    fn from(event: ContractEvent) -> Self {
-        Self {
-            source: event.target.0,
-            topic: event.topic,
-            data: event.data,
-        }
-    }
-}
-
 /// A RUES event
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RuesEvent {
     pub uri: RuesEventUri,
     pub headers: serde_json::Map<String, serde_json::Value>,
     pub data: DataType,
+}
+
+/// A RUES Dispatch request event
+#[derive(Debug)]
+pub struct RuesDispatchEvent {
+    pub uri: RuesEventUri,
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: RequestData,
+}
+
+impl RuesDispatchEvent {
+    pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
+        let mut h = self.headers.clone();
+        h.retain(|k, _| k.to_lowercase().starts_with("x-"));
+        h
+    }
+
+    pub fn header(&self, name: &str) -> Option<&serde_json::Value> {
+        self.headers
+            .iter()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
+    }
+
+    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
+            let req = match v.as_str() {
+                Some(v) => VersionReq::from_str(v),
+                None => VersionReq::from_str(&v.to_string()),
+            }?;
+
+            let current = Version::from_str(&crate::VERSION)?;
+            if !req.matches(&current) {
+                return Err(anyhow::anyhow!(
+                    "Mismatched rusk version: requested {req} - current {current}",
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn is_binary(&self) -> bool {
+        self.headers
+            .get(CONTENT_TYPE)
+            .map(|h| h.to_string())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+            .unwrap_or_default()
+    }
+    pub async fn from_request(req: Request<Incoming>) -> anyhow::Result<Self> {
+        let (parts, body) = req.into_parts();
+
+        let uri = RuesEventUri::parse_from_path(parts.uri.path())
+            .ok_or(anyhow::anyhow!("Invalid URL path"))?;
+
+        let headers = parts
+            .headers
+            .iter()
+            .map(|(k, v)| {
+                let v = if v.is_empty() {
+                    serde_json::Value::Null
+                } else {
+                    serde_json::from_slice::<serde_json::Value>(v.as_bytes())
+                        .unwrap_or(serde_json::Value::String(
+                            v.to_str().unwrap().to_string(),
+                        ))
+                };
+                (k.to_string().to_lowercase(), v)
+            })
+            .collect();
+
+        // HTTP REQUEST
+        let content_type = parts
+            .headers
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or_default();
+
+        let bytes = body.collect().await?.to_bytes().to_vec();
+        let data = match content_type {
+            CONTENT_TYPE_BINARY => bytes.into(),
+            _ => {
+                let text = String::from_utf8(bytes)
+                    .map_err(|e| anyhow::anyhow!("Invalid utf8"))?;
+                if let Some(hex) = text.strip_prefix("0x") {
+                    if let Ok(bytes) = hex::decode(hex) {
+                        bytes.into()
+                    } else {
+                        text.into()
+                    }
+                } else {
+                    text.into()
+                }
+            }
+        };
+
+        let ret = RuesDispatchEvent { headers, data, uri };
+
+        Ok(ret)
+    }
 }
 
 impl RuesEvent {
@@ -876,23 +972,23 @@ impl RuesEvent {
     }
 }
 
-impl From<ContractEvent> for RuesEvent {
-    fn from(event: ContractEvent) -> Self {
+#[cfg(feature = "node")]
+impl From<crate::node::ContractTxEvent> for RuesEvent {
+    fn from(tx_event: crate::node::ContractTxEvent) -> Self {
+        let mut headers = serde_json::Map::new();
+        if let Some(origin) = tx_event.origin {
+            headers.insert("Rusk-Origin".into(), hex::encode(origin).into());
+        }
+        let event = tx_event.event;
         Self {
             uri: RuesEventUri {
                 component: "contracts".into(),
-                entity: Some(hex::encode(event.target.0.as_bytes())),
+                entity: Some(hex::encode(event.source.as_bytes())),
                 topic: event.topic,
             },
             data: event.data.into(),
-            headers: Default::default(),
+            headers,
         }
-    }
-}
-
-impl From<execution_core::Event> for RuesEvent {
-    fn from(event: execution_core::Event) -> Self {
-        Self::from(ContractEvent::from(event))
     }
 }
 

@@ -51,6 +51,11 @@ unsafe fn get_stake(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
+unsafe fn get_stake_keys(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake_keys(&pk).cloned())
+}
+
+#[no_mangle]
 unsafe fn burnt_amount(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.burnt_amount())
 }
@@ -92,9 +97,9 @@ unsafe fn insert_stake(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn reward(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pk, value)| {
+    rusk_abi::wrap_call(arg_len, |arg| {
         assert_external_caller();
-        STATE.reward(&pk, value);
+        STATE.reward(arg);
     })
 }
 

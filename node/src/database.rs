@@ -10,7 +10,7 @@ use std::path::Path;
 pub mod rocksdb;
 
 use anyhow::Result;
-use node_data::ledger::{self, Fault, Label, SpentTransaction};
+use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
 use serde::{Deserialize, Serialize};
 
 pub struct LightBlock {
@@ -131,8 +131,8 @@ pub trait Mempool {
     /// Deletes a transaction from the mempool.
     fn delete_tx(&self, tx_id: [u8; 32]) -> Result<bool>;
 
-    /// Get transactions hash from the mempool, searching by nullifiers
-    fn get_txs_by_nullifiers(&self, n: &[[u8; 32]]) -> HashSet<[u8; 32]>;
+    /// Get transactions hash from the mempool, searching by spendable ids
+    fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]>;
 
     /// Get an iterator over the mempool transactions sorted by gas price
     fn get_txs_sorted_by_fee(

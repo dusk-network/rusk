@@ -16,7 +16,9 @@ use crate::ledger::{
 use crate::message::payload::{
     QuorumType, Ratification, RatificationResult, ValidationResult, Vote,
 };
-use crate::message::{ConsensusHeader, SignInfo};
+use crate::message::{
+    ConsensusHeader, SignInfo, MESSAGE_MAX_FAILED_ITERATIONS,
+};
 use crate::Serializable;
 
 impl Serializable for Block {
@@ -87,6 +89,7 @@ impl Serializable for Transaction {
         let tx_type = Self::read_u32_le(r)?;
 
         let protocol_tx = Self::read_var_le_bytes32(r)?;
+        let tx_size = protocol_tx.len();
         let inner = ProtocolTransaction::from_slice(&protocol_tx[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -94,6 +97,7 @@ impl Serializable for Transaction {
             inner,
             version,
             r#type: tx_type,
+            size: Some(tx_size),
         })
     }
 }
@@ -278,6 +282,14 @@ impl Serializable for IterationsInfo {
         let mut att_list = vec![];
 
         let count = Self::read_u8(r)?;
+
+        // Iteration is 0-based
+        if count > MESSAGE_MAX_FAILED_ITERATIONS {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid iterations_info count {count})"),
+            ));
+        }
 
         for _ in 0..count {
             let opt = Self::read_u8(r)?;

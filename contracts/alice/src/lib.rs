@@ -33,4 +33,14 @@ mod wasm {
     unsafe fn deposit(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
     }
+
+    #[no_mangle]
+    unsafe fn transfer_to_contract(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_contract(arg))
+    }
+
+    #[no_mangle]
+    unsafe fn transfer_to_account(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_account(arg))
+    }
 }

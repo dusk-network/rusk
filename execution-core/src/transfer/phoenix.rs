@@ -14,7 +14,6 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use dusk_poseidon::{Domain, Hash};
 use ff::Field;
-use poseidon_merkle::Opening;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -22,26 +21,50 @@ use crate::{
     signatures::schnorr::{
         SecretKey as SchnorrSecretKey, Signature as SchnorrSignature,
     },
-    transfer::contract_exec::{
-        ContractBytecode, ContractCall, ContractDeploy, ContractExec,
+    transfer::data::{
+        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+        MAX_MEMO_SIZE,
     },
     BlsScalar, Error, JubJubAffine, JubJubScalar,
 };
 
 // phoenix types
+pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
 pub use phoenix_core::{
     value_commitment, Error as CoreError, Note, PublicKey, SecretKey, Sender,
     StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
 };
 
-pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
+/// The depth of the merkle tree of notes stored in the transfer-contract.
+pub const NOTES_TREE_DEPTH: usize = 17;
+/// The arity of the merkle tree of notes stored in the transfer-contract.
+pub use poseidon_merkle::ARITY as NOTES_TREE_ARITY;
+/// The merkle tree of notes stored in the transfer-contract.
+pub type NotesTree = poseidon_merkle::Tree<(), NOTES_TREE_DEPTH>;
+/// The merkle opening for a note-hash in the merkle tree of notes.
+pub type NoteOpening = poseidon_merkle::Opening<(), NOTES_TREE_DEPTH>;
+/// the tree item for the merkle-tree of notes stored in the transfer-contract.
+pub type NoteTreeItem = poseidon_merkle::Item<()>;
+
+/// A leaf of the merkle tree of notes stored in the transfer-contract.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct NoteLeaf {
+    /// The height of the block when the note was inserted in the tree.
+    pub block_height: u64,
+    /// The note inserted in the tree.
+    pub note: Note,
+}
+
+impl AsRef<Note> for NoteLeaf {
+    fn as_ref(&self) -> &Note {
+        &self.note
+    }
+}
 
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
-
-/// The depth of the transfer tree.
-pub const NOTES_TREE_DEPTH: usize = 17;
 
 /// Phoenix transaction.
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
@@ -71,6 +94,7 @@ impl Transaction {
     /// - the `inputs` vector is either empty or larger than 4 elements
     /// - the `inputs` vector contains duplicate `Note`s
     /// - the `Prove` trait is implemented incorrectly
+    /// - the memo, if given, is too large
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::similar_names)]
@@ -79,15 +103,24 @@ impl Transaction {
         sender_sk: &SecretKey,
         change_pk: &PublicKey,
         receiver_pk: &PublicKey,
-        inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
+        inputs: Vec<(Note, NoteOpening)>,
         root: BlsScalar,
         transfer_value: u64,
         obfuscated_transaction: bool,
         deposit: u64,
         gas_limit: u64,
         gas_price: u64,
-        exec: Option<impl Into<ContractExec>>,
+        chain_id: u8,
+        data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
+        let data = data.map(Into::into);
+
+        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
+            if memo.len() > MAX_MEMO_SIZE {
+                return Err(Error::MemoTooLarge(memo.len()));
+            }
+        }
+
         let sender_pk = PublicKey::from(sender_sk);
         let sender_vk = ViewKey::from(sender_sk);
 
@@ -175,9 +208,10 @@ impl Transaction {
             deposit,
         };
         let payload = Payload {
+            chain_id,
             tx_skeleton,
             fee,
-            exec: exec.map(Into::into),
+            data,
         };
         let payload_hash = payload.hash();
 
@@ -356,6 +390,12 @@ impl Transaction {
         self.payload.fee.gas_price
     }
 
+    /// Returns the chain ID of the transaction.
+    #[must_use]
+    pub fn chain_id(&self) -> u8 {
+        self.payload.chain_id
+    }
+
     /// Returns the max fee to be spend by the transaction.
     #[must_use]
     pub fn max_fee(&self) -> u64 {
@@ -372,8 +412,8 @@ impl Transaction {
     #[must_use]
     pub fn call(&self) -> Option<&ContractCall> {
         #[allow(clippy::match_wildcard_for_single_variants)]
-        match self.exec()? {
-            ContractExec::Call(ref c) => Some(c),
+        match self.data()? {
+            TransactionData::Call(ref c) => Some(c),
             _ => None,
         }
     }
@@ -382,16 +422,25 @@ impl Transaction {
     #[must_use]
     pub fn deploy(&self) -> Option<&ContractDeploy> {
         #[allow(clippy::match_wildcard_for_single_variants)]
-        match self.exec()? {
-            ContractExec::Deploy(ref d) => Some(d),
+        match self.data()? {
+            TransactionData::Deploy(ref d) => Some(d),
             _ => None,
         }
     }
 
-    /// Returns the contract execution, if it exists.
+    /// Returns the memo used with the transaction, if any.
     #[must_use]
-    fn exec(&self) -> Option<&ContractExec> {
-        self.payload.exec.as_ref()
+    pub fn memo(&self) -> Option<&[u8]> {
+        match self.data()? {
+            TransactionData::Memo(memo) => Some(memo),
+            _ => None,
+        }
+    }
+
+    /// Returns the transaction data, if it exists.
+    #[must_use]
+    fn data(&self) -> Option<&TransactionData> {
+        self.payload.data.as_ref()
     }
 
     /// Creates a modified clone of this transaction if it contains data for
@@ -401,9 +450,9 @@ impl Transaction {
     pub fn strip_off_bytecode(&self) -> Option<Self> {
         let deploy = self.deploy()?;
 
-        let stripped_deploy = ContractExec::Deploy(ContractDeploy {
+        let stripped_deploy = TransactionData::Deploy(ContractDeploy {
             owner: deploy.owner.clone(),
-            constructor_args: deploy.constructor_args.clone(),
+            init_args: deploy.init_args.clone(),
             bytecode: ContractBytecode {
                 hash: deploy.bytecode.hash,
                 bytes: Vec::new(),
@@ -412,7 +461,7 @@ impl Transaction {
         });
 
         let mut stripped_transaction = self.clone();
-        stripped_transaction.payload.exec = Some(stripped_deploy);
+        stripped_transaction.payload.data = Some(stripped_deploy);
 
         Some(stripped_transaction)
     }
@@ -556,12 +605,14 @@ impl Transaction {
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Payload {
+    /// ID of the chain for this transaction to execute on.
+    pub chain_id: u8,
     /// Transaction skeleton used for the phoenix transaction.
     pub tx_skeleton: TxSkeleton,
     /// Data used to calculate the transaction fee.
     pub fee: Fee,
-    /// Data to do a contract call or deployment.
-    pub exec: Option<ContractExec>,
+    /// Data to do a contract call, deployment, or insert a memo.
+    pub data: Option<TransactionData>,
 }
 
 impl PartialEq for Payload {
@@ -576,7 +627,7 @@ impl Payload {
     /// Serialize the `Payload` into a variable length byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
+        let mut bytes = Vec::from([self.chain_id]);
 
         // serialize the tx-skeleton
         let skeleton_bytes = self.tx_skeleton.to_var_bytes();
@@ -586,15 +637,20 @@ impl Payload {
         // serialize the fee
         bytes.extend(self.fee.to_bytes());
 
-        // serialize the contract call/deployment
-        match &self.exec {
-            Some(ContractExec::Deploy(deploy)) => {
+        // serialize the contract call, deployment or memo, if present.
+        match &self.data {
+            Some(TransactionData::Call(call)) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
+            }
+            Some(TransactionData::Deploy(deploy)) => {
                 bytes.push(2);
                 bytes.extend(deploy.to_var_bytes());
             }
-            Some(ContractExec::Call(call)) => {
-                bytes.push(1);
-                bytes.extend(call.to_var_bytes());
+            Some(TransactionData::Memo(memo)) => {
+                bytes.push(3);
+                bytes.extend((memo.len() as u64).to_bytes());
+                bytes.extend(memo);
             }
             _ => bytes.push(0),
         }
@@ -609,6 +665,8 @@ impl Payload {
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buf = buf;
 
+        let chain_id = u8::from_reader(&mut buf)?;
+
         // deserialize the tx-skeleton
         #[allow(clippy::cast_possible_truncation)]
         let skeleton_len = usize::try_from(u64::from_reader(&mut buf)?)
@@ -619,20 +677,35 @@ impl Payload {
         // deserialize fee
         let fee = Fee::from_reader(&mut buf)?;
 
-        // deserialize contract call/deploy data
-        let exec = match u8::from_reader(&mut buf)? {
+        // deserialize contract call, deploy data, or memo, if present
+        let data = match u8::from_reader(&mut buf)? {
             0 => None,
-            1 => Some(ContractExec::Call(ContractCall::from_slice(buf)?)),
-            2 => Some(ContractExec::Deploy(ContractDeploy::from_slice(buf)?)),
+            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
+            2 => {
+                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+            }
+            3 => {
+                // we only build for 64-bit so this truncation is impossible
+                #[allow(clippy::cast_possible_truncation)]
+                let size = u64::from_reader(&mut buf)? as usize;
+
+                if buf.len() != size || size > MAX_MEMO_SIZE {
+                    return Err(BytesError::InvalidData);
+                }
+
+                let memo = buf[..size].to_vec();
+                Some(TransactionData::Memo(memo))
+            }
             _ => {
                 return Err(BytesError::InvalidData);
             }
         };
 
         Ok(Self {
+            chain_id,
             tx_skeleton,
             fee,
-            exec,
+            data,
         })
     }
 
@@ -642,22 +715,27 @@ impl Payload {
     /// for hashing and *cannot* be used to deserialize the `Payload` again.
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
-        let mut bytes = self.tx_skeleton.to_hash_input_bytes();
+        let mut bytes = Vec::from([self.chain_id]);
 
-        match &self.exec {
-            Some(ContractExec::Deploy(d)) => {
+        bytes.extend(self.tx_skeleton.to_hash_input_bytes());
+
+        match &self.data {
+            Some(TransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
                 bytes.extend(&d.owner);
-                if let Some(constructor_args) = &d.constructor_args {
-                    bytes.extend(constructor_args);
+                if let Some(init_args) = &d.init_args {
+                    bytes.extend(init_args);
                 }
             }
-            Some(ContractExec::Call(c)) => {
+            Some(TransactionData::Call(c)) => {
                 bytes.extend(c.contract.as_bytes());
                 bytes.extend(c.fn_name.as_bytes());
                 bytes.extend(&c.fn_args);
             }
-            _ => {}
+            Some(TransactionData::Memo(m)) => {
+                bytes.extend(m);
+            }
+            None => {}
         }
 
         bytes
@@ -819,15 +897,6 @@ impl Serializable<SIZE> for Fee {
             sender,
         })
     }
-}
-/// A leaf of the transfer tree.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct TreeLeaf {
-    /// The height of the block when the note was inserted in the tree.
-    pub block_height: u64,
-    /// The note inserted in the tree.
-    pub note: Note,
 }
 
 /// This struct mimics the [`TxCircuit`] but is not generic over the amount of

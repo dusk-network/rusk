@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use execution_core::transfer::Transaction as ProtocolTransaction;
 use node::database::rocksdb::{Backend, DBTransaction};
 use node::database::{Mempool, DB};
 use node::network::Kadcast;
@@ -22,7 +23,7 @@ use graphql::{DBContext, Query};
 use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
-use serde_json::json;
+use serde_json::{json, Map, Value};
 
 use super::*;
 use crate::node::RuskNode;
@@ -30,10 +31,9 @@ use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
-fn variables_from_request(request: &MessageRequest) -> Variables {
+fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
     let mut var = Variables::default();
-    request
-        .headers
+    headers
         .iter()
         .filter_map(|(h, v)| {
             let h = h.to_lowercase();
@@ -47,17 +47,60 @@ fn variables_from_request(request: &MessageRequest) -> Variables {
 
     var
 }
+
 #[async_trait]
 impl HandleRequest for RuskNode {
     fn can_handle(&self, request: &MessageRequest) -> bool {
         matches!(request.event.to_route(), (Target::Host(_), "Chain", _))
+    }
+
+    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
+        match request.uri.inner() {
+            ("graphql", _, "query") => true,
+            ("transactions", _, "propagate") => true,
+            ("network", _, "peers") => true,
+            ("node", _, "info") => true,
+            ("blocks", _, "gas-price") => true,
+            _ => false,
+        }
+    }
+    async fn handle_rues(
+        &self,
+        request: &RuesDispatchEvent,
+    ) -> anyhow::Result<ResponseData> {
+        match request.uri.inner() {
+            ("graphql", _, "query") => {
+                self.handle_gql(&request.data, &request.headers).await
+            }
+            ("transactions", _, "propagate") => {
+                self.propagate_tx(request.data.as_bytes()).await
+            }
+            ("network", _, "peers") => {
+                let amount = request.data.as_string().trim().parse()?;
+                self.alive_nodes(amount).await
+            }
+            ("node", _, "info") => self.get_info().await,
+            ("blocks", _, "gas-price") => {
+                let max_transactions = request
+                    .data
+                    .as_string()
+                    .trim()
+                    .parse::<usize>()
+                    .unwrap_or(usize::MAX);
+                self.get_gas_price(max_transactions).await
+            }
+            _ => anyhow::bail!("Unsupported"),
+        }
     }
     async fn handle(
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
         match &request.event.to_route() {
-            (Target::Host(_), "Chain", "gql") => self.handle_gql(request).await,
+            (Target::Host(_), "Chain", "gql") => {
+                self.handle_gql(&request.event.data, &request.headers).await
+            }
             (Target::Host(_), "Chain", "propagate_tx") => {
                 self.propagate_tx(request.event_data()).await
             }
@@ -83,9 +126,10 @@ impl HandleRequest for RuskNode {
 impl RuskNode {
     async fn handle_gql(
         &self,
-        request: &MessageRequest,
+        data: &RequestData,
+        headers: &serde_json::Map<String, Value>,
     ) -> anyhow::Result<ResponseData> {
-        let gql_query = request.event.data.as_string();
+        let gql_query = data.as_string();
 
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
             .data(self.db())
@@ -95,7 +139,7 @@ impl RuskNode {
             return Ok(ResponseData::new(schema.sdl()));
         }
 
-        let variables = variables_from_request(request);
+        let variables = variables_from_headers(headers);
         let gql_query =
             async_graphql::Request::new(gql_query).variables(variables);
 
@@ -110,10 +154,10 @@ impl RuskNode {
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
-        let tx = execution_core::transfer::Transaction::from_slice(tx)
+        let tx: Transaction = ProtocolTransaction::from_slice(tx)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
             .into();
-        let tx_message = Message::new_transaction(tx);
+        let tx_message = tx.into();
 
         let network = self.network();
         network.read().await.route_internal(tx_message);

@@ -10,12 +10,14 @@ use execution_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,
 };
+use payload::Nonce;
 use tracing::{error, warn};
 
 use crate::bls::PublicKey;
 use crate::ledger::{to_str, Hash, Signature};
 use crate::StepName;
 use crate::{bls, ledger, Serializable};
+use core::fmt;
 use std::cmp::Ordering;
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
@@ -25,7 +27,52 @@ use async_channel::TrySendError;
 use self::payload::{Candidate, Ratification, Validation};
 
 /// Topic field position in the message binary representation
-pub const TOPIC_FIELD_POS: usize = 8 + 8 + 4;
+pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
+pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
+
+/// Max value for iteration.
+pub const MESSAGE_MAX_ITER: u8 = 50;
+
+/// Max value for failed iterations.
+pub const MESSAGE_MAX_FAILED_ITERATIONS: u8 = 8;
+
+#[derive(Debug, Clone)]
+/// Represent version (major, minor, patch)
+pub struct Version(pub u8, pub u16, pub u16);
+
+impl Default for Version {
+    fn default() -> Self {
+        PROTOCOL_VERSION
+    }
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Version(maj, min, patch) = self;
+        write!(f, "{maj}.{min}.{patch}")
+    }
+}
+
+impl crate::Serializable for Version {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        let Version(maj, min, patch) = self;
+        w.write_all(&[*maj])?;
+        w.write_all(&min.to_le_bytes())?;
+        w.write_all(&patch.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let maj = Self::read_u8(r)?;
+        let min = Self::read_u16_le(r)?;
+        let patch = Self::read_u16_le(r)?;
+        Ok(Self(maj, min, patch))
+    }
+}
 
 pub enum Status {
     Past,
@@ -46,11 +93,22 @@ impl From<Ordering> for Status {
 /// Message definition
 #[derive(Debug, Default, Clone)]
 pub struct Message {
+    pub version: Version,
     topic: Topics,
     pub header: ConsensusHeader,
     pub payload: Payload,
 
     pub metadata: Option<Metadata>,
+}
+
+pub trait WireMessage: Into<Payload> {
+    const TOPIC: Topics;
+    fn consensus_header(&self) -> ConsensusHeader {
+        ConsensusHeader::default()
+    }
+    fn payload(self) -> Payload {
+        self.into()
+    }
 }
 
 impl Message {
@@ -85,6 +143,15 @@ impl Message {
             _ => StepName::Proposal.to_step(self.header.iteration),
         }
     }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn with_version(mut self, v: Version) -> Self {
+        self.version = v;
+        self
+    }
 }
 
 /// Defines a transport-related properties that determines how the message
@@ -97,6 +164,7 @@ pub struct Metadata {
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.version.write(w)?;
         w.write_all(&[self.topic as u8])?;
 
         match &self.payload {
@@ -118,33 +186,21 @@ impl Serializable for Message {
     where
         Self: Sized,
     {
+        let version = Version::read(r)?;
+
         // Read topic
         let topic = Topics::from(Self::read_u8(r)?);
-        let message = match topic {
-            Topics::Candidate => {
-                Message::new_candidate(payload::Candidate::read(r)?)
-            }
-            Topics::Validation => {
-                Message::new_validation(payload::Validation::read(r)?)
-            }
-            Topics::Ratification => {
-                Message::new_ratification(payload::Ratification::read(r)?)
-            }
-            Topics::Quorum => Message::new_quorum(payload::Quorum::read(r)?),
-            Topics::Block => Message::new_block(ledger::Block::read(r)?),
-            Topics::Tx => {
-                Message::new_transaction(ledger::Transaction::read(r)?)
-            }
-            Topics::GetResource => {
-                Message::new_get_resource(payload::GetResource::read(r)?)
-            }
-            Topics::GetBlocks => {
-                Message::new_get_blocks(payload::GetBlocks::read(r)?)
-            }
-            Topics::GetMempool => {
-                Message::new_get_mempool(payload::GetMempool::read(r)?)
-            }
-            Topics::Inv => Message::new_inv(payload::Inv::read(r)?),
+        let message: Message = match topic {
+            Topics::Candidate => payload::Candidate::read(r)?.into(),
+            Topics::Validation => payload::Validation::read(r)?.into(),
+            Topics::Ratification => payload::Ratification::read(r)?.into(),
+            Topics::Quorum => payload::Quorum::read(r)?.into(),
+            Topics::Block => ledger::Block::read(r)?.into(),
+            Topics::Tx => ledger::Transaction::read(r)?.into(),
+            Topics::GetResource => payload::GetResource::read(r)?.into(),
+            Topics::GetBlocks => payload::GetBlocks::read(r)?.into(),
+            Topics::GetMempool => payload::GetMempool::read(r)?.into(),
+            Topics::Inv => payload::Inv::read(r)?.into(),
             Topics::Unknown => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -153,114 +209,78 @@ impl Serializable for Message {
             }
         };
 
-        Ok(message)
+        Ok(message.with_version(version))
     }
 }
 
+impl<W: WireMessage> From<W> for Message {
+    fn from(wire_msg: W) -> Self {
+        Self {
+            header: wire_msg.consensus_header(),
+            topic: W::TOPIC,
+            payload: wire_msg.payload(),
+            ..Default::default()
+        }
+    }
+}
+
+impl WireMessage for Candidate {
+    const TOPIC: Topics = Topics::Candidate;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for Validation {
+    const TOPIC: Topics = Topics::Validation;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for Ratification {
+    const TOPIC: Topics = Topics::Ratification;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for payload::Quorum {
+    const TOPIC: Topics = Topics::Quorum;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl WireMessage for payload::GetMempool {
+    const TOPIC: Topics = Topics::GetMempool;
+}
+
+impl WireMessage for payload::Inv {
+    const TOPIC: Topics = Topics::Inv;
+}
+
+impl WireMessage for payload::GetBlocks {
+    const TOPIC: Topics = Topics::GetBlocks;
+}
+
+impl WireMessage for payload::GetResource {
+    const TOPIC: Topics = Topics::GetResource;
+}
+
+impl WireMessage for ledger::Block {
+    const TOPIC: Topics = Topics::Block;
+}
+
+impl WireMessage for ledger::Transaction {
+    const TOPIC: Topics = Topics::Tx;
+}
+
+impl WireMessage for payload::ValidationResult {
+    const TOPIC: Topics = Topics::Unknown;
+}
+
 impl Message {
-    /// Creates topics.Candidate message
-    pub fn new_candidate(payload: payload::Candidate) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Candidate,
-            payload: Payload::Candidate(Box::new(payload)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Ratification message
-    pub fn new_ratification(payload: payload::Ratification) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Ratification,
-            payload: Payload::Ratification(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Validation message
-    pub fn new_validation(payload: payload::Validation) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Validation,
-            payload: Payload::Validation(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Quorum message
-    pub fn new_quorum(payload: payload::Quorum) -> Message {
-        Self {
-            header: payload.header.clone(),
-            topic: Topics::Quorum,
-            payload: Payload::Quorum(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Block message
-    pub fn new_block(payload: ledger::Block) -> Message {
-        Self {
-            topic: Topics::Block,
-            payload: Payload::Block(Box::new(payload)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Inv (inventory) message
-    pub fn new_inv(p: payload::Inv) -> Message {
-        Self {
-            topic: Topics::Inv,
-            payload: Payload::Inv(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetResource  message
-    pub fn new_get_resource(p: payload::GetResource) -> Message {
-        Self {
-            topic: Topics::GetResource,
-            payload: Payload::GetResource(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetMempool message
-    pub fn new_get_mempool(p: payload::GetMempool) -> Message {
-        Self {
-            topic: Topics::GetMempool,
-            payload: Payload::GetMempool(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.GetBlocks  message
-    pub fn new_get_blocks(p: payload::GetBlocks) -> Message {
-        Self {
-            topic: Topics::GetBlocks,
-            payload: Payload::GetBlocks(p),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.Tx  message
-    pub fn new_transaction(tx: ledger::Transaction) -> Message {
-        Self {
-            topic: Topics::Tx,
-            payload: Payload::Transaction(Box::new(tx)),
-            ..Default::default()
-        }
-    }
-
-    /// Creates a message with a validation_result
-    pub fn from_validation_result(p: payload::ValidationResult) -> Message {
-        Self {
-            topic: Topics::default(),
-            payload: Payload::ValidationResult(Box::new(p)),
-            ..Default::default()
-        }
-    }
-
     /// Creates a unknown message with empty payload
     pub fn empty() -> Message {
         Self {
@@ -280,6 +300,7 @@ impl Message {
 pub struct ConsensusHeader {
     pub prev_block_hash: Hash,
     pub round: u64,
+    #[cfg_attr(any(feature = "faker", test), dummy(faker = "0..50"))]
     pub iteration: u8,
 }
 
@@ -309,6 +330,14 @@ impl Serializable for ConsensusHeader {
         let prev_block_hash = Self::read_bytes(r)?;
         let round = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
+
+        // Iteration is 0-based
+        if iteration >= MESSAGE_MAX_ITER {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid iteration {iteration})"),
+            ));
+        }
 
         Ok(ConsensusHeader {
             prev_block_hash,
@@ -360,13 +389,82 @@ pub enum Payload {
     Empty,
 }
 
+impl Payload {
+    pub fn set_nonce<N: Into<Nonce>>(&mut self, nonce: N) {
+        match self {
+            Payload::GetMempool(p) => p.set_nonce(nonce),
+            Payload::GetBlocks(p) => p.set_nonce(nonce),
+            _ => {}
+        }
+    }
+}
+
+impl From<payload::Ratification> for Payload {
+    fn from(value: payload::Ratification) -> Self {
+        Self::Ratification(value)
+    }
+}
+
+impl From<payload::Validation> for Payload {
+    fn from(value: payload::Validation) -> Self {
+        Self::Validation(value)
+    }
+}
+
+impl From<payload::Candidate> for Payload {
+    fn from(value: payload::Candidate) -> Self {
+        Self::Candidate(Box::new(value))
+    }
+}
+impl From<payload::Quorum> for Payload {
+    fn from(value: payload::Quorum) -> Self {
+        Self::Quorum(value)
+    }
+}
+impl From<ledger::Block> for Payload {
+    fn from(value: ledger::Block) -> Self {
+        Self::Block(Box::new(value))
+    }
+}
+impl From<ledger::Transaction> for Payload {
+    fn from(value: ledger::Transaction) -> Self {
+        Self::Transaction(Box::new(value))
+    }
+}
+impl From<payload::GetMempool> for Payload {
+    fn from(value: payload::GetMempool) -> Self {
+        Self::GetMempool(value)
+    }
+}
+impl From<payload::Inv> for Payload {
+    fn from(value: payload::Inv) -> Self {
+        Self::Inv(value)
+    }
+}
+impl From<payload::GetBlocks> for Payload {
+    fn from(value: payload::GetBlocks) -> Self {
+        Self::GetBlocks(value)
+    }
+}
+impl From<payload::GetResource> for Payload {
+    fn from(value: payload::GetResource) -> Self {
+        Self::GetResource(value)
+    }
+}
+
+impl From<payload::ValidationResult> for Payload {
+    fn from(value: payload::ValidationResult) -> Self {
+        Self::ValidationResult(Box::new(value))
+    }
+}
+
 pub mod payload {
     use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
     use crate::{get_current_timestamp, Serializable};
     use std::fmt;
     use std::io::{self, Read, Write};
     use std::net::{
-        Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
+        IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
     };
 
     use super::{ConsensusHeader, SignInfo};
@@ -408,6 +506,20 @@ pub mod payload {
 
         #[default]
         NoQuorum = 3,
+    }
+
+    impl Vote {
+        pub fn size(&self) -> usize {
+            const ENUM_BYTE: usize = 1;
+
+            let data_size: usize = match &self {
+                Vote::NoCandidate => 0,
+                Vote::Valid(_) => 32,
+                Vote::Invalid(_) => 32,
+                Vote::NoQuorum => 0,
+            };
+            ENUM_BYTE + data_size
+        }
     }
 
     impl fmt::Debug for Vote {
@@ -709,20 +821,89 @@ pub mod payload {
             })
         }
     }
-
     #[derive(Debug, Clone, Default)]
-    pub struct GetMempool {}
+    pub struct Nonce([u8; 8]);
 
-    impl Serializable for GetMempool {
-        fn write<W: Write>(&self, _w: &mut W) -> io::Result<()> {
-            Ok(())
+    impl Serializable for Nonce {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            w.write_all(&self.0)
         }
 
-        fn read<R: Read>(_r: &mut R) -> io::Result<Self>
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
         {
-            Ok(GetMempool::default())
+            let nonce = Self::read_bytes(r)?;
+            Ok(Self(nonce))
+        }
+    }
+
+    impl From<Nonce> for u64 {
+        fn from(value: Nonce) -> Self {
+            u64::from_le_bytes(value.0)
+        }
+    }
+
+    impl From<u64> for Nonce {
+        fn from(value: u64) -> Self {
+            Self(value.to_le_bytes())
+        }
+    }
+
+    impl From<IpAddr> for Nonce {
+        fn from(value: IpAddr) -> Self {
+            match value {
+                IpAddr::V4(v4) => v4.into(),
+                IpAddr::V6(v6) => v6.into(),
+            }
+        }
+    }
+
+    impl From<Ipv4Addr> for Nonce {
+        fn from(value: Ipv4Addr) -> Self {
+            let num = u32::from_le_bytes(value.octets());
+            (num as u64).into()
+        }
+    }
+
+    impl From<Ipv6Addr> for Nonce {
+        fn from(value: Ipv6Addr) -> Self {
+            let mut ret = [0u8; 8];
+            let value = value.octets();
+            let (a, b) = value.split_at(8);
+            a.iter()
+                .zip(b)
+                .map(|(a, b)| a.wrapping_add(*b))
+                .enumerate()
+                .for_each(|(idx, v)| ret[idx] = v);
+
+            Self(ret)
+        }
+    }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct GetMempool {
+        pub(crate) nonce: Nonce,
+    }
+
+    impl GetMempool {
+        pub fn set_nonce<N: Into<Nonce>>(&mut self, nonce: N) {
+            self.nonce = nonce.into()
+        }
+    }
+
+    impl Serializable for GetMempool {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            self.nonce.write(w)?;
+            Ok(())
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let nonce = Nonce::read(r)?;
+            Ok(GetMempool { nonce })
         }
     }
 
@@ -872,9 +1053,22 @@ pub mod payload {
         }
     }
 
-    #[derive(Clone, Default)]
+    #[derive(Clone)]
     pub struct GetBlocks {
         pub locator: [u8; 32],
+        pub(crate) nonce: Nonce,
+    }
+
+    impl GetBlocks {
+        pub fn new(locator: [u8; 32]) -> Self {
+            Self {
+                locator,
+                nonce: Nonce::default(),
+            }
+        }
+        pub fn set_nonce<N: Into<Nonce>>(&mut self, nonce: N) {
+            self.nonce = nonce.into()
+        }
     }
 
     impl fmt::Debug for GetBlocks {
@@ -885,7 +1079,9 @@ pub mod payload {
 
     impl Serializable for GetBlocks {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            w.write_all(&self.locator[..])
+            w.write_all(&self.locator[..])?;
+            self.nonce.write(w)?;
+            Ok(())
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
@@ -893,7 +1089,8 @@ pub mod payload {
             Self: Sized,
         {
             let locator = Self::read_bytes(r)?;
-            Ok(Self { locator })
+            let nonce = Nonce::read(r)?;
+            Ok(Self { locator, nonce })
         }
     }
 
@@ -1242,7 +1439,11 @@ impl StepMessage for Candidate {
         &mut self.sign_info
     }
     fn signable(&self) -> Vec<u8> {
-        self.candidate.header().hash.to_vec()
+        let mut signable = self.header.signable();
+        signable.extend_from_slice(Self::SIGN_SEED);
+        let candidate_hash = self.candidate.header().hash.to_vec();
+        signable.extend_from_slice(&candidate_hash);
+        signable
     }
     fn header(&self) -> &ConsensusHeader {
         &self.header

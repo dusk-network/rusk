@@ -7,7 +7,7 @@
 use crate::config::Network;
 use crate::io::WalletArgs;
 
-use dusk_wallet::Error;
+use rusk_wallet::Error;
 use std::fmt;
 use std::path::PathBuf;
 

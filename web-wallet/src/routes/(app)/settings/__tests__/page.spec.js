@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 
-import mockedWalletStore from "../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
 import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
@@ -82,7 +82,7 @@ describe("Settings", () => {
     await act(() => {
       mockedWalletStore.setMockedStoreValue({
         ...initialWalletStoreState,
-        isSyncing: true,
+        syncStatus: { isInProgress: true },
       });
     });
 

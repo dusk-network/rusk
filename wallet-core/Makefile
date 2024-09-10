@@ -1,5 +1,3 @@
-TARGET_DIR:="../../target/dusk"
-
 all: ## Build the ABI
 	cargo build
 
@@ -11,13 +9,7 @@ test:
 
 
 wasm: ## Build the WASM files
-	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \
-	CARGO_TARGET_DIR=$(TARGET_DIR) \
-	cargo +dusk build \
-		--release \
-		--color=always \
-		-Z build-std=core,alloc \
-		--target wasm64-unknown-unknown
+	@cargo wasm
 
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings

@@ -43,6 +43,16 @@ unsafe fn convert(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| STATE.convert(arg))
 }
 
+#[no_mangle]
+unsafe fn transfer_to_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_contract(arg))
+}
+
+#[no_mangle]
+unsafe fn transfer_to_account(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_account(arg))
+}
+
 // Queries
 
 #[no_mangle]
@@ -77,6 +87,11 @@ unsafe fn num_notes(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.num_notes())
 }
 
+#[no_mangle]
+unsafe fn chain_id(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.chain_id())
+}
+
 // "Feeder" queries
 
 #[no_mangle]
@@ -87,6 +102,13 @@ unsafe fn leaves_from_height(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn leaves_from_pos(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |pos| STATE.leaves_from_pos(pos))
+}
+
+#[no_mangle]
+unsafe fn sync(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(from, count_limint)| {
+        STATE.sync(from, count_limint)
+    })
 }
 
 // "Management" transactions

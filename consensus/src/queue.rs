@@ -58,11 +58,6 @@ impl<T: Debug + Clone> MsgRegistry<T> {
         self.0.remove(&round);
     }
 
-    /// Removes all messages that belong to a round greater than the specified.
-    pub fn remove_msgs_greater_than(&mut self, round: u64) {
-        self.0.split_off(&round);
-    }
-
     /// Removes all messages that do not belong to the range (closed interval)
     /// of keys
     pub fn remove_msgs_out_of_range(&mut self, start_round: u64, offset: u64) {
@@ -119,30 +114,6 @@ mod tests {
         reg.remove_msgs_by_round(4444);
         assert_eq!(reg.msg_count(), 0);
         assert!(reg.drain_msg_by_round_step(round, 2).is_none());
-    }
-
-    #[test]
-    fn test_remove() {
-        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-        struct Item(i32);
-
-        let round = 100;
-
-        let mut reg = MsgRegistry::<Item>::default();
-        reg.put_msg(round + 1, 1, Item(1));
-        reg.put_msg(round + 2, 1, Item(1));
-        reg.put_msg(round + 3, 1, Item(1));
-        reg.put_msg(round, 1, Item(1));
-
-        reg.remove_msgs_greater_than(round + 2);
-
-        assert!(reg.drain_msg_by_round_step(round, 1).is_some());
-        assert!(reg.drain_msg_by_round_step(round + 1, 1).is_some());
-
-        assert!(reg.drain_msg_by_round_step(round + 2, 1).is_none());
-        assert!(reg.drain_msg_by_round_step(round + 3, 1).is_none());
-
-        assert_eq!(reg.msg_count(), 0);
     }
 
     #[test]

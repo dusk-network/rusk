@@ -63,6 +63,8 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;
 
+    fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()>;
+
     /// Returns last finalized state root
     fn get_finalized_state_root(&self) -> anyhow::Result<[u8; 32]>;
 

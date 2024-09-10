@@ -35,6 +35,28 @@ pub enum Fault {
     DoubleValidationVote(FaultData<Vote>, FaultData<Vote>),
 }
 
+impl Fault {
+    pub fn size(&self) -> usize {
+        // prev_block_hash + round + iter
+        const FAULT_CONSENSUS_HEADER_SIZE: usize = 32 + u64::SIZE + u8::SIZE;
+        // signer + signature
+        const FAULT_SIG_INFO_SIZE: usize =
+            BlsMultisigPublicKey::SIZE + BlsMultisigSignature::SIZE;
+
+        const HEADERS: usize = FAULT_CONSENSUS_HEADER_SIZE * 2;
+        const SIG_INFOS: usize = FAULT_SIG_INFO_SIZE * 2;
+        let faults_data_size = match self {
+            Fault::DoubleCandidate(..) => 32 * 2,
+            Fault::DoubleRatificationVote(a, b) => {
+                a.data.size() + b.data.size()
+            }
+            Fault::DoubleValidationVote(a, b) => a.data.size() + b.data.size(),
+        };
+
+        HEADERS + SIG_INFOS + faults_data_size
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum InvalidFault {
     #[error("Inner faults have same data")]

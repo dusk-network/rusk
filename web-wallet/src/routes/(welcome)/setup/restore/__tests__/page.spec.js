@@ -152,7 +152,13 @@ describe("Restore", async () => {
     await fireEvent.click(getByRole("button", { name: "Next" }));
     expect(loginInfoStorage.get()).toBeNull();
 
-    // Restore Wallet step
+    // Block Height Step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    // Syncing Step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    // All Done Step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
@@ -161,7 +167,7 @@ describe("Restore", async () => {
     expect(getWalletSpy).toHaveBeenCalledTimes(1);
     expect(getWalletSpy).toHaveBeenCalledWith(seed);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
+    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), 0);
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });
@@ -197,15 +203,22 @@ describe("Restore", async () => {
       expect(loginInfoStorage.get()).not.toBeNull();
     });
 
-    // Restore Wallet step
+    // Block Height step
     await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    // Network Sync step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    // All Done step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
     expect(getWalletSpy).toHaveBeenCalledTimes(1);
     expect(getWalletSpy).toHaveBeenCalledWith(seed);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet));
+    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), 0);
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });

@@ -41,10 +41,9 @@ dirs = "4"
 blake3 = "1"
 blake2b_simd = { version = "1", default-features = false }
 
-poseidon-merkle = { version = "0.7", features = ["rkyv-impl", "size_32"] }
 sha3 = "0.10"
 dusk-bytes = "0.1"
-kadcast = "0.6.0-rc"
+kadcast = "0.7.0-rc.5"
 pin-project = "1"
 tungstenite = "0.21"
 hyper-tungstenite = "0.13"
@@ -61,7 +60,7 @@ async-trait = "0.1"
 execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
-rusk-prover = { version = "0.3", path = "../rusk-prover", features = ["std"], optional = true }
+rusk-prover = { version = "0.4", path = "../rusk-prover", features = ["std"], optional = true }
 
 ## node dependencies
 node = { version = "0.1", path = "../node", optional = true }
@@ -86,20 +85,21 @@ test-context = "0.1"
 reqwest = "0.12"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
 ff = { version = "0.13", default-features = false }
-rusk-prover = { version = "0.3", path = "../rusk-prover", features = ["no_random"] }
+rusk-prover = { version = "0.4", path = "../rusk-prover", features = ["no_random"] }
 criterion = "0.5"
 
 [build-dependencies]
 rustc_tools_util = "0.3"
 
 [features]
-default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "node"]
+default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "node", "http-wasm"]
 ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "node"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover"]
 testwallet = ["dep:futures"]
 node = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
+http-wasm = []
 
 [[bench]]
 name = "block_ingestion"

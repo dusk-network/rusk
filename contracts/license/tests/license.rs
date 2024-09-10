@@ -41,6 +41,7 @@ const LICENSE_CONTRACT_ID: ContractId = {
 
 const POINT_LIMIT: u64 = 0x10000000;
 const TEST_OWNER: [u8; 32] = [0; 32];
+const CHAIN_ID: u8 = 0xFA;
 const USER_ATTRIBUTES: u64 = 545072475273;
 
 static LABEL: &[u8] = b"dusk-network";
@@ -66,7 +67,7 @@ fn initialize() -> Session {
         "../../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
-    let mut session = rusk_abi::new_genesis_session(&vm);
+    let mut session = rusk_abi::new_genesis_session(&vm, CHAIN_ID);
 
     session
         .deploy(

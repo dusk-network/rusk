@@ -205,7 +205,7 @@ impl RatificationHandler {
             },
         };
 
-        Message::new_quorum(quorum)
+        quorum.into()
     }
 
     pub(crate) fn reset(&mut self, iter: u8, validation: ValidationResult) {

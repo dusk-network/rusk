@@ -6,16 +6,15 @@
 
 use std::sync::mpsc;
 
-use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 
 use execution_core::{
     transfer::{
-        contract_exec::ContractExec,
+        data::TransactionData,
         phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, TreeLeaf,
-            ViewKey as PhoenixViewKey, NOTES_TREE_DEPTH,
+            Note, NoteLeaf, NoteOpening, NoteTreeItem,
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
         },
         Transaction, TRANSFER_CONTRACT,
     },
@@ -29,7 +28,7 @@ const POINT_LIMIT: u64 = 0x100000000;
 pub fn leaves_from_height(
     session: &mut Session,
     height: u64,
-) -> Result<Vec<TreeLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -49,7 +48,7 @@ pub fn leaves_from_height(
 pub fn leaves_from_pos(
     session: &mut Session,
     pos: u64,
-) -> Result<Vec<TreeLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, PiecrustError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -81,9 +80,15 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonOpening<(), NOTES_TREE_DEPTH>>, PiecrustError> {
+) -> Result<Option<NoteOpening>, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
+        .map(|r| r.data)
+}
+
+pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "chain_id", &(), POINT_LIMIT)
         .map(|r| r.data)
 }
 
@@ -148,7 +153,7 @@ pub fn create_transaction<const I: usize>(
     transfer_value: u64,
     obfuscated_transaction: bool,
     deposit: u64,
-    exec: Option<impl Into<ContractExec>>,
+    data: Option<impl Into<TransactionData>>,
 ) -> Transaction {
     // Get the root of the tree of phoenix-notes.
     let root = root(session).expect("Getting the anchor should be successful");
@@ -171,13 +176,13 @@ pub fn create_transaction<const I: usize>(
             .expect("An opening should exist for a note in the tree");
 
         // sanity check of the merkle opening
-        assert!(opening.verify(poseidon_merkle::Item::new(
-            rusk_abi::poseidon_hash(note.hash_inputs().to_vec()),
-            ()
-        )));
+        assert!(opening.verify(NoteTreeItem::new(note.hash(), ())));
 
         inputs.push((note.clone(), opening));
     }
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
 
     PhoenixTransaction::new::<StdRng, LocalProver>(
         rng,
@@ -191,7 +196,8 @@ pub fn create_transaction<const I: usize>(
         deposit,
         gas_limit,
         gas_price,
-        exec.map(Into::into),
+        chain_id,
+        data.map(Into::into),
     )
     .expect("creating the creation shouldn't fail")
     .into()

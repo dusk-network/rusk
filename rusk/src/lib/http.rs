@@ -68,7 +68,9 @@ use rand::rngs::OsRng;
 use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
-pub use self::event::{ContractEvent, RuesEvent, RUES_LOCATION_PREFIX};
+pub use self::event::{
+    ContractEvent, RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX,
+};
 use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 
@@ -146,6 +148,24 @@ impl HandleRequest for DataSources {
             }
         }
         Err(anyhow::anyhow!("unsupported target type"))
+    }
+
+    fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
+        self.sources.iter().any(|s| s.can_handle_rues(event))
+    }
+
+    async fn handle_rues(
+        &self,
+        event: &RuesDispatchEvent,
+    ) -> anyhow::Result<ResponseData> {
+        info!("Received event at {}", event.uri);
+        event.check_rusk_version()?;
+        for h in &self.sources {
+            if h.can_handle_rues(event) {
+                return h.handle_rues(event).await;
+            }
+        }
+        Err(anyhow::anyhow!("unsupported location"))
     }
 }
 
@@ -426,7 +446,6 @@ where
 enum SubscriptionAction {
     Subscribe(RuesEventUri),
     Unsubscribe(RuesEventUri),
-    Dispatch { uri: RuesEventUri, body: Incoming },
 }
 
 async fn handle_stream_rues<H: HandleRequest>(
@@ -459,17 +478,8 @@ async fn handle_stream_rues<H: HandleRequest>(
     const DISPATCH_BUFFER_SIZE: usize = 16;
 
     let mut subscription_set = HashSet::new();
-    let (dispatch_sender, dispatch_events) =
-        mpsc::channel(DISPATCH_BUFFER_SIZE);
 
-    // Join the two event receivers together, allowing for reusing the exact
-    // same code when handling them either of them.
     let mut events = BroadcastStream::new(events);
-    let mut dispatch_events = ReceiverStream::new(dispatch_events);
-
-    let mut events = events
-        .map_err(Either::Left)
-        .merge(dispatch_events.map_err(Either::Right));
 
     loop {
         tokio::select! {
@@ -502,36 +512,23 @@ async fn handle_stream_rues<H: HandleRequest>(
                     SubscriptionAction::Unsubscribe(subscription) => {
                         subscription_set.remove(&subscription);
                     },
-                    SubscriptionAction::Dispatch {
-                        uri,
-                        body
-                    } => {
-                        // TODO figure out if we should subscribe to the event we dispatch
-                        task::spawn(handle_dispatch(uri, body, handler.clone(), dispatch_sender.clone()));
-                    }
                 }
             }
 
             Some(event) = events.next() => {
                 let mut event = match event {
                     Ok(event) => event,
-                    Err(err) => match err {
-                        Either::Left(_berr) => {
-                            // If the event channel is closed, it means the
-                            // server has stopped producing events, so we
-                            // should inform the client and stop.
-                            let _ = stream.close(Some(CloseFrame {
-                                code: CloseCode::Away,
-                                reason: Cow::from("Shutting down"),
-                            })).await;
-                            break;
+                    Err(err) => {
+                        // If the event channel is closed, it means the
+                        // server has stopped producing events, so we
+                        // should inform the client and stop.
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Away,
+                            reason: Cow::from("Shutting down"),
+                        })).await;
+                        break;
 
-                        }
-                        Either::Right(_eerr) => {
-                            // TODO handle execution error
-                            continue;
-                        },
-                    },
+                    }
                 };
 
                 // The event is subscribed to if it matches any of the subscriptions.
@@ -648,6 +645,31 @@ async fn handle_request_rues<H: HandleRequest>(
         ));
 
         Ok(response.map(Into::into))
+    } else if req.method() == Method::POST {
+        let event = RuesDispatchEvent::from_request(req).await?;
+        let is_binary = event.is_binary();
+        let mut resp_headers = event.x_headers();
+        let (responder, mut receiver) = mpsc::unbounded_channel();
+        handle_execution_rues(handler, event, responder).await;
+
+        let execution_response = receiver
+            .recv()
+            .await
+            .expect("An execution should always return a response");
+        resp_headers.extend(execution_response.headers.clone());
+        let mut resp = execution_response.into_http(is_binary)?;
+
+        for (k, v) in resp_headers {
+            let k = HeaderName::from_str(&k)?;
+            let v = match v {
+                serde_json::Value::String(s) => HeaderValue::from_str(&s),
+                serde_json::Value::Null => HeaderValue::from_str(""),
+                _ => HeaderValue::from_str(&v.to_string()),
+            }?;
+            resp.headers_mut().append(k, v);
+        }
+
+        Ok(resp)
     } else {
         let headers = req.headers();
 
@@ -684,10 +706,6 @@ async fn handle_request_rues<H: HandleRequest>(
         let action = match *req.method() {
             Method::GET => SubscriptionAction::Subscribe(uri),
             Method::DELETE => SubscriptionAction::Unsubscribe(uri),
-            Method::POST => SubscriptionAction::Dispatch {
-                uri,
-                body: req.into_body(),
-            },
             _ => {
                 return response(
                     StatusCode::METHOD_NOT_ALLOWED,
@@ -733,6 +751,20 @@ where
             ws_event_channel_cap,
         )
         .await;
+    }
+
+    #[cfg(feature = "http-wasm")]
+    if path == "/static/drivers/wallet-core.wasm" {
+        let wallet_wasm = include_bytes!(
+            "../../../target/wasm32-unknown-unknown/release/wallet_core.wasm"
+        );
+        let mut response =
+            Response::new(Full::from(wallet_wasm.to_vec()).into());
+        response.headers_mut().append(
+            "Content-Type",
+            HeaderValue::from_static("application/wasm"),
+        );
+        return Ok(response);
     }
 
     if hyper_tungstenite::is_upgrade_request(&req) {
@@ -797,12 +829,47 @@ async fn handle_execution<H>(
     let _ = responder.send(rsp);
 }
 
+async fn handle_execution_rues<H>(
+    sources: Arc<H>,
+    event: RuesDispatchEvent,
+    responder: mpsc::UnboundedSender<EventResponse>,
+) where
+    H: HandleRequest,
+{
+    let mut rsp = sources
+        .handle_rues(&event)
+        .await
+        .map(|data| {
+            let (data, mut headers) = data.into_inner();
+            headers.append(&mut event.x_headers());
+            EventResponse {
+                data,
+                error: None,
+                headers,
+            }
+        })
+        .unwrap_or_else(|e| EventResponse {
+            headers: event.x_headers(),
+            data: DataType::None,
+            error: Some(e.to_string()),
+        });
+
+    rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
+    let _ = responder.send(rsp);
+}
+
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
     fn can_handle(&self, request: &MessageRequest) -> bool;
     async fn handle(
         &self,
         request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData>;
+
+    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
+    async fn handle_rues(
+        &self,
+        request: &RuesDispatchEvent,
     ) -> anyhow::Result<ResponseData>;
 }
 
@@ -832,6 +899,16 @@ mod tests {
     impl HandleRequest for TestHandle {
         fn can_handle(&self, _request: &MessageRequest) -> bool {
             true
+        }
+
+        fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
+            false
+        }
+        async fn handle_rues(
+            &self,
+            request: &RuesDispatchEvent,
+        ) -> anyhow::Result<ResponseData> {
+            unimplemented!()
         }
 
         async fn handle(
@@ -1215,5 +1292,19 @@ mod tests {
 
         let data = data.to_vec().into();
         Ok(RuesEvent { data, headers, uri })
+    }
+
+    impl From<ContractEvent> for RuesEvent {
+        fn from(event: ContractEvent) -> Self {
+            Self {
+                uri: RuesEventUri {
+                    component: "contracts".into(),
+                    entity: Some(hex::encode(event.target.0.as_bytes())),
+                    topic: event.topic,
+                },
+                data: event.data.into(),
+                headers: Default::default(),
+            }
+        }
     }
 }

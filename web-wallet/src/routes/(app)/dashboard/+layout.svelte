@@ -1,4 +1,9 @@
 <script>
+  /**
+   * Note: shieldedTokensPercentage props in `` is passed the same balance twice.
+   * This is because we currently don't have the separate balances
+   * for phoenix and moonlight.
+   */
   import {
     mdiAlertOutline,
     mdiCogOutline,
@@ -14,7 +19,7 @@
   export let data;
 
   /** @type {string} */
-  let syncStatus = "";
+  let syncStatusLabel = "";
 
   /** @type {string} */
   let networkStatusIconPath = "";
@@ -32,19 +37,19 @@
   const { currency, language } = $settingsStore;
 
   $: ({ network } = $settingsStore);
-  $: ({ balance, currentAddress, addresses, isSyncing, error } = $walletStore);
-  $: if (isSyncing) {
+  $: ({ balance, currentAddress, addresses, syncStatus } = $walletStore);
+  $: if (syncStatus.isInProgress) {
     iconVariant = "warning";
     networkStatusIconPath = mdiTimerSand;
-    syncStatus = `Syncing with Dusk ${network}`;
-  } else if (error) {
+    syncStatusLabel = "";
+  } else if (syncStatus.error) {
     iconVariant = "error";
     networkStatusIconPath = mdiAlertOutline;
-    syncStatus = `Dusk ${network} - Sync Failed`;
+    syncStatusLabel = `Dusk ${network} - Sync Failed`;
   } else {
     iconVariant = "success";
     networkStatusIconPath = mdiLink;
-    syncStatus = `Dusk ${network}`;
+    syncStatusLabel = `Dusk ${network}`;
   }
 </script>
 
@@ -66,6 +71,9 @@
       locale={language}
       tokenCurrency="DUSK"
       tokens={balance.value}
+      shieldedTokensPercentage={import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED
+        ? (balance.value / balance.value) * 100
+        : undefined}
     />
 
     <slot />
@@ -75,22 +83,36 @@
       <div class="footer__network-status">
         <Icon
           className="footer__network-status-icon footer__network-status-icon--{iconVariant}"
-          data-tooltip-disabled={!error}
+          data-tooltip-disabled={!syncStatus.error}
           data-tooltip-id="main-tooltip"
-          data-tooltip-text={error?.message}
+          data-tooltip-text={syncStatus.error?.message}
           data-tooltip-type="error"
           path={networkStatusIconPath}
           size="large"
         />
         <div class="footer__network-message">
-          <span>{syncStatus}</span>
-          {#if isSyncing}
-            <ProgressBar />
+          {#if syncStatusLabel}
+            <span>{syncStatusLabel}</span>
+          {/if}
+          {#if syncStatus.isInProgress}
+            {#if !syncStatus.current || !syncStatus.last}
+              <span>Syncing</span>
+            {:else}
+              <span>
+                Syncing: <b
+                  >{syncStatus.current.toLocaleString()}/{syncStatus.last.toLocaleString()}</b
+                >
+              </span>
+              <ProgressBar
+                className="footer__sync-status-progress-bar"
+                currentPercentage={(syncStatus.current / syncStatus.last) * 100}
+              />
+            {/if}
           {/if}
         </div>
       </div>
       <div class="footer__actions">
-        {#if error}
+        {#if syncStatus.error}
           <Button
             aria-label="Retry synchronization"
             className="footer__actions-button footer__actions-button--retry"
@@ -161,12 +183,14 @@
       gap: var(--small-gap);
       line-height: 150%;
       text-transform: capitalize;
+      width: 100%;
     }
 
     &__network-message {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
+      width: 100%;
     }
 
     :global(.footer__network-status-icon) {
@@ -188,6 +212,10 @@
     :global(.footer__network-status-icon--warning) {
       color: var(--on-warning-color);
       background: var(--warning-color);
+    }
+
+    :global(.footer__sync-status-progress-bar) {
+      min-width: 100%;
     }
   }
 </style>

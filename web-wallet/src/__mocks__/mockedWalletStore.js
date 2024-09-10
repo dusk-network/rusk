@@ -9,9 +9,10 @@ const content = {
   addresses,
   balance,
   currentAddress,
-  error: null,
   initialized: true,
-  isSyncing: false,
+  syncStatus: { current: 0, error: null, isInProgress: false, last: 0 },
 };
 
-export default mockReadableStore(content);
+const mockedWalletStore = mockReadableStore(content);
+
+export default mockedWalletStore;

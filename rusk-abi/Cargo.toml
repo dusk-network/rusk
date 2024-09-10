@@ -15,8 +15,8 @@ dusk-poseidon = "0.39"
 dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 
-piecrust-uplink = { version = "0.16" }
-piecrust = { version = "0.23", optional = true }
+piecrust-uplink = { version = "0.17" }
+piecrust = { version = "0.24", optional = true }
 
 execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
 

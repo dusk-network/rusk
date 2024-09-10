@@ -10,7 +10,7 @@ import {
 import { act, cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { createCurrencyFormatter } from "$lib/dusk/currency";
-import mockedWalletStore from "../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
 import Layout from "../+layout.svelte";
 import { load } from "../+layout.js";
 
@@ -180,7 +180,7 @@ describe("Dashboard Layout", () => {
     );
   });
 
-  it("should render the dashboard layout in the sync state", async () => {
+  it("should render the dashboard layout in the sync state when no progress is reported", async () => {
     const { container } = render(Layout, baseProps);
 
     expect(getStatusWrapper(container, "warning")).toBeNull();
@@ -188,7 +188,39 @@ describe("Dashboard Layout", () => {
     await act(() => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
-        isSyncing: true,
+        syncStatus: {
+          current: 0,
+          error: null,
+          isInProgress: true,
+          last: 0,
+        },
+      });
+    });
+
+    expect(getStatusWrapper(container, "warning")).toBeTruthy();
+    expect(container.firstChild).toMatchSnapshot();
+
+    await act(() => {
+      mockedWalletStore.setMockedStoreValue(initialState);
+    });
+
+    expect(getStatusWrapper(container, "warning")).toBeNull();
+  });
+
+  it("should render the dashboard layout in the sync state with a progress indicator", async () => {
+    const { container } = render(Layout, baseProps);
+
+    expect(getStatusWrapper(container, "warning")).toBeNull();
+
+    await act(() => {
+      mockedWalletStore.setMockedStoreValue({
+        ...initialState,
+        syncStatus: {
+          current: 100,
+          error: null,
+          isInProgress: true,
+          last: 200,
+        },
       });
     });
 
@@ -213,7 +245,12 @@ describe("Dashboard Layout", () => {
     await act(() => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
-        error: new Error(),
+        syncStatus: {
+          current: 0,
+          error: new Error(),
+          isInProgress: false,
+          last: 0,
+        },
       });
     });
 

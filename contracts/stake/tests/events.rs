@@ -6,13 +6,16 @@
 
 pub mod common;
 
+use common::assert::assert_slash_event;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use execution_core::{
     dusk,
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{StakeAmount, StakeData, STAKE_CONTRACT},
+    stake::{
+        Reward, RewardReason, StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
+    },
     transfer::{
         phoenix::{
             PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -39,6 +42,10 @@ fn reward_slash() -> Result<(), PiecrustError> {
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
+    let stake_pks = StakeKeys {
+        account: stake_pk,
+        funds: stake_pk,
+    };
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -51,6 +58,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
         amount: Some(StakeAmount {
             value: stake_amount,
             eligibility: 0,
+            locked: 0,
         }),
         nonce: 0,
         faults: 0,
@@ -67,16 +75,18 @@ fn reward_slash() -> Result<(), PiecrustError> {
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
-        &(stake_pk, stake_data),
+        &(stake_pks, stake_data),
         u64::MAX,
     )?;
 
-    let receipt = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(stake_pk, reward_amount),
-        u64::MAX,
-    )?;
+    let rewards = vec![Reward {
+        account: stake_pk,
+        value: reward_amount,
+        reason: RewardReason::Other,
+    }];
+
+    let receipt =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
     assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     let receipt = session.call::<_, ()>(
@@ -86,7 +96,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
         u64::MAX,
     )?;
     assert!(receipt.events.len() == 1, "No shift at first warn");
-    assert_event(&receipt.events, "slash", &stake_pk, slash_amount);
+    assert_slash_event(&receipt.events, "slash", &stake_pk, slash_amount, None);
     let stake_amount = stake_amount - slash_amount;
 
     let receipt = session.call::<_, ()>(
@@ -97,8 +107,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
     )?;
     // 10% of current amount
     let slash_amount = stake_amount / 10;
-    assert_event(&receipt.events, "slash", &stake_pk, slash_amount);
-    assert_event(&receipt.events, "suspended", &stake_pk, 4320);
+    assert_slash_event(&receipt.events, "slash", &stake_pk, slash_amount, 4320);
 
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -110,8 +119,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
 
     // 20% of current amount
     let slash_amount = stake_amount / 100 * 20;
-    assert_event(&receipt.events, "slash", &stake_pk, slash_amount);
-    assert_event(&receipt.events, "suspended", &stake_pk, 6480);
+    assert_slash_event(&receipt.events, "slash", &stake_pk, slash_amount, 6480);
 
     Ok(())
 }
@@ -128,6 +136,10 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
+    let stake_pks = StakeKeys {
+        account: stake_pk,
+        funds: stake_pk,
+    };
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -142,6 +154,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
         amount: Some(StakeAmount {
             value: stake_amount,
             eligibility: block_height,
+            locked: 0,
         }),
         nonce: 0,
         faults: 0,
@@ -158,7 +171,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "insert_stake",
-        &(stake_pk, stake_data),
+        &(stake_pks, stake_data),
         u64::MAX,
     )?;
 
@@ -171,7 +184,14 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
         u64::MAX,
     )?;
     let expected_slash = stake_amount / 100 * 10;
-    assert_event(&receipt.events, "hard_slash", &stake_pk, expected_slash);
+    assert_slash_event(
+        &receipt.events,
+        "hard_slash",
+        &stake_pk,
+        expected_slash,
+        None,
+    );
+    println!("f1");
     cur_balance -= expected_slash;
 
     // Severe hard fault (slash 30%)
@@ -182,7 +202,13 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
         u64::MAX,
     )?;
     let expected_slash = cur_balance / 100 * (1 + severity) * 10;
-    assert_event(&receipt.events, "hard_slash", &stake_pk, expected_slash);
+    assert_slash_event(
+        &receipt.events,
+        "hard_slash",
+        &stake_pk,
+        expected_slash,
+        None,
+    );
     cur_balance -= expected_slash;
 
     // Direct slash (slash hard_slash_amount)
@@ -192,15 +218,23 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
         &(stake_pk, Some(hard_slash_amount), None::<u8>),
         u64::MAX,
     )?;
-    assert_event(&receipt.events, "hard_slash", &stake_pk, hard_slash_amount);
+    assert_slash_event(
+        &receipt.events,
+        "hard_slash",
+        &stake_pk,
+        hard_slash_amount,
+        None,
+    );
     cur_balance -= hard_slash_amount;
 
-    let receipt = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(stake_pk, reward_amount),
-        u64::MAX,
-    )?;
+    let rewards = vec![Reward {
+        account: stake_pk,
+        value: reward_amount,
+        reason: RewardReason::Other,
+    }];
+
+    let receipt =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
     assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     // Simple hard fault post-reward (slash 10%)
@@ -212,7 +246,13 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
         u64::MAX,
     )?;
     let expected_slash = cur_balance / 100 * 10;
-    assert_event(&receipt.events, "hard_slash", &stake_pk, expected_slash);
+    assert_slash_event(
+        &receipt.events,
+        "hard_slash",
+        &stake_pk,
+        expected_slash,
+        None,
+    );
 
     Ok(())
 }

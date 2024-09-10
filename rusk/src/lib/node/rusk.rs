@@ -9,6 +9,8 @@ use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
 use std::{fs, io};
 
+use execution_core::stake::StakeKeys;
+use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
@@ -17,15 +19,15 @@ use tracing::{debug, info, warn};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
-    validation_quorum, RATIFICATION_COMMITTEE_CREDITS,
-    VALIDATION_COMMITTEE_CREDITS,
+    validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
+    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
-    stake::{StakeData, STAKE_CONTRACT},
+    stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
     transfer::{
-        contract_exec::{ContractBytecode, ContractDeploy},
+        data::{ContractBytecode, ContractDeploy},
         moonlight::AccountData,
         Transaction as ProtocolTransaction, TRANSFER_CONTRACT,
     },
@@ -36,6 +38,7 @@ use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 
+use super::vm::ContractTxEvent;
 use super::{coinbase_value, Rusk, RuskTip};
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
@@ -49,12 +52,16 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
 });
 
 const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
+const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
 
 impl Rusk {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
+        chain_id: u8,
         generation_timeout: Option<Duration>,
         gas_per_deploy_byte: Option<u64>,
+        min_deployment_gas_price: Option<u64>,
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
@@ -87,8 +94,10 @@ impl Rusk {
             tip,
             vm,
             dir: dir.into(),
+            chain_id,
             generation_timeout,
             gas_per_deploy_byte,
+            min_deployment_gas_price,
             feeder_gas_limit,
             event_sender,
             block_gas_limit,
@@ -121,6 +130,9 @@ impl Rusk {
 
         let mut event_hasher = Sha3_256::new();
 
+        // We always write the faults len in a u32
+        let mut size_left = params.max_txs_bytes - u32::SIZE;
+
         for unspent_tx in txs {
             if let Some(timeout) = self.generation_timeout {
                 if started.elapsed() > timeout {
@@ -128,9 +140,29 @@ impl Rusk {
                     break;
                 }
             }
-            let tx_id = hex::encode(unspent_tx.id());
+
+            // Limit execution to the block transactions limit
+            if spent_txs.len() >= MAX_NUMBER_OF_TRANSACTIONS {
+                info!("Maximum number of transactions reached");
+                break;
+            }
+
+            let tx_id = unspent_tx.id();
+            let tx_id_hex = hex::encode(unspent_tx.id());
             if unspent_tx.inner.gas_limit() > block_gas_left {
-                info!("Skipping {tx_id} due gas_limit greater than left: {block_gas_left}");
+                info!("Skipping {tx_id_hex} due gas_limit greater than left: {block_gas_left}");
+                continue;
+            }
+
+            let tx_len = unspent_tx.size().unwrap_or_default();
+
+            if tx_len == 0 {
+                info!("Skipping {tx_id_hex} due to error while calculating the len");
+                continue;
+            }
+
+            if tx_len > size_left {
+                info!("Skipping {tx_id_hex} due size greater than bytes left: {size_left}");
                 continue;
             }
 
@@ -138,6 +170,7 @@ impl Rusk {
                 &mut session,
                 &unspent_tx.inner,
                 self.gas_per_deploy_byte,
+                self.min_deployment_gas_price,
             ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
@@ -156,17 +189,29 @@ impl Rusk {
                                 &mut session,
                                 &spent_tx.inner.inner,
                                 self.gas_per_deploy_byte,
+                                self.min_deployment_gas_price,
                             );
                         }
 
                         continue;
                     }
 
+                    size_left -= tx_len;
+
                     // We're currently ignoring the result of successful calls
                     let err = receipt.data.err().map(|e| format!("{e}"));
-                    info!("Tx {tx_id} executed with {gas_spent} gas and err {err:?}");
+                    info!("Tx {tx_id_hex} executed with {gas_spent} gas and err {err:?}");
 
-                    update_hasher(&mut event_hasher, &receipt.events);
+                    let tx_events: Vec<_> = receipt
+                        .events
+                        .into_iter()
+                        .map(|event| ContractTxEvent {
+                            event,
+                            origin: Some(tx_id),
+                        })
+                        .collect();
+
+                    update_hasher(&mut event_hasher, &tx_events);
 
                     block_gas_left -= gas_spent;
                     let gas_price = unspent_tx.inner.gas_price();
@@ -178,8 +223,18 @@ impl Rusk {
                         err,
                     });
                 }
+                Err(PiecrustError::Panic(val))
+                    if val == PANIC_NONCE_NOT_READY =>
+                {
+                    // If the transaction panic due to a not yet valid nonce,
+                    // we should not discard the transactions since it can be
+                    // included in future.
+
+                    // TODO: Try to process the transaction as soon as the
+                    // nonce is unlocked
+                }
                 Err(e) => {
-                    info!("discard tx {tx_id} due to {e:?}");
+                    info!("discard tx {tx_id_hex} due to {e:?}");
                     // An unspendable transaction should be discarded
                     discarded_txs.push(unspent_tx);
                     continue;
@@ -195,6 +250,14 @@ impl Rusk {
             to_slash,
             voters,
         )?;
+
+        let coinbase_events: Vec<_> = coinbase_events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event,
+                origin: None,
+            })
+            .collect();
         update_hasher(&mut event_hasher, &coinbase_events);
 
         let state_root = session.root();
@@ -231,6 +294,7 @@ impl Rusk {
             slashing,
             voters,
             self.gas_per_deploy_byte,
+            self.min_deployment_gas_price,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -262,6 +326,7 @@ impl Rusk {
             slashing,
             voters,
             self.gas_per_deploy_byte,
+            self.min_deployment_gas_price,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -332,12 +397,12 @@ impl Rusk {
     pub fn provisioners(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>> {
+    ) -> Result<impl Iterator<Item = (StakeKeys, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
-                "The contract should only return (pk, stake_data) tuples",
+            rkyv::from_bytes::<(StakeKeys, StakeData)>(&bytes).expect(
+                "The contract should only return (StakeKeys, StakeData) tuples",
             )
         }))
     }
@@ -345,6 +410,11 @@ impl Rusk {
     /// Returns an account's information.
     pub fn account(&self, pk: &BlsPublicKey) -> Result<AccountData> {
         self.query(TRANSFER_CONTRACT, "account", pk)
+    }
+
+    /// Returns an account's information.
+    pub fn chain_id(&self) -> Result<u8> {
+        self.query(TRANSFER_CONTRACT, "chain_id", &())
     }
 
     /// Fetches the previous state data for stake changes in the contract.
@@ -396,7 +466,12 @@ impl Rusk {
             tip.current
         });
 
-        let session = rusk_abi::new_session(&self.vm, commit, block_height)?;
+        let session = rusk_abi::new_session(
+            &self.vm,
+            commit,
+            self.chain_id,
+            block_height,
+        )?;
 
         Ok(session)
     }
@@ -444,11 +519,12 @@ fn accept(
     slashing: Vec<Slash>,
     voters: Option<&[Voter]>,
     gas_per_deploy_byte: Option<u64>,
+    min_deployment_gas_price: Option<u64>,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
     Session,
-    Vec<Event>,
+    Vec<ContractTxEvent>,
 )> {
     let mut session = session;
 
@@ -462,10 +538,25 @@ fn accept(
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
-        let receipt = execute(&mut session, tx, gas_per_deploy_byte)?;
+        let tx_id = unspent_tx.id();
+        let receipt = execute(
+            &mut session,
+            tx,
+            gas_per_deploy_byte,
+            min_deployment_gas_price,
+        )?;
 
-        update_hasher(&mut event_hasher, &receipt.events);
-        events.extend(receipt.events);
+        let tx_events: Vec<_> = receipt
+            .events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event,
+                origin: Some(tx_id),
+            })
+            .collect();
+
+        update_hasher(&mut event_hasher, &tx_events);
+        events.extend(tx_events);
 
         let gas_spent = receipt.gas_spent;
 
@@ -492,6 +583,13 @@ fn accept(
         voters,
     )?;
 
+    let coinbase_events: Vec<_> = coinbase_events
+        .into_iter()
+        .map(|event| ContractTxEvent {
+            event,
+            origin: None,
+        })
+        .collect();
     update_hasher(&mut event_hasher, &coinbase_events);
     events.extend(coinbase_events);
 
@@ -550,7 +648,7 @@ fn contract_deploy(
                 &deploy.owner,
             )),
             deploy.bytecode.bytes.as_slice(),
-            deploy.constructor_args.clone(),
+            deploy.init_args.clone(),
             deploy.owner.clone(),
             gas_limit - receipt.gas_spent,
         );
@@ -569,7 +667,8 @@ fn contract_deploy(
 /// The following steps are performed:
 ///
 /// 1. Check if the transaction contains contract deployment data, and if so,
-///    verifies if gas limit is enough for deployment. If gas limit is not
+///    verifies if gas limit is enough for deployment and if the gas price is
+///    sufficient for deployment. If either gas price or gas limit is not
 ///    sufficient for deployment, transaction is discarded.
 ///
 /// 2. Call the "spend_and_execute" function on the transfer contract with
@@ -602,12 +701,21 @@ fn execute(
     session: &mut Session,
     tx: &ProtocolTransaction,
     gas_per_deploy_byte: Option<u64>,
+    min_deployment_gas_price: Option<u64>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     if let Some(deploy) = tx.deploy() {
         let deploy_charge =
             bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
+        if tx.gas_price()
+            < min_deployment_gas_price
+                .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE)
+        {
+            return Err(PiecrustError::Panic(
+                "gas price too low to deploy".into(),
+            ));
+        }
         if tx.gas_limit() < deploy_charge {
             return Err(PiecrustError::Panic(
                 "not enough gas to deploy".into(),
@@ -660,8 +768,12 @@ fn execute(
     Ok(receipt)
 }
 
-fn update_hasher(hasher: &mut Sha3_256, events: &[Event]) {
-    for event in events {
+fn update_hasher(hasher: &mut Sha3_256, events: &[ContractTxEvent]) {
+    for tx_event in events {
+        if let Some(origin) = tx_event.origin {
+            hasher.update(origin);
+        }
+        let event = &tx_event.event;
         hasher.update(event.source.as_bytes());
         hasher.update(event.topic.as_bytes());
         hasher.update(&event.data);
@@ -676,12 +788,8 @@ fn reward_slash_and_update_root(
     slashing: Vec<Slash>,
     voters: Option<&[Voter]>,
 ) -> Result<Vec<Event>> {
-    let (
-        dusk_value,
-        generator_fixed_reward,
-        generator_extra_reward,
-        voters_reward,
-    ) = coinbase_value(block_height, dusk_spent);
+    let (dusk_value, generator_reward, generator_extra_reward, voters_reward) =
+        coinbase_value(block_height, dusk_spent);
 
     let credits = voters
         .unwrap_or_default()
@@ -693,40 +801,43 @@ fn reward_slash_and_update_root(
         return Err(InvalidCreditsCount(block_height, 0));
     }
 
-    let r = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(*DUSK_KEY, dusk_value),
-        u64::MAX,
-    )?;
-
-    let mut events = r.events;
-
-    debug!(
-        event = "Dusk rewarded",
-        voter = to_bs58(&DUSK_KEY),
-        reward = dusk_value
-    );
-
-    let generator_curr_extra_reward =
+    let generator_extra_reward =
         calc_generator_extra_reward(generator_extra_reward, credits);
 
-    let generator_reward = generator_fixed_reward + generator_curr_extra_reward;
-    let r = session.call::<_, ()>(
-        STAKE_CONTRACT,
-        "reward",
-        &(*generator, generator_reward),
-        u64::MAX,
-    )?;
-    events.extend(r.events);
+    // We first start with only the generator (fixed) and Dusk
+    let mut num_rewards = 2;
 
-    debug!(
-        event = "generator rewarded",
-        generator = to_bs58(generator),
-        total_reward = generator_reward,
-        extra_reward = generator_curr_extra_reward,
-        credits,
-    );
+    // If there is an extra reward we add it.
+    if generator_extra_reward != 0 {
+        num_rewards += 1;
+    }
+
+    // Additionally we also reward the voters.
+    if let Some(voters) = &voters {
+        num_rewards += voters.len();
+    }
+
+    let mut rewards = Vec::with_capacity(num_rewards);
+
+    rewards.push(Reward {
+        account: *generator,
+        value: generator_reward,
+        reason: RewardReason::GeneratorFixed,
+    });
+
+    rewards.push(Reward {
+        account: *DUSK_KEY,
+        value: dusk_value,
+        reason: RewardReason::Other,
+    });
+
+    if generator_extra_reward != 0 {
+        rewards.push(Reward {
+            account: *generator,
+            value: generator_extra_reward,
+            reason: RewardReason::GeneratorExtra,
+        });
+    }
 
     let credit_reward = voters_reward
         / (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
@@ -735,21 +846,17 @@ fn reward_slash_and_update_root(
     for (to_voter, credits) in voters.unwrap_or_default() {
         let voter = to_voter.inner();
         let voter_reward = *credits as u64 * credit_reward;
-        let r = session.call::<_, ()>(
-            STAKE_CONTRACT,
-            "reward",
-            &(*voter, voter_reward),
-            u64::MAX,
-        )?;
-        events.extend(r.events);
-
-        debug!(
-            event = "validator of prev block rewarded",
-            voter = to_bs58(voter),
-            credits = *credits,
-            reward = voter_reward
-        )
+        rewards.push(Reward {
+            account: *voter,
+            value: voter_reward,
+            reason: RewardReason::Voter,
+        });
     }
+
+    let r =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
+
+    let mut events = r.events;
 
     events.extend(slash(session, slashing)?);
 
@@ -781,12 +888,6 @@ fn calc_generator_extra_reward(
 
     let sum = ratification_quorum() + validation_quorum();
     credits.saturating_sub(sum as u64) * reward_per_quota
-}
-
-fn to_bs58(pk: &BlsPublicKey) -> String {
-    let mut pk = bs58::encode(&pk.to_bytes()).into_string();
-    pk.truncate(16);
-    pk
 }
 
 fn slash(session: &mut Session, slash: Vec<Slash>) -> Result<Vec<Event>> {

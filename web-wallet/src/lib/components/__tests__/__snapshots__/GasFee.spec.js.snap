@@ -2,20 +2,30 @@
 
 exports[`GasFee > renders the GasFee component 1`] = `
 <div
-  class="gas-fee svelte-x1l5rc"
+  class="gas-fee svelte-1c6b481"
 >
   <span>
-    Max Gas Fee:
+    Fee:
   </span>
    
   <div
-    class="gas-fee__amount svelte-x1l5rc"
+    class="gas-fee__amount svelte-1c6b481"
   >
-    <span
-      class="gas-fee__amount-value svelte-x1l5rc"
+    <div
+      class="gas-fee__amount-value svelte-1c6b481"
     >
-      0.020000000
-    </span>
+      <span
+        class="svelte-1c6b481"
+      >
+        max
+      </span>
+       
+      <span
+        class="svelte-1c6b481"
+      >
+        0.020000000
+      </span>
+    </div>
      
     <svg
       class="dusk-icon dusk-icon--size--default dusk-amount__icon"

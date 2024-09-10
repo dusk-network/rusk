@@ -13,8 +13,24 @@ import "vitest-canvas-mock";
 import { IntersectionObserver } from "./src/lib/dusk/mocks";
 import Wallet from "./__mocks__/Wallet.js";
 
+// Mocking wallet connection modules
+vi.mock("@wagmi/core");
+vi.mock("@web3modal/wagmi");
+
+// Removing the console logging created by the walletConnect library after each test file
+Object.defineProperty(window, "litIssuedWarnings", {
+  value: new Set([
+    "Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.",
+    "Multiple versions of Lit loaded. Loading multiple versions is not recommended. See https://lit.dev/msg/multiple-versions for more information.",
+  ]),
+  writable: false,
+});
+
 // Mocking the Wallet
-vi.doMock("@dusk-network/dusk-wallet-js", () => ({ Wallet }));
+vi.doMock("@dusk-network/dusk-wallet-js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  Wallet,
+}));
 
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
+use crate::commons::{ConsensusError, QuorumMsgSender, RoundUpdate};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
@@ -13,7 +13,6 @@ use crate::queue::MsgRegistry;
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
 
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Block;
@@ -34,8 +33,8 @@ use tracing::{debug, error, info, trace, warn};
 
 /// ExecutionCtx encapsulates all data needed in the execution of consensus
 /// messages handlers.
-pub struct ExecutionCtx<'a, DB: Database, T> {
-    pub iter_ctx: &'a mut IterationCtx<DB>,
+pub struct ExecutionCtx<'a, T> {
+    pub iter_ctx: &'a mut IterationCtx,
 
     /// Messaging-related fields
     pub inbound: AsyncQueue<Message>,
@@ -57,11 +56,11 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     quorum_sender: QuorumMsgSender,
 }
 
-impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
+impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
     /// Creates step execution context.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
-        iter_ctx: &'a mut IterationCtx<DB>,
+        iter_ctx: &'a mut IterationCtx,
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<MsgRegistry<Message>>>,
@@ -104,10 +103,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// Returns true if `my pubkey` is a member of [`committee`].
     pub(crate) fn am_member(&self, committee: &Committee) -> bool {
         committee.is_member(&self.round_update.pubkey_bls)
-    }
-
-    pub(crate) fn save_committee(&mut self, step: u8, committee: Committee) {
-        self.iter_ctx.committees.insert(step, committee);
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
@@ -220,7 +215,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
-                RatificationStep::<DB>::try_vote(
+                RatificationStep::try_vote(
                     &self.round_update,
                     msg_iteration,
                     validation,
@@ -248,41 +243,40 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     async fn on_emergency_mode(&mut self, msg: Message) {
         self.outbound.try_send(msg.clone());
 
-        // Try to cast validation vote for a candidate block from former
-        // iteration
+        // Try to vote for a candidate block from former iteration
         if let Payload::Candidate(p) = &msg.payload {
             self.try_cast_validation_vote(&p.candidate).await;
-        }
+        } else {
+            let msg_iteration = msg.header.iteration;
 
-        let msg_iteration = msg.header.iteration;
+            // Collect message from a previous iteration/step.
+            if let Some(m) = self
+                .iter_ctx
+                .collect_past_event(&self.round_update, msg)
+                .await
+            {
+                match &m.payload {
+                    Payload::Quorum(q) => {
+                        debug!(
+                            event = "quorum",
+                            src = "prev_step",
+                            msg_step = m.get_step(),
+                            vote = ?q.vote(),
+                        );
 
-        // Collect message from a previous iteration/step.
-        if let Some(m) = self
-            .iter_ctx
-            .collect_past_event(&self.round_update, msg)
-            .await
-        {
-            match &m.payload {
-                Payload::Quorum(q) => {
-                    debug!(
-                        event = "quorum",
-                        src = "prev_step",
-                        msg_step = m.get_step(),
-                        vote = ?q.vote(),
-                    );
+                        self.quorum_sender.send_quorum(m).await;
+                    }
 
-                    self.quorum_sender.send_quorum(m).await;
-                }
-
-                Payload::ValidationResult(validation_result) => {
-                    self.try_cast_ratification_vote(
-                        msg_iteration,
-                        validation_result,
-                    )
-                    .await
-                }
-                _ => {
-                    // Not supported.
+                    Payload::ValidationResult(validation_result) => {
+                        self.try_cast_ratification_vote(
+                            msg_iteration,
+                            validation_result,
+                        )
+                        .await
+                    }
+                    _ => {
+                        // Not supported.
+                    }
                 }
             }
         }
@@ -455,19 +449,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
 
         None
-    }
-
-    pub fn get_sortition_config(
-        &self,
-        exclusion: Vec<PublicKeyBytes>,
-    ) -> sortition::Config {
-        sortition::Config::new(
-            self.round_update.seed(),
-            self.round_update.round,
-            self.iteration,
-            self.step_name(),
-            exclusion,
-        )
     }
 
     /// Reports step elapsed time to the client

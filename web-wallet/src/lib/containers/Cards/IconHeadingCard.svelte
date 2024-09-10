@@ -9,6 +9,9 @@
   /** @type {string} */
   export let heading;
 
+  /** @type {string | Undefined} */
+  export let className = undefined;
+
   /** @type {CardGap} */
   export let gap = "default";
 
@@ -19,7 +22,7 @@
   export let reverse = false;
 </script>
 
-<Card {...$$restProps} {gap} {onSurface}>
+<Card {...$$restProps} {className} {gap} {onSurface}>
   <header slot="header" class="dusk-card__header">
     <div
       class="dusk-card__heading-container"

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ProgressBar > re-renders the Stepper component when the current percentage property changes 1`] = `
+exports[`ProgressBar > re-renders the ProgressBar component when the current percentage property changes 1`] = `
 <div
   class="dusk-progress-bar"
   role="progressbar"
@@ -12,7 +12,7 @@ exports[`ProgressBar > re-renders the Stepper component when the current percent
 </div>
 `;
 
-exports[`ProgressBar > re-renders the Stepper component when the current percentage property changes 2`] = `
+exports[`ProgressBar > re-renders the ProgressBar component when the current percentage property changes 2`] = `
 <div
   class="dusk-progress-bar"
   role="progressbar"
@@ -24,18 +24,7 @@ exports[`ProgressBar > re-renders the Stepper component when the current percent
 </div>
 `;
 
-exports[`ProgressBar > renders the ProgressBar component with no current percentage set 1`] = `
-<div
-  class="dusk-progress-bar"
-  role="progressbar"
->
-  <div
-    class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
-  />
-</div>
-`;
-
-exports[`ProgressBar > renders the Stepper component with current percentage set as zero 1`] = `
+exports[`ProgressBar > renders the ProgressBar component with current percentage set as zero 1`] = `
 <div
   class="dusk-progress-bar"
   role="progressbar"
@@ -43,6 +32,17 @@ exports[`ProgressBar > renders the Stepper component with current percentage set
   <div
     class="dusk-progress-bar__filler"
     style="width: 0%"
+  />
+</div>
+`;
+
+exports[`ProgressBar > renders the ProgressBar component with no current percentage set 1`] = `
+<div
+  class="dusk-progress-bar"
+  role="progressbar"
+>
+  <div
+    class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
   />
 </div>
 `;

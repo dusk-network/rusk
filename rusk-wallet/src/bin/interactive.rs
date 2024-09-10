@@ -5,10 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use bip39::{Language, Mnemonic, MnemonicType};
-use dusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
-use dusk_wallet::gas;
-use dusk_wallet::{Address, Dusk, Error, Wallet, WalletPath, MAX_ADDRESSES};
 use requestty::Question;
+use rusk_wallet::{
+    currency::Dusk,
+    dat::{DatFileVersion, LATEST_VERSION},
+    gas, Address, Error, Wallet, WalletPath, MAX_ADDRESSES,
+};
 
 use crate::command::DEFAULT_STAKE_GAS_LIMIT;
 use crate::io;
@@ -68,7 +70,7 @@ pub(crate) async fn run_loop(
             // get balance for this address
             prompt::hide_cursor()?;
             let balance = wallet.get_balance(&addr).await?;
-            let spendable: Dusk = balance.spendable.into();
+            let spendable = balance.spendable.into();
             let total: Dusk = balance.value.into();
             prompt::hide_cursor()?;
 
@@ -159,7 +161,7 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
         ));
     }
 
-    if let Some(rx) = &wallet.sync_rx {
+    if let Some(rx) = &wallet.state()?.sync_rx {
         if let Ok(status) = rx.try_recv() {
             action_menu = action_menu
                 .separator()

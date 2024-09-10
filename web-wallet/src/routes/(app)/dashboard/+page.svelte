@@ -2,7 +2,15 @@
 
 <script>
   import { filterWith, hasKeyValue } from "lamb";
-  import { mdiContain, mdiDatabaseOutline, mdiSwapVertical } from "@mdi/js";
+  import {
+    mdiArrowBottomLeft,
+    mdiArrowTopRight,
+    mdiContain,
+    mdiDatabaseOutline,
+    mdiSwapHorizontal,
+    mdiSwapVertical,
+    mdiSync,
+  } from "@mdi/js";
   import { Icon } from "$lib/dusk/components";
   import { DashboardNav, Transactions } from "$lib/components";
   import { settingsStore, walletStore } from "$lib/stores";
@@ -10,18 +18,51 @@
 
   const { dashboardTransactionLimit, language } = $settingsStore;
 
+  /**
+   * @param {string} contract
+   */
+  function getIconsForContract(contract) {
+    /** @type {Array.<DashboardNavItemIconProp>} */
+    let icons = [{ path: "" }];
+
+    switch (contract) {
+      case "allocate":
+        icons = [{ path: mdiSync }];
+        break;
+      case "receive":
+        icons = [{ path: mdiArrowBottomLeft }];
+        break;
+      case "send":
+        icons = [{ path: mdiArrowTopRight }];
+        break;
+      case "staking":
+        icons = [{ path: mdiDatabaseOutline }];
+        break;
+      case "transfer":
+        icons = [{ path: mdiSwapVertical }];
+        break;
+      case "migrate":
+        icons = [{ path: mdiSwapHorizontal }];
+        break;
+      default:
+        break;
+    }
+
+    return icons;
+  }
+
   /** @type {(descriptors: ContractDescriptor[]) => ContractDescriptor[]} */
   const getEnabledContracts = filterWith(hasKeyValue("disabled", false));
   const enabledContracts = getEnabledContracts(contractDescriptors);
   const dashboardNavItems = enabledContracts.map(({ id, label }) => ({
     href: id,
-    icons: [{ path: id === "transfer" ? mdiSwapVertical : mdiDatabaseOutline }],
+    icons: getIconsForContract(id),
     id,
     label,
   }));
   const hasNoEnabledContracts = enabledContracts.length === 0;
 
-  $: ({ isSyncing, error } = $walletStore);
+  $: ({ syncStatus } = $walletStore);
 </script>
 
 {#if hasNoEnabledContracts}
@@ -47,8 +88,8 @@
   items={walletStore.getTransactionsHistory()}
   {language}
   limit={dashboardTransactionLimit}
-  {isSyncing}
-  syncError={error}
+  isSyncing={syncStatus.isInProgress}
+  syncError={syncStatus.error}
 />
 
 <style lang="postcss">
@@ -67,7 +108,6 @@
     & p:not(:last-child) {
       margin-bottom: 1em;
     }
-
     h4 {
       margin-bottom: 0.5em;
     }

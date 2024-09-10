@@ -109,7 +109,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -184,9 +184,9 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-error transaction-status"
           >
-            success
+            failed
           </span>
         </td>
         
@@ -259,7 +259,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -334,7 +334,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -409,7 +409,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -484,7 +484,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -559,7 +559,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -634,7 +634,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -709,7 +709,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -784,7 +784,7 @@ exports[`Transactions Table > should pass additional class names to the rendered
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -891,7 +891,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -945,9 +945,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-error transaction-status"
           >
-            success
+            failed
           </span>
         </td>
         
@@ -999,7 +999,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1053,7 +1053,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1107,7 +1107,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1161,7 +1161,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1215,7 +1215,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1269,7 +1269,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1323,7 +1323,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1377,7 +1377,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1511,7 +1511,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1586,9 +1586,9 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-error transaction-status"
           >
-            success
+            failed
           </span>
         </td>
         
@@ -1661,7 +1661,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1736,7 +1736,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1811,7 +1811,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1886,7 +1886,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -1961,7 +1961,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -2036,7 +2036,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -2111,7 +2111,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>
@@ -2186,7 +2186,7 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
           class="table__data-cell"
         >
           <span
-            class="dusk-badge dusk-badge--variant-success"
+            class="dusk-badge dusk-badge--variant-success transaction-status"
           >
             success
           </span>

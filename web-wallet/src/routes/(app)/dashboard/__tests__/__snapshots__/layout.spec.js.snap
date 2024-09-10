@@ -3,10 +3,10 @@
 exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 <div>
   <section
-    class="dashboard svelte-x8x7bh"
+    class="dashboard svelte-1i7pgqm"
   >
     <div
-      class="dashboard-content svelte-x8x7bh"
+      class="dashboard-content svelte-1i7pgqm"
     >
       <h2
         class="sr-only"
@@ -78,7 +78,9 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         <header
           class="dusk-balance__header"
         >
-          <h2>
+          <h2
+            class="sr-only"
+          >
             Your Balance:
           </h2>
         </header>
@@ -90,39 +92,61 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             2,345.000000000
           </strong>
            
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-            data-tooltip-id="balance-tooltip"
-            data-tooltip-place="right"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+          <strong>
+            DUSK
+          </strong>
         </p>
          
         <p
           class="dusk-balance__fiat"
         >
           <strong>
-            (
             $0.00
-            )
           </strong>
         </p>
          
-         
         <div
-          aria-hidden="true"
-          class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-          id="balance-tooltip"
-          role="tooltip"
-          style="left: 0px; top: 0px;"
+          class="usage-indicator dusk-balance__usage"
         >
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+            />
+          </svg>
+          
+           
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="100"
+            aria-valuetext="You have put 100% of your funds in your shielded account"
+            class="usage-indicator__meter"
+            role="meter"
+          >
+            <div
+              aria-hidden="true"
+              class="usage-indicator__meter-bar"
+              style="width: 100%;"
+            />
+          </div>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+            />
+          </svg>
           
         </div>
       </article>
@@ -130,13 +154,13 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
     </div>
      
     <footer
-      class="footer svelte-x8x7bh"
+      class="footer svelte-1i7pgqm"
     >
       <nav
-        class="footer__navigation svelte-x8x7bh"
+        class="footer__navigation svelte-1i7pgqm"
       >
         <div
-          class="footer__network-status svelte-x8x7bh"
+          class="footer__network-status svelte-1i7pgqm"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
@@ -153,7 +177,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
           
            
           <div
-            class="footer__network-message svelte-x8x7bh"
+            class="footer__network-message svelte-1i7pgqm"
           >
             <span>
               Dusk testnet
@@ -163,7 +187,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         </div>
          
         <div
-          class="footer__actions svelte-x8x7bh"
+          class="footer__actions svelte-1i7pgqm"
         >
            
           <a
@@ -197,10 +221,10 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 
 exports[`Dashboard Layout > should render the dashboard layout and show a throbber while balance is loading 1`] = `
 <section
-  class="dashboard svelte-x8x7bh"
+  class="dashboard svelte-1i7pgqm"
 >
   <div
-    class="dashboard-content svelte-x8x7bh"
+    class="dashboard-content svelte-1i7pgqm"
   >
     <h2
       class="sr-only"
@@ -272,7 +296,9 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
       <header
         class="dusk-balance__header"
       >
-        <h2>
+        <h2
+          class="sr-only"
+        >
           Your Balance:
         </h2>
       </header>
@@ -284,39 +310,61 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
           2,345.000000000
         </strong>
          
-        <svg
-          class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-          data-tooltip-id="balance-tooltip"
-          data-tooltip-place="right"
-          data-tooltip-text="DUSK"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-          />
-        </svg>
-        
+        <strong>
+          DUSK
+        </strong>
       </p>
        
       <p
         class="dusk-balance__fiat"
       >
         <strong>
-          (
           $0.00
-          )
         </strong>
       </p>
        
-       
       <div
-        aria-hidden="true"
-        class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-        id="balance-tooltip"
-        role="tooltip"
-        style="left: 0px; top: 0px;"
+        class="usage-indicator dusk-balance__usage"
       >
+        <svg
+          class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="You have put 100% of your funds in your shielded account"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+          />
+        </svg>
+        
+         
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          aria-valuenow="100"
+          aria-valuetext="You have put 100% of your funds in your shielded account"
+          class="usage-indicator__meter"
+          role="meter"
+        >
+          <div
+            aria-hidden="true"
+            class="usage-indicator__meter-bar"
+            style="width: 100%;"
+          />
+        </div>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="You have put 0% of your funds in your unshielded account"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+          />
+        </svg>
         
       </div>
     </article>
@@ -324,13 +372,13 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
   </div>
    
   <footer
-    class="footer svelte-x8x7bh"
+    class="footer svelte-1i7pgqm"
   >
     <nav
-      class="footer__navigation svelte-x8x7bh"
+      class="footer__navigation svelte-1i7pgqm"
     >
       <div
-        class="footer__network-status svelte-x8x7bh"
+        class="footer__network-status svelte-1i7pgqm"
       >
         <svg
           class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
@@ -347,7 +395,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
         
          
         <div
-          class="footer__network-message svelte-x8x7bh"
+          class="footer__network-message svelte-1i7pgqm"
         >
           <span>
             Dusk testnet
@@ -357,7 +405,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
       </div>
        
       <div
-        class="footer__actions svelte-x8x7bh"
+        class="footer__actions svelte-1i7pgqm"
       >
          
         <a
@@ -391,10 +439,10 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
 exports[`Dashboard Layout > should render the dashboard layout in the error state 1`] = `
 <div>
   <section
-    class="dashboard svelte-x8x7bh"
+    class="dashboard svelte-1i7pgqm"
   >
     <div
-      class="dashboard-content svelte-x8x7bh"
+      class="dashboard-content svelte-1i7pgqm"
     >
       <h2
         class="sr-only"
@@ -466,7 +514,9 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         <header
           class="dusk-balance__header"
         >
-          <h2>
+          <h2
+            class="sr-only"
+          >
             Your Balance:
           </h2>
         </header>
@@ -478,39 +528,61 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             2,345.000000000
           </strong>
            
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-            data-tooltip-id="balance-tooltip"
-            data-tooltip-place="right"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+          <strong>
+            DUSK
+          </strong>
         </p>
          
         <p
           class="dusk-balance__fiat dusk-balance__fiat--visible"
         >
           <strong>
-            (
             $1,172.50
-            )
           </strong>
         </p>
          
-         
         <div
-          aria-hidden="true"
-          class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-          id="balance-tooltip"
-          role="tooltip"
-          style="left: 0px; top: 0px;"
+          class="usage-indicator dusk-balance__usage"
         >
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+            />
+          </svg>
+          
+           
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="100"
+            aria-valuetext="You have put 100% of your funds in your shielded account"
+            class="usage-indicator__meter"
+            role="meter"
+          >
+            <div
+              aria-hidden="true"
+              class="usage-indicator__meter-bar"
+              style="width: 100%;"
+            />
+          </div>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+            />
+          </svg>
           
         </div>
       </article>
@@ -518,13 +590,13 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
     </div>
      
     <footer
-      class="footer svelte-x8x7bh"
+      class="footer svelte-1i7pgqm"
     >
       <nav
-        class="footer__navigation svelte-x8x7bh"
+        class="footer__navigation svelte-1i7pgqm"
       >
         <div
-          class="footer__network-status svelte-x8x7bh"
+          class="footer__network-status svelte-1i7pgqm"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--error"
@@ -542,7 +614,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
           
            
           <div
-            class="footer__network-message svelte-x8x7bh"
+            class="footer__network-message svelte-1i7pgqm"
           >
             <span>
               Dusk testnet - Sync Failed
@@ -552,7 +624,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         </div>
          
         <div
-          class="footer__actions svelte-x8x7bh"
+          class="footer__actions svelte-1i7pgqm"
         >
           <button
             aria-label="Retry synchronization"
@@ -604,13 +676,231 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
 </div>
 `;
 
-exports[`Dashboard Layout > should render the dashboard layout in the sync state 1`] = `
+exports[`Dashboard Layout > should render the dashboard layout in the sync state when no progress is reported 1`] = `
+<section
+  class="dashboard svelte-1i7pgqm"
+>
+  <div
+    class="dashboard-content svelte-1i7pgqm"
+  >
+    <h2
+      class="sr-only"
+    >
+      Dashboard
+    </h2>
+     
+     
+    <div
+      class="address-picker"
+    >
+      <div
+        aria-expanded="false"
+        aria-haspopup="true"
+        class="address-picker__trigger"
+        role="button"
+        tabindex="0"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button"
+          disabled=""
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"
+            />
+          </svg>
+          
+           
+          
+        </button>
+         
+        <p
+          class="address-picker__current-address"
+        >
+          2087290d3dc213d43e493f03f5435f99
+        </p>
+         
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button address-picker__copy-address-button"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+           
+          
+        </button>
+      </div>
+       
+    </div>
+     
+    <article
+      class="dusk-balance"
+    >
+      <header
+        class="dusk-balance__header"
+      >
+        <h2
+          class="sr-only"
+        >
+          Your Balance:
+        </h2>
+      </header>
+       
+      <p
+        class="dusk-balance__dusk"
+      >
+        <strong>
+          2,345.000000000
+        </strong>
+         
+        <strong>
+          DUSK
+        </strong>
+      </p>
+       
+      <p
+        class="dusk-balance__fiat dusk-balance__fiat--visible"
+      >
+        <strong>
+          $1,172.50
+        </strong>
+      </p>
+       
+      <div
+        class="usage-indicator dusk-balance__usage"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="You have put 100% of your funds in your shielded account"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+          />
+        </svg>
+        
+         
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          aria-valuenow="100"
+          aria-valuetext="You have put 100% of your funds in your shielded account"
+          class="usage-indicator__meter"
+          role="meter"
+        >
+          <div
+            aria-hidden="true"
+            class="usage-indicator__meter-bar"
+            style="width: 100%;"
+          />
+        </div>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="You have put 0% of your funds in your unshielded account"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+          />
+        </svg>
+        
+      </div>
+    </article>
+     
+  </div>
+   
+  <footer
+    class="footer svelte-1i7pgqm"
+  >
+    <nav
+      class="footer__navigation svelte-1i7pgqm"
+    >
+      <div
+        class="footer__network-status svelte-1i7pgqm"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-type="error"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M6,2H18V8H18V8L14,12L18,16V16H18V22H6V16H6V16L10,12L6,8V8H6V2M16,16.5L12,12.5L8,16.5V20H16V16.5M12,11.5L16,7.5V4H8V7.5L12,11.5M10,6H14V6.75L12,8.75L10,6.75V6Z"
+          />
+        </svg>
+        
+         
+        <div
+          class="footer__network-message svelte-1i7pgqm"
+        >
+           
+          <span>
+            Syncing
+          </span>
+          
+        </div>
+      </div>
+       
+      <div
+        class="footer__actions svelte-1i7pgqm"
+      >
+         
+        <a
+          aria-disabled="false"
+          aria-label="Settings"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--default dusk-icon-button footer__actions-button footer__actions-button--settings"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Settings"
+          href="/some-base-path/settings"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--large dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M10,22C9.75,22 9.54,21.82 9.5,21.58L9.13,18.93C8.5,18.68 7.96,18.34 7.44,17.94L4.95,18.95C4.73,19.03 4.46,18.95 4.34,18.73L2.34,15.27C2.21,15.05 2.27,14.78 2.46,14.63L4.57,12.97L4.5,12L4.57,11L2.46,9.37C2.27,9.22 2.21,8.95 2.34,8.73L4.34,5.27C4.46,5.05 4.73,4.96 4.95,5.05L7.44,6.05C7.96,5.66 8.5,5.32 9.13,5.07L9.5,2.42C9.54,2.18 9.75,2 10,2H14C14.25,2 14.46,2.18 14.5,2.42L14.87,5.07C15.5,5.32 16.04,5.66 16.56,6.05L19.05,5.05C19.27,4.96 19.54,5.05 19.66,5.27L21.66,8.73C21.79,8.95 21.73,9.22 21.54,9.37L19.43,11L19.5,12L19.43,13L21.54,14.63C21.73,14.78 21.79,15.05 21.66,15.27L19.66,18.73C19.54,18.95 19.27,19.04 19.05,18.95L16.56,17.95C16.04,18.34 15.5,18.68 14.87,18.93L14.5,21.58C14.46,21.82 14.25,22 14,22H10M11.25,4L10.88,6.61C9.68,6.86 8.62,7.5 7.85,8.39L5.44,7.35L4.69,8.65L6.8,10.2C6.4,11.37 6.4,12.64 6.8,13.8L4.68,15.36L5.43,16.66L7.86,15.62C8.63,16.5 9.68,17.14 10.87,17.38L11.24,20H12.76L13.13,17.39C14.32,17.14 15.37,16.5 16.14,15.62L18.57,16.66L19.32,15.36L17.2,13.81C17.6,12.64 17.6,11.37 17.2,10.2L19.31,8.65L18.56,7.35L16.15,8.39C15.38,7.5 14.32,6.86 13.12,6.62L12.75,4H11.25Z"
+            />
+          </svg>
+          
+           
+          
+          
+        </a>
+      </div>
+    </nav>
+  </footer>
+</section>
+`;
+
+exports[`Dashboard Layout > should render the dashboard layout in the sync state with a progress indicator 1`] = `
 <div>
   <section
-    class="dashboard svelte-x8x7bh"
+    class="dashboard svelte-1i7pgqm"
   >
     <div
-      class="dashboard-content svelte-x8x7bh"
+      class="dashboard-content svelte-1i7pgqm"
     >
       <h2
         class="sr-only"
@@ -682,7 +972,9 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <header
           class="dusk-balance__header"
         >
-          <h2>
+          <h2
+            class="sr-only"
+          >
             Your Balance:
           </h2>
         </header>
@@ -694,39 +986,61 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             2,345.000000000
           </strong>
            
-          <svg
-            class="dusk-icon dusk-icon--size--default dusk-balance__icon"
-            data-tooltip-id="balance-tooltip"
-            data-tooltip-place="right"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
+          <strong>
+            DUSK
+          </strong>
         </p>
          
         <p
           class="dusk-balance__fiat dusk-balance__fiat--visible"
         >
           <strong>
-            (
             $1,172.50
-            )
           </strong>
         </p>
          
-         
         <div
-          aria-hidden="true"
-          class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
-          id="balance-tooltip"
-          role="tooltip"
-          style="left: 0px; top: 0px;"
+          class="usage-indicator dusk-balance__usage"
         >
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+            />
+          </svg>
+          
+           
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="100"
+            aria-valuetext="You have put 100% of your funds in your shielded account"
+            class="usage-indicator__meter"
+            role="meter"
+          >
+            <div
+              aria-hidden="true"
+              class="usage-indicator__meter-bar"
+              style="width: 100%;"
+            />
+          </div>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default usage-indicator__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+            />
+          </svg>
           
         </div>
       </article>
@@ -734,13 +1048,13 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
     </div>
      
     <footer
-      class="footer svelte-x8x7bh"
+      class="footer svelte-1i7pgqm"
     >
       <nav
-        class="footer__navigation svelte-x8x7bh"
+        class="footer__navigation svelte-1i7pgqm"
       >
         <div
-          class="footer__network-status svelte-x8x7bh"
+          class="footer__network-status svelte-1i7pgqm"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
@@ -757,25 +1071,33 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           
            
           <div
-            class="footer__network-message svelte-x8x7bh"
+            class="footer__network-message svelte-1i7pgqm"
           >
+             
             <span>
-              Syncing with Dusk testnet
+              Syncing: 
+              <b>
+                100
+                /
+                200
+              </b>
             </span>
              
             <div
-              class="dusk-progress-bar"
+              class="dusk-progress-bar footer__sync-status-progress-bar"
               role="progressbar"
             >
               <div
-                class="dusk-progress-bar__filler dusk-progress-bar__filler--undetermined"
+                class="dusk-progress-bar__filler"
+                style="width: 0%"
               />
             </div>
+            
           </div>
         </div>
          
         <div
-          class="footer__actions svelte-x8x7bh"
+          class="footer__actions svelte-1i7pgqm"
         >
            
           <a

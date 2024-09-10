@@ -258,20 +258,30 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
           class="gas-settings__edit svelte-1daay07"
         >
           <div
-            class="gas-fee svelte-x1l5rc"
+            class="gas-fee svelte-1c6b481"
           >
             <span>
-              Max Gas Fee:
+              Fee:
             </span>
              
             <div
-              class="gas-fee__amount svelte-x1l5rc"
+              class="gas-fee__amount svelte-1c6b481"
             >
-              <span
-                class="gas-fee__amount-value svelte-x1l5rc"
+              <div
+                class="gas-fee__amount-value svelte-1c6b481"
               >
-                0.020000000
-              </span>
+                <span
+                  class="svelte-1c6b481"
+                >
+                  max
+                </span>
+                 
+                <span
+                  class="svelte-1c6b481"
+                >
+                  0.020000000
+                </span>
+              </div>
                
               <svg
                 class="dusk-icon dusk-icon--size--default dusk-amount__icon"
@@ -307,12 +317,13 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
     <div
       class="dusk-wizard__step-navigation"
     >
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-        type="button"
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+        href="/some-base-path/dashboard"
       >
         <svg
-          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -323,12 +334,13 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         
          
         <span
-          class="dusk-button__text"
+          class="dusk-anchor-button__text"
         >
           Back
         </span>
         
-      </button>
+        
+      </a>
       
        
       <button
@@ -496,20 +508,30 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <div
-        class="gas-fee svelte-x1l5rc"
+        class="gas-fee svelte-1c6b481"
       >
         <span>
-          Max Gas Fee:
+          Fee:
         </span>
          
         <div
-          class="gas-fee__amount svelte-x1l5rc"
+          class="gas-fee__amount svelte-1c6b481"
         >
-          <span
-            class="gas-fee__amount-value svelte-x1l5rc"
+          <div
+            class="gas-fee__amount-value svelte-1c6b481"
           >
-            0.020000000
-          </span>
+            <span
+              class="svelte-1c6b481"
+            >
+              max
+            </span>
+             
+            <span
+              class="svelte-1c6b481"
+            >
+              0.020000000
+            </span>
+          </div>
            
           <svg
             class="dusk-icon dusk-icon--size--default dusk-amount__icon"

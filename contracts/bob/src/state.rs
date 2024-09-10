@@ -4,15 +4,41 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+extern crate alloc;
+use alloc::string::String;
+use bytecheck::CheckBytes;
+use dusk_bytes::Serializable;
+use execution_core::{
+    signatures::bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
+    transfer::ReceiveFromContract,
+    ContractId,
+};
+use rkyv::{Archive, Deserialize, Serialize};
+
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct OwnerMessage {
+    contract_id: ContractId,
+    args: u8,
+    fname: String,
+    nonce: u64,
+}
+
 /// Bob contract.
 #[derive(Debug, Clone)]
 pub struct Bob {
     value: u8,
+    nonce: u64,
+    total_dusk: u64,
 }
 
 impl Bob {
     pub const fn new() -> Self {
-        Self { value: 0 }
+        Self {
+            value: 0,
+            nonce: 0,
+            total_dusk: 0,
+        }
     }
 
     #[allow(dead_code)]
@@ -24,6 +50,38 @@ impl Bob {
 impl Bob {
     pub fn init(&mut self, n: u8) {
         self.value = n;
+        self.nonce = 0;
+    }
+
+    pub fn reset(&mut self, n: u8) {
+        self.value = n;
+    }
+
+    pub fn owner_reset(&mut self, sig: BlsSignature, msg: OwnerMessage) {
+        let mut granted = false;
+        let message_bytes = rkyv::to_bytes::<_, 4096>(&msg)
+            .expect("Message should serialize correctly")
+            .to_vec();
+
+        let owner_bytes = rusk_abi::self_owner_raw();
+        if let Ok(owner) = BlsPublicKey::from_bytes(&owner_bytes) {
+            if self.nonce == msg.nonce
+                && msg.fname == "owner_reset"
+                && msg.contract_id == rusk_abi::self_id()
+                && rusk_abi::verify_bls(message_bytes, owner, sig)
+            {
+                self.owner_only_function(msg.args);
+                self.nonce += 1;
+                granted = true;
+            }
+        }
+        if !granted {
+            panic!("method restricted only to the owner")
+        }
+    }
+
+    fn owner_only_function(&mut self, args: u8) {
+        self.value = args;
     }
 
     pub fn ping(&mut self) {}
@@ -34,5 +92,13 @@ impl Bob {
 
     pub fn value(&mut self) -> u8 {
         self.value
+    }
+
+    pub fn nonce(&mut self) -> u64 {
+        self.nonce
+    }
+
+    pub fn recv_transfer(&mut self, recv: ReceiveFromContract) {
+        self.total_dusk += recv.value;
     }
 }
