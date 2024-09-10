@@ -84,7 +84,8 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     .into())
 }
 
-/// Creates a totally generic Moonlight transaction, all fields being variable
+/// Creates a totally generic Moonlight [`Transaction`], all fields being
+/// variable.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
@@ -125,7 +126,6 @@ pub fn moonlight(
 /// - the `inputs` vector contains duplicate `Note`s
 /// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::missing_panics_doc)]
 pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
@@ -145,8 +145,9 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     let transfer_value = 0;
     let obfuscated_transaction = false;
     let deposit = stake_value;
+    let nonce = current_nonce + 1;
 
-    let stake = Stake::new(stake_sk, stake_value, current_nonce + 1, chain_id);
+    let stake = Stake::new(stake_sk, stake_value, nonce, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
@@ -168,6 +169,44 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     )
 }
 
+/// Create a [`Transaction`] to stake from a Moonlight account.
+///
+/// # Errors
+/// The creation of this transaction doesn't error, but still returns a result
+/// for the sake of API consistency.
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight_stake(
+    moonlight_sender_sk: &BlsSecretKey,
+    stake_sk: &BlsSecretKey,
+    stake_value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    moonlight_current_nonce: u64,
+    stake_current_nonce: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    let transfer_value = 0;
+    let deposit = stake_value;
+    let moonlight_nonce = moonlight_current_nonce + 1;
+    let stake_nonce = stake_current_nonce + 1;
+
+    let stake = Stake::new(stake_sk, stake_value, stake_nonce, chain_id);
+
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
+
+    moonlight(
+        moonlight_sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        moonlight_nonce,
+        chain_id,
+        Some(contract_call),
+    )
+}
+
 /// Create an unproven [`Transaction`] to withdraw stake rewards into a
 /// phoenix-note.
 ///
@@ -179,7 +218,6 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
 /// - the `inputs` vector contains duplicate `Note`s
 /// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::missing_panics_doc)]
 pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
@@ -237,6 +275,49 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     )
 }
 
+/// Create a [`Transaction`] to withdraw stake rewards into Moonlight account.
+///
+/// # Errors
+/// The creation of this transaction doesn't error, but still returns a result
+/// for the sake of API consistency.
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    moonlight_sender_sk: &BlsSecretKey,
+    stake_sk: &BlsSecretKey,
+    reward_amount: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    current_nonce: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    let transfer_value = 0;
+    let deposit = 0;
+    let nonce = current_nonce + 1;
+
+    let gas_payment_token = WithdrawReplayToken::Moonlight(nonce);
+
+    let contract_call = stake_reward_to_moonlight(
+        rng,
+        moonlight_sender_sk,
+        stake_sk,
+        gas_payment_token,
+        reward_amount,
+    )?;
+
+    moonlight(
+        moonlight_sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        nonce,
+        chain_id,
+        Some(contract_call),
+    )
+}
+
 /// Create an unproven [`Transaction`] to unstake into a phoenix-note.
 ///
 /// # Errors
@@ -247,7 +328,6 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
 /// - the `inputs` vector contains duplicate `Note`s
 /// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::missing_panics_doc)]
 pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
@@ -305,6 +385,49 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     )
 }
 
+/// Create a [`Transaction`] to unstake into a Moonlight account.
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - the Memo provided with `data` is too large
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight_unstake<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    moonlight_sender_sk: &BlsSecretKey,
+    stake_sk: &BlsSecretKey,
+    unstake_value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    current_nonce: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    let transfer_value = 0;
+    let deposit = 0;
+    let nonce = current_nonce + 1;
+
+    let gas_payment_token = WithdrawReplayToken::Moonlight(nonce);
+
+    let contract_call = unstake_to_moonlight(
+        rng,
+        moonlight_sender_sk,
+        stake_sk,
+        gas_payment_token,
+        unstake_value,
+    )?;
+
+    moonlight(
+        moonlight_sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        nonce,
+        chain_id,
+        Some(contract_call),
+    )
+}
+
 /// Create an unproven [`Transaction`] to convert Phoenix Dusk into Moonlight
 /// Dusk.
 ///
@@ -319,7 +442,6 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
 /// - the `inputs` vector contains duplicate `Note`s
 /// - the `Prove` trait is implemented incorrectly
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::missing_panics_doc)]
 pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
@@ -393,12 +515,13 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
     convert_value: u64,
     gas_limit: u64,
     gas_price: u64,
-    nonce: u64,
+    current_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
     let transfer_value = 0;
     let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
                                  // transfer contract
+    let nonce = current_nonce + 1;
 
     let gas_payment_token = WithdrawReplayToken::Moonlight(nonce);
 
@@ -442,6 +565,26 @@ fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
     ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
 }
 
+fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    moonlight_receiver_sk: &BlsSecretKey,
+    stake_sk: &BlsSecretKey,
+    gas_payment_token: WithdrawReplayToken,
+    reward_amount: u64,
+) -> Result<ContractCall, Error> {
+    let withdraw = withdraw_to_moonlight(
+        rng,
+        moonlight_receiver_sk,
+        STAKE_CONTRACT,
+        gas_payment_token,
+        reward_amount,
+    );
+
+    let reward_withdraw = StakeWithdraw::new(stake_sk, withdraw);
+
+    ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
+}
+
 fn unstake_to_phoenix<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
@@ -452,6 +595,26 @@ fn unstake_to_phoenix<R: RngCore + CryptoRng>(
     let withdraw = withdraw_to_phoenix(
         rng,
         phoenix_sender_sk,
+        STAKE_CONTRACT,
+        gas_payment_token,
+        unstake_value,
+    );
+
+    let unstake = StakeWithdraw::new(stake_sk, withdraw);
+
+    ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
+}
+
+fn unstake_to_moonlight<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    moonlight_receiver_sk: &BlsSecretKey,
+    stake_sk: &BlsSecretKey,
+    gas_payment_token: WithdrawReplayToken,
+    unstake_value: u64,
+) -> Result<ContractCall, Error> {
+    let withdraw = withdraw_to_moonlight(
+        rng,
+        moonlight_receiver_sk,
         STAKE_CONTRACT,
         gas_payment_token,
         unstake_value,
