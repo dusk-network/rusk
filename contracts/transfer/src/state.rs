@@ -746,6 +746,20 @@ impl TransferState {
         }
     }
 
+    pub fn sync_accounts(&self, from: u64, count_limit: u64) {
+        let iter = self.accounts.iter().skip(from as usize);
+
+        if count_limit == 0 {
+            for (key, account) in iter {
+                rusk_abi::feed((account.clone(), *key));
+            }
+        } else {
+            for (key, account) in iter.take(count_limit as usize) {
+                rusk_abi::feed((account.clone(), *key));
+            }
+        }
+    }
+
     /// Update the root for of the tree.
     pub fn update_root(&mut self) {
         let root = self.tree.root();
