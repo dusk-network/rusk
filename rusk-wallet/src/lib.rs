@@ -40,9 +40,8 @@ use execution_core::{
     signatures::bls::PublicKey as AccountPublicKey,
     stake::StakeData,
     transfer::phoenix::{
-        ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening,
-        PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-        ViewKey as PhoenixViewKey,
+        ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,
+        SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
     },
     BlsScalar,
 };

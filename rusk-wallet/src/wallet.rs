@@ -36,7 +36,7 @@ use wallet_core::{
 
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    transfer::{data::TransactionData, Transaction},
+    transfer::{data::ContractCall, data::TransactionData, Transaction},
 };
 
 use zeroize::Zeroize;
@@ -539,7 +539,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
-            data,
+            Some(data),
             &Prover,
         )?;
 
@@ -730,7 +730,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
 
         let state = self.state()?;
-
         let amt = *amt;
         let sender_index = addr.index()?;
         let mut stake_sk = self.bls_secret_key(sender_index);
@@ -742,12 +741,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let stake = moonlight_stake(
             &stake_sk,
+            &stake_sk,
             amt,
-            chain_id,
-            nonce,
-            account.nonce,
             gas.limit,
             gas.price,
+            account.nonce,
+            nonce,
+            chain_id,
         )?;
 
         stake_sk.zeroize();
@@ -842,11 +842,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let unstake = moonlight_unstake(
             &mut rng,
             &stake_sk,
+            &stake_sk,
             unstake_value,
-            chain_id,
-            account.nonce + 1,
             gas.price,
             gas.limit,
+            account.nonce + 1,
+            chain_id,
         )?;
 
         stake_sk.zeroize();
