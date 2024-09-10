@@ -1,10 +1,7 @@
 import { readContract, simulateContract, writeContract } from "@wagmi/core";
-import { formatUnits, parseUnits } from "viem";
 import ERC20Abi from "./abi/erc_bep_20.json";
 import migrationABI from "./abi/migrationABI.json";
 import { wagmiConfig } from "./walletConnection";
-
-const stableCoinDecimals = 18;
 
 /**
  * Retrieves the allowance amount for a stable coin for a given spender and account.
@@ -12,7 +9,7 @@ const stableCoinDecimals = 18;
  * @param {HexString} userAddress - The address of the user to check if it gave an allowance to the migration contract.
  * @param {HexString} stableCoinAddress - contract address for the coin.
  * @param {HexString} migrationContract - migration contract address for the the coin.
- * @returns {Promise<string>} - A promise that resolves to the allowed amount.
+ * @returns {Promise<bigint>} - A promise that resolves to the allowed amount.
  * @throws {Error} - Throws an error if there is an issue with retrieving the allowance.
  */
 export const allowance = async (
@@ -29,7 +26,7 @@ export const allowance = async (
         functionName: "allowance",
       })
     );
-    return formatUnits(balance, stableCoinDecimals);
+    return balance;
   } catch (e) {
     const errorMessage =
       e instanceof Error
@@ -42,7 +39,7 @@ export const allowance = async (
 /**
  * Approves a spender to transfer a specified amount of stable coin on behalf of the caller.
  *
- * @param {string} value - The amount of stable coin to approve.
+ * @param {bigint} value - The amount of stable coin to approve.
  * @param {HexString} stableCoinAddress - contract address for the coin.
  * @param {HexString} migrationContract - migration contract address for the the coin.
  * @returns {Promise<string>} - Transaction hash.
@@ -50,11 +47,10 @@ export const allowance = async (
  */
 export const approve = async (migrationContract, stableCoinAddress, value) => {
   try {
-    const convertedValue = parseUnits(value, stableCoinDecimals);
     return await writeContract(wagmiConfig, {
       abi: ERC20Abi,
       address: stableCoinAddress,
-      args: [migrationContract, convertedValue],
+      args: [migrationContract, value],
       functionName: "approve",
     });
   } catch (e) {
@@ -97,7 +93,7 @@ export const getBalanceOfCoin = async (userAddress, stableCoinAddress) => {
 /**
  *  Migrates the approved amount to the given account
  *
- * @param {string} amount - the amount to be migrated
+ * @param {bigint} amount - the amount to be migrated
  * @param {number} chainId - the id of the smart contract
  * @param {string} mainnetDuskAddress - the wallet address where tokens should be migrated to
  * @param {HexString} migrationContract - the migration contract address
@@ -112,7 +108,7 @@ export const migrate = async (
   const { request } = await simulateContract(wagmiConfig, {
     abi: migrationABI,
     address: migrationContract,
-    args: [parseUnits(amount, 18), mainnetDuskAddress],
+    args: [amount, mainnetDuskAddress],
     chainId: chainId,
     functionName: "migrate",
   });

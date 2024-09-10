@@ -14,7 +14,7 @@
   import { migrate } from "$lib/migration/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let amount;
 
   /** @type {string} */
@@ -33,12 +33,7 @@
 
   /** @param {number} id - the chain id of the selected smart contract */
   async function handleMigration(id) {
-    const txHash = await migrate(
-      amount.toString(),
-      id,
-      currentAddress,
-      migrationContract
-    );
+    const txHash = await migrate(amount, id, currentAddress, migrationContract);
 
     if (isHex(txHash)) {
       migrationHash = txHash;
