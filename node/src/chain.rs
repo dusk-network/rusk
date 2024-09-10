@@ -269,7 +269,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
                 // Lack of register record means the loaded database is
                 // either malformed or empty.
                 let state = vm.get_state_root()?;
-                let genesis_blk = genesis::generate_state(state);
+                let genesis_blk = genesis::generate_block(state);
                 db.update(|t| {
                     // Persist genesis block
                     t.store_block(

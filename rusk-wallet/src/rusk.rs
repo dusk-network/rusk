@@ -12,7 +12,7 @@ use rkyv::Archive;
 use crate::Error;
 
 /// Supported Rusk version
-const REQUIRED_RUSK_VERSION: &str = "0.7.0";
+const REQUIRED_RUSK_VERSION: &str = ">=0.8.0";
 
 #[derive(Debug)]
 /// RuskRequesst according to the rusk event system
