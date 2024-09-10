@@ -70,7 +70,8 @@ pub struct TransferState {
     // NOTE: we should never remove entries from this list, since the entries
     //       contain the nonce of the given account. Doing so opens the account
     //       up to replay attacks.
-    accounts: BTreeMap<[u8; AccountPublicKey::SIZE], AccountData>,
+    accounts:
+        BTreeMap<[u8; AccountPublicKey::SIZE], (AccountData, AccountPublicKey)>,
     contract_balances: BTreeMap<ContractId, u64>,
 }
 
@@ -134,7 +135,7 @@ impl TransferState {
                 let note = Note::transparent_stealth(*address, value, sender);
                 self.push_note_current_height(note);
             }
-            WithdrawReceiver::Moonlight(account) => {
+            WithdrawReceiver::Moonlight(account_key) => {
                 let signature = match signature {
                     WithdrawSignature::Moonlight(s) => s,
                     _ => panic!(
@@ -142,13 +143,15 @@ impl TransferState {
                     ),
                 };
 
-                if !rusk_abi::verify_bls(msg, *account, *signature) {
+                if !rusk_abi::verify_bls(msg, *account_key, *signature) {
                     panic!("Invalid signature");
                 }
 
-                let account_bytes = account.to_bytes();
-                let account =
-                    self.accounts.entry(account_bytes).or_insert(EMPTY_ACCOUNT);
+                let account_bytes = account_key.to_bytes();
+                let (account, _) = self
+                    .accounts
+                    .entry(account_bytes)
+                    .or_insert_with(|| (EMPTY_ACCOUNT, *account_key));
 
                 account.balance += value;
             }
@@ -423,10 +426,10 @@ impl TransferState {
             panic!("Caller must have enough balance");
         }
 
-        let account = self
+        let (account, _) = self
             .accounts
             .entry(transfer.account.to_bytes())
-            .or_insert(EMPTY_ACCOUNT);
+            .or_insert_with(|| (EMPTY_ACCOUNT, transfer.account));
 
         *from_balance -= transfer.value;
         account.balance += transfer.value;
@@ -569,7 +572,7 @@ impl TransferState {
             + moonlight_tx.gas_limit() * moonlight_tx.gas_price();
 
         match self.accounts.get_mut(&from_bytes) {
-            Some(account) => {
+            Some((account, _)) => {
                 if total_value > account.balance {
                     panic!("Account doesn't have enough funds");
                 }
@@ -595,14 +598,17 @@ impl TransferState {
         // if there is a value carried by the transaction but no key specified
         // in the `to` field, we just give the value back to `from`.
         if moonlight_tx.value() > 0 {
-            let key = match moonlight_tx.to_account() {
-                Some(to) => to.to_bytes(),
-                None => from_bytes,
+            let (key, account) = match moonlight_tx.to_account() {
+                Some(to) => (to.to_bytes(), to),
+                None => (from_bytes, moonlight_tx.from_account()),
             };
 
             // if the key has no entry, we simply instantiate a new one with a
             // zero nonce and balance.
-            let account = self.accounts.entry(key).or_insert(EMPTY_ACCOUNT);
+            let (account, _) = self
+                .accounts
+                .entry(key)
+                .or_insert_with(|| (EMPTY_ACCOUNT, *account));
             account.balance += moonlight_tx.value();
         }
     }
@@ -668,7 +674,7 @@ impl TransferState {
                 let remaining = remaining_gas * tx.gas_price()
                     + deposit.unwrap_or_default();
 
-                let account = self.accounts.get_mut(&from_bytes).expect(
+                let (account, _) = self.accounts.get_mut(&from_bytes).expect(
                     "The account that just transacted must have an entry",
                 );
 
@@ -784,19 +790,23 @@ impl TransferState {
         let key_bytes = key.to_bytes();
         self.accounts
             .get(&key_bytes)
+            .map(|(account, _)| account)
             .cloned()
             .unwrap_or(EMPTY_ACCOUNT)
     }
 
     pub fn add_account_balance(&mut self, key: &AccountPublicKey, value: u64) {
         let key_bytes = key.to_bytes();
-        let account = self.accounts.entry(key_bytes).or_insert(EMPTY_ACCOUNT);
+        let (account, _) = self
+            .accounts
+            .entry(key_bytes)
+            .or_insert_with(|| (EMPTY_ACCOUNT, *key));
         account.balance = account.balance.saturating_add(value);
     }
 
     pub fn sub_account_balance(&mut self, key: &AccountPublicKey, value: u64) {
         let key_bytes = key.to_bytes();
-        if let Some(account) = self.accounts.get_mut(&key_bytes) {
+        if let Some((account, _)) = self.accounts.get_mut(&key_bytes) {
             account.balance = account.balance.saturating_sub(value);
         }
     }
