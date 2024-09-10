@@ -219,7 +219,7 @@ pub fn create_phoenix_transaction<const I: usize>(
     let chain_id =
         chain_id(session).expect("Getting the chain ID should succeed");
 
-    PhoenixTransaction::new::<StdRng, LocalProver>(
+    PhoenixTransaction::new(
         rng,
         sender_sk,
         change_pk,
@@ -233,6 +233,7 @@ pub fn create_phoenix_transaction<const I: usize>(
         gas_price,
         chain_id,
         data.map(Into::into),
+        &LocalProver,
     )
     .expect("creating the creation shouldn't fail")
 }
