@@ -295,6 +295,21 @@ impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
         phase: Arc<Mutex<C>>,
         msg: Message,
     ) -> Option<Message> {
+        // If it's a message from a future iteration of the current round, we
+        // generate the committees so that we can pre-verify its validity.
+        // We do it here because we need the IterationCtx
+        if msg.header.round == self.round_update.round
+            && msg.header.iteration > self.iteration
+            && msg.header.prev_block_hash == self.round_update.hash()
+        {
+            // Generate committees for the iteration
+            self.iter_ctx.generate_iteration_committees(
+                msg.header.iteration,
+                self.provisioners,
+                self.round_update.seed(),
+            );
+        }
+
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
@@ -322,7 +337,11 @@ impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
             Err(ConsensusError::FutureEvent) => {
                 trace!("future msg {:?}", msg);
 
-                self.outbound.try_send(msg.clone());
+                // Re-propagate messages from future iterations of the current
+                // round
+                if msg.header.round == self.round_update.round {
+                    self.outbound.try_send(msg.clone());
+                }
 
                 self.future_msgs.lock().await.put_msg(
                     msg.header.round,

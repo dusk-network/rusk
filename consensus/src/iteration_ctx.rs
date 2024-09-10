@@ -147,11 +147,11 @@ impl IterationCtx {
 
     pub(crate) fn generate_committee(
         &mut self,
+        iteration: u8,
         step_name: StepName,
         provisioners: &Provisioners,
         seed: Seed,
     ) {
-        let iteration = self.iter;
         let step = step_name.to_step(iteration);
 
         // Check if we already generated the committee.
@@ -216,10 +216,12 @@ impl IterationCtx {
         // If the step is Proposal, the only extracted member is the generator
         // For Validation and Ratification steps, extracted members are
         // delegated to vote on the candidate block
-        let step_committee = Committee::new(
-            provisioners,
-            &self.get_sortition_config(seed, step_name, exclusion),
-        );
+
+        let sortition_step = step_name.to_step(iteration);
+        let mut config_step =
+            self.get_sortition_config(seed, step_name, exclusion);
+        config_step.step = sortition_step;
+        let step_committee = Committee::new(provisioners, &config_step);
 
         debug!(
             event = "committee_generated",
@@ -227,6 +229,23 @@ impl IterationCtx {
         );
 
         self.committees.insert(step, step_committee);
+    }
+
+    pub(crate) fn generate_iteration_committees(
+        &mut self,
+        iteration: u8,
+        provisioners: &Provisioners,
+        seed: Seed,
+    ) {
+        let stepnames = [
+            StepName::Proposal,
+            StepName::Validation,
+            StepName::Ratification,
+        ];
+
+        for stepname in &stepnames {
+            self.generate_committee(iteration, *stepname, provisioners, seed);
+        }
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {

@@ -10,7 +10,6 @@ use crate::operations::Operations;
 use crate::phase::Phase;
 
 use node_data::message::{AsyncQueue, Message, Topics};
-use node_data::StepName;
 
 use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
@@ -193,19 +192,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 // in case they are needed to process past-iteration messages in
                 // Emergency Mode
                 while iter <= saved_iter {
-                    iter_ctx.on_begin(iter);
-                    iter_ctx.generate_committee(
-                        StepName::Proposal,
-                        provisioners.as_ref(),
-                        ru.seed(),
-                    );
-                    iter_ctx.generate_committee(
-                        StepName::Validation,
-                        provisioners.as_ref(),
-                        ru.seed(),
-                    );
-                    iter_ctx.generate_committee(
-                        StepName::Ratification,
+                    iter_ctx.generate_iteration_committees(
+                        iter,
                         provisioners.as_ref(),
                         ru.seed(),
                     );
@@ -221,6 +209,12 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                 iter_ctx.on_begin(iter);
 
+                iter_ctx.generate_iteration_committees(
+                    iter,
+                    provisioners.as_ref(),
+                    ru.seed(),
+                );
+
                 let mut msg = Message::empty();
                 // Execute a single iteration
                 for phase in phases.iter_mut() {
@@ -228,13 +222,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // Initialize new phase with message returned by previous
                     // phase.
                     phase.reinitialize(msg, ru.round, iter).await;
-
-                    // Generate step committee
-                    iter_ctx.generate_committee(
-                        step_name,
-                        provisioners.as_ref(),
-                        ru.seed(),
-                    );
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(

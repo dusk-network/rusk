@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Attestation;
 use node_data::{ledger, StepName};
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::aggregator::{Aggregator, StepVote};
 
@@ -36,6 +36,34 @@ pub struct RatificationHandler {
 impl StepVote for Ratification {
     fn vote(&self) -> &Vote {
         &self.vote
+    }
+}
+
+impl RatificationHandler {
+    pub fn verify_stateless(
+        msg: &Message,
+        round_committees: &RoundCommittees,
+    ) -> Result<(), ConsensusError> {
+        match &msg.payload {
+            Payload::Ratification(p) => {
+                p.verify_signature()?;
+                let signer = &p.sign_info.signer;
+                let committee = round_committees
+                    .get_committee(msg.get_step())
+                    .expect("committee to be created before run");
+
+                committee
+                    .votes_for(signer)
+                    .ok_or(ConsensusError::NotCommitteeMember)?;
+            }
+            Payload::Empty => (),
+            _ => {
+                info!("cannot verify in validation handler");
+                Err(ConsensusError::InvalidMsgType)?
+            }
+        }
+
+        Ok(())
     }
 }
 
