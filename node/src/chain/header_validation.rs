@@ -17,7 +17,7 @@ use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use execution_core::stake::EPOCH;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
-use node_data::message::ConsensusHeader;
+use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -90,7 +90,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
-        if candidate_block.version > 0 {
+        if candidate_block.version != BLOCK_HEADER_VERSION {
             return Err(anyhow!("unsupported block version"));
         }
 
