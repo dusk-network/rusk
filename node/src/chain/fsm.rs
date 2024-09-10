@@ -108,30 +108,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
     }
 
-    pub async fn on_idle(&mut self, timeout: Duration) {
-        let acc = self.acc.read().await;
-        let tip_height = acc.get_curr_height().await;
-        let iter = acc.get_curr_iteration().await;
-        if let Ok(last_finalized) = acc.get_latest_final_block().await {
-            info!(
-                event = "fsm::idle",
-                tip_height,
-                iter,
-                timeout_sec = timeout.as_secs(),
-                "finalized_height" = last_finalized.header().height,
-            );
-
-            // Clear up all blacklisted blocks
-            self.blacklisted_blocks.write().await.clear();
-        } else {
-            error!("could not get final block");
-        }
-
-        let now = Instant::now();
-        self.attestations_cache
-            .retain(|_, (_, expiry)| *expiry > now);
-    }
-
     pub async fn on_failed_consensus(&mut self) {
         self.acc.write().await.restart_consensus().await;
     }

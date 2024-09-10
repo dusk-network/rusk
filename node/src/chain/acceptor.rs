@@ -953,10 +953,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         Ok(final_block)
     }
 
-    pub(crate) async fn get_curr_iteration(&self) -> u8 {
-        self.tip.read().await.inner().header().iteration
-    }
-
     pub(crate) async fn get_curr_tip(&self) -> BlockWithLabel {
         self.tip.read().await.clone()
     }
