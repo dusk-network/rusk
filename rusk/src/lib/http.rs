@@ -483,6 +483,12 @@ async fn handle_stream_rues<H: HandleRequest>(
 
     loop {
         tokio::select! {
+            recv = stream.next() => {
+                if let Some(Ok(Message::Close(msg))) = recv {
+                    let _ = stream.close(msg).await;
+                    break;
+                }
+            }
             _ = shutdown.recv() => {
                 let _ = stream.close(Some(CloseFrame {
                     code: CloseCode::Away,
