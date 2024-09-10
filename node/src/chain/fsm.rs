@@ -124,7 +124,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // Clear up all blacklisted blocks
             self.blacklisted_blocks.write().await.clear();
         } else {
-            error!("could not request blocks");
+            error!("could not get final block");
         }
 
         let now = Instant::now();
@@ -207,34 +207,74 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // Generally speaking, if a node is receiving future blocks from the
             // network but it cannot accept a new block for long time, then
             // it might be a sign of a getting stalled on non-main branch.
-            if let stall_chain_fsm::State::StalledOnFork =
-                self.stalled_sm.on_block_received(blk).await
-            {
-                let mut acc = self.acc.write().await;
-                match acc.try_revert(RevertTarget::LastFinalizedState).await {
-                    Ok(_) => {
-                        counter!("dusk_revert_count").increment(1);
 
-                        info!(event = "reverted to last finalized");
+            let res = self.stalled_sm.on_block_received(blk).await.clone();
 
-                        for blk in self.stalled_sm.recovery_blocks() {
+            match res {
+                stall_chain_fsm::State::StalledOnFork(
+                    local_hash_at_fork,
+                    remote_blk,
+                ) => {
+                    info!(
+                        event = "stalled on fork",
+                        local_hash = to_str(&local_hash_at_fork),
+                        remote_hash = to_str(&remote_blk.header().hash),
+                        remote_height = remote_blk.header().height,
+                    );
+                    let mut acc = self.acc.write().await;
+
+                    let prev_local_state_root =
+                        acc.db.read().await.view(|t| {
+                            let local_blk = t
+                                .fetch_block_header(&local_hash_at_fork)?
+                                .expect("local hash should exist");
+
+                            let prev_blk = t
+                                .fetch_block_header(&local_blk.prev_block_hash)?
+                                .expect("prev block hash should exist");
+
+                            anyhow::Ok(prev_blk.state_hash)
+                        })?;
+
+                    match acc
+                        .try_revert(RevertTarget::Commit(prev_local_state_root))
+                        .await
+                    {
+                        Ok(_) => {
+                            counter!("dusk_revert_count").increment(1);
+                            info!(event = "reverted to last finalized");
+
                             info!(
                                 event = "recovery block",
-                                height = blk.header().height,
-                                hash = to_str(&blk.header().hash),
+                                height = remote_blk.header().height,
+                                hash = to_str(&remote_blk.header().hash),
                             );
 
-                            acc.try_accept_block(&blk, true).await?;
+                            acc.try_accept_block(&remote_blk, true).await?;
+
+                            // Black list the block hash to avoid accepting it
+                            // again due to fallback execution
+                            self.blacklisted_blocks
+                                .write()
+                                .await
+                                .insert(local_hash_at_fork);
+
+                            // Reset the stalled chain FSM
+                            self.stalled_sm.reset(remote_blk.header().clone());
+                        }
+                        Err(e) => {
+                            error!(
+                                event = "revert failed",
+                                err = format!("{:?}", e)
+                            );
+                            return Ok(None);
                         }
                     }
-                    Err(e) => {
-                        error!(
-                            event = "revert failed",
-                            err = format!("{:?}", e)
-                        );
-                        return Ok(None);
-                    }
                 }
+                stall_chain_fsm::State::Stalled => {
+                    self.blacklisted_blocks.write().await.clear();
+                }
+                _ => {}
             }
         }
         // FIXME: The block should return only if accepted. The current issue is
@@ -277,6 +317,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         quorum: &payload::Quorum,
         msg: &Message,
     ) -> anyhow::Result<Option<Block>> {
+        // Clean up attestation cache
+        let now = Instant::now();
+        self.attestations_cache
+            .retain(|_, (_, expiry)| *expiry > now);
+
         // FIXME: We should return the whole outcome for this quorum
         // Basically we need to inform the upper layer if the received quorum is
         // valid (even if it's a FailedQuorum)

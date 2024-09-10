@@ -20,6 +20,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use core::panic;
 use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
@@ -830,13 +831,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
 
-                // If we are at genesis block, we can stop here
-                if b.header().height == 0 {
+                if h.state_hash == target_state_hash {
                     return Ok((b, label));
                 }
 
-                if h.state_hash == target_state_hash {
-                    return Ok((b, label));
+                // the target_state_hash could not be found
+                if height == 0 {
+                    panic!("revert to genesis block failed");
                 }
 
                 info!(
@@ -922,7 +923,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn get_latest_final_block(&self) -> Result<Block> {
-        let tip = self.tip.read().await;
+        let tip: tokio::sync::RwLockReadGuard<'_, BlockWithLabel> =
+            self.tip.read().await;
         if tip.is_final() {
             return Ok(tip.inner().clone());
         }
