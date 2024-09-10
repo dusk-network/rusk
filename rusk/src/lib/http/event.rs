@@ -975,8 +975,8 @@ impl RuesEvent {
 }
 
 #[cfg(feature = "node")]
-impl From<crate::node::ContractTxEvent> for RuesEvent {
-    fn from(tx_event: crate::node::ContractTxEvent) -> Self {
+impl From<node_data::archive::ContractTxEvent> for RuesEvent {
+    fn from(tx_event: node_data::archive::ContractTxEvent) -> Self {
         let mut headers = serde_json::Map::new();
         if let Some(origin) = tx_event.origin {
             headers.insert("Rusk-Origin".into(), hex::encode(origin).into());
@@ -985,7 +985,7 @@ impl From<crate::node::ContractTxEvent> for RuesEvent {
         Self {
             uri: RuesEventUri {
                 component: "contracts".into(),
-                entity: Some(hex::encode(event.source.as_bytes())),
+                entity: Some(hex::encode(event.source)),
                 topic: event.topic,
             },
             data: event.data.into(),

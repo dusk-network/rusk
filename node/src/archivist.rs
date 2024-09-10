@@ -4,20 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use core::panic;
-use std::sync::{mpsc, Arc};
-
-use async_trait::async_trait;
-use node_data::archive::ArchivalData;
-use tokio::sync::Mutex;
-use tracing::error;
-
 use crate::database::archive::SQLiteArchive;
 use crate::database::Archivist;
 use crate::{database, vm, LongLivedService, Network};
+use async_trait::async_trait;
+use node_data::archive::ArchivalData;
+use std::sync::Arc;
+use tokio::sync::mpsc::Receiver;
+use tracing::error;
 
 pub struct ArchivistSrv {
-    pub archive_receiver: Mutex<mpsc::Receiver<ArchivalData>>,
+    pub archive_receiver: Receiver<ArchivalData>,
     pub archivist: SQLiteArchive,
 }
 
@@ -32,7 +29,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         _: Arc<tokio::sync::RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         loop {
-            if let Ok(msg) = self.archive_receiver.lock().await.recv() {
+            if let Some(msg) = self.archive_receiver.recv().await {
                 match msg {
                     ArchivalData::ArchivedEvents(
                         block_height,
@@ -65,6 +62,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
     /// Returns service name.
     fn name(&self) -> &'static str {
-        "archive"
+        "archivist"
     }
 }

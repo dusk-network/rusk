@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO archive (block_height, block_hash, json_contract_events) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d9caf75d1a861747219f81ab0badbd7f8c96b61ba05f051db1ca653618cf7ae2"
+}
