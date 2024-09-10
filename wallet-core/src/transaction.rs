@@ -63,6 +63,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     gas_price: u64,
     chain_id: u8,
     data: Option<impl Into<TransactionData>>,
+    prover: &P,
 ) -> Result<Transaction, Error> {
     Ok(PhoenixTransaction::new::<R, P>(
         rng,
@@ -78,6 +79,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         data,
+        prover,
     )?
     .into())
 }
@@ -135,6 +137,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     stake_value: u64,
     current_nonce: u64,
+    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -161,6 +164,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
+        prover,
     )
 }
 
@@ -186,6 +190,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
+    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -228,6 +233,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
+        prover,
     )
 }
 
@@ -252,6 +258,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
+    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -294,6 +301,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
+        prover,
     )
 }
 
@@ -322,6 +330,7 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
+    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -364,6 +373,7 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
+        prover,
     )
 }
 
