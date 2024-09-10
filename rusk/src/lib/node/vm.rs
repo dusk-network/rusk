@@ -14,19 +14,13 @@ use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey, stake::StakeData,
-    transfer::Transaction as ProtocolTransaction, Event,
+    transfer::Transaction as ProtocolTransaction,
 };
 use node::vm::VMExecution;
 use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
 use super::Rusk;
-
-#[derive(Debug, Clone)]
-pub struct ContractTxEvent {
-    pub event: Event,
-    pub origin: Option<[u8; 32]>,
-}
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(

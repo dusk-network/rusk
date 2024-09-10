@@ -35,18 +35,20 @@ use execution_core::{
     BlsScalar, ContractError, Dusk, Event,
 };
 #[cfg(feature = "archive")]
-use node_data::archive::{ArchivalData, ContractEvent};
+use node_data::archive::ArchivalData;
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
+#[cfg(feature = "archive")]
+use tokio::sync::mpsc::Sender;
 
-use super::vm::ContractTxEvent;
 use super::{coinbase_value, Rusk, RuskTip};
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result, DELETING_VM_FNAME};
+use node_data::archive::ContractTxEvent;
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");
@@ -68,9 +70,7 @@ impl Rusk {
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
-        #[cfg(feature = "archive")] archive_sender: mpsc::SyncSender<
-            ArchivalData,
-        >,
+        #[cfg(feature = "archive")] archive_sender: Sender<ArchivalData>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
@@ -210,7 +210,7 @@ impl Rusk {
                         .events
                         .into_iter()
                         .map(|event| ContractTxEvent {
-                            event,
+                            event: event.into(),
                             origin: Some(tx_id),
                         })
                         .collect();
@@ -258,7 +258,7 @@ impl Rusk {
         let coinbase_events: Vec<_> = coinbase_events
             .into_iter()
             .map(|event| ContractTxEvent {
-                event,
+                event: event.into(),
                 origin: None,
             })
             .collect();
@@ -344,24 +344,20 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
-        // Convert vm events to ContractEvent and sent to archive
+        // Sent events to archivist
         #[cfg(feature = "archive")]
         {
-            let _ = self.archive_sender.send(ArchivalData::ArchivedEvents(
+            let _ = self.archive_sender.try_send(ArchivalData::ArchivedEvents(
                 block_height,
                 _archive_block_hash,
-                events
-                    .clone()
-                    .into_iter()
-                    .map(|event| ContractEvent::from(event))
-                    .collect(),
+                events.clone(),
             ));
         }
 
         for event in events {
             // Send VN event to RUES
             let event = RuesEvent::from(event);
-            let _ = self.event_sender.send(event.into());
+            let _ = self.event_sender.send(event);
         }
 
         Ok((spent_txs, verification_output))
@@ -579,7 +575,7 @@ fn accept(
             .events
             .into_iter()
             .map(|event| ContractTxEvent {
-                event,
+                event: event.into(),
                 origin: Some(tx_id),
             })
             .collect();
@@ -615,7 +611,7 @@ fn accept(
     let coinbase_events: Vec<_> = coinbase_events
         .into_iter()
         .map(|event| ContractTxEvent {
-            event,
+            event: event.into(),
             origin: None,
         })
         .collect();
@@ -803,7 +799,7 @@ fn update_hasher(hasher: &mut Sha3_256, events: &[ContractTxEvent]) {
             hasher.update(origin);
         }
         let event = &tx_event.event;
-        hasher.update(event.source.as_bytes());
+        hasher.update(event.source);
         hasher.update(event.topic.as_bytes());
         hasher.update(&event.data);
     }

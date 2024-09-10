@@ -11,6 +11,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::ledger::Hash;
 
+/// Contract event with optional origin (tx hash).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContractTxEvent {
+    pub event: ContractEvent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub origin: Option<[u8; 32]>,
+}
+
 /// Wrapper around a contract event that is to be archived.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ContractEvent {
@@ -28,7 +36,7 @@ pub struct ContractEvent {
 pub enum ArchivalData {
     /// List of contract events from one block together with the block height
     /// and block hash.
-    ArchivedEvents(u64, Hash, Vec<ContractEvent>),
+    ArchivedEvents(u64, Hash, Vec<ContractTxEvent>),
 }
 
 impl ArchivalData {

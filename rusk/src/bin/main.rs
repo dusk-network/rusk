@@ -13,7 +13,7 @@ mod ephemeral;
 mod log;
 
 #[cfg(feature = "archive")]
-use std::sync::mpsc;
+use tokio::sync::mpsc;
 
 use clap::Parser;
 
@@ -26,8 +26,6 @@ use rusk::http::{DataSources, HttpServer};
 use rusk::Result;
 
 use tokio::sync::broadcast;
-#[cfg(feature = "archive")]
-use tokio::sync::Mutex;
 
 use tracing::info;
 
@@ -67,8 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // MPSC channel used for VM events (& in the future maybe other data) sent
     // to the archivist
     #[cfg(feature = "archive")]
-    let (archive_sender, archive_receiver) =
-        mpsc::sync_channel(10000);
+    let (archive_sender, archive_receiver) = mpsc::channel(1000);
 
     #[cfg(feature = "node")]
     let mut node_builder = {
@@ -111,9 +108,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_rues(_event_sender);
 
         #[cfg(feature = "archive")]
-        let node_builder =
-            node_builder.with_archivist(Mutex::new(archive_receiver));
+        let node_builder = node_builder.with_archivist(archive_receiver);
 
+        #[allow(clippy::let_and_return)]
         node_builder
     };
 

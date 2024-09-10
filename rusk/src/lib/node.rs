@@ -33,13 +33,9 @@ use node::{LongLivedService, Node};
 use node_data::archive::ArchivalData;
 use parking_lot::RwLock;
 use rusk_abi::VM;
-#[cfg(feature = "archive")]
-use tokio::sync::Mutex;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::http::{HandleRequest, RuesEvent};
-
-pub use vm::ContractTxEvent;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -60,7 +56,7 @@ pub struct Rusk {
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
-    pub(crate) archive_sender: std::sync::mpsc::SyncSender<ArchivalData>,
+    pub(crate) archive_sender: tokio::sync::mpsc::Sender<ArchivalData>,
 }
 
 type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
@@ -96,7 +92,7 @@ pub struct RuskNodeBuilder {
     rusk: Rusk,
     rues_sender: Option<broadcast::Sender<RuesEvent>>,
     #[cfg(feature = "archive")]
-    archive_receiver: Option<Mutex<std::sync::mpsc::Receiver<ArchivalData>>>,
+    archive_receiver: Option<tokio::sync::mpsc::Receiver<ArchivalData>>,
 }
 
 impl RuskNodeBuilder {
@@ -155,7 +151,7 @@ impl RuskNodeBuilder {
     #[cfg(feature = "archive")]
     pub fn with_archivist(
         mut self,
-        archive_receiver: Mutex<std::sync::mpsc::Receiver<ArchivalData>>,
+        archive_receiver: tokio::sync::mpsc::Receiver<ArchivalData>,
     ) -> Self {
         self.archive_receiver = Some(archive_receiver);
         self
@@ -217,7 +213,7 @@ impl RuskNodeBuilder {
 
         let (node_sender, node_receiver) = mpsc::channel(1000);
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool, node_sender.clone())), /* Note: transaction events are fired in Mempool service for moonlight/phoenix */
+            Box::new(MempoolSrv::new(self.mempool, node_sender.clone())),
             Box::new(ChainSrv::new(
                 self.consensus_keys_path,
                 self.max_chain_queue_size,
@@ -226,7 +222,7 @@ impl RuskNodeBuilder {
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];
-        
+
         if let Some(rues_sender) = self.rues_sender {
             service_list.push(Box::new(ChainEventStreamer {
                 rues_sender,

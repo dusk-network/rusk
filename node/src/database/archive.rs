@@ -8,7 +8,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
-use node_data::archive::ContractEvent;
+use node_data::archive::ContractTxEvent;
 use node_data::ledger::Hash;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tracing::info;
@@ -78,7 +78,7 @@ impl Archivist for SQLiteArchive {
         &self,
         block_height: u64,
         block_hash: Hash,
-        events: Vec<ContractEvent>,
+        events: Vec<ContractTxEvent>,
     ) -> Result<()> {
         let block_height: i64 = block_height as i64;
         let block_hash = hex::encode(block_hash);
@@ -97,10 +97,11 @@ impl Archivist for SQLiteArchive {
         Ok(())
     }
 
+    /// Fetch the list of all vm events from the block of the given height.
     async fn fetch_vm_events(
         &self,
         block_height: u64,
-    ) -> Result<Vec<ContractEvent>> {
+    ) -> Result<Vec<ContractTxEvent>> {
         let block_height: i64 = block_height as i64;
 
         let mut conn = self.archive_db.acquire().await?;
@@ -110,7 +111,7 @@ impl Archivist for SQLiteArchive {
             block_height
         ).fetch_one(&mut *conn).await?;
 
-        // convert the json string to a vector of ContractEvent and return it
+        // convert the json string to a vector of ContractTxEvent and return it
         Ok(serde_json::from_str(&events.json_contract_events)?)
     }
 }
@@ -118,9 +119,10 @@ impl Archivist for SQLiteArchive {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use node_data::archive::ContractEvent;
     use rand::{distributions::Alphanumeric, Rng};
     use std::env;
-    use std::path::{self, PathBuf};
+    use std::path::PathBuf;
 
     // Construct a random test directory path in the temp folder of the OS
     fn get_test_dir() -> PathBuf {
@@ -142,15 +144,21 @@ mod tests {
         let archive = SQLiteArchive::create_or_open(path).await;
 
         let events = vec![
-            ContractEvent {
-                source: [0; 32],
-                topic: "contract1".to_string(),
-                data: vec![1, 6, 1, 8],
+            ContractTxEvent {
+                event: ContractEvent {
+                    source: [0; 32],
+                    topic: "contract1".to_string(),
+                    data: vec![1, 6, 1, 8],
+                },
+                origin: Some([0; 32]),
             },
-            ContractEvent {
-                source: [0; 32],
-                topic: "contract2".to_string(),
-                data: vec![1, 2, 3],
+            ContractTxEvent {
+                event: ContractEvent {
+                    source: [0; 32],
+                    topic: "contract2".to_string(),
+                    data: vec![1, 2, 3],
+                },
+                origin: Some([1; 32]),
             },
         ];
 
@@ -162,10 +170,19 @@ mod tests {
         let fetched_events = archive.fetch_vm_events(1).await.unwrap();
 
         // Check if the events are the same
-        for (event, fetched_event) in events.iter().zip(fetched_events.iter()) {
-            assert_eq!(event.source, fetched_event.source);
-            assert_eq!(event.topic, fetched_event.topic);
-            assert_eq!(event.data, fetched_event.data);
+        for (contract_tx_event, fetched_event) in
+            events.iter().zip(fetched_events.iter())
+        {
+            assert_eq!(
+                contract_tx_event.event.source,
+                fetched_event.event.source
+            );
+            assert_eq!(
+                contract_tx_event.event.topic,
+                fetched_event.event.topic
+            );
+            assert_eq!(contract_tx_event.event.data, fetched_event.event.data);
+            assert_eq!(contract_tx_event.origin, fetched_event.origin);
         }
     }
 }

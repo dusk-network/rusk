@@ -13,13 +13,11 @@ pub mod rocksdb;
 
 use anyhow::Result;
 #[cfg(feature = "archive")]
-use node_data::archive::ContractEvent;
+use node_data::archive::ContractTxEvent;
 #[cfg(feature = "archive")]
 use node_data::ledger::Hash;
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
 
-#[cfg(feature = "archive")]
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use serde::{Deserialize, Serialize};
 
 pub struct LightBlock {
@@ -229,11 +227,11 @@ pub(crate) trait Archivist {
         &self,
         block_height: u64,
         block_hash: Hash,
-        events: Vec<ContractEvent>,
+        events: Vec<ContractTxEvent>,
     ) -> Result<()>;
 
     async fn fetch_vm_events(
         &self,
         block_height: u64,
-    ) -> Result<Vec<ContractEvent>>;
+    ) -> Result<Vec<ContractTxEvent>>;
 }
