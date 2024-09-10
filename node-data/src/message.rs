@@ -33,6 +33,9 @@ pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
 /// Max value for iteration.
 pub const MESSAGE_MAX_ITER: u8 = 50;
 
+/// Block version
+pub const BLOCK_HEADER_VERSION: u8 = 1;
+
 /// Max value for failed iterations.
 pub const MESSAGE_MAX_FAILED_ITERATIONS: u8 = 8;
 
