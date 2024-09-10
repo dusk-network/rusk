@@ -54,6 +54,7 @@ pub struct Prover;
 
 impl Prove for Prover {
     fn prove(
+        &self,
         tx_circuit_vec_bytes: &[u8],
     ) -> Result<Vec<u8>, ExecutionCoreError> {
         Ok(tx_circuit_vec_bytes.to_vec())

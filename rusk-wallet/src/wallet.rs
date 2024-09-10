@@ -432,7 +432,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root()?;
         let chain_id = state.fetch_chain_id()?;
 
-        let tx = phoenix::<_, Prover>(
+        let tx = phoenix(
             &mut rng,
             &sender_sk,
             sender.pk(),
@@ -446,6 +446,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             data,
+            &Prover,
         )?;
 
         let tx = state.prove_and_propagate(tx);
@@ -497,7 +498,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root()?;
         let chain_id = state.fetch_chain_id()?;
 
-        let tx = phoenix::<_, Prover>(
+        let tx = phoenix(
             &mut rng,
             &sender_sk,
             change_pk,
@@ -511,6 +512,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             None::<ContractCall>,
+            &Prover,
         )?;
 
         let tx = state.prove_and_propagate(tx);
@@ -563,9 +565,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root()?;
         let chain_id = state.fetch_chain_id()?;
 
-        let stake = phoenix_stake::<_, Prover>(
+        let stake = phoenix_stake(
             &mut rng, &sender_sk, &stake_sk, inputs, root, gas.limit,
-            gas.price, chain_id, amt, nonce,
+            gas.price, chain_id, amt, nonce, &Prover,
         )?;
 
         let tx = state.prove_and_propagate(stake);
@@ -621,7 +623,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root()?;
         let chain_id = state.fetch_chain_id()?;
 
-        let unstake = phoenix_unstake::<_, Prover>(
+        let unstake = phoenix_unstake(
             &mut rng,
             &sender_sk,
             &stake_sk,
@@ -631,6 +633,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
+            &Prover,
         )?;
 
         let tx = state.prove_and_propagate(unstake);
@@ -670,7 +673,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .map(|s| s.reward)
             .unwrap_or(0);
 
-        let withdraw = phoenix_stake_reward::<_, Prover>(
+        let withdraw = phoenix_stake_reward(
             &mut rng,
             &sender_sk,
             &stake_sk,
@@ -680,6 +683,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
+            &Prover,
         )?;
 
         let tx = state.prove_and_propagate(withdraw);

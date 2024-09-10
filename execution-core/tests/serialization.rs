@@ -32,7 +32,7 @@ struct TxCircuitVecProver();
 // use the serialized TxCircuitVec as proof. This way that serialization is also
 // tested.
 impl Prove for TxCircuitVecProver {
-    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
+    fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
         Ok(TxCircuitVec::from_slice(tx_circuit_vec_bytes)
             .expect("serialization should be ok")
             .to_var_bytes()
@@ -111,7 +111,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
     let gas_limit = 50;
     let gas_price = 1;
 
-    Transaction::phoenix::<R, TxCircuitVecProver>(
+    Transaction::phoenix(
         rng,
         &sender_sk,
         change_pk,
@@ -125,6 +125,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         gas_price,
         CHAIN_ID,
         data,
+        &TxCircuitVecProver(),
     )
     .expect("transaction generation should work")
 }

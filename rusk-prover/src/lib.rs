@@ -38,7 +38,7 @@ static TX_CIRCUIT_4_2_PROVER: Lazy<PlonkProver> =
 pub struct LocalProver;
 
 impl Prove for LocalProver {
-    fn prove(tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
+    fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
         let tx_circuit_vec = TxCircuitVec::from_slice(tx_circuit_vec_bytes)?;
 
         #[cfg(not(feature = "no_random"))]
@@ -110,6 +110,6 @@ mod tests {
     fn test_prove_tx_circuit() {
         let tx_circuit_vec_bytes =
             hex::decode(include_str!("../tests/tx_circuit_vec.hex")).unwrap();
-        let _proof = LocalProver::prove(&tx_circuit_vec_bytes).unwrap();
+        let _proof = LocalProver.prove(&tx_circuit_vec_bytes).unwrap();
     }
 }

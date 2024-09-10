@@ -370,7 +370,7 @@ where
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
-        let tx = phoenix_transaction::<Rng, LocalProver>(
+        let tx = phoenix_transaction(
             rng,
             &sender_sk,
             &change_pk,
@@ -384,6 +384,7 @@ where
             gas_price,
             chain_id,
             Some(data),
+            &LocalProver,
         )?;
 
         sender_sk.zeroize();
@@ -420,7 +421,7 @@ where
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
-        let tx = phoenix_transaction::<Rng, LocalProver>(
+        let tx = phoenix_transaction(
             rng,
             &sender_sk,
             &change_pk,
@@ -434,6 +435,7 @@ where
             gas_price,
             chain_id,
             data,
+            &LocalProver,
         )?;
 
         sender_sk.zeroize();
@@ -473,7 +475,7 @@ where
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
-        let tx = phoenix_stake::<Rng, LocalProver>(
+        let tx = phoenix_stake(
             rng,
             &phoenix_sender_sk,
             &stake_sk,
@@ -484,6 +486,7 @@ where
             chain_id,
             stake_value,
             current_nonce,
+            &LocalProver,
         )?;
 
         stake_sk.zeroize();
@@ -529,7 +532,7 @@ where
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
-        let tx = phoenix_unstake::<Rng, LocalProver>(
+        let tx = phoenix_unstake(
             rng,
             &phoenix_sender_sk,
             &stake_sk,
@@ -539,6 +542,7 @@ where
             gas_limit,
             gas_price,
             chain_id,
+            &LocalProver,
         )?;
 
         stake_sk.zeroize();
@@ -578,7 +582,7 @@ where
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
-        let tx = phoenix_stake_reward::<Rng, LocalProver>(
+        let tx = phoenix_stake_reward(
             rng,
             &phoenix_sender_sk,
             &stake_sk,
@@ -588,6 +592,7 @@ where
             gas_limit,
             gas_price,
             chain_id,
+            &LocalProver,
         )?;
 
         stake_sk.zeroize();
@@ -621,7 +626,7 @@ where
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
-        let tx = phoenix_to_moonlight::<Rng, LocalProver>(
+        let tx = phoenix_to_moonlight(
             rng,
             &phoenix_sender_sk,
             &moonlight_receiver_sk,
@@ -631,6 +636,7 @@ where
             gas_limit,
             gas_price,
             chain_id,
+            &LocalProver,
         )?;
 
         phoenix_sender_sk.zeroize();

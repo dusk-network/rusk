@@ -26,7 +26,7 @@ impl HandleRequest for LocalProver {
         let data = request.data.as_bytes();
         let response = match request.uri.inner() {
             ("prover", _, "prove") => {
-                LocalProver::prove(data).map_err(|e| anyhow!(e))?
+                LocalProver.prove(data).map_err(|e| anyhow!(e))?
             }
             _ => anyhow::bail!("Unsupported"),
         };
@@ -39,7 +39,8 @@ impl HandleRequest for LocalProver {
     ) -> anyhow::Result<ResponseData> {
         let topic = request.event.topic.as_str();
         let response = match topic {
-            "prove_execute" => LocalProver::prove(request.event_data())
+            "prove_execute" => LocalProver
+                .prove(request.event_data())
                 .map_err(|e| anyhow!(e))?,
             _ => anyhow::bail!("Unsupported"),
         };
