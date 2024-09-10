@@ -300,6 +300,7 @@ impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
         // We do it here because we need the IterationCtx
         if msg.header.round == self.round_update.round
             && msg.header.iteration > self.iteration
+            && msg.header.prev_block_hash == self.round_update.hash()
         {
             // Generate committees for the iteration
             self.iter_ctx.generate_iteration_committees(
