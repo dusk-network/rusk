@@ -733,6 +733,20 @@ impl TransferState {
         }
     }
 
+    pub fn sync_contract_balances(&self, from: u64, count_limit: u64) {
+        let iter = self.contract_balances.iter().skip(from as usize);
+
+        if count_limit == 0 {
+            for (contract, balance) in iter {
+                rusk_abi::feed((*contract, *balance));
+            }
+        } else {
+            for (contract, balance) in iter.take(count_limit as usize) {
+                rusk_abi::feed((*contract, *balance));
+            }
+        }
+    }
+
     /// Update the root for of the tree.
     pub fn update_root(&mut self) {
         let root = self.tree.root();
