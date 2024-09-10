@@ -216,10 +216,12 @@ impl IterationCtx {
         // If the step is Proposal, the only extracted member is the generator
         // For Validation and Ratification steps, extracted members are
         // delegated to vote on the candidate block
-        let step_committee = Committee::new(
-            provisioners,
-            &self.get_sortition_config(seed, step_name, exclusion),
-        );
+
+        let sortition_step = step_name.to_step(iteration);
+        let mut config_step =
+            self.get_sortition_config(seed, step_name, exclusion);
+        config_step.step = sortition_step;
+        let step_committee = Committee::new(provisioners, &config_step);
 
         debug!(
             event = "committee_generated",
