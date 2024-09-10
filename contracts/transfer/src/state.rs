@@ -13,6 +13,7 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
+use execution_core::stake::EPOCH;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
 use execution_core::{
@@ -40,7 +41,7 @@ use crate::transitory;
 use transitory::Deposit;
 
 /// Number of roots stored
-pub const MAX_ROOTS: usize = 5000;
+pub const MAX_ROOTS: usize = 2 * EPOCH as usize;
 
 /// An empty account, used as the default return and for instantiating new
 /// entries.
