@@ -9,7 +9,7 @@ const transformTransaction = (tx) => ({
   blockheight: tx.blockHeight,
   contract: tx.tx.callData ? capitalize(tx.tx.callData.fnName) : "Transfer",
   date: unixTsToDate(tx.blockTimestamp),
-  feepaid: tx.gasSpent,
+  feepaid: tx.gasSpent * tx.tx.gasPrice,
   gaslimit: tx.tx.gasLimit,
   gasprice: tx.tx.gasPrice,
   gasspent: tx.gasSpent,
