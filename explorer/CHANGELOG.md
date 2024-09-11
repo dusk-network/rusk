@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix Transactions Fee is not properly computed [#2348]
+
 ## [0.2.0] - 2024-08-26
 
 ### Added
@@ -58,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2061]: https://github.com/dusk-network/rusk/issues/2061
 [#2159]: https://github.com/dusk-network/rusk/issues/2159
 [#2220]: https://github.com/dusk-network/rusk/issues/2220
+[#2348]: https://github.com/dusk-network/rusk/issues/2348
 
 <!-- VERSIONS -->
 
