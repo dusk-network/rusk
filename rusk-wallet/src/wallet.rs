@@ -28,8 +28,9 @@ use wallet_core::{
         derive_phoenix_vk,
     },
     transaction::{
-        moonlight, moonlight_stake, moonlight_unstake, phoenix, phoenix_stake,
-        phoenix_stake_reward, phoenix_unstake,
+        moonlight, moonlight_stake, moonlight_to_phoenix, moonlight_unstake,
+        phoenix, phoenix_stake, phoenix_stake_reward, phoenix_to_moonlight,
+        phoenix_unstake,
     },
     BalanceInfo,
 };
@@ -631,12 +632,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotEnoughGas);
         }
 
-        let mut from_sk = self.bls_secret_key(sender.index()?);
+        let sender = sender.index()?;
+
+        let mut from_sk = self.bls_secret_key(sender);
         let apk = rcvr.apk()?;
+        let from_pk = self.bls_public_key(sender);
         let amt = *amt;
 
         let state = self.state()?;
-        let account = state.fetch_account(apk)?;
+        let nonce = state.fetch_account(&from_pk)?.nonce + 1;
         let chain_id = state.fetch_chain_id()?;
 
         let tx = moonlight(
@@ -646,7 +650,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             0,
             gas.limit,
             gas.price,
-            account.nonce,
+            nonce,
             chain_id,
             None::<TransactionData>,
         )?;
@@ -687,7 +691,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let nonce = state
             .fetch_stake(&AccountPublicKey::from(&stake_sk))?
             .map(|s| s.nonce)
-            .unwrap_or(0);
+            .unwrap_or(0)
+            + 1;
 
         let inputs = state
             .inputs(sender_index, amt + gas.limit * gas.price)?
@@ -734,10 +739,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let sender_index = addr.index()?;
         let mut stake_sk = self.bls_secret_key(sender_index);
         let pk = AccountPublicKey::from(&stake_sk);
-        let account = state.fetch_account(&pk)?;
         let chain_id = state.fetch_chain_id()?;
+        let moonlight_current_nonce = state.fetch_account(&pk)?.nonce + 1;
 
-        let nonce = state.fetch_stake(&pk)?.map(|s| s.nonce).unwrap_or(0);
+        let nonce = state.fetch_stake(&pk)?.map(|s| s.nonce + 1).unwrap_or(0);
 
         let stake = moonlight_stake(
             &stake_sk,
@@ -745,7 +750,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             amt,
             gas.limit,
             gas.price,
-            account.nonce,
+            moonlight_current_nonce,
             nonce,
             chain_id,
         )?;
@@ -831,7 +836,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let pk = AccountPublicKey::from(&stake_sk);
 
         let chain_id = state.fetch_chain_id()?;
-        let account = state.fetch_account(&pk)?;
+        let account_nonce = state.fetch_account(&pk)?.nonce + 1;
 
         let unstake_value = state
             .fetch_stake(&pk)?
@@ -846,7 +851,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             unstake_value,
             gas.price,
             gas.limit,
-            account.nonce + 1,
+            account_nonce,
             chain_id,
         )?;
 
@@ -900,6 +905,67 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         stake_sk.zeroize();
 
         state.prove_and_propagate(withdraw)
+    }
+
+    /// Convert balance from phoenix to moonlight
+    pub async fn phoenix_to_moonlight(
+        &self,
+        sender_addr: &Address,
+        amt: Dusk,
+        gas: Gas,
+    ) -> Result<Transaction, Error> {
+        let mut rng = StdRng::from_entropy();
+        let state = self.state()?;
+        let sender_index = sender_addr.index()?;
+        let amt = *amt;
+        let inputs = state.inputs(sender_index, amt + gas.limit * gas.price)?;
+
+        let root = state.fetch_root()?;
+        let chain_id = state.fetch_chain_id()?;
+
+        let mut sender_sk = self.phoenix_secret_key(sender_index);
+        let mut stake_sk = self.bls_secret_key(sender_index);
+
+        let convert = phoenix_to_moonlight(
+            &mut rng, &sender_sk, &stake_sk, inputs, root, amt, gas.limit,
+            gas.price, chain_id, &Prover,
+        )?;
+
+        sender_sk.zeroize();
+        stake_sk.zeroize();
+
+        state.prove_and_propagate(convert)
+    }
+
+    /// Convert balance from moonlight to phoenix
+    pub async fn moonlight_to_phoenix(
+        &self,
+        sender_addr: &Address,
+        amt: Dusk,
+        gas: Gas,
+    ) -> Result<Transaction, Error> {
+        let mut rng = StdRng::from_entropy();
+        let state = self.state()?;
+        let sender_index = sender_addr.index()?;
+        let amt = *amt;
+
+        let pk = self.bls_public_key(sender_index);
+
+        let nonce = state.fetch_account(&pk)?.nonce + 1;
+        let chain_id = state.fetch_chain_id()?;
+
+        let mut sender_sk = self.phoenix_secret_key(sender_index);
+        let mut stake_sk = self.bls_secret_key(sender_index);
+
+        let convert = moonlight_to_phoenix(
+            &mut rng, &stake_sk, &sender_sk, amt, gas.limit, gas.price, nonce,
+            chain_id,
+        )?;
+
+        sender_sk.zeroize();
+        stake_sk.zeroize();
+
+        state.prove_and_propagate(convert)
     }
 
     /// Returns bls key pair for provisioner nodes

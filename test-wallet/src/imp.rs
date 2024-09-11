@@ -471,7 +471,8 @@ where
             .state
             .fetch_stake(&stake_pk)
             .map_err(Error::from_state_err)?
-            .nonce;
+            .nonce
+            + 1;
 
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
@@ -746,8 +747,8 @@ where
             stake_value,
             gas_limit,
             gas_price,
-            sender_account.nonce,
-            staker_data.nonce,
+            sender_account.nonce + 1,
+            staker_data.nonce + 1,
             chain_id,
         )?;
 
@@ -798,7 +799,7 @@ where
             unstake_value,
             gas_limit,
             gas_price,
-            sender_account.nonce,
+            sender_account.nonce + 1,
             chain_id,
         )?;
 
@@ -843,7 +844,7 @@ where
             staker_data.reward,
             gas_limit,
             gas_price,
-            sender_account.nonce,
+            sender_account.nonce + 1,
             chain_id,
         )?;
 
@@ -875,7 +876,7 @@ where
             .fetch_account(&moonlight_sender_pk)
             .map_err(Error::from_state_err)?;
 
-        let nonce = moonlight_sender_account.nonce;
+        let nonce = moonlight_sender_account.nonce + 1;
 
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;

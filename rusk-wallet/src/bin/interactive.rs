@@ -96,7 +96,9 @@ pub(crate) async fn run_loop(
 
             // request operation to perform
             let op = match wallet.is_online().await {
-                true => menu_op(addr.clone(), spendable, settings),
+                true => {
+                    menu_op(addr.clone(), spendable, moonlight_bal, settings)
+                }
                 false => menu_op_offline(addr.clone(), settings),
             };
 
@@ -210,6 +212,8 @@ enum CommandMenuItem {
     PhoenixTransfer,
     MoonlightTransfer,
     PhoenixStake,
+    PhoenixToMoonlight,
+    MoonlightToPhoenix,
     StakeInfo,
     PhoenixUnstake,
     PhoenixWithdraw,
@@ -221,7 +225,8 @@ enum CommandMenuItem {
 /// selected address
 fn menu_op(
     addr: Address,
-    balance: Dusk,
+    phoenix_balance: Dusk,
+    moonlight_balance: Dusk,
     settings: &Settings,
 ) -> anyhow::Result<AddrOp> {
     use CommandMenuItem as CMI;
@@ -234,6 +239,14 @@ fn menu_op(
         .add(CMI::StakeInfo, "Check existing stake")
         .add(CMI::PhoenixUnstake, "Phoenix Unstake Dusk")
         .add(CMI::PhoenixWithdraw, "Phoenix Withdraw staking reward")
+        .add(
+            CMI::PhoenixToMoonlight,
+            "Convert dusk from phoenix account to moonlight",
+        )
+        .add(
+            CMI::MoonlightToPhoenix,
+            "Convert dusk from moonlight account to phoenix",
+        )
         .add(CMI::Export, "Export provisioner key-pair")
         .separator()
         .add(CMI::Back, "Back");
@@ -254,7 +267,7 @@ fn menu_op(
             AddrOp::Run(Box::new(Command::PhoenixTransfer {
                 sndr: Some(addr),
                 rcvr: prompt::request_rcvr_addr("recipient")?,
-                amt: prompt::request_token_amt("transfer", balance)?,
+                amt: prompt::request_token_amt("transfer", phoenix_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
             }))
@@ -263,14 +276,14 @@ fn menu_op(
             AddrOp::Run(Box::new(Command::MoonlightTransfer {
                 sndr: Some(addr),
                 rcvr: prompt::request_rcvr_addr("recipient")?,
-                amt: prompt::request_token_amt("transfer", balance)?,
+                amt: prompt::request_token_amt("transfer", moonlight_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
         CMI::PhoenixStake => AddrOp::Run(Box::new(Command::PhoenixStake {
             addr: Some(addr),
-            amt: prompt::request_token_amt("stake", balance)?,
+            amt: prompt::request_token_amt("stake", phoenix_balance)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -287,6 +300,22 @@ fn menu_op(
             AddrOp::Run(Box::new(Command::PhoenixWithdraw {
                 addr: Some(addr),
                 gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::MoonlightToPhoenix => {
+            AddrOp::Run(Box::new(Command::MoonlightToPhoenix {
+                addr: Some(addr),
+                amt: prompt::request_token_amt("convert", moonlight_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::PhoenixToMoonlight => {
+            AddrOp::Run(Box::new(Command::PhoenixToMoonlight {
+                addr: Some(addr),
+                amt: prompt::request_token_amt("convert", phoenix_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }

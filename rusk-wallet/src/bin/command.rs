@@ -188,6 +188,42 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
+    /// Convert Phoenix balance to moonlight for the same owned address
+    PhoenixToMoonlight {
+        /// Bls or Phoenix Address from which to convert DUSK to
+        addr: Option<Address>,
+
+        /// Amount of DUSK to transfer to moonlight account
+        #[clap(short, long)]
+        amt: Dusk,
+
+        /// Max amt of gas for this transaction
+        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Convert moonlight balance to phoenix for the same owned address
+    MoonlightToPhoenix {
+        /// Bls or Phoenix Address from which to convert DUSK to
+        addr: Option<Address>,
+
+        /// Amount of DUSK to transfer to phoenix account
+        #[clap(short, long)]
+        amt: Dusk,
+
+        /// Max amt of gas for this transaction
+        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
     /// Export BLS provisioner key pair
     Export {
         /// Address for which you want the exported keys [default: first
@@ -384,6 +420,40 @@ impl Command {
                     history::transaction_from_notes(settings, notes).await?;
 
                 Ok(RunResult::PhoenixHistory(transactions))
+            }
+            Command::PhoenixToMoonlight {
+                addr,
+                gas_limit,
+                gas_price,
+                amt,
+            } => {
+                wallet.sync().await?;
+                let addr = match addr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let tx = wallet.phoenix_to_moonlight(addr, amt, gas).await?;
+                Ok(RunResult::Tx(tx.hash()))
+            }
+            Command::MoonlightToPhoenix {
+                addr,
+                amt,
+                gas_limit,
+                gas_price,
+            } => {
+                wallet.sync().await?;
+                let addr = match addr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let tx = wallet.moonlight_to_phoenix(addr, amt, gas).await?;
+                Ok(RunResult::Tx(tx.hash()))
             }
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),
