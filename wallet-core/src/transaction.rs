@@ -8,16 +8,18 @@
 
 use alloc::vec::Vec;
 
-use rand::{CryptoRng, RngCore};
-
+use dusk_bytes::Serializable;
 use ff::Field;
+use rand::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
     transfer::{
-        data::{ContractCall, TransactionData},
+        data::{
+            ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+        },
         moonlight::Transaction as MoonlightTransaction,
         phoenix::{
             Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
@@ -564,6 +566,124 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
         current_nonce,
         chain_id,
         Some(contract_call),
+    )
+}
+
+/// Create a new unproven [`Transaction`] to deploy a contract to the network.
+///
+/// # Errors
+/// The creation of a transaction is not possible and will error if:
+/// - one of the input-notes doesn't belong to the `sender_sk`
+/// - the transaction input doesn't cover the transaction costs
+/// - the `inputs` vector is either empty or larger than 4 elements
+/// - the `inputs` vector contains duplicate `Note`s
+/// - the `Prove` trait is implemented incorrectly
+#[allow(clippy::too_many_arguments)]
+pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
+    rng: &mut R,
+    phoenix_sender_sk: &PhoenixSecretKey,
+    inputs: Vec<(Note, NoteOpening, BlsScalar)>,
+    root: BlsScalar,
+    bytecode: impl Into<Vec<u8>>,
+    owner: &BlsPublicKey,
+    init_args: Vec<u8>,
+    nonce: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    chain_id: u8,
+    prover: &P,
+) -> Result<Transaction, Error> {
+    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let change_pk = receiver_pk;
+
+    let transfer_value = 0;
+    let obfuscated_transaction = true;
+    let deposit = 0;
+
+    // split the input notes and openings from the nullifiers
+    let mut nullifiers = Vec::with_capacity(inputs.len());
+    let inputs = inputs
+        .into_iter()
+        .map(|(note, opening, nullifier)| {
+            nullifiers.push(nullifier);
+            (note, opening)
+        })
+        .collect();
+
+    let bytes = bytecode.into();
+    let deploy = ContractDeploy {
+        bytecode: ContractBytecode {
+            hash: blake3::hash(&bytes).into(),
+            bytes,
+        },
+        owner: owner.to_bytes().to_vec(),
+        init_args: Some(init_args),
+        nonce,
+    };
+
+    phoenix(
+        rng,
+        phoenix_sender_sk,
+        &change_pk,
+        &receiver_pk,
+        inputs,
+        root,
+        transfer_value,
+        obfuscated_transaction,
+        deposit,
+        gas_limit,
+        gas_price,
+        chain_id,
+        Some(deploy),
+        prover,
+    )
+}
+
+/// Create a new [`Transaction`] to deploy a contract to the network.
+///
+/// # Note
+/// The `current_nonce` is NOT incremented and should be incremented by the
+/// caller of this function, if its not done so, rusk will throw 500 error
+///
+/// # Errors
+/// The creation of this transaction doesn't error, but still returns a result
+/// for the sake of API consistency.
+#[allow(clippy::too_many_arguments)]
+pub fn moonlight_deployment(
+    moonlight_sender_sk: &BlsSecretKey,
+    bytecode: impl Into<Vec<u8>>,
+    owner: &BlsPublicKey,
+    init_args: Vec<u8>,
+    gas_limit: u64,
+    gas_price: u64,
+    moonlight_current_nonce: u64,
+    deploy_nonce: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    let transfer_value = 0;
+    let deposit = 0;
+
+    let bytes = bytecode.into();
+    let deploy = ContractDeploy {
+        bytecode: ContractBytecode {
+            hash: blake3::hash(&bytes).into(),
+            bytes,
+        },
+        owner: owner.to_bytes().to_vec(),
+        init_args: Some(init_args),
+        nonce: deploy_nonce,
+    };
+
+    moonlight(
+        moonlight_sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        moonlight_current_nonce,
+        chain_id,
+        Some(deploy),
     )
 }
 
