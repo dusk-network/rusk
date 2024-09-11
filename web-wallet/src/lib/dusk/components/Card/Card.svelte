@@ -13,6 +13,9 @@
   /** @type {boolean} */
   export let onSurface = false;
 
+  /** @type {boolean} */
+  export let showBody = true;
+
   $: classes = makeClassName(["dusk-card", `dusk-card--gap-${gap}`, className]);
 </script>
 
@@ -27,9 +30,11 @@
       <slot name="header" />
     </div>
   {/if}
-  <div class="dusk-card__body-container">
-    <slot />
-  </div>
+  {#if showBody}
+    <div class="dusk-card__body-container">
+      <slot />
+    </div>
+  {/if}
   {#if $$slots.footer}
     <div class="dusk-card__footer-container">
       <slot name="footer" />

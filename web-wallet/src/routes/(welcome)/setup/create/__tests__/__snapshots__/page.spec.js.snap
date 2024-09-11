@@ -1944,12 +1944,26 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       class="dusk-card__header-container"
     >
       <header
-        class="dusk-card__header"
+        class="dusk-card__header dusk-card__header-toggle"
         slot="header"
       >
-        <div
-          class="dusk-card__header-title"
+        <h3
+          class="h4"
         >
+          Password
+        </h3>
+         
+        <div
+          class="dusk-card__header-controls-wrapper"
+        >
+          <div
+            aria-checked="false"
+            aria-disabled="false"
+            class="dusk-switch dusk-switch--on-surface"
+            role="switch"
+            tabindex="0"
+          />
+           
           <svg
             class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
@@ -1960,29 +1974,10 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
             />
           </svg>
           
-           
-          <h3
-            class="h4"
-          >
-            Password
-          </h3>
         </div>
-         
-        <div
-          aria-checked="false"
-          aria-disabled="false"
-          class="dusk-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
       </header>
     </div>
      
-    <div
-      class="dusk-card__body-container"
-    >
-      
-    </div>
      
   </div>
   
@@ -2142,12 +2137,26 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       class="dusk-card__header-container"
     >
       <header
-        class="dusk-card__header"
+        class="dusk-card__header dusk-card__header-toggle"
         slot="header"
       >
-        <div
-          class="dusk-card__header-title"
+        <h3
+          class="h4"
         >
+          Password
+        </h3>
+         
+        <div
+          class="dusk-card__header-controls-wrapper"
+        >
+          <div
+            aria-checked="true"
+            aria-disabled="false"
+            class="dusk-switch dusk-switch--on-surface"
+            role="switch"
+            tabindex="0"
+          />
+           
           <svg
             class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
@@ -2158,21 +2167,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
             />
           </svg>
           
-           
-          <h3
-            class="h4"
-          >
-            Password
-          </h3>
         </div>
-         
-        <div
-          aria-checked="true"
-          aria-disabled="false"
-          class="dusk-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
       </header>
     </div>
      
