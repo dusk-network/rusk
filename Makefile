@@ -37,6 +37,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./wallet-core $@
 	$(MAKE) -C ./rusk/ $@
+	$(MAKE) -C ./rusk-wallet/ $@
 			
 clippy: ## Run clippy
 	$(MAKE) -C ./execution-core/ $@
@@ -51,6 +52,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./wallet-core $@
 	$(MAKE) -C ./rusk/ $@
+	$(MAKE) -C ./rusk-wallet/ $@
 
 doc: ## Run doc gen
 	$(MAKE) -C ./execution-core/ $@
