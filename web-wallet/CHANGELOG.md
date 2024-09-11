@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add validation for "Use Max" button on Send / Stake flows [#2310]
 - Add option to sync from a custom block height on Wallet Restoration [#1568]
 - Show current block height on Wallet Creation [#1561]
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
@@ -253,6 +254,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2196]: https://github.com/dusk-network/rusk/issues/2196
 [#2014]: https://github.com/dusk-network/rusk/issues/2014
 [#2303]: https://github.com/dusk-network/rusk/issues/2303
+[#2310]: https://github.com/dusk-network/rusk/issues/2310
 
 <!-- VERSIONS -->
 
