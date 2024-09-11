@@ -62,6 +62,3 @@ konst = "0.3"
 
 [dev-dependencies]
 tempfile = "3.2"
-
-[profile.release]
-overflow-checks = true
