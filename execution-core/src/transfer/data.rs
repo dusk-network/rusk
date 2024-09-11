@@ -188,7 +188,7 @@ impl ContractCall {
 #[archive_attr(derive(CheckBytes))]
 /// Holds bytes of bytecode and its hash.
 pub struct ContractBytecode {
-    /// Hash of the bytecode bytes.
+    /// Blake3 hash of the bytecode bytes.
     pub hash: [u8; 32],
     /// Bytecode bytes.
     pub bytes: Vec<u8>,
