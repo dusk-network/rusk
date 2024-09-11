@@ -57,11 +57,25 @@
   }
 
   /**
-   * Adds word to the entered phrase if only one suggestion is available
-   * @param {{ key: string }} event
+   * Prevents non-alphabetical characters from being entered
+   * and auto-selects the first suggestion on Enter
+   * if there is only one word available
+   * @param {KeyboardEvent} event
    * @param {string} index
    */
   function handleKeyDownOnAuthenticateTextbox(event, index) {
+    const isAlphabetical = /^[a-zA-Z]+$/;
+
+    if (!isAlphabetical.test(event.key)) {
+      event.preventDefault();
+      toast(
+        "error",
+        "Only alphabetical characters are allowed",
+        mdiAlertOutline
+      );
+      return;
+    }
+
     if (event.key === "Enter" && suggestions.length === 1) {
       updateEnteredPhrase(suggestions[0], index);
     }
