@@ -21,7 +21,7 @@ pub(crate) use event::{
 };
 
 use execution_core::Event;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -484,9 +484,29 @@ async fn handle_stream_rues<H: HandleRequest>(
     loop {
         tokio::select! {
             recv = stream.next() => {
-                if let Some(Ok(Message::Close(msg))) = recv {
-                    let _ = stream.close(msg).await;
-                    break;
+                match (recv) {
+                    Some(Ok(Message::Close(msg))) => {
+                        debug!("Closing stream for {sid} due to {msg:?}");
+                        let _ = stream.close(msg).await;
+                        break;
+                    }
+                    Some(Err(e)) => {
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Error,
+                            reason: Cow::from("Internal error"),
+                        })).await;
+                        warn!("Closing stream for {sid} due to {e}");
+                        break;
+                    }
+                    None => {
+                        let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Error,
+                            reason: Cow::from("No more events"),
+                        })).await;
+                        warn!("Closing stream for {sid} due to no more events");
+                        break;
+                    }
+                    _ => {}
                 }
             }
             _ = shutdown.recv() => {
