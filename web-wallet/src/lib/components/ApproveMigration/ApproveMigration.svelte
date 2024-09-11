@@ -10,7 +10,7 @@
   import { allowance, approve } from "$lib/migration/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let amount;
 
   /** @type {HexString} */
@@ -41,7 +41,7 @@
         chainContract,
         migrationContract
       );
-      return Number(allowedAmount) >= amount;
+      return allowedAmount >= amount;
     } catch (e) {
       return false;
     }
@@ -53,11 +53,7 @@
     hasApprovedCoin = await checkAllowance();
 
     if (!hasApprovedCoin) {
-      const txHash = await approve(
-        migrationContract,
-        chainContract,
-        amount.toString()
-      );
+      const txHash = await approve(migrationContract, chainContract, amount);
 
       if (isHex(txHash)) {
         dispatch("incrementStep");

@@ -3,10 +3,15 @@
 <script>
   import { mdiArrowLeft, mdiArrowRight, mdiWalletOutline } from "@mdi/js";
   import { getAccount, switchChain } from "@wagmi/core";
-  import { formatUnits } from "viem";
+  import { formatUnits, parseUnits } from "viem";
   import { onDestroy, onMount } from "svelte";
   import { tokens } from "./tokenConfig";
-  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
+  import { getDecimalSeparator } from "$lib/dusk/number";
+  import {
+    calculateAdaptiveCharCount,
+    cleanNumberString,
+    middleEllipsis,
+  } from "$lib/dusk/string";
   import {
     AppAnchor,
     AppAnchorButton,
@@ -41,11 +46,10 @@
 
   const options = ["ERC-20", "BEP-20"];
 
-  const minAmount = 1n ** 9n;
+  // The minimum allowed amount to be migrated expressed as a string
+  const minAmount = "0.000000000000000001";
 
   const ercDecimals = 18;
-
-  const decimalMultiplier = 10n ** BigInt(ercDecimals);
 
   /** @type {TokenNames} */
   let selectedChain = erc20.name;
@@ -56,8 +60,8 @@
   /** @type {bigint} */
   let connectedWalletBalance;
 
-  /** @type {number} */
-  let amount;
+  /** @type {string} */
+  let amount = "";
 
   /** @type {HTMLInputElement | null} */
   let amountInput;
@@ -78,8 +82,10 @@
   $: ({ currentAddress } = $walletStore);
   $: isAmountValid =
     !!amount &&
-    BigInt(amount) * decimalMultiplier >= minAmount &&
-    BigInt(amount) * decimalMultiplier <= connectedWalletBalance;
+    parseUnits(amount.replace(",", "."), ercDecimals) >=
+      parseUnits(minAmount, ercDecimals) &&
+    parseUnits(amount.replace(",", "."), ercDecimals) <= connectedWalletBalance;
+  $: amount = cleanNumberString(amount, getDecimalSeparator());
 
   /**
    *  Triggers the switchChain event and reverts the ExclusiveChoice UI selected option if an error is thrown
@@ -252,8 +258,7 @@
                 ercDecimals
               );
             }
-
-            amount = Number(formatUnits(connectedWalletBalance, ercDecimals));
+            amount = formatUnits(connectedWalletBalance, ercDecimals);
           }}
           text="USE MAX"
           disabled={isInputDisabled}
@@ -264,10 +269,7 @@
         className="migrate__input-field"
         bind:value={amount}
         required
-        type="number"
-        min={Number(formatUnits(minAmount, ercDecimals))}
-        max={Number(formatUnits(connectedWalletBalance, ercDecimals))}
-        step={Number(formatUnits(minAmount, ercDecimals))}
+        type="text"
         placeholder="Amount"
         disabled={isInputDisabled}
       />
@@ -287,13 +289,13 @@
           on:errorApproval={() => {
             isInputDisabled = false;
           }}
-          {amount}
+          amount={parseUnits(amount.replace(",", "."), ercDecimals)}
           chainContract={tokens[network][selectedChain].contract}
           migrationContract={tokens[network][selectedChain].migrationContract}
         />
       {:else}
         <ExecuteMigration
-          {amount}
+          amount={parseUnits(amount.replace(",", "."), ercDecimals)}
           {currentAddress}
           migrationContract={tokens[network][selectedChain].migrationContract}
         />
