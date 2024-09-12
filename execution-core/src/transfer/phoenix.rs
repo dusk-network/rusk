@@ -62,6 +62,19 @@ impl AsRef<Note> for NoteLeaf {
     }
 }
 
+/// Ord compares positions, not values, note values need to be decrypted first
+impl cmp::Ord for NoteLeaf {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.note.pos().cmp(other.note.pos())
+    }
+}
+
+impl cmp::PartialOrd for NoteLeaf {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
