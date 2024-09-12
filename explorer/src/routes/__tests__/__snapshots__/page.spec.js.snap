@@ -30,12 +30,14 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
-            
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+              
+            </div>
           </div>
            
           <span
@@ -61,12 +63,14 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
-            
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+              
+            </div>
           </div>
            
           <span
@@ -82,6 +86,10 @@ exports[`home page > should render the home page, start polling for the latest c
       >
         <div
           class="statistics-panel__statistics-item"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-place="top"
+          data-tooltip-text="--- DUSK"
+          data-tooltip-type="info"
         >
           <div
             class="statistics-panel__statistics-item-value"
@@ -97,11 +105,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -112,6 +122,10 @@ exports[`home page > should render the home page, start polling for the latest c
         </div>
         <div
           class="statistics-panel__statistics-item"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-place="top"
+          data-tooltip-text="--- DUSK"
+          data-tooltip-type="info"
         >
           <div
             class="statistics-panel__statistics-item-value"
@@ -127,11 +141,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -162,11 +178,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -192,11 +210,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -227,11 +247,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -257,11 +279,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -1039,11 +1063,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            0.368
-            
-            
-             
-            
+            <div>
+              0.368
+              
+              
+               
+              
+            </div>
           </div>
            
           <span
@@ -1069,11 +1095,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            168M
-            
-            
-             
-            
+            <div>
+              168.00M
+              
+              
+               
+              
+            </div>
           </div>
            
           <span
@@ -1089,6 +1117,10 @@ exports[`home page > should render the home page, start polling for the latest c
       >
         <div
           class="statistics-panel__statistics-item"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-place="top"
+          data-tooltip-text="--- DUSK"
+          data-tooltip-type="info"
         >
           <div
             class="statistics-panel__statistics-item-value"
@@ -1104,11 +1136,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -1119,6 +1153,10 @@ exports[`home page > should render the home page, start polling for the latest c
         </div>
         <div
           class="statistics-panel__statistics-item"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-place="top"
+          data-tooltip-text="--- DUSK"
+          data-tooltip-type="info"
         >
           <div
             class="statistics-panel__statistics-item-value"
@@ -1134,11 +1172,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -1169,11 +1209,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -1199,11 +1241,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -1234,11 +1278,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span
@@ -1264,11 +1310,13 @@ exports[`home page > should render the home page, start polling for the latest c
             </svg>
             
              
-            <span>
-              - - -
-            </span>
-            
-             
+            <div>
+              <span>
+                - - -
+              </span>
+              
+               
+            </div>
           </div>
            
           <span

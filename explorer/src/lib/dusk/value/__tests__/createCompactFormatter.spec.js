@@ -5,7 +5,7 @@ import { createCompactFormatter } from "../";
 describe("createCompactFormatter", () => {
   it("should format a number correctly", () => {
     const formatter = createCompactFormatter("en");
-    expect(formatter(9e5)).toBe("900K");
-    expect(formatter(1e6)).toBe("1M");
+    expect(formatter(9e5)).toBe("900.00K");
+    expect(formatter(1e6)).toBe("1.00M");
   });
 });
