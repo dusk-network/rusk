@@ -164,6 +164,10 @@ impl Header<'_> {
     pub async fn iteration(&self) -> u8 {
         self.0.iteration
     }
+
+    pub async fn json(&self) -> String {
+        serde_json::to_string(self.0).unwrap_or_default()
+    }
 }
 
 #[Object]
