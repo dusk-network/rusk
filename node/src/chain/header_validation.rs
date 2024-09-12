@@ -8,7 +8,10 @@ use crate::database;
 use crate::database::Ledger;
 use anyhow::anyhow;
 use dusk_bytes::Serializable;
-use dusk_consensus::config::{MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD};
+use dusk_consensus::config::{
+    EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
+    RELAX_ITERATION_THRESHOLD,
+};
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
@@ -297,6 +300,9 @@ pub async fn verify_faults<DB: database::DB>(
 ) -> Result<(), InvalidFault> {
     for f in faults {
         let fault_header = f.validate(current_height)?;
+        if fault_header.iteration >= EMERGENCY_MODE_ITERATION_THRESHOLD {
+            return Err(InvalidFault::EmergencyIteration);
+        }
         db.read()
             .await
             .view(|db| {
