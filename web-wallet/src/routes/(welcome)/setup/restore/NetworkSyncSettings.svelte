@@ -44,7 +44,7 @@
   <Textbox type="number" bind:value={blockHeight} placeholder="Block Height" />
   {#if currentNetworkBlock}
     <span class="block-height-meta"
-      >Network Block Height: #{numberFormatter(currentNetworkBlock)}</span
+      >Network block height: {numberFormatter(currentNetworkBlock)}</span
     >
   {/if}
 </ToggleableCard>
@@ -66,7 +66,6 @@
   .block-height-meta {
     display: inline-block;
     font-size: 0.75em;
-    margin-top: 0.8em;
     margin-left: 1em;
     opacity: 0.5;
   }
