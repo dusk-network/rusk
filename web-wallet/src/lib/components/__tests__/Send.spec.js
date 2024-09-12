@@ -81,6 +81,44 @@ describe("Send", () => {
       expect(nextButton).toBeEnabled();
     });
 
+    it("should not change the default amount (1) in the textbox if the user clicks the related button and the balance is zero", async () => {
+      const props = {
+        ...baseProps,
+        spendable: 0,
+      };
+      const { getByRole } = render(Send, props);
+
+      const useMaxButton = getByRole("button", { name: "USE MAX" });
+      const amountInput = getByRole("spinbutton");
+
+      expect(amountInput).toHaveValue(1);
+
+      await fireEvent.click(useMaxButton);
+
+      expect(amountInput).toHaveValue(1);
+    });
+
+    it("should not change the default amount (1) in the textbox if the user clicks the related button and the gas settings are invalid", async () => {
+      const props = {
+        ...baseProps,
+        gasSettings: {
+          ...baseProps.gasSettings,
+          gasLimit: 40000000,
+          gasPrice: 40000000,
+        },
+      };
+
+      const { getByRole } = render(Send, props);
+      const useMaxButton = getByRole("button", { name: "USE MAX" });
+      const amountInput = getByRole("spinbutton");
+
+      expect(amountInput).toHaveValue(1);
+
+      await fireEvent.click(useMaxButton);
+
+      expect(amountInput).toHaveValue(1);
+    });
+
     it("should disable the next button if the user enters an invalid amount", async () => {
       const { getByRole } = render(Send, baseProps);
       const nextButton = getByRole("button", { name: "Next" });

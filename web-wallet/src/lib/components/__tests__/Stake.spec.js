@@ -142,6 +142,45 @@ describe("Stake", () => {
     expect(amountInput).toHaveValue(maxSpendable);
   });
 
+  it("should not change the default amount (min stake amount) in the textbox if the user clicks the related button and the balance is zero", async () => {
+    const props = {
+      ...baseProps,
+      spendable: 0,
+    };
+
+    const { getByRole } = render(Stake, props);
+
+    const useMaxButton = getByRole("button", { name: "USE MAX" });
+    const amountInput = getByRole("spinbutton");
+
+    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+
+    await fireEvent.click(useMaxButton);
+
+    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+  });
+
+  it("should not change the default amount (1) in the textbox if the user clicks the related button and the gas settings are invalid", async () => {
+    const props = {
+      ...baseProps,
+      gasSettings: {
+        ...baseProps.gasSettings,
+        gasLimit: 40000000,
+        gasPrice: 40000000,
+      },
+    };
+
+    const { getByRole } = render(Stake, props);
+    const useMaxButton = getByRole("button", { name: "USE MAX" });
+    const amountInput = getByRole("spinbutton");
+
+    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+
+    await fireEvent.click(useMaxButton);
+
+    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+  });
+
   it("should disable the next button if the user enters an invalid amount", async () => {
     const { getByRole } = render(Stake, baseOptions);
     const nextButton = getByRole("button", { name: "Next" });

@@ -3,7 +3,11 @@
 <script>
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
-  import { mdiArrowUpBoldBoxOutline, mdiWalletOutline } from "@mdi/js";
+  import {
+    mdiAlertOutline,
+    mdiArrowUpBoldBoxOutline,
+    mdiWalletOutline,
+  } from "@mdi/js";
   import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { validateAddress } from "$lib/dusk/string";
@@ -16,6 +20,7 @@
     Wizard,
     WizardStep,
   } from "$lib/dusk/components";
+  import { toast } from "$lib/dusk/components/Toast/store";
   import {
     AppAnchorButton,
     ContractStatusesList,
@@ -81,6 +86,28 @@
   $: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
   $: addressValidationResult = validateAddress(address);
+
+  function setMaxAmount() {
+    if (!isGasValid) {
+      toast("error", "Please set valid gas settings first", mdiAlertOutline);
+      return;
+    }
+
+    if (spendable < luxToDusk(luxFee)) {
+      toast(
+        "error",
+        "You don't have enough DUSK to cover the transaction fee",
+        mdiAlertOutline
+      );
+      return;
+    }
+
+    if (amountInput) {
+      amountInput.value = maxSpendable.toString();
+    }
+
+    amount = maxSpendable;
+  }
 </script>
 
 <div class="operation">
@@ -102,13 +129,7 @@
           <Button
             size="small"
             variant="tertiary"
-            on:click={() => {
-              if (amountInput) {
-                amountInput.value = maxSpendable.toString();
-              }
-
-              amount = maxSpendable;
-            }}
+            on:click={setMaxAmount}
             text="USE MAX"
           />
         </div>

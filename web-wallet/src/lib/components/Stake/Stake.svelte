@@ -22,7 +22,7 @@
     Wizard,
     WizardStep,
   } from "$lib/dusk/components";
-
+  import { toast } from "$lib/dusk/components/Toast/store";
   import {
     AppAnchor,
     AppAnchorButton,
@@ -146,6 +146,28 @@
 
     return 2;
   }
+
+  function setMaxAmount() {
+    if (!isGasValid) {
+      toast("error", "Please set valid gas settings first", mdiAlertOutline);
+      return;
+    }
+
+    if (spendable < luxToDusk(luxFee)) {
+      toast(
+        "error",
+        "You don't have enough DUSK to cover the transaction fee",
+        mdiAlertOutline
+      );
+      return;
+    }
+
+    if (stakeInput) {
+      stakeInput.value = maxSpendable.toString();
+    }
+
+    stakeAmount = maxSpendable;
+  }
 </script>
 
 <div class="operation">
@@ -215,13 +237,7 @@
           <Button
             size="small"
             variant="tertiary"
-            on:click={() => {
-              if (stakeInput) {
-                stakeInput.value = maxSpendable.toString();
-              }
-
-              stakeAmount = maxSpendable;
-            }}
+            on:click={setMaxAmount}
             text="USE MAX"
           />
         </div>
