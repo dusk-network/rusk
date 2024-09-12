@@ -36,9 +36,3 @@
     cannot retrieve your passphrase.
   </p>
 </div>
-
-<style lang="postcss">
-  :global(.dusk-agreement:first-of-type) {
-    margin-bottom: var(--default-gap);
-  }
-</style>
