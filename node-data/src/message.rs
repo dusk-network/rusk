@@ -512,6 +512,9 @@ pub mod payload {
     }
 
     impl Vote {
+        pub fn is_valid(&self) -> bool {
+            matches!(self, Vote::Valid(_))
+        }
         pub fn size(&self) -> usize {
             const ENUM_BYTE: usize = 1;
 
@@ -654,11 +657,8 @@ pub mod payload {
             })
         }
     }
-    #[derive(Clone, Copy, Debug, Default)]
-    #[cfg_attr(
-        any(feature = "faker", test),
-        derive(fake::Dummy, Eq, PartialEq)
-    )]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+    #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     pub enum QuorumType {
         /// Supermajority of Valid votes
         Valid = 0,
