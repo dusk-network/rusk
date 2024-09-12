@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
@@ -17,7 +18,7 @@ use node_data::message::StepMessage;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use thiserror::Error;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 /// Aggregator collects votes for Validation and Ratification steps by
 /// mapping step numbers and [StepVote] to both an aggregated signature and a
@@ -81,8 +82,19 @@ impl<V: StepVote> Aggregator<V> {
         v: &V,
     ) -> Result<(StepVotes, bool), AggregatorError<V>> {
         let sign_info = v.sign_info();
+
+        let iter = v.header().iteration;
+
+        let emergency = iter >= EMERGENCY_MODE_ITERATION_THRESHOLD;
+
         let msg_step = v.get_step();
         let vote = v.vote();
+        if emergency && !vote.is_valid() {
+            warn!(
+                "Vote {vote:?} for iter {iter} skipped due to emergency mode",
+            );
+            return Ok((StepVotes::default(), false));
+        }
 
         let signature = sign_info.signature.inner();
         let signer = &sign_info.signer;
@@ -109,14 +121,18 @@ impl<V: StepVote> Aggregator<V> {
             return Err(AggregatorError::DuplicatedVote);
         }
 
-        // Check if the provisioner voted for a different result
-        let voters_list = self.uniqueness.entry(msg_step).or_default();
-        match voters_list.get(signer.bytes()) {
-            None => voters_list.insert(*signer.bytes(), v.clone()),
-            Some(prev_vote) => {
-                return Err(AggregatorError::ConflictingVote(prev_vote.clone()))
-            }
-        };
+        if v.header().iteration < EMERGENCY_MODE_ITERATION_THRESHOLD {
+            // Check if the provisioner voted for a different result
+            let voters_list = self.uniqueness.entry(msg_step).or_default();
+            match voters_list.get(signer.bytes()) {
+                None => voters_list.insert(*signer.bytes(), v.clone()),
+                Some(prev_vote) => {
+                    return Err(AggregatorError::ConflictingVote(
+                        prev_vote.clone(),
+                    ))
+                }
+            };
+        }
 
         // Aggregate Signatures
         aggr_sign.add(signature)?;
@@ -134,6 +150,8 @@ impl<V: StepVote> Aggregator<V> {
             event = "vote aggregated",
             ?vote,
             from = signer.to_bs58(),
+            iter = v.header().iteration,
+            step = ?V::STEP_NAME,
             added,
             total,
             majority = committee.majority_quorum(),
@@ -158,6 +176,8 @@ impl<V: StepVote> Aggregator<V> {
             tracing::info!(
                 event = "quorum reached",
                 ?vote,
+                iter = v.header().iteration,
+                step = ?V::STEP_NAME,
                 total,
                 target = quorum_target,
                 bitset,
