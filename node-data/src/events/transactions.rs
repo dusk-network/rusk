@@ -134,6 +134,9 @@ impl Serialize for Transaction {
             call
         });
         state.serialize_field("call", &call)?;
+
+        state.serialize_field("is_deploy", &tx.deploy().is_some())?;
+        state.serialize_field("memo", &tx.memo().map(hex::encode))?;
         state.end()
     }
 }

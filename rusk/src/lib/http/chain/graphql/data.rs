@@ -164,6 +164,10 @@ impl Header<'_> {
     pub async fn iteration(&self) -> u8 {
         self.0.iteration
     }
+
+    pub async fn json(&self) -> String {
+        serde_json::to_string(self.0).unwrap_or_default()
+    }
 }
 
 #[Object]
@@ -258,12 +262,28 @@ impl Transaction<'_> {
         self.0.inner.gas_price()
     }
 
+    pub async fn tx_type(&self) -> String {
+        match self.0.inner {
+            execution_core::transfer::Transaction::Phoenix(_) => "Phoenix",
+            execution_core::transfer::Transaction::Moonlight(_) => "Moonlight",
+        }
+        .into()
+    }
+
     pub async fn call_data(&self) -> Option<CallData> {
         self.0.inner.call().map(|call| CallData {
             contract_id: hex::encode(call.contract),
             fn_name: call.fn_name.clone(),
             data: hex::encode(&call.fn_args),
         })
+    }
+
+    pub async fn is_deploy(&self) -> bool {
+        self.0.inner.deploy().is_some()
+    }
+
+    pub async fn memo(&self) -> Option<String> {
+        self.0.inner.memo().map(hex::encode)
     }
 }
 
