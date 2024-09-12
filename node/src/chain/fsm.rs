@@ -184,7 +184,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // network but it cannot accept a new block for long time, then
             // it might be a sign of a getting stalled on non-main branch.
 
-            let res = self.stalled_sm.on_block_received(blk).await.clone();
+            let res =
+                self.stalled_sm.on_block_received(Some(blk)).await.clone();
 
             match res {
                 stall_chain_fsm::State::StalledOnFork(
@@ -235,8 +236,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                 .await
                                 .insert(local_hash_at_fork);
 
-                            // Reset the stalled chain FSM
-                            self.stalled_sm.reset(remote_blk.header().clone());
+                            // Try to reset the stalled chain FSM to `running`
+                            // state
+                            self.stalled_sm.try_reset(remote_blk.header());
                         }
                         Err(e) => {
                             error!(
@@ -383,6 +385,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     }
 
     pub(crate) async fn on_heartbeat_event(&mut self) -> anyhow::Result<()> {
+        self.stalled_sm.on_heartbeat_event().await;
+
         match &mut self.curr {
             State::InSync(ref mut curr) => {
                 if curr.on_heartbeat().await? {
@@ -731,10 +735,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
-        // TODO: Consider reporting metrics here
-
-        // TODO: Consider handling ACCEPT_BLOCK_TIMEOUT event here
-
         if let Some(pre_sync) = &mut self.presync {
             if pre_sync.expiry <= Instant::now() {
                 // Reset presync if it timed out

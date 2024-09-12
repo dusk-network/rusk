@@ -29,12 +29,25 @@ pub(crate) enum State {
     /// No block has been accepted recently
     ///
     /// Node might be stuck on non-main branch and might need to recover
+    /// It could be also stalled due to temporary network issues or main branch
+    /// not producing blocks
     Stalled,
     /// Node is disconnected from the main branch
     StalledOnFork([u8; 32], Box<Block>),
 }
 
 /// Implements a simple FSM to detect a stalled state of the chain
+///
+/// Supported state transitions:
+///
+/// Normal transitions:
+/// Running -> Running ... (no state change)
+///
+/// Emergency transitions:
+///
+/// Running -> Stalled -> Running
+///
+/// Running -> Stalled -> StalledOnFork -> Running
 pub(crate) struct StalledChainFSM<DB: database::DB, N: Network, VM: VMExecution>
 {
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
@@ -57,27 +70,41 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             acc,
         };
 
-        sm.update_tip(tip.inner().header().clone());
+        sm.update_tip(tip.inner().header());
         sm
     }
 
-    pub(crate) fn reset(&mut self, tip: Header) {
+    /// Attempts to reset the FSM state, if tip has changed
+    pub(crate) fn try_reset(&mut self, tip: &Header) {
         if self.tip.0.hash != tip.hash {
+            // Tip has changed, which means a new block is accepted either due
+            // to normal block acceptance or fallback execution
             self.update_tip(tip);
             self.state_transition(State::Running);
         }
     }
 
+    /// Handles heartbeat event
+    pub(crate) async fn on_heartbeat_event(&mut self) -> &State {
+        trace!(event = "chain.heartbeat",);
+        self.on_block_received(None).await
+    }
+
     /// Handles block received event
     ///
     /// Returns the new state of the FSM after processing the block
-    pub(crate) async fn on_block_received(&mut self, blk: &Block) -> &State {
-        trace!(
-            event = "chain.block_received",
-            hash = to_str(&blk.header().hash),
-            height = blk.header().height,
-            iter = blk.header().iteration,
-        );
+    pub(crate) async fn on_block_received(
+        &mut self,
+        blk: Option<&Block>,
+    ) -> &State {
+        if let Some(blk) = blk {
+            trace!(
+                event = "chain.block_received",
+                hash = to_str(&blk.header().hash),
+                height = blk.header().height,
+                iter = blk.header().iteration,
+            );
+        }
 
         let tip = self
             .acc
@@ -89,12 +116,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             .header()
             .clone();
 
-        if self.tip.0.hash != tip.hash {
-            // Tip has changed, which means a new block is accepted either due
-            // to normal block acceptance or fallback execution
-            self.update_tip(tip);
-            self.state_transition(State::Running);
-        }
+        self.try_reset(&tip);
 
         let curr = &self.state;
         match curr {
@@ -121,7 +143,15 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     /// Handles block from wire in the `Stalled` state
-    async fn on_stalled(&mut self, new_blk: &Block) -> anyhow::Result<()> {
+    async fn on_stalled(
+        &mut self,
+        new_blk: Option<&Block>,
+    ) -> anyhow::Result<()> {
+        let new_blk = match new_blk {
+            Some(blk) => blk.clone(),
+            None => return Ok(()), // No block received
+        };
+
         if new_blk.header().height > self.tip.0.height {
             // Block is newer than the local tip block
             return Ok(());
@@ -203,8 +233,8 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         self.state_transition(State::Stalled);
     }
 
-    fn update_tip(&mut self, tip: Header) {
-        self.tip.0 = tip;
+    fn update_tip(&mut self, tip: &Header) {
+        self.tip.0 = tip.clone();
         self.tip.1 = node_data::get_current_timestamp();
     }
 
