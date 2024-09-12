@@ -170,6 +170,14 @@
       <svelte:fragment slot="definition">{data.gasspent}</svelte:fragment>
     </ListItem>
 
+    <!-- MEMO -->
+    <ListItem tooltipText="Transaction reference and additional notes">
+      <svelte:fragment slot="term">memo</svelte:fragment>
+      <svelte:fragment slot="definition"
+        ><DataGuard data={data.memo}>{data.memo}</DataGuard></svelte:fragment
+      >
+    </ListItem>
+
     <!-- PAYLOAD -->
     <ListItem tooltipText="The payload">
       <svelte:fragment slot="term">
