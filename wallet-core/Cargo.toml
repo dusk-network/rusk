@@ -11,6 +11,7 @@ dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["derive"] }
 rand_chacha = { version = "0.3", default-features = false }
+blake3 = { version = "1", default-features = false }
 sha2 = { version = "0.10", default-features = false }
 rand = { version = "0.8", default-features = false }
 ff = { version = "0.13", default-features = false }

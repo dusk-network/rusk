@@ -38,8 +38,9 @@ use wallet_core::{
     keys::{derive_bls_sk, derive_phoenix_sk},
     phoenix_balance,
     transaction::{
-        moonlight_stake, moonlight_stake_reward, moonlight_to_phoenix,
-        moonlight_unstake, phoenix as phoenix_transaction, phoenix_stake,
+        moonlight_deployment, moonlight_stake, moonlight_stake_reward,
+        moonlight_to_phoenix, moonlight_unstake,
+        phoenix as phoenix_transaction, phoenix_deployment, phoenix_stake,
         phoenix_stake_reward, phoenix_to_moonlight, phoenix_unstake,
     },
     BalanceInfo,
@@ -647,6 +648,50 @@ where
         Ok(tx)
     }
 
+    /// Deploy a contract using Phoenix to pay for gas.
+    pub fn phoenix_deployment<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        sender_index: u8,
+        bytecode: impl Into<Vec<u8>>,
+        owner: &BlsPublicKey,
+        init_args: Vec<u8>,
+        nonce: u64,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut phoenix_sender_sk = self.phoenix_secret_key(sender_index)?;
+
+        let inputs = self.input_notes_openings_nullifiers(
+            &phoenix_sender_sk,
+            gas_limit * gas_price,
+        )?;
+
+        let root = self.state.fetch_root().map_err(Error::from_state_err)?;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = phoenix_deployment(
+            rng,
+            &phoenix_sender_sk,
+            inputs,
+            root,
+            bytecode,
+            owner,
+            init_args,
+            nonce,
+            gas_limit,
+            gas_price,
+            chain_id,
+            &LocalProver,
+        )?;
+
+        phoenix_sender_sk.zeroize();
+
+        Ok(tx)
+    }
+
     /// Transfer Dusk from one account to another using moonlight.
     pub fn moonlight_transfer(
         &self,
@@ -894,6 +939,48 @@ where
 
         moonlight_sender_sk.zeroize();
         phoenix_receiver_sk.zeroize();
+
+        Ok(tx)
+    }
+
+    /// Deploy a contract using Moonlight to pay for gas.
+    pub fn moonlight_deployment(
+        &self,
+        sender_index: u8,
+        bytecode: impl Into<Vec<u8>>,
+        owner: &BlsPublicKey,
+        init_args: Vec<u8>,
+        gas_limit: u64,
+        gas_price: u64,
+        deploy_nonce: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut sender_sk = self.account_secret_key(sender_index)?;
+        let sender_pk = self.account_public_key(sender_index)?;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let moonlight_current_nonce = self
+            .state
+            .fetch_account(&sender_pk)
+            .map_err(Error::from_state_err)?
+            .nonce;
+
+        let moonlight_nonce = moonlight_current_nonce + 1;
+
+        let tx = moonlight_deployment(
+            &sender_sk,
+            bytecode,
+            owner,
+            init_args,
+            gas_limit,
+            gas_price,
+            moonlight_nonce,
+            deploy_nonce,
+            chain_id,
+        )?;
+
+        sender_sk.zeroize();
 
         Ok(tx)
     }
