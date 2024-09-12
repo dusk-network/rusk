@@ -125,6 +125,12 @@ pub enum Error {
     /// Expected Phoenix public key
     #[error("Expected Phoenix public Key")]
     ExpectedPhoenixPublicKey,
+    /// Invalid contract id provided
+    #[error("Invalid contractID provided")]
+    InvalidContractId,
+    /// Contract file location not found
+    #[error("Invalid wasm contract path provided")]
+    InvalidWasmContractPath,
 }
 
 impl From<dusk_bytes::Error> for Error {

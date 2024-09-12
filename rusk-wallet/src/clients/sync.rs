@@ -4,18 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::mem::size_of;
-
 use futures::StreamExt;
 
-use crate::block::Block;
 use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::rusk::RuskHttpClient;
 use crate::{Error, RuskRequest};
 
 use super::*;
-
-const TREE_LEAF: usize = size_of::<ArchivedNoteLeaf>();
 
 pub(crate) async fn sync_db(
     client: &RuskHttpClient,
@@ -93,7 +88,7 @@ pub(crate) async fn sync_db(
                 let nullifier = note.gen_nullifier(sk);
                 let spent =
                     fetch_existing_nullifiers_remote(client, &[nullifier])
-                        .wait()?
+                        .await?
                         .first()
                         .is_some();
                 let note = (note.clone(), nullifier);
@@ -114,7 +109,7 @@ pub(crate) async fn sync_db(
         if !nullifiers.is_empty() {
             let existing =
                 fetch_existing_nullifiers_remote(client, nullifiers.as_slice())
-                    .wait()?;
+                    .await?;
 
             cache.spend_notes(&pk, existing.as_slice())?;
         }

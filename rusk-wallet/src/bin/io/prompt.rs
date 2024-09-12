@@ -282,6 +282,52 @@ pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
     Ok(*price)
 }
 
+pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
+    let question = requestty::Question::input("string")
+        .message(format!("Introduce string for {}:", name))
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+    Ok(a.as_string().expect("answer to be a string").to_owned())
+}
+
+/// Request contract wasm file location
+pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
+    let question = requestty::Question::input("Location of the WASM contract")
+        .message("Location of the wasm file:")
+        .validate_on_key(|f, _| PathBuf::from(f).exists())
+        .validate(|f, _| {
+            PathBuf::from(f)
+                .exists()
+                .then_some(())
+                .ok_or("File not found".to_owned())
+        })
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+    let location = a.as_string().expect("answer to be a string").to_owned();
+
+    Ok(PathBuf::from(location))
+}
+
+pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
+    let question = requestty::Question::input("bytes")
+        .message(format!("Introduce bytes for {}", name))
+        .validate_on_key(|f, _| hex::decode(f).is_ok())
+        .validate(|f, _| {
+            hex::decode(f)
+                .is_ok()
+                .then_some(())
+                .ok_or("Invalid hex string".to_owned())
+        })
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+    let bytes = hex::decode(a.as_string().expect("answer to be a string"))?;
+
+    Ok(bytes)
+}
+
 /// Request Dusk block explorer to be opened
 pub(crate) fn launch_explorer(url: String) -> Result<()> {
     let q = requestty::Question::confirm("launch")

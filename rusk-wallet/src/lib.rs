@@ -17,7 +17,6 @@
 /// module to help with currency conversions
 pub mod currency;
 
-mod block;
 mod cache;
 mod clients;
 mod crypto;
