@@ -146,7 +146,7 @@ mod tests {
         let events = vec![
             ContractTxEvent {
                 event: ContractEvent {
-                    source: [0; 32],
+                    target: [0; 32],
                     topic: "contract1".to_string(),
                     data: vec![1, 6, 1, 8],
                 },
@@ -154,7 +154,7 @@ mod tests {
             },
             ContractTxEvent {
                 event: ContractEvent {
-                    source: [0; 32],
+                    target: [0; 32],
                     topic: "contract2".to_string(),
                     data: vec![1, 2, 3],
                 },
@@ -174,8 +174,8 @@ mod tests {
             events.iter().zip(fetched_events.iter())
         {
             assert_eq!(
-                contract_tx_event.event.source,
-                fetched_event.event.source
+                contract_tx_event.event.target,
+                fetched_event.event.target
             );
             assert_eq!(
                 contract_tx_event.event.topic,

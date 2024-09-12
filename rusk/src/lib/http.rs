@@ -68,11 +68,12 @@ use rand::rngs::OsRng;
 use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
-pub use self::event::{
-    ContractEvent, RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX,
-};
+pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
+
 use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
+#[cfg(feature = "node")]
+use node_data::archive::ContractEvent;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
@@ -906,8 +907,8 @@ mod tests {
     use super::*;
     use event::Event as EventRequest;
 
-    use crate::http::event::WrappedContractId;
     use execution_core::ContractId;
+    use node_data::archive::{ContractTxEvent, WrappedContractId};
     use std::net::TcpStream;
     use tungstenite::client;
 
@@ -1223,25 +1224,34 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // This event is subscribed to, so it should be received
-        let received_event = RuesEvent::from(ContractEvent {
-            target: SUB_CONTRACT_ID,
-            topic: TOPIC.into(),
-            data: b"hello, events".to_vec(),
+        let received_event = RuesEvent::from(ContractTxEvent {
+            event: ContractEvent {
+                target: SUB_CONTRACT_ID,
+                topic: TOPIC.into(),
+                data: b"hello, events".to_vec(),
+            },
+            origin: None,
         });
 
         // This event is at first subscribed to, so it should be received the
         // first time
-        let at_first_received_event = RuesEvent::from(ContractEvent {
-            target: MAYBE_SUB_CONTRACT_ID,
-            topic: TOPIC.into(),
-            data: b"hello, events".to_vec(),
+        let at_first_received_event = RuesEvent::from(ContractTxEvent {
+            event: ContractEvent {
+                target: MAYBE_SUB_CONTRACT_ID,
+                topic: TOPIC.into(),
+                data: b"hello, events".to_vec(),
+            },
+            origin: None,
         });
 
         // This event is not subscribed to, so it should not be received
-        let non_received_event = RuesEvent::from(ContractEvent {
-            target: NON_SUB_CONTRACT_ID,
-            topic: TOPIC.into(),
-            data: b"hello, events".to_vec(),
+        let non_received_event = RuesEvent::from(ContractTxEvent {
+            event: ContractEvent {
+                target: NON_SUB_CONTRACT_ID,
+                topic: TOPIC.into(),
+                data: b"hello, events".to_vec(),
+            },
+            origin: None,
         });
 
         event_sender
@@ -1318,19 +1328,5 @@ mod tests {
 
         let data = data.to_vec().into();
         Ok(RuesEvent { data, headers, uri })
-    }
-
-    impl From<ContractEvent> for RuesEvent {
-        fn from(event: ContractEvent) -> Self {
-            Self {
-                uri: RuesEventUri {
-                    component: "contracts".into(),
-                    entity: Some(hex::encode(event.target.0.as_bytes())),
-                    topic: event.topic,
-                },
-                data: event.data.into(),
-                headers: Default::default(),
-            }
-        }
     }
 }
