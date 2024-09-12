@@ -1,6 +1,7 @@
 .dusk-card {
   background-color: var(--surface-color);
   border-radius: var(--control-border-radius-size);
+  padding: 0.5rem 0;
 }
 
 .dusk-card__header-container,

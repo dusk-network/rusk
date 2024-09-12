@@ -1,16 +1,12 @@
+.dusk-card {
+  width: 100%;
+}
+
 .dusk-card__header {
   display: flex;
   gap: var(--small-gap);
   align-items: center;
   width: 100%;
-}
-
-.dusk-card__heading-icon {
-  fill: var(--secondary-color-variant-dark);
-}
-
-.dark .dusk-card__heading-icon {
-  fill: var(--secondary-color-variant-light);
 }
 
 .dusk-card__heading-container {
@@ -24,4 +20,16 @@
   flex-direction: row-reverse;
   justify-content: space-between;
   gap: 0;
+}
+
+.dusk-card__header-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dusk-card__header-controls-wrapper {
+  display: flex;
+  gap: var(--small-gap);
+  align-items: center;
 }

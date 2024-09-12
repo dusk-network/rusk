@@ -26,15 +26,19 @@
   }
 </script>
 
-<Card {...$$restProps} {gap} {onSurface}>
-  <header slot="header" class="dusk-card__header">
-    <div class="dusk-card__header-title">
+<Card {...$$restProps} {gap} {onSurface} showBody={isToggled}>
+  <header slot="header" class="dusk-card__header dusk-card__header-toggle">
+    <h3 class="h4">{heading}</h3>
+    <div class="dusk-card__header-controls-wrapper">
+      <Switch
+        onSurface
+        bind:value={isToggled}
+        on:change={dispatchToggleEvent}
+      />
       {#if iconPath}
         <Icon path={iconPath} />
       {/if}
-      <h3 class="h4">{heading}</h3>
     </div>
-    <Switch onSurface bind:value={isToggled} on:change={dispatchToggleEvent} />
   </header>
   {#if isToggled}
     <slot />
