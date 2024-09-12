@@ -268,11 +268,13 @@ impl<'a, T: Operations + 'static> ExecutionCtx<'a, T> {
                     }
 
                     Payload::ValidationResult(validation_result) => {
-                        self.try_cast_ratification_vote(
-                            msg_iteration,
-                            validation_result,
-                        )
-                        .await
+                        if let QuorumType::Valid = validation_result.quorum() {
+                            self.try_cast_ratification_vote(
+                                msg_iteration,
+                                validation_result,
+                            )
+                            .await
+                        }
                     }
                     _ => {
                         // Not supported.

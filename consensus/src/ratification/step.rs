@@ -5,12 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
-use node_data::message::payload::{self, ValidationResult};
+use node_data::message::payload::{self, QuorumType, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
 use node_data::{get_current_timestamp, message};
 use std::sync::Arc;
@@ -35,11 +36,15 @@ impl RatificationStep {
 
         let msg = Message::from(ratification);
 
-        // Publish ratification vote
-        info!(event = "send_vote", validation_bitset = result.sv().bitset);
+        if result.quorum() == QuorumType::Valid
+            || iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
+        {
+            // Publish ratification vote
+            info!(event = "send_vote", validation_bitset = result.sv().bitset);
 
-        // Publish
-        outbound.try_send(msg.clone());
+            // Publish
+            outbound.try_send(msg.clone());
+        }
 
         msg
     }

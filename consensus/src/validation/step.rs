@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::config;
+use crate::config::{self, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
@@ -126,11 +126,13 @@ impl<T: Operations + 'static> ValidationStep<T> {
         info!(event = "send_vote", vote = ?validation.vote);
         let msg = Message::from(validation);
 
-        // Publish
-        outbound.try_send(msg.clone());
+        if vote.is_valid() || iteration < EMERGENCY_MODE_ITERATION_THRESHOLD {
+            // Publish
+            outbound.try_send(msg.clone());
 
-        // Register my vote locally
-        inbound.try_send(msg);
+            // Register my vote locally
+            inbound.try_send(msg);
+        }
     }
 
     async fn call_vst(

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
-use crate::config::CONSENSUS_MAX_ITER;
+use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::operations::Operations;
 use crate::phase::Phase;
 
@@ -20,9 +20,9 @@ use tracing::{debug, error, info, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
-use std::env;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{cmp, env};
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 
@@ -186,6 +186,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             let (prev_block_hash, saved_iter) =
                 db.lock().await.get_last_iter().await;
+
+            let saved_iter =
+                cmp::min(EMERGENCY_MODE_ITERATION_THRESHOLD, saved_iter);
 
             if ru.hash() == prev_block_hash {
                 // If starting from `saved_iter`, we regenerate all committees

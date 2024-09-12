@@ -71,6 +71,8 @@ pub enum InvalidFault {
     PrevHashMismatch,
     #[error("Iteration mismatch")]
     IterationMismatch,
+    #[error("Faults related to emergency iteration")]
+    EmergencyIteration,
     #[error("Round mismatch")]
     RoundMismatch,
     #[error("Invalid Signature {0}")]
