@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restrict mnemonic step input to alphabetical characters (Restore Flow) [#2355]
 - Newly created Wallet does not sync from genesis [#1567]
 - Update font-display to swap for custom fonts to improve performance [#2026]
 - Update anchor colors to ensure better accessibility [#1765]
@@ -255,6 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2014]: https://github.com/dusk-network/rusk/issues/2014
 [#2303]: https://github.com/dusk-network/rusk/issues/2303
 [#2310]: https://github.com/dusk-network/rusk/issues/2310
+[#2355]: https://github.com/dusk-network/rusk/issues/2355
 
 <!-- VERSIONS -->
 
