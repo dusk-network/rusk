@@ -794,7 +794,7 @@ fn update_hasher(hasher: &mut Sha3_256, events: &[ContractTxEvent]) {
             hasher.update(origin);
         }
         let event = &tx_event.event;
-        hasher.update(event.source);
+        hasher.update(event.target.0);
         hasher.update(event.topic.as_bytes());
         hasher.update(&event.data);
     }

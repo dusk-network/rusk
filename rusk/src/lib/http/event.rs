@@ -651,38 +651,6 @@ impl From<tungstenite::Error> for ExecutionError {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-#[repr(C)]
-pub struct WrappedContractId(pub ContractId);
-
-impl Serialize for WrappedContractId {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let source_hex = hex::encode(self.0.as_bytes());
-        s.serialize_str(&source_hex)
-    }
-}
-
-impl<'de> Deserialize<'de> for WrappedContractId {
-    fn deserialize<D>(deserializer: D) -> Result<WrappedContractId, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let source_hex: String = Deserialize::deserialize(deserializer)?;
-        let source_bytes = hex::decode(&source_hex).map_err(Error::custom)?;
-        let mut source_array = [0u8; 32];
-
-        if source_bytes.len() != 32 {
-            return Err(Error::invalid_length(source_hex.len(), &"32"));
-        }
-
-        source_array.copy_from_slice(&source_bytes);
-        Ok(WrappedContractId(ContractId::from_bytes(source_array)))
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SessionId(u128);
 
@@ -812,28 +780,6 @@ impl RuesEventUri {
             return false;
         }
         true
-    }
-}
-
-/// A contract event that is sent to a websocket client.
-#[serde_with::serde_as]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct ContractEvent {
-    // TODO: Move this into node-data and merge it with the ContractEvent used
-    // for archival so that all events are handled in the same way
-    pub target: WrappedContractId,
-    pub topic: String,
-    #[serde_as(as = "serde_with::hex::Hex")]
-    pub data: Vec<u8>,
-}
-
-impl From<execution_core::Event> for ContractEvent {
-    fn from(event: execution_core::Event) -> Self {
-        Self {
-            target: WrappedContractId(event.source),
-            topic: event.topic,
-            data: event.data,
-        }
     }
 }
 
@@ -985,7 +931,7 @@ impl From<node_data::archive::ContractTxEvent> for RuesEvent {
         Self {
             uri: RuesEventUri {
                 component: "contracts".into(),
-                entity: Some(hex::encode(event.source)),
+                entity: Some(hex::encode(event.target.0)),
                 topic: event.topic,
             },
             data: event.data.into(),
