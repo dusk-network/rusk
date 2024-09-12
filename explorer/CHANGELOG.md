@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add accessible name to the nav bar button on mobile [#2036]
 - Implement warning for stale market data [#1892]
 - Add tooltip to current and pending stake showing the exact amount [#2363]
+- Add `memo` and `isDeploy` fields in transactions [#2362]
 
 ### Changed
 
@@ -62,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2159]: https://github.com/dusk-network/rusk/issues/2159
 [#2220]: https://github.com/dusk-network/rusk/issues/2220
 [#2348]: https://github.com/dusk-network/rusk/issues/2348
+[#2362]: https://github.com/dusk-network/rusk/issues/2362
 [#2363]: https://github.com/dusk-network/rusk/issues/2363
 
 <!-- VERSIONS -->

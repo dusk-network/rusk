@@ -37,12 +37,12 @@ type SearchResult = {
 type Transaction = {
   blockhash: string;
   blockheight: number;
-  contract: string;
   date: Date;
   feepaid: number;
   gaslimit: number;
   gasprice: number;
   gasspent: number;
+  memo: string;
   method: string;
   success: boolean;
   txerror: string;
