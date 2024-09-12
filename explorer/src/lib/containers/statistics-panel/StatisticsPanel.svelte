@@ -52,9 +52,12 @@
   $: ({ data: marketData } = $marketDataStore);
   $: ({ data: nodesData } = $nodeLocationsStore);
   $: ({ data: statsData } = $pollingStatsDataStore);
+
   $: statistics = [
     [
       {
+        approximate: false,
+        attributes: null,
         canBeStale: true,
         compact: true,
         data: marketData?.currentPrice.usd,
@@ -62,6 +65,8 @@
         title: "Dusk Price",
       },
       {
+        approximate: false,
+        attributes: null,
         canBeStale: true,
         compact: true,
         data: marketData?.marketCap.usd,
@@ -72,6 +77,15 @@
 
     [
       {
+        approximate: !!statsData?.activeStake,
+        attributes: {
+          "data-tooltip-id": "main-tooltip",
+          "data-tooltip-place": "top",
+          "data-tooltip-text": luxToDusk(statsData?.activeStake)
+            ? `${luxToDusk(statsData?.activeStake)} DUSK`
+            : "--- DUSK",
+          "data-tooltip-type": "info",
+        },
         canBeStale: false,
         compact: true,
         data: statsData?.activeStake
@@ -81,6 +95,15 @@
         title: "Current Stake",
       },
       {
+        approximate: !!statsData?.waitingStake,
+        attributes: {
+          "data-tooltip-id": "main-tooltip",
+          "data-tooltip-place": "top",
+          "data-tooltip-text": luxToDusk(statsData?.waitingStake)
+            ? `${luxToDusk(statsData?.waitingStake)} DUSK`
+            : "--- DUSK",
+          "data-tooltip-type": "info",
+        },
         canBeStale: false,
         compact: true,
         data: statsData?.waitingStake
@@ -93,6 +116,8 @@
 
     [
       {
+        approximate: false,
+        attributes: null,
         canBeStale: false,
         compact: false,
         data: statsData?.lastBlock,
@@ -100,6 +125,8 @@
         title: "Last Block",
       },
       {
+        approximate: false,
+        attributes: null,
         canBeStale: false,
         compact: true,
         data: statsData?.txs100blocks.transfers,
@@ -110,6 +137,8 @@
 
     [
       {
+        approximate: false,
+        attributes: null,
         canBeStale: false,
         compact: true,
         data: statsData?.activeProvisioners,
@@ -117,6 +146,8 @@
         title: "Active Provisioners",
       },
       {
+        approximate: false,
+        attributes: null,
         canBeStale: false,
         compact: true,
         data: statsData?.waitingProvisioners,
@@ -133,19 +164,21 @@
     {#each statistics as statistic, index (index)}
       <div class="statistics-panel__statistics-column">
         {#each statistic as item (`${item.title}`)}
-          <div class="statistics-panel__statistics-item">
+          <div class="statistics-panel__statistics-item" {...item.attributes}>
             <div class="statistics-panel__statistics-item-value">
               <Icon path={item.icon} size="normal" />
-              <DataGuard data={item.data}>
-                {#if item.compact}
-                  {formatter(item.data)}
-                {:else}
-                  {valueFormatter(item.data)}
+              <div class:approximate={item.approximate}>
+                <DataGuard data={item.data}>
+                  {#if item.compact}
+                    {formatter(item.data)}
+                  {:else}
+                    {valueFormatter(item.data)}
+                  {/if}
+                </DataGuard>
+                {#if item.canBeStale}
+                  <StaleDataNotice />
                 {/if}
-              </DataGuard>
-              {#if item.canBeStale}
-                <StaleDataNotice />
-              {/if}
+              </div>
             </div>
             <span class="statistics-panel__statistics-item-title"
               >{item.title}</span

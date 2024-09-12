@@ -7,7 +7,8 @@
 const createFormatter = (locale) => {
   const formatter = new Intl.NumberFormat(locale, {
     compactDisplay: "short",
-    maximumFractionDigits: 1,
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
     notation: "compact",
   });
 
