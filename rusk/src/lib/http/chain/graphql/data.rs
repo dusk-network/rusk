@@ -265,6 +265,14 @@ impl Transaction<'_> {
             data: hex::encode(&call.fn_args),
         })
     }
+
+    pub async fn is_deploy(&self) -> bool {
+        self.0.inner.deploy().is_some()
+    }
+
+    pub async fn memo(&self) -> Option<String> {
+        self.0.inner.memo().map(hex::encode)
+    }
 }
 
 #[derive(SimpleObject)]
