@@ -10,6 +10,9 @@ import crypto from "node:crypto";
 import "jsdom-worker";
 import "vitest-canvas-mock";
 
+// adds in-memory replacement for IndexedDB
+import "fake-indexeddb/auto";
+
 import { IntersectionObserver } from "./src/lib/dusk/mocks";
 import Wallet from "./__mocks__/Wallet.js";
 
