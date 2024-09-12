@@ -8,8 +8,12 @@
     TableHead,
     TableRow,
   } from "$lib/components/table";
-  import { AppAnchor, TransactionStatus } from "$lib/components";
-  import { Badge, RelativeTime } from "$lib/dusk/components";
+  import {
+    AppAnchor,
+    TransactionStatus,
+    TransactionType,
+  } from "$lib/components";
+  import { RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import { makeClassName, middleEllipsis } from "$lib/dusk/string";
@@ -69,12 +73,9 @@
             showErrorTooltip={false}
           />
         </TableCell>
-        <TableCell
-          ><Badge
-            className="transaction__type"
-            text={transaction.method}
-          /></TableCell
-        >
+        <TableCell>
+          <TransactionType data={transaction} />
+        </TableCell>
       </TableRow>
     {/each}
   </TableBody>

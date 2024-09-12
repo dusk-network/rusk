@@ -50,5 +50,6 @@ type GQLTransaction = {
     id: string;
     isDeploy: boolean;
     memo: string;
+    txType: string;
   };
 };

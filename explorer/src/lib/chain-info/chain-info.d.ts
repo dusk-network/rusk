@@ -47,4 +47,5 @@ type Transaction = {
   success: boolean;
   txerror: string;
   txid: string;
+  txtype: string;
 };

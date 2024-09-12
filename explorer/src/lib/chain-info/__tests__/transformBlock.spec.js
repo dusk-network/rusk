@@ -38,6 +38,7 @@ describe("transformBlock", () => {
           success: true,
           txerror: "",
           txid: "3a3f6f90a1012ae751b4448bcb8e98def0ba2b18170239bd69fcf8e2e37f0602",
+          txtype: "Moonlight",
         },
         {
           blockhash:
@@ -53,6 +54,7 @@ describe("transformBlock", () => {
           success: true,
           txerror: "",
           txid: "07bfabea1d94c16f2dc3697fa642f6cecea6e81bf76b9644efbb6e2723b76d00",
+          txtype: "Phoenix",
         },
       ],
       stats: { averageGasPrice: 1, gasLimit: 5000000000, gasUsed: 580718 },

@@ -63,7 +63,7 @@
   inset-inline-start: calc(calc(var(--desktop-gap) / 2) * -1);
 }
 
-.statistics-panel__statistics-item-value {
+.statistics-panel__statistics-item-value-container {
   display: flex;
   flex-direction: row;
   column-gap: 0.3125rem;
@@ -100,6 +100,12 @@
   }
 
   .statistics-panel__statistics-item-value {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .statistics-panel__statistics-item-value-container {
     font-size: 1.125rem;
   }
 

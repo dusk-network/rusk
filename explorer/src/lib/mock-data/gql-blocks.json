@@ -1164,7 +1164,8 @@
             "gasPrice": 1,
             "id": "befe14f664fe1cb95f89b7500cc8a8368b3cd8ab58f4897dd3c0132cbebde004",
             "isDeploy": false,
-            "memo": ""
+            "memo": "",
+            "txType": "Moonlight"
           }
         }
       ]
@@ -1277,7 +1278,8 @@
             "gasPrice": 1,
             "id": "dd9249849db6143ae4bf3420da9a2bf90b402807f0ef4843d51dd06db35e2a0a",
             "isDeploy": false,
-            "memo": ""
+            "memo": "",
+            "txType": "Moonlight"
           }
         }
       ]
@@ -1406,7 +1408,8 @@
             "gasPrice": 1,
             "id": "1466ebfcaefcff92b8bb88feb86aab902a73d6062731de52d3f22d502136fc01",
             "isDeploy": false,
-            "memo": ""
+            "memo": "",
+            "txType": "Moonlight"
           }
         }
       ]
@@ -1455,7 +1458,8 @@
             "gasPrice": 1,
             "id": "15af4e04d4f34b89a77601945aaec5c284ff71ed076ba3e4c7b6db1c7cddb80d",
             "isDeploy": false,
-            "memo": ""
+            "memo": "",
+            "txType": "Moonlight"
           }
         }
       ]
