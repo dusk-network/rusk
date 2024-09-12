@@ -262,6 +262,14 @@ impl Transaction<'_> {
         self.0.inner.gas_price()
     }
 
+    pub async fn tx_type(&self) -> String {
+        match self.0.inner {
+            execution_core::transfer::Transaction::Phoenix(_) => "Phoenix",
+            execution_core::transfer::Transaction::Moonlight(_) => "Moonlight",
+        }
+        .into()
+    }
+
     pub async fn call_data(&self) -> Option<CallData> {
         self.0.inner.call().map(|call| CallData {
             contract_id: hex::encode(call.contract),
