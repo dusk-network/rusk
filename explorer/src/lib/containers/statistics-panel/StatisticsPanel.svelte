@@ -165,9 +165,12 @@
       <div class="statistics-panel__statistics-column">
         {#each statistic as item (`${item.title}`)}
           <div class="statistics-panel__statistics-item" {...item.attributes}>
-            <div class="statistics-panel__statistics-item-value">
+            <div class="statistics-panel__statistics-item-value-container">
               <Icon path={item.icon} size="normal" />
-              <div class:approximate={item.approximate}>
+              <div
+                class="statistics-panel__statistics-item-value"
+                class:approximate={item.approximate}
+              >
                 <DataGuard data={item.data}>
                   {#if item.compact}
                     {formatter(item.data)}

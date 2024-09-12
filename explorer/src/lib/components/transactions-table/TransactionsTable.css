@@ -9,7 +9,3 @@
   color: var(--color-text-secondary);
   margin-top: 0.2rem;
 }
-
-.transaction__type {
-  display: block;
-}

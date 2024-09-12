@@ -22,5 +22,6 @@ export { default as TransactionsCard } from "./transactions-card/TransactionsCar
 export { default as TransactionDetails } from "./transaction-details/TransactionDetails.svelte";
 export { default as TransactionsList } from "./transactions-list/TransactionsList.svelte";
 export { default as TransactionsTable } from "./transactions-table/TransactionsTable.svelte";
+export { default as TransactionType } from "./transaction-type/TransactionType.svelte";
 export { default as TransactionStatus } from "./transaction-status/TransactionStatus.svelte";
 export { default as WorldMap } from "./world-map/WorldMap.svelte";

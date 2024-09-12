@@ -20,6 +20,7 @@ describe("transformTransaction", () => {
     success: true,
     txerror: "",
     txid: "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
+    txtype: "Moonlight",
   };
 
   it("should transform a transaction received from the GraphQL API into the format used by the Explorer", () => {

@@ -27,7 +27,8 @@
           "gasLimit": 500000000,
           "gasPrice": 1,
           "id": "3a3f6f90a1012ae751b4448bcb8e98def0ba2b18170239bd69fcf8e2e37f0602",
-          "memo": ""
+          "memo": "",
+          "txType": "Moonlight"
         }
       },
       {
@@ -43,7 +44,8 @@
           "gasPrice": 1,
           "id": "07bfabea1d94c16f2dc3697fa642f6cecea6e81bf76b9644efbb6e2723b76d00",
           "isDeploy": false,
-          "memo": "some notes about the transaction"
+          "memo": "some notes about the transaction",
+          "txType": "Phoenix"
         }
       }
     ]

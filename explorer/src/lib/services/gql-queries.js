@@ -17,6 +17,7 @@ fragment TransactionInfo on SpentTransaction {
     id,
     isDeploy,
     memo
+    txType
   }
 }
 `;

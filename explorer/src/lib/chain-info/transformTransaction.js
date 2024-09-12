@@ -14,6 +14,7 @@ const transformTransaction = (tx) => ({
   success: tx.err === null,
   txerror: tx.err ?? "",
   txid: tx.id,
+  txtype: tx.tx.txType,
 });
 
 export default transformTransaction;
