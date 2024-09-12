@@ -25,6 +25,7 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
+const INITIAL_BALANCE_DEPLOY: u64 = 1_000_000_000_000;
 
 const BOB_BYTECODE: &[u8] = include_bytes!(
     "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
@@ -34,6 +35,15 @@ const BOB_BYTECODE: &[u8] = include_bytes!(
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/multi_transfer.toml"))
+            .expect("Cannot deserialize config");
+
+    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+}
+
+// Creates the Rusk initial state for the tests below
+fn initial_state_deploy<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+    let snapshot =
+        toml::from_str(include_str!("../config/multi_transfer_deploy.toml"))
             .expect("Cannot deserialize config");
 
     new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
@@ -218,7 +228,7 @@ fn wallet_transfer_deploy(
         "Wrong initial balance for the sender"
     );
     assert_eq!(
-        initial_balance_2, INITIAL_BALANCE,
+        initial_balance_2, INITIAL_BALANCE_DEPLOY,
         "Wrong initial balance for the sender"
     );
 
@@ -255,7 +265,7 @@ fn wallet_transfer_deploy(
             init_args,
             0,
             GAS_LIMIT,
-            1,
+            20_000,
         )
         .expect("Failed to deploy");
     txs.push(tx);
@@ -387,7 +397,7 @@ pub async fn multi_transfer_deploy() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state_deploy(&tmp)?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
