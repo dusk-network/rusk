@@ -14,7 +14,7 @@ use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
@@ -149,10 +149,6 @@ impl Rusk {
 
             let tx_id = unspent_tx.id();
             let tx_id_hex = hex::encode(unspent_tx.id());
-            if unspent_tx.inner.gas_limit() > block_gas_left {
-                info!("Skipping {tx_id_hex} due gas_limit greater than left: {block_gas_left}");
-                continue;
-            }
 
             let tx_len = unspent_tx.size().unwrap_or_default();
 
@@ -179,7 +175,7 @@ impl Rusk {
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
-                        warn!("This is not supposed to happen with conservative tx inclusion");
+                        info!("Skipping {tx_id_hex} due gas_spent {gas_spent} greater than left: {block_gas_left}");
                         session = self.session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
