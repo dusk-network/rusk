@@ -44,7 +44,6 @@ impl HandleRequest for Rusk {
         &self,
         request: &RuesDispatchEvent,
     ) -> anyhow::Result<ResponseData> {
-        info!("received event {request:?}");
         match request.uri.inner() {
             ("contracts", Some(contract_id), method) => {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
