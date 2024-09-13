@@ -130,7 +130,7 @@
     <ListItem tooltipText="The transaction type">
       <svelte:fragment slot="term">type</svelte:fragment>
       <svelte:fragment slot="definition">
-        <TransactionType {data} />
+        <TransactionType {data} displayTooltips={true} />
       </svelte:fragment>
     </ListItem>
 

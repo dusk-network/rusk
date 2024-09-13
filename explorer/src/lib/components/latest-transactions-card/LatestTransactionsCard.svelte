@@ -58,6 +58,10 @@
       />
     {/each}
   {:else}
-    <TransactionsTable data={txns} mode={isOnHomeScreen ? "compact" : "full"} />
+    <TransactionsTable
+      data={txns}
+      {displayTooltips}
+      mode={isOnHomeScreen ? "compact" : "full"}
+    />
   {/if}
 </DataCard>

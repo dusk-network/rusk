@@ -208,7 +208,8 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="false"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"

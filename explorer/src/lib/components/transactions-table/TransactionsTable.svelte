@@ -25,6 +25,9 @@
   /** @type {Transaction[]}*/
   export let data;
 
+  /** @type {boolean} */
+  export let displayTooltips = false;
+
   /** @type {"compact" | "full"} */
   export let mode;
 
@@ -74,7 +77,7 @@
           />
         </TableCell>
         <TableCell>
-          <TransactionType data={transaction} />
+          <TransactionType data={transaction} {displayTooltips} />
         </TableCell>
       </TableRow>
     {/each}

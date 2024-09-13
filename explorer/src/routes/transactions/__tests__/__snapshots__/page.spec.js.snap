@@ -147,7 +147,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -282,7 +283,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -417,7 +419,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -552,7 +555,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -687,7 +691,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -822,7 +827,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -957,7 +963,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1092,7 +1099,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1227,7 +1235,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1362,7 +1371,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1497,7 +1507,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1632,7 +1643,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1767,7 +1779,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1902,7 +1915,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -2037,7 +2051,8 @@ exports[`Transactions page > should render the Transactions page with the mobile
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="true"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -2270,7 +2285,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2364,7 +2380,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2458,7 +2475,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2552,7 +2570,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2646,7 +2665,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2740,7 +2760,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2834,7 +2855,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -2928,7 +2950,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3022,7 +3045,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3116,7 +3140,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3210,7 +3235,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3304,7 +3330,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3398,7 +3425,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3492,7 +3520,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"
@@ -3586,7 +3615,8 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   class="transaction-type"
                 >
                   <svg
-                    class="dusk-icon dusk-icon--size--large"
+                    class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                    data-tooltip-disabled="false"
                     data-tooltip-id="main-tooltip"
                     data-tooltip-place="top"
                     data-tooltip-text="Moonlight"

@@ -61,6 +61,7 @@
     <TransactionsTable
       className="transactions-card__table"
       data={displayedTxns}
+      displayTooltips={true}
       mode="full"
     />
   {/if}

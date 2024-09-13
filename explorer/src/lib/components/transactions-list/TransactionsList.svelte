@@ -125,7 +125,7 @@
     <svelte:fragment slot="term">Type</svelte:fragment>
     <svelte:fragment slot="definition"
       ><DataGuard data={data.method && data.txtype}>
-        <TransactionType {data} />
+        <TransactionType {data} {displayTooltips} />
       </DataGuard></svelte:fragment
     >
   </ListItem>
