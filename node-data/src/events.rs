@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod blocks;
+pub mod contract;
 mod transactions;
 
 pub use blocks::{BlockEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED};

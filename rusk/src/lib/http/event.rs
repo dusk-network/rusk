@@ -921,8 +921,8 @@ impl RuesEvent {
 }
 
 #[cfg(feature = "node")]
-impl From<node_data::archive::ContractTxEvent> for RuesEvent {
-    fn from(tx_event: node_data::archive::ContractTxEvent) -> Self {
+impl From<node_data::events::contract::ContractTxEvent> for RuesEvent {
+    fn from(tx_event: node_data::events::contract::ContractTxEvent) -> Self {
         let mut headers = serde_json::Map::new();
         if let Some(origin) = tx_event.origin {
             headers.insert("Rusk-Origin".into(), hex::encode(origin).into());

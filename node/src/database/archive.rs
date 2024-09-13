@@ -8,7 +8,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
-use node_data::archive::ContractTxEvent;
+use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tracing::info;
@@ -119,7 +119,8 @@ impl Archivist for SQLiteArchive {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use node_data::archive::ContractEvent;
+    use execution_core::ContractId;
+    use node_data::events::contract::{ContractEvent, WrappedContractId};
     use rand::{distributions::Alphanumeric, Rng};
     use std::env;
     use std::path::PathBuf;
@@ -146,7 +147,7 @@ mod tests {
         let events = vec![
             ContractTxEvent {
                 event: ContractEvent {
-                    target: [0; 32],
+                    target: WrappedContractId(ContractId::from_bytes([0; 32])),
                     topic: "contract1".to_string(),
                     data: vec![1, 6, 1, 8],
                 },
@@ -154,7 +155,7 @@ mod tests {
             },
             ContractTxEvent {
                 event: ContractEvent {
-                    target: [0; 32],
+                    target: WrappedContractId(ContractId::from_bytes([1; 32])),
                     topic: "contract2".to_string(),
                     data: vec![1, 2, 3],
                 },

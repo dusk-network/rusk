@@ -13,7 +13,7 @@ pub mod rocksdb;
 
 use anyhow::Result;
 #[cfg(feature = "archive")]
-use node_data::archive::ContractTxEvent;
+use node_data::events::contract::ContractTxEvent;
 #[cfg(feature = "archive")]
 use node_data::ledger::Hash;
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
