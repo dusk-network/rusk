@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix Average Fee Paid label [#2057]
 - Fix list items alignment on mobile [#2056]
+- Fix shield icons used for tx type [#2389]
 
 ## [0.1.0] - 2024-07-24
 
@@ -67,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2362]: https://github.com/dusk-network/rusk/issues/2362
 [#2363]: https://github.com/dusk-network/rusk/issues/2363
 [#2363]: https://github.com/dusk-network/rusk/issues/2347
+[#2389]: https://github.com/dusk-network/rusk/issues/2389
 
 <!-- VERSIONS -->
 
