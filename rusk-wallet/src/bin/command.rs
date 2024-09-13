@@ -97,7 +97,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
         gas_limit: u64,
 
@@ -116,7 +116,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -125,14 +125,14 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Phoeinx Unstake a key's stake
+    /// Unstake a key's stake using Phoenix
     PhoenixUnstake {
         /// Phoenix Address from which your DUSK was staked [default: first
         /// address]
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -141,14 +141,14 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Phoenix Withdraw accumulated reward for a stake key
+    /// Withdraw accumulated reward for a stake key using Phoenix
     PhoenixWithdraw {
         /// Phoenix Address from which your DUSK was staked [default: first
         /// address]
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -171,7 +171,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         init_args: Vec<u8>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -190,14 +190,15 @@ pub(crate) enum Command {
         #[clap(short, long)]
         contract_id: Vec<u8>,
 
-        /// Fn name to call
+        /// Function name to call
         #[clap(short, long)]
         fn_name: String,
 
+        /// Function arguments for this call
         #[clap(short, long)]
         fn_args: Vec<u8>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -233,7 +234,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
         gas_limit: u64,
 
@@ -251,7 +252,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -267,7 +268,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -276,7 +277,7 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Withdraw rewards via moonlight
+    /// Withdraw accumulated rewards for a stake key using Moonlight
     MoonlightWithdraw {
         /// Bls Address from which your DUSK was staked [default: first
         /// address]
@@ -287,7 +288,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -310,7 +311,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         init_args: Vec<u8>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
         gas_limit: u64,
 
@@ -329,14 +330,15 @@ pub(crate) enum Command {
         #[clap(short, long)]
         contract_id: Vec<u8>,
 
-        /// Fn name to call
+        /// Function name to call
         #[clap(short, long)]
         fn_name: String,
 
+        /// Function arguments for this call
         #[clap(short, long)]
         fn_args: Vec<u8>,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
         gas_limit: u64,
 
@@ -357,7 +359,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
@@ -376,7 +378,7 @@ pub(crate) enum Command {
         #[clap(short, long)]
         amt: Dusk,
 
-        /// Max amt of gas for this transaction
+        /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 

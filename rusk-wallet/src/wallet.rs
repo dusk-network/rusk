@@ -9,7 +9,6 @@ mod file;
 pub mod gas;
 
 pub use address::Address;
-use execution_core::transfer::phoenix::NoteLeaf;
 pub use file::{SecureWalletFile, WalletPath};
 
 use bip39::{Language, Mnemonic, Seed};
@@ -41,7 +40,10 @@ use wallet_core::{
 
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    transfer::{data::ContractCall, data::TransactionData, Transaction},
+    transfer::{
+        data::ContractCall, data::TransactionData, phoenix::NoteLeaf,
+        Transaction,
+    },
 };
 
 use zeroize::Zeroize;

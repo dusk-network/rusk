@@ -210,8 +210,7 @@ enum AddrOp {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum CommandMenuItem {
-    // phoenix
-    StakeInfo,
+    // Phoenix
     PhoenixHistory,
     PhoenixTransfer,
     PhoenixStake,
@@ -219,17 +218,18 @@ enum CommandMenuItem {
     PhoenixWithdraw,
     PhoenixContractDeploy,
     PhoenixContractCall,
-    // moonlight
+    // Moonlight
     MoonlightTransfer,
     MoonlightStake,
     MoonlightUnstake,
     MoonlightWithdraw,
     MoonlightContractDeploy,
     MoonlightContractCall,
-    // conversion
+    // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
-
+    // Others
+    StakeInfo,
     Export,
     Back,
 }
