@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fs::File;
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
@@ -14,7 +15,7 @@ use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use sha3::{Digest, Sha3_256};
 use tokio::task;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
@@ -43,7 +44,7 @@ use super::{coinbase_value, Rusk, RuskTip};
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
 use crate::Error::InvalidCreditsCount;
-use crate::{Error, Result};
+use crate::{Error, Result, DELETING_VM_FNAME};
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");
@@ -483,6 +484,14 @@ impl Rusk {
         to_delete: Vec<[u8; 32]>,
     ) {
         self.tip.write().base = base;
+
+        for c in &to_delete {
+            if let Err(e) = File::create(
+                self.dir.join(hex::encode(c)).join(DELETING_VM_FNAME),
+            ) {
+                warn!("cannot mark state as in deletion: {e}");
+            }
+        }
 
         // Deleting commits is blocking, meaning it will wait until any process
         // using the commit is done. This includes any queries that are

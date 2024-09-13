@@ -8,6 +8,7 @@ use super::*;
 
 use std::{env, fs, io};
 
+use rusk::DELETING_VM_FNAME;
 use rusk_recovery_tools::state::{deploy, restore_state, tar};
 use rusk_recovery_tools::Theme;
 use tracing::info;
@@ -42,6 +43,15 @@ pub fn recovery_state(
     }
 
     let state_dir = rusk_profile::get_rusk_state_dir()?;
+
+    let paths = fs::read_dir(&state_dir)?;
+    for dir in paths.flatten() {
+        if dir.path().join(DELETING_VM_FNAME).exists() {
+            info!("{} dirty state {:?}", theme.info("Deleting"), dir.path());
+            fs::remove_dir_all(dir.path())?
+        }
+    }
+
     let state_id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
 
     let _ = rusk_abi::new_vm(&state_dir)?;

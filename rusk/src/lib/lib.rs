@@ -21,5 +21,7 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 #[cfg(feature = "node")]
 pub use node::Rusk;
 
+pub const DELETING_VM_FNAME: &str = ".delete";
+
 #[cfg(feature = "testwallet")]
 mod test_utils;
