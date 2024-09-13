@@ -524,8 +524,8 @@ impl Event {
         Ok((event, binary_response))
     }
 }
-const CONTENT_TYPE: &str = "Content-Type";
-const ACCEPT: &str = "Accept";
+const CONTENT_TYPE: &str = "content-type";
+const ACCEPT: &str = "accept";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
 static CONTENT_TYPE_JSON: HeaderValue =
     HeaderValue::from_static("application/json");
@@ -884,7 +884,7 @@ impl RuesDispatchEvent {
     pub fn is_binary(&self) -> bool {
         self.headers
             .get(CONTENT_TYPE)
-            .map(|h| h.to_string())
+            .and_then(|h| h.as_str())
             .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default()
     }
