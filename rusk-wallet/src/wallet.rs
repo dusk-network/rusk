@@ -750,15 +750,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
         let sender_index = addr.index()?;
         let mut stake_sk = self.bls_secret_key(sender_index);
-        let pk = addr.apk()?;
+        let pk = self.bls_public_key(sender_index);
         let chain_id = state.fetch_chain_id().await?;
-        let moonlight_current_nonce = state.fetch_account(pk).await?.nonce + 1;
+        let moonlight_current_nonce = state.fetch_account(&pk).await?.nonce + 1;
 
-        let nonce = state
-            .fetch_stake(pk)
-            .await?
-            .map(|s| s.nonce + 1)
-            .unwrap_or(0);
+        let nonce =
+            state.fetch_stake(&pk).await?.map(|s| s.nonce).unwrap_or(0) + 1;
 
         let stake = moonlight_stake(
             &stake_sk,

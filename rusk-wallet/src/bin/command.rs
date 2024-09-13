@@ -744,6 +744,10 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
+                if code.extension().unwrap_or_default() != "wasm" {
+                    return Err(Error::InvalidWasmContractPath.into());
+                }
+
                 let code = std::fs::read(code)
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
@@ -765,6 +769,10 @@ impl Command {
                 };
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                if code.extension().unwrap_or_default() != "wasm" {
+                    return Err(Error::InvalidWasmContractPath.into());
+                }
 
                 let code = std::fs::read(code)
                     .map_err(|_| Error::InvalidWasmContractPath)?;
