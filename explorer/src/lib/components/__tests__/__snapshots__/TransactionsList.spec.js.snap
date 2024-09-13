@@ -7,8 +7,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    ID
+    <div
+      class="details-list__term-layout"
+    >
+       
+      ID
+    </div>
   </dt>
    
   <dd
@@ -25,8 +29,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    relative time
+    <div
+      class="details-list__term-layout"
+    >
+       
+      relative time
+    </div>
   </dt>
    
   <dd
@@ -45,8 +53,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Fee
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Fee
+    </div>
   </dt>
    
   <dd
@@ -59,8 +71,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Status
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Status
+    </div>
   </dt>
    
   <dd
@@ -76,8 +92,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Type
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Type
+    </div>
   </dt>
    
   <dd
@@ -120,8 +140,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    ID
+    <div
+      class="details-list__term-layout"
+    >
+       
+      ID
+    </div>
   </dt>
    
   <dd
@@ -138,8 +162,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    relative time
+    <div
+      class="details-list__term-layout"
+    >
+       
+      relative time
+    </div>
   </dt>
    
   <dd
@@ -157,8 +185,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Gas Price
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Gas Price
+    </div>
   </dt>
    
   <dd
@@ -170,8 +202,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Gas Limit
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Gas Limit
+    </div>
   </dt>
    
   <dd
@@ -183,8 +219,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Fee
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Fee
+    </div>
   </dt>
    
   <dd
@@ -197,8 +237,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Status
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Status
+    </div>
   </dt>
    
   <dd
@@ -214,8 +258,12 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    Type
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Type
+    </div>
   </dt>
    
   <dd

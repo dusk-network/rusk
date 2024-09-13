@@ -1,0 +1,7 @@
+{
+  "block": {
+    "header": {
+      "json": "{\"version\":1,\"height\":4705,\"timestamp\":1726077151,\"prev_block_hash\":\"d63e9b3ccd3e5217b108f0a1f5aacef9bc247adb61bfbce4b26138c88c7cfe3b\",\"seed\":\"813da52d506e815c1a793e6c9ff14520a11bf56a53b4a605edae665837a63a261586ac24f89dc1f125920dafdbefb96d\",\"state_hash\":\"981ca3595588822377bdfc4fbe6b02501b66d48bfbfa353069148cd758ecb137\",\"event_hash\":\"65c5d014c8b2f68463f8697d9254c0ea159bab10d2012b9f18b2bf803a4ff11c\",\"generator_bls_pubkey\":\"2681cRrpmrN17r1C1jNKNqAL6xc7mCTNu9qwhtjTVNHiaVioqowCcTcMqXcmYuqpG8c22bPqKWDRfRmzcfSnLLA9GG5jdgBhmoQxSAqaXMUL2Ee5LAGMB5RJycuUcDoHTCwY\",\"txroot\":\"ffa26c053fb27e627db71e8629abcf85bd9d929ef185a6456f95f4a7a8ee44d1\",\"faultroot\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"gas_limit\":5000000000,\"iteration\":0,\"prev_block_cert\":{\"result\":{\"Valid\":\"d63e9b3ccd3e5217b108f0a1f5aacef9bc247adb61bfbce4b26138c88c7cfe3b\"},\"validation\":{\"bitset\":1826677,\"aggregate_signature\":\"968dd2af69beb59b21b4cd8ee228e957f46226eff808a3f9843e22a8301c0290026ff9046afed5ce49f78cdb224b74f3\"},\"ratification\":{\"bitset\":52854269,\"aggregate_signature\":\"acc24d1996f30062015e2727098ed63764b230f9957bca7e9d18d78c70942d8eda23d6f58046d6d97b0d13e8e029d57b\"}},\"failed_iterations\":[],\"hash\":\"716abb947d32ac58ee4483dc0428ac75f4d3685f7fe418ec236cf46daf323315\"}"
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { get } from "svelte/store";
 
 import { duskAPI } from "$lib/services";
 import { transformBlock } from "$lib/chain-info";
-import { gqlBlock } from "$lib/mock-data";
+import { gqlBlock, gqlBlockDetails } from "$lib/mock-data";
 import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
 import BlockDetails from "../+page.svelte";
@@ -17,14 +17,20 @@ describe("Block Details", () => {
     .spyOn(duskAPI, "getBlock")
     .mockResolvedValue(transformBlock(gqlBlock.block));
 
+  const getBlockDetailsSpy = vi
+    .spyOn(duskAPI, "getBlockDetails")
+    .mockResolvedValue(gqlBlockDetails.block.header.json);
+
   afterEach(() => {
     cleanup();
     getBlockSpy.mockClear();
+    getBlockDetailsSpy.mockClear();
   });
 
   afterAll(() => {
     vi.useRealTimers();
     getBlockSpy.mockRestore();
+    getBlockDetailsSpy.mockRestore();
   });
 
   it("should render the Block Details page and query the necessary info", async () => {
@@ -33,6 +39,7 @@ describe("Block Details", () => {
     expect(container.firstChild).toMatchSnapshot();
 
     expect(getBlockSpy).toHaveBeenCalledTimes(1);
+    expect(getBlockDetailsSpy).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(1);
 
@@ -49,6 +56,7 @@ describe("Block Details", () => {
     expect(get(appStore).isSmallScreen).toBe(true);
 
     expect(getBlockSpy).toHaveBeenCalledTimes(1);
+    expect(getBlockDetailsSpy).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(1);
 

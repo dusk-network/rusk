@@ -1,13 +1,18 @@
 .details-list__term {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
   padding: 0.25rem;
   margin-bottom: 0.625rem;
   background-color: var(--background-color-alt);
   border-radius: var(--control-border-radius-size);
   text-transform: uppercase;
   position: relative;
+}
+
+.details-list__term-layout {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
 }
 
 .details-list__term:first-child,

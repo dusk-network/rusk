@@ -177,7 +177,7 @@
     </ListItem>
 
     <!-- PAYLOAD -->
-    <ListItem tooltipText="The payload">
+    <ListItem tooltipText="The transaction payload">
       <svelte:fragment slot="term">
         payload
 
@@ -191,11 +191,9 @@
       <svelte:fragment slot="definition">
         {#if isPayloadToggled}
           <Card onSurface={true} className="transaction-details__payload">
-            <svelte:fragment>
-              <DataGuard data={payload}>
-                {payload}
-              </DataGuard>
-            </svelte:fragment>
+            <pre>{payload
+                ? JSON.stringify(JSON.parse(payload), null, 2)
+                : "---"}</pre>
           </Card>
         {/if}
       </svelte:fragment>

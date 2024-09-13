@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add tooltip to current and pending stake showing the exact amount [#2363]
 - Add `memo` and `isDeploy` fields in transactions [#2362]
 - Add `txType` fields in transactions and display it [#2347]
+- Add `json` payload to block detail [#2364]
 
 ### Changed
 
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Statistics Panel labels for clarity [#2034]
 - Update font-display to swap for custom fonts to improve performance [#2025]
 - Optimize auto re-renders of relative times [#2059]
+- Switch `raw` payload with `json` in transaction details [#2364]
 
 ### Fixed
 
@@ -68,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2362]: https://github.com/dusk-network/rusk/issues/2362
 [#2363]: https://github.com/dusk-network/rusk/issues/2363
 [#2363]: https://github.com/dusk-network/rusk/issues/2347
+[#2364]: https://github.com/dusk-network/rusk/issues/2364
 [#2389]: https://github.com/dusk-network/rusk/issues/2389
 
 <!-- VERSIONS -->

@@ -18,18 +18,20 @@
   class="details-list__term"
   class:details-list__term--table={context === contexts.LIST_ITEM.DETAIL_LIST}
 >
-  {#if tooltipText}
-    <Icon
-      className="detail-list__help"
-      path={mdiInformationOutline}
-      size="normal"
-      data-tooltip-id="main-tooltip"
-      data-tooltip-text={tooltipText}
-      data-tooltip-place="top"
-      data-tooltip-type="info"
-    />
-  {/if}
-  <slot name="term" />
+  <div class="details-list__term-layout">
+    {#if tooltipText}
+      <Icon
+        className="detail-list__help"
+        path={mdiInformationOutline}
+        size="normal"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-text={tooltipText}
+        data-tooltip-place="top"
+        data-tooltip-type="info"
+      />
+    {/if}
+    <slot name="term" />
+  </div>
 </dt>
 <dd
   class="details-list__definition"

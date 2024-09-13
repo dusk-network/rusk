@@ -51,4 +51,8 @@
   .transaction-details__type {
     width: auto;
   }
+
+  .transaction-details__list .details-list__term:last-of-type {
+    align-items: start;
+  }
 }
