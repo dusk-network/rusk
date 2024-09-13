@@ -52,8 +52,8 @@ All other commands involve transactions, and thus require an active connection t
 [Install rust](https://www.rust-lang.org/tools/install) and then:
 
 ```
-git clone git@github.com:dusk-network/wallet-cli.git
-cd wallet-cli
+git clone git@github.com:dusk-network/rusk.git
+cd rusk/rusk-wallet
 make install
 ```
 
@@ -61,7 +61,7 @@ make install
 
 You will need to connect to a running [**Rusk**](https://github.com/dusk-network/rusk) instance for full wallet capabilities.
 
-The default settings can be seen [here](https://github.com/dusk-network/wallet-cli/blob/main/default.config.toml).
+The default settings can be seen [here](https://github.com/dusk-network/rusk/blob/master/rusk-wallet/default.config.toml).
 
 It's possible to override those settings by create a `config.toml` file with the same structure, in one of the following
 directory:

@@ -82,7 +82,7 @@ The node can be build as a prover only as follows:
 cargo r --release --no-default-features --features prover -p rusk
 ```
 
-This prover node will be accessible on `https://localhost:8080`. Apps like the [wallet-cli](https://github.com/dusk-network/wallet-cli) can be connected to it for quicker and more private local proving.
+This prover node will be accessible on `https://localhost:8080`. Apps like the [rusk-wallet](https://github.com/dusk-network/rusk/tree/master/rusk-wallet) can be connected to it for quicker and more private local proving.
 
 ## Contracts compilation
 
