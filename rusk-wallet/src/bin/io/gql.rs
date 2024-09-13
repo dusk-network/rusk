@@ -7,7 +7,7 @@
 use execution_core::transfer::Transaction;
 use tokio::time::{sleep, Duration};
 
-use rusk_wallet::{Error, RuskHttpClient, RuskRequest};
+use rusk_wallet::{Error, RuesHttpClient};
 use serde::Deserialize;
 
 /// GraphQL is a helper struct that aggregates all queries done
@@ -16,7 +16,7 @@ use serde::Deserialize;
 /// mixed with the wallet logic.
 #[derive(Clone)]
 pub struct GraphQL {
-    client: RuskHttpClient,
+    client: RuesHttpClient,
     status: fn(&str),
 }
 
@@ -59,7 +59,7 @@ impl GraphQL {
         S: Into<String>,
     {
         Self {
-            client: RuskHttpClient::new(url.into()),
+            client: RuesHttpClient::new(url.into()),
             status,
         }
     }
@@ -151,8 +151,9 @@ impl From<serde_json::Error> for GraphQLError {
 
 impl GraphQL {
     pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
-        let request = RuskRequest::new("gql", query.as_bytes().to_vec());
-        self.client.call(2, "Chain", &request).await
+        self.client
+            .call("graphql", None, "query", query.as_bytes())
+            .await
     }
 }
 
@@ -163,7 +164,7 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
         status: |s| {
             println!("{s}");
         },
-        client: RuskHttpClient::new(
+        client: RuesHttpClient::new(
             "http://nodes.dusk.network:9500/graphql".to_string(),
         ),
     };
