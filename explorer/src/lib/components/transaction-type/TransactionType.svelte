@@ -17,7 +17,7 @@
     data-tooltip-text={data.txtype}
     data-tooltip-place="top"
     data-tooltip-type="info"
-    path={data.txtype.toLowerCase() === "moonlight"
+    path={data.txtype.toLowerCase() !== "moonlight"
       ? mdiShieldLock
       : mdiShieldOutline}
     size="large"
