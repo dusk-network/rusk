@@ -22,6 +22,7 @@ const metadata = {
 const chains = [sepolia, bsc, mainnet];
 
 export const wagmiConfig = defaultWagmiConfig({
+  auth: { email: false },
   chains,
   metadata,
   projectId,
@@ -31,6 +32,7 @@ reconnect(wagmiConfig);
 // Create the Web3 modal with the WAGMI config
 export const modal = createWeb3Modal({
   allowUnsupportedChain: false,
+  enableAnalytics: false,
   enableOnramp: false,
   enableSwaps: false,
   projectId,
