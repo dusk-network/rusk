@@ -18,6 +18,8 @@ use crate::{
     Network,
 };
 
+use anyhow::{anyhow, Result};
+
 use super::acceptor::Acceptor;
 
 const STALLED_TIMEOUT: u64 = 60; // seconds
@@ -75,36 +77,35 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     /// Attempts to reset the FSM state, if tip has changed
-    pub(crate) fn try_reset(&mut self, tip: &Header) {
+    pub(crate) fn reset(&mut self, tip: &Header) -> Result<()> {
         if self.tip.0.hash != tip.hash {
             // Tip has changed, which means a new block is accepted either due
             // to normal block acceptance or fallback execution
             self.update_tip(tip);
             self.state_transition(State::Running);
+
+            return Ok(());
         }
+
+        Err(anyhow!("Tip has not changed"))
     }
 
     /// Handles heartbeat event
-    pub(crate) async fn on_heartbeat_event(&mut self) -> &State {
+    pub(crate) async fn on_heartbeat_event(&mut self) {
         trace!(event = "chain.heartbeat",);
-        self.on_block_received(None).await
+        self.on_running().await;
     }
 
     /// Handles block received event
     ///
     /// Returns the new state of the FSM after processing the block
-    pub(crate) async fn on_block_received(
-        &mut self,
-        blk: Option<&Block>,
-    ) -> &State {
-        if let Some(blk) = blk {
-            trace!(
-                event = "chain.block_received",
-                hash = to_str(&blk.header().hash),
-                height = blk.header().height,
-                iter = blk.header().iteration,
-            );
-        }
+    pub(crate) async fn on_block_received(&mut self, blk: &Block) -> &State {
+        trace!(
+            event = "chain.block_received",
+            hash = to_str(&blk.header().hash),
+            height = blk.header().height,
+            iter = blk.header().iteration,
+        );
 
         let tip = self
             .acc
@@ -116,7 +117,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             .header()
             .clone();
 
-        self.try_reset(&tip);
+        let _ = self.reset(&tip);
 
         let curr = &self.state;
         match curr {
@@ -143,15 +144,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     /// Handles block from wire in the `Stalled` state
-    async fn on_stalled(
-        &mut self,
-        new_blk: Option<&Block>,
-    ) -> anyhow::Result<()> {
-        let new_blk = match new_blk {
-            Some(blk) => blk.clone(),
-            None => return Ok(()), // No block received
-        };
-
+    async fn on_stalled(&mut self, new_blk: &Block) -> anyhow::Result<()> {
         if new_blk.header().height > self.tip.0.height {
             // Block is newer than the local tip block
             return Ok(());

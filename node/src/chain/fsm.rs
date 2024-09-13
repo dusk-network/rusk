@@ -184,8 +184,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // network but it cannot accept a new block for long time, then
             // it might be a sign of a getting stalled on non-main branch.
 
-            let res =
-                self.stalled_sm.on_block_received(Some(blk)).await.clone();
+            let res = self.stalled_sm.on_block_received(blk).await.clone();
 
             match res {
                 stall_chain_fsm::State::StalledOnFork(
@@ -238,7 +237,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
                             // Try to reset the stalled chain FSM to `running`
                             // state
-                            self.stalled_sm.try_reset(remote_blk.header());
+                            if let Err(err) =
+                                self.stalled_sm.reset(remote_blk.header())
+                            {
+                                info!(
+                                    event = "revert failed",
+                                    err = format!("{:?}", err)
+                                );
+                            }
                         }
                         Err(e) => {
                             error!(
