@@ -9,15 +9,20 @@ mod sync;
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as AccountPublicKey,
-    transfer::{moonlight::AccountData, phoenix::Prove, Transaction},
+    transfer::{
+        moonlight::AccountData,
+        phoenix::{Note, NoteLeaf, Prove},
+        Transaction,
+    },
     Error as ExecutionCoreError,
 };
-
-use execution_core::transfer::phoenix::{Note, NoteLeaf};
-
 use flume::Receiver;
+use futures::{StreamExt, TryStreamExt};
 use rues::RuesHttpClient;
-use tokio::time::{sleep, Duration};
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
 use wallet_core::{
     keys::{derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk},
     pick_notes,
@@ -31,10 +36,9 @@ use std::{
 
 use self::sync::sync_db;
 
-use super::{block::Block, cache::Cache, *};
+use super::{cache::Cache, *};
 
 use crate::{
-    cache::NoteData,
     rusk::{RuskHttpClient, RuskRequest},
     store::LocalStore,
     Error, MAX_ADDRESSES,
@@ -48,6 +52,9 @@ const STAKE_CONTRACT: &str =
 
 // Sync every 3 seconds for now
 const SYNC_INTERVAL_SECONDS: u64 = 3;
+
+/// SIZE of the tree leaf
+pub const TREE_LEAF: usize = std::mem::size_of::<ArchivedNoteLeaf>();
 
 /// A prover struct that has the `Prove` trait from executio-core implemented.
 /// It currently uses a hardcoded prover which delegates the proving to the
@@ -71,6 +78,7 @@ pub struct State {
     prover: RuskHttpClient,
     store: LocalStore,
     pub sync_rx: Option<Receiver<String>>,
+    sync_join_handle: Option<JoinHandle<()>>,
 }
 
 impl State {
@@ -100,6 +108,7 @@ impl State {
             prover,
             status,
             client,
+            sync_join_handle: None,
         })
     }
 
@@ -121,7 +130,7 @@ impl State {
 
         status("Starting Sync..");
 
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 let _ = sync_tx.send("Syncing..".to_string());
 
@@ -134,6 +143,8 @@ impl State {
             }
         });
 
+        self.sync_join_handle = Some(handle);
+
         Ok(())
     }
 
@@ -143,7 +154,7 @@ impl State {
 
     /// Requests that a node prove the given transaction and later propagates it
     /// Skips writing the proof for non phoenix transactions
-    pub fn prove_and_propagate(
+    pub async fn prove_and_propagate(
         &self,
         tx: Transaction,
     ) -> Result<Transaction, Error> {
@@ -160,7 +171,7 @@ impl State {
             let prove_req = RuskRequest::new("prove_execute", proof.to_vec());
 
             let proof =
-                prover.call(2, "rusk", &prove_req).wait().map_err(|e| {
+                prover.call(2, "rusk", &prove_req).await.map_err(|e| {
                     ExecutionCoreError::PhoenixCircuit(e.to_string())
                 })?;
 
@@ -175,21 +186,21 @@ impl State {
         let _ = self
             .client
             .call("transactions", None, "preverify", &tx_bytes)
-            .wait()?;
+            .await?;
         status("Preverify success!");
 
         status("Propagating tx...");
         let _ = self
             .client
             .call("transactions", None, "propagate", &tx_bytes)
-            .wait()?;
+            .await?;
         status("Transaction propagated!");
 
         Ok(tx)
     }
 
     /// Find notes for a view key, starting from the given block height.
-    pub(crate) fn inputs(
+    pub(crate) async fn inputs(
         &self,
         index: u8,
         target: u64,
@@ -204,28 +215,34 @@ impl State {
             .into_iter()
             .map(|data| {
                 let note = data.note;
-                let block_height = data.height;
+                let block_height = data.block_height;
                 let nullifier = note.gen_nullifier(&sk);
                 let leaf = NoteLeaf { note, block_height };
                 Ok((nullifier, leaf))
             })
             .collect();
 
-        let inputs = pick_notes(&vk, inputs?.into(), target)
-            .into_iter()
-            .map(|(scalar, note)| {
-                let opening = self.fetch_opening(note.as_ref())?;
+        let pick_notes = pick_notes(&vk, inputs?.into(), target);
 
-                Ok((note.note.clone(), opening, *scalar))
-            })
-            .collect();
+        let inputs = pick_notes.iter().map(|(scalar, note)| async {
+            let opening = self.fetch_opening(note.as_ref()).await?;
+
+            Ok((note.note.clone(), opening, *scalar))
+        });
+
+        // to not overwhelm the node, we buffer the requests
+        // 10 in line
+        let inputs = futures::stream::iter(inputs)
+            .buffer_unordered(10)
+            .try_collect()
+            .await;
 
         sk.zeroize();
 
         inputs
     }
 
-    pub(crate) fn fetch_account(
+    pub(crate) async fn fetch_account(
         &self,
         pk: &AccountPublicKey,
     ) -> Result<AccountData, Error> {
@@ -235,7 +252,7 @@ impl State {
         let account = self
             .client
             .contract_query::<_, _, 1024>(TRANSFER_CONTRACT, "account", pk)
-            .wait()?;
+            .await?;
         let account = rkyv::from_bytes(&account).map_err(|_| Error::Rkyv)?;
         status("account-data received!");
 
@@ -245,35 +262,26 @@ impl State {
     pub(crate) fn fetch_notes(
         &self,
         pk: &PhoenixPublicKey,
-    ) -> Result<Vec<NoteData>, Error> {
-        self.cache()
-            .notes(pk)?
-            .into_iter()
-            .map(|data| {
-                Ok(NoteData {
-                    note: data.note,
-                    height: data.height,
-                })
-            })
-            .collect()
+    ) -> Result<Vec<NoteLeaf>, Error> {
+        self.cache().notes(pk).map(|set| set.into_iter().collect())
     }
 
     /// Fetch the current root of the state.
-    pub(crate) fn fetch_root(&self) -> Result<BlsScalar, Error> {
+    pub(crate) async fn fetch_root(&self) -> Result<BlsScalar, Error> {
         let status = self.status;
         status("Fetching root...");
 
         let root = self
             .client
             .contract_query::<(), _, 0>(TRANSFER_CONTRACT, "root", &())
-            .wait()?;
+            .await?;
         status("root received!");
-        let root = rkyv::from_bytes(&root).map_err(|_| Error::Rkyv)?;
-        Ok(root)
+
+        rkyv::from_bytes(&root).map_err(|_| Error::Rkyv)
     }
 
     /// Queries the node for the amount staked by a key.
-    pub(crate) fn fetch_stake(
+    pub(crate) async fn fetch_stake(
         &self,
         pk: &AccountPublicKey,
     ) -> Result<Option<StakeData>, Error> {
@@ -283,7 +291,7 @@ impl State {
         let data = self
             .client
             .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", pk)
-            .wait()?;
+            .await?;
 
         let res: Option<StakeData> =
             rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
@@ -291,6 +299,7 @@ impl State {
 
         let staking_address = pk.to_bytes().to_vec();
         let staking_address = bs58::encode(staking_address).into_string();
+
         println!("Staking address: {}", staking_address);
 
         Ok(res)
@@ -300,7 +309,7 @@ impl State {
         &self.store
     }
 
-    pub(crate) fn fetch_chain_id(&self) -> Result<u8, Error> {
+    pub(crate) async fn fetch_chain_id(&self) -> Result<u8, Error> {
         let status = self.status;
         status("Fetching chain_id...");
 
@@ -311,7 +320,7 @@ impl State {
                 "chain_id",
                 &(),
             )
-            .wait()?;
+            .await?;
 
         let res: u8 = rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
         status("Chain id received!");
@@ -320,7 +329,7 @@ impl State {
     }
 
     /// Queries the node to find the opening for a specific note.
-    fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Error> {
+    async fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Error> {
         let status = self.status;
         status("Fetching opening notes...");
 
@@ -331,11 +340,25 @@ impl State {
                 "opening",
                 note.pos(),
             )
-            .wait()?;
+            .await?;
 
         status("Opening notes received!");
 
         let branch = rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
         Ok(branch)
+    }
+
+    pub fn close(&mut self) {
+        // UNWRAP: its okay to panic here because we're closing the database
+        // if there's an error we want an exception to happen
+        self.cache().close().unwrap();
+        let store = &mut self.store;
+
+        // if there's sync handle we abort it
+        if let Some(x) = self.sync_join_handle.as_ref() {
+            x.abort();
+        }
+
+        store.inner_mut().zeroize();
     }
 }

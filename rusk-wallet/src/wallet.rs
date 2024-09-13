@@ -21,6 +21,9 @@ use serde::Serialize;
 use std::fmt::Debug;
 use std::fs;
 use std::path::{Path, PathBuf};
+use wallet_core::transaction::{
+    moonlight_deployment, moonlight_stake_reward, phoenix_deployment,
+};
 
 use wallet_core::{
     phoenix_balance,
@@ -38,7 +41,10 @@ use wallet_core::{
 
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    transfer::{data::ContractCall, data::TransactionData, Transaction},
+    transfer::{
+        data::ContractCall, data::TransactionData, phoenix::NoteLeaf,
+        Transaction,
+    },
 };
 
 use zeroize::Zeroize;
@@ -46,7 +52,6 @@ use zeroize::Zeroize;
 use super::*;
 
 use crate::{
-    cache::NoteData,
     clients::{Prover, State},
     crypto::encrypt,
     currency::Dusk,
@@ -337,10 +342,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let live_notes = live_notes
             .into_iter()
-            .map(|data| (None, data.note, data.height));
+            .map(|data| (None, data.note, data.block_height));
         let spent_notes = spent_notes.into_iter().map(
-            |(nullifier, NoteData { note, height })| {
-                (Some(nullifier), note, height)
+            |(nullifier, NoteLeaf { note, block_height })| {
+                (Some(nullifier), note, block_height)
             },
         );
         let history = live_notes
@@ -382,10 +387,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Get moonlight account balance
-    pub fn get_moonlight_balance(&self, addr: &Address) -> Result<Dusk, Error> {
+    pub async fn get_moonlight_balance(
+        &self,
+        addr: &Address,
+    ) -> Result<Dusk, Error> {
         let pk = addr.apk()?;
         let state = self.state()?;
-        let account = state.fetch_account(pk)?;
+        let account = state.fetch_account(pk).await?;
 
         Ok(Dusk::from(account.balance))
     }
@@ -441,7 +449,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Creates a generic moonlight transaction.
     #[allow(clippy::too_many_arguments)]
-    pub fn moonlight_transaction(
+    pub async fn moonlight_execute(
         &self,
         from_addr: &Address,
         to_account: Option<BlsPublicKey>,
@@ -467,13 +475,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut from_sk = self.bls_secret_key(from_index);
         let from_account = self.bls_public_key(from_index);
 
-        let account = state.fetch_account(&from_account)?;
+        let account = state.fetch_account(&from_account).await?;
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.
         let nonce = account.nonce + 1;
 
-        let chain_id = state.fetch_chain_id()?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
             &from_sk,
@@ -489,7 +497,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         from_sk.zeroize();
 
-        state.prove_and_propagate(tx)
+        state.prove_and_propagate(tx).await
     }
 
     /// Executes a generic contract call, paying gas with phoenix notes
@@ -520,13 +528,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let receiver_pk = sender.pk()?;
 
         let inputs = state
-            .inputs(sender_index, deposit + gas.limit * gas.price)?
+            .inputs(sender_index, deposit + gas.limit * gas.price)
+            .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
             .collect();
 
-        let root = state.fetch_root()?;
-        let chain_id = state.fetch_chain_id()?;
+        let root = state.fetch_root().await?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let tx = phoenix(
             &mut rng,
@@ -547,7 +556,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx)
+        state.prove_and_propagate(tx).await
     }
 
     /// Transfers funds between phoenix-addresses
@@ -582,13 +591,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let reciever_pk = rcvr.pk()?;
 
         let inputs = state
-            .inputs(sender_index, amt + gas.limit * gas.price)?
+            .inputs(sender_index, amt + gas.limit * gas.price)
+            .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
             .collect();
 
-        let root = state.fetch_root()?;
-        let chain_id = state.fetch_chain_id()?;
+        let root = state.fetch_root().await?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let tx = phoenix(
             &mut rng,
@@ -609,7 +619,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx)
+        state.prove_and_propagate(tx).await
     }
 
     /// Transfer through moonlight
@@ -641,8 +651,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
 
         let state = self.state()?;
-        let nonce = state.fetch_account(&from_pk)?.nonce + 1;
-        let chain_id = state.fetch_chain_id()?;
+        let nonce = state.fetch_account(&from_pk).await?.nonce + 1;
+        let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
             &from_sk,
@@ -658,7 +668,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         from_sk.zeroize();
 
-        state.prove_and_propagate(tx)
+        state.prove_and_propagate(tx).await
     }
 
     /// Stakes Dusk using phoenix notes
@@ -690,19 +700,21 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut stake_sk = self.bls_secret_key(sender_index);
 
         let nonce = state
-            .fetch_stake(&AccountPublicKey::from(&stake_sk))?
+            .fetch_stake(&AccountPublicKey::from(&stake_sk))
+            .await?
             .map(|s| s.nonce)
             .unwrap_or(0)
             + 1;
 
         let inputs = state
-            .inputs(sender_index, amt + gas.limit * gas.price)?
+            .inputs(sender_index, amt + gas.limit * gas.price)
+            .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
             .collect();
 
-        let root = state.fetch_root()?;
-        let chain_id = state.fetch_chain_id()?;
+        let root = state.fetch_root().await?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let stake = phoenix_stake(
             &mut rng, &sender_sk, &stake_sk, inputs, root, gas.limit,
@@ -712,11 +724,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(stake)
+        state.prove_and_propagate(stake).await
     }
 
     /// Stake via moonlight
-    pub fn moonlight_stake(
+    pub async fn moonlight_stake(
         &self,
         addr: &Address,
         amt: Dusk,
@@ -739,11 +751,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
         let sender_index = addr.index()?;
         let mut stake_sk = self.bls_secret_key(sender_index);
-        let pk = AccountPublicKey::from(&stake_sk);
-        let chain_id = state.fetch_chain_id()?;
-        let moonlight_current_nonce = state.fetch_account(&pk)?.nonce + 1;
+        let pk = self.bls_public_key(sender_index);
+        let chain_id = state.fetch_chain_id().await?;
+        let moonlight_current_nonce = state.fetch_account(&pk).await?.nonce + 1;
 
-        let nonce = state.fetch_stake(&pk)?.map(|s| s.nonce + 1).unwrap_or(0);
+        let nonce =
+            state.fetch_stake(&pk).await?.map(|s| s.nonce).unwrap_or(0) + 1;
 
         let stake = moonlight_stake(
             &stake_sk,
@@ -758,7 +771,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         stake_sk.zeroize();
 
-        state.prove_and_propagate(stake)
+        state.prove_and_propagate(stake).await
     }
 
     /// Obtains stake information for a given address
@@ -766,7 +779,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         addr_idx: u8,
     ) -> Result<Option<StakeData>, Error> {
-        self.state()?.fetch_stake(&self.bls_public_key(addr_idx))
+        self.state()?
+            .fetch_stake(&self.bls_public_key(addr_idx))
+            .await
     }
 
     /// Unstakes Dusk into phoenix notes
@@ -789,15 +804,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut stake_sk = self.bls_secret_key(index);
 
         let unstake_value = state
-            .fetch_stake(&AccountPublicKey::from(&stake_sk))?
+            .fetch_stake(&AccountPublicKey::from(&stake_sk))
+            .await?
             .and_then(|s| s.amount)
             .map(|s| s.value)
             .unwrap_or(0);
 
-        let inputs = state.inputs(index, gas.limit * gas.price)?;
+        let inputs = state.inputs(index, gas.limit * gas.price).await?;
 
-        let root = state.fetch_root()?;
-        let chain_id = state.fetch_chain_id()?;
+        let root = state.fetch_root().await?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let unstake = phoenix_unstake(
             &mut rng,
@@ -815,7 +831,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(unstake)
+        state.prove_and_propagate(unstake).await
     }
 
     /// Unstakes Dusk through moonlight
@@ -834,13 +850,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let mut stake_sk = self.bls_secret_key(index);
 
-        let pk = AccountPublicKey::from(&stake_sk);
+        let pk = addr.apk()?;
 
-        let chain_id = state.fetch_chain_id()?;
-        let account_nonce = state.fetch_account(&pk)?.nonce + 1;
+        let chain_id = state.fetch_chain_id().await?;
+        let account_nonce = state.fetch_account(pk).await?.nonce + 1;
 
         let unstake_value = state
-            .fetch_stake(&pk)?
+            .fetch_stake(pk)
+            .await?
             .and_then(|s| s.amount)
             .map(|s| s.value)
             .unwrap_or(0);
@@ -858,7 +875,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         stake_sk.zeroize();
 
-        state.prove_and_propagate(unstake)
+        state.prove_and_propagate(unstake).await
     }
 
     /// Withdraw accumulated staking reward for a given address
@@ -879,13 +896,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.phoenix_secret_key(sender_index);
         let mut stake_sk = self.bls_secret_key(sender_index);
 
-        let inputs = state.inputs(sender_index, gas.limit * gas.price)?;
+        let inputs = state.inputs(sender_index, gas.limit * gas.price).await?;
 
-        let root = state.fetch_root()?;
-        let chain_id = state.fetch_chain_id()?;
+        let root = state.fetch_root().await?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let reward_amount = state
-            .fetch_stake(&AccountPublicKey::from(&stake_sk))?
+            .fetch_stake(&AccountPublicKey::from(&stake_sk))
+            .await?
             .map(|s| s.reward)
             .unwrap_or(0);
 
@@ -905,7 +923,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(withdraw)
+        state.prove_and_propagate(withdraw).await
     }
 
     /// Convert balance from phoenix to moonlight
@@ -919,10 +937,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let sender_index = sender_addr.index()?;
         let amt = *amt;
-        let inputs = state.inputs(sender_index, amt + gas.limit * gas.price)?;
+        let inputs = state
+            .inputs(sender_index, amt + gas.limit * gas.price)
+            .await?;
 
-        let root = state.fetch_root()?;
-        let chain_id = state.fetch_chain_id()?;
+        let root = state.fetch_root().await?;
+        let chain_id = state.fetch_chain_id().await?;
 
         let mut sender_sk = self.phoenix_secret_key(sender_index);
         let mut stake_sk = self.bls_secret_key(sender_index);
@@ -935,7 +955,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(convert)
+        state.prove_and_propagate(convert).await
     }
 
     /// Convert balance from moonlight to phoenix
@@ -948,25 +968,106 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
         let sender_index = sender_addr.index()?;
-        let amt = *amt;
 
         let pk = self.bls_public_key(sender_index);
 
-        let nonce = state.fetch_account(&pk)?.nonce + 1;
-        let chain_id = state.fetch_chain_id()?;
+        let nonce = state.fetch_account(&pk).await?.nonce + 1;
+        let chain_id = state.fetch_chain_id().await?;
 
         let mut sender_sk = self.phoenix_secret_key(sender_index);
         let mut stake_sk = self.bls_secret_key(sender_index);
 
         let convert = moonlight_to_phoenix(
-            &mut rng, &stake_sk, &sender_sk, amt, gas.limit, gas.price, nonce,
+            &mut rng, &stake_sk, &sender_sk, *amt, gas.limit, gas.price, nonce,
             chain_id,
         )?;
 
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(convert)
+        state.prove_and_propagate(convert).await
+    }
+
+    /// stake reward via moonlight
+    pub async fn moonlight_stake_withdraw(
+        &self,
+        sender: &Address,
+        amt: Dusk,
+        gas: Gas,
+    ) -> Result<Transaction, Error> {
+        let mut rng = StdRng::from_entropy();
+        let state = self.state()?;
+        let sender_index = sender.index()?;
+        let pk = sender.apk()?;
+        let nonce = state.fetch_account(pk).await?.nonce + 1;
+        let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.bls_secret_key(sender_index);
+
+        let withdraw = moonlight_stake_reward(
+            &mut rng, &sender_sk, &sender_sk, *amt, gas.limit, gas.price,
+            nonce, chain_id,
+        )?;
+
+        sender_sk.zeroize();
+
+        state.prove_and_propagate(withdraw).await
+    }
+
+    /// Deploy contract using moonlight
+    pub async fn moonlight_deploy(
+        &self,
+        sender: &Address,
+        bytes_code: Vec<u8>,
+        init_args: Vec<u8>,
+        gas: Gas,
+    ) -> Result<Transaction, Error> {
+        let state = self.state()?;
+        let sender_index = sender.index()?;
+        let pk = sender.apk()?;
+        let nonce = state.fetch_account(pk).await?.nonce + 1;
+        let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.bls_secret_key(sender_index);
+
+        let deploy = moonlight_deployment(
+            &sender_sk, bytes_code, pk, init_args, gas.limit, gas.price, nonce,
+            0, chain_id,
+        )?;
+
+        sender_sk.zeroize();
+
+        state.prove_and_propagate(deploy).await
+    }
+
+    /// Deploy contract using phoenix
+    pub async fn phoenix_deploy(
+        &self,
+        sender: &Address,
+        bytes_code: Vec<u8>,
+        init_args: Vec<u8>,
+        gas: Gas,
+    ) -> Result<Transaction, Error> {
+        let mut rng = StdRng::from_entropy();
+        let state = self.state()?;
+        let sender_index = sender.index()?;
+
+        let chain_id = state.fetch_chain_id().await?;
+        let root = state.fetch_root().await?;
+
+        let inputs = state.inputs(sender_index, gas.limit * gas.price).await?;
+
+        let mut sender_sk = self.phoenix_secret_key(sender_index);
+        let apk = self.bls_public_key(sender_index);
+
+        let deploy = phoenix_deployment(
+            &mut rng, &sender_sk, inputs, root, bytes_code, &apk, init_args, 0,
+            gas.limit, gas.price, chain_id, &Prover,
+        )?;
+
+        sender_sk.zeroize();
+
+        state.prove_and_propagate(deploy).await
     }
 
     /// Returns bls key pair for provisioner nodes
@@ -1044,6 +1145,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             Ok(dat::read_file_version(file.path())?)
         } else {
             Err(Error::WalletFileMissing)
+        }
+    }
+
+    /// Close the wallet and zeroize the seed
+    pub fn close(&mut self) {
+        self.store.inner_mut().zeroize();
+
+        // close the state if exists
+        if let Some(x) = &mut self.state {
+            x.close();
         }
     }
 }

@@ -4,15 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::BTreeSet;
 use std::path::Path;
-use std::{cmp::Ordering, collections::BTreeSet};
 
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::DeserializableSlice;
+use execution_core::transfer::phoenix::NoteLeaf;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
 use super::*;
 
-use crate::error::Error;
+use crate::{clients::TREE_LEAF, error::Error};
 
 type DB = DBWithThreadMode<MultiThreaded>;
 
@@ -50,7 +51,7 @@ impl Cache {
     pub(crate) fn insert(
         &self,
         pk: &PhoenixPublicKey,
-        height: u64,
+        block_height: u64,
         note_data: (Note, BlsScalar),
     ) -> Result<(), Error> {
         let cf_name = format!("{:?}", pk);
@@ -62,10 +63,14 @@ impl Cache {
 
         let (note, nullifier) = note_data;
 
-        let data = NoteData { height, note };
+        let leaf = NoteLeaf { block_height, note };
+
+        let data = rkyv::to_bytes::<NoteLeaf, TREE_LEAF>(&leaf)
+            .map_err(|_| Error::Rkyv)?;
+
         let key = nullifier.to_bytes();
 
-        self.db.put_cf(&cf, key, data.to_bytes())?;
+        self.db.put_cf(&cf, key, data)?;
 
         Ok(())
     }
@@ -76,7 +81,7 @@ impl Cache {
     pub(crate) fn insert_spent(
         &self,
         pk: &PhoenixPublicKey,
-        height: u64,
+        block_height: u64,
         note_data: (Note, BlsScalar),
     ) -> Result<(), Error> {
         let cf_name = format!("spent_{:?}", pk);
@@ -88,10 +93,12 @@ impl Cache {
 
         let (note, nullifier) = note_data;
 
-        let data = NoteData { height, note };
+        let leaf = NoteLeaf { block_height, note };
+        let data = rkyv::to_bytes::<NoteLeaf, TREE_LEAF>(&leaf)
+            .map_err(|_| Error::Rkyv)?;
         let key = nullifier.to_bytes();
 
-        self.db.put_cf(&cf, key, data.to_bytes())?;
+        self.db.put_cf(&cf, key, data)?;
 
         Ok(())
     }
@@ -173,9 +180,9 @@ impl Cache {
     pub(crate) fn notes(
         &self,
         pk: &PhoenixPublicKey,
-    ) -> Result<BTreeSet<NoteData>, Error> {
+    ) -> Result<BTreeSet<NoteLeaf>, Error> {
         let cf_name = format!("{:?}", pk);
-        let mut notes = BTreeSet::<NoteData>::new();
+        let mut notes = BTreeSet::<NoteLeaf>::new();
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
             let iterator =
@@ -184,7 +191,8 @@ impl Cache {
             for i in iterator {
                 let (_, note_data) = i?;
 
-                let note = NoteData::from_slice(&note_data)?;
+                let note = rkyv::from_bytes(&note_data)
+                    .map_err(|_| Error::CacheDatabaseCorrupted)?;
 
                 notes.insert(note);
             }
@@ -198,7 +206,7 @@ impl Cache {
     pub(crate) fn spent_notes(
         &self,
         pk: &PhoenixPublicKey,
-    ) -> Result<Vec<(BlsScalar, NoteData)>, Error> {
+    ) -> Result<Vec<(BlsScalar, NoteLeaf)>, Error> {
         let cf_name = format!("spent_{:?}", pk);
         let mut notes = vec![];
 
@@ -209,7 +217,9 @@ impl Cache {
             for i in iterator {
                 let (key, note_data) = i?;
 
-                let note = NoteData::from_slice(&note_data)?;
+                let note = rkyv::from_bytes(&note_data)
+                    .map_err(|_| Error::CacheDatabaseCorrupted)?;
+
                 let key = BlsScalar::from_slice(&key)?;
 
                 notes.push((key, note));
@@ -218,55 +228,9 @@ impl Cache {
 
         Ok(notes)
     }
-}
 
-/// Data kept about each note.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NoteData {
-    pub height: u64,
-    pub note: Note,
-}
-
-impl PartialOrd for NoteData {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for NoteData {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.note.pos().cmp(other.note.pos())
-    }
-}
-
-impl AsRef<Note> for NoteData {
-    fn as_ref(&self) -> &Note {
-        &self.note
-    }
-}
-
-impl Serializable<{ u64::SIZE + Note::SIZE }> for NoteData {
-    type Error = dusk_bytes::Error;
-    /// Converts a Note into a byte representation
-
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut buf = [0u8; Self::SIZE];
-
-        buf[0..8].copy_from_slice(&self.height.to_bytes());
-
-        buf[8..].copy_from_slice(&self.note.to_bytes());
-
-        buf
-    }
-
-    /// Attempts to convert a byte representation of a note into a `Note`,
-    /// failing if the input is invalid
-    fn from_bytes(bytes: &[u8; Self::SIZE]) -> Result<Self, Self::Error> {
-        let mut one_u64 = [0u8; 8];
-        one_u64.copy_from_slice(&bytes[0..8]);
-        let height = u64::from_bytes(&one_u64)?;
-
-        let note = Note::from_slice(&bytes[8..])?;
-        Ok(Self { height, note })
+    pub fn close(&self) -> Result<(), Error> {
+        self.db.cancel_all_background_work(false);
+        Ok(())
     }
 }
