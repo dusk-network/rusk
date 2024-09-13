@@ -24,7 +24,6 @@ pub struct RuesHttpClient {
 impl RuesHttpClient {
     /// Create a new HTTP Client
     pub fn new(uri: String) -> Self {
-        let uri = uri + "/on";
         Self { uri }
     }
 
@@ -89,8 +88,10 @@ impl RuesHttpClient {
         let uri = &self.uri;
         let client = reqwest::Client::new();
         let entity = entity.into().map(|e| format!(":{e}")).unwrap_or_default();
+
+        let rues_prefix = if uri.ends_with('/') { "on" } else { "/on" };
         let mut request = client
-            .post(format!("{uri}/{target}{entity}/{topic}"))
+            .post(format!("{uri}{rues_prefix}/{target}{entity}/{topic}"))
             .body(Body::from(data.to_vec()))
             .header("Content-Type", "application/octet-stream")
             .header("rusk-version", REQUIRED_RUSK_VERSION);
