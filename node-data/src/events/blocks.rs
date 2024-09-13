@@ -10,6 +10,33 @@ use crate::ledger::{Block, Hash};
 pub const BLOCK_FINALIZED: &str = "finalized";
 pub const BLOCK_CONFIRMED: &str = "confirmed";
 
+/// Represents events related to blocks in the chain.
+///
+/// - `Accepted(&'b Block)`
+///
+///     Indicates that a block has been accepted into the chain.
+///
+/// - `StateChange`
+///
+///     Represents a change in the state of a block.
+///
+///     - `hash: Hash` The unique identifier of the block whose state has
+///       changed.
+///
+///     - `state: &'static str` Describes the new state of the block (e.g.,
+///       `"finalized"`, `"confirmed"`).
+///
+///     - `height: u64` Indicates at which block height the state changed.
+#[derive(Clone, Debug)]
+pub enum BlockEvent<'b> {
+    Accepted(&'b Block),
+    StateChange {
+        hash: Hash,
+        state: &'static str,
+        height: u64,
+    },
+}
+
 impl EventSource for BlockEvent<'_> {
     const COMPONENT: &'static str = "blocks";
 
@@ -48,31 +75,4 @@ impl EventSource for BlockEvent<'_> {
         };
         hex::encode(hash)
     }
-}
-
-/// Represents events related to blocks in the chain.
-///
-/// - `Accepted(&'b Block)`
-///
-///     Indicates that a block has been accepted into the chain.
-///
-/// - `StateChange`
-///
-///     Represents a change in the state of a block.
-///
-///     - `hash: Hash` The unique identifier of the block whose state has
-///       changed.
-///
-///     - `state: &'static str` Describes the new state of the block (e.g.,
-///       `"finalized"`, `"confirmed"`).
-///
-///     - `height: u64` Indicates at which block height the state changed.
-#[derive(Clone, Debug)]
-pub enum BlockEvent<'b> {
-    Accepted(&'b Block),
-    StateChange {
-        hash: Hash,
-        state: &'static str,
-        height: u64,
-    },
 }

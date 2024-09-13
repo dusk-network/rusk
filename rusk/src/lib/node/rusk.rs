@@ -47,7 +47,7 @@ use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
-use node_data::archive::ContractTxEvent;
+use node_data::events::contract::ContractTxEvent;
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");

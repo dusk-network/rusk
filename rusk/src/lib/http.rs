@@ -73,7 +73,7 @@ pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
 use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 #[cfg(feature = "node")]
-use node_data::archive::ContractEvent;
+use node_data::events::contract::ContractEvent;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
@@ -882,7 +882,7 @@ mod tests {
     use event::Event as EventRequest;
 
     use execution_core::ContractId;
-    use node_data::archive::{ContractTxEvent, WrappedContractId};
+    use node_data::events::contract::{ContractTxEvent, WrappedContractId};
     use std::net::TcpStream;
     use tungstenite::client;
 
