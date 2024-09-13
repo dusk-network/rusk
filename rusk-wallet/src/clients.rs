@@ -16,6 +16,7 @@ use execution_core::{
 use execution_core::transfer::phoenix::{Note, NoteLeaf};
 
 use flume::Receiver;
+use rues::RuesHttpClient;
 use tokio::time::{sleep, Duration};
 use wallet_core::{
     keys::{derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk},
@@ -66,7 +67,7 @@ impl Prove for Prover {
 pub struct State {
     cache: Mutex<Arc<Cache>>,
     status: fn(&str),
-    client: RuskHttpClient,
+    client: RuesHttpClient,
     prover: RuskHttpClient,
     store: LocalStore,
     pub sync_rx: Option<Receiver<String>>,
@@ -77,7 +78,7 @@ impl State {
     pub(crate) fn new(
         data_dir: &Path,
         status: fn(&str),
-        client: RuskHttpClient,
+        client: RuesHttpClient,
         prover: RuskHttpClient,
         store: LocalStore,
     ) -> Result<Self, Error> {
@@ -171,13 +172,17 @@ impl State {
         let tx_bytes = tx.to_var_bytes();
 
         status("Attempt to preverify tx...");
-        let preverify_req = RuskRequest::new("preverify", tx_bytes.clone());
-        let _ = self.client.call(2, "rusk", &preverify_req).wait()?;
+        let _ = self
+            .client
+            .call("transactions", None, "preverify", &tx_bytes)
+            .wait()?;
         status("Preverify success!");
 
         status("Propagating tx...");
-        let propagate_req = RuskRequest::new("propagate_tx", tx_bytes);
-        let _ = self.client.call(2, "Chain", &propagate_req).wait()?;
+        let _ = self
+            .client
+            .call("transactions", None, "propagate", &tx_bytes)
+            .wait()?;
         status("Transaction propagated!");
 
         Ok(tx)
@@ -229,7 +234,7 @@ impl State {
 
         let account = self
             .client
-            .contract_query::<_, 1024>(TRANSFER_CONTRACT, "account", pk)
+            .contract_query::<_, _, 1024>(TRANSFER_CONTRACT, "account", pk)
             .wait()?;
         let account = rkyv::from_bytes(&account).map_err(|_| Error::Rkyv)?;
         status("account-data received!");
@@ -260,7 +265,7 @@ impl State {
 
         let root = self
             .client
-            .contract_query::<(), 0>(TRANSFER_CONTRACT, "root", &())
+            .contract_query::<(), _, 0>(TRANSFER_CONTRACT, "root", &())
             .wait()?;
         status("root received!");
         let root = rkyv::from_bytes(&root).map_err(|_| Error::Rkyv)?;
@@ -277,7 +282,7 @@ impl State {
 
         let data = self
             .client
-            .contract_query::<_, 1024>(STAKE_CONTRACT, "get_stake", pk)
+            .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", pk)
             .wait()?;
 
         let res: Option<StakeData> =
@@ -301,7 +306,7 @@ impl State {
 
         let data = self
             .client
-            .contract_query::<_, { u8::SIZE }>(
+            .contract_query::<_, _, { u8::SIZE }>(
                 TRANSFER_CONTRACT,
                 "chain_id",
                 &(),
@@ -321,7 +326,11 @@ impl State {
 
         let data = self
             .client
-            .contract_query::<_, 1024>(TRANSFER_CONTRACT, "opening", note.pos())
+            .contract_query::<_, _, 1024>(
+                TRANSFER_CONTRACT,
+                "opening",
+                note.pos(),
+            )
             .wait()?;
 
         status("Opening notes received!");
