@@ -19,6 +19,10 @@ impl LocalStore {
     pub fn get_seed(&self) -> &Seed {
         &self.seed
     }
+
+    pub fn inner_mut(&mut self) -> &mut Seed {
+        &mut self.seed
+    }
 }
 
 impl From<Seed> for LocalStore {

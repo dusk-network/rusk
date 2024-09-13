@@ -9,15 +9,20 @@ mod sync;
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as AccountPublicKey,
-    transfer::{moonlight::AccountData, phoenix::Prove, Transaction},
+    transfer::{
+        moonlight::AccountData,
+        phoenix::{Note, NoteLeaf, Prove},
+        Transaction,
+    },
     Error as ExecutionCoreError,
 };
-
-use execution_core::transfer::phoenix::{Note, NoteLeaf};
-
 use flume::Receiver;
+use futures::{StreamExt, TryStreamExt};
 use rues::RuesHttpClient;
-use tokio::time::{sleep, Duration};
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
 use wallet_core::{
     keys::{derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk},
     pick_notes,
@@ -73,6 +78,7 @@ pub struct State {
     prover: RuskHttpClient,
     store: LocalStore,
     pub sync_rx: Option<Receiver<String>>,
+    sync_join_handle: Option<JoinHandle<()>>,
 }
 
 impl State {
@@ -102,6 +108,7 @@ impl State {
             prover,
             status,
             client,
+            sync_join_handle: None,
         })
     }
 
@@ -123,7 +130,7 @@ impl State {
 
         status("Starting Sync..");
 
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 let _ = sync_tx.send("Syncing..".to_string());
 
@@ -135,6 +142,8 @@ impl State {
                 sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)).await;
             }
         });
+
+        self.sync_join_handle = Some(handle);
 
         Ok(())
     }
@@ -177,14 +186,14 @@ impl State {
         let _ = self
             .client
             .call("transactions", None, "preverify", &tx_bytes)
-            .wait()?;
+            .await?;
         status("Preverify success!");
 
         status("Propagating tx...");
         let _ = self
             .client
             .call("transactions", None, "propagate", &tx_bytes)
-            .wait()?;
+            .await?;
         status("Transaction propagated!");
 
         Ok(tx)
@@ -243,7 +252,7 @@ impl State {
         let account = self
             .client
             .contract_query::<_, _, 1024>(TRANSFER_CONTRACT, "account", pk)
-            .wait()?;
+            .await?;
         let account = rkyv::from_bytes(&account).map_err(|_| Error::Rkyv)?;
         status("account-data received!");
 
@@ -265,7 +274,7 @@ impl State {
         let root = self
             .client
             .contract_query::<(), _, 0>(TRANSFER_CONTRACT, "root", &())
-            .wait()?;
+            .await?;
         status("root received!");
 
         rkyv::from_bytes(&root).map_err(|_| Error::Rkyv)
@@ -282,7 +291,7 @@ impl State {
         let data = self
             .client
             .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", pk)
-            .wait()?;
+            .await?;
 
         let res: Option<StakeData> =
             rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
@@ -331,11 +340,25 @@ impl State {
                 "opening",
                 note.pos(),
             )
-            .wait()?;
+            .await?;
 
         status("Opening notes received!");
 
         let branch = rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
         Ok(branch)
+    }
+
+    pub fn close(&mut self) {
+        // UNWRAP: its okay to panic here because we're closing the database
+        // if there's an error we want an exception to happen
+        self.cache().close().unwrap();
+        let store = &mut self.store;
+
+        // if there's sync handle we abort it
+        if let Some(x) = self.sync_join_handle.as_ref() {
+            x.abort();
+        }
+
+        store.inner_mut().zeroize();
     }
 }

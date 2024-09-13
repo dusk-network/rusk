@@ -1147,6 +1147,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             Err(Error::WalletFileMissing)
         }
     }
+
+    /// Close the wallet and zeroize the seed
+    pub fn close(&mut self) {
+        self.store.inner_mut().zeroize();
+
+        // close the state if exists
+        if let Some(x) = &mut self.state {
+            x.close();
+        }
+    }
 }
 
 /// This structs represent a Note decoded enriched with useful chain information
