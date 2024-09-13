@@ -1,0 +1,60 @@
+name: rusk-wallet CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'execution-core/**'
+              - 'wallet-core/**'
+              - 'rusk-wallet/**'
+              - '.github/workflows/ruskwallet_ci.yml'
+
+  test_nightly-macm1:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+    name: "[Mac arm64] Nightly checks"
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+
+      - name: Add arm target for Apple Silicon build
+        run: rustup target add aarch64-apple-darwin
+
+      - run: cargo check --target=aarch64-apple-darwin --release
+        working-directory: ./rusk-wallet
+
+  test_nightly-win:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+    name: "[Windows] Nightly tests"
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+
+      - run: cargo test --release
+        working-directory: ./rusk-wallet
