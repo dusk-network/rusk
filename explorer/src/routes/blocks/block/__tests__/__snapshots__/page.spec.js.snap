@@ -579,7 +579,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                     class="transaction-type"
                   >
                     <svg
-                      class="dusk-icon dusk-icon--size--large"
+                      class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                      data-tooltip-disabled="false"
                       data-tooltip-id="main-tooltip"
                       data-tooltip-place="top"
                       data-tooltip-text="Moonlight"
@@ -673,7 +674,8 @@ exports[`Block Details > should render the Block Details page and query the nece
                     class="transaction-type"
                   >
                     <svg
-                      class="dusk-icon dusk-icon--size--large"
+                      class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                      data-tooltip-disabled="false"
                       data-tooltip-id="main-tooltip"
                       data-tooltip-place="top"
                       data-tooltip-text="Phoenix"
@@ -1307,7 +1309,8 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="false"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Moonlight"
@@ -1541,7 +1544,8 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="transaction-type"
             >
               <svg
-                class="dusk-icon dusk-icon--size--large"
+                class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                data-tooltip-disabled="false"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Phoenix"

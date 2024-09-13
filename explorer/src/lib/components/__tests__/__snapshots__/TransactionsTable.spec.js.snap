@@ -123,7 +123,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -217,7 +218,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -311,7 +313,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -405,7 +408,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -499,7 +503,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -593,7 +598,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -687,7 +693,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -781,7 +788,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -875,7 +883,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -969,7 +978,8 @@ exports[`Transactions Table > should pass additional class names to the rendered
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1095,7 +1105,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1168,7 +1179,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1241,7 +1253,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1314,7 +1327,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1387,7 +1401,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1460,7 +1475,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1533,7 +1549,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1606,7 +1623,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1679,7 +1697,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1752,7 +1771,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1905,7 +1925,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -1999,7 +2020,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2093,7 +2115,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2187,7 +2210,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2281,7 +2305,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2375,7 +2400,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2469,7 +2495,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2563,7 +2590,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2657,7 +2685,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"
@@ -2751,7 +2780,8 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             class="transaction-type"
           >
             <svg
-              class="dusk-icon dusk-icon--size--large"
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="true"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Moonlight"

@@ -87,7 +87,8 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
       class="transaction-type"
     >
       <svg
-        class="dusk-icon dusk-icon--size--large"
+        class="dusk-icon dusk-icon--size--large transaction-type__icon"
+        data-tooltip-disabled="true"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
         data-tooltip-text="Moonlight"
@@ -224,7 +225,8 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
       class="transaction-type"
     >
       <svg
-        class="dusk-icon dusk-icon--size--large"
+        class="dusk-icon dusk-icon--size--large transaction-type__icon"
+        data-tooltip-disabled="true"
         data-tooltip-id="main-tooltip"
         data-tooltip-place="top"
         data-tooltip-text="Moonlight"

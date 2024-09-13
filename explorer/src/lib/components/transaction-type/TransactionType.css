@@ -3,3 +3,7 @@
   align-items: center;
   gap: 0.3rem;
 }
+
+.transaction-type__icon[data-tooltip-disabled="false"] {
+  cursor: help;
+}

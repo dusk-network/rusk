@@ -170,7 +170,8 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           class="transaction-type"
         >
           <svg
-            class="dusk-icon dusk-icon--size--large"
+            class="dusk-icon dusk-icon--size--large transaction-type__icon"
+            data-tooltip-disabled="false"
             data-tooltip-id="main-tooltip"
             data-tooltip-place="top"
             data-tooltip-text="Moonlight"
@@ -543,7 +544,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
           class="transaction-type"
         >
           <svg
-            class="dusk-icon dusk-icon--size--large"
+            class="dusk-icon dusk-icon--size--large transaction-type__icon"
+            data-tooltip-disabled="false"
             data-tooltip-id="main-tooltip"
             data-tooltip-place="top"
             data-tooltip-text="Moonlight"
