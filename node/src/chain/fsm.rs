@@ -235,8 +235,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                                 .await
                                 .insert(local_hash_at_fork);
 
-                            // Reset the stalled chain FSM
-                            self.stalled_sm.reset(remote_blk.header().clone());
+                            // Try to reset the stalled chain FSM to `running`
+                            // state
+                            if let Err(err) =
+                                self.stalled_sm.reset(remote_blk.header())
+                            {
+                                info!(
+                                    event = "revert failed",
+                                    err = format!("{:?}", err)
+                                );
+                            }
                         }
                         Err(e) => {
                             error!(
@@ -383,6 +391,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     }
 
     pub(crate) async fn on_heartbeat_event(&mut self) -> anyhow::Result<()> {
+        self.stalled_sm.on_heartbeat_event().await;
+
         match &mut self.curr {
             State::InSync(ref mut curr) => {
                 if curr.on_heartbeat().await? {
@@ -731,10 +741,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
-        // TODO: Consider reporting metrics here
-
-        // TODO: Consider handling ACCEPT_BLOCK_TIMEOUT event here
-
         if let Some(pre_sync) = &mut self.presync {
             if pre_sync.expiry <= Instant::now() {
                 // Reset presync if it timed out
