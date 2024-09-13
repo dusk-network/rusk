@@ -505,7 +505,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             );
 
             for slashed in Slash::from_block(blk)? {
-                info!("Slashed {}", slashed.provisioner.to_base58());
+                info!(
+                    "Slashed {} at block {} (type: {:?})",
+                    slashed.provisioner.to_base58(),
+                    blk.header().height,
+                    slashed.r#type
+                );
                 slashed_count += 1;
             }
 
