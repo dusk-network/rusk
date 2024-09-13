@@ -5,15 +5,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use futures::StreamExt;
+use rues::CONTRACTS_TARGET;
 
 use crate::clients::{Cache, TRANSFER_CONTRACT};
-use crate::rusk::RuskHttpClient;
-use crate::{Error, RuskRequest};
+use crate::Error;
 
 use super::*;
 
 pub(crate) async fn sync_db(
-    client: &RuskHttpClient,
+    client: &RuesHttpClient,
     cache: &Cache,
     store: &LocalStore,
     status: fn(&str),
@@ -46,9 +46,10 @@ pub(crate) async fn sync_db(
 
     let mut stream = client
         .call_raw(
-            1,
+            CONTRACTS_TARGET,
             TRANSFER_CONTRACT,
-            &RuskRequest::new("leaves_from_pos", req),
+            "leaves_from_pos",
+            &req,
             true,
         )
         .await?
@@ -123,7 +124,7 @@ pub(crate) async fn sync_db(
 /// Asks the node to return the nullifiers that already exist from the given
 /// nullifiers.
 pub(crate) async fn fetch_existing_nullifiers_remote(
-    client: &RuskHttpClient,
+    client: &RuesHttpClient,
     nullifiers: &[BlsScalar],
 ) -> Result<Vec<BlsScalar>, Error> {
     if nullifiers.is_empty() {
@@ -131,7 +132,7 @@ pub(crate) async fn fetch_existing_nullifiers_remote(
     }
     let nullifiers = nullifiers.to_vec();
     let data = client
-        .contract_query::<_, 1024>(
+        .contract_query::<_, _, 1024>(
             TRANSFER_CONTRACT,
             "existing_nullifiers",
             &nullifiers,

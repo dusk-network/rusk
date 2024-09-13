@@ -21,6 +21,7 @@ mod cache;
 mod clients;
 mod crypto;
 mod error;
+mod rues;
 mod rusk;
 mod store;
 mod wallet;
@@ -28,6 +29,7 @@ mod wallet;
 /// Methods for parsing/checking the DAT wallet file
 pub mod dat;
 
+pub use rues::RuesHttpClient;
 pub use rusk::{RuskHttpClient, RuskRequest};
 
 pub use error::Error;

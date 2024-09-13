@@ -132,16 +132,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
+                href="/some-base-path/transactions/transaction?id=4a4593a447ae768a20a28c534afd815f1f72965a7442eff71e62833047514552"
               >
-                070280c695...94efca2a0e
+                4a4593a447...3047514552
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:42:20.000Z"
+                datetime="2024-09-11T21:55:25.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -171,7 +171,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000215552
+              0.008221117
             </td>
             
              
@@ -189,11 +189,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -207,16 +227,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
+                href="/some-base-path/transactions/transaction?id=47ae464b9cf13bbf6e7307ecd0cc1a978094d7571bc6698c9bc5fe3e5facba66"
               >
-                534f753d5a...5153259c00
+                47ae464b9c...3e5facba66
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:42:08.000Z"
+                datetime="2024-09-11T21:55:25.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -246,7 +266,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000215617
+              0.008221117
             </td>
             
              
@@ -254,9 +274,9 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               <span
-                class="dusk-badge dusk-badge--variant-error transaction-status"
+                class="dusk-badge dusk-badge--variant-success transaction-status"
               >
-                failed
+                success
               </span>
             </td>
             
@@ -264,11 +284,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -282,16 +322,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
+                href="/some-base-path/transactions/transaction?id=225dae3745d75fa7bbae7e0294cb9626ff01bb4de697c0be31a3fc176b36ea41"
               >
-                c6f13af20c...fc68ebb102
+                225dae3745...176b36ea41
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:41:58.000Z"
+                datetime="2024-09-11T21:55:25.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -321,7 +361,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000214413
+              0.008220846
             </td>
             
              
@@ -339,11 +379,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -357,16 +417,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
+                href="/some-base-path/transactions/transaction?id=03bae6e2e96709ebf41da7ca72353efca792723355332f467c0f32b3849de702"
               >
-                31c7dce26a...bf7bcb4c04
+                03bae6e2e9...b3849de702
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:40:57.000Z"
+                datetime="2024-09-11T21:55:25.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -396,7 +456,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000291769
+              0.008221266
             </td>
             
              
@@ -414,11 +474,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -432,16 +512,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=4fa6e913c083aa595530b1f6c010c7e5a58121307c991ea6782f9e9e4dd5510d"
+                href="/some-base-path/transactions/transaction?id=ed17ab505ab991e83194183b47b0ea8cd933e096c773767153414603a2b96964"
               >
-                4fa6e913c0...9e4dd5510d
+                ed17ab505a...03a2b96964
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:40:28.000Z"
+                datetime="2024-09-11T21:54:11.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -471,7 +551,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000290764
+              0.008220422
             </td>
             
              
@@ -489,11 +569,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -507,16 +607,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=d1a7928a435021d87ea3649bff57c8154fc7b5c6c68081a61fea5779ccdb2e04"
+                href="/some-base-path/transactions/transaction?id=cbac233a76cde9fdd129277e7368a2fdd99a5f390c2472e7f316151f4b53666c"
               >
-                d1a7928a43...79ccdb2e04
+                cbac233a76...1f4b53666c
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:39:59.000Z"
+                datetime="2024-09-11T21:54:11.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -546,7 +646,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000291961
+              0.008220926
             </td>
             
              
@@ -564,11 +664,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -582,16 +702,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=004ca8683c315b9270e04d3768dfb58fb0f65d92a9469ca31a5d97cff9718b06"
+                href="/some-base-path/transactions/transaction?id=a9abf02f549d21a89390eb18f5e91eeff95c21a4c6740dc30e113f2314152b5d"
               >
-                004ca8683c...cff9718b06
+                a9abf02f54...2314152b5d
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:39:13.000Z"
+                datetime="2024-09-11T21:54:11.000Z"
               >
-                18 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -621,7 +741,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000292039
+              0.008221243
             </td>
             
              
@@ -639,11 +759,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -657,16 +797,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=b5a77063e45dd90b97b2c30b4cd670fbf04ae60c4b8e3ea9fd0d0b4496253a05"
+                href="/some-base-path/transactions/transaction?id=a7171542640d6b918928927ee814c147ec2c07c5f7990fe82796520084798b6f"
               >
-                b5a77063e4...4496253a05
+                a717154264...0084798b6f
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:01:59.000Z"
+                datetime="2024-09-11T21:54:11.000Z"
               >
-                19 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -696,7 +836,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000290406
+              0.008220934
             </td>
             
              
@@ -714,11 +854,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -732,16 +892,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=b263d9d594439be92bb9349bd97f55a05060956419f2f4a32925639d80b06e0b"
+                href="/some-base-path/transactions/transaction?id=a171e5d05bd1e6478a4bcc7db4afd9d2e6430e5c3f94d49ffb71934776765465"
               >
-                b263d9d594...9d80b06e0b
+                a171e5d05b...4776765465
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:01:15.000Z"
+                datetime="2024-09-11T21:54:11.000Z"
               >
-                19 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -771,7 +931,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000291537
+              0.008220989
             </td>
             
              
@@ -789,11 +949,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              
@@ -807,16 +987,16 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             >
               <a
                 class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                href="/some-base-path/transactions/transaction?id=b4525cb82f5cd56fcf8ceb2eb30f647d2c3567e82abb8265dd12daf5275d7709"
+                href="/some-base-path/transactions/transaction?id=8fff9d4eb4818bfd66cfaf41b01842f4fd75b0c50605e40fa8b1b1393ee0ac57"
               >
-                b4525cb82f...f5275d7709
+                8fff9d4eb4...393ee0ac57
               </a>
                
               <time
                 class="dusk-relative-time transaction__time"
-                datetime="2024-05-29T05:00:40.000Z"
+                datetime="2024-09-11T21:54:11.000Z"
               >
-                19 hours ago
+                in 3 months
               </time>
             </td>
             
@@ -846,7 +1026,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              0.000291361
+              0.008221018
             </td>
             
              
@@ -864,11 +1044,31 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
-              <span
-                class="dusk-badge dusk-badge--variant-neutral transaction__type"
+              <div
+                class="transaction-type"
               >
-                transfer
-              </span>
+                <svg
+                  class="dusk-icon dusk-icon--size--large transaction-type__icon"
+                  data-tooltip-disabled="false"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="Moonlight"
+                  data-tooltip-type="info"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+                  />
+                </svg>
+                
+                 
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                >
+                  transfer
+                </span>
+              </div>
             </td>
             
              

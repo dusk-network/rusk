@@ -8,8 +8,9 @@
     ListItem,
     StaleDataNotice,
     TransactionStatus,
+    TransactionType,
   } from "$lib/components";
-  import { Badge, Card, RelativeTime, Switch } from "$lib/dusk/components";
+  import { Card, RelativeTime, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
     createCurrencyFormatter,
@@ -128,12 +129,9 @@
     <!-- TYPE -->
     <ListItem tooltipText="The transaction type">
       <svelte:fragment slot="term">type</svelte:fragment>
-      <svelte:fragment slot="definition"
-        ><Badge
-          className="transaction-details__type explorer-badge"
-          text={data.method}
-        /></svelte:fragment
-      >
+      <svelte:fragment slot="definition">
+        <TransactionType {data} displayTooltips={true} />
+      </svelte:fragment>
     </ListItem>
 
     <!-- TRANSACTION FEE -->
@@ -168,6 +166,14 @@
     <ListItem tooltipText="The amount of gas spent generating the transaction">
       <svelte:fragment slot="term">gas spent</svelte:fragment>
       <svelte:fragment slot="definition">{data.gasspent}</svelte:fragment>
+    </ListItem>
+
+    <!-- MEMO -->
+    <ListItem tooltipText="Transaction reference and additional notes">
+      <svelte:fragment slot="term">memo</svelte:fragment>
+      <svelte:fragment slot="definition"
+        ><DataGuard data={data.memo}>{data.memo}</DataGuard></svelte:fragment
+      >
     </ListItem>
 
     <!-- PAYLOAD -->

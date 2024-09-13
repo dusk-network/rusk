@@ -16,6 +16,7 @@ use dusk_bytes::Serializable;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
+use rues::RuesHttpClient;
 use serde::Serialize;
 use std::fmt::Debug;
 use std::fs;
@@ -271,7 +272,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         S: Into<String>,
     {
         // attempt connection
-        let http_state = RuskHttpClient::new(rusk_addr.into());
+        let http_state = RuesHttpClient::new(rusk_addr.into());
         let http_prover = RuskHttpClient::new(prov_addr.into());
 
         let state_status = http_state.check_connection().await;

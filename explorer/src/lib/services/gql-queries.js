@@ -14,7 +14,10 @@ fragment TransactionInfo on SpentTransaction {
     },
     gasLimit,
     gasPrice,
-    id
+    id,
+    isDeploy,
+    memo
+    txType
   }
 }
 `;

@@ -45,7 +45,7 @@ const TOPICS: &[u8] = &[
     Topics::Quorum as u8,
 ];
 
-const HEARTBEAT_SEC: Duration = Duration::from_secs(1);
+const HEARTBEAT_SEC: Duration = Duration::from_secs(3);
 
 pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Inbound wire messages queue
@@ -123,7 +123,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         let result_chan = acc.read().await.get_result_chan().await;
 
         let mut heartbeat = Instant::now().checked_add(HEARTBEAT_SEC).unwrap();
-
         // Message loop for Chain context
         loop {
             tokio::select! {

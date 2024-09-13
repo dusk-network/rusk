@@ -14,7 +14,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -27,7 +27,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -47,7 +49,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -60,7 +62,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -89,7 +93,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         data-tooltip-type="info"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -102,7 +106,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -125,7 +131,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         data-tooltip-type="info"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -138,7 +144,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -162,7 +170,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -175,7 +183,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -194,7 +204,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -207,7 +217,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -231,7 +243,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -244,7 +256,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -263,7 +277,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -276,7 +290,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             <span>
               - - -
             </span>
@@ -1043,7 +1059,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1056,7 +1072,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             0.368
             
             
@@ -1075,7 +1093,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1088,7 +1106,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             168.00M
             
             
@@ -1116,7 +1136,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         data-tooltip-type="info"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1130,7 +1150,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           
            
           <div
-            class="approximate"
+            class="statistics-panel__statistics-item-value approximate"
           >
             58.23M
             
@@ -1153,7 +1173,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         data-tooltip-type="info"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1167,7 +1187,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           
            
           <div
-            class="approximate"
+            class="statistics-panel__statistics-item-value approximate"
           >
             2.57M
             
@@ -1191,7 +1211,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1204,7 +1224,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             487,596
             
             
@@ -1222,7 +1244,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1235,7 +1257,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             10
             
             
@@ -1258,7 +1282,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1271,7 +1295,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             945
             
             
@@ -1289,7 +1315,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         class="statistics-panel__statistics-item"
       >
         <div
-          class="statistics-panel__statistics-item-value"
+          class="statistics-panel__statistics-item-value-container"
         >
           <svg
             class="dusk-icon dusk-icon--size--normal"
@@ -1302,7 +1328,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           </svg>
           
            
-          <div>
+          <div
+            class="statistics-panel__statistics-item-value"
+          >
             34
             
             

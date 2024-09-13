@@ -7,10 +7,11 @@
     DetailList,
     ListItem,
     TransactionStatus,
+    TransactionType,
   } from "$lib/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
-  import { Badge, RelativeTime } from "$lib/dusk/components";
+  import { RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { onMount } from "svelte";
 
@@ -123,8 +124,8 @@
   <ListItem tooltipText={displayTooltips ? "The transaction type" : ""}>
     <svelte:fragment slot="term">Type</svelte:fragment>
     <svelte:fragment slot="definition"
-      ><DataGuard data={data.method}>
-        <Badge className="explorer-badge" text={data.method} />
+      ><DataGuard data={data.method && data.txtype}>
+        <TransactionType {data} {displayTooltips} />
       </DataGuard></svelte:fragment
     >
   </ListItem>

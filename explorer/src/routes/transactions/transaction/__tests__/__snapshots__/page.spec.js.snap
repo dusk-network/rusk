@@ -204,11 +204,32 @@ exports[`Transaction Details > should render the Transaction details page and qu
         <dd
           class="details-list__definition"
         >
-          <span
-            class="dusk-badge dusk-badge--variant-neutral transaction-details__type explorer-badge"
+          <div
+            class="transaction-type"
           >
-            transfer
-          </span>
+            <svg
+              class="dusk-icon dusk-icon--size--large transaction-type__icon"
+              data-tooltip-disabled="false"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="Moonlight"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21Z"
+              />
+            </svg>
+            
+             
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+            >
+              transfer
+            </span>
+          </div>
+           
         </dd>
         <dt
           class="details-list__term"
@@ -321,6 +342,33 @@ exports[`Transaction Details > should render the Transaction details page and qu
           class="details-list__definition"
         >
           290766
+        </dd>
+        <dt
+          class="details-list__term"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Transaction reference and additional notes"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          memo
+        </dt>
+         
+        <dd
+          class="details-list__definition"
+        >
+          some notes about the transaction
+          
         </dd>
         <dt
           class="details-list__term"

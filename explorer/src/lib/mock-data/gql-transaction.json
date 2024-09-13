@@ -10,7 +10,10 @@
       "callData": null,
       "gasLimit": 500000000,
       "gasPrice": 1,
-      "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+      "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
+      "isDeploy": false,
+      "memo": "some notes about the transaction",
+      "txType": "Moonlight"
     }
   }
 }

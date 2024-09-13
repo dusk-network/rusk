@@ -48,5 +48,8 @@ type GQLTransaction = {
     gasLimit: number;
     gasPrice: number;
     id: string;
+    isDeploy: boolean;
+    memo: string;
+    txType: string;
   };
 };
