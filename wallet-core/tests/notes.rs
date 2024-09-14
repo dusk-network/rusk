@@ -21,7 +21,7 @@ use wallet_core::{
 };
 
 /// Generate a note, useful for testing purposes
-pub fn gen_note<T: RngCore + CryptoRng>(
+fn gen_note<T: RngCore + CryptoRng>(
     rng: &mut T,
     obfuscated_note: bool,
     owner_pk: &PhoenixPublicKey,
@@ -49,7 +49,7 @@ pub fn gen_note<T: RngCore + CryptoRng>(
 }
 
 /// Generate a note leaf, useful for testing purposes
-pub fn gen_note_leaf<T: RngCore + CryptoRng>(
+fn gen_note_leaf<T: RngCore + CryptoRng>(
     rng: &mut T,
     obfuscated_note: bool,
     owner_pk: &PhoenixPublicKey,

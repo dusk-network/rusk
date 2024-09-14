@@ -8,6 +8,7 @@
 
 use alloc::vec::Vec;
 
+use bytecheck::CheckBytes;
 use core::ops::Index;
 use core::slice::Iter;
 use execution_core::{
@@ -20,6 +21,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// The key is a `BlsScalar` and the value is a `NoteLeaf`.
 /// Duplicates are allowed.
 #[derive(Default, Archive, Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[archive_attr(derive(CheckBytes))]
 pub struct NoteList {
     /// The underlying storage of key-value pairs where
     /// `BlsScalar` is the key and `NoteLeaf` is the value.
