@@ -1,6 +1,6 @@
-# Dusk Wallet CLI
+# Rusk Wallet
 
-A user-friendly, reliable command line interface to the Dusk wallet!
+A feature-rich CLI wallet for interacting with Dusk.
 
 ```
 USAGE:
@@ -21,19 +21,30 @@ OPTIONS:
     -V, --version                  Print version information
 
 SUBCOMMANDS:
-    create         Create a new wallet
-    restore        Restore a lost wallet
-    balance        Check your current balance
-    addresses      List your existing addresses and generate new ones
-    history        Show address transaction history
-    transfer       Send DUSK through the network
-    stake          Start staking DUSK
-    stake-info     Check your stake information
-    unstake        Unstake a key's stake
-    withdraw       Withdraw accumulated reward for a stake key
-    export         Export BLS provisioner key pair
-    settings       Show current settings
-    help           Print this message or the help of the given subcommand(s)
+    create                       Create a new wallet
+    restore                      Restore a lost wallet
+    phoenix-balance              Check your current Phoenix balance
+    moonlight-balance            Check your current Moonlight balance
+    addresses                    List your existing addresses and generate new ones
+    phoenix-history              Show address transaction history
+    phoenix-transfer             Send DUSK privately through the network using Phoenix
+    phoenix-stake                Stake DUSK through Phoenix
+    phoenix-unstake              Unstake using Phoenix
+    phoenix-withdraw             Withdraw accumulated rewards for a stake key using Phoenix
+    phoenix-contract-deploy      Deploy a contract using Phoenix
+    phoenix-contract-call        Call a contract using Phoenix
+    stake-info                   Check your stake information
+    moonlight-transfer           Send DUSK publicly through the network using Moonlight
+    moonlight-stake              Stake DUSK using Moonlight
+    moonlight-unstake            Unstake using Moonlight
+    moonlight-withdraw           Withdraw accumulated rewards for a stake key using Moonlight
+    moonlight-contract-deploy    Deploy a contract using Moonlight
+    moonlight-contract-call      Call a contract using Moonlight
+    phoenix-to-moonlight         Convert Phoenix DUSK to Moonlight for the same owned address
+    moonlight-to-phoenix         Convert Moonlight DUSK to Phoenix for the same owned address
+    export                       Export BLS provisioner key-pair
+    settings                     Show current settings
+    help                         Print this message or the help of the given subcommand(s)
 ```
 
 ## Good to know
