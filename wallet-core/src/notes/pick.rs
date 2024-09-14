@@ -13,7 +13,7 @@ use crate::notes::MAX_INPUT_NOTES;
 use execution_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
 use execution_core::BlsScalar;
 
-/// Pick the notes to be used in a transaction from a vector of notes.
+/// Pick the notes to be used in a transaction from a list of owned notes.
 ///
 /// The notes are picked in a way to maximize the number of notes used,
 /// while minimizing the value employed. To do this we sort the notes in

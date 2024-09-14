@@ -17,17 +17,17 @@
 pub(crate) mod debug;
 
 pub mod error;
+pub mod mem;
 pub mod panic;
 
 use crate::keys::{
     derive_bls_pk, derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };
-use crate::notes;
+use crate::notes::{self, owned, pick};
 use crate::phoenix_balance;
 use crate::Seed;
 use error::ErrorCode;
 
-use alloc::alloc::{alloc, dealloc, Layout};
 use alloc::vec::Vec;
 use core::{ptr, slice};
 use dusk_bytes::Serializable;
@@ -37,36 +37,10 @@ use execution_core::{
 };
 use zeroize::Zeroize;
 
-use rkyv::{from_bytes, to_bytes};
+use rkyv::to_bytes;
 
 /// The size of the scratch buffer used for parsing the notes.
-/// It can roughly contains less than 128 serialized notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
-
-/// The alignment of the memory allocated by the FFI.
-///
-/// This is 1 because we're not allocating any complex data structures, and
-/// just interacting with the memory directly.
-const ALIGNMENT: usize = 1;
-
-/// Allocates a buffer of `len` bytes on the WASM memory.
-#[no_mangle]
-pub fn malloc(len: u32) -> u32 {
-    unsafe {
-        let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
-        let ptr = alloc(layout);
-        ptr as _
-    }
-}
-
-/// Frees a previously allocated buffer on the WASM memory.
-#[no_mangle]
-pub fn free(ptr: u32, len: u32) {
-    unsafe {
-        let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
-        dealloc(ptr as _, layout);
-    }
-}
 
 /// Map a list of indexes into keys using the provided seed and callback.
 unsafe fn indexes_into_keys<T, F>(
@@ -80,12 +54,6 @@ where
     let len = *indexes as usize;
     let slice = slice::from_raw_parts(indexes.add(1), len);
     slice.iter().map(|&byte| callback(seed, byte)).collect()
-}
-
-unsafe fn read_buffer(ptr: *const u8) -> Vec<u8> {
-    let len = slice::from_raw_parts(ptr, 4);
-    let len = u32::from_le_bytes(len.try_into().unwrap()) as usize;
-    slice::from_raw_parts(ptr.add(4), len).to_vec()
 }
 
 /// Generate a profile (account / address pair) for the given seed and index.
@@ -119,12 +87,11 @@ pub unsafe extern "C" fn generate_profile(
 pub unsafe fn map_owned(
     seed: &Seed,
     indexes: *const u8,
-    notes_ptr: *mut u8,
+    notes_ptr: *const u8,
+    owned_ptr: *mut *mut u8,
 ) -> ErrorCode {
     let keys = indexes_into_keys(seed, indexes, derive_phoenix_sk);
-    let notes = read_buffer(notes_ptr);
-    let notes: Vec<NoteLeaf> = from_bytes::<Vec<NoteLeaf>>(&notes)
-        .or(Err(ErrorCode::UnarchivingError))?;
+    let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
 
     let owned = notes::owned::map(&keys, notes);
 
@@ -135,8 +102,14 @@ pub unsafe fn map_owned(
 
     let len = bytes.len().to_le_bytes();
 
-    ptr::copy_nonoverlapping(len.as_ptr(), notes_ptr, 4);
-    ptr::copy_nonoverlapping(bytes.as_ptr(), notes_ptr.add(4), bytes.len());
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+
+    let ptr = ptr as *mut u8;
+
+    *owned_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
 
     ErrorCode::Ok
 }
@@ -152,9 +125,7 @@ pub unsafe fn balance(
 ) -> ErrorCode {
     let vk = derive_phoenix_vk(seed, index);
 
-    let notes = read_buffer(notes_ptr);
-    let notes: Vec<NoteLeaf> = from_bytes::<Vec<NoteLeaf>>(&notes)
-        .or(Err(ErrorCode::UnarchivingError))?;
+    let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
 
     let info = phoenix_balance(&vk, notes.iter());
 
@@ -163,6 +134,41 @@ pub unsafe fn balance(
         &mut (*balance_info_ptr)[0],
         16,
     );
+
+    ErrorCode::Ok
+}
+
+/// Pick the notes to be used in a transaction from an owned notes list.
+#[no_mangle]
+pub unsafe fn pick_notes(
+    seed: &Seed,
+    index: u8,
+    value: *const u64,
+    notes_ptr: *mut u8,
+) -> ErrorCode {
+    let vk = derive_phoenix_vk(seed, index);
+
+    let notes: owned::NoteList = mem::from_buffer(notes_ptr)?;
+
+    let notes = pick::notes(&vk, notes, *value);
+
+    let bytes = to_bytes::<_, NOTES_BUFFER_SIZE>(&notes)
+        .or(Err(ErrorCode::ArchivingError))?;
+
+    let len = bytes.len().to_le_bytes();
+
+    ptr::copy_nonoverlapping(len.as_ptr(), notes_ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), notes_ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
+/// Gets the bookmark from the given note.
+#[no_mangle]
+pub unsafe fn bookmark(leaf_ptr: *const u8, bookmark: *mut u64) -> ErrorCode {
+    let leaf: NoteLeaf = mem::from_buffer(leaf_ptr)?;
+
+    *bookmark = *leaf.note.pos();
 
     ErrorCode::Ok
 }
