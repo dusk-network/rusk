@@ -76,7 +76,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         info!(
             "collect_from_past: store candidate block  height: {}, iter: {}, hash: {}",
             p.candidate.header().height,
-            p.candidate.header().iter,
+            p.candidate.header().iteration,
             to_str(&p.candidate.header().hash),
         );
 
