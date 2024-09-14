@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
@@ -110,9 +110,9 @@ impl RatificationStep {
         )
     }
 
-    pub async fn run<T: Operations + 'static>(
+    pub async fn run<T: Operations + 'static, DB: Database>(
         &mut self,
-        mut ctx: ExecutionCtx<'_, T>,
+        mut ctx: ExecutionCtx<'_, T, DB>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
             .get_current_committee()

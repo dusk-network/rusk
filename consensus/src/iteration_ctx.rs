@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{RoundUpdate, TimeoutSet};
+use crate::commons::{Database, RoundUpdate, TimeoutSet};
 use std::cmp;
 
 use crate::config::{CONSENSUS_MAX_ITER, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE};
@@ -15,7 +15,7 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 
-use crate::{ratification, validation};
+use crate::{proposal, ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
 use node_data::ledger::Seed;
@@ -62,10 +62,11 @@ impl RoundCommittees {
 
 /// Represents a shared state within a context of the execution of a single
 /// iteration.
-pub struct IterationCtx {
+pub struct IterationCtx<DB: Database> {
     validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
     ratification_handler:
         Arc<Mutex<ratification::handler::RatificationHandler>>,
+    proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
 
     pub join_set: JoinSet<()>,
 
@@ -80,7 +81,7 @@ pub struct IterationCtx {
     timeouts: TimeoutSet,
 }
 
-impl IterationCtx {
+impl<DB: Database> IterationCtx<DB> {
     pub fn new(
         round: u64,
         iter: u8,
@@ -88,6 +89,7 @@ impl IterationCtx {
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,
+        proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
         timeouts: TimeoutSet,
     ) -> Self {
         Self {
@@ -98,6 +100,7 @@ impl IterationCtx {
             ratification_handler,
             committees: Default::default(),
             timeouts,
+            proposal_handler,
         }
     }
 
@@ -283,6 +286,15 @@ impl IterationCtx {
                     return Some(m);
                 }
             }
+            node_data::message::Topics::Candidate => {
+                let mut handler = self.proposal_handler.lock().await;
+                if let Ok(HandleMsgOutput::Ready(m)) = handler
+                    .collect_from_past(msg, ru, committee, generator)
+                    .await
+                {
+                    return Some(m);
+                }
+            }
             _ => {}
         };
 
@@ -290,7 +302,7 @@ impl IterationCtx {
     }
 }
 
-impl Drop for IterationCtx {
+impl<DB: Database> Drop for IterationCtx<DB> {
     fn drop(&mut self) {
         self.on_close();
     }

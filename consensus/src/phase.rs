@@ -52,7 +52,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_, T>,
+        mut ctx: ExecutionCtx<'_, T, D>,
     ) -> Result<Message, ConsensusError> {
         ctx.set_start_time();
 

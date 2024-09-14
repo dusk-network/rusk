@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config::{self, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{Operations, Voter};
@@ -228,9 +228,9 @@ impl<T: Operations + 'static> ValidationStep<T> {
         )
     }
 
-    pub async fn run(
+    pub async fn run<DB: Database>(
         &mut self,
-        mut ctx: ExecutionCtx<'_, T>,
+        mut ctx: ExecutionCtx<'_, T, DB>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
             .get_current_committee()
