@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Add
+
+- Add support for RUES [#2401]
+- Add Moonlight-Phoenix conversion [#2340]
+- Add Moonlight transactions [#2288]
+- Add Moonlight stake, unstake and withdraw [#2400]
+- Add contract deploy and contract calling [#2402]
+
 ### Fixed
 
 - Fix tx history to show tx created with "MAX" amount [#248]
@@ -498,6 +506,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implementation of `Store` trait from `wallet-core`
 - Implementation of `State` and `Prover` traits from `wallet-core`
 
+[#2402]: https://github.com/dusk-network/rusk/issues/2402
+[#2401]: https://github.com/dusk-network/rusk/issues/2401
+[#2400]: https://github.com/dusk-network/rusk/issues/2400
+[#2340]: https://github.com/dusk-network/rusk/issues/2340
+[#2288]: https://github.com/dusk-network/rusk/issues/2288
 [#248]: https://github.com/dusk-network/wallet-cli/issues/248
 [#244]: https://github.com/dusk-network/wallet-cli/issues/244
 [#243]: https://github.com/dusk-network/wallet-cli/issues/243
