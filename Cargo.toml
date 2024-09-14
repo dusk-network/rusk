@@ -25,11 +25,11 @@ members = [
     "node-data",
     "consensus",
     "node",
+    "rusk-wallet",
 
     # Test utils
     "test-wallet",
 ]
-exclude = ["rusk-wallet"]
 resolver = "2"
 
 [profile.dev.build-override]
@@ -52,4 +52,7 @@ codegen-units = 16
 overflow-checks = true
 
 [profile.release.package.transfer-contract]
+overflow-checks = true
+
+[profile.release.package.rusk-wallet]
 overflow-checks = true

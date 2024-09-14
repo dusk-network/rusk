@@ -25,60 +25,10 @@ jobs:
         with:
           filters: |
             run-ci:
-              - 'wallet-core/**'
               - 'execution-core/**'
+              - 'wallet-core/**'
               - 'rusk-wallet/**'
               - '.github/workflows/ruskwallet_ci.yml'
-  fmt:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
-    name: Rustfmt
-    runs-on: core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: cargo fmt --all -- --check
-
-  analyze:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
-    name: Dusk Analyzer
-    runs-on: core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: cargo install --git https://github.com/dusk-network/cargo-dusk-analyzer
-      - run: cargo dusk-analyzer
-
-  test_nightly-linux:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
-    name: "[Linux] Nightly tests"
-    runs-on: core
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: cargo test --release
-        working-directory: ./rusk-wallet
-      - run: cargo clippy --all-features --release -- -D warnings
-        working-directory: ./rusk-wallet
-
-  test_nightly-macintel:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
-    name: "[Mac Intel] Nightly tests"
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-
-      - name: Add arm target for Apple Silicon build
-        run: rustup target add aarch64-apple-darwin
-
-      - run: cargo test --release
-        working-directory: ./rusk-wallet
 
   test_nightly-macm1:
     needs: changes

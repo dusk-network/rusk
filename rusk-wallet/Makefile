@@ -7,7 +7,10 @@ build: ## Build the wallet
 install: build
 	cargo install --path .
 
+clippy: 
+	cargo clippy --all-features --release -- -D warnings
+
 test: build ## Run wallet tests
 	cargo test --release
 
-.PHONY: build test help
+.PHONY: build clippy test help 

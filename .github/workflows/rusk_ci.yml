@@ -28,7 +28,6 @@ jobs:
             run-ci:
               - '!(web-wallet/**/*|.github/workflows/webwallet_ci.yml)'
               - '!(explorer/**/*|.github/workflows/explorer_ci.yml)'
-              - '!(rusk-wallet/**/*|.github/workflows/ruskwallet_ci.yml)'
           predicate-quantifier: "every"
   analyze:
     needs: changes
