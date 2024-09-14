@@ -23,14 +23,14 @@ pub enum Address {
         index: Option<u8>,
         addr: PhoenixPublicKey,
     },
-    /// A BLS address for moonlight account
+    /// A BLS address for Moonlight account
     Bls {
         index: Option<u8>,
         addr: AccountPublicKey,
     },
 }
 
-/// A public address within the Dusk Network
+/// A public address within Dusk
 impl Address {
     /// Returns true if the current user owns this address
     pub fn is_owned(&self) -> bool {
@@ -76,7 +76,7 @@ impl Address {
         format!("{}...{}", &addr[..7], &addr[addr.len() - 7..])
     }
 
-    /// try to create phoenix address from string
+    /// try to create Phoenix address from string
     pub fn try_from_str_phoenix(s: &str) -> Result<Self, Error> {
         let bytes = bs58::decode(s).into_vec()?;
 
@@ -91,7 +91,7 @@ impl Address {
         Ok(addr)
     }
 
-    /// try to create moonlight address from string
+    /// try to create Moonlight address from string
     pub fn try_from_str_bls(s: &str) -> Result<Self, Error> {
         let bytes = bs58::decode(s).into_vec()?;
 
@@ -106,7 +106,7 @@ impl Address {
         Ok(addr)
     }
 
-    /// try to create phoenix public key from bytes
+    /// try to create Phoenix public key from bytes
     pub fn try_from_bytes_phoenix(
         bytes: &[u8; PhoenixPublicKey::SIZE],
     ) -> Result<Self, Error> {

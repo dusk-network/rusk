@@ -92,7 +92,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self.file
     }
 
-    /// Returns phoenix key pair for a given address
+    /// Returns Phoenix key pair for a given address
     ///
     /// # Errors
     ///
@@ -386,7 +386,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         ))
     }
 
-    /// Get moonlight account balance
+    /// Get Moonlight account balance
     pub async fn get_moonlight_balance(
         &self,
         addr: &Address,
@@ -423,31 +423,31 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self.addresses
     }
 
-    /// Returns the phoenix secret-key for a given index
+    /// Returns the Phoenix secret-key for a given index
     pub(crate) fn phoenix_secret_key(&self, index: u8) -> PhoenixSecretKey {
         let seed = self.store.get_seed();
         derive_phoenix_sk(seed, index)
     }
 
-    /// Returns the phoenix public-key for a given index
+    /// Returns the Phoenix public-key for a given index
     pub fn phoenix_public_key(&self, index: u8) -> PhoenixPublicKey {
         let seed = self.store.get_seed();
         derive_phoenix_pk(seed, index)
     }
 
-    /// Returns the bls secret-key for a given index
+    /// Returns the BLS secret-key for a given index
     pub(crate) fn bls_secret_key(&self, index: u8) -> BlsSecretKey {
         let seed = self.store.get_seed();
         derive_bls_sk(seed, index)
     }
 
-    /// Returns the bls public-key for a given index
+    /// Returns the BLS public-key for a given index
     pub fn bls_public_key(&self, index: u8) -> BlsPublicKey {
         let seed = self.store.get_seed();
         derive_bls_pk(seed, index)
     }
 
-    /// Creates a generic moonlight transaction.
+    /// Creates a generic Moonlight transaction.
     #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(
         &self,
@@ -559,7 +559,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(tx).await
     }
 
-    /// Transfers funds between phoenix-addresses
+    /// Transfers funds between Phoenix addresses
     pub async fn phoenix_transfer(
         &self,
         sender: &Address,
@@ -622,7 +622,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(tx).await
     }
 
-    /// Transfer through moonlight
+    /// Transfer through Moonlight
     pub async fn moonlight_transfer(
         &self,
         sender: &Address,
@@ -671,7 +671,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(tx).await
     }
 
-    /// Stakes Dusk using phoenix notes
+    /// Stakes Dusk using Phoenix notes
     pub async fn phoenix_stake(
         &self,
         addr: &Address,
@@ -727,7 +727,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(stake).await
     }
 
-    /// Stake via moonlight
+    /// Stake via Moonlight
     pub async fn moonlight_stake(
         &self,
         addr: &Address,
@@ -784,7 +784,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .await
     }
 
-    /// Unstakes Dusk into phoenix notes
+    /// Unstakes Dusk into Phoenix notes
     pub async fn phoenix_unstake(
         &self,
         addr: &Address,
@@ -834,7 +834,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(unstake).await
     }
 
-    /// Unstakes Dusk through moonlight
+    /// Unstakes Dusk through Moonlight
     pub async fn moonlight_unstake(
         &self,
         addr: &Address,
@@ -878,7 +878,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(unstake).await
     }
 
-    /// Withdraw accumulated staking reward for a given address
+    /// Withdraw accumulated staking reward for a given address to Phoenix
     pub async fn phoenix_stake_withdraw(
         &self,
         sender_addr: &Address,
@@ -926,7 +926,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(withdraw).await
     }
 
-    /// Convert balance from phoenix to moonlight
+    /// Convert balance from Phoenix to Moonlight
     pub async fn phoenix_to_moonlight(
         &self,
         sender_addr: &Address,
@@ -958,7 +958,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(convert).await
     }
 
-    /// Convert balance from moonlight to phoenix
+    /// Convert balance from Moonlight to Phoenix
     pub async fn moonlight_to_phoenix(
         &self,
         sender_addr: &Address,
@@ -988,7 +988,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(convert).await
     }
 
-    /// stake reward via moonlight
+    /// Withdraw accumulated staking reward for a given address to Moonlight
     pub async fn moonlight_stake_withdraw(
         &self,
         sender: &Address,
@@ -1014,7 +1014,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(withdraw).await
     }
 
-    /// Deploy contract using moonlight
+    /// Deploy a contract using Moonlight
     pub async fn moonlight_deploy(
         &self,
         sender: &Address,
@@ -1040,7 +1040,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(deploy).await
     }
 
-    /// Deploy contract using phoenix
+    /// Deploy a contract using Phoenix
     pub async fn phoenix_deploy(
         &self,
         sender: &Address,
@@ -1070,7 +1070,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(deploy).await
     }
 
-    /// Returns bls key pair for provisioner nodes
+    /// Returns BLS key-pair for provisioner nodes
     pub fn provisioner_keys(
         &self,
         addr: &Address,
@@ -1087,7 +1087,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok((pk, sk))
     }
 
-    /// Export bls key pair for provisioners in node-compatible format
+    /// Export BLS key-pair for provisioners in node-compatible format
     pub fn export_provisioner_keys(
         &self,
         addr: &Address,
@@ -1122,7 +1122,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut bytes = json.as_bytes().to_vec();
         bytes = crate::crypto::encrypt(&bytes, pwd)?;
 
-        // export key pair to disk
+        // export key-pair to disk
         fs::write(path.with_extension("keys"), bytes)?;
 
         Ok((path.with_extension("keys"), path.with_extension("cpk")))
@@ -1161,7 +1161,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
 /// This structs represent a Note decoded enriched with useful chain information
 pub struct DecodedNote {
-    /// The phoenix note
+    /// The Phoenix note
     pub note: Note,
     /// The decoded amount
     pub amount: u64,
@@ -1171,7 +1171,7 @@ pub struct DecodedNote {
     pub nullified_by: Option<BlsScalar>,
 }
 
-/// Bls key pair helper structure
+/// BLS key-pair helper structure
 #[derive(Serialize)]
 struct BlsKeyPair {
     #[serde(with = "base64")]

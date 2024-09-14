@@ -291,10 +291,10 @@ pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
     Ok(a.as_string().expect("answer to be a string").to_owned())
 }
 
-/// Request contract wasm file location
+/// Request contract WASM file location
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
     let question = requestty::Question::input("Location of the WASM contract")
-        .message("Location of the wasm file:")
+        .message("Location of the WASM file:")
         .validate_on_key(|f, _| PathBuf::from(f).exists())
         .validate(|f, _| {
             PathBuf::from(f)

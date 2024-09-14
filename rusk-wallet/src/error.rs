@@ -119,8 +119,8 @@ pub enum Error {
     /// Memo provided is too large
     #[error("Memo too large {0}")]
     MemoTooLarge(usize),
-    /// Expected Bls Key
-    #[error("Expected Bls Public Key")]
+    /// Expected BLS Key
+    #[error("Expected BLS Public Key")]
     ExpectedBlsPublicKey,
     /// Expected Phoenix public key
     #[error("Expected Phoenix public Key")]
@@ -129,7 +129,7 @@ pub enum Error {
     #[error("Invalid contractID provided")]
     InvalidContractId,
     /// Contract file location not found
-    #[error("Invalid wasm contract path provided")]
+    #[error("Invalid WASM contract path provided")]
     InvalidWasmContractPath,
 }
 

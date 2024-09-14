@@ -49,7 +49,7 @@ pub(crate) enum Command {
         file: Option<WalletPath>,
     },
 
-    /// Check your current phoenix balance
+    /// Check your current Phoenix balance
     PhoenixBalance {
         /// Address
         #[clap(short, long)]
@@ -60,7 +60,7 @@ pub(crate) enum Command {
         spendable: bool,
     },
 
-    /// Check your current moonlight balance
+    /// Check your current Moonlight balance
     MoonlightBalance {
         /// Address
         #[clap(short, long)]
@@ -74,8 +74,7 @@ pub(crate) enum Command {
         new: bool,
     },
 
-    /// Phoenix transaction commands
-
+    // Phoenix transaction commands
     /// Show address transaction history
     PhoenixHistory {
         /// Address for which you want to see the history
@@ -85,11 +84,11 @@ pub(crate) enum Command {
 
     /// Send DUSK privately through the network using Phoenix
     PhoenixTransfer {
-        /// Phoenix Address from which to send DUSK [default: first address]
+        /// Phoenix address from which to send DUSK [default: first address]
         #[clap(short, long)]
         sndr: Option<Address>,
 
-        /// Phoenix Receiver address
+        /// Phoenix receiver address
         #[clap(short, long)]
         rcvr: Address,
 
@@ -106,9 +105,9 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Start staking DUSK through phoenix
+    /// Stake DUSK through Phoenix
     PhoenixStake {
-        /// Phoenix Address from which to stake DUSK [default: first address]
+        /// Phoenix address from which to stake DUSK [default: first address]
         #[clap(short = 's', long)]
         addr: Option<Address>,
 
@@ -125,10 +124,10 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Unstake a key's stake using Phoenix
+    /// Unstake using Phoenix
     PhoenixUnstake {
-        /// Phoenix Address from which your DUSK was staked [default: first
-        /// address]
+        /// Phoenix address from which to make the unstake request [default:
+        /// first address]
         #[clap(short, long)]
         addr: Option<Address>,
 
@@ -141,10 +140,10 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Withdraw accumulated reward for a stake key using Phoenix
+    /// Withdraw accumulated rewards for a stake key using Phoenix
     PhoenixWithdraw {
-        /// Phoenix Address from which your DUSK was staked [default: first
-        /// address]
+        /// Phoenix address from which to make the withdraw request [default:
+        /// first address]
         #[clap(short, long)]
         addr: Option<Address>,
 
@@ -157,13 +156,13 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Deploy a contract using phoenix transaction
+    /// Deploy a contract using Phoenix
     PhoenixContractDeploy {
-        /// Phoenix Address from which to deploy the contract [default: first]
+        /// Phoenix address from which to deploy the contract [default: first]
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Path to the wasm contract code
+        /// Path to the WASM contract code
         #[clap(short, long)]
         code: PathBuf,
 
@@ -180,13 +179,13 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Call a contract using phoenix
+    /// Call a contract using Phoenix
     PhoenixContractCall {
-        /// Phoenix Address from which to call the contract [default: first]
+        /// Phoenix address from which to call the contract [default: first]
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// ContractId to call
+        /// Contract id of the contract to call
         #[clap(short, long)]
         contract_id: Vec<u8>,
 
@@ -218,15 +217,14 @@ pub(crate) enum Command {
         reward: bool,
     },
 
-    /// Moonlight transcation commands
-
-    /// Send DUSK through the network using moonlight
+    // Moonlight transaction commands
+    /// Send DUSK publicly through the network using Moonlight
     MoonlightTransfer {
-        /// Bls Address from which to send DUSK [default: first address]
+        /// Moonlight Address from which to send DUSK [default: first address]
         #[clap(short, long)]
         sndr: Option<Address>,
 
-        /// Bls Receiver address
+        /// Moonlight receiver address
         #[clap(short, long)]
         rcvr: Address,
 
@@ -243,8 +241,9 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
+    /// Stake DUSK using Moonlight
     MoonlightStake {
-        /// Bls Address from which to stake DUSK [default: first address]
+        /// Moonlight address from which to stake DUSK [default: first address]
         #[clap(short = 's', long)]
         addr: Option<Address>,
 
@@ -261,10 +260,10 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Unstake using moonlight
+    /// Unstake using Moonlight
     MoonlightUnstake {
-        /// Bls Address from which your DUSK was staked [default: first
-        /// address]
+        /// Moonlight address from which to make the unstake request [default:
+        /// first address]
         #[clap(short, long)]
         addr: Option<Address>,
 
@@ -279,12 +278,12 @@ pub(crate) enum Command {
 
     /// Withdraw accumulated rewards for a stake key using Moonlight
     MoonlightWithdraw {
-        /// Bls Address from which your DUSK was staked [default: first
-        /// address]
+        /// Moonlight address from which to make the withdraw request [default:
+        /// first address]
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Amount of dusk to withdraw
+        /// Amount of DUSK to withdraw
         #[clap(short, long)]
         amt: Dusk,
 
@@ -297,13 +296,14 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Deploy a contract using moonlight transaction
+    /// Deploy a contract using Moonlight
     MoonlightContractDeploy {
-        /// Bls Address from which to deploy the contract [default: first]
+        /// Moonlight address from which to deploy the contract [default:
+        /// first]
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Path to the wasm contract code
+        /// Path to the WASM contract code
         #[clap(short, long)]
         code: PathBuf,
 
@@ -320,7 +320,7 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Call a contract using moonlight
+    /// Call a contract using Moonlight
     MoonlightContractCall {
         /// ContractId to call
         #[clap(short, long)]
@@ -347,15 +347,14 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Conversion commands
-
-    /// Convert Phoenix balance to moonlight for the same owned address
+    // Conversion commands
+    /// Convert Phoenix DUSK to Moonlight for the same owned address
     PhoenixToMoonlight {
-        /// Bls or Phoenix Address from which to convert DUSK to
+        /// Moonlight or Phoenix address from which to convert DUSK to
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Amount of DUSK to transfer to moonlight account
+        /// Amount of DUSK to transfer to your Moonlight account
         #[clap(short, long)]
         amt: Dusk,
 
@@ -368,13 +367,13 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Convert moonlight balance to phoenix for the same owned address
+    /// Convert Moonlight DUSK to Phoenix for the same owned address
     MoonlightToPhoenix {
-        /// Bls or Phoenix Address from which to convert DUSK to
+        /// Moonlight or Phoenix Address from which to convert DUSK to
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Amount of DUSK to transfer to phoenix account
+        /// Amount of DUSK to transfer to your phoenix account
         #[clap(short, long)]
         amt: Dusk,
 
@@ -387,7 +386,7 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Export BLS provisioner key pair
+    /// Export BLS provisioner key-pair
     Export {
         /// Address for which you want the exported keys [default: first
         /// address]
