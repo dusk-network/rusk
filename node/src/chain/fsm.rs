@@ -926,7 +926,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             let from = self.range.0 + 1;
             let to = self.range.1 + 1;
 
-            for height in from..to {
+            for height in from..=to {
                 if self.pool.contains_key(&height) {
                     // already received
                     continue;

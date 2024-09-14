@@ -93,7 +93,9 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     /// Handles heartbeat event
     pub(crate) async fn on_heartbeat_event(&mut self) {
         trace!(event = "chain.heartbeat",);
-        self.on_running().await;
+        if let State::Running = &self.state {
+            self.on_running().await;
+        }
     }
 
     /// Handles block received event
@@ -264,7 +266,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             .await
             .get_latest_final_block()
             .await
-            .unwrap()
+            .unwrap_or_default() // TODO: handle error
             .header()
             .clone();
 
