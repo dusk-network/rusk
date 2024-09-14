@@ -3,10 +3,10 @@ name = "rusk-wallet"
 version = "0.1.0"
 edition = "2021"
 autobins = false
-description = "A library providing functionalities to create wallets compatible with Dusk Network"
+description = "A library providing functionalities to create wallets compatible with Dusk"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 keywords = ["wallet", "dusk", "cryptocurrency", "blockchain"]
-repository = "https://github.com/dusk-network/wallet-cli"
+repository = "https://github.com/dusk-network/rusk"
 license = "MPL-2.0"
 exclude = [".github/*", ".gitignore"]
 
