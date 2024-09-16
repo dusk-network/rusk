@@ -26,6 +26,7 @@ tar = "0.4"
 cargo_toml = "0.15"
 reqwest = "0.12"
 tokio = { version = "1", features = ["full"] }
+lazy_static = "1.5"
 
 license-circuits = { version = "0.1", path = "../circuits/license" }
 
