@@ -10,9 +10,7 @@ use execution_core::{
     transfer::phoenix::TRANSCRIPT_LABEL,
 };
 use once_cell::sync::Lazy;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use std::io;
+use std::{io, sync::mpsc, thread};
 
 use rusk_profile::Circuit as CircuitProfile;
 
@@ -32,12 +30,21 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
 
         _ => {
             warn!("{} new CRS due to cache miss", theme.warn("Building"));
-            let mut rng = StdRng::seed_from_u64(0xbeef);
+            let (tx, rx) = mpsc::channel();
 
-            let pp = PublicParameters::setup(1 << 17, &mut rng)
-                .expect("Cannot initialize Public Parameters");
+            thread::spawn(move || {
+                let pp_bytes =
+                    fetch_pp().expect("PublicParameters download failed.");
+                tx.send(pp_bytes).unwrap();
+            })
+            .join()
+            .expect("PublicParameters download thread panicked");
 
-            rusk_profile::set_common_reference_string(pp.to_raw_var_bytes())
+            let pp_bytes = rx.recv().unwrap();
+            let pp = PublicParameters::from_slice(pp_bytes.as_slice())
+                .expect("Creating PublicParameters from slice failed.");
+
+            rusk_profile::set_common_reference_string(pp_bytes)
                 .expect("Unable to write the CRS");
 
             info!("{} CRS", theme.info("Cached"));
@@ -46,6 +53,15 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
         }
     }
 });
+
+#[tokio::main]
+async fn fetch_pp() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let response = reqwest::get("https://dusk-infra.ams3.digitaloceanspaces.com/trusted-setup/dusk-trusted-setup").await?
+     .bytes()
+     .await?;
+
+    Ok(response.to_vec())
+}
 
 fn check_circuits_cache(
     circuit_list: Vec<CircuitProfile>,
