@@ -141,12 +141,14 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             // While we are still receiving blocks, no block
             // has been accepted for a long time (tip has not changed
             // recently)
-            self.on_accept_block_timeout().await
+            if let Err(err) = self.on_accept_block_timeout().await {
+                error!("Error in timeout event: {:?}", err);
+            }
         }
     }
 
     /// Handles block from wire in the `Stalled` state
-    async fn on_stalled(&mut self, new_blk: &Block) -> anyhow::Result<()> {
+    async fn on_stalled(&mut self, new_blk: &Block) -> Result<()> {
         if new_blk.header().height > self.tip.0.height {
             // Block is newer than the local tip block
             return Ok(());
@@ -206,8 +208,9 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     /// Handles block acceptance timeout
     ///
     /// Request missing blocks since last finalized block
-    async fn on_accept_block_timeout(&mut self) {
-        let (_, last_final_block) = self.last_final_block().await;
+    async fn on_accept_block_timeout(&mut self) -> Result<()> {
+        let (_, last_final_block) = self.last_final_block().await?;
+
         let from = last_final_block + 1;
         let to = self.tip.0.height + 1;
 
@@ -221,11 +224,11 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         let network = self.acc.read().await.network.clone();
         if let Err(e) = network.read().await.flood_request(&inv, None, 8).await
         {
-            warn!("Unable to request GetBlocks {e}");
-            return;
+            anyhow::bail!("Unable to request GetBlocks {e}");
         }
 
         self.state_transition(State::Stalled);
+        Ok(())
     }
 
     fn update_tip(&mut self, tip: &Header) {
@@ -259,17 +262,16 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         &self.state
     }
 
-    async fn last_final_block(&self) -> ([u8; 32], u64) {
+    async fn last_final_block(&self) -> Result<([u8; 32], u64)> {
         let hdr = self
             .acc
             .read()
             .await
             .get_latest_final_block()
-            .await
-            .unwrap_or_default() // TODO: handle error
+            .await?
             .header()
             .clone();
 
-        (hdr.hash, hdr.height)
+        Ok((hdr.hash, hdr.height))
     }
 }
