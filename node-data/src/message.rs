@@ -77,6 +77,7 @@ impl crate::Serializable for Version {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Status {
     Past,
     Present,
