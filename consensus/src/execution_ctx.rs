@@ -229,7 +229,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Process messages from past
     async fn process_past_events(&mut self, msg: Message) {
         if msg.header.round != self.round_update.round
-            || self.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
+            || msg.header.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
         {
             // Discard messages from past if current iteration is not considered
             // an emergency iteration

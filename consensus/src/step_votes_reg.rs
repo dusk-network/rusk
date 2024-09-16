@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
+use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Attestation, IterationInfo, StepVotes};
 use node_data::message::payload::{RatificationResult, Vote};
@@ -164,10 +165,10 @@ impl AttInfoRegistry {
         }
     }
 
-    /// Adds step votes per iteration
+    /// Set step votes per iteration
     /// Returns a quorum if both validation and ratification for an iteration
     /// exist
-    pub(crate) fn add_step_votes(
+    pub(crate) fn set_step_votes(
         &mut self,
         iteration: u8,
         vote: &Vote,
@@ -176,7 +177,7 @@ impl AttInfoRegistry {
         quorum_reached: bool,
         generator: &PublicKeyBytes,
     ) -> Option<Message> {
-        if let Vote::Valid(_) = vote {
+        if vote.is_valid() || iteration < EMERGENCY_MODE_ITERATION_THRESHOLD {
             let att = self
                 .att_list
                 .entry(iteration)
