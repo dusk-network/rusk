@@ -18,6 +18,10 @@ pub enum Command {
         /// Keeps untracked keys
         #[clap(short, long, value_parser = BoolishValueParser::new(), env = "RUSK_KEEP_KEYS")]
         keep: bool,
+
+        /// URL of the server to download the CRS from
+        #[clap(short, long, value_parser = BoolishValueParser::new(), env = "RUSK_CRS_URL")]
+        crs_url: String,
     },
 
     #[cfg(feature = "recovery-state")]
@@ -64,8 +68,8 @@ impl Command {
                 output,
             } => super::state::recovery_state(init, force, output),
             #[cfg(feature = "recovery-keys")]
-            Self::RecoveryKeys { keep } => {
-                rusk_recovery_tools::keys::exec(keep)
+            Self::RecoveryKeys { keep, crs_url } => {
+                rusk_recovery_tools::keys::exec(keep, crs_url)
             }
         };
 
