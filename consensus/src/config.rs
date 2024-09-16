@@ -23,7 +23,7 @@ pub const MAX_NUMBER_OF_FAULTS: usize = 100;
 pub const MAX_BLOCK_SIZE: usize = 1_024 * 1_024;
 
 /// Emergency mode is enabled after 16 iterations
-pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 6;
+pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
 
 pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);

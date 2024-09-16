@@ -176,21 +176,17 @@ impl AttInfoRegistry {
         quorum_reached: bool,
         generator: &PublicKeyBytes,
     ) -> Option<Message> {
-        if let Vote::Valid(_) = vote {
-            let att = self
-                .att_list
-                .entry(iteration)
-                .or_insert_with(|| IterationAtts::new(*generator));
+        let att = self
+            .att_list
+            .entry(iteration)
+            .or_insert_with(|| IterationAtts::new(*generator));
 
-            let att_info = att.get_or_insert(vote);
+        let att_info = att.get_or_insert(vote);
 
-            att_info.set_sv(iteration, sv, step, quorum_reached);
-            att_info.is_ready().then(|| {
-                Self::build_quorum_msg(&self.ru, iteration, att_info.att)
-            })
-        } else {
-            None
-        }
+        att_info.set_sv(iteration, sv, step, quorum_reached);
+        att_info
+            .is_ready()
+            .then(|| Self::build_quorum_msg(&self.ru, iteration, att_info.att))
     }
 
     fn build_quorum_msg(
