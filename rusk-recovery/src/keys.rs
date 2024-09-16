@@ -38,7 +38,10 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
         },
 
         _ => {
-            warn!("{} new CRS due to cache miss", theme.warn("Building"));
+            warn!(
+                "{} CRS from server due to cache miss",
+                theme.warn("Fetching")
+            );
             let (tx, rx) = mpsc::channel();
 
             thread::spawn(move || {
