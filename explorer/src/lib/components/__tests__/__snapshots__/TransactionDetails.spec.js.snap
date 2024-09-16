@@ -25,22 +25,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The ID of the transaction"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        ID
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The ID of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          ID
+        </div>
       </dt>
        
       <dd
@@ -51,22 +55,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The block height this transaction belongs to"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        block height
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The block height this transaction belongs to"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block height
+        </div>
       </dt>
        
       <dd
@@ -82,22 +90,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction status"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        Status
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction status"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          Status
+        </div>
       </dt>
        
       <dd
@@ -112,22 +124,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The date and time the transaction was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        timestamp
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The date and time the transaction was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          timestamp
+        </div>
       </dt>
        
       <dd
@@ -145,22 +161,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction type"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        type
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction type"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          type
+        </div>
       </dt>
        
       <dd
@@ -196,22 +216,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The fee paid for the transaction"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        transaction fee
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The fee paid for the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          transaction fee
+        </div>
       </dt>
        
       <dd
@@ -226,22 +250,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction gas price"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        gas price
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction gas price"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas price
+        </div>
       </dt>
        
       <dd
@@ -256,22 +284,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction gas limit"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        transaction gas limit
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction gas limit"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          transaction gas limit
+        </div>
       </dt>
        
       <dd
@@ -282,22 +314,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas spent generating the transaction"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        gas spent
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas spent generating the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas spent
+        </div>
       </dt>
        
       <dd
@@ -308,22 +344,26 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Transaction reference and additional notes"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        memo
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Transaction reference and additional notes"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          memo
+        </div>
       </dt>
        
       <dd
@@ -335,31 +375,35 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The payload"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        payload
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction payload"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          payload
 
         
-        <div
-          aria-checked="false"
-          aria-disabled="false"
-          class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
+          <div
+            aria-checked="false"
+            aria-disabled="false"
+            class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
+            role="switch"
+            tabindex="0"
+          />
+        </div>
       </dt>
        
       <dd
@@ -399,22 +443,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The ID of the transaction"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        ID
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The ID of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          ID
+        </div>
       </dt>
        
       <dd
@@ -425,22 +473,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The block height this transaction belongs to"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        block height
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The block height this transaction belongs to"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          block height
+        </div>
       </dt>
        
       <dd
@@ -456,22 +508,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction status"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        Status
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction status"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          Status
+        </div>
       </dt>
        
       <dd
@@ -486,22 +542,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The date and time the transaction was created"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        timestamp
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The date and time the transaction was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          timestamp
+        </div>
       </dt>
        
       <dd
@@ -519,22 +579,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction type"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        type
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction type"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          type
+        </div>
       </dt>
        
       <dd
@@ -570,22 +634,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The fee paid for the transaction"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        transaction fee
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The fee paid for the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          transaction fee
+        </div>
       </dt>
        
       <dd
@@ -600,22 +668,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction gas price"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        gas price
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction gas price"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas price
+        </div>
       </dt>
        
       <dd
@@ -630,22 +702,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The transaction gas limit"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        transaction gas limit
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction gas limit"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          transaction gas limit
+        </div>
       </dt>
        
       <dd
@@ -656,22 +732,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The amount of gas spent generating the transaction"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        gas spent
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The amount of gas spent generating the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          gas spent
+        </div>
       </dt>
        
       <dd
@@ -682,22 +762,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="Transaction reference and additional notes"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        memo
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="Transaction reference and additional notes"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          memo
+        </div>
       </dt>
        
       <dd
@@ -709,31 +793,35 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dt
         class="details-list__term"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--normal detail-list__help"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-place="top"
-          data-tooltip-text="The payload"
-          data-tooltip-type="info"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <div
+          class="details-list__term-layout"
         >
-          <path
-            d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-          />
-        </svg>
-        
-         
-        payload
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction payload"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          payload
 
         
-        <div
-          aria-checked="true"
-          aria-disabled="false"
-          class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
+          <div
+            aria-checked="true"
+            aria-disabled="false"
+            class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
+            role="switch"
+            tabindex="0"
+          />
+        </div>
       </dt>
        
       <dd
@@ -743,8 +831,26 @@ exports[`Transaction Details > renders the Transaction Details component with th
           class="dusk-card transaction-details__payload dusk-card--on-surface"
         >
            
-          db0794770322802a22905c4364511f3186e6184085f875dbb9f11a3ae914766c020000000000000014bc23b875c67d0dbecfdd45f5964f3fea7188aff2035730c8802
-          
+          <pre>
+            {
+  "type": "moonlight",
+  "from": "214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F",
+  "to": null,
+  "value": 0,
+  "deposit": 0,
+  "fee": {
+    "gas_price": "37",
+    "gas_limit": "500000000"
+  },
+  "call": {
+    "fn_name": "reset",
+    "contract": "1ea3e990304333fa98e5e31e48a1aaa1506235d8a243ea2168422e56f6681da8",
+    "fn_args": "Hg=="
+  },
+  "is_deploy": false,
+  "memo": null
+}
+          </pre>
            
         </div>
         

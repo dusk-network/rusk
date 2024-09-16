@@ -7,13 +7,16 @@
   import { onNetworkChange } from "$lib/lifecyles";
 
   const dataStore = createDataStore(duskAPI.getBlock);
+  const payloadStore = createDataStore(duskAPI.getBlockDetails);
 
   const getBlock = () => {
     dataStore.getData($appStore.network, $page.url.searchParams.get("id"));
+    payloadStore.getData($appStore.network, $page.url.searchParams.get("id"));
   };
 
   const updateData = () => {
     dataStore.reset();
+    payloadStore.reset();
     getBlock();
   };
 
@@ -28,11 +31,18 @@
 
   $: ({ isSmallScreen } = $appStore);
   $: ({ data, error, isLoading } = $dataStore);
+  $: ({ data: payloadData } = $payloadStore);
 </script>
 
 <section class="block">
   <div class="block__details">
-    <BlockDetails on:retry={getBlock} {data} {error} loading={isLoading} />
+    <BlockDetails
+      on:retry={getBlock}
+      {data}
+      {error}
+      loading={isLoading}
+      payload={payloadData}
+    />
   </div>
   <div class="block__transactions">
     <LatestTransactionsCard

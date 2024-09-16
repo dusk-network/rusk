@@ -7,8 +7,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    block
+    <div
+      class="details-list__term-layout"
+    >
+       
+      block
+    </div>
   </dt>
    
   <dd
@@ -25,8 +29,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    relative time
+    <div
+      class="details-list__term-layout"
+    >
+       
+      relative time
+    </div>
   </dt>
    
   <dd
@@ -44,8 +52,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    average gas price
+    <div
+      class="details-list__term-layout"
+    >
+       
+      average gas price
+    </div>
   </dt>
    
   <dd
@@ -58,8 +70,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    gas used
+    <div
+      class="details-list__term-layout"
+    >
+       
+      gas used
+    </div>
   </dt>
    
   <dd
@@ -80,8 +96,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    txn(s)
+    <div
+      class="details-list__term-layout"
+    >
+       
+      txn(s)
+    </div>
   </dt>
    
   <dd
@@ -93,8 +113,12 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dt
     class="details-list__term details-list__term--table"
   >
-     
-    rewards
+    <div
+      class="details-list__term-layout"
+    >
+       
+      rewards
+    </div>
   </dt>
    
   <dd

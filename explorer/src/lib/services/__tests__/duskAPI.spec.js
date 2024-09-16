@@ -159,6 +159,27 @@ describe("duskAPI", () => {
     `);
   });
 
+  it("should expose a method to retrieve the details of a single block", async () => {
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlockDetails));
+
+    await expect(duskAPI.getBlockDetails(node, fakeID)).resolves.toBe(
+      mockData.gqlBlockDetails.block.header.json
+    );
+    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
+      {
+        "body": "{"data":"query($id: String!) { block(hash: $id) { header { json } } }","topic":"gql"}",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "utf-8",
+          "Content-Type": "application/json",
+          "Rusk-gqlvar-id": ""some-id"",
+        },
+        "method": "POST",
+      }
+    `);
+  });
+
   it("should expose a method to retrieve the list of blocks", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlocks));
 
@@ -325,12 +346,12 @@ describe("duskAPI", () => {
     );
 
     await expect(duskAPI.getTransactionDetails(node, fakeID)).resolves.toBe(
-      mockData.gqlTransactionDetails.tx.raw
+      mockData.gqlTransactionDetails.tx.tx.json
     );
     expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"query($id: String!) { tx(hash: $id) { raw } }","topic":"gql"}",
+        "body": "{"data":"query($id: String!) { tx(hash: $id) { tx {json} } }","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",

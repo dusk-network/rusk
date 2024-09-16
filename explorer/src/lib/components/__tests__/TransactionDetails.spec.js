@@ -19,7 +19,7 @@ describe("Transaction Details", () => {
       marketCap: apiMarketData.market_data.market_cap,
     },
     payload:
-      "db0794770322802a22905c4364511f3186e6184085f875dbb9f11a3ae914766c020000000000000014bc23b875c67d0dbecfdd45f5964f3fea7188aff2035730c8802",
+      '{"type":"moonlight","from":"214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F","to":null,"value":0,"deposit":0,"fee":{"gas_price":"37","gas_limit":"500000000"},"call":{"fn_name":"reset","contract":"1ea3e990304333fa98e5e31e48a1aaa1506235d8a243ea2168422e56f6681da8","fn_args":"Hg=="},"is_deploy":false,"memo":null}',
   };
 
   afterEach(cleanup);

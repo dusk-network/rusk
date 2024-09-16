@@ -3,7 +3,12 @@
 <script>
   import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
   import { AppAnchorButton, DataCard, ListItem } from "$lib/components";
-  import { ProgressBar, RelativeTime } from "$lib/dusk/components";
+  import {
+    Card,
+    ProgressBar,
+    RelativeTime,
+    Switch,
+  } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -26,10 +31,16 @@
   /** @type {Boolean} */
   export let loading;
 
+  /** @type {String | null} */
+  export let payload;
+
   const formatter = createValueFormatter("en");
 
   /** @type {Number} */
   let screenWidth = window.innerWidth;
+
+  /** @type {Boolean} */
+  let isPayloadToggled = false;
 
   $: classes = makeClassName(["block-details", className]);
 
@@ -171,6 +182,29 @@
           calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
         )}</span
       >
+    </ListItem>
+
+    <!-- HEADER -->
+    <ListItem tooltipText="The block header information">
+      <svelte:fragment slot="term">
+        header
+
+        <Switch
+          className="block-details__payload-switch"
+          onSurface={true}
+          bind:value={isPayloadToggled}
+        />
+      </svelte:fragment>
+
+      <svelte:fragment slot="definition">
+        {#if isPayloadToggled}
+          <Card onSurface={true} className="block-details__payload">
+            <pre>{payload
+                ? JSON.stringify(JSON.parse(payload), null, 2)
+                : "---"}</pre>
+          </Card>
+        {/if}
+      </svelte:fragment>
     </ListItem>
   </dl>
 </DataCard>

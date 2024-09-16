@@ -33,7 +33,7 @@ vi.mock("$lib/services", async (importOriginal) => {
         .mockResolvedValue(transformTransaction(gqlTransaction.tx)),
       getTransactionDetails: vi
         .fn()
-        .mockResolvedValue(gqlTransactionDetails.tx.raw),
+        .mockResolvedValue(gqlTransactionDetails.tx.tx.json),
     },
   };
 });

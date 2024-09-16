@@ -103,22 +103,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            height
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              height
+            </div>
           </dt>
            
           <dd
@@ -170,22 +174,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The hash for the header of the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            hash
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The hash for the header of the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              hash
+            </div>
           </dt>
            
           <dd
@@ -196,22 +204,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The date and time the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            timestamp
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The date and time the block was created"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              timestamp
+            </div>
           </dt>
            
           <dd
@@ -229,22 +241,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            transactions
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The number of transactions included in the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              transactions
+            </div>
           </dt>
            
           <dd
@@ -255,22 +271,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The total fees paid for the transactions in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block fees paid
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The total fees paid for the transactions in the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              block fees paid
+            </div>
           </dt>
            
           <dd
@@ -282,22 +302,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block reward
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reward allocated to the block generator"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              block reward
+            </div>
           </dt>
            
           <dd
@@ -309,22 +333,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The block gas limit"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block gas limit
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block gas limit"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              block gas limit
+            </div>
           </dt>
            
           <dd
@@ -335,22 +363,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            gas used
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The amount of gas used generating the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              gas used
+            </div>
           </dt>
            
           <dd
@@ -373,22 +405,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average gas price for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            average gas price
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The average gas price for the transactions within the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              average gas price
+            </div>
           </dt>
            
           <dd
@@ -400,22 +436,26 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The state root hash"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            state root hash
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The state root hash"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              state root hash
+            </div>
           </dt>
            
           <dd
@@ -427,6 +467,45 @@ exports[`Block Details > should render the Block Details page and query the nece
             >
               20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
             </span>
+          </dd>
+          <dt
+            class="details-list__term"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block header information"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              header
+
+        
+              <div
+                aria-checked="false"
+                aria-disabled="false"
+                class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
+                role="switch"
+                tabindex="0"
+              />
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition"
+          >
+            
           </dd>
         </dl>
       </div>
@@ -744,22 +823,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            height
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              height
+            </div>
           </dt>
            
           <dd
@@ -811,22 +894,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The hash for the header of the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            hash
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The hash for the header of the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              hash
+            </div>
           </dt>
            
           <dd
@@ -837,22 +924,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The date and time the block was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            timestamp
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The date and time the block was created"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              timestamp
+            </div>
           </dt>
            
           <dd
@@ -870,22 +961,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The number of transactions included in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            transactions
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The number of transactions included in the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              transactions
+            </div>
           </dt>
            
           <dd
@@ -896,22 +991,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The total fees paid for the transactions in the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block fees paid
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The total fees paid for the transactions in the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              block fees paid
+            </div>
           </dt>
            
           <dd
@@ -923,22 +1022,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The reward allocated to the block generator"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block reward
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reward allocated to the block generator"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              block reward
+            </div>
           </dt>
            
           <dd
@@ -950,22 +1053,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The block gas limit"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            block gas limit
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block gas limit"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              block gas limit
+            </div>
           </dt>
            
           <dd
@@ -976,22 +1083,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The amount of gas used generating the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            gas used
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The amount of gas used generating the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              gas used
+            </div>
           </dt>
            
           <dd
@@ -1014,22 +1125,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The average gas price for the transactions within the block"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            average gas price
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The average gas price for the transactions within the block"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              average gas price
+            </div>
           </dt>
            
           <dd
@@ -1041,22 +1156,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The state root hash"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            state root hash
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The state root hash"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              state root hash
+            </div>
           </dt>
            
           <dd
@@ -1068,6 +1187,45 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             >
               20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
             </span>
+          </dd>
+          <dt
+            class="details-list__term"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block header information"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              header
+
+        
+              <div
+                aria-checked="false"
+                aria-disabled="false"
+                class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
+                role="switch"
+                tabindex="0"
+              />
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition"
+          >
+            
           </dd>
         </dl>
       </div>
@@ -1105,22 +1263,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            ID
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The ID of the transaction"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              ID
+            </div>
           </dt>
            
           <dd
@@ -1137,22 +1299,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            relative time
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Time elapsed since the transaction was created"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              relative time
+            </div>
           </dt>
            
           <dd
@@ -1171,22 +1337,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Gas Price
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction gas price in lux"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Gas Price
+            </div>
           </dt>
            
           <dd
@@ -1198,22 +1368,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Gas Limit
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction gas limit in lux"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Gas Limit
+            </div>
           </dt>
            
           <dd
@@ -1225,22 +1399,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Fee
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction fee amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Fee
+            </div>
           </dt>
            
           <dd
@@ -1253,22 +1431,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Status
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction status"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Status
+            </div>
           </dt>
            
           <dd
@@ -1284,22 +1466,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Type
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction type"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Type
+            </div>
           </dt>
            
           <dd
@@ -1340,22 +1526,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The ID of the transaction"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            ID
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The ID of the transaction"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              ID
+            </div>
           </dt>
            
           <dd
@@ -1372,22 +1562,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="Time elapsed since the transaction was created"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            relative time
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Time elapsed since the transaction was created"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              relative time
+            </div>
           </dt>
            
           <dd
@@ -1406,22 +1600,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas price in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Gas Price
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction gas price in lux"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Gas Price
+            </div>
           </dt>
            
           <dd
@@ -1433,22 +1631,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction gas limit in lux"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Gas Limit
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction gas limit in lux"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Gas Limit
+            </div>
           </dt>
            
           <dd
@@ -1460,22 +1662,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction fee amount"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Fee
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction fee amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Fee
+            </div>
           </dt>
            
           <dd
@@ -1488,22 +1694,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction status"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Status
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction status"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Status
+            </div>
           </dt>
            
           <dd
@@ -1519,22 +1729,26 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dt
             class="details-list__term details-list__term--table"
           >
-            <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-place="top"
-              data-tooltip-text="The transaction type"
-              data-tooltip-type="info"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
+            <div
+              class="details-list__term-layout"
             >
-              <path
-                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-              />
-            </svg>
-            
-             
-            Type
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The transaction type"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Type
+            </div>
           </dt>
            
           <dd

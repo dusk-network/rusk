@@ -155,6 +155,17 @@ const duskAPI = {
 
   /**
    * @param {string} node
+   * @param {string} id
+   * @returns {Promise<string>}
+   */
+  getBlockDetails(node, id) {
+    return gqlGet(node, gqlQueries.getBlockDetailsQueryInfo(id)).then(
+      getPath("block.header.json")
+    );
+  },
+
+  /**
+   * @param {string} node
    * @param {number} height
    * @returns {Promise<string>}
    */
@@ -248,7 +259,7 @@ const duskAPI = {
    */
   getTransactionDetails(node, id) {
     return gqlGet(node, gqlQueries.getTransactionDetailsQueryInfo(id)).then(
-      getPath("tx.raw")
+      getPath("tx.tx.json")
     );
   },
 

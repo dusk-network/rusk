@@ -59,6 +59,12 @@ export const getBlockQueryInfo = (id) => ({
   variables: { id },
 });
 
+/** @param {string} id */
+export const getBlockDetailsQueryInfo = (id) => ({
+  query: "query($id: String!) { block(hash: $id) { header { json } } }",
+  variables: { id },
+});
+
 /** @param {number} amount */
 export const getBlocksQueryInfo = (amount) => ({
   query: `
@@ -100,7 +106,7 @@ export const getTransactionsQueryInfo = (amount) => ({
 
 /** @param {string} id */
 export const getTransactionDetailsQueryInfo = (id) => ({
-  query: "query($id: String!) { tx(hash: $id) { raw } }",
+  query: "query($id: String!) { tx(hash: $id) { tx {json} } }",
   variables: { id },
 });
 
