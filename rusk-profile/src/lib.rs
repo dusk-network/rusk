@@ -24,7 +24,7 @@ pub use circuit::Circuit;
 pub static CRS_17_HASH: &str =
     "6161605616b62356cf09fa28252c672ef53b2c8489ad5f81d87af26e105f6059";
 
-const CRS_FNAME: &str = "dev-piecrust.crs";
+const CRS_FNAME: &str = "devnet-piecrust.crs";
 
 fn extension(p: &Path) -> Option<&str> {
     p.extension()?.to_str()
