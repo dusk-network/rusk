@@ -120,7 +120,7 @@ impl MsgHandler for RatificationHandler {
             })?;
 
         // Record any signature in global registry
-        _ = self.sv_registry.lock().await.add_step_votes(
+        let _ = self.sv_registry.lock().await.add_step_votes(
             iteration,
             &p.vote,
             sv,

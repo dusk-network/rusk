@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 use crate::iteration_ctx::RoundCommittees;
 use crate::proposal;
 use crate::ratification::handler::RatificationHandler;
@@ -36,7 +37,7 @@ pub trait MsgHandler {
         &self,
         msg: &Message,
         ru: &RoundUpdate,
-        iteration: u8,
+        current_iteration: u8,
         step: StepName,
         committee: &Committee,
         round_committees: &RoundCommittees,
@@ -51,9 +52,21 @@ pub trait MsgHandler {
 
         trace!(event = "msg received", msg = format!("{:#?}", msg),);
 
+        // We don't verify the tip here, otherwise future round messages will be
+        // discarded and not put into the queue
         let msg_tip = msg.header.prev_block_hash;
-        match msg.compare(ru.round, iteration, step) {
-            Status::Past => Err(ConsensusError::PastEvent),
+        match msg.compare(ru.round, current_iteration, step) {
+            Status::Past => {
+                if msg.header.iteration >= EMERGENCY_MODE_ITERATION_THRESHOLD {
+                    Self::verify_message(
+                        msg,
+                        ru,
+                        round_committees,
+                        Status::Past,
+                    )?;
+                }
+                Err(ConsensusError::PastEvent)
+            }
             Status::Present => {
                 if msg_tip != ru.hash() {
                     return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
@@ -70,60 +83,74 @@ pub trait MsgHandler {
                 self.verify(msg, round_committees)
             }
             Status::Future => {
-                // Pre-verify future messages for the current round
-                if msg.header.round == ru.round {
-                    if msg_tip != ru.hash() {
-                        return Err(ConsensusError::InvalidPrevBlockHash(
-                            msg_tip,
-                        ));
-                    }
-
-                    if let Some(future_committee) =
-                        round_committees.get_committee(msg.get_step())
-                    {
-                        // Ensure the message originates from a committee
-                        // member.
-                        if !future_committee.is_member(signer) {
-                            return Err(ConsensusError::NotCommitteeMember);
-                        }
-
-                        match &msg.payload {
-                            node_data::message::Payload::Ratification(_) => {
-                                RatificationHandler::verify_stateless(
-                                    msg,
-                                    round_committees,
-                                )?;
-                            }
-                            node_data::message::Payload::Validation(_) => {
-                                ValidationHandler::verify_stateless(
-                                    msg,
-                                    round_committees,
-                                )?;
-                            }
-                            node_data::message::Payload::Candidate(c) => {
-                                proposal::handler::verify_stateless(
-                                    c,
-                                    round_committees,
-                                )?;
-                            }
-                            node_data::message::Payload::Quorum(_) => {}
-                            node_data::message::Payload::Block(_) => {}
-                            _ => {
-                                warn!(
-                                    "future message not repropagated {:?}",
-                                    msg.topic()
-                                );
-                                Err(ConsensusError::InvalidMsgType)?;
-                            }
-                        }
-                    } else {
-                        warn!("Future committee for iteration {iteration} not generated; skipping pre-verification for {:?} message", msg.topic());
-                    }
-                }
-
+                Self::verify_message(
+                    msg,
+                    ru,
+                    round_committees,
+                    Status::Future,
+                )?;
                 Err(ConsensusError::FutureEvent)
             }
         }
+    }
+
+    fn verify_message(
+        msg: &Message,
+        ru: &RoundUpdate,
+        round_committees: &RoundCommittees,
+        status: Status,
+    ) -> Result<(), ConsensusError> {
+        let signer = msg.get_signer().expect("signer to exist");
+
+        // Pre-verify messages for the current round with different iteration
+        if msg.header.round == ru.round {
+            let msg_tip = msg.header.prev_block_hash;
+            if msg_tip != ru.hash() {
+                return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
+            }
+
+            let step = msg.get_step();
+            if let Some(committee) = round_committees.get_committee(step) {
+                // Ensure the message originates from a committee
+                // member.
+                if !committee.is_member(signer) {
+                    return Err(ConsensusError::NotCommitteeMember);
+                }
+
+                match &msg.payload {
+                    node_data::message::Payload::Ratification(_) => {
+                        RatificationHandler::verify_stateless(
+                            msg,
+                            round_committees,
+                        )?;
+                    }
+                    node_data::message::Payload::Validation(_) => {
+                        ValidationHandler::verify_stateless(
+                            msg,
+                            round_committees,
+                        )?;
+                    }
+                    node_data::message::Payload::Candidate(c) => {
+                        proposal::handler::verify_stateless(
+                            c,
+                            round_committees,
+                        )?;
+                    }
+                    node_data::message::Payload::Quorum(_) => {}
+                    node_data::message::Payload::Block(_) => {}
+                    _ => {
+                        warn!(
+                            "{status:?} message not repropagated {:?}",
+                            msg.topic()
+                        );
+                        Err(ConsensusError::InvalidMsgType)?;
+                    }
+                }
+            } else {
+                warn!("{status:?} committee for step {step} not generated; skipping pre-verification for {:?} message", msg.topic());
+            }
+        }
+        Ok(())
     }
 
     /// verify allows each Phase to fully verify the message payload.

@@ -71,8 +71,6 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(&msg)?;
 
-        // TODO: verify_new_block
-
         info!(
             "collect_from_past: store candidate block  height: {}, iter: {}, hash: {}",
             p.candidate.header().height,
