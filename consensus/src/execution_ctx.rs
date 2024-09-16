@@ -23,7 +23,7 @@ use node_data::StepName;
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
-use node_data::message::payload::{QuorumType, ValidationResult};
+use node_data::message::payload::{QuorumType, ValidationResult, Vote};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -227,16 +227,15 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     }
 
     /// Process messages from past
+    ///
+    /// Ignores messages that do not originate from emergency iteration of
+    /// current round
     async fn process_past_events(&mut self, msg: Message) {
-        if msg.header.round != self.round_update.round
-            || self.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
+        if msg.header.round == self.round_update.round
+            && msg.header.iteration >= EMERGENCY_MODE_ITERATION_THRESHOLD
         {
-            // Discard messages from past if current iteration is not considered
-            // an emergency iteration
-            return;
+            self.on_emergency_mode(msg).await;
         }
-
-        self.on_emergency_mode(msg).await
     }
 
     /// Handles a consensus message in emergency mode
@@ -257,23 +256,32 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         {
             match &m.payload {
                 Payload::Quorum(q) => {
-                    debug!(
-                        event = "quorum",
-                        src = "past_step",
-                        msg_step = m.get_step(),
-                        vote = ?q.vote(),
-                    );
+                    // When collecting votes from a past iteration, only
+                    // quorum for Vote::Valid should be propagated
+                    if let Vote::Valid(_) = &q.vote() {
+                        info!(
+                            event = "Quorum",
+                            src = "emergency_iter",
+                            msg_iteration,
+                            vote = ?q.vote(),
+                        );
 
-                    self.quorum_sender.send_quorum(m).await;
+                        self.quorum_sender.send_quorum(m).await;
+                    }
                 }
 
-                Payload::ValidationResult(validation_result) => {
-                    if let QuorumType::Valid = validation_result.quorum() {
-                        self.try_cast_ratification_vote(
-                            msg_iteration,
-                            validation_result,
-                        )
-                        .await
+                Payload::ValidationResult(result) => {
+                    info!(
+                      event = "Validation result",
+                      src = "emergency_iter",
+                      msg_iteration,
+                      vote = ?result.vote(),
+                      quorum = ?result.quorum(),
+                    );
+
+                    if let QuorumType::Valid = result.quorum() {
+                        self.try_cast_ratification_vote(msg_iteration, result)
+                            .await
                     }
                 }
                 _ => {
