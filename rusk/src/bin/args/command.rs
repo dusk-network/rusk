@@ -20,7 +20,7 @@ pub enum Command {
         keep: bool,
 
         /// URL of the server to download the CRS from
-        #[clap(short, long, value_parser = BoolishValueParser::new(), env = "RUSK_CRS_URL")]
+        #[clap(long, value_parser = BoolishValueParser::new(), env = "RUSK_CRS_URL")]
         crs_url: String,
     },
 
