@@ -67,7 +67,7 @@ pub trait MsgHandler {
                 // Delegate message final verification to the phase instance.
                 // It is the phase that knows what message type to expect and if
                 // it is valid or not.
-                self.verify(msg, iteration, round_committees)
+                self.verify(msg, round_committees)
             }
             Status::Future => {
                 // Pre-verify future messages for the current round
@@ -130,7 +130,6 @@ pub trait MsgHandler {
     fn verify(
         &self,
         msg: &Message,
-        iteration: u8,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError>;
 

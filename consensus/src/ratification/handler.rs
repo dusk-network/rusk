@@ -70,7 +70,6 @@ impl MsgHandler for RatificationHandler {
     fn verify(
         &self,
         msg: &Message,
-        iteration: u8,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
