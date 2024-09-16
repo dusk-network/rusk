@@ -120,7 +120,7 @@ impl MsgHandler for RatificationHandler {
             })?;
 
         // Record any signature in global registry
-        let _ = self.sv_registry.lock().await.add_step_votes(
+        let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &p.vote,
             sv,
@@ -159,7 +159,7 @@ impl MsgHandler for RatificationHandler {
             Ok((sv, quorum_reached)) => {
                 // Record any signature in global registry
                 if let Some(quorum_msg) =
-                    self.sv_registry.lock().await.add_step_votes(
+                    self.sv_registry.lock().await.set_step_votes(
                         p.header().iteration,
                         &p.vote,
                         sv,

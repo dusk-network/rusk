@@ -155,7 +155,7 @@ impl MsgHandler for ValidationHandler {
                 ConsensusError::InvalidVote(p.vote)
             })?;
         // Record result in global round registry
-        _ = self.sv_registry.lock().await.add_step_votes(
+        _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &p.vote,
             sv,
@@ -204,7 +204,7 @@ impl MsgHandler for ValidationHandler {
             Ok((sv, validation_quorum_reached)) => {
                 // We ignore the result since it's not possible to have a full
                 // quorum in the validation phase
-                let _ = self.sv_registry.lock().await.add_step_votes(
+                let _ = self.sv_registry.lock().await.set_step_votes(
                     p.header().iteration,
                     &p.vote,
                     sv,

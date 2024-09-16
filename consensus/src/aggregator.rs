@@ -121,7 +121,7 @@ impl<V: StepVote> Aggregator<V> {
             return Err(AggregatorError::DuplicatedVote);
         }
 
-        if v.header().iteration < EMERGENCY_MODE_ITERATION_THRESHOLD {
+        if !emergency {
             // Check if the provisioner voted for a different result
             let voters_list = self.uniqueness.entry(msg_step).or_default();
             match voters_list.get(signer.bytes()) {
