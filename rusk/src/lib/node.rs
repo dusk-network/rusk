@@ -12,25 +12,17 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use events::ChainEventStreamer;
 use execution_core::{dusk, Dusk};
-use kadcast::config::Config as KadcastConfig;
-use node::chain::ChainSrv;
 use node::database::rocksdb::{self, Backend};
-use node::database::{DatabaseOptions, DB};
-use node::databroker::conf::Params as BrokerParam;
-use node::databroker::DataBrokerSrv;
-use node::mempool::conf::Params as MempoolParam;
-use node::mempool::MempoolSrv;
 use node::network::Kadcast;
-use node::telemetry::TelemetrySrv;
-use node::{LongLivedService, Node};
+use node::LongLivedService;
 use parking_lot::RwLock;
 use rusk_abi::VM;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::broadcast;
 
-use crate::http::{HandleRequest, RuesEvent};
+use crate::http::RuesEvent;
 
+pub(crate) use events::ChainEventStreamer;
 pub use vm::ContractTxEvent;
 
 #[derive(Debug, Clone, Copy)]
@@ -53,153 +45,23 @@ pub struct Rusk {
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
 }
 
-type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
+pub(crate) type Services =
+    dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
 
+#[derive(Clone)]
 pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
 }
 
-#[derive(Clone)]
-pub struct RuskNodeBuilder {
-    consensus_keys_path: String,
-    databroker: BrokerParam,
-    kadcast: KadcastConfig,
-    mempool: MempoolParam,
-    telemetry_address: Option<String>,
-    db_path: PathBuf,
-    db_options: DatabaseOptions,
-    max_chain_queue_size: usize,
-
-    node: Option<node::Node<Kadcast<255>, Backend, Rusk>>,
-    rusk: Rusk,
-    rues_sender: Option<broadcast::Sender<RuesEvent>>,
-}
-
-impl RuskNodeBuilder {
-    pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
-        self.consensus_keys_path = consensus_keys_path;
-        self
-    }
-
-    pub fn with_databroker<P: Into<BrokerParam>>(
-        mut self,
-        databroker: P,
-    ) -> Self {
-        self.databroker = databroker.into();
-        self
-    }
-
-    pub fn with_kadcast<K: Into<kadcast::config::Config>>(
-        mut self,
-        kadcast: K,
-    ) -> Self {
-        self.kadcast = kadcast.into();
-        self
-    }
-
-    pub fn with_db_path(mut self, db_path: PathBuf) -> Self {
-        self.db_path = db_path;
-        self
-    }
-
-    pub fn with_db_options(mut self, db_options: DatabaseOptions) -> Self {
-        self.db_options = db_options;
-        self
-    }
-
-    pub fn with_rues(
-        mut self,
-        rues_sender: broadcast::Sender<RuesEvent>,
-    ) -> Self {
-        self.rues_sender = Some(rues_sender);
-        self
-    }
-
-    pub fn with_telemetry(
-        mut self,
-        telemetry_listen_add: Option<String>,
-    ) -> Self {
-        self.telemetry_address = telemetry_listen_add;
-        self
-    }
-
-    pub fn with_mempool(mut self, conf: MempoolParam) -> Self {
-        self.mempool = conf;
-        self
-    }
-
-    pub fn with_chain_queue_size(mut self, max_queue_size: usize) -> Self {
-        self.max_chain_queue_size = max_queue_size;
-        self
-    }
-
-    pub fn new(rusk: Rusk) -> Self {
-        Self {
-            consensus_keys_path: Default::default(),
-            databroker: Default::default(),
-            kadcast: Default::default(),
-            mempool: Default::default(),
-            telemetry_address: None,
-            db_path: Default::default(),
-            db_options: Default::default(),
-            max_chain_queue_size: 0,
-            node: None,
-            rusk,
-            rues_sender: None,
-        }
-    }
-
-    pub fn build_data_sources(
-        &mut self,
-    ) -> anyhow::Result<Vec<Box<dyn HandleRequest>>> {
-        let sources: Vec<Box<dyn HandleRequest>> = vec![
-            Box::new(self.rusk.clone()),
-            Box::new(self.get_or_create_node()?),
-        ];
-        Ok(sources)
-    }
-
-    fn get_or_create_node(&mut self) -> anyhow::Result<RuskNode> {
-        if self.node.is_none() {
-            let db = rocksdb::Backend::create_or_open(
-                self.db_path.clone(),
-                self.db_options.clone(),
-            );
-            let net = Kadcast::new(self.kadcast.clone())?;
-            let node = Node::new(net, db, self.rusk.clone());
-            self.node = Some(node)
-        }
-        Ok(RuskNode {
-            inner: self.node.clone().expect("Node to be initialized"),
-        })
-    }
-
-    pub async fn build_and_run(mut self) -> anyhow::Result<()> {
-        let node = self.get_or_create_node()?;
-        let (sender, node_receiver) = mpsc::channel(1000);
-        let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool, sender.clone())),
-            Box::new(ChainSrv::new(
-                self.consensus_keys_path,
-                self.max_chain_queue_size,
-                sender.clone(),
-            )),
-            Box::new(DataBrokerSrv::new(self.databroker)),
-            Box::new(TelemetrySrv::new(self.telemetry_address)),
-        ];
-        if let Some(rues_sender) = self.rues_sender {
-            service_list.push(Box::new(ChainEventStreamer {
-                rues_sender,
-                node_receiver,
-            }))
-        }
-        node.inner.initialize(&mut service_list).await?;
-        node.inner.spawn_all(service_list).await?;
-        Ok(())
-    }
-}
-
 impl RuskNode {
+    pub fn new(inner: node::Node<Kadcast<255>, Backend, Rusk>) -> Self {
+        Self { inner }
+    }
+
+    pub fn inner(&self) -> &node::Node<Kadcast<255>, Backend, Rusk> {
+        &self.inner
+    }
+
     pub fn db(&self) -> Arc<tokio::sync::RwLock<Backend>> {
         self.inner.database() as Arc<tokio::sync::RwLock<Backend>>
     }

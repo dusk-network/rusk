@@ -6,12 +6,12 @@
 
 #![allow(unused)]
 
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 mod chain;
 mod event;
 #[cfg(feature = "prover")]
 mod prover;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 mod rusk;
 mod stream;
 
@@ -21,6 +21,7 @@ pub(crate) use event::{
 };
 
 use execution_core::Event;
+use tokio::task::JoinError;
 use tracing::{debug, info, warn};
 
 use std::borrow::Cow;
@@ -28,7 +29,7 @@ use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::future::Future;
 use std::net::SocketAddr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::mpsc as std_mpsc;
@@ -77,12 +78,23 @@ use self::stream::{Listener, Stream};
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
 pub struct HttpServer {
-    pub handle: task::JoinHandle<()>,
+    handle: task::JoinHandle<()>,
     local_addr: SocketAddr,
-    pub _shutdown: broadcast::Sender<Infallible>,
+    _shutdown: broadcast::Sender<Infallible>,
+}
+
+pub struct HttpServerConfig {
+    pub address: String,
+    pub cert: Option<PathBuf>,
+    pub key: Option<PathBuf>,
+    pub ws_event_channel_cap: usize,
 }
 
 impl HttpServer {
+    pub async fn wait(self) -> Result<(), JoinError> {
+        self.handle.await
+    }
+
     pub async fn bind<A, H, P1, P2>(
         handler: H,
         event_receiver: broadcast::Receiver<RuesEvent>,

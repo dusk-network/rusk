@@ -11,12 +11,15 @@ pub mod gen_id;
 pub mod http;
 #[cfg(feature = "node")]
 pub mod node;
+
+mod builder;
 pub mod verifier;
 mod version;
 
 pub use crate::error::Error;
 pub use version::{VERSION, VERSION_BUILD};
 
+pub use builder::Builder;
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 #[cfg(feature = "node")]
 pub use node::Rusk;
