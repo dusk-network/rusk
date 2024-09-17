@@ -11,8 +11,11 @@ import { get } from "svelte/store";
 import {
   AddressSyncer,
   Bookkeeper,
+  Gas,
+  Network,
   ProfileGenerator,
 } from "$lib/vendor/w3sper.js/src/mod";
+import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 import { generateMnemonic } from "bip39";
 
 import { cacheUnspentNotes } from "$lib/mock-data";
@@ -81,7 +84,8 @@ describe("Wallet store", async () => {
     profiles: [defaultProfile],
   };
 
-  afterEach(() => {
+  afterEach(async () => {
+    await vi.runAllTimersAsync();
     abortControllerSpy.mockClear();
     addressSyncerNotesSpy.mockClear();
   });
@@ -117,6 +121,8 @@ describe("Wallet store", async () => {
       await vi.runAllTimersAsync();
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
+      expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
+      expect(balanceSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -166,17 +172,47 @@ describe("Wallet store", async () => {
   describe("Wallet store services", () => {
     const cacheClearSpy = vi.spyOn(walletCache, "clear");
 
+    /** @type {string} */
+    let from;
+
+    const toPhoenix =
+      "4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG";
+    const toMoonlight =
+      "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
+    const amount = 150_000_000_000n;
+    const gas = new Gas({ limit: 500n, price: 1n });
+
+    const txResult = {
+      hash: "some-tx-id",
+      nullifiers: [],
+    };
+
+    const executeSpy = vi
+      .spyOn(Network.prototype, "execute")
+      .mockResolvedValue(txResult);
+
     beforeEach(async () => {
       await walletStore.init(profileGenerator);
       await vi.runAllTimersAsync();
+
+      from = /** @type {string} */ (
+        get(walletStore).currentProfile?.address.toString()
+      );
+
+      addressSyncerNotesSpy.mockClear();
+      balanceSpy.mockClear();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+      await vi.runAllTimersAsync();
+
       cacheClearSpy.mockClear();
+      executeSpy.mockClear();
     });
 
     afterAll(() => {
       cacheClearSpy.mockRestore();
+      executeSpy.mockRestore();
     });
 
     it("should expose a method to clear local data", async () => {
@@ -206,6 +242,66 @@ describe("Wallet store", async () => {
         currentProfile: newProfile,
         profiles: [newProfile],
       });
+      expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
+      expect(balanceSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should expose a method to execute a phoenix transfer", async () => {
+      vi.useRealTimers();
+
+      const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
+      const expectedTx = {
+        amount,
+        from,
+        gas,
+        obfuscated: true,
+        to: b58.decode(toPhoenix),
+      };
+      const result = await walletStore.transfer(toPhoenix, amount, gas);
+
+      expect(executeSpy).toHaveBeenCalledTimes(1);
+
+      // our TransactionBuilder mock is loaded
+      expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+      expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
+      expect(setPendingNotesSpy).toHaveBeenCalledWith(
+        txResult.nullifiers,
+        txResult.hash
+      );
+      expect(result).toBe(txResult);
+
+      // check that we made a sync before the transfer and the balance update afterwards
+      expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
+      expect(balanceSpy).toHaveBeenCalledTimes(1);
+      expect(addressSyncerNotesSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        executeSpy.mock.invocationCallOrder[0]
+      );
+      expect(balanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
+        executeSpy.mock.invocationCallOrder[0]
+      );
+
+      setPendingNotesSpy.mockRestore();
+
+      vi.useFakeTimers();
+    });
+
+    it("shouldn't obfuscate the transaction if the receiver is a moonlight account", async () => {
+      vi.useRealTimers();
+
+      const expectedTx = {
+        amount,
+        from,
+        gas,
+        obfuscated: false,
+        to: b58.decode(toMoonlight),
+      };
+
+      await walletStore.transfer(toMoonlight, amount, gas);
+
+      // our TransactionBuilder mock is loaded
+      expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+
+      vi.useFakeTimers();
     });
   });
 });

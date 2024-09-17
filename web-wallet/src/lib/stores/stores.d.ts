@@ -30,6 +30,11 @@ type GasSettings = {
   price: number;
 };
 
+type TransactionInfo = {
+  hash: string;
+  nullifiers: Uint8Array[];
+};
+
 type TransactionsStoreContent = { transactions: Transaction[] };
 
 type TransactionsStore = Readable<TransactionsStoreContent>;
@@ -105,8 +110,8 @@ type WalletStoreServices = {
 
   transfer: (
     to: string,
-    amount: number,
-    gasSettings: GasSettings
+    amount: bigint,
+    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<any>;
 
   unstake: (gasSettings: GasSettings) => Promise<any>;

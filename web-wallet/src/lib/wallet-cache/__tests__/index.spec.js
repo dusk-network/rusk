@@ -36,7 +36,7 @@ describe("Wallet cache", () => {
   const db = getCacheDatabase();
 
   beforeEach(async () => {
-    await getCacheDatabase().delete();
+    await getCacheDatabase().delete({ disableAutoOpen: false });
     await fillCacheDatabase();
   });
 
@@ -514,6 +514,43 @@ describe("Wallet cache", () => {
       await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
         currentSyncInfo
       );
+    });
+
+    it("should expose a method to set a note as pending", async () => {
+      const existingPendingNullifiersAsStrings = await walletCache
+        .getPendingNotesInfo()
+        .then(mapWith(compose(String, getKey("nullifier"))));
+
+      /** @type {(notes: WalletCacheNote[]) => WalletCacheNote[]} */
+      const getTwoSpendableNotes = compose(
+        take(2),
+        filterWith(
+          (note) =>
+            !existingPendingNullifiersAsStrings.includes(
+              note.nullifier.toString()
+            )
+        )
+      );
+      const spendableNotes = getTwoSpendableNotes(cacheUnspentNotes);
+
+      // ensure we have the necessary data
+      expect(spendableNotes.length).toBe(2);
+
+      const spendableNullifiers = pluckFrom(spendableNotes, "nullifier");
+      const expectedInfo = sortByNullifier(
+        spendableNullifiers.map((nullifier) => ({
+          nullifier,
+          txId: "some-tx-id",
+        }))
+      );
+
+      await walletCache.setPendingNoteInfo(spendableNullifiers, "some-tx-id");
+
+      await expect(
+        walletCache
+          .getPendingNotesInfo(spendableNullifiers)
+          .then(sortByNullifier)
+      ).resolves.toStrictEqual(expectedInfo);
     });
 
     it("should expose a method to convert notes in the w3sper map format into the one used by the cache", () => {

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+
 import { walletStore } from "$lib/stores";
-import { getLastTransactionHash } from "$lib/transactions";
+
 import { executeSend } from "..";
 
 vi.mock("$lib/stores", async (importOriginal) => {
@@ -11,51 +12,54 @@ vi.mock("$lib/stores", async (importOriginal) => {
     ...original,
     walletStore: {
       ...original.walletStore,
-      transfer: vi.fn().mockResolvedValue(undefined),
+      transfer: vi.fn().mockResolvedValue({
+        hash: "some-tx-id",
+        nullifiers: [],
+      }),
     },
-  };
-});
-
-vi.mock("$lib/transactions", async (importOriginal) => {
-  /** @type {typeof import("$lib/transactions")} */
-  const original = await importOriginal();
-
-  return {
-    ...original,
-    getLastTransactionHash: vi.fn(() => ""),
   };
 });
 
 afterEach(() => {
   vi.mocked(walletStore.transfer).mockClear();
-  vi.mocked(getLastTransactionHash).mockClear();
 });
 
 afterAll(() => {
   vi.doUnmock("$lib/stores/walletStore");
-  vi.doUnmock("$lib/transactions");
 });
 
 describe("executeSend", () => {
-  it("should call the walletStore transfer method", async () => {
-    const args = ["abc", 1000, 1, 2];
-    // @ts-ignore
-    await executeSend(...args);
+  it("should call the walletStore transfer method and execute the transaction", async () => {
+    const duskAmount = 1000;
+    const luxAmount = BigInt(duskAmount * 1e9);
+    const result = await executeSend("fake-address", duskAmount, 1, 500);
 
     expect(walletStore.transfer).toHaveBeenCalledTimes(1);
-    expect(walletStore.transfer).toHaveBeenCalledWith("abc", 1000, {
-      limit: 2,
-      price: 1,
-    });
-    expect(getLastTransactionHash).toHaveBeenCalledTimes(1);
+    expect(walletStore.transfer).toHaveBeenCalledWith(
+      "fake-address",
+      luxAmount,
+      expect.objectContaining({
+        limit: 500n,
+        price: 1n,
+      })
+    );
+    expect(result).toBe("some-tx-id");
   });
 
-  it("should not call the getLastTransactionHash function when an error is emitted from the transfer function", async () => {
-    const err = new Error("some error");
+  it("should correctly convert decimal amounts in Dusk to Lux", async () => {
+    const duskAmount = 1234.56789;
+    const luxAmount = 1_234_567_890_000n;
+    const result = await executeSend("fake-address", duskAmount, 1, 500);
 
-    vi.mocked(walletStore.transfer).mockRejectedValueOnce(err);
-
-    await expect(executeSend("abc", 1000, 1, 2)).rejects.toBe(err);
-    expect(getLastTransactionHash).not.toHaveBeenCalled();
+    expect(walletStore.transfer).toHaveBeenCalledTimes(1);
+    expect(walletStore.transfer).toHaveBeenCalledWith(
+      "fake-address",
+      luxAmount,
+      expect.objectContaining({
+        limit: 500n,
+        price: 1n,
+      })
+    );
+    expect(result).toBe("some-tx-id");
   });
 });
