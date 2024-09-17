@@ -21,9 +21,6 @@ use serde::Serialize;
 use std::fmt::Debug;
 use std::fs;
 use std::path::{Path, PathBuf};
-use wallet_core::transaction::{
-    moonlight_deployment, moonlight_stake_reward, phoenix_deployment,
-};
 
 use wallet_core::{
     phoenix_balance,
@@ -32,9 +29,10 @@ use wallet_core::{
         derive_phoenix_vk,
     },
     transaction::{
-        moonlight, moonlight_stake, moonlight_to_phoenix, moonlight_unstake,
-        phoenix, phoenix_stake, phoenix_stake_reward, phoenix_to_moonlight,
-        phoenix_unstake,
+        moonlight, moonlight_deployment, moonlight_stake,
+        moonlight_stake_reward, moonlight_to_phoenix, moonlight_unstake,
+        phoenix, phoenix_deployment, phoenix_stake, phoenix_stake_reward,
+        phoenix_to_moonlight, phoenix_unstake,
     },
     BalanceInfo,
 };
@@ -52,7 +50,7 @@ use zeroize::Zeroize;
 use super::*;
 
 use crate::{
-    clients::{Prover, State},
+    clients::State,
     crypto::encrypt,
     currency::Dusk,
     dat::{
@@ -497,7 +495,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         from_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        state.propagate(tx).await
     }
 
     /// Executes a generic contract call, paying gas with phoenix notes
@@ -537,7 +535,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let tx = phoenix(
+        let utx = phoenix(
             &mut rng,
             &sender_sk,
             sender.pk()?,
@@ -551,12 +549,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             Some(data),
-            &Prover,
         )?;
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Transfers funds between Phoenix addresses
@@ -600,7 +598,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let tx = phoenix(
+        let utx = phoenix(
             &mut rng,
             &sender_sk,
             change_pk,
@@ -614,12 +612,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             None::<ContractCall>,
-            &Prover,
         )?;
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Transfer through Moonlight
@@ -668,7 +666,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         from_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        state.propagate(tx).await
     }
 
     /// Stakes Dusk using Phoenix notes
@@ -716,15 +714,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let stake = phoenix_stake(
+        let utx = phoenix_stake(
             &mut rng, &sender_sk, &stake_sk, inputs, root, gas.limit,
-            gas.price, chain_id, amt, nonce, &Prover,
+            gas.price, chain_id, amt, nonce,
         )?;
 
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(stake).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Stake via Moonlight
@@ -771,7 +770,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         stake_sk.zeroize();
 
-        state.prove_and_propagate(stake).await
+        state.propagate(stake).await
     }
 
     /// Obtains stake information for a given address
@@ -815,7 +814,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let unstake = phoenix_unstake(
+        let utx = phoenix_unstake(
             &mut rng,
             &sender_sk,
             &stake_sk,
@@ -825,13 +824,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
-            &Prover,
         )?;
 
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(unstake).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Unstakes Dusk through Moonlight
@@ -875,7 +874,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         stake_sk.zeroize();
 
-        state.prove_and_propagate(unstake).await
+        state.propagate(unstake).await
     }
 
     /// Withdraw accumulated staking reward for a given address to Phoenix
@@ -907,7 +906,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .map(|s| s.reward)
             .unwrap_or(0);
 
-        let withdraw = phoenix_stake_reward(
+        let utx = phoenix_stake_reward(
             &mut rng,
             &sender_sk,
             &stake_sk,
@@ -917,13 +916,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
-            &Prover,
         )?;
 
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(withdraw).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Convert balance from Phoenix to Moonlight
@@ -947,15 +946,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.phoenix_secret_key(sender_index);
         let mut stake_sk = self.bls_secret_key(sender_index);
 
-        let convert = phoenix_to_moonlight(
+        let utx = phoenix_to_moonlight(
             &mut rng, &sender_sk, &stake_sk, inputs, root, amt, gas.limit,
-            gas.price, chain_id, &Prover,
+            gas.price, chain_id,
         )?;
 
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(convert).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Convert balance from Moonlight to Phoenix
@@ -985,7 +985,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(convert).await
+        state.propagate(convert).await
     }
 
     /// Withdraw accumulated staking reward for a given address to Moonlight
@@ -1011,7 +1011,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(withdraw).await
+        state.propagate(withdraw).await
     }
 
     /// Deploy a contract using Moonlight
@@ -1037,7 +1037,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(deploy).await
+        state.propagate(deploy).await
     }
 
     /// Deploy a contract using Phoenix
@@ -1060,14 +1060,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.phoenix_secret_key(sender_index);
         let apk = self.bls_public_key(sender_index);
 
-        let deploy = phoenix_deployment(
+        let utx = phoenix_deployment(
             &mut rng, &sender_sk, inputs, root, bytes_code, &apk, init_args, 0,
-            gas.limit, gas.price, chain_id, &Prover,
+            gas.limit, gas.price, chain_id,
         )?;
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(deploy).await
+        let tx = state.prove_unproven(utx).await?;
+        state.propagate(tx).await
     }
 
     /// Returns BLS key-pair for provisioner nodes
