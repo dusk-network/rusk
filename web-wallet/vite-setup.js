@@ -4,6 +4,7 @@
 
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { expect, vi } from "vitest";
+
 import { readable } from "svelte/store";
 import { ResizeObserver } from "@juggle/resize-observer";
 import crypto from "node:crypto";
@@ -17,11 +18,19 @@ import "core-js/stable/structured-clone";
 import "fake-indexeddb/auto";
 
 import { IntersectionObserver } from "./src/lib/dusk/mocks";
-import Wallet from "./__mocks__/Wallet.js";
 
 // Mocking wallet connection modules
 vi.mock("@wagmi/core");
 vi.mock("@web3modal/wagmi");
+
+vi.mock("./src/lib/vendor/w3sper.js/src/protocol-driver/mod", async () => ({
+  ...(await import("./src/__mocks__/ProtocolDriver.js")),
+}));
+
+vi.mock("./src/lib/vendor/w3sper.js/src/mod", async (importOriginal) => ({
+  ...(await importOriginal()),
+  Network: (await import("./src/__mocks__/Network.js")).default,
+}));
 
 // Removing the console logging created by the walletConnect library after each test file
 Object.defineProperty(window, "litIssuedWarnings", {
@@ -31,12 +40,6 @@ Object.defineProperty(window, "litIssuedWarnings", {
   ]),
   writable: false,
 });
-
-// Mocking the Wallet
-vi.doMock("@dusk-network/dusk-wallet-js", async (importOriginal) => ({
-  ...(await importOriginal()),
-  Wallet,
-}));
 
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.

@@ -8,28 +8,22 @@ import {
   vi,
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
+import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
 
 import * as navigation from "$lib/navigation";
-import { addresses } from "$lib/mock-data";
 import { walletStore } from "$lib/stores";
 
 import { load } from "../+layout";
 import Layout from "../+layout.svelte";
 
 describe("App layout.js", () => {
-  const getPsksSpy = vi
-    .spyOn(Wallet.prototype, "getPsks")
-    .mockResolvedValue(addresses);
   const redirectSpy = vi.spyOn(navigation, "redirect");
 
   afterEach(() => {
-    getPsksSpy.mockClear();
     redirectSpy.mockClear();
   });
 
   afterAll(() => {
-    getPsksSpy.mockRestore();
     redirectSpy.mockRestore();
   });
 
@@ -42,7 +36,7 @@ describe("App layout.js", () => {
   });
 
   it("should do nothing otherwise", async () => {
-    await walletStore.init(new Wallet([]));
+    await walletStore.init(new ProfileGenerator(async () => new Uint8Array()));
 
     // @ts-ignore
     await expect(load()).resolves.toBe(void 0);

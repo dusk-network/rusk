@@ -5,14 +5,14 @@
   import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { createNumberFormatter } from "$lib/dusk/number";
-  import { settingsStore, walletStore } from "$lib/stores";
+  import { networkStore, settingsStore } from "$lib/stores";
   import { mdiCubeOutline } from "@mdi/js";
   $: ({ language } = $settingsStore);
 
-  /** @type {number} */
+  /** @type {bigint} */
   let currentBlock;
 
-  walletStore.getCurrentBlockHeight().then((block) => {
+  networkStore.getCurrentBlockHeight().then((block) => {
     currentBlock = block;
   });
 

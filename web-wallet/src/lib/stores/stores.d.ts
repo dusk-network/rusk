@@ -1,7 +1,5 @@
 type Readable<T> = import("svelte/store").Readable<T>;
 
-type Wallet = import("@dusk-network/dusk-wallet-js").Wallet;
-
 type Writable<T> = import("svelte/store").Writable<T>;
 
 type GasStoreContent = {
@@ -40,6 +38,18 @@ type OperationsStoreContent = { currentOperation: string };
 
 type OperationsStore = Writable<OperationsStoreContent>;
 
+type NetworkStoreContent = {
+  get connected(): boolean;
+};
+
+type NetworkStoreServices = {
+  connect: () => Promise<import("$lib/vendor/w3sper.js/src/mod").Network>;
+  disconnect: () => Promise<void>;
+  getCurrentBlockHeight: () => Promise<bigint>;
+};
+
+type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
+
 type WalletStoreContent = {
   balance: {
     maximum: number;
@@ -62,43 +72,36 @@ type WalletStoreServices = {
   clearLocalData: () => Promise<void>;
 
   clearLocalDataAndInit: (
-    wallet: Wallet,
-    syncFromBlock?: number
+    profileGenerator: import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator,
+    syncFromBlock?: bigint
   ) => Promise<void>;
 
-  getCurrentBlockHeight: () => Promise<number>;
+  getStakeInfo: () => Promise<any>;
 
-  getStakeInfo: () => Promise<any> & ReturnType<Wallet["stakeInfo"]>;
+  getTransactionsHistory: () => Promise<any>;
 
-  // The return type apparently is not in a promise here
-  getTransactionsHistory: () => Promise<ReturnType<Wallet["history"]>>;
-
-  init: (wallet: Wallet, syncFromBlock?: number) => Promise<void>;
+  init: (
+    profileGenerator: import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator,
+    syncFromBlock?: bigint
+  ) => Promise<void>;
 
   reset: () => void;
 
   setCurrentAddress: (address: string) => Promise<void>;
 
-  stake: (
-    amount: number,
-    gasSettings: GasSettings
-  ) => Promise<any> & ReturnType<Wallet["stake"]>;
+  stake: (amount: number, gasSettings: GasSettings) => Promise<any>;
 
-  sync: (from?: number) => Promise<void>;
+  sync: (from?: bigint) => Promise<void>;
 
   transfer: (
     to: string,
     amount: number,
     gasSettings: GasSettings
-  ) => Promise<any> & ReturnType<Wallet["transfer"]>;
+  ) => Promise<any>;
 
-  unstake: (
-    gasSettings: GasSettings
-  ) => Promise<any> & ReturnType<Wallet["unstake"]>;
+  unstake: (gasSettings: GasSettings) => Promise<any>;
 
-  withdrawReward: (
-    gasSettings: GasSettings
-  ) => Promise<any> & ReturnType<Wallet["withdrawReward"]>;
+  withdrawReward: (gasSettings: GasSettings) => Promise<any>;
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;
