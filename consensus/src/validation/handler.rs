@@ -214,6 +214,9 @@ impl MsgHandler for ValidationHandler {
                     )
                 {
                     return Ok(HandleMsgOutput::Ready(quorum_msg));
+                } else if let Vote::Valid(_) = &p.vote {
+                    // ValidationResult from past iteration is found
+                    return Ok(final_result(sv, p.vote, QuorumType::Valid));
                 }
             }
             Err(error) => {

@@ -13,7 +13,9 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
+use node_data::ledger::to_str;
 use node_data::message::payload::Candidate;
+use tracing::info;
 
 use crate::iteration_ctx::RoundCommittees;
 use node_data::message::{Message, Payload, StepMessage, WireMessage};
@@ -62,11 +64,27 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
 
     async fn collect_from_past(
         &mut self,
-        _msg: Message,
+        msg: Message,
         _ru: &RoundUpdate,
         _committee: &Committee,
         _generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
+        let p = Self::unwrap_msg(&msg)?;
+
+        // TODO: verify_new_block
+
+        info!(
+            "collect_from_past: store candidate block  height: {}, iter: {}, hash: {}",
+            p.candidate.header().height,
+            p.candidate.header().iteration,
+            to_str(&p.candidate.header().hash),
+        );
+
+        self.db
+            .lock()
+            .await
+            .store_candidate_block(p.candidate.clone());
+
         Ok(HandleMsgOutput::Pending)
     }
 

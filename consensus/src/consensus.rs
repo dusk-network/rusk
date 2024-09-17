@@ -161,7 +161,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Phase::Proposal(proposal::step::ProposalStep::new(
                     executor.clone(),
                     db.clone(),
-                    proposal_handler,
+                    proposal_handler.clone(),
                 )),
                 Phase::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
@@ -181,6 +181,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 iter,
                 validation_handler,
                 ratification_handler,
+                proposal_handler,
                 ru.base_timeouts.clone(),
             );
 

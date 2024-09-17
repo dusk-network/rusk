@@ -177,7 +177,7 @@ impl MsgHandler for RatificationHandler {
                     )
                 {
                     return Ok(HandleMsgOutput::Ready(quorum_msg));
-                };
+                }
             }
             Err(error) => {
                 warn!(

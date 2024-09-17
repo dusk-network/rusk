@@ -757,6 +757,7 @@ struct OutOfSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
     start_time: SystemTime,
     pool: HashMap<u64, Block>,
     peer_addr: SocketAddr,
+    attempts: u8,
 
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
     network: Arc<RwLock<N>>,
@@ -779,6 +780,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 Ipv4Addr::new(127, 0, 0, 1),
                 8000,
             )),
+            attempts: 3,
         }
     }
     /// performed when entering the OutOfSync state
@@ -904,12 +906,45 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             .unwrap()
             <= SystemTime::now()
         {
-            debug!(event = "out_of_sync timer expired");
-            // sync-up has timed out, recover consensus task
-            self.acc.write().await.restart_consensus().await;
+            if self.attempts == 0 {
+                debug!(
+                    event = format!(
+                        "out_of_sync timer expired for {} attempts",
+                        self.attempts
+                    )
+                );
+                // sync-up has timed out, recover consensus task
+                self.acc.write().await.restart_consensus().await;
 
-            // Transit back to InSync mode
-            return Ok(true);
+                // sync-up timed out for N attempts
+                // Transit back to InSync mode as a fail-over
+                return Ok(true);
+            }
+
+            // Request missing from local_pool blocks
+            let mut inv = Inv::new(0);
+            let from = self.range.0 + 1;
+            let to = self.range.1 + 1;
+
+            for height in from..=to {
+                if self.pool.contains_key(&height) {
+                    // already received
+                    continue;
+                }
+                inv.add_block_from_height(height);
+            }
+
+            let network = self.acc.read().await.network.clone();
+            if !inv.inv_list.is_empty() {
+                if let Err(e) =
+                    network.read().await.flood_request(&inv, None, 8).await
+                {
+                    warn!("Unable to request missing blocks {e}");
+                }
+            }
+
+            self.start_time = SystemTime::now();
+            self.attempts -= 1;
         }
 
         Ok(false)
