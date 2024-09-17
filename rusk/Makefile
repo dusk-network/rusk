@@ -34,7 +34,7 @@ clippy: ## Run clippy
 		-- -D warnings
 	@cargo clippy \
 		--no-default-features \
-		--features node \
+		--features chain \
 		--release \
 		-- -D warnings
 	@cargo check --benches --features testwallet

@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 mod node;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub use node::RuskNodeBuilder as Builder;
 
-#[cfg(not(feature = "node"))]
+#[cfg(not(feature = "chain"))]
 mod http_only;
-#[cfg(not(feature = "node"))]
+#[cfg(not(feature = "chain"))]
 pub use http_only::RuskHttpBuilder as Builder;

@@ -50,7 +50,7 @@ pub enum Error {
     /// Bad dusk spent in coinbase (got, expected).
     CoinbaseDuskSpent(Dusk, Dusk),
     /// Failed to produce proper state
-    #[cfg(feature = "node")]
+    #[cfg(feature = "chain")]
     InconsistentState(dusk_consensus::operations::VerificationOutput),
     /// Other
     Other(Box<dyn std::error::Error>),
@@ -177,7 +177,7 @@ impl fmt::Display for Error {
             Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
             }
-            #[cfg(feature = "node")]
+            #[cfg(feature = "chain")]
             Error::InconsistentState(verification_output) => {
                 write!(
                     f,
