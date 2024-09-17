@@ -13,9 +13,8 @@ use execution_core::{
             ContractBytecode, ContractCall, ContractDeploy, TransactionData,
         },
         phoenix::{
-            Note, NoteTreeItem, NotesTree, Prove,
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            TxCircuitVec,
+            Note, NoteTreeItem, NotesTree, PublicKey as PhoenixPublicKey,
+            SecretKey as PhoenixSecretKey,
         },
         Transaction,
     },
@@ -26,19 +25,6 @@ use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
 const CHAIN_ID: u8 = 0xFA;
-
-struct TxCircuitVecProver();
-
-// use the serialized TxCircuitVec as proof. This way that serialization is also
-// tested.
-impl Prove for TxCircuitVecProver {
-    fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
-        Ok(TxCircuitVec::from_slice(tx_circuit_vec_bytes)
-            .expect("serialization should be ok")
-            .to_var_bytes()
-            .to_vec())
-    }
-}
 
 fn new_phoenix_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
@@ -125,7 +111,6 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         gas_price,
         CHAIN_ID,
         data,
-        &TxCircuitVecProver(),
     )
     .expect("transaction generation should work")
 }

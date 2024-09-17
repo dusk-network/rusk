@@ -40,9 +40,8 @@ pub const PANIC_NONCE_NOT_READY: &str = "Nonce not ready to be used yet";
 use data::{ContractCall, ContractDeploy, TransactionData};
 use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{
-    Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-    Sender, StealthAddress, Transaction as PhoenixTransaction,
-    NOTES_TREE_DEPTH,
+    Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, Sender,
+    StealthAddress, Transaction as PhoenixTransaction, NOTES_TREE_DEPTH,
 };
 
 /// The transaction used by the transfer contract.
@@ -60,14 +59,10 @@ impl Transaction {
     /// Create a new phoenix transaction.
     ///
     /// # Errors
-    /// The creation of a transaction is not possible and will error if:
-    /// - one of the input-notes doesn't belong to the `sender_sk`
-    /// - the transaction input doesn't cover the transaction costs
-    /// - the `inputs` vector is either empty or larger than 4 elements
-    /// - the `inputs` vector contains duplicate `Note`s
-    /// - the `Prove` trait is implemented incorrectly
+    /// The creation of a transaction is not possible and will error if
+    /// [`PhoenixTransaction::new`] errors.
     #[allow(clippy::too_many_arguments)]
-    pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
+    pub fn phoenix<R: RngCore + CryptoRng>(
         rng: &mut R,
         sender_sk: &PhoenixSecretKey,
         change_pk: &PhoenixPublicKey,
@@ -81,9 +76,8 @@ impl Transaction {
         gas_price: u64,
         chain_id: u8,
         data: Option<impl Into<TransactionData>>,
-        prover: &P,
     ) -> Result<Self, Error> {
-        Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
+        Ok(Self::Phoenix(PhoenixTransaction::new(
             rng,
             sender_sk,
             change_pk,
@@ -97,7 +91,6 @@ impl Transaction {
             gas_price,
             chain_id,
             data,
-            prover,
         )?))
     }
 
