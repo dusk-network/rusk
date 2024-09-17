@@ -22,7 +22,7 @@ pub enum Command {
         /// URL of the server to download the CRS from
         #[clap(
             long,
-            default_value = "https://dusk-infra.ams3.digitaloceanspaces.com/trusted-setup/dusk-trusted-setup",
+            default_value = "https://nodes.dusk.network/trusted-setup",
             env = "RUSK_CRS_URL"
         )]
         crs_url: String,
