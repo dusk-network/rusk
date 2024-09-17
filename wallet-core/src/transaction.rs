@@ -22,7 +22,7 @@ use execution_core::{
         },
         moonlight::Transaction as MoonlightTransaction,
         phoenix::{
-            Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
+            Note, NoteOpening, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
@@ -31,27 +31,13 @@ use execution_core::{
     BlsScalar, ContractId, Error, JubJubScalar,
 };
 
-/// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
-/// the only difference being that it carries a serialized [`TxCircuitVec`]
-/// instead of the proof bytes.
-/// This way it is possible to delegate the proof generation of the
-/// [`TxCircuitVec`] after the unproven transaction was created while at the
-/// same time ensuring non-malleability of the transaction, as the transaction's
-/// payload-hash is part of the public inputs of the circuit.
-/// Once the proof is generated from the [`TxCircuitVec`] bytes, it can
-/// replace the serialized circuit in the transaction by calling
-/// [`Transaction::replace_proof`].
+/// Create a new generic unproven Phoenix [`Transaction`].
 ///
 /// # Errors
-/// The creation of a transaction is not possible and will error if:
-/// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
-/// - the transaction input doesn't cover the transaction costs
-/// - the `inputs` vector is either empty or larger than 4 elements
-/// - the `inputs` vector contains duplicate `Note`s
-/// - the `Prove` trait is implemented incorrectly
-/// - the Memo provided with `data` is too large
+/// The creation of a transaction is not possible and will error for the same
+/// reasons [`PhoenixTransaction::new`] would error.
 #[allow(clippy::too_many_arguments)]
-pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
+pub fn phoenix<R: RngCore + CryptoRng>(
     rng: &mut R,
     sender_sk: &PhoenixSecretKey,
     change_pk: &PhoenixPublicKey,
@@ -65,9 +51,8 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     gas_price: u64,
     chain_id: u8,
     data: Option<impl Into<TransactionData>>,
-    prover: &P,
 ) -> Result<Transaction, Error> {
-    Ok(PhoenixTransaction::new::<R, P>(
+    Ok(PhoenixTransaction::new(
         rng,
         sender_sk,
         change_pk,
@@ -81,7 +66,6 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         data,
-        prover,
     )?
     .into())
 }
@@ -123,7 +107,7 @@ pub fn moonlight(
     .into())
 }
 
-/// Create a [`Transaction`] to stake from phoenix-notes.
+/// Create a new unproven [`Transaction`] to stake from phoenix-notes.
 ///
 /// # Note
 /// The `current_nonce` is NOT incremented and should be incremented
@@ -131,14 +115,10 @@ pub fn moonlight(
 /// will throw 500 error
 ///
 /// # Errors
-/// The creation of a transaction is not possible and will error if:
-/// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
-/// - the transaction input doesn't cover the transaction costs
-/// - the `inputs` vector is either empty or larger than 4 elements
-/// - the `inputs` vector contains duplicate `Note`s
-/// - the `Prove` trait is implemented incorrectly
+/// The creation of a transaction is not possible and will error for the same
+/// reasons [`PhoenixTransaction::new`] would error.
 #[allow(clippy::too_many_arguments)]
-pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
+pub fn phoenix_stake<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
@@ -149,7 +129,6 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     stake_value: u64,
     current_nonce: u64,
-    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -162,7 +141,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
-    phoenix::<R, P>(
+    phoenix(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -176,7 +155,6 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
-        prover,
     )
 }
 
@@ -222,18 +200,14 @@ pub fn moonlight_stake(
     )
 }
 
-/// Create an unproven [`Transaction`] to withdraw stake rewards into a
+/// Create a new unproven [`Transaction`] to withdraw stake rewards into a
 /// phoenix-note.
 ///
 /// # Errors
-/// The creation of a transaction is not possible and will error if:
-/// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
-/// - the transaction input doesn't cover the transaction costs
-/// - the `inputs` vector is either empty or larger than 4 elements
-/// - the `inputs` vector contains duplicate `Note`s
-/// - the `Prove` trait is implemented incorrectly
+/// The creation of a transaction is not possible and will error for the same
+/// reasons [`PhoenixTransaction::new`] would error.
 #[allow(clippy::too_many_arguments)]
-pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
+pub fn phoenix_stake_reward<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
@@ -243,7 +217,6 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
-    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -272,7 +245,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
         reward_amount,
     )?;
 
-    phoenix::<R, P>(
+    phoenix(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -286,7 +259,6 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
-        prover,
     )
 }
 
@@ -336,17 +308,13 @@ pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
     )
 }
 
-/// Create an unproven [`Transaction`] to unstake into a phoenix-note.
+/// Create a new unproven [`Transaction`] to unstake into a phoenix-note.
 ///
 /// # Errors
-/// The creation of a transaction is not possible and will error if:
-/// - one of the input-notes doesn't belong to the `sender_sk`
-/// - the transaction input doesn't cover the transaction costs
-/// - the `inputs` vector is either empty or larger than 4 elements
-/// - the `inputs` vector contains duplicate `Note`s
-/// - the `Prove` trait is implemented incorrectly
+/// The creation of a transaction is not possible and will error for the same
+/// reasons [`PhoenixTransaction::new`] would error.
 #[allow(clippy::too_many_arguments)]
-pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
+pub fn phoenix_unstake<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
@@ -356,7 +324,6 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
-    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -385,7 +352,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
         unstake_value,
     )?;
 
-    phoenix::<R, P>(
+    phoenix(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -399,7 +366,6 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
-        prover,
     )
 }
 
@@ -449,22 +415,18 @@ pub fn moonlight_unstake<R: RngCore + CryptoRng>(
     )
 }
 
-/// Create an unproven [`Transaction`] to convert Phoenix Dusk into Moonlight
+/// Create a new unproven [`Transaction`] to convert Phoenix Dusk into Moonlight
 /// Dusk.
 ///
 /// # Note
-/// The ownership of both sender and receiver keys is required, and
-/// enforced by the protocol.
+/// The ownership of both sender and receiver keys is required, and enforced by
+/// the protocol.
 ///
 /// # Errors
-/// The creation of a transaction is not possible and will error if:
-/// - one of the input-notes doesn't belong to the `sender_sk`
-/// - the transaction input doesn't cover the transaction costs
-/// - the `inputs` vector is either empty or larger than 4 elements
-/// - the `inputs` vector contains duplicate `Note`s
-/// - the `Prove` trait is implemented incorrectly
+/// The creation of a transaction is not possible and will error for the same
+/// reasons [`PhoenixTransaction::new`] would error.
 #[allow(clippy::too_many_arguments)]
-pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
+pub fn phoenix_to_moonlight<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     moonlight_receiver_sk: &BlsSecretKey,
@@ -474,7 +436,6 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
-    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -503,7 +464,7 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
         convert_value,
     )?;
 
-    phoenix::<R, P>(
+    phoenix(
         rng,
         phoenix_sender_sk,
         &change_pk,
@@ -517,18 +478,16 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(contract_call),
-        prover,
     )
 }
 
 /// Create a [`Transaction`] to convert Moonlight Dusk into Phoenix Dusk.
 ///
 /// # Note
-/// 1. The ownership of both sender and receiver keys is required, and
-/// enforced by the protocol.
+/// 1. The ownership of both sender and receiver keys is required, and enforced
+///    by the protocol.
 /// 2. `current_nonce` is NOT incremented and should be incremented by the
-///    caller
-/// of this function, if its not done so, rusk will throw 500 error
+///    caller of this function, if its not done so, rusk will throw 500 error
 ///
 /// # Errors
 /// The creation of this transaction doesn't error, but still returns a result
@@ -545,8 +504,9 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
     chain_id: u8,
 ) -> Result<Transaction, Error> {
     let transfer_value = 0;
-    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
-                                 // transfer contract
+    // a conversion is a deposit to *and* withdrawal from the transfer contract
+    // done simultaniously
+    let deposit = convert_value;
     let gas_payment_token = WithdrawReplayToken::Moonlight(current_nonce);
 
     let contract_call = convert_to_phoenix(
@@ -572,14 +532,10 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
 /// Create a new unproven [`Transaction`] to deploy a contract to the network.
 ///
 /// # Errors
-/// The creation of a transaction is not possible and will error if:
-/// - one of the input-notes doesn't belong to the `sender_sk`
-/// - the transaction input doesn't cover the transaction costs
-/// - the `inputs` vector is either empty or larger than 4 elements
-/// - the `inputs` vector contains duplicate `Note`s
-/// - the `Prove` trait is implemented incorrectly
+/// The creation of a transaction is not possible and will error for the same
+/// reasons [`PhoenixTransaction::new`] would error.
 #[allow(clippy::too_many_arguments)]
-pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
+pub fn phoenix_deployment<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     inputs: Vec<(Note, NoteOpening, BlsScalar)>,
@@ -591,7 +547,6 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
     gas_limit: u64,
     gas_price: u64,
     chain_id: u8,
-    prover: &P,
 ) -> Result<Transaction, Error> {
     let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
     let change_pk = receiver_pk;
@@ -635,11 +590,10 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
         gas_price,
         chain_id,
         Some(deploy),
-        prover,
     )
 }
 
-/// Create a new [`Transaction`] to deploy a contract to the network.
+/// Create a new Moonlight [`Transaction`] to deploy a contract to the network.
 ///
 /// # Note
 /// The `current_nonce` is NOT incremented and should be incremented by the
