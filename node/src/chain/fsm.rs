@@ -142,7 +142,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
         let blk = self.attach_att_if_needed(blk);
         if let Some(blk) = blk.as_ref() {
-            match &mut self.curr {
+            let fsm_res = match &mut self.curr {
                 State::InSync(ref mut curr) => {
                     if let Some((b, peer_addr)) =
                         curr.on_block_event(blk, metadata).await?
@@ -158,6 +158,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         next.on_entering(b, peer_addr).await;
                         self.curr = State::OutOfSync(next);
                     }
+                    anyhow::Ok(())
                 }
                 State::OutOfSync(ref mut curr) => {
                     if curr.on_block_event(blk, metadata).await? {
@@ -176,8 +177,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         })?;
                         self.curr = State::InSync(next);
                     }
+                    anyhow::Ok(())
                 }
-            }
+            };
 
             // Try to detect a stalled chain
             // Generally speaking, if a node is receiving future blocks from the
@@ -185,7 +187,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // it might be a sign of a getting stalled on non-main branch.
 
             let res = self.stalled_sm.on_block_received(blk).await.clone();
-
             match res {
                 stall_chain_fsm::State::StalledOnFork(
                     local_hash_at_fork,
@@ -255,18 +256,15 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         }
                     }
                 }
-                stall_chain_fsm::State::Stalled => {
+                stall_chain_fsm::State::Stalled(_) => {
                     self.blacklisted_blocks.write().await.clear();
                 }
                 _ => {}
             }
+
+            // Ensure that an error in FSM does not affect the stalled_sm
+            fsm_res?;
         }
-        // FIXME: The block should return only if accepted. The current issue is
-        // that the impl of State::on_block_event doesn't return always the
-        // accepted block, so we can't rely on them
-        //
-        // Due to this issue, we reset the outer timeout even if we are not
-        // accepting the received block
 
         Ok(blk)
     }
