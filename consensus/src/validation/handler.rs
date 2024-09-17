@@ -103,7 +103,6 @@ impl MsgHandler for ValidationHandler {
     fn verify(
         &self,
         msg: &Message,
-        _iteration: u8,
         _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         match &msg.payload {
@@ -156,7 +155,7 @@ impl MsgHandler for ValidationHandler {
                 ConsensusError::InvalidVote(p.vote)
             })?;
         // Record result in global round registry
-        _ = self.sv_registry.lock().await.add_step_votes(
+        _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &p.vote,
             sv,
@@ -202,19 +201,18 @@ impl MsgHandler for ValidationHandler {
         let collect_vote = self.aggr.collect_vote(committee, &p);
 
         match collect_vote {
-            Ok((sv, quorum_reached)) => {
-                if let Some(quorum_msg) =
-                    self.sv_registry.lock().await.add_step_votes(
-                        p.header().iteration,
-                        &p.vote,
-                        sv,
-                        StepName::Validation,
-                        quorum_reached,
-                        &generator.expect("There must be a valid generator"),
-                    )
-                {
-                    return Ok(HandleMsgOutput::Ready(quorum_msg));
-                } else if let Vote::Valid(_) = &p.vote {
+            Ok((sv, validation_quorum_reached)) => {
+                // We ignore the result since it's not possible to have a full
+                // quorum in the validation phase
+                let _ = self.sv_registry.lock().await.set_step_votes(
+                    p.header().iteration,
+                    &p.vote,
+                    sv,
+                    StepName::Validation,
+                    validation_quorum_reached,
+                    &generator.expect("There must be a valid generator"),
+                );
+                if p.vote.is_valid() && validation_quorum_reached {
                     // ValidationResult from past iteration is found
                     return Ok(final_result(sv, p.vote, QuorumType::Valid));
                 }

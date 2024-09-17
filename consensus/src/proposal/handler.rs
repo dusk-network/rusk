@@ -32,13 +32,13 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
     fn verify(
         &self,
         msg: &Message,
-        iteration: u8,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
+        let p = Self::unwrap_msg(msg)?;
+        let iteration = p.header.iteration;
         let generator = round_committees
             .get_generator(iteration)
             .expect("committee to be created before run");
-        let p = Self::unwrap_msg(msg)?;
         super::handler::verify_new_block(p, &generator)?;
 
         Ok(())
@@ -70,8 +70,6 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         _generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(&msg)?;
-
-        // TODO: verify_new_block
 
         info!(
             "collect_from_past: store candidate block  height: {}, iter: {}, hash: {}",

@@ -18,9 +18,7 @@ use crate::aggregator::{Aggregator, StepVote};
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
-use node_data::message::{
-    payload, ConsensusHeader, Message, Payload, StepMessage,
-};
+use node_data::message::{payload, Message, Payload, StepMessage};
 
 use crate::user::committee::Committee;
 
@@ -72,7 +70,6 @@ impl MsgHandler for RatificationHandler {
     fn verify(
         &self,
         msg: &Message,
-        iteration: u8,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
@@ -81,12 +78,7 @@ impl MsgHandler for RatificationHandler {
             }
 
             p.verify_signature()?;
-            Self::verify_validation_result(
-                &msg.header,
-                iteration,
-                round_committees,
-                &p.validation_result,
-            )?;
+            Self::verify_validation_result(p, round_committees)?;
 
             return Ok(());
         }
@@ -128,7 +120,7 @@ impl MsgHandler for RatificationHandler {
             })?;
 
         // Record any signature in global registry
-        _ = self.sv_registry.lock().await.add_step_votes(
+        let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &p.vote,
             sv,
@@ -167,7 +159,7 @@ impl MsgHandler for RatificationHandler {
             Ok((sv, quorum_reached)) => {
                 // Record any signature in global registry
                 if let Some(quorum_msg) =
-                    self.sv_registry.lock().await.add_step_votes(
+                    self.sv_registry.lock().await.set_step_votes(
                         p.header().iteration,
                         &p.vote,
                         sv,
@@ -254,11 +246,12 @@ impl RatificationHandler {
 
     /// Verifies either valid or nil quorum of validation output
     fn verify_validation_result(
-        header: &ConsensusHeader,
-        iter: u8,
+        ratification: &Ratification,
         round_committees: &RoundCommittees,
-        result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
+        let header = &ratification.header;
+        let result = &ratification.validation_result;
+        let iter = header.iteration;
         let validation_committee = round_committees
             .get_validation_committee(iter)
             .ok_or_else(|| {
