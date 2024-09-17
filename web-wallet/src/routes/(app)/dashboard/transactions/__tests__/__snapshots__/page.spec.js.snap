@@ -51,27 +51,444 @@ exports[`Dashboard > should render the transactions page 1`] = `
     <div
       class="dusk-suspense transactions-list__container"
     >
-      <details
-        class="dusk-error-details dusk-error-details__details dusk-suspense__error"
+      <dl
+        class="transactions-list"
       >
-        <summary
-          class="dusk-error-details__summary"
+        <dt
+          class="transactions-list__term"
         >
-          Error getting transactions
-        </summary>
-         
-        <pre
-          class="dusk-error-details__error"
+          Hash
+        </dt>
+        <dd
+          class="transactions-list__datum transactions-list__datum--hash"
         >
-          			
-          No wallet instance to sync
-          
-		
-        </pre>
-      </details>
+          <samp>
+            <a
+              class="dusk-anchor dusk-anchor--on-surface"
+              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              tg874534tddsghdtst54hdfh795h
+            </a>
+          </samp>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Type
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
+          >
+            STAKE
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Block
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          33,460
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Amount
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          +27,000.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Fee
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          1,876.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+      </dl>
+      <dl
+        class="transactions-list"
+      >
+        <dt
+          class="transactions-list__term"
+        >
+          Hash
+        </dt>
+        <dd
+          class="transactions-list__datum transactions-list__datum--hash"
+        >
+          <samp>
+            <a
+              class="dusk-anchor dusk-anchor--on-surface"
+              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              tg874534tddsghdtst54hdfh794h
+            </a>
+          </samp>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Type
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
+          >
+            TRANSFER
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Block
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          33,459
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Amount
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          -25,000.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+      </dl>
+      <dl
+        class="transactions-list"
+      >
+        <dt
+          class="transactions-list__term"
+        >
+          Hash
+        </dt>
+        <dd
+          class="transactions-list__datum transactions-list__datum--hash"
+        >
+          <samp>
+            <a
+              class="dusk-anchor dusk-anchor--on-surface"
+              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              tg874534tddsghdtst54hdfh793h
+            </a>
+          </samp>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Type
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
+          >
+            TRANSFER
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Block
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          33,458
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Amount
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          +25,000.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+      </dl>
+      <dl
+        class="transactions-list"
+      >
+        <dt
+          class="transactions-list__term"
+        >
+          Hash
+        </dt>
+        <dd
+          class="transactions-list__datum transactions-list__datum--hash"
+        >
+          <samp>
+            <a
+              class="dusk-anchor dusk-anchor--on-surface"
+              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh792h"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              tg874534tddsghdtst54hdfh792h
+            </a>
+          </samp>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Type
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
+          >
+            TRANSFER
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Block
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          33,457
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Amount
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          -25,000.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Fee
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          1,876.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+      </dl>
+      <dl
+        class="transactions-list"
+      >
+        <dt
+          class="transactions-list__term"
+        >
+          Hash
+        </dt>
+        <dd
+          class="transactions-list__datum transactions-list__datum--hash"
+        >
+          <samp>
+            <a
+              class="dusk-anchor dusk-anchor--on-surface"
+              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh791h"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              tg874534tddsghdtst54hdfh791h
+            </a>
+          </samp>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Type
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
+          >
+            TRANSFER
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Block
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          33,456
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Amount
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          -25,000.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+      </dl>
+      <dl
+        class="transactions-list"
+      >
+        <dt
+          class="transactions-list__term"
+        >
+          Hash
+        </dt>
+        <dd
+          class="transactions-list__datum transactions-list__datum--hash"
+        >
+          <samp>
+            <a
+              class="dusk-anchor dusk-anchor--on-surface"
+              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh790h"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              tg874534tddsghdtst54hdfh790h
+            </a>
+          </samp>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Type
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          <span
+            class="dusk-badge dusk-badge--variant-neutral transactions-list__badge"
+          >
+            STAKE
+          </span>
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Block
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          33,455
+           
+        </dd>
+        <dt
+          class="transactions-list__term"
+        >
+          Amount
+        </dt>
+        <dd
+          class="transactions-list__datum"
+        >
+          +25,000.00
+           
+          <span
+            class="transactions-list__ticker"
+          >
+            Dusk
+          </span>
+           
+        </dd>
+      </dl>
       
-       
-       
+      
     </div>
   </article>
 </div>
