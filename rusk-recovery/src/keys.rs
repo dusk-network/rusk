@@ -31,11 +31,12 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     let theme = Theme::default();
     info!("{} CRS from cache", theme.action("Fetching"));
     match rusk_profile::get_common_reference_string() {
-        Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
-            let pp = PublicParameters::from_slice_unchecked(&buff[..]);
+        Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => {
+            let pp = PublicParameters::from_slice(&buff[..])
+                .expect("Creating PublicParameters from slice failed.");
             info!("{} CRS", theme.info("Loaded"));
             pp
-        },
+        }
 
         _ => {
             warn!(
