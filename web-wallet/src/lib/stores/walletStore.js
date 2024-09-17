@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 import { setKey } from "lamb";
 import { Bookkeeper, Bookmark } from "$lib/vendor/w3sper.js/src/mod";
+import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 
 import walletCache from "$lib/wallet-cache";
 
@@ -39,6 +40,11 @@ const walletStore = writable(initialState);
 const { set, subscribe, update } = walletStore;
 
 const bookkeeper = new Bookkeeper(walletCache.treasury);
+
+/** @type {<T>(action: (...args: any[]) => Promise<T>) => Promise<T>} */
+const effectfulAction = (action) => sync().then(action).finally(sync);
+
+const getCurrentAddress = () => get(walletStore).currentProfile?.address;
 
 /** @type {(...args: any) => Promise<void>} */
 const asyncNoopFailure = () => Promise.reject(new Error("Not implemented"));
@@ -181,9 +187,17 @@ async function sync(fromBlock) {
         const currentUnspentNullifiers =
           await walletCache.getUnspentNotesNullifiers();
 
-        // retrieve the nullifiers that are now spent
+        /**
+         * Retrieving the nullifiers that are now spent.
+         *
+         * Currently `w3sper.js` returns an array of `ArrayBuffer`s
+         * instead of one of `Uint8Array`s, but we don't
+         * care as `ArrayBuffers` will be written in the
+         * database anyway.
+         */
         const spentNullifiers = await addressSyncer.spent(
-          currentUnspentNullifiers
+          // TODO remove map
+          currentUnspentNullifiers.map((n) => new Uint8Array(n))
         );
 
         // update the cache with the spent nullifiers info
@@ -234,8 +248,34 @@ async function sync(fromBlock) {
 }
 
 /** @type {WalletStoreServices["transfer"]} */
-const transfer = async (to, amount, gasSettings) =>
-  asyncNoopFailure(to, amount, gasSettings);
+const transfer = async (to, amount, gas) =>
+  effectfulAction(() =>
+    networkStore
+      .connect()
+      .then((network) =>
+        network.execute(
+          bookkeeper
+            .transfer(amount)
+            .obfuscated()
+            .from(getCurrentAddress())
+            .to(b58.decode(to))
+            .gas(gas)
+        )
+      )
+      .then(
+        /** @type {(txInfo: TransactionInfo) => Promise<TransactionInfo>} */ async (
+          txInfo
+        ) => {
+          await walletCache
+            .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
+            .catch((err) => {
+              console.log("error setting pending nullifiers", txInfo, err);
+            });
+
+          return txInfo;
+        }
+      )
+  );
 
 /** @type {WalletStoreServices["unstake"]} */
 const unstake = async (gasSettings) => asyncNoopFailure(gasSettings);

@@ -11,8 +11,11 @@ import { get } from "svelte/store";
 import {
   AddressSyncer,
   Bookkeeper,
+  Gas,
+  Network,
   ProfileGenerator,
 } from "$lib/vendor/w3sper.js/src/mod";
+import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 import { generateMnemonic } from "bip39";
 
 import { cacheUnspentNotes } from "$lib/mock-data";
@@ -206,6 +209,50 @@ describe("Wallet store", async () => {
         currentProfile: newProfile,
         profiles: [newProfile],
       });
+    });
+
+    it("should expose a method to execute a phoenix transfer", async () => {
+      vi.useRealTimers();
+
+      const txResult = {
+        hash: "some-tx-id",
+        nullifiers: [],
+      };
+      const executeSpy = vi
+        .spyOn(Network.prototype, "execute")
+        .mockResolvedValue(txResult);
+      const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
+      // const syncSpy = vi.spyOn(walletStore, "sync");
+      const from = get(walletStore).currentProfile?.address.toString();
+      const to =
+        "4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG";
+      const amount = 150_000_000_000n;
+      const gas = new Gas({ limit: 500n, price: 1n });
+      const expectedTx = {
+        amount,
+        from,
+        gas,
+        obfuscated: true,
+        to: b58.decode(to),
+      };
+      const result = await walletStore.transfer(to, amount, gas);
+
+      expect(executeSpy).toHaveBeenCalledTimes(1);
+
+      // our TransactionBuilder mock is loaded
+      expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+      expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
+      expect(setPendingNotesSpy).toHaveBeenCalledWith(
+        txResult.nullifiers,
+        txResult.hash
+      );
+      expect(result).toBe(txResult);
+      // expect(syncSpy).toHaveBeenCalledTimes(2);
+
+      executeSpy.mockRestore();
+      setPendingNotesSpy.mockRestore();
+      // syncSpy.mockRestore();
+      vi.useFakeTimers();
     });
   });
 });
