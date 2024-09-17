@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub mod chain;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub mod databroker;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub mod kadcast;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub mod mempool;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub mod telemetry;
 
 pub mod http;
@@ -20,19 +20,15 @@ pub mod http;
 use std::env;
 use std::str::FromStr;
 
+#[cfg(feature = "chain")]
+use self::{
+    chain::ChainConfig, databroker::DataBrokerConfig, kadcast::KadcastConfig,
+    mempool::MempoolConfig, telemetry::TelemetryConfig,
+};
+
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "node")]
-use self::chain::ChainConfig;
-#[cfg(feature = "node")]
-use self::databroker::DataBrokerConfig;
-#[cfg(feature = "node")]
-use self::kadcast::KadcastConfig;
-#[cfg(feature = "node")]
-use self::telemetry::TelemetryConfig;
 use crate::args::Args;
-#[cfg(feature = "node")]
-use crate::config::mempool::MempoolConfig;
 
 use self::http::HttpConfig;
 
@@ -42,26 +38,26 @@ pub(crate) struct Config {
     log_type: Option<String>,
     log_filter: Option<String>,
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "chain")]
     #[serde(default = "DataBrokerConfig::default")]
     pub(crate) databroker: DataBrokerConfig,
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "chain")]
     #[serde(default = "KadcastConfig::default")]
     pub(crate) kadcast: KadcastConfig,
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "chain")]
     #[serde(default = "ChainConfig::default")]
     pub(crate) chain: ChainConfig,
 
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "chain")]
     #[serde(default = "TelemetryConfig::default")]
     pub(crate) telemetry: TelemetryConfig,
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "chain")]
     #[serde(default = "MempoolConfig::default")]
     pub(crate) mempool: MempoolConfig,
 }
@@ -104,7 +100,7 @@ impl From<&Args> for Config {
 
         rusk_config.http.merge(args);
 
-        #[cfg(feature = "node")]
+        #[cfg(feature = "chain")]
         {
             rusk_config.kadcast.merge(args);
             rusk_config.chain.merge(args);

@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(lazy_cell)]
-
 mod args;
 mod config;
 #[cfg(feature = "ephemeral")]
@@ -16,15 +14,10 @@ use clap::Parser;
 
 use log::Log;
 
-#[cfg(feature = "node")]
-use rusk::node::{Rusk, RuskNodeBuilder};
+use rusk::Builder;
 
-use rusk::http::{DataSources, HttpServer};
+use rusk::http::HttpServerConfig;
 use rusk::Result;
-
-use tokio::sync::broadcast;
-
-use tracing::info;
 
 use crate::config::Config;
 
@@ -54,26 +47,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
 
-    let channel_cap = config.http.ws_event_channel_cap;
-    let (_event_sender, event_receiver) = broadcast::channel(channel_cap);
+    let mut node_builder = Builder::default();
 
-    #[cfg(feature = "node")]
-    let mut node_builder = {
+    #[cfg(feature = "chain")]
+    {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
-        info!("Using state from {state_dir:?}");
-
-        let rusk = Rusk::new(
-            state_dir,
-            config.kadcast.chain_id(),
-            config.chain.generation_timeout(),
-            config.chain.gas_per_deploy_byte(),
-            config.chain.min_deployment_gas_price(),
-            config.chain.block_gas_limit(),
-            config.http.feeder_call_gas,
-            _event_sender.clone(),
-        )?;
-
-        info!("Rusk VM loaded");
 
         #[cfg(feature = "ephemeral")]
         let db_path = tempdir.as_ref().map_or_else(
@@ -84,7 +62,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(feature = "ephemeral"))]
         let db_path = config.chain.db_path();
 
-        RuskNodeBuilder::new(rusk)
+        node_builder = node_builder
+            .with_feeder_call_gas(config.http.feeder_call_gas)
             .with_db_path(db_path)
             .with_db_options(config.chain.db_options())
             .with_kadcast(config.kadcast)
@@ -93,51 +72,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_telemetry(config.telemetry.listen_addr())
             .with_chain_queue_size(config.chain.max_queue_size())
             .with_mempool(config.mempool.into())
-            .with_rues(_event_sender)
-    };
-    let mut _ws_server = None;
-    if config.http.listen {
-        info!("Configuring HTTP");
-
-        #[allow(unused_mut)]
-        let mut handler = DataSources::default();
-
-        #[cfg(feature = "prover")]
-        handler.sources.push(Box::new(rusk_prover::LocalProver));
-
-        #[cfg(feature = "node")]
-        handler.sources.extend(node_builder.build_data_sources()?);
-
-        let listen_addr = config.http.listen_addr();
-
-        let cert_and_key = match (config.http.cert, config.http.key) {
-            (Some(cert), Some(key)) => Some((cert, key)),
-            _ => None,
-        };
-
-        let ws_event_channel_cap = config.http.ws_event_channel_cap;
-
-        _ws_server = Some(
-            HttpServer::bind(
-                handler,
-                event_receiver,
-                ws_event_channel_cap,
-                listen_addr,
-                cert_and_key,
+            .with_state_dir(state_dir)
+            .with_generation_timeout(config.chain.generation_timeout())
+            .with_gas_per_deploy_byte(config.chain.gas_per_deploy_byte())
+            .with_min_deployment_gas_price(
+                config.chain.min_deployment_gas_price(),
             )
-            .await?,
-        );
+            .with_block_gas_limit(config.chain.block_gas_limit())
     }
 
-    #[cfg(feature = "node")]
+    if config.http.listen {
+        let http_builder = HttpServerConfig {
+            address: config.http.listen_addr(),
+            cert: config.http.cert,
+            key: config.http.key,
+            ws_event_channel_cap: config.http.ws_event_channel_cap,
+        };
+        node_builder = node_builder.with_http(http_builder)
+    }
+
     if let Err(e) = node_builder.build_and_run().await {
         tracing::error!("node terminated with err: {}", e);
         return Err(e.into());
-    }
-
-    #[cfg(not(feature = "node"))]
-    if let Some(s) = _ws_server {
-        s.handle.await?;
     }
 
     Ok(())
