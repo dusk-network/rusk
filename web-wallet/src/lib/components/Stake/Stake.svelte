@@ -52,7 +52,7 @@
   /** @type {number} */
   export let rewards;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let spendable;
 
   /** @type {number} */
@@ -126,7 +126,7 @@
 
   $: luxFee = gasLimit * gasPrice;
   $: fee = formatter(luxToDusk(luxFee));
-  $: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
+  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
   $: minStake =
     maxSpendable > 0
       ? Math.min(minAllowedStake, maxSpendable)
@@ -134,7 +134,7 @@
   $: isStakeAmountValid =
     stakeAmount >= minStake && stakeAmount <= maxSpendable;
   $: totalLuxFee = luxFee + duskToLux(stakeAmount);
-  $: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
+  $: isFeeWithinLimit = BigInt(totalLuxFee) <= spendable;
   $: isNextButtonDisabled =
     flow === "stake"
       ? !(isStakeAmountValid && isGasValid && isFeeWithinLimit)
@@ -169,7 +169,7 @@
       return;
     }
 
-    if (spendable < luxToDusk(luxFee)) {
+    if (spendable < BigInt(luxFee)) {
       toast(
         "error",
         "You don't have enough DUSK to cover the transaction fee",

@@ -1,16 +1,33 @@
 import { Dexie } from "dexie";
-import { head, isUndefined, pairs, pipe, skipIf, unless, when } from "lamb";
+import {
+  compose,
+  getKey,
+  head,
+  isUndefined,
+  mapWith,
+  pairs,
+  pipe,
+  setKey,
+  skipIf,
+  unless,
+  when,
+} from "lamb";
 
 /**
  * Not importing from "$lib/wallet" because for some reason
  * while running tests the export of `initializeWallet` there
- * causes this bug to happen:
+ * causes this bug to happen in Node 22:
  * https://github.com/nodejs/undici/issues/2663
+ *
+ * Update: possibly a circular dependency case during tests.
  */
 import notesArrayToMap from "$lib/wallet/notesArrayToMap";
 
 /** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] }} RawCriteria */
 /** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | undefined} Criteria */
+
+/** @type {(profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>) => string[]} */
+const getAddressesFrom = mapWith(compose(String, getKey("address")));
 
 /** @type {(rawCriteria: RawCriteria) => Criteria} */
 const toCriteria = pipe([
@@ -29,10 +46,9 @@ class WalletCache {
 
   /** @type {WalletCacheTreasury} */
   #treasury = {
-    address: async (profile) => {
-      /** @type {WalletCacheNote[]} */
+    address: async (identifier) => {
+      const address = identifier.toString();
       const result = [];
-      const address = profile.address.toString();
       const notes = await this.getUnspentNotes([address]);
 
       for (const note of notes) {
@@ -41,7 +57,11 @@ class WalletCache {
         }
       }
 
-      return notesArrayToMap(result);
+      return result.length
+        ? /** @type {Map<Uint8Array, Uint8Array>} */ (
+            notesArrayToMap(result).get(address)
+          )
+        : new Map();
     },
   };
 
@@ -88,13 +108,18 @@ class WalletCache {
 
   /**
    * @param {WalletCacheNote[]} notes
+   * @param {WalletCacheSyncInfo} syncInfo
    * @returns {Promise<void>}
    */
-  async addUnspentNotes(notes) {
+  async addUnspentNotes(notes, syncInfo) {
     await this.#db.open();
 
     return this.#db
-      .transaction("rw", "unspentNotes", async () => {
+      .transaction("rw", ["syncInfo", "unspentNotes"], async () => {
+        const syncInfoTable = this.#db.table("syncInfo");
+
+        await syncInfoTable.clear();
+        await syncInfoTable.add(syncInfo);
         await this.#db.table("unspentNotes").bulkPut(notes);
       })
       .finally(() => this.#db.close());
@@ -155,6 +180,74 @@ class WalletCache {
    */
   getUnspentNotesNullifiers(addresses) {
     return this.#getEntriesFrom("unspentNotes", true, { addresses });
+  }
+
+  /**
+   * @param {bigint} n
+   * @returns {Promise<void>}
+   */
+  setLastBlockHeight(n) {
+    return this.getSyncInfo()
+      .then(setKey("blockHeight", n))
+      .then(async (syncInfo) => {
+        await this.#db.open();
+
+        return this.#db
+          .transaction("rw", "syncInfo", async () => {
+            const syncInfoTable = this.#db.table("syncInfo");
+
+            await syncInfoTable.clear();
+            await syncInfoTable.add(syncInfo);
+          })
+          .finally(() => this.#db.close());
+      });
+  }
+
+  /**
+   * @param {Uint8Array[]} nullifiers
+   * @returns {Promise<void>}
+   */
+  async spendNotes(nullifiers) {
+    await this.#db.open();
+
+    return this.#db
+      .transaction(
+        "rw",
+        ["pendingNotesInfo", "spentNotes", "unspentNotes"],
+        async () => {
+          const newlySpentNotes = await this.#db
+            .table("unspentNotes")
+            .where("nullifier")
+            .anyOf(nullifiers)
+            .toArray();
+
+          await this.#db.table("pendingNotesInfo").bulkDelete(nullifiers);
+          await this.#db.table("unspentNotes").bulkDelete(nullifiers);
+          await this.#db.table("spentNotes").bulkAdd(newlySpentNotes);
+        }
+      )
+      .finally(() => this.#db.close());
+  }
+
+  /**
+   * @param {Array<Map<Uint8Array, Uint8Array>>} syncerNotes
+   * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
+   * @returns {WalletCacheNote[]}
+   */
+  toCacheNotes(syncerNotes, profiles) {
+    const addresses = getAddressesFrom(profiles);
+
+    return syncerNotes.reduce((result, entry, idx) => {
+      Array.from(entry).forEach(([nullifier, note]) => {
+        result.push({
+          address: addresses[idx],
+          note,
+          nullifier,
+        });
+      });
+
+      return result;
+    }, /** @type {WalletCacheNote[]} */ ([]));
   }
 }
 

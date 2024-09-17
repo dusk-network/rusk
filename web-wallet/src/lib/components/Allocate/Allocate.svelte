@@ -44,10 +44,10 @@
   /** @type {string} */
   export let unshieldedAddress;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let shieldedBalance;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let unshieldedBalance;
 
   /** @type {boolean} */
@@ -59,10 +59,10 @@
   let { gasLimit, gasPrice } = gasSettings;
 
   /** @type {number} */
-  let shieldedAmount = shieldedBalance;
+  let shieldedAmount = luxToDusk(shieldedBalance);
 
   /** @type {number} */
-  let unshieldedAmount = unshieldedBalance;
+  let unshieldedAmount = luxToDusk(unshieldedBalance);
 
   /** @type {number} */
   let screenWidth = window.innerWidth;
@@ -127,14 +127,13 @@
               type="number"
               min={minAmount}
               max={deductLuxFeeFrom(
-                shieldedBalance + unshieldedBalance,
+                luxToDusk(shieldedBalance + unshieldedBalance),
                 luxFee
               )}
               step="0.000000001"
               on:input={() => {
                 unshieldedAmount = +(
-                  shieldedBalance +
-                  unshieldedBalance -
+                  luxToDusk(shieldedBalance + unshieldedBalance) -
                   shieldedAmount
                 ).toFixed(9);
               }}
@@ -166,15 +165,14 @@
               type="number"
               min={minAmount}
               max={deductLuxFeeFrom(
-                unshieldedBalance + shieldedBalance,
+                luxToDusk(unshieldedBalance + shieldedBalance),
                 luxFee
               )}
               step="0.000000001"
               id="unshielded-amount"
               on:input={() => {
                 shieldedAmount = +(
-                  unshieldedBalance +
-                  shieldedBalance -
+                  luxToDusk(unshieldedBalance + shieldedBalance) -
                   unshieldedAmount
                 ).toFixed(9);
               }}
@@ -231,8 +229,8 @@
           <dd class="review-transaction__value operation__review-amount">
             <span>
               {isFromUnshielded
-                ? `${formatter(luxToDusk(duskToLux(unshieldedBalance) - duskToLux(unshieldedAmount)))} DUSK`
-                : `${formatter(luxToDusk(duskToLux(shieldedBalance) - duskToLux(shieldedAmount)))} DUSK`}
+                ? `${formatter(luxToDusk(unshieldedBalance - BigInt(duskToLux(unshieldedAmount))))} DUSK`
+                : `${formatter(luxToDusk(shieldedBalance - BigInt(duskToLux(shieldedAmount))))} DUSK`}
             </span>
             <Icon
               className="dusk-amount__icon"

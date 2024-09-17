@@ -96,7 +96,7 @@
 
   /**
    * @param {WalletStakeInfo} stakeInfo
-   * @param {number} spendable
+   * @param {bigint} spendable
    * @returns {ContractStatus[]}
    */
   const getStatuses = (stakeInfo, spendable) => [

@@ -42,9 +42,16 @@ type NetworkStoreContent = {
   get connected(): boolean;
 };
 
+type NetworkSyncerOptions = {
+  signal?: AbortSignal;
+};
+
 type NetworkStoreServices = {
   connect: () => Promise<import("$lib/vendor/w3sper.js/src/mod").Network>;
   disconnect: () => Promise<void>;
+  getAddressSyncer: (
+    options?: NetworkSyncerOptions
+  ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AddressSyncer>;
   getCurrentBlockHeight: () => Promise<bigint>;
 };
 
@@ -52,18 +59,21 @@ type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
 
 type WalletStoreContent = {
   balance: {
-    maximum: number;
-    value: number;
+    maximum: bigint;
+    value: bigint;
   };
   syncStatus: {
     isInProgress: boolean;
-    current: number;
-    last: number;
+    current: bigint;
+    last: bigint;
     error: Error | null;
+    progress: number;
   };
   currentAddress: string;
+  currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
   initialized: boolean;
   addresses: string[];
+  profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
 };
 
 type WalletStoreServices = {
@@ -91,7 +101,7 @@ type WalletStoreServices = {
 
   stake: (amount: number, gasSettings: GasSettings) => Promise<any>;
 
-  sync: (from?: bigint) => Promise<void>;
+  sync: (fromBlock?: bigint) => Promise<void>;
 
   transfer: (
     to: string,

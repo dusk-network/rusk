@@ -14,6 +14,7 @@
   import { Button, Icon, ProgressBar } from "$lib/dusk/components";
   import { settingsStore, walletStore } from "$lib/stores";
   import { AddressPicker, AppAnchorButton, Balance } from "$lib/components";
+  import { luxToDusk } from "$lib/dusk/currency";
 
   /** @type {import('./$types').LayoutData} */
   export let data;
@@ -70,9 +71,9 @@
       {fiatPrice}
       locale={language}
       tokenCurrency="DUSK"
-      tokens={balance.value}
+      tokens={luxToDusk(balance.value)}
       shieldedTokensPercentage={import.meta.env.VITE_FEATURE_ALLOCATE || false
-        ? (balance.value / balance.value) * 100
+        ? 100
         : undefined}
     />
 
@@ -95,7 +96,7 @@
             <span>{syncStatusLabel}</span>
           {/if}
           {#if syncStatus.isInProgress}
-            {#if !syncStatus.current || !syncStatus.last}
+            {#if !syncStatus.progress}
               <span>Syncing</span>
             {:else}
               <span>
@@ -105,7 +106,7 @@
               </span>
               <ProgressBar
                 className="footer__sync-status-progress-bar"
-                currentPercentage={(syncStatus.current / syncStatus.last) * 100}
+                currentPercentage={syncStatus.progress * 100}
               />
             {/if}
           {/if}
