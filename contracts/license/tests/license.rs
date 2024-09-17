@@ -337,7 +337,8 @@ fn use_license_get_session() {
     let rng = &mut StdRng::seed_from_u64(0xbeef);
 
     let crs = get_common_reference_string().expect("getting CRS file works");
-    let pp = unsafe { PublicParameters::from_slice_unchecked(crs.as_slice()) };
+    let pp = PublicParameters::from_slice(crs.as_slice())
+        .expect("PublicParameters failed to be created from slice.");
 
     let (prover, verifier) = Compiler::compile::<LicenseCircuit>(&pp, LABEL)
         .expect("Compiling circuit should succeed");

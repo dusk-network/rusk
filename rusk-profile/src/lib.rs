@@ -19,11 +19,12 @@ pub use theme::Theme;
 mod circuit;
 pub use circuit::Circuit;
 
-/// HEX representaion of the SHA-256 hash of the CRS uncompressed bytes.
+/// HEX representation of the SHA-256 hash of the CRS uncompressed bytes.
+/// This is the hash of the contribution number 15 of the Dusk Trusted Setup.
 pub static CRS_17_HASH: &str =
-    "18b48f588fd4d1e88ef9e7b3cacfa29046f6f489c5c237a4b01ee4f0334772a5";
+    "6161605616b62356cf09fa28252c672ef53b2c8489ad5f81d87af26e105f6059";
 
-const CRS_FNAME: &str = "dev-piecrust.crs";
+const CRS_FNAME: &str = "devnet-piecrust.crs";
 
 fn extension(p: &Path) -> Option<&str> {
     p.extension()?.to_str()

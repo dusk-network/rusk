@@ -10,34 +10,54 @@ use execution_core::{
     transfer::phoenix::TRANSCRIPT_LABEL,
 };
 use once_cell::sync::Lazy;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use std::io;
+use std::{
+    io,
+    sync::{mpsc, Mutex},
+    thread,
+};
 
 use rusk_profile::Circuit as CircuitProfile;
 
+use lazy_static::lazy_static;
 use tracing::{info, warn};
 
 mod circuits;
+
+lazy_static! {
+    static ref CRS_URL: Mutex<String> = Mutex::new(String::default());
+}
 
 static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     let theme = Theme::default();
     info!("{} CRS from cache", theme.action("Fetching"));
     match rusk_profile::get_common_reference_string() {
-        Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
-            let pp = PublicParameters::from_slice_unchecked(&buff[..]);
+        Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => {
+            let pp = PublicParameters::from_slice(&buff[..])
+                .expect("Creating PublicParameters from slice failed.");
             info!("{} CRS", theme.info("Loaded"));
             pp
-        },
+        }
 
         _ => {
-            warn!("{} new CRS due to cache miss", theme.warn("Building"));
-            let mut rng = StdRng::seed_from_u64(0xbeef);
+            warn!(
+                "{} CRS from server due to cache miss",
+                theme.warn("Fetching")
+            );
+            let (tx, rx) = mpsc::channel();
 
-            let pp = PublicParameters::setup(1 << 17, &mut rng)
-                .expect("Cannot initialize Public Parameters");
+            thread::spawn(move || {
+                let pp_bytes =
+                    fetch_pp().expect("PublicParameters download failed.");
+                tx.send(pp_bytes).unwrap();
+            })
+            .join()
+            .expect("PublicParameters download thread panicked");
 
-            rusk_profile::set_common_reference_string(pp.to_raw_var_bytes())
+            let pp_bytes = rx.recv().unwrap();
+            let pp = PublicParameters::from_slice(pp_bytes.as_slice())
+                .expect("Creating PublicParameters from slice failed.");
+
+            rusk_profile::set_common_reference_string(pp_bytes)
                 .expect("Unable to write the CRS");
 
             info!("{} CRS", theme.info("Cached"));
@@ -46,6 +66,15 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
         }
     }
 });
+
+#[tokio::main]
+async fn fetch_pp() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let crs_url = CRS_URL.lock().expect("Unlocking failed.").to_string();
+
+    let response = reqwest::get(crs_url).await?.bytes().await?;
+
+    Ok(response.to_vec())
+}
 
 fn check_circuits_cache(
     circuit_list: Vec<CircuitProfile>,
@@ -116,7 +145,12 @@ fn run_stored_circuits_checks(
     check_circuits_cache(circuit_list).map(|_| ())
 }
 
-pub fn exec(keep_circuits: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn exec(
+    keep_circuits: bool,
+    crs_url: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    *CRS_URL.lock().expect("Unlocking failed.") = crs_url;
+
     // This force init is needed to check CRS and create it (if not available)
     // See also: https://github.com/dusk-network/rusk/issues/767
     Lazy::force(&PUB_PARAMS);

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed 'phoenix-core' dependency [#1139]
 - Added closure argument to the 'deploy' method [#1630]
+- Update Plonk to 0.20
+- Download CRS from URL
 
 ### Removed
 
