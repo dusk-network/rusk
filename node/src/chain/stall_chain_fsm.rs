@@ -6,7 +6,7 @@
 
 use node_data::{
     ledger::{to_str, Block, Header},
-    message::payload::Inv,
+    message::payload::{self},
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -22,7 +22,14 @@ use anyhow::{anyhow, Result};
 
 use super::acceptor::Acceptor;
 
-const STALLED_TIMEOUT: u64 = 60; // seconds
+/// Timeout for accepting a block.
+/// If we have not accepted a block for more than this time, we switch to
+/// stalled state
+const ACCEPT_TIMEOUT: u64 = 60; // seconds
+
+/// If we are in stalled state for more than this time, we need to re-request
+/// missing blocks
+const STALLED_TIMEOUT: u64 = 30; // seconds
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum State {
@@ -33,7 +40,7 @@ pub(crate) enum State {
     /// Node might be stuck on non-main branch and might need to recover
     /// It could be also stalled due to temporary network issues or main branch
     /// not producing blocks
-    Stalled,
+    Stalled(u64),
     /// Node is disconnected from the main branch
     StalledOnFork([u8; 32], Box<Block>),
 }
@@ -93,8 +100,11 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     /// Handles heartbeat event
     pub(crate) async fn on_heartbeat_event(&mut self) {
         trace!(event = "chain.heartbeat",);
-        if let State::Running = &self.state {
-            self.on_running().await;
+
+        match &self.state {
+            State::Running => self.on_running().await,
+            State::Stalled(_) => self.on_heartbeat_in_stalled().await,
+            State::StalledOnFork(_, _) => warn!("Stalled on fork"),
         }
     }
 
@@ -124,7 +134,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         let curr = &self.state;
         match curr {
             State::Running => self.on_running().await,
-            State::Stalled => {
+            State::Stalled(_) => {
                 if let Err(err) = self.on_stalled(blk).await {
                     error!("Error while processing block: {:?}", err);
                 }
@@ -137,13 +147,17 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
 
     /// Handles a running state
     async fn on_running(&mut self) {
-        if self.tip.1 + STALLED_TIMEOUT < node_data::get_current_timestamp() {
+        if self.tip.1 + ACCEPT_TIMEOUT < node_data::get_current_timestamp() {
             // While we are still receiving blocks, no block
             // has been accepted for a long time (tip has not changed
             // recently)
-            if let Err(err) = self.on_accept_block_timeout().await {
-                error!("Error in timeout event: {:?}", err);
-            }
+            let _ = self.request_missing_blocks().await.map_err(|e| {
+                error!("Error in request_missing_blocks: {:?}", e);
+            });
+
+            self.state_transition(State::Stalled(
+                node_data::get_current_timestamp(),
+            ));
         }
     }
 
@@ -205,29 +219,33 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         Ok(())
     }
 
-    /// Handles block acceptance timeout
-    ///
-    /// Request missing blocks since last finalized block
-    async fn on_accept_block_timeout(&mut self) -> Result<()> {
-        let (_, last_final_block) = self.last_final_block().await?;
+    async fn on_heartbeat_in_stalled(&mut self) {
+        if let State::Stalled(timestamp) = self.state {
+            if timestamp + STALLED_TIMEOUT < node_data::get_current_timestamp()
+            {
+                let _ = self.request_missing_blocks().await.map_err(|e| {
+                    error!("Error in request_missing_blocks: {:?}", e);
+                });
 
-        let from = last_final_block + 1;
-        let to = self.tip.0.height + 1;
-
-        info!(event = "chain.requesting_blocks", from, to,);
-
-        let mut inv = Inv::new(0);
-        for height in from..to {
-            inv.add_block_from_height(height);
+                self.state_transition(State::Stalled(
+                    node_data::get_current_timestamp(),
+                ));
+            }
         }
+    }
+
+    /// Requests missing blocks since last finalized block
+    async fn request_missing_blocks(&self) -> Result<()> {
+        let (last_final, _) = self.last_final_block().await?;
+        let locator = last_final;
 
         let network = self.acc.read().await.network.clone();
-        if let Err(e) = network.read().await.flood_request(&inv, None, 8).await
-        {
-            anyhow::bail!("Unable to request GetBlocks {e}");
-        }
+        network
+            .read()
+            .await
+            .send_to_alive_peers(payload::GetBlocks::new(locator).into(), 8)
+            .await?;
 
-        self.state_transition(State::Stalled);
         Ok(())
     }
 
@@ -244,10 +262,14 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
 
         self.state = state;
 
-        let state_str: &str = match &self.state {
-            State::Running => "running",
-            State::Stalled => "stalled",
-            State::StalledOnFork(_, _) => "stalled_on_fork",
+        let state_str: String = match &self.state {
+            State::Running => "running".to_string(),
+            State::Stalled(timestamp) => {
+                format!("stalled at {}", timestamp)
+            }
+            State::StalledOnFork(hash, _) => {
+                format!("stalled_on_fork at {}", to_str(hash))
+            }
         };
 
         let hdr = &self.tip.0;
