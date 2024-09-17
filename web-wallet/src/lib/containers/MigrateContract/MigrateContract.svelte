@@ -47,9 +47,11 @@
   const options = ["ERC-20", "BEP-20"];
 
   // The minimum allowed amount to be migrated expressed as a string
-  const minAmount = "0.000000000000000001";
+  const minAmount = "0.000000001";
 
   const ercDecimals = 18;
+
+  const duskDecimals = 9;
 
   /** @type {TokenNames} */
   let selectedChain = erc20.name;
@@ -85,7 +87,7 @@
     parseUnits(amount.replace(",", "."), ercDecimals) >=
       parseUnits(minAmount, ercDecimals) &&
     parseUnits(amount.replace(",", "."), ercDecimals) <= connectedWalletBalance;
-  $: amount = cleanNumberString(amount, getDecimalSeparator());
+  $: amount = slashDecimals(cleanNumberString(amount, getDecimalSeparator()));
 
   /**
    *  Triggers the switchChain event and reverts the ExclusiveChoice UI selected option if an error is thrown
@@ -107,6 +109,7 @@
     if (!isConnected) {
       return;
     }
+    amount = "";
     const chainIdToSwitchTo =
       e.target?.value === bep20.name ? bep20.chainId : erc20.chainId;
     await handleSwitchChain(chainIdToSwitchTo);
@@ -139,6 +142,18 @@
 
   function incrementStep() {
     migrationStep++;
+  }
+
+  /**
+   * @param {string} numberAsString
+   * @returns {string}
+   */
+  function slashDecimals(numberAsString) {
+    const separator = numberAsString.includes(".") ? "." : ",";
+    const [integer, decimal] = numberAsString.split(separator);
+    return decimal
+      ? `${integer}${separator}${decimal.slice(0, duskDecimals)}`
+      : numberAsString;
   }
 
   onMount(() => {
@@ -219,7 +234,7 @@
       </p>
       <div class="migrate__token-balance">
         Balance: <span
-          >{formatUnits(connectedWalletBalance, ercDecimals)}
+          >{slashDecimals(formatUnits(connectedWalletBalance, ercDecimals))}
           {selectedChain} DUSK</span
         >
       </div>
@@ -258,7 +273,9 @@
                 ercDecimals
               );
             }
-            amount = formatUnits(connectedWalletBalance, ercDecimals);
+            amount = slashDecimals(
+              formatUnits(connectedWalletBalance, ercDecimals)
+            );
           }}
           text="USE MAX"
           disabled={isInputDisabled}

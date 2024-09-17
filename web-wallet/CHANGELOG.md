@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `Stepper` component to new design [#2071]
 - Update dashboard to use routes instead of `Tabs` for navigation pattern [#2075]
 - Update dashboard by splitting the transfer operations into send and receive operations [#2175]
+- Update decimals shown for migration balance [#2406]
 
 ### Fixed
 
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add missing "Soehne Mono" and its `@font-face` definition [#2071]
 - The sync promise should be set to `null` after aborting a sync [#2118]
 - Fix rounding errors in migration amount input [#2303]
+- Fix number of leading zeros in migration amount input [#2406]
 
 ## [0.5.0] - 2024-03-27
 
@@ -257,6 +259,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2303]: https://github.com/dusk-network/rusk/issues/2303
 [#2310]: https://github.com/dusk-network/rusk/issues/2310
 [#2355]: https://github.com/dusk-network/rusk/issues/2355
+[#2406]: https://github.com/dusk-network/rusk/issues/2406
 
 <!-- VERSIONS -->
 
