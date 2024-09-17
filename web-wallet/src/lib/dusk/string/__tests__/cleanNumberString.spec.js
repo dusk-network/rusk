@@ -25,4 +25,10 @@ describe("calculateAdaptiveCharCount", () => {
       cleanNumberString("1321651.0518asds592asd/*-,/?!@#$%^&*()_=+", ".")
     ).toBe("1321651.0518592");
   });
+
+  it("should return a valid string represantation of a number if a string more than one leading zero", () => {
+    expect(cleanNumberString("000.2165", ".")).toBe("0.2165");
+
+    expect(cleanNumberString("0002165", ".")).toBe("2165");
+  });
 });
