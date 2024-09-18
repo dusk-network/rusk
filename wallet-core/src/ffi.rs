@@ -33,11 +33,19 @@ use core::{ptr, slice};
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
-    transfer::phoenix::{NoteLeaf, PublicKey as PhoenixPublicKey},
+    transfer::phoenix::{
+        ArchivedNoteLeaf, NoteLeaf, PublicKey as PhoenixPublicKey,
+    },
+    BlsScalar,
 };
 use zeroize::Zeroize;
 
 use rkyv::to_bytes;
+
+#[no_mangle]
+static KEY_SIZE: usize = BlsScalar::SIZE;
+#[no_mangle]
+static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
 
 /// The size of the scratch buffer used for parsing the notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
@@ -89,9 +97,22 @@ pub unsafe fn map_owned(
     indexes: *const u8,
     notes_ptr: *const u8,
     owned_ptr: *mut *mut u8,
+    last_info_ptr: *mut [u8; 16],
 ) -> ErrorCode {
+    use core::cmp::max;
+
     let keys = indexes_into_keys(seed, indexes, derive_phoenix_sk);
     let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
+
+    let (block_height, pos) =
+        notes
+            .iter()
+            .fold((0u64, 0u64), |(block_height, pos), leaf| {
+                (
+                    max(block_height, leaf.block_height),
+                    max(pos, *leaf.note.pos()),
+                )
+            });
 
     let owned = notes::owned::map(&keys, notes);
 
@@ -110,6 +131,16 @@ pub unsafe fn map_owned(
 
     ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
     ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+    ptr::copy_nonoverlapping(
+        block_height.to_le_bytes().as_ptr(),
+        &mut (*last_info_ptr)[0],
+        8,
+    );
+    ptr::copy_nonoverlapping(
+        pos.to_le_bytes().as_ptr(),
+        &mut (*last_info_ptr)[8],
+        8,
+    );
 
     ErrorCode::Ok
 }
