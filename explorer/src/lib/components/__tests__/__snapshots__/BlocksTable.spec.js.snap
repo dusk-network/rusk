@@ -23,7 +23,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         <th
           class="table__header-cell"
         >
-          Fee (Dusk)
+          Gas
         </th>
         
          
@@ -75,7 +75,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -84,7 +84,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -135,7 +135,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -144,7 +144,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -195,7 +195,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -204,7 +204,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -255,7 +255,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -264,7 +264,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -315,7 +315,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -324,7 +324,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -375,7 +375,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -384,7 +384,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -435,7 +435,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -444,7 +444,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -495,7 +495,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -504,7 +504,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -555,7 +555,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -564,7 +564,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
@@ -615,7 +615,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-avg-label"
           >
-            AVG:
+            AVG PRICE:
           </b>
            
           0
@@ -624,7 +624,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
           <b
             class="block__fee-total-label"
           >
-            TOTAL:
+            USED:
           </b>
            
           0
