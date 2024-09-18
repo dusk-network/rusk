@@ -71,6 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_databroker(config.databroker)
             .with_telemetry(config.telemetry.listen_addr())
             .with_chain_queue_size(config.chain.max_queue_size())
+            .with_genesis_timestamp(config.chain.genesis_timestamp())
             .with_mempool(config.mempool.into())
             .with_state_dir(state_dir)
             .with_generation_timeout(config.chain.generation_timeout())
