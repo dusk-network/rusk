@@ -146,7 +146,7 @@ impl RuskNode {
         let gql_res = schema.execute(gql_query).await;
         let async_graphql::Response { data, errors, .. } = gql_res;
         if !errors.is_empty() {
-            return Err(anyhow::anyhow!("{errors:?}"));
+            return Err(anyhow::anyhow!(serde_json::to_value(errors)?));
         }
         let data = serde_json::to_value(&data)
             .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
