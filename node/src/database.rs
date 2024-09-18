@@ -13,9 +13,8 @@ pub mod rocksdb;
 
 use anyhow::Result;
 #[cfg(feature = "archive")]
-use node_data::events::contract::ContractTxEvent;
-#[cfg(feature = "archive")]
-use node_data::ledger::Hash;
+use {node_data::events::contract::ContractTxEvent, node_data::ledger::Hash};
+
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
 
 use serde::{Deserialize, Serialize};
@@ -234,4 +233,16 @@ pub(crate) trait Archivist {
         &self,
         block_height: u64,
     ) -> Result<Vec<ContractTxEvent>>;
+
+    async fn mark_block_finalized(
+        &self,
+        block_height: u64,
+        hex_block_hash: String,
+    ) -> Result<()>;
+
+    async fn remove_deleted_block(
+        &self,
+        block_height: u64,
+        hex_block_hash: String,
+    ) -> Result<bool>;
 }

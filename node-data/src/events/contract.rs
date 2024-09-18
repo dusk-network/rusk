@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! This module defines the contract event type and related types.
+
 use anyhow::Result;
 use execution_core::ContractId;
 use execution_core::Event;

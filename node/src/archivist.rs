@@ -32,17 +32,41 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             if let Some(msg) = self.archive_receiver.recv().await {
                 match msg {
                     ArchivalData::ArchivedEvents(
-                        block_height,
-                        block_hash,
+                        blk_height,
+                        blk_hash,
                         events,
                     ) => {
                         if let Err(e) = self
                             .archivist
-                            .store_vm_events(block_height, block_hash, events)
+                            .store_vm_events(blk_height, blk_hash, events)
                             .await
                         {
                             error!(
                                 "Failed to archive block vm events: {:?}",
+                                e
+                            );
+                        }
+                    }
+                    ArchivalData::DeletedBlock(blk_height, hex_blk_hash) => {
+                        if let Err(e) = self
+                            .archivist
+                            .remove_deleted_block(blk_height, hex_blk_hash)
+                            .await
+                        {
+                            error!(
+                                "Failed to delete block in archive: {:?}",
+                                e
+                            );
+                        }
+                    }
+                    ArchivalData::FinalizedBlock(blk_height, hex_blk_hash) => {
+                        if let Err(e) = self
+                            .archivist
+                            .mark_block_finalized(blk_height, hex_blk_hash)
+                            .await
+                        {
+                            error!(
+                                "Failed to finalize block in archive: {:?}",
                                 e
                             );
                         }

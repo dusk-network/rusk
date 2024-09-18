@@ -34,21 +34,19 @@ use execution_core::{
     },
     BlsScalar, ContractError, Dusk, Event,
 };
-#[cfg(feature = "archive")]
-use node_data::archive::ArchivalData;
+use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 #[cfg(feature = "archive")]
-use tokio::sync::mpsc::Sender;
+use {node_data::archive::ArchivalData, tokio::sync::mpsc::Sender};
 
-use super::{coinbase_value, Rusk, RuskTip};
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
+use crate::node::{coinbase_value, Rusk, RuskTip};
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result, DELETING_VM_FNAME};
-use node_data::events::contract::ContractTxEvent;
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");

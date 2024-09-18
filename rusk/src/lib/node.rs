@@ -15,11 +15,9 @@ use std::time::Duration;
 use events::ChainEventStreamer;
 use execution_core::{dusk, Dusk};
 use kadcast::config::Config as KadcastConfig;
-#[cfg(feature = "archive")]
-use node::archivist::ArchivistSrv;
+
 use node::chain::ChainSrv;
-#[cfg(feature = "archive")]
-use node::database::archive::SQLiteArchive;
+
 use node::database::rocksdb::{self, Backend};
 use node::database::{DatabaseOptions, DB};
 use node::databroker::conf::Params as BrokerParam;
@@ -29,11 +27,14 @@ use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
-#[cfg(feature = "archive")]
-use node_data::archive::ArchivalData;
 use parking_lot::RwLock;
 use rusk_abi::VM;
 use tokio::sync::{broadcast, mpsc};
+#[cfg(feature = "archive")]
+use {
+    node::archivist::ArchivistSrv, node::database::archive::SQLiteArchive,
+    node_data::archive::ArchivalData,
+};
 
 use crate::http::{HandleRequest, RuesEvent};
 
@@ -56,7 +57,7 @@ pub struct Rusk {
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
-    pub(crate) archive_sender: tokio::sync::mpsc::Sender<ArchivalData>,
+    pub(crate) archive_sender: mpsc::Sender<ArchivalData>,
 }
 
 type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
@@ -92,7 +93,10 @@ pub struct RuskNodeBuilder {
     rusk: Rusk,
     rues_sender: Option<broadcast::Sender<RuesEvent>>,
     #[cfg(feature = "archive")]
-    archive_receiver: Option<tokio::sync::mpsc::Receiver<ArchivalData>>,
+    archive_channel: (
+        Option<tokio::sync::mpsc::Sender<ArchivalData>>,
+        Option<tokio::sync::mpsc::Receiver<ArchivalData>>,
+    ),
 }
 
 impl RuskNodeBuilder {
@@ -151,9 +155,10 @@ impl RuskNodeBuilder {
     #[cfg(feature = "archive")]
     pub fn with_archivist(
         mut self,
+        archive_sender: tokio::sync::mpsc::Sender<ArchivalData>,
         archive_receiver: tokio::sync::mpsc::Receiver<ArchivalData>,
     ) -> Self {
-        self.archive_receiver = Some(archive_receiver);
+        self.archive_channel = (Some(archive_sender), Some(archive_receiver));
         self
     }
 
@@ -176,7 +181,7 @@ impl RuskNodeBuilder {
             rusk,
             rues_sender: None,
             #[cfg(feature = "archive")]
-            archive_receiver: None,
+            archive_channel: (None, None),
         }
     }
 
@@ -227,11 +232,16 @@ impl RuskNodeBuilder {
             service_list.push(Box::new(ChainEventStreamer {
                 rues_sender,
                 node_receiver,
+                #[cfg(feature = "archive")]
+                archivist_sender: self
+                    .archive_channel
+                    .0
+                    .expect("archive feature set but archive sender not set"),
             }))
         }
 
         #[cfg(feature = "archive")]
-        if let Some(archive_receiver) = self.archive_receiver {
+        if let (_, Some(archive_receiver)) = self.archive_channel {
             let archivist =
                 SQLiteArchive::create_or_open(self.db_path.clone()).await;
 

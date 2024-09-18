@@ -35,6 +35,10 @@ pub enum BlockEvent<'b> {
         state: &'static str,
         height: u64,
     },
+    Deleted {
+        hash: Hash,
+        height: u64,
+    },
 }
 
 impl EventSource for BlockEvent<'_> {
@@ -44,6 +48,7 @@ impl EventSource for BlockEvent<'_> {
         match self {
             Self::Accepted(_) => "accepted",
             Self::StateChange { .. } => "statechange",
+            BlockEvent::Deleted { .. } => "deleted",
         }
     }
     fn data(&self) -> Option<serde_json::Value> {
@@ -65,6 +70,11 @@ impl EventSource for BlockEvent<'_> {
                     "atHeight": height,
                 })
             }
+            BlockEvent::Deleted { height, .. } => {
+                serde_json::json!({
+                    "atHeight": height,
+                })
+            }
         };
         Some(data)
     }
@@ -72,6 +82,7 @@ impl EventSource for BlockEvent<'_> {
         let hash = match self {
             Self::Accepted(block) => block.header().hash,
             Self::StateChange { hash, .. } => *hash,
+            Self::Deleted { hash, .. } => *hash,
         };
         hex::encode(hash)
     }

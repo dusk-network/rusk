@@ -11,7 +11,7 @@ use anyhow::Result;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
-use tracing::info;
+use tracing::{info, warn};
 
 use super::Archivist;
 
@@ -81,7 +81,7 @@ impl Archivist for SQLiteArchive {
         events: Vec<ContractTxEvent>,
     ) -> Result<()> {
         let block_height: i64 = block_height as i64;
-        let block_hash = hex::encode(block_hash);
+        let hex_block_hash = hex::encode(block_hash);
         // Serialize the events to a json string
         let json_contract_events = serde_json::to_string(&events).unwrap();
 
@@ -89,10 +89,14 @@ impl Archivist for SQLiteArchive {
 
         sqlx::query!(
              r#"INSERT INTO archive (block_height, block_hash, json_contract_events) VALUES (?, ?, ?)"#,
-            block_height, block_hash, json_contract_events
+            block_height, hex_block_hash, json_contract_events
         ).execute(&mut *conn).await?.rows_affected();
 
-        info!("Stored events in block: {}", block_height);
+        info!(
+            "Archived events from block {} with height {}",
+            util::truncate_string(&hex_block_hash),
+            block_height
+        );
 
         Ok(())
     }
@@ -113,6 +117,86 @@ impl Archivist for SQLiteArchive {
 
         // convert the json string to a vector of ContractTxEvent and return it
         Ok(serde_json::from_str(&events.json_contract_events)?)
+    }
+
+    /// Mark the block of the given height and hash as finalized in the archive.
+    async fn mark_block_finalized(
+        &self,
+        block_height: u64,
+        hex_block_hash: String,
+    ) -> Result<()> {
+        let block_height: i64 = block_height as i64;
+
+        let mut conn = self.archive_db.acquire().await?;
+
+        // Set finalized to true for the block with the given hash
+        // Return the block height
+        let r = sqlx::query!(
+            r#"UPDATE archive SET finalized = 1 WHERE block_hash = ?
+            RETURNING block_height
+            "#,
+            hex_block_hash
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        info!(
+            "Marked block {} as finalized at height {}. After {} blocks",
+            util::truncate_string(&hex_block_hash),
+            block_height,
+            block_height - r.block_height
+        );
+
+        Ok(())
+    }
+
+    /// Remove the block of the given height and hash from the archive.
+    async fn remove_deleted_block(
+        &self,
+        block_height: u64,
+        hex_block_hash: String,
+    ) -> Result<bool> {
+        let block_height: i64 = block_height as i64;
+
+        let mut conn = self.archive_db.acquire().await?;
+
+        let r = sqlx::query!(
+            r#"DELETE FROM archive WHERE block_hash = ? AND (finalized IS NULL OR finalized = 0)
+            RETURNING block_height
+            "#,
+            hex_block_hash
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        if let Some(r) = r {
+            info!(
+                "Deleted events from block {} with block height: {} at height {}",
+                util::truncate_string(&hex_block_hash),
+                r.block_height,
+                block_height
+            );
+            Ok(true)
+        } else {
+            warn!(
+                "Trying to delete Block {} which is finalized or does not exist in the archive",
+                util::truncate_string(&hex_block_hash)
+            );
+            Ok(false)
+        }
+    }
+}
+
+mod util {
+    /// Truncate a string to at most 35 characters.
+    pub fn truncate_string(s: &str) -> String {
+        if s.len() <= 32 {
+            return s.to_string();
+        }
+
+        let first_part = &s[..16];
+        let last_part = &s[s.len() - 16..];
+        format!("{}...{}", first_part, last_part)
     }
 }
 
@@ -138,13 +222,8 @@ mod tests {
         env::temp_dir().join(test_dir)
     }
 
-    #[tokio::test]
-    async fn test_store_fetch_vm_events() {
-        let path = get_test_dir();
-
-        let archive = SQLiteArchive::create_or_open(path).await;
-
-        let events = vec![
+    fn get_dummy_data() -> Vec<ContractTxEvent> {
+        vec![
             ContractTxEvent {
                 event: ContractEvent {
                     target: WrappedContractId(ContractId::from_bytes([0; 32])),
@@ -161,7 +240,16 @@ mod tests {
                 },
                 origin: Some([1; 32]),
             },
-        ];
+        ]
+    }
+
+    #[tokio::test]
+    async fn test_store_fetch_vm_events() {
+        let path = get_test_dir();
+
+        let archive = SQLiteArchive::create_or_open(path).await;
+
+        let events = get_dummy_data();
 
         archive
             .store_vm_events(1, [5; 32], events.clone())
@@ -185,5 +273,44 @@ mod tests {
             assert_eq!(contract_tx_event.event.data, fetched_event.event.data);
             assert_eq!(contract_tx_event.origin, fetched_event.origin);
         }
+    }
+
+    #[tokio::test]
+    async fn test_delete_vm_events() {
+        let path = get_test_dir();
+        let archive = SQLiteArchive::create_or_open(path).await;
+        let blk_height = 1;
+        let blk_hash = [5; 32];
+        let hex_blk_hash = hex::encode(blk_hash);
+        let events = get_dummy_data();
+
+        archive
+            .store_vm_events(blk_height, blk_hash, events.clone())
+            .await
+            .unwrap();
+
+        assert!(archive
+            .remove_deleted_block(blk_height, hex_blk_hash.clone())
+            .await
+            .unwrap());
+
+        let fetched_events = archive.fetch_vm_events(blk_height).await;
+
+        assert!(fetched_events.is_err());
+
+        archive
+            .store_vm_events(blk_height, blk_hash, events.clone())
+            .await
+            .unwrap();
+
+        archive
+            .mark_block_finalized(blk_height, hex_blk_hash.clone())
+            .await
+            .unwrap();
+
+        assert!(!archive
+            .remove_deleted_block(blk_height, hex_blk_hash)
+            .await
+            .unwrap());
     }
 }

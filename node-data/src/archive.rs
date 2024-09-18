@@ -7,6 +7,8 @@
 use crate::events::contract::ContractTxEvent;
 use crate::ledger::Hash;
 
+type HexHash = String;
+
 /// Defined data, that the archivist will store.
 ///
 /// This is also the type of the mpsc channel where the archivist listens for
@@ -18,20 +20,6 @@ pub enum ArchivalData {
     /// List of contract events from one block together with the block height
     /// and block hash.
     ArchivedEvents(u64, Hash, Vec<ContractTxEvent>),
-}
-
-impl ArchivalData {
-    /// Returns the block height of the data.
-    pub fn block_height(&self) -> u64 {
-        match self {
-            ArchivalData::ArchivedEvents(height, _, _) => *height,
-        }
-    }
-
-    /// Returns the block hash of the data.
-    pub fn block_hash(&self) -> &Hash {
-        match self {
-            ArchivalData::ArchivedEvents(_, hash, _) => hash,
-        }
-    }
+    FinalizedBlock(u64, HexHash),
+    DeletedBlock(u64, HexHash),
 }

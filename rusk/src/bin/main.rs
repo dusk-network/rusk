@@ -108,7 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_rues(_event_sender);
 
         #[cfg(feature = "archive")]
-        let node_builder = node_builder.with_archivist(archive_receiver);
+        let node_builder =
+            node_builder.with_archivist(archive_sender, archive_receiver);
 
         #[allow(clippy::let_and_return)]
         node_builder
