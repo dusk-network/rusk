@@ -28,7 +28,7 @@
   <IconHeadingCard
     gap="medium"
     heading="Staking"
-    iconPath={mdiDatabaseOutline}
+    icons={[mdiDatabaseOutline]}
     reverse
   >
     <StakeContract

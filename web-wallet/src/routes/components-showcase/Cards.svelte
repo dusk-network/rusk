@@ -1,8 +1,11 @@
 <script>
   import { Card } from "$lib/dusk/components";
-  import { IconHeadingCard } from "$lib/containers/Cards";
-  import { mdiHome } from "@mdi/js";
-  import ToggleableCard from "$lib/containers/Cards/ToggleableCard.svelte";
+  import { mdiArrowBottomLeftThin, mdiHome, mdiShieldLock } from "@mdi/js";
+  import {
+    IconHeadingCard,
+    ToggleableCard,
+    WarningCard,
+  } from "$lib/containers/Cards";
 </script>
 
 <section>
@@ -38,7 +41,10 @@
     </p>
   </Card>
   <hr />
-  <IconHeadingCard heading="No place like home" iconPath={mdiHome} reverse>
+  <IconHeadingCard
+    heading="No place like home"
+    icons={[mdiArrowBottomLeftThin, mdiShieldLock]}
+  >
     <p>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. In viverra
       tincidunt dolor, nec imperdiet felis tristique non. Nunc quis tempus est,
@@ -51,7 +57,7 @@
     </p>
   </IconHeadingCard>
   <hr />
-  <IconHeadingCard heading="No place like home" iconPath={mdiHome}>
+  <WarningCard heading="No place like home">
     <p>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. In viverra
       tincidunt dolor, nec imperdiet felis tristique non. Nunc quis tempus est,
@@ -62,7 +68,7 @@
       ullamcorper in velit. Aenean eros dolor, condimentum sed tempor et, ornare
       in erat.
     </p>
-  </IconHeadingCard>
+  </WarningCard>
   <hr />
   <ToggleableCard heading="No place like home" iconPath={mdiHome}>
     <p>

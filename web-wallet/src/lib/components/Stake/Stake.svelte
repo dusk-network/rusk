@@ -32,7 +32,7 @@
     OperationResult,
   } from "$lib/components";
 
-  import { IconHeadingCard } from "$lib/containers/Cards";
+  import { WarningCard } from "$lib/containers/Cards";
 
   import StakeOverview from "./StakeOverview.svelte";
 
@@ -194,10 +194,9 @@
           }}
         >
           <Badge text="WARNING" variant="warning" />
-          <IconHeadingCard
+          <WarningCard
             onSurface
             heading="Only stake if you have a node set up!"
-            iconPath={mdiAlertOutline}
           >
             <p class="staking-warning">
               I understand that I have set up a node properly, as described <AppAnchor
@@ -215,7 +214,7 @@
               label="Don't show this step again."
               bind:checked={hideStakingNoticeNextTime}
             />
-          </IconHeadingCard>
+          </WarningCard>
         </WizardStep>
       {/if}
 

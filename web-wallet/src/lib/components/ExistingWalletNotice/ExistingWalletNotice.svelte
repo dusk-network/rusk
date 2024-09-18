@@ -1,18 +1,14 @@
 <script>
   import { Button } from "$lib/dusk/components";
   import { AppAnchorButton } from "$lib/components";
-  import { IconHeadingCard } from "$lib/containers/Cards";
-  import { mdiAlertOutline } from "@mdi/js";
+  import { WarningCard } from "$lib/containers/Cards";
 
   /** @type {boolean} */
   export let notice = false;
 </script>
 
 <section>
-  <IconHeadingCard
-    heading="Existing Wallet Detected"
-    iconPath={mdiAlertOutline}
-  >
+  <WarningCard heading="Existing Wallet Detected">
     <p>
       Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
@@ -34,7 +30,7 @@
         }}
       />
     </div>
-  </IconHeadingCard>
+  </WarningCard>
 </section>
 
 <style lang="postcss">

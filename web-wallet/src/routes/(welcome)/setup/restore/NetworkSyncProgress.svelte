@@ -24,7 +24,7 @@
   });
 </script>
 
-<IconHeadingCard iconPath={mdiCubeOutline} heading="Network Sync">
+<IconHeadingCard icons={[mdiCubeOutline]} heading="Network Sync">
   {#if !syncStarted || (syncStatus.isInProgress && (!syncStatus.current || !syncStatus.last))}
     <span>Syncing...</span>
   {:else if syncStatus.isInProgress}

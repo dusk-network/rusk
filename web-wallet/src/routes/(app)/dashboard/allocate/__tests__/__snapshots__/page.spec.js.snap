@@ -12,24 +12,29 @@ exports[`Allocate > should render the allocation page 1`] = `
       slot="header"
     >
       <div
-        class="dusk-card__heading-container dusk-card__heading-container--reverse"
+        class="dusk-card__heading-container"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"
-          />
-        </svg>
-        
-         
         <h3
           class="h4"
         >
           Shield / Unshield
         </h3>
+         
+        <div
+          class="dusk-card__heading-icons"
+        >
+          
+          <svg
+            class="dusk-icon dusk-icon--size--default"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"
+            />
+          </svg>
+          
+        </div>
       </div>
     </header>
   </div>

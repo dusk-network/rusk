@@ -1,8 +1,7 @@
 <script>
   import { onMount } from "svelte";
-  import { mdiAlertOutline } from "@mdi/js";
   import { AppAnchorButton } from "$lib/components";
-  import { IconHeadingCard } from "$lib/containers/Cards";
+  import { WarningCard } from "$lib/containers/Cards";
 
   onMount(() => {
     // eslint-disable-next-line no-alert
@@ -16,10 +15,7 @@
 </script>
 
 <section class="forced-logout">
-  <IconHeadingCard
-    heading="You have been automatically logged out"
-    iconPath={mdiAlertOutline}
-  >
+  <WarningCard heading="You have been automatically logged out">
     <div>
       <p>
         Another tab or window unlocked a different wallet and replaced the local
@@ -30,7 +26,7 @@
         will need to wait for a full sync.
       </p>
     </div>
-  </IconHeadingCard>
+  </WarningCard>
   <AppAnchorButton data-sveltekit-replacestate href="/" text="HOME" />
 </section>
 

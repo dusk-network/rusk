@@ -289,10 +289,10 @@ exports[`Stake > should render the Stake notice 1`] = `
           slot="header"
         >
           <div
-            class="dusk-card__heading-container"
+            class="dusk-card__heading-container dusk-card__heading-container--warning-card"
           >
             <svg
-              class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+              class="dusk-icon dusk-icon--size--default"
               role="graphics-symbol"
               viewBox="0 0 24 24"
             >

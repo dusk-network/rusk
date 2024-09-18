@@ -3,17 +3,43 @@
 <script>
   import { walletStore } from "$lib/stores";
   import { Receive } from "$lib/components";
+  import { ExclusiveChoice } from "$lib/dusk/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
-  import { mdiArrowTopRight } from "@mdi/js";
+  import {
+    mdiArrowBottomLeftThin,
+    mdiShieldLock,
+    mdiShieldLockOpen,
+  } from "@mdi/js";
 
   $: ({ currentAddress } = $walletStore);
+
+  let addressToShow = "shielded";
+
+  const options = [
+    { disabled: false, label: "Shielded", value: "shielded" },
+    { disabled: false, label: "Unshielded", value: "unshielded" },
+  ];
 </script>
 
-<IconHeadingCard
-  gap="medium"
-  heading="Transfer"
-  iconPath={mdiArrowTopRight}
-  reverse
->
-  <Receive address={currentAddress} />
-</IconHeadingCard>
+{#if import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED === "false"}
+  <IconHeadingCard
+    gap="medium"
+    heading="Receive"
+    icons={[
+      mdiArrowBottomLeftThin,
+      addressToShow === "shielded" ? mdiShieldLock : mdiShieldLockOpen,
+    ]}
+  >
+    <ExclusiveChoice {options} bind:value={addressToShow} />
+
+    <Receive address={currentAddress} />
+  </IconHeadingCard>
+{:else}
+  <IconHeadingCard
+    gap="medium"
+    heading="Receive"
+    icons={[mdiArrowBottomLeftThin]}
+  >
+    <Receive address={currentAddress} />
+  </IconHeadingCard>
+{/if}

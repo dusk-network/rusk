@@ -1,9 +1,7 @@
 <script>
   import { Card, Icon } from "$lib/dusk/components";
+  import { mdiAlertOutline } from "@mdi/js";
   import "./Card.css";
-
-  /** @type {string[] | undefined} */
-  export let icons = undefined;
 
   /** @type {string} */
   export let heading;
@@ -20,15 +18,11 @@
 
 <Card {...$$restProps} {className} {gap} {onSurface}>
   <header slot="header" class="dusk-card__header">
-    <div class="dusk-card__heading-container">
+    <div
+      class="dusk-card__heading-container dusk-card__heading-container--warning-card"
+    >
+      <Icon path={mdiAlertOutline} />
       <h3 class="h4">{heading}</h3>
-      {#if icons && icons.length}
-        <div class="dusk-card__heading-icons">
-          {#each icons as iconPath (iconPath)}
-            <Icon path={iconPath} />
-          {/each}
-        </div>
-      {/if}
     </div>
   </header>
   <slot />

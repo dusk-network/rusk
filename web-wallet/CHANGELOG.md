@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
 - Restrict mnemonic step input to alphabetical characters (Restore Flow) [#2355]
 - Newly created Wallet does not sync from genesis [#1567]
 - Update font-display to swap for custom fonts to improve performance [#2026]
@@ -260,6 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2310]: https://github.com/dusk-network/rusk/issues/2310
 [#2355]: https://github.com/dusk-network/rusk/issues/2355
 [#2406]: https://github.com/dusk-network/rusk/issues/2406
+[#2421]: https://github.com/dusk-network/rusk/issues/2421
 
 <!-- VERSIONS -->
 
