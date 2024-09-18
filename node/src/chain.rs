@@ -54,6 +54,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     acceptor: Option<Arc<RwLock<Acceptor<N, DB, VM>>>>,
     max_consensus_queue_size: usize,
     event_sender: Sender<Event>,
+    genesis_timestamp: u64,
 }
 
 #[async_trait]
@@ -66,9 +67,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<()> {
-        let tip =
-            Self::load_tip(db.read().await.deref(), vm.read().await.deref())
-                .await?;
+        let tip = Self::load_tip(
+            db.read().await.deref(),
+            vm.read().await.deref(),
+            self.genesis_timestamp,
+        )
+        .await?;
 
         let locator = tip.inner().header().hash;
         let msg = payload::GetBlocks::new(locator).into();
@@ -233,6 +237,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         keys_path: String,
         max_inbound_size: usize,
         event_sender: Sender<Event>,
+        genesis_timestamp: u64,
     ) -> Self {
         info!(
             "ChainSrv::new with keys_path: {}, max_inbound_size: {}",
@@ -245,6 +250,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             acceptor: None,
             max_consensus_queue_size: max_inbound_size,
             event_sender,
+            genesis_timestamp,
         }
     }
 
@@ -253,7 +259,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     /// Panics
     ///
     /// If register entry is read but block is not found.
-    async fn load_tip(db: &DB, vm: &VM) -> Result<BlockWithLabel> {
+    async fn load_tip(
+        db: &DB,
+        vm: &VM,
+        genesis_timestamp: u64,
+    ) -> Result<BlockWithLabel> {
         let stored_block = db.view(|t| {
             anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
                 t.fetch_block(&tip_hash[..])
@@ -275,7 +285,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
                 // Lack of register record means the loaded database is
                 // either malformed or empty.
                 let state = vm.get_state_root()?;
-                let genesis_blk = genesis::generate_block(state);
+                let genesis_blk =
+                    genesis::generate_block(state, genesis_timestamp);
                 db.update(|t| {
                     // Persist genesis block
                     t.store_block(
