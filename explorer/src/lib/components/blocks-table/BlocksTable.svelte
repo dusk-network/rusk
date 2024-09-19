@@ -31,7 +31,7 @@
   <TableHead>
     <TableRow>
       <TableCell type="th">Block</TableCell>
-      <TableCell type="th">Fee (Dusk)</TableCell>
+      <TableCell type="th">Gas</TableCell>
       <TableCell type="th">Txn(s)</TableCell>
       <TableCell type="th">Rewards (Dusk)</TableCell>
     </TableRow>
@@ -48,9 +48,9 @@
           <RelativeTime className="block__time" date={block.header.date} />
         </TableCell>
         <TableCell>
-          <b class="block__fee-avg-label">AVG:</b>
+          <b class="block__fee-avg-label">AVG PRICE:</b>
           {numberFormatter(block.transactions.stats.averageGasPrice)}<br />
-          <b class="block__fee-total-label">TOTAL:</b>
+          <b class="block__fee-total-label">USED:</b>
           {numberFormatter(block.transactions.stats.gasUsed)}
         </TableCell>
         <TableCell>{numberFormatter(block.transactions.data.length)}</TableCell>

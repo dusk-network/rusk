@@ -57,7 +57,11 @@ describe("transformBlock", () => {
           txtype: "Phoenix",
         },
       ],
-      stats: { averageGasPrice: 1, gasLimit: 5000000000, gasUsed: 580718 },
+      stats: {
+        averageGasPrice: 1,
+        gasLimit: 5000000000,
+        gasUsed: 580718,
+      },
     },
   };
 

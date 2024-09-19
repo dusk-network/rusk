@@ -169,7 +169,7 @@
     >
       <svelte:fragment slot="term">average gas price</svelte:fragment>
       <svelte:fragment slot="definition"
-        >{formatter(luxToDusk(data.transactions.stats.averageGasPrice))} DUSK</svelte:fragment
+        >{formatter(data.transactions.stats.averageGasPrice)}</svelte:fragment
       >
     </ListItem>
 

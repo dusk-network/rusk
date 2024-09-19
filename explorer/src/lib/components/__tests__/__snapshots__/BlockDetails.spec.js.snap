@@ -352,8 +352,7 @@ exports[`Block Details > it renders the Block Details component with the payload
       <dd
         class="details-list__definition"
       >
-        0.000000001
-         DUSK
+        1
       </dd>
       <dt
         class="details-list__term"
@@ -826,8 +825,7 @@ exports[`Block Details > renders the Block Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        0.000000001
-         DUSK
+        1
       </dd>
       <dt
         class="details-list__term"

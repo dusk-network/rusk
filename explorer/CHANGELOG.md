@@ -10,12 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Show the error message for failed transactions [#2220]
+- Add tooltip to current and pending stake showing the exact amount [#2363]
+- Add `memo` and `isDeploy` fields in transactions [#2362]
+- Add `txType` fields in transactions and display it [#2347]
+- Add `json` payload to block detail [#2364]
 
 ### Changed
+
+- Switch `raw` payload with `json` in transaction details [#2364]
+- Change the displayed value for average gas price to lux [#2416]
+- Change the blocks table header `FEE` to `GAS` and `AVG` to `AVG PRICE` and `TOTAL` to `USED` [#2416]
 
 ### Fixed
 
 - Fix Transactions Fee is not properly computed [#2348]
+- Fix shield icons used for tx type [#2389]
 
 ## [0.2.0] - 2024-08-26
 
@@ -26,10 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add accessible name to the gas used progress bar [#2037]
 - Add accessible name to the nav bar button on mobile [#2036]
 - Implement warning for stale market data [#1892]
-- Add tooltip to current and pending stake showing the exact amount [#2363]
-- Add `memo` and `isDeploy` fields in transactions [#2362]
-- Add `txType` fields in transactions and display it [#2347]
-- Add `json` payload to block detail [#2364]
 
 ### Changed
 
@@ -37,13 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Statistics Panel labels for clarity [#2034]
 - Update font-display to swap for custom fonts to improve performance [#2025]
 - Optimize auto re-renders of relative times [#2059]
-- Switch `raw` payload with `json` in transaction details [#2364]
 
 ### Fixed
 
 - Fix Average Fee Paid label [#2057]
 - Fix list items alignment on mobile [#2056]
-- Fix shield icons used for tx type [#2389]
 
 ## [0.1.0] - 2024-07-24
 

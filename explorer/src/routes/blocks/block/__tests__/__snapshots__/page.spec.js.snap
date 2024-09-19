@@ -430,8 +430,7 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dd
             class="details-list__definition"
           >
-            0.000000001
-             DUSK
+            1
           </dd>
           <dt
             class="details-list__term"
@@ -1150,8 +1149,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dd
             class="details-list__definition"
           >
-            0.000000001
-             DUSK
+            1
           </dd>
           <dt
             class="details-list__term"

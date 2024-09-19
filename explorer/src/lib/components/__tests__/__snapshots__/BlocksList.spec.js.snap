@@ -63,8 +63,7 @@ exports[`Blocks List > renders the Blocks List component 1`] = `
   <dd
     class="details-list__definition details-list__definition--table"
   >
-    0.000000001
-     DUSK
+    1
   </dd>
    
   <dt
