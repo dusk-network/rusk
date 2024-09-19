@@ -58,7 +58,8 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         self.db
             .lock()
             .await
-            .store_candidate_block(p.candidate.clone());
+            .store_candidate_block(p.candidate.clone())
+            .await;
 
         Ok(HandleMsgOutput::Ready(msg))
     }
@@ -82,7 +83,8 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         self.db
             .lock()
             .await
-            .store_candidate_block(p.candidate.clone());
+            .store_candidate_block(p.candidate.clone())
+            .await;
 
         Ok(HandleMsgOutput::Pending)
     }
