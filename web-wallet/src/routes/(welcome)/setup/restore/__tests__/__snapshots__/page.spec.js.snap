@@ -16,10 +16,10 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
           slot="header"
         >
           <div
-            class="dusk-card__heading-container"
+            class="dusk-card__heading-container dusk-card__heading-container--warning-card"
           >
             <svg
-              class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
+              class="dusk-icon dusk-icon--size--default"
               role="graphics-symbol"
               viewBox="0 0 24 24"
             >
@@ -146,12 +146,12 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
         <div
           class="dusk-card__heading-container"
         >
-           
           <h3
             class="h4"
           >
             Enter your Mnemonic Phrase
           </h3>
+           
         </div>
       </header>
     </div>
@@ -380,12 +380,12 @@ exports[`Restore > should render the Terms of Service step of the Restore flow i
           <div
             class="dusk-card__heading-container"
           >
-             
             <h3
               class="h4"
             >
               Terms & Privacy Policy
             </h3>
+             
           </div>
         </header>
       </div>

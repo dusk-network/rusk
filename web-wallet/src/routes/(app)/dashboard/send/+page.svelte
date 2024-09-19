@@ -26,12 +26,7 @@
   ];
 </script>
 
-<IconHeadingCard
-  gap="medium"
-  heading="Send"
-  iconPath={mdiArrowTopRight}
-  reverse
->
+<IconHeadingCard gap="medium" heading="Send" icons={[mdiArrowTopRight]} reverse>
   <Send
     execute={executeSend}
     formatter={duskFormatter}

@@ -3,6 +3,7 @@
 exports[`Send > should render the send page 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
+  reverse="true"
 >
   <div
     class="dusk-card__header-container"
@@ -12,24 +13,29 @@ exports[`Send > should render the send page 1`] = `
       slot="header"
     >
       <div
-        class="dusk-card__heading-container dusk-card__heading-container--reverse"
+        class="dusk-card__heading-container"
       >
-        <svg
-          class="dusk-icon dusk-icon--size--default dusk-card__heading-icon"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"
-          />
-        </svg>
-        
-         
         <h3
           class="h4"
         >
           Send
         </h3>
+         
+        <div
+          class="dusk-card__heading-icons"
+        >
+          
+          <svg
+            class="dusk-icon dusk-icon--size--default"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"
+            />
+          </svg>
+          
+        </div>
       </div>
     </header>
   </div>

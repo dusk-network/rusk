@@ -57,15 +57,11 @@
 
 <style lang="postcss">
   .receive {
-    position: absolute;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
     gap: var(--default-gap);
-    background-color: var(--background-color);
-    top: 0;
-    left: 0;
     z-index: 3;
     height: 100%;
     overflow: auto;

@@ -1,8 +1,6 @@
 <script>
   import { Words } from "$lib/dusk/components";
-  import { IconHeadingCard } from "$lib/containers/Cards";
-
-  import { mdiAlertOutline } from "@mdi/js";
+  import { WarningCard } from "$lib/containers/Cards";
   import { generateMnemonic } from "bip39";
 
   /** @type {string[]} */
@@ -13,12 +11,12 @@
   }
 </script>
 
-<IconHeadingCard heading="Keep this SAFE" iconPath={mdiAlertOutline}>
+<WarningCard heading="Keep this SAFE">
   <p class="mnemonic-card__notice">
     Please make sure to write your phrase down and save it in a secure location.
   </p>
   <Words words={mnemonicPhrase} />
-</IconHeadingCard>
+</WarningCard>
 
 <style lang="postcss">
   .mnemonic-card__notice {

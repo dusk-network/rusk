@@ -13,7 +13,7 @@
 </script>
 
 {#if !!import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED}
-  <IconHeadingCard heading="Shield / Unshield" iconPath={mdiSync} reverse>
+  <IconHeadingCard heading="Shield / Unshield" icons={[mdiSync]}>
     <AllocateContract
       on:operationChange={({ detail }) => updateOperation(detail)}
     />

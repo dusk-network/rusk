@@ -96,7 +96,7 @@
       tag="article"
       gap="medium"
       heading={modeLabel}
-      iconPath={mdiKeyOutline}
+      icons={[mdiKeyOutline]}
     >
       <form
         class="login__form"

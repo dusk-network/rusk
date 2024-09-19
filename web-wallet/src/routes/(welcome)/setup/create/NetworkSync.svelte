@@ -18,7 +18,7 @@
   const numberFormatter = createNumberFormatter(language);
 </script>
 
-<IconHeadingCard iconPath={mdiCubeOutline} heading="Block Height">
+<IconHeadingCard icons={[mdiCubeOutline]} heading="Block Height">
   <p>
     Store the current block height in case you want to resync from it next time
     you reset your wallet. This can significantly reduce the initial sync time.
