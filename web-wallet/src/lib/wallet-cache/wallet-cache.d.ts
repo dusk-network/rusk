@@ -11,3 +11,5 @@ type WalletCacheHistoryEntry = {
   lastBlockHeight: number;
   psk: string;
 };
+
+type WalletCacheTableName = "history" | "spentNotes" | "unspentNotes";

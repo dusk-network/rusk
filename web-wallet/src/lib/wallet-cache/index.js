@@ -8,7 +8,7 @@ class WalletCache {
   #db;
 
   /**
-   * @template {"history" | "spentNotes" | "unspentNotes"} TName
+   * @template {WalletCacheTableName} TName
    * @param {TName} tableName
    * @param {string} [psk]
    * @returns {Promise<TName extends "history" ? WalletCacheHistoryEntry[] : WalletCacheNote[]>}
