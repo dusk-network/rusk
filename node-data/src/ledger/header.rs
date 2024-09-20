@@ -40,6 +40,8 @@ pub struct Header {
     #[serde(serialize_with = "crate::serialize_hex")]
     pub hash: Hash,
 
+    pub signature: Signature,
+
     // Non-hashable fields
     #[serde(skip_serializing)]
     pub att: Attestation,
@@ -70,6 +72,7 @@ impl std::fmt::Debug for Header {
             .field("gen_bls_pubkey", &to_str(self.generator_bls_pubkey.inner()))
             .field("gas_limit", &self.gas_limit)
             .field("hash", &to_str(&self.hash))
+            .field("signature", &to_str(self.signature.inner()))
             .field("att", &self.att)
             .field("tx_root", &to_str(&self.txroot))
             .field("fault_root", &to_str(&self.faultroot))
@@ -155,6 +158,7 @@ impl Header {
             att: Default::default(),
             prev_block_cert,
             failed_iterations,
+            signature: Default::default(),
         })
     }
 }

@@ -1538,6 +1538,7 @@ mod tests {
                 ..Default::default()
             },
             failed_iterations: Default::default(),
+            signature: Signature::from([9; 48]),
         };
 
         let sample_block = ledger::Block::new(header, vec![], vec![])
@@ -1549,9 +1550,7 @@ mod tests {
         };
 
         assert_serialize(payload::Candidate {
-            header: consensus_header.clone(),
             candidate: sample_block,
-            sign_info: sign_info.clone(),
         });
 
         assert_serialize(ledger::StepVotes::new([4; 48], 12345));
