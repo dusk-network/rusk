@@ -9,109 +9,16 @@ import * as exu from "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/mod
 import { none } from "./none.js";
 
 import { DriverError } from "./protocol-driver/error.js";
+import * as DataBuffer from "./protocol-driver/buffer.js";
 
-const uninit = () => [
+const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
   none`No size set yet. Load the Protocol Driver first.`,
-];
+]);
 
-let [protocolDriverModule, driverEntrySize] = uninit();
+let [protocolDriverModule, driverEntrySize] = uninit;
 
 export const getEntrySize = () => driverEntrySize;
-
-function prepare(chunks, size) {
-  let totalLength = chunks.length;
-
-  // Allocate a Uint8Array with the total length,
-  // plus 4 bytes for the buffer size and 8 bytes
-  // for the struct layout
-  const result = new Uint8Array(totalLength + 8);
-  const view = new DataView(result.buffer);
-
-  result.set(chunks);
-
-  // Calculate and copy the layout
-  const align = 2 ** 32 - ((totalLength + 3) & ~3);
-
-  view.setUint32(result.length - 8, align, true);
-  view.setUint32(result.length - 4, size, true);
-
-  return result;
-}
-
-async function collectEntries(entries) {
-  const chunks = [];
-  let totalLength = 0;
-
-  for await (const entry of entries) {
-    const chunk = new Uint8Array(entry[0].byteLength + entry[1].byteLength);
-    chunk.set(entry[0]);
-    chunk.set(entry[1], entry[0].byteLength);
-    chunks.push(chunk);
-
-    totalLength += chunk.length;
-  }
-
-  // Allocate a Uint8Array with the total length,
-  // plus 4 bytes for the buffer size and 8 bytes
-  // for the struct layout
-  const result = new Uint8Array(totalLength + 4 + 8);
-  const view = new DataView(result.buffer);
-
-  // Copy the buffer size including the struct layout
-  view.setUint32(0, totalLength + 8, true);
-
-  // Copy each chunk into the result array
-  let offset = 4;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  // Calculate and copy the layout
-  const align = 2 ** 32 - ((totalLength + 3) & ~3);
-  const size = chunks.length;
-
-  view.setUint32(result.length - 8, align, true);
-  view.setUint32(result.length - 4, size, true);
-
-  return result;
-}
-
-async function collect(items) {
-  const chunks = [];
-  let totalLength = 0;
-
-  for await (const chunk of items) {
-    chunks.push(chunk);
-    totalLength += chunk.length;
-  }
-
-  // Allocate a Uint8Array with the total length,
-  // plus 4 bytes for the buffer size and 8 bytes
-  // for the struct layout
-  const result = new Uint8Array(totalLength + 4 + 8);
-  const view = new DataView(result.buffer);
-
-  // Copy the buffer size including the struct layout
-  view.setUint32(0, totalLength + 8, true);
-
-  // Copy each chunk into the result array
-  let offset = 4;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  // Calculate and copy the layout
-  const align = 2 ** 32 - ((totalLength + 3) & ~3);
-  const size = chunks.length;
-
-  view.setUint32(result.length - 8, align, true);
-  view.setUint32(result.length - 4, size, true);
-
-  return result;
-}
 
 export function load(source, importsURL) {
   // If the module is already loaded, no need to load it again.
@@ -144,12 +51,10 @@ export function unload() {
     return Promise.resolve();
   } else {
     return Promise.all([protocolDriverModule, driverEntrySize]).then(() => {
-      [protocolDriverModule, driverEntrySize] = uninit();
+      [protocolDriverModule, driverEntrySize] = uninit;
     });
   }
 }
-
-Promise.all([protocolDriverModule, driverEntrySize]);
 
 export async function pickNotes(owner, notes, value) {
   const task = protocolDriverModule.task(async function (
@@ -167,7 +72,7 @@ export async function pickNotes(owner, notes, value) {
     await memcpy(seed_ptr, seed, 64);
 
     // Prepare the notes buffer
-    let notesBuffer = await collectEntries(notes.entries());
+    let notesBuffer = new Uint8Array(DataBuffer.from(notes.entries()));
 
     // Allocate memory for the notes + 4 bytes for the length
     let ptr = await malloc(notesBuffer.byteLength);
@@ -260,7 +165,9 @@ export async function mapOwned(owners, notes) {
     let { key: keySize, item: itemSize } = await driverEntrySize;
     let entrySize = keySize + itemSize;
 
-    notes = prepare(notes, notes.byteLength / itemSize);
+    let notesBuffer = new Uint8Array(
+      DataBuffer.from(notes, { size: notes.byteLength / itemSize }),
+    );
 
     // Copyw the seed to avoid invalidating the original buffer
     let seed = new Uint8Array(await firstOwner.seed);
@@ -268,17 +175,11 @@ export async function mapOwned(owners, notes) {
     let seed_ptr = await malloc(64);
     await memcpy(seed_ptr, seed, 64);
 
-    // Prepare the notes buffer
-    let notesBuffer = new Uint8Array(notes.byteLength + 4);
-    // Copy the length of the notes to the first 4 bytes
-    new DataView(notesBuffer.buffer).setUint32(0, notes.byteLength, true);
-    // Copy the notes to the buffer
-    notesBuffer.set(notes, 4);
-
     // Allocate memory for the notes + 4 bytes for the length
     let ptr = await malloc(notesBuffer.byteLength);
 
     // Copy the notes to the WASM memory
+    //
     await memcpy(ptr, notesBuffer, notesBuffer.byteLength);
 
     // Convert the profile to indexes and copy them to a Uint8Array
@@ -337,22 +238,24 @@ export async function mapOwned(owners, notes) {
   return await task();
 }
 
-export async function balance(profile, notes) {
+export async function balance(seed, n, notes) {
   const task = await protocolDriverModule.task(async function (
     { malloc, balance },
     { memcpy },
   ) {
-    let seed = new Uint8Array(await profile.seed);
+    // Copy the seed to avoid invalidating the original buffer
+    seed = new Uint8Array(seed);
+
     let seed_ptr = await malloc(64);
     await memcpy(seed_ptr, seed, 64);
 
-    let notesBuffer = await collect(notes.values());
+    let notesBuffer = new Uint8Array(DataBuffer.from(notes.values()));
 
-    let ptr = await malloc(notesBuffer.length);
-    await memcpy(ptr, notesBuffer, notesBuffer.length);
+    let ptr = await malloc(notesBuffer.byteLength);
+    await memcpy(ptr, notesBuffer);
     let info_ptr = await malloc(16);
 
-    const _result = await balance(seed_ptr, +profile, ptr, info_ptr);
+    const _result = await balance(seed_ptr, n, ptr, info_ptr);
 
     let info = new Uint8Array(await memcpy(null, info_ptr, 16));
 
@@ -361,6 +264,15 @@ export async function balance(profile, notes) {
 
     return { value, spendable };
   });
+  return await task();
+}
+
+export async function accountsIntoRaw(users) {
+  const task = await protocolDriverModule.task(async function (
+    { malloc, accounts_into_raw },
+    { memcpy },
+  ) {});
+
   return await task();
 }
 

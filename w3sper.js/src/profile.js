@@ -20,6 +20,19 @@ class Key {
   toString() {
     return base58.encode(this.#buffer);
   }
+
+  valueOf() {
+    return this.#buffer.slice(0);
+  }
+
+  [Symbol.toPrimitive](hint) {
+    if (hint === "number") {
+      return this[_index];
+    } else if (hint === "string") {
+      return this.toString();
+    }
+    return null;
+  }
 }
 
 export class Profile {
@@ -43,7 +56,7 @@ export class Profile {
   }
 
   get seed() {
-    return this[_seeder]?.();
+    return ProfileGenerator.seedFrom(this);
   }
 
   sameSourceOf(profile) {
@@ -55,18 +68,6 @@ export class Profile {
       return this[_index];
     }
     return null;
-  }
-
-  balance(type, source) {
-    switch (type) {
-      case "account":
-        throw new Error("Not implemented yet");
-      case "address":
-        return ProtocolDriver.balance(this, source);
-        break;
-      default:
-        throw new Error("Unknown account type");
-    }
   }
 }
 
@@ -84,8 +85,12 @@ export class ProfileGenerator {
     const buffer = await ProtocolDriver.generateProfile(seed, n);
 
     const profile = new Profile(buffer);
-    profile[_index] = n;
     profile[_seeder] = this[_seeder];
+    profile[_index] = n;
+    profile.address[_index] = n;
+    profile.account[_index] = n;
+    profile.address[_seeder] = this[_seeder];
+    profile.account[_seeder] = this[_seeder];
 
     return profile;
   }
@@ -132,5 +137,9 @@ export class ProfileGenerator {
       return "account";
     }
     return "undefined";
+  }
+
+  static seedFrom(target) {
+    return target[_seeder]?.();
   }
 }

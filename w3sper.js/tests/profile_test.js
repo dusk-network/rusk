@@ -51,6 +51,10 @@ test("Default Profile", async () => {
   assert.equal(await profiles.at(0), defaultProfile);
   assert.equal(await profiles.at(1), undefined);
 
+  // Ensure the default profile's keys (address and account) are indexed correctly
+  assert.equal(+defaultProfile, +defaultProfile.address);
+  assert.equal(+defaultProfile, +defaultProfile.account);
+
   // Verify that the profile list has been updated to include the default profile
   assert.equal(profiles.length, 1);
 
@@ -81,6 +85,10 @@ test("Next Profile Generation", async () => {
   assert.equal(+profile, 1);
   assert.equal(profiles.indexOf(profile), 1);
   assert.equal(await profiles.at(1), profile);
+
+  // Ensure the next profile's keys (address and account) are indexed correctly
+  assert.equal(+profile, +profile.address);
+  assert.equal(+profile, +profile.account);
 
   // Verify that the profile list has been updated to include the next profile
   assert.equal(profiles.length, 2);

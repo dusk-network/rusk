@@ -6,3 +6,5 @@
 
 export * from "./network.js";
 export * from "./profile.js";
+export * from "./bookkeeper.js";
+export * from "./network/state-syncer.js";
