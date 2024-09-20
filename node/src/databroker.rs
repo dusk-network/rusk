@@ -18,7 +18,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use node_data::message::{payload, AsyncQueue};
+use node_data::message::{payload, AsyncQueue, ConsensusHeader, SignInfo};
 use node_data::message::{Payload, Topics};
 use tokio::sync::{RwLock, Semaphore};
 use tracing::{debug, info, warn};
@@ -219,7 +219,9 @@ impl DataBrokerSrv {
                 match Self::handle_get_resource(db, m, conf.max_inv_entries)
                     .await
                 {
-                    Ok(msg_list) => Ok(Response::new(msg_list, m.get_addr())),
+                    Ok(msg_list) => {
+                        Ok(Response::new(msg_list, m.get_addr().unwrap()))
+                    }
                     Err(err) => {
                         // resource is not found, rebroadcast the request only
                         // if hops_limit is not reached
@@ -388,6 +390,26 @@ impl DataBrokerSrv {
                             }
                         }
                     }
+                    InvType::CandidateFromIteration => {
+                        if let InvParam::HashAndIteration(
+                            prev_block_hash,
+                            iteration,
+                        ) = &i.param
+                        {
+                            if Candidate::fetch_candidate_block_by_iteration(
+                                &t,
+                                *prev_block_hash,
+                                *iteration,
+                            )?
+                            .is_none()
+                            {
+                                inv.add_candidate_from_iteration(
+                                    *prev_block_hash,
+                                    *iteration,
+                                );
+                            }
+                        }
+                    }
                 }
 
                 if inv.inv_list.len() >= max_entries {
@@ -405,7 +427,7 @@ impl DataBrokerSrv {
         // Send GetResource request with disabled rebroadcast (hops_limit = 1),
         // Inv message is part of one-to-one messaging flows
         // (GetBlocks/Mempool) so it should not be treated as flooding request
-        Ok(GetResource::new(inv, requester_addr, u64::MAX, 1).into())
+        Ok(GetResource::new(inv, Some(requester_addr), u64::MAX, 1).into())
     }
 
     /// Handles GetResource message request.
@@ -469,6 +491,39 @@ impl DataBrokerSrv {
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
+                        } else {
+                            None
+                        }
+                    }
+                    InvType::CandidateFromIteration => {
+                        if let InvParam::HashAndIteration(
+                            prev_block_hash,
+                            iter,
+                        ) = &i.param
+                        {
+                            Candidate::fetch_candidate_block_by_iteration(
+                                &t,
+                                *prev_block_hash,
+                                *iter,
+                            )
+                            .ok()
+                            .flatten()
+                            .map(|candidate| {
+                                let round = candidate.header().height;
+                                let iteration = candidate.header().iteration;
+                                let prev_block_hash =
+                                    candidate.header().prev_block_hash;
+
+                                Message::from(payload::Candidate {
+                                    candidate,
+                                    header: ConsensusHeader {
+                                        prev_block_hash,
+                                        round,
+                                        iteration,
+                                    },
+                                    sign_info: SignInfo::default(), // TODO: Use Block::Signature here
+                                })
+                            })
                         } else {
                             None
                         }
