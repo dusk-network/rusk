@@ -10,11 +10,15 @@ use std::time::Duration;
 
 use node_data::bls::PublicKey;
 use node_data::bls::PublicKeyBytes;
+use node_data::ledger::Hash;
 use node_data::ledger::{
     Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
 };
+use node_data::message::payload::RatificationResult;
 use node_data::StepName;
 use thiserror::Error;
+
+use crate::commons::StepSigError;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
@@ -56,6 +60,10 @@ pub enum HeaderError {
     InvalidBlockSignature(String),
     #[error("invalid seed: {0}")]
     InvalidSeed(String),
+
+    #[error("Invalid Attestation: {0}")]
+    InvalidAttestation(AttestationError),
+
     #[error("Generic error in header verification: {0}")]
     Generic(anyhow::Error),
 }
@@ -73,6 +81,7 @@ impl HeaderError {
             HeaderError::UnsupportedVersion => true,
             HeaderError::EmptyHash => true,
             HeaderError::InvalidSeed(_) => true,
+            HeaderError::InvalidAttestation(_) => true,
 
             // TODO: This must be removed as soon as we remove all anyhow errors
             HeaderError::Generic(_) => true,
@@ -80,9 +89,19 @@ impl HeaderError {
     }
 }
 
-impl From<anyhow::Error> for HeaderError {
-    fn from(value: anyhow::Error) -> Self {
-        Self::Generic(value)
+#[derive(Debug, Clone, Copy, Error)]
+pub enum AttestationError {
+    #[error("Invalid votes for {0:?}: {1:?}")]
+    InvalidVotes(StepName, StepSigError),
+    #[error("Expected block hash: {0:?}, Got: {1:?}")]
+    InvalidHash(Hash, Hash),
+    #[error("Result: {0:?}, Expected: {1:?}")]
+    InvalidResult(RatificationResult, RatificationResult),
+}
+
+impl From<AttestationError> for HeaderError {
+    fn from(value: AttestationError) -> Self {
+        Self::InvalidAttestation(value)
     }
 }
 

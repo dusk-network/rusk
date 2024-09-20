@@ -9,6 +9,7 @@ use node_data::ledger::{to_str, Seed, StepVotes};
 use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
+use tracing::error;
 
 use crate::commons::StepSigError;
 use crate::operations::Voter;
@@ -31,7 +32,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
-) -> anyhow::Result<(QuorumResult, Vec<Voter>)> {
+) -> Result<(QuorumResult, Vec<Voter>), StepSigError> {
     let round = header.round;
     let iteration = header.iteration;
 
@@ -66,16 +67,20 @@ pub async fn verify_step_votes(
 
     let (quorum_result, voters) =
         verify_votes(header, step, vote, sv, committee)
-        .map_err(|e| anyhow::anyhow!(
-            "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
+        .map_err(|e|
+            {
+            error!( "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
             step,
             vote,
             header.round,
             header.iteration,
             to_str(seed.inner()),
             sv,
+            e);
             e
-        ))?;
+           
+             }
+        )?;
 
     Ok((quorum_result, voters))
 }
