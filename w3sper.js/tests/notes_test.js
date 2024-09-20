@@ -13,24 +13,25 @@ const hex = (bytes) =>
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 
-import { ProfileGenerator } from "../src/mod.js";
+import { ProfileGenerator, Bookkeeper } from "../src/mod.js";
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64).fill(1);
 const seeder = async () => SEED;
 
-const notesBuffer = await Deno.readFile("./tests/assets/notes.rkyv");
+const NOTES_RKYV = "./tests/assets/notes.rkyv";
+const WASM_PATH = "../target/wasm32-unknown-unknown/release/wallet_core.wasm";
+
+const notesBuffer = await Deno.readFile(NOTES_RKYV);
+
+const wasm = await Deno.readFile(WASM_PATH);
 
 import * as ProtocolDriver from "../src/protocol-driver.js";
-
-const wasmBuffer = await Deno.readFile(
-  "../target/wasm32-unknown-unknown/release/wallet_core.wasm",
-);
 
 // Test case for default profile
 test("owened notes balance", async () => {
   ProtocolDriver.load(
-    wasmBuffer,
+    wasm,
     new URL("./assets/debug-imports.js", import.meta.url),
   );
 
@@ -46,10 +47,10 @@ test("owened notes balance", async () => {
   const owner3 = [await profiles.next()];
   const owner4 = [await profiles.next()];
 
-  let [notes] = await ProtocolDriver.mapOwned(owner1, notesBuffer);
+  let [notes1] = await ProtocolDriver.mapOwned(owner1, notesBuffer);
 
-  assert.equal(notes.size, 14);
-  assert.equal([...notes.keys()].map(hex), [
+  assert.equal(notes1.size, 14);
+  assert.equal([...notes1.keys()].map(hex), [
     "b3063d50864e5e138db87447e0bdaf4cf345c17dd2da0b7ac7abbc08b090e62b",
     "1afa317b0d0c8bcf2c08890380954adabb19ffd4bf721422179b6f08b664394a",
     "7a70d19b83c4722a6b27e2f5712e9ad3b7573656d32ccf847ec95d3ae942955b",
@@ -66,56 +67,98 @@ test("owened notes balance", async () => {
     "7cd032f0160e0a54ca1de4d86ee8c9981289121982c28a916752ffc06c9fc72a",
   ]);
 
-  let balance = await owner1[0].balance("address", notes);
-  assert.equal(balance, { value: 67n, spendable: 39n });
+  let [notes2] = await ProtocolDriver.mapOwned(owner2, notesBuffer);
 
-  let picked = await ProtocolDriver.pickNotes(owner1[0], notes, 10n);
-  assert.equal(picked.size, 4);
-  assert.equal(await owner1[0].balance("address", picked), {
-    value: 10n,
-    spendable: 10n,
-  });
-
-  picked = await ProtocolDriver.pickNotes(owner1[0], notes, 14n);
-  assert.equal(picked.size, 4);
-  assert.equal(await owner1[0].balance("address", picked), {
-    value: 15n,
-    spendable: 15n,
-  });
-
-  [notes] = await ProtocolDriver.mapOwned(owner2, notesBuffer);
-  assert.equal(notes.size, 2);
-  assert.equal([...notes.keys()].map(hex), [
+  assert.equal(notes2.size, 2);
+  assert.equal([...notes2.keys()].map(hex), [
     "cc7a09800474fc6668fba1f1b631e940f00309d88a9424fe1c84ca93d627b518",
     "96c24f81d2587017726ec7bbcbbfa80d5f300002c5d8dabe53870e97379d873f",
   ]);
 
-  balance = await owner2[0].balance("address", notes);
-  assert.equal(balance, { value: 3n, spendable: 3n });
+  let [notes3] = await ProtocolDriver.mapOwned(owner3, notesBuffer);
 
-  [notes] = await ProtocolDriver.mapOwned(owner3, notesBuffer);
-  assert.equal(notes.size, 1);
-  assert.equal([...notes.keys()].map(hex), [
+  assert.equal(notes3.size, 1);
+  assert.equal([...notes3.keys()].map(hex), [
     "81d45c11c5e9b20c2ebba17eaa4f720c669bfd4876cf620280c296225b721c18",
   ]);
 
-  picked = await ProtocolDriver.pickNotes(owner3[0], notes, 14n);
-  assert.equal(picked.size, 1);
-  assert.equal(await owner3[0].balance("address", picked), {
+  let [notes4] = await ProtocolDriver.mapOwned(owner4, notesBuffer);
+  assert.equal(notes4.size, 0);
+
+  // Create a treasury object for testing
+  let treasury = {
+    data: {
+      "62b5giMnKSpczFSdeLAouS76DZRB6Ny755WTUbJ7sp9dXMJptfe3gknP3XRubWkT1apSZ4YPanSVFjBJBP2SV6wU":
+        notes1,
+      "2cjjDfHEqP3nBQNXqukyKRCJ466VoWGyJmiCbgWuinnK6JEmftzuoHBNjs1gej19A8dgZN8XfGLvKDam2AxJuhya":
+        notes2,
+      "5LGVg71BfjmqV6GEB5pov1ZFNaaVUNsqmmBj1uGCTEND6kbh4w2aq13vXfYtDjNM4VpvpWZdagm7b4XbnxVUJZfU":
+        notes3,
+      "2BqT2oxcE56deFGjKxEpPy3E9NapkiFjzEzDoQAjcmhss4pmYGrfAgRuTrAPe3feGvysymjgP8QFD9M7GcbS2qKi":
+        notes4,
+    },
+
+    address(profile) {
+      return this.data[profile];
+    },
+  };
+
+  let bookkeeper = new Bookkeeper(treasury);
+
+  assert.equal(await bookkeeper.balance(owner1[0].address), {
+    value: 67n,
+    spendable: 39n,
+  });
+
+  assert.equal(await bookkeeper.balance(owner2[0].address), {
+    value: 3n,
+    spendable: 3n,
+  });
+
+  assert.equal(await bookkeeper.balance(owner3[0].address), {
     value: 42n,
     spendable: 42n,
   });
 
-  balance = await owner3[0].balance("address", notes);
-  assert.equal(balance, { value: 42n, spendable: 42n });
+  assert.equal(await bookkeeper.balance(owner4[0].address), {
+    value: 0n,
+    spendable: 0n,
+  });
 
-  [notes] = await ProtocolDriver.mapOwned(owner4, notesBuffer);
-  assert.equal(notes.size, 0);
+  let picked = await ProtocolDriver.pickNotes(owner1[0], notes1, 10n);
+  assert.equal(picked.size, 4);
 
-  balance = await owner4[0].balance("address", notes);
-  assert.equal(balance, { value: 0n, spendable: 0n });
+  assert.equal(
+    await ProtocolDriver.balance(await owner1[0].seed, +owner1[0], picked),
+    {
+      value: 10n,
+      spendable: 10n,
+    },
+  );
 
-  picked = await ProtocolDriver.pickNotes(owner4, notes, 1n);
+  picked = await ProtocolDriver.pickNotes(owner1[0], notes1, 14n);
+  assert.equal(picked.size, 4);
+
+  assert.equal(
+    await ProtocolDriver.balance(await owner1[0].seed, +owner1[0], picked),
+    {
+      value: 15n,
+      spendable: 15n,
+    },
+  );
+
+  picked = await ProtocolDriver.pickNotes(owner3[0], notes3, 14n);
+  assert.equal(picked.size, 1);
+
+  assert.equal(
+    await ProtocolDriver.balance(await owner3[0].seed, +owner3[0], picked),
+    {
+      value: 42n,
+      spendable: 42n,
+    },
+  );
+
+  picked = await ProtocolDriver.pickNotes(owner4, notes4, 1n);
   assert.equal(picked.size, 0);
 
   await ProtocolDriver.unload();

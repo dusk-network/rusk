@@ -16,9 +16,9 @@ export class Bookmark {
   }
 
   static from(source) {
-    if (typeof source === "bigint") {
+    if (typeof source === "bigint" || typeof source === "number") {
       let buffer = new ArrayBuffer(8);
-      new DataView(buffer).setBigUint64(0, source, true);
+      new DataView(buffer).setBigUint64(0, BigInt(source), true);
       return new Bookmark(new Uint8Array(buffer));
     } else if (source instanceof Bookmark) {
       return new Bookmark(source.data);
@@ -32,7 +32,7 @@ export class Bookmark {
     return this.#data;
   }
 
-  asUintN() {
+  asUint() {
     return new DataView(this.#data.buffer).getBigUint64(0, true);
   }
 

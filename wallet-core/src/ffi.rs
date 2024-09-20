@@ -34,13 +34,15 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     transfer::phoenix::{
-        ArchivedNoteLeaf, NoteLeaf, PublicKey as PhoenixPublicKey,
+        ArchivedNoteLeaf, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
     },
     BlsScalar,
 };
 use zeroize::Zeroize;
 
 use rkyv::to_bytes;
+
+use rand_chacha::{rand_core::SeedableRng, ChaCha12Rng};
 
 #[no_mangle]
 static KEY_SIZE: usize = BlsScalar::SIZE;
@@ -73,6 +75,7 @@ pub unsafe extern "C" fn generate_profile(
 ) -> ErrorCode {
     let ppk = derive_phoenix_pk(seed, index).to_bytes();
     let bpk = derive_bls_pk(seed, index).to_bytes();
+    let bpk2 = derive_bls_pk(seed, index).to_raw_bytes();
 
     ptr::copy_nonoverlapping(
         &ppk[0],
@@ -145,6 +148,36 @@ pub unsafe fn map_owned(
     ErrorCode::Ok
 }
 
+#[no_mangle]
+pub unsafe fn accounts_into_raw(
+    accounts_ptr: *const u8,
+    raws_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let accounts =
+        mem::from_buffer::<Vec<[u8; BlsPublicKey::SIZE]>>(accounts_ptr)?
+            .iter()
+            .map(|bpk| {
+                BlsPublicKey::from_bytes(bpk).map(|key| key.to_raw_bytes())
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .or(Err(ErrorCode::DeserializationError))?;
+
+    let bytes =
+        to_bytes::<_, 4096>(&accounts).or(Err(ErrorCode::ArchivingError))?;
+
+    let len = bytes.len().to_le_bytes();
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+
+    let ptr = ptr as *mut u8;
+
+    *raws_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
 /// Calculate the balance info for the phoenix address at the given index for
 /// the given seed.
 #[no_mangle]
@@ -203,3 +236,65 @@ pub unsafe fn bookmark(leaf_ptr: *const u8, bookmark: *mut u64) -> ErrorCode {
 
     ErrorCode::Ok
 }
+
+#[no_mangle]
+pub unsafe fn phoenix(
+    rng: &[u8; 32],
+    seed: &Seed,
+    sender_index: u8,
+    receiver: &[u8; PhoenixPublicKey::SIZE],
+    inputs: *const u8, // NoteOpening?
+    opening: *const u8,
+    root: &[u8; BlsScalar::SIZE],
+    transfer_value: *const u64,
+    obfuscated_transaction: bool, // ?
+    deposit: *const u64,          // ?
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    chain_id: u8,    // ?
+    data: *const u8, // ?
+) -> ErrorCode {
+    let rng = ChaCha12Rng::from_seed(*rng);
+
+    let sender_sk = derive_phoenix_sk(&seed, sender_index);
+    let receiver_pk = PhoenixPublicKey::from_bytes(receiver);
+    let root = BlsScalar::from_bytes(root);
+
+    let NoteOpening = mem::from_buffer(opening)?;
+
+    ErrorCode::Ok
+}
+
+// pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
+//     rng: &mut R,
+//     sender_sk: &PhoenixSecretKey,
+//     change_pk: &PhoenixPublicKey,
+//     receiver_pk: &PhoenixPublicKey,
+//     inputs: Vec<(Note, NoteOpening)>,
+//     root: BlsScalar,
+//     transfer_value: u64,
+//     obfuscated_transaction: bool,
+//     deposit: u64,
+//     gas_limit: u64,
+//     gas_price: u64,
+//     chain_id: u8,
+//     data: Option<impl Into<TransactionData>>,
+//     prover: &P,
+// ) -> Result<Transaction, Error> {
+//     Ok(PhoenixTransaction::new::<R, P>(
+//         rng,
+//         sender_sk,
+//         change_pk,
+//         receiver_pk,
+//         inputs,
+//         root,
+//         transfer_value,
+//         obfuscated_transaction,
+//         deposit,
+//         gas_limit,
+//         gas_price,
+//         chain_id,
+//         data,
+//         prover,
+//     )?
+//     .into())

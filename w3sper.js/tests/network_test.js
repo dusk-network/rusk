@@ -9,7 +9,12 @@ import {
   assert,
 } from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
 
-import { Network, ProfileGenerator } from "../src/mod.js";
+import {
+  Network,
+  ProfileGenerator,
+  Bookkeeper,
+  StateSyncer,
+} from "../src/mod.js";
 
 const once = (target, topic) =>
   new Promise((resolve) =>
@@ -58,9 +63,7 @@ test("Network block height", async () => {
 
 test("Network synchronization", async () => {
   const network = await Network.connect("http://localhost:8080/");
-  const syncer = await network.sync({ from: 0n });
-
-  assert.equal(syncer.from, 0n);
+  const syncer = new StateSyncer(network);
 
   let iterationOwnedCountTotal = 0;
   syncer.addEventListener("synciteration", ({ detail }) => {
@@ -71,34 +74,47 @@ test("Network synchronization", async () => {
 
   const profiles = new ProfileGenerator(seeder);
 
-  let owner1 = await profiles.default;
-  let owner2 = await profiles.next();
-  let owner3 = await profiles.next();
+  const owners = await Promise.all([
+    profiles.default,
+    profiles.next(),
+    profiles.next(),
+  ]);
 
-  const owners = [owner1, owner2, owner3];
+  const notes = await syncer.notes(owners, { from: 0n });
+  //const accounts = await syncer.accounts(owners);
 
-  const entries = await syncer.entriesFor(owners);
-
-  let allEntries = new Map();
-  for await (let [owned, syncInfo] of entries) {
-    allEntries = new Map([...allEntries, ...owned]);
+  let ownedNotes = new Map();
+  for await (let [owned, _syncInfo] of notes) {
+    ownedNotes = new Map([...ownedNotes, ...owned]);
   }
 
   assert.ok(iterationOwnedCountTotal, 1857);
-  assert.ok(allEntries.size, iterationOwnedCountTotal);
+  assert.ok(ownedNotes.size, iterationOwnedCountTotal);
 
-  assert.ok(
-    (await owner1.balance("address", allEntries)).value,
-    1026179647718621n,
+  const bookkeeper = new Bookkeeper({
+    address(_profile) {
+      return ownedNotes;
+    },
+    // account(profile) {
+    //   return accounts.get(profile);
+    // },
+  });
+
+  const addressBalances = await Promise.all(
+    owners.map((owner) => bookkeeper.balance(owner.address)),
   );
-  assert.ok(
-    (await owner2.balance("address", allEntries)).value,
-    1419179830115057n,
-  );
-  assert.ok(
-    (await owner3.balance("address", allEntries)).value,
-    512720219906168n,
-  );
+
+  assert.equal(addressBalances[0].value, 1026179647718621n);
+  assert.equal(addressBalances[1].value, 1419179830115057n);
+  assert.equal(addressBalances[2].value, 512720219906168n);
+
+  // const accountBalances = await Promise.all(
+  //   owners.map((owner) => bookkeeper.balance(owner.account)),
+  // );
+
+  // assert.equal(accountBalances[0].value, 0n);
+  // assert.equal(accountBalances[1].value, 0n);
+  // assert.equal(accountBalances[2].value, 0n);
 
   await network.disconnect();
 });

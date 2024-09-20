@@ -5,31 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as ProtocolDriver from "../protocol-driver.js";
-import { Bookmark } from "./syncer/bookmark.js";
-import { getBYOBReader } from "../stream.js";
+import { getBYOBReader } from "../protocol-driver/stream.js";
+import { Bookmark } from "./state-syncer/bookmark.js";
 
 export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
-
-function prepare(chunks, size) {
-  let totalLength = chunks.length;
-
-  // Allocate a Uint8Array with the total length,
-  // plus 4 bytes for the buffer size and 8 bytes
-  // for the struct layout
-  const result = new Uint8Array(totalLength + 8);
-  const view = new DataView(result.buffer);
-
-  result.set(chunks);
-
-  // Calculate and copy the layout
-  const align = 2 ** 32 - ((totalLength + 3) & ~3);
-
-  view.setUint32(result.length - 8, align, true);
-  view.setUint32(result.length - 4, size, true);
-
-  return result;
-}
 
 export class SyncEvent extends CustomEvent {
   constructor(type, detail) {
@@ -37,20 +17,14 @@ export class SyncEvent extends CustomEvent {
   }
 }
 
-export class Syncer extends EventTarget {
+export class StateSyncer extends EventTarget {
   #network;
-  #from;
 
   constructor(network, options = {}) {
-    const { from, signal } = options;
+    const { signal } = options;
 
     super();
     this.#network = network;
-    this.#from = from ?? 0n;
-  }
-
-  get from() {
-    return this.#from;
   }
 
   get #bookmark() {
@@ -72,8 +46,23 @@ export class Syncer extends EventTarget {
       .then((buffer) => new Bookmark(new Uint8Array(buffer)));
   }
 
-  async entriesFor(owners) {
-    const from = this.#from;
+  async accounts(users) {
+    await ProtocolDriver.accountsIntoRaw(users);
+    // const url = new URL(
+    //   `/on/contracts:${TRANSFER}/account`,
+    //   this.#network.url,
+    //   pub fn account(&self, key: &AccountPublicKey) -> AccountData {
+    //       let key_bytes = key.to_raw_bytes();
+    //       self.accounts
+    //           .get(&key_bytes)
+    //           .cloned()
+    //           .unwrap_or(EMPTY_ACCOUNT)
+    //   }
+    // );
+  }
+
+  async notes(owners, options = {}) {
+    const from = options.from ?? 0n;
     const lastBookmark = await this.#bookmark;
     const lastBlock = await this.#network.blockHeight;
 
@@ -81,13 +70,13 @@ export class Syncer extends EventTarget {
 
     if (from instanceof Bookmark) {
       topic = "leaves_from_pos";
-      body = this.#from.data;
+      body = from.data;
       to = lastBookmark;
     } else {
       topic = "leaves_from_height";
       body = new Uint8Array(8);
       to = lastBlock;
-      new DataView(body.buffer).setBigUint64(0, this.#from, true);
+      new DataView(body.buffer).setBigUint64(0, from, true);
     }
 
     const url = new URL(
@@ -123,12 +112,12 @@ export class Syncer extends EventTarget {
 
           const [owned, syncInfo] = await ProtocolDriver.mapOwned(
             owners,
-            prepare(value, value.byteLength / entrySize.item),
+            value,
           ).catch(console.error);
 
           let progress =
             Number(
-              ((syncInfo.bookmark * 100n) / lastBookmark.asUintN()) * 100n,
+              ((syncInfo.bookmark * 100n) / lastBookmark.asUint()) * 100n,
             ) / 10000;
 
           this.dispatchEvent(
@@ -137,7 +126,7 @@ export class Syncer extends EventTarget {
               progress,
               bookmarks: {
                 current: syncInfo.bookmark,
-                last: lastBookmark.asUintN(),
+                last: lastBookmark.asUint(),
               },
               blocks: {
                 current: syncInfo.blockHeight,

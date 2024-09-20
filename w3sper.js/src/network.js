@@ -6,9 +6,10 @@
 
 // Return a promised rejected if the signal is aborted, resolved otherwise
 
-import { Syncer, TRANSFER } from "./network/syncer.js";
 import { GraphQLRequest } from "./network/graphql.js";
-import * as ProtocolDriver from "../src/protocol-driver.js";
+import * as ProtocolDriver from "./protocol-driver.js";
+
+export { Bookmark } from "./network/state-syncer/bookmark.js";
 
 const protocol = { "https:": "wss:", "http:": "ws:" };
 
@@ -62,7 +63,7 @@ export class Network {
     const { signal } = options;
     const socket = new WebSocket(url);
     this.#socket = socket;
-
+    socket.onerror = console.error;
     return new Promise(async (resolve, reject) => {
       if (signal?.aborted) {
         reject(signal.reason);
@@ -89,6 +90,7 @@ export class Network {
         Object.entries(info).map(([key, value]) => [snakeToCamel(key), value]),
       );
 
+      nodeInfo.chainId = nodeInfo.chainId ?? 0;
       this.#nodeInfo = Object.freeze(nodeInfo);
 
       ProtocolDriver.load(
@@ -135,13 +137,13 @@ export class Network {
     );
   }
 
-  async sync(options = {}) {
-    if (!("to" in options)) {
-      options.to = await this.blockHeight;
-    }
+  // async sync(options = {}) {
+  //   if (!("to" in options)) {
+  //     options.to = await this.blockHeight;
+  //   }
 
-    return new Syncer(this, options);
-  }
+  //   return new Syncer(this, options);
+  // }
 
   async dispatch(resource, options = {}) {
     const { signal } = options;

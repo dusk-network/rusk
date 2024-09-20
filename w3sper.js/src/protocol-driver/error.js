@@ -9,26 +9,38 @@ export class DriverError extends Error {
     super(message);
     this.name = this.constructor.name;
   }
+
   static from(code) {
     switch (code) {
       case 255:
         throw new DriverArchiveError();
       case 254:
         throw new DriverUnarchiveError();
+      case 253:
+        throw new DriverDeserializeError();
       case 0:
-        return 0;
+        // Exit Code `0` is a success code
+        break;
+      default:
+        throw new DriverError(`Unknown error code: ${code}`);
     }
   }
 }
 
 export class DriverArchiveError extends DriverError {
   constructor() {
-    super("Failed to serialize the data");
+    super("Failed to archive the data");
   }
 }
 
 export class DriverUnarchiveError extends DriverError {
   constructor() {
-    super("Failed to parse the buffer");
+    super("Failed to unarchive the buffer");
+  }
+}
+
+export class DriverDeserializeError extends DriverError {
+  constructor() {
+    super("Failed to deserialize the buffer");
   }
 }
