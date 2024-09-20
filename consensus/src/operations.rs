@@ -9,6 +9,7 @@ use std::io;
 use std::time::Duration;
 
 use node_data::bls::PublicKey;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
     Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
 };
@@ -115,6 +116,7 @@ pub trait Operations: Send + Sync {
     async fn verify_candidate_header(
         &self,
         candidate_header: &Header,
+        expected_generator: &PublicKeyBytes,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error>;
 
     async fn verify_faults(
