@@ -17,6 +17,9 @@ use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
+use execution_core::signatures::bls::{
+    MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+};
 use execution_core::stake::EPOCH;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
@@ -138,11 +141,25 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             Ok(())
         })?;
 
+        // Get generator MultisigPublicKey
+        let generator = candidate_block.generator_bls_pubkey.inner();
+        let generator = BlsPublicKey::from_bytes(generator)
+            .map_err(|err| anyhow!("invalid pk bytes: {err:?}"))?;
+        let generator = MultisigPublicKey::aggregate(&[generator])
+            .map_err(|err| anyhow!("failed aggregating single key: {err}"))?;
+
+        // Verify block signature
+        let block_sig =
+            MultisigSignature::from_bytes(candidate_block.signature.inner())
+                .map_err(|err| {
+                    anyhow!("invalid block signature bytes: {err}")
+                })?;
+        generator
+            .verify(&block_sig, &candidate_block.hash)
+            .map_err(|err| anyhow!("invalid block signature: {err}"))?;
+
         // Verify seed field
-        self.verify_seed_field(
-            candidate_block.seed.inner(),
-            candidate_block.generator_bls_pubkey.inner(),
-        )?;
+        self.verify_seed_field(candidate_block.seed.inner(), &generator)?;
 
         Ok(())
     }
@@ -150,22 +167,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     fn verify_seed_field(
         &self,
         seed: &[u8; 48],
-        pk_bytes: &[u8; 96],
+        pk: &MultisigPublicKey,
     ) -> anyhow::Result<()> {
-        let pk =
-            execution_core::signatures::bls::PublicKey::from_bytes(pk_bytes)
-                .map_err(|err| anyhow!("invalid pk bytes: {:?}", err))?;
+        let signature = MultisigSignature::from_bytes(seed)
+            .map_err(|err| anyhow!("invalid seed signature bytes: {err}"))?;
 
-        let signature =
-            execution_core::signatures::bls::MultisigSignature::from_bytes(
-                seed,
-            )
-            .map_err(|err| anyhow!("invalid signature bytes: {}", err))?;
-
-        execution_core::signatures::bls::MultisigPublicKey::aggregate(&[pk])
-            .map_err(|err| anyhow!("failed aggregating single key: {}", err))?
-            .verify(&signature, &self.prev_header.seed.inner()[..])
-            .map_err(|err| anyhow!("invalid seed: {:?}", err))?;
+        pk.verify(&signature, self.prev_header.seed.inner())
+            .map_err(|err| anyhow!("invalid seed: {err:?}"))?;
 
         Ok(())
     }
