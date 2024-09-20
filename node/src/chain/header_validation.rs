@@ -6,13 +6,12 @@
 
 use crate::database;
 use crate::database::Ledger;
-use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
     EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
     RELAX_ITERATION_THRESHOLD,
 };
-use dusk_consensus::operations::Voter;
+use dusk_consensus::operations::{HeaderError, Voter};
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -21,6 +20,7 @@ use execution_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
 };
 use execution_core::stake::EPOCH;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
@@ -68,9 +68,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     pub async fn execute_checks(
         &self,
         candidate_block: &ledger::Header,
+        expected_generator: &PublicKeyBytes,
         disable_att_check: bool,
-    ) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
-        self.verify_basic_fields(candidate_block).await?;
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
+        let generator =
+            self.verify_block_generator(candidate_block, expected_generator)?;
+        self.verify_basic_fields(candidate_block, &generator)
+            .await?;
 
         let prev_block_voters =
             self.verify_prev_block_cert(candidate_block).await?;
@@ -91,22 +95,66 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok((pni, prev_block_voters, candidate_block_voters))
     }
 
+    fn verify_block_generator(
+        &self,
+        candidate_header: &'a ledger::Header,
+        expected_generator: &PublicKeyBytes,
+    ) -> Result<MultisigPublicKey, HeaderError> {
+        if expected_generator != &candidate_header.generator_bls_pubkey {
+            return Err(HeaderError::InvalidBlockSignature(
+                "Signed by a different generator:".into(),
+            ));
+        }
+
+        // Get generator MultisigPublicKey
+        let generator = candidate_header.generator_bls_pubkey.inner();
+        let generator = BlsPublicKey::from_bytes(generator).map_err(|err| {
+            HeaderError::InvalidBlockSignature(format!(
+                "invalid pk bytes: {err:?}"
+            ))
+        })?;
+        let generator =
+            MultisigPublicKey::aggregate(&[generator]).map_err(|err| {
+                HeaderError::InvalidBlockSignature(format!(
+                    "failed aggregating single key: {err:?}"
+                ))
+            })?;
+
+        // Verify block signature
+        let block_sig =
+            MultisigSignature::from_bytes(candidate_header.signature.inner())
+                .map_err(|err| {
+                HeaderError::InvalidBlockSignature(format!(
+                    "invalid block signature bytes: {err:?}"
+                ))
+            })?;
+        generator
+            .verify(&block_sig, &candidate_header.hash)
+            .map_err(|err| {
+                HeaderError::InvalidBlockSignature(format!(
+                    "invalid block signature: {err:?}"
+                ))
+            })?;
+
+        Ok(generator)
+    }
+
     /// Verifies any non-attestation field
     pub async fn verify_basic_fields(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<()> {
+        generator: &MultisigPublicKey,
+    ) -> Result<(), HeaderError> {
         if candidate_block.version != BLOCK_HEADER_VERSION {
-            return Err(anyhow!("unsupported block version"));
+            return Err(HeaderError::UnsupportedVersion);
         }
 
         if candidate_block.hash == [0u8; 32] {
-            return Err(anyhow!("empty block hash"));
+            return Err(HeaderError::EmptyHash);
         }
 
         if candidate_block.height != self.prev_header.height + 1 {
-            return Err(anyhow!(
-                "invalid block height block_height: {:?}, curr_height: {:?}",
+            return Err(HeaderError::MismatchHeight(
                 candidate_block.height,
                 self.prev_header.height,
             ));
@@ -116,50 +164,32 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         if candidate_block.timestamp
             < self.prev_header.timestamp + MINIMUM_BLOCK_TIME
         {
-            return Err(anyhow!("block time is less than minimum block time"));
+            return Err(HeaderError::BlockTimeLess);
         }
 
         let local_time = get_current_timestamp();
 
         if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
-            return Err(anyhow!(
-                "block timestamp {} is higher than local time",
-                candidate_block.timestamp
+            return Err(HeaderError::BlockTimeHigher(
+                candidate_block.timestamp,
             ));
         }
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
-            return Err(anyhow!("invalid previous block hash"));
+            return Err(HeaderError::PrevBlockHash);
         }
 
         // Ensure block is not already in the ledger
         self.db.read().await.view(|v| {
             if Ledger::get_block_exists(&v, &candidate_block.hash)? {
-                return Err(anyhow!("block already exists"));
+                return Err(HeaderError::BlockExists);
             }
 
             Ok(())
         })?;
 
-        // Get generator MultisigPublicKey
-        let generator = candidate_block.generator_bls_pubkey.inner();
-        let generator = BlsPublicKey::from_bytes(generator)
-            .map_err(|err| anyhow!("invalid pk bytes: {err:?}"))?;
-        let generator = MultisigPublicKey::aggregate(&[generator])
-            .map_err(|err| anyhow!("failed aggregating single key: {err}"))?;
-
-        // Verify block signature
-        let block_sig =
-            MultisigSignature::from_bytes(candidate_block.signature.inner())
-                .map_err(|err| {
-                    anyhow!("invalid block signature bytes: {err}")
-                })?;
-        generator
-            .verify(&block_sig, &candidate_block.hash)
-            .map_err(|err| anyhow!("invalid block signature: {err}"))?;
-
         // Verify seed field
-        self.verify_seed_field(candidate_block.seed.inner(), &generator)?;
+        self.verify_seed_field(candidate_block.seed.inner(), generator)?;
 
         Ok(())
     }
@@ -168,12 +198,17 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         seed: &[u8; 48],
         pk: &MultisigPublicKey,
-    ) -> anyhow::Result<()> {
-        let signature = MultisigSignature::from_bytes(seed)
-            .map_err(|err| anyhow!("invalid seed signature bytes: {err}"))?;
+    ) -> Result<(), HeaderError> {
+        let signature = MultisigSignature::from_bytes(seed).map_err(|err| {
+            HeaderError::InvalidSeed(format!(
+                "invalid seed signature bytes: {err:?}"
+            ))
+        })?;
 
         pk.verify(&signature, self.prev_header.seed.inner())
-            .map_err(|err| anyhow!("invalid seed: {err:?}"))?;
+            .map_err(|err| {
+                HeaderError::InvalidSeed(format!("invalid seed: {err:?}"))
+            })?;
 
         Ok(())
     }

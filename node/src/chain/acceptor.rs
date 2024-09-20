@@ -21,7 +21,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
 use core::panic;
-use dusk_consensus::operations::Voter;
+use dusk_consensus::operations::{HeaderError, Voter};
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
@@ -1138,7 +1138,14 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
+) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
     let validator = Validator::new(db, prev_header, provisioners);
-    validator.execute_checks(header, false).await
+    let expected_generator = provisioners.current().get_generator(
+        header.iteration,
+        prev_header.seed,
+        header.height,
+    );
+    validator
+        .execute_checks(header, &expected_generator, false)
+        .await
 }

@@ -14,6 +14,7 @@ use dusk_consensus::operations::{
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Block, Fault, Hash, Header};
 use node_data::message::AsyncQueue;
 
@@ -278,6 +279,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     async fn verify_candidate_header(
         &self,
         candidate_header: &Header,
+        expected_generator: &PublicKeyBytes,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error> {
         let validator = Validator::new(
             self.db.clone(),
@@ -286,7 +288,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         );
 
         validator
-            .execute_checks(candidate_header, true)
+            .execute_checks(candidate_header, expected_generator, true)
             .await
             .map_err(operations::Error::InvalidHeader)
     }
