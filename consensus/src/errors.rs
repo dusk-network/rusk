@@ -8,6 +8,7 @@ use std::io;
 
 use execution_core::signatures::bls::Error as BlsSigError;
 use node_data::{
+    bls::PublicKeyBytes,
     ledger::{Hash, InvalidFault},
     message::payload::{QuorumType, RatificationResult, Vote},
     StepName,
@@ -106,9 +107,14 @@ pub enum HeaderError {
 
     #[error("Invalid Attestation: {0}")]
     InvalidAttestation(AttestationError),
+    #[error("Invalid Failed Iterations: {0}")]
+    InvalidFailedIterations(FailedIterationError),
 
     #[error("Generic error in header verification: {0}")]
-    Generic(anyhow::Error),
+    Generic(&'static str),
+
+    #[error("Storage error '{0}' in header verification: {1}")]
+    Storage(&'static str, anyhow::Error),
 }
 
 impl HeaderError {
@@ -119,15 +125,16 @@ impl HeaderError {
             HeaderError::PrevBlockHash => false,
             HeaderError::BlockExists => false,
             HeaderError::InvalidBlockSignature(_) => false,
+            HeaderError::Storage(..) => false,
 
             HeaderError::BlockTimeLess => true,
             HeaderError::UnsupportedVersion => true,
             HeaderError::EmptyHash => true,
             HeaderError::InvalidSeed(_) => true,
             HeaderError::InvalidAttestation(_) => true,
+            HeaderError::InvalidFailedIterations(_) => true,
 
-            // TODO: This must be removed as soon as we remove all anyhow errors
-            HeaderError::Generic(_) => true,
+            HeaderError::Generic(..) => false,
         }
     }
 }
@@ -142,15 +149,31 @@ pub enum AttestationError {
     InvalidResult(RatificationResult, RatificationResult),
 }
 
+#[derive(Debug, Clone, Copy, Error)]
+pub enum FailedIterationError {
+    #[error("Too many {0}")]
+    TooMany(usize),
+    #[error("Invalid generator. Expected {0:?}")]
+    InvalidGenerator(PublicKeyBytes),
+    #[error("Invalid attestation: {0}")]
+    InvalidAttestation(AttestationError),
+}
+
 impl From<AttestationError> for HeaderError {
     fn from(value: AttestationError) -> Self {
         Self::InvalidAttestation(value)
     }
 }
 
-impl From<anyhow::Error> for HeaderError {
-    fn from(value: anyhow::Error) -> Self {
-        Self::Generic(value)
+impl From<AttestationError> for FailedIterationError {
+    fn from(value: AttestationError) -> Self {
+        Self::InvalidAttestation(value)
+    }
+}
+
+impl From<FailedIterationError> for HeaderError {
+    fn from(value: FailedIterationError) -> Self {
+        Self::InvalidFailedIterations(value)
     }
 }
 
