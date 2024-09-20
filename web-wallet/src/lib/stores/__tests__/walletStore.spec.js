@@ -4,7 +4,7 @@ import { keys } from "lamb";
 import { Gas, Wallet } from "@dusk-network/dusk-wallet-js";
 
 import { addresses, transactions } from "$lib/mock-data";
-import { rejectAfter, resolveAfter } from "$lib/dusk/test-helpers";
+import { rejectAfter, resolveAfter } from "$lib/dusk/promise";
 
 import { walletStore } from "..";
 import { waitFor } from "@testing-library/svelte";
