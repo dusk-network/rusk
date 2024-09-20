@@ -35,7 +35,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
-        let iteration = p.header.iteration;
+        let iteration = p.header().iteration;
         let generator = round_committees
             .get_generator(iteration)
             .expect("committee to be created before run");
@@ -109,7 +109,7 @@ fn verify_new_block(
     p: &Candidate,
     expected_generator: &PublicKeyBytes,
 ) -> Result<(), ConsensusError> {
-    if expected_generator != p.sign_info.signer.bytes() {
+    if expected_generator != p.sign_info().signer.bytes() {
         return Err(ConsensusError::NotCommitteeMember);
     }
 
@@ -161,7 +161,7 @@ pub fn verify_stateless(
     c: &Candidate,
     round_committees: &RoundCommittees,
 ) -> Result<(), ConsensusError> {
-    let iteration = c.header.iteration;
+    let iteration = c.header().iteration;
     let generator = round_committees
         .get_generator(iteration)
         .expect("committee to be created before run");
