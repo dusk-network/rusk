@@ -140,7 +140,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     }
 
     /// Verifies any non-attestation field
-    pub async fn verify_basic_fields(
+    async fn verify_basic_fields(
         &self,
         candidate_block: &'a ledger::Header,
         generator: &MultisigPublicKey,
@@ -213,7 +213,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(())
     }
 
-    pub async fn verify_prev_block_cert(
+    async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<Vec<Voter>> {
@@ -245,7 +245,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// ratification phase
     ///
     /// We refer to this number as Previous Non-Attested Iterations, or PNI
-    pub async fn verify_failed_iterations(
+    async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<u8> {
