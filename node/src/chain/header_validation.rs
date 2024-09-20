@@ -11,7 +11,9 @@ use dusk_consensus::config::{
     EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
     RELAX_ITERATION_THRESHOLD,
 };
-use dusk_consensus::errors::{AttestationError, HeaderError};
+use dusk_consensus::errors::{
+    AttestationError, FailedIterationError, HeaderError,
+};
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
@@ -179,13 +181,21 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         // Ensure block is not already in the ledger
-        self.db.read().await.view(|v| {
-            if Ledger::get_block_exists(&v, &candidate_block.hash)? {
-                return Err(HeaderError::BlockExists);
-            }
+        let block_exists = self
+            .db
+            .read()
+            .await
+            .view(|db| db.get_block_exists(&candidate_block.hash))
+            .map_err(|e| {
+                HeaderError::Storage(
+                    "error checking Ledger::get_block_exists",
+                    e,
+                )
+            })?;
 
-            Ok(())
-        })?;
+        if block_exists {
+            return Err(HeaderError::BlockExists);
+        }
 
         // Verify seed field
         self.verify_seed_field(candidate_block.seed.inner(), generator)?;
@@ -215,18 +225,26 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<Vec<Voter>> {
+    ) -> Result<Vec<Voter>, HeaderError> {
         if self.prev_header.height == 0 {
             return Ok(vec![]);
         }
 
         let prev_block_hash = candidate_block.prev_block_hash;
 
-        let prev_block_seed = self.db.read().await.view(|v| {
-            v.fetch_block_header(&self.prev_header.prev_block_hash)?
-                .ok_or_else(|| anyhow::anyhow!("Header not found"))
-                .map(|h| h.seed)
-        })?;
+        let prev_block_seed = self
+            .db
+            .read()
+            .await
+            .view(|v| v.fetch_block_header(&self.prev_header.prev_block_hash))
+            .map_err(|e| {
+                HeaderError::Storage(
+                    "error checking Ledger::fetch_block_header",
+                    e,
+                )
+            })?
+            .ok_or(HeaderError::Generic("Header not found"))
+            .map(|h| h.seed)?;
 
         let (_, _, voters) = verify_att(
             &candidate_block.prev_block_cert,
@@ -247,13 +265,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<u8> {
+    ) -> Result<u8, FailedIterationError> {
         let mut failed_atts = 0u8;
 
         let att_list = &candidate_block.failed_iterations.att_list;
 
         if att_list.len() > RELAX_ITERATION_THRESHOLD as usize {
-            anyhow::bail!("Too many failed iterations {}", att_list.len())
+            return Err(FailedIterationError::TooMany(att_list.len()));
         }
 
         for (iter, att) in att_list.iter().enumerate() {
@@ -266,7 +284,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     candidate_block.height,
                 );
 
-                anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
+                if pk != &expected_pk {
+                    return Err(FailedIterationError::InvalidGenerator(
+                        expected_pk,
+                    ));
+                }
 
                 let mut consensus_header =
                     candidate_block.to_consensus_header();
