@@ -14,9 +14,7 @@ use crate::merkle::merkle_root;
 use crate::config::{MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use dusk_bytes::Serializable;
 use node_data::message::payload::Candidate;
-use node_data::message::{
-    ConsensusHeader, Message, SignInfo, StepMessage, BLOCK_HEADER_VERSION,
-};
+use node_data::message::{Message, StepMessage, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger};
 use std::sync::Arc;
 use std::time::Instant;
@@ -66,17 +64,7 @@ impl<T: Operations> Generator<T> {
 
         debug!("block: {:?}", &candidate);
 
-        let header = ConsensusHeader {
-            prev_block_hash: ru.hash(),
-            round: ru.round,
-            iteration,
-        };
-        let sign_info = SignInfo::default();
-        let mut candidate = Candidate {
-            header,
-            candidate,
-            sign_info,
-        };
+        let mut candidate = Candidate { candidate };
 
         candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
 

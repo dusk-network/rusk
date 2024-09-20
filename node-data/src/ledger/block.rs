@@ -71,6 +71,10 @@ impl Block {
         self.write(&mut buf)?;
         Ok(buf.len())
     }
+
+    pub fn set_signature(&mut self, signature: Signature) {
+        self.header.signature = signature;
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
