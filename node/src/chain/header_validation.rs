@@ -11,7 +11,7 @@ use dusk_consensus::config::{
     EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
     RELAX_ITERATION_THRESHOLD,
 };
-use dusk_consensus::operations::{HeaderError, Voter};
+use dusk_consensus::operations::{AttestationError, HeaderError, Voter};
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
@@ -378,7 +378,7 @@ pub async fn verify_att(
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
     expected_result: RatificationResult,
-) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<Voter>)> {
+) -> Result<(QuorumResult, QuorumResult, Vec<Voter>), AttestationError> {
     // Check expected result
     match (att.result, expected_result) {
         // Both are Success and the inner Valid(Hash) values match
@@ -387,21 +387,18 @@ pub async fn verify_att(
             RatificationResult::Success(Vote::Valid(e_hash)),
         ) => {
             if r_hash != e_hash {
-                anyhow::bail!(
-                    "Invalid Attestation: Expected block hash: {:?}, Got: {:?}",
-                    e_hash,
-                    r_hash
-                )
+                return Err(AttestationError::InvalidHash(e_hash, r_hash));
             }
         }
         // Both are Fail
         (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
         // All other mismatches
-        _ => anyhow::bail!(
-            "Invalid Attestation: Result: {:?}, Expected: {:?}",
-            att.result,
-            expected_result
-        ),
+        _ => {
+            return Err(AttestationError::InvalidResult(
+                att.result,
+                expected_result,
+            ));
+        }
     }
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
@@ -416,7 +413,8 @@ pub async fn verify_att(
         curr_seed,
         StepName::Validation,
     )
-    .await?;
+    .await
+    .map_err(|s| AttestationError::InvalidVotes(StepName::Validation, s))?;
 
     // Verify ratification
     let (rat_result, ratification_voters) = verifiers::verify_step_votes(
@@ -427,7 +425,8 @@ pub async fn verify_att(
         curr_seed,
         StepName::Ratification,
     )
-    .await?;
+    .await
+    .map_err(|s| AttestationError::InvalidVotes(StepName::Ratification, s))?;
 
     let voters = merge_voters(validation_voters, ratification_voters);
     Ok((val_result, rat_result, voters))
