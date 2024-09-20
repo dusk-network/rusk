@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dashboard to use routes instead of `Tabs` for navigation pattern [#2075]
 - Update dashboard by splitting the transfer operations into send and receive operations [#2175]
 - Update decimals shown for migration balance [#2406]
+- Make address field only vertically resizable [#2435]
 
 ### Fixed
 
@@ -262,6 +263,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2355]: https://github.com/dusk-network/rusk/issues/2355
 [#2406]: https://github.com/dusk-network/rusk/issues/2406
 [#2421]: https://github.com/dusk-network/rusk/issues/2421
+[#2421]: https://github.com/dusk-network/rusk/issues/2435
 
 <!-- VERSIONS -->
 

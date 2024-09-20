@@ -351,6 +351,12 @@
     font-weight: bold;
   }
 
+  :global(.operation__send-address) {
+    resize: vertical;
+    min-height: 5em;
+    max-height: 10em;
+  }
+
   :global(.operation__send-address--invalid) {
     color: var(--error-color);
   }

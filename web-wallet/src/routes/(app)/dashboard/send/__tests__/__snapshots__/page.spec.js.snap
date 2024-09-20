@@ -44,7 +44,7 @@ exports[`Send > should render the send page 1`] = `
     class="dusk-card__body-container"
   >
     <div
-      class="operation svelte-1y886qs"
+      class="operation svelte-1tivzwh"
     >
       <div
         class="dusk-wizard"
@@ -52,7 +52,7 @@ exports[`Send > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-1y886qs"
+          class="operation__send svelte-1tivzwh"
         >
           <dl
             class="contract-statuses svelte-19157rx"
@@ -87,7 +87,7 @@ exports[`Send > should render the send page 1`] = `
           </dl>
            
           <div
-            class="operation__send-amount operation__space-between svelte-1y886qs"
+            class="operation__send-amount operation__space-between svelte-1tivzwh"
           >
             <p>
               Enter amount:
@@ -106,7 +106,7 @@ exports[`Send > should render the send page 1`] = `
           </div>
            
           <div
-            class="operation__send-amount operation__input svelte-1y886qs"
+            class="operation__send-amount operation__input svelte-1tivzwh"
           >
             <input
               class="dusk-textbox dusk-textbox-number operation__input-field"
