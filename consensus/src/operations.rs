@@ -60,6 +60,26 @@ pub enum HeaderError {
     Generic(anyhow::Error),
 }
 
+impl HeaderError {
+    pub fn must_vote(&self) -> bool {
+        match self {
+            HeaderError::MismatchHeight(_, _) => false,
+            HeaderError::BlockTimeHigher(_) => false,
+            HeaderError::PrevBlockHash => false,
+            HeaderError::BlockExists => false,
+            HeaderError::InvalidBlockSignature(_) => false,
+
+            HeaderError::BlockTimeLess => true,
+            HeaderError::UnsupportedVersion => true,
+            HeaderError::EmptyHash => true,
+            HeaderError::InvalidSeed(_) => true,
+
+            // TODO: This must be removed as soon as we remove all anyhow errors
+            HeaderError::Generic(_) => true,
+        }
+    }
+}
+
 impl From<anyhow::Error> for HeaderError {
     fn from(value: anyhow::Error) -> Self {
         Self::Generic(value)
@@ -117,7 +137,7 @@ pub trait Operations: Send + Sync {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error>;
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError>;
 
     async fn verify_faults(
         &self,

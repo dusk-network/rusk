@@ -110,11 +110,11 @@ impl<T: Operations + 'static> ValidationStep<T> {
                 }
             }
             Err(err) => {
-                error!(event = "invalid_header", ?err, ?header);
-                // We should not vote Invalid if the candidate is not signed by
-                // the block producer.
-                // However, this is already verified in the Candidate message
-                // verification, so it's safe to vote invalid here
+                let voting = err.must_vote();
+                error!(event = "invalid_header", ?err, ?header, voting);
+                if !voting {
+                    return;
+                }
                 Vote::Invalid(header.hash)
             }
         };
