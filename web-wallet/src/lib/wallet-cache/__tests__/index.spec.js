@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { Dexie } from "dexie";
-import { filterWith, partition, setKey, sortWith } from "lamb";
+import { filterWith, partition, setKey } from "lamb";
 
 import {
   cacheHistory,
@@ -8,68 +7,24 @@ import {
   cacheUnspentNotes,
 } from "$lib/mock-data";
 import { arrayMaxByKey } from "$lib/dusk/array";
+import {
+  fillCacheDatabase,
+  getCacheDatabase,
+  getCacheTableCount,
+  sortCacheNotes,
+} from "$lib/test-helpers";
 
 import walletCache from "..";
-
-function getDatabase() {
-  const db = new Dexie("@dusk-network/wallet-cache");
-
-  db.version(1).stores({
-    history: "psk",
-    spentNotes: "nullifier,&pos,psk",
-    unspentNotes: "nullifier,&pos,psk",
-  });
-
-  return db;
-}
-
-/** @type {(tableName: "history" | "spentNotes" | "unspentNotes") => Promise<number>} */
-async function getTableCount(tableName) {
-  const db = await getDatabase().open();
-
-  return db
-    .table(tableName)
-    .count()
-    .finally(() => db.close());
-}
 
 const getMaxLastBlockHeight = arrayMaxByKey("lastBlockHeight");
 const getMaxPos = arrayMaxByKey("pos");
 
-/**
- * We need to sort the notes as the database doesn't guarantee
- * a sort order.
- *
- * @type {(notes: WalletCacheNote[]) => WalletCacheNote[]}
- */
-const sortNotes = sortWith([
-  /** @type {(entry: WalletCacheNote) => string} */ (
-    (entry) => entry.nullifier.toString()
-  ),
-]);
-
-async function fillDatabase() {
-  const db = getDatabase();
-
-  await db.open();
-
-  return db
-    .transaction("rw", ["history", "spentNotes", "unspentNotes"], async () => {
-      await db.table("history").bulkPut(cacheHistory);
-      await db.table("spentNotes").bulkPut(cacheSpentNotes);
-      await db.table("unspentNotes").bulkPut(cacheUnspentNotes);
-    })
-    .finally(() => {
-      db.close();
-    });
-}
-
 describe("Wallet cache", () => {
-  const db = getDatabase();
+  const db = getCacheDatabase();
 
   beforeEach(async () => {
-    await getDatabase().delete();
-    await fillDatabase();
+    await getCacheDatabase().delete();
+    await fillCacheDatabase();
   });
 
   describe("Reading and clearing the cache", async () => {
@@ -108,9 +63,11 @@ describe("Wallet cache", () => {
     });
 
     it("should expose a method to retrieve all existing notes and optionally filter them by a `psk`", async () => {
-      const allDbNotes = sortNotes(await walletCache.getAllNotes());
-      const allNotes = sortNotes(cacheUnspentNotes.concat(cacheSpentNotes));
-      const dbNotesByPsk = sortNotes(await walletCache.getAllNotes(psk));
+      const allDbNotes = sortCacheNotes(await walletCache.getAllNotes());
+      const allNotes = sortCacheNotes(
+        cacheUnspentNotes.concat(cacheSpentNotes)
+      );
+      const dbNotesByPsk = sortCacheNotes(await walletCache.getAllNotes(psk));
       const notesByPsk = filterByPsk(allNotes);
 
       expect(allDbNotes).toStrictEqual(allNotes);
@@ -128,9 +85,11 @@ describe("Wallet cache", () => {
     });
 
     it("should expose a method to retrieve the spent notes and optionally filter them by a `psk`", async () => {
-      const spentDbNotes = sortNotes(await walletCache.getSpentNotes());
-      const spentNotes = sortNotes(cacheSpentNotes);
-      const spentDbNotesByPsk = sortNotes(await walletCache.getSpentNotes(psk));
+      const spentDbNotes = sortCacheNotes(await walletCache.getSpentNotes());
+      const spentNotes = sortCacheNotes(cacheSpentNotes);
+      const spentDbNotesByPsk = sortCacheNotes(
+        await walletCache.getSpentNotes(psk)
+      );
       const spentNotesByPsk = filterByPsk(spentNotes);
 
       expect(spentDbNotes).toStrictEqual(spentNotes);
@@ -139,9 +98,11 @@ describe("Wallet cache", () => {
     });
 
     it("should expose a method to retrieve the unspent notes and optionally filter them by a `psk`", async () => {
-      const unspentDbNotes = sortNotes(await walletCache.getUnspentNotes());
-      const unspentNotes = sortNotes(cacheUnspentNotes);
-      const unspentDbNotesByPsk = sortNotes(
+      const unspentDbNotes = sortCacheNotes(
+        await walletCache.getUnspentNotes()
+      );
+      const unspentNotes = sortCacheNotes(cacheUnspentNotes);
+      const unspentDbNotesByPsk = sortCacheNotes(
         await walletCache.getUnspentNotes(psk)
       );
       const unspentNotesByPsk = filterByPsk(unspentNotes);
@@ -191,7 +152,7 @@ describe("Wallet cache", () => {
         ).resolves.toStrictEqual(entry);
       }
 
-      await expect(getTableCount("history")).resolves.toBe(
+      await expect(getCacheTableCount("history")).resolves.toBe(
         cacheHistory.length + 1
       );
     });
@@ -214,7 +175,9 @@ describe("Wallet cache", () => {
       await expect(
         walletCache.getHistoryEntry(cacheHistory[1].psk)
       ).resolves.toStrictEqual(cacheHistory[1]);
-      await expect(getTableCount("history")).resolves.toBe(cacheHistory.length);
+      await expect(getCacheTableCount("history")).resolves.toBe(
+        cacheHistory.length
+      );
     });
 
     it("should leave the history as it was before if an error occurs during writing", async () => {
@@ -229,7 +192,9 @@ describe("Wallet cache", () => {
         ).resolves.toStrictEqual(entry);
       }
 
-      await expect(getTableCount("history")).resolves.toBe(cacheHistory.length);
+      await expect(getCacheTableCount("history")).resolves.toBe(
+        cacheHistory.length
+      );
     });
   });
 
@@ -279,15 +244,15 @@ describe("Wallet cache", () => {
       await walletCache.addSpentNotes(newNotes);
 
       await expect(
-        walletCache.getUnspentNotes().then(sortNotes)
-      ).resolves.toStrictEqual(sortNotes(expectedUnspentNotes));
+        walletCache.getUnspentNotes().then(sortCacheNotes)
+      ).resolves.toStrictEqual(sortCacheNotes(expectedUnspentNotes));
       await expect(
-        walletCache.getSpentNotes().then(sortNotes)
-      ).resolves.toStrictEqual(sortNotes(expectedSpentNotes));
-      await expect(getTableCount("spentNotes")).resolves.toBe(
+        walletCache.getSpentNotes().then(sortCacheNotes)
+      ).resolves.toStrictEqual(sortCacheNotes(expectedSpentNotes));
+      await expect(getCacheTableCount("spentNotes")).resolves.toBe(
         cacheSpentNotes.length + notesBeingSpent.length + 1
       );
-      await expect(getTableCount("unspentNotes")).resolves.toBe(
+      await expect(getCacheTableCount("unspentNotes")).resolves.toBe(
         cacheUnspentNotes.length - notesBeingSpent.length
       );
     });
@@ -300,10 +265,10 @@ describe("Wallet cache", () => {
         Error
       );
 
-      const allNotes = sortNotes(await walletCache.getAllNotes());
+      const allNotes = sortCacheNotes(await walletCache.getAllNotes());
 
       expect(
-        sortNotes(cacheSpentNotes.concat(cacheUnspentNotes))
+        sortCacheNotes(cacheSpentNotes.concat(cacheUnspentNotes))
       ).toStrictEqual(allNotes);
     });
 
@@ -335,8 +300,8 @@ describe("Wallet cache", () => {
       await walletCache.addUnspentNotes(newNotes);
 
       await expect(
-        walletCache.getUnspentNotes().then(sortNotes)
-      ).resolves.toStrictEqual(sortNotes(expectedUnspentNotes));
+        walletCache.getUnspentNotes().then(sortCacheNotes)
+      ).resolves.toStrictEqual(sortCacheNotes(expectedUnspentNotes));
     });
 
     it("should leave the unspent notes as they were if an error occurs during insertion", async () => {
@@ -347,8 +312,8 @@ describe("Wallet cache", () => {
         Error
       );
 
-      expect(sortNotes(cacheUnspentNotes)).toStrictEqual(
-        sortNotes(await walletCache.getUnspentNotes())
+      expect(sortCacheNotes(cacheUnspentNotes)).toStrictEqual(
+        sortCacheNotes(await walletCache.getUnspentNotes())
       );
     });
   });
