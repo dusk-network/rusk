@@ -909,12 +909,15 @@ pub mod payload {
         BlockFromHeight,
         /// A candidate block fetched by block hash, Att is None
         CandidateFromHash,
+        /// A candidate block fetched by (prev_block_hash, iteration)
+        CandidateFromIteration,
     }
 
     #[derive(Clone, Copy)]
     pub enum InvParam {
         Hash([u8; 32]),
         Height(u64),
+        HashAndIteration([u8; 32], u8),
     }
 
     impl Default for InvParam {
@@ -926,8 +929,16 @@ pub mod payload {
     impl fmt::Debug for InvParam {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
-                Self::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
-                Self::Height(height) => write!(f, "Height: {}", height),
+                InvParam::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
+                InvParam::Height(height) => write!(f, "Height: {}", height),
+                InvParam::HashAndIteration(hash, iteration) => {
+                    write!(
+                        f,
+                        "Hash: {}, Iteration: {}",
+                        to_str(hash),
+                        iteration
+                    )
+                }
             }
         }
     }
@@ -979,6 +990,16 @@ pub mod payload {
                 param: InvParam::Hash(hash),
             });
         }
+        pub fn add_candidate_from_iteration(
+            &mut self,
+            prev_block_hash: [u8; 32],
+            iteration: u8,
+        ) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::CandidateFromIteration,
+                param: InvParam::HashAndIteration(prev_block_hash, iteration),
+            });
+        }
     }
 
     impl Serializable for Inv {
@@ -993,6 +1014,10 @@ pub mod payload {
                     InvParam::Hash(hash) => w.write_all(&hash[..])?,
                     InvParam::Height(height) => {
                         w.write_all(&height.to_le_bytes())?
+                    }
+                    InvParam::HashAndIteration(hash, iteration) => {
+                        w.write_all(&hash[..])?;
+                        w.write_all(&[*iteration])?;
                     }
                 };
             }
@@ -1016,6 +1041,7 @@ pub mod payload {
                     1 => InvType::BlockFromHash,
                     2 => InvType::BlockFromHeight,
                     3 => InvType::CandidateFromHash,
+                    4 => InvType::CandidateFromIteration,
                     _ => {
                         return Err(io::Error::from(io::ErrorKind::InvalidData))
                     }
@@ -1034,6 +1060,9 @@ pub mod payload {
                         inv.add_block_from_height(Self::read_u64_le(r)?);
                     }
                     InvType::CandidateFromHash => {
+                        inv.add_candidate_from_hash(Self::read_bytes(r)?);
+                    }
+                    InvType::CandidateFromIteration => {
                         inv.add_candidate_from_hash(Self::read_bytes(r)?);
                     }
                 }
@@ -1091,7 +1120,7 @@ pub mod payload {
         inventory: Inv,
 
         /// (requester) Address to which the resource is sent back, if found
-        requester_addr: SocketAddr,
+        requester_addr: Option<SocketAddr>,
 
         /// Limits request lifespan by absolute (epoch) time
         ttl_as_sec: u64,
@@ -1103,7 +1132,7 @@ pub mod payload {
     impl GetResource {
         pub fn new(
             inventory: Inv,
-            requester_addr: SocketAddr,
+            requester_addr: Option<SocketAddr>,
             ttl_as_sec: u64,
             hops_limit: u16,
         ) -> Self {
@@ -1124,7 +1153,7 @@ pub mod payload {
             Some(req)
         }
 
-        pub fn get_addr(&self) -> SocketAddr {
+        pub fn get_addr(&self) -> Option<SocketAddr> {
             self.requester_addr
         }
 
@@ -1140,7 +1169,13 @@ pub mod payload {
     impl Serializable for GetResource {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.inventory.write(w)?;
-            self.requester_addr.write(w)?;
+
+            let requester_addr = self.requester_addr.ok_or(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Requester address is missing",
+            ))?;
+
+            requester_addr.write(w)?;
             w.write_all(&self.ttl_as_sec.to_le_bytes()[..])?;
             w.write_all(&self.hops_limit.to_le_bytes()[..])
         }
@@ -1162,7 +1197,7 @@ pub mod payload {
 
             Ok(GetResource {
                 inventory: inner,
-                requester_addr,
+                requester_addr: Some(requester_addr),
                 ttl_as_sec,
                 hops_limit,
             })
