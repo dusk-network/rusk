@@ -21,7 +21,7 @@ use node_data::message::{AsyncQueue, Message, Payload};
 
 use node_data::StepName;
 
-use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
+use crate::config::{is_emergency_iter, CONSENSUS_MAX_ITER};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
 use node_data::message::payload::{QuorumType, ValidationResult, Vote};
@@ -238,7 +238,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// current round
     async fn process_past_events(&mut self, msg: Message) {
         if msg.header.round == self.round_update.round
-            && msg.header.iteration >= EMERGENCY_MODE_ITERATION_THRESHOLD
+            && is_emergency_iter(msg.header.iteration)
         {
             self.on_emergency_mode(msg).await;
         }
@@ -416,10 +416,12 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     ) -> Result<Message, ConsensusError> {
         self.iter_ctx.on_timeout_event(self.step_name());
 
-        if let Ok(HandleMsgOutput::Ready(msg)) =
-            phase.lock().await.handle_timeout()
+        if let Some(msg) = phase
+            .lock()
+            .await
+            .handle_timeout(&self.round_update, self.iteration)
         {
-            return Ok(msg);
+            self.outbound.try_send(msg.clone());
         }
 
         Ok(Message::empty())

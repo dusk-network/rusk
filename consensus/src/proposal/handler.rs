@@ -6,7 +6,8 @@
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::{
-    MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
+    is_emergency_iter, MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS,
+    MAX_NUMBER_OF_TRANSACTIONS,
 };
 use crate::errors::ConsensusError;
 use crate::merkle::merkle_root;
@@ -15,7 +16,7 @@ use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::to_str;
-use node_data::message::payload::Candidate;
+use node_data::message::payload::{Candidate, GetResource, Inv};
 use tracing::info;
 
 use crate::iteration_ctx::RoundCommittees;
@@ -90,8 +91,28 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
     }
 
     /// Handles of an event of step execution timeout
-    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::Ready(Message::empty()))
+    fn handle_timeout(
+        &self,
+        ru: &RoundUpdate,
+        curr_iteration: u8,
+    ) -> Option<Message> {
+        if is_emergency_iter(curr_iteration) {
+            // While we are in Emergency mode but still the candidate is missing
+            // then we should request it
+            info!(
+                event = "request candidate block",
+                src = "emergency_iter",
+                iteration = curr_iteration,
+                prev_block_hash = to_str(&ru.hash())
+            );
+
+            let mut inv = Inv::new(1);
+            inv.add_candidate_from_iteration(ru.hash(), curr_iteration);
+            let msg = GetResource::new(inv, None, u64::MAX, 0);
+            return Some(msg.into());
+        }
+
+        None
     }
 }
 

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{Database, RoundUpdate};
-use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
@@ -37,9 +37,9 @@ impl RatificationStep {
 
         let msg = Message::from(ratification);
 
-        if result.quorum() == QuorumType::Valid
-            || iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
-        {
+        let is_emergency = is_emergency_iter(iteration);
+
+        if result.quorum() == QuorumType::Valid || !is_emergency {
             // Publish ratification vote
             info!(event = "send_vote", validation_bitset = result.sv().bitset);
 

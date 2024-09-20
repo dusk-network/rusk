@@ -36,7 +36,7 @@ impl<T: Operations> Generator<T> {
         failed_iterations: IterationsInfo,
     ) -> Result<Message, crate::errors::OperationError> {
         // Sign seed
-        let seed = ru
+        let seed: [u8; 48] = ru
             .secret_key
             .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
             .to_bytes();
