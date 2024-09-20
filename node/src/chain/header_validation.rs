@@ -64,50 +64,51 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// * `disable_winner_att_check` - disables the check of the winning
     /// attestation
     ///
-    /// Returns the number of Previous Non-Attested Iterations (PNI)
+    /// Returns a tuple containing:
+    ///   - the number of Previous Non-Attested Iterations (PNI)
+    ///   - previous block voters
+    ///   - current block voters (if not `disable_winner_att_check`)
     pub async fn execute_checks(
         &self,
-        candidate_block: &ledger::Header,
+        header: &ledger::Header,
         expected_generator: &PublicKeyBytes,
         disable_att_check: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
         let generator =
-            self.verify_block_generator(candidate_block, expected_generator)?;
-        self.verify_basic_fields(candidate_block, &generator)
-            .await?;
+            self.verify_block_generator(header, expected_generator)?;
+        self.verify_basic_fields(header, &generator).await?;
 
-        let prev_block_voters =
-            self.verify_prev_block_cert(candidate_block).await?;
+        let prev_block_voters = self.verify_prev_block_cert(header).await?;
 
-        let mut candidate_block_voters = vec![];
+        let mut block_voters = vec![];
         if !disable_att_check {
-            (_, _, candidate_block_voters) = verify_att(
-                &candidate_block.att,
-                candidate_block.to_consensus_header(),
+            (_, _, block_voters) = verify_att(
+                &header.att,
+                header.to_consensus_header(),
                 self.prev_header.seed,
                 self.provisioners.current(),
-                RatificationResult::Success(Vote::Valid(candidate_block.hash)),
+                RatificationResult::Success(Vote::Valid(header.hash)),
             )
             .await?;
         }
 
-        let pni = self.verify_failed_iterations(candidate_block).await?;
-        Ok((pni, prev_block_voters, candidate_block_voters))
+        let pni = self.verify_failed_iterations(header).await?;
+        Ok((pni, prev_block_voters, block_voters))
     }
 
     fn verify_block_generator(
         &self,
-        candidate_header: &'a ledger::Header,
+        header: &'a ledger::Header,
         expected_generator: &PublicKeyBytes,
     ) -> Result<MultisigPublicKey, HeaderError> {
-        if expected_generator != &candidate_header.generator_bls_pubkey {
+        if expected_generator != &header.generator_bls_pubkey {
             return Err(HeaderError::InvalidBlockSignature(
                 "Signed by a different generator:".into(),
             ));
         }
 
         // Get generator MultisigPublicKey
-        let generator = candidate_header.generator_bls_pubkey.inner();
+        let generator = header.generator_bls_pubkey.inner();
         let generator = BlsPublicKey::from_bytes(generator).map_err(|err| {
             HeaderError::InvalidBlockSignature(format!(
                 "invalid pk bytes: {err:?}"
@@ -121,20 +122,17 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             })?;
 
         // Verify block signature
-        let block_sig =
-            MultisigSignature::from_bytes(candidate_header.signature.inner())
-                .map_err(|err| {
+        let block_sig = MultisigSignature::from_bytes(header.signature.inner())
+            .map_err(|err| {
                 HeaderError::InvalidBlockSignature(format!(
                     "invalid block signature bytes: {err:?}"
                 ))
             })?;
-        generator
-            .verify(&block_sig, &candidate_header.hash)
-            .map_err(|err| {
-                HeaderError::InvalidBlockSignature(format!(
-                    "invalid block signature: {err:?}"
-                ))
-            })?;
+        generator.verify(&block_sig, &header.hash).map_err(|err| {
+            HeaderError::InvalidBlockSignature(format!(
+                "invalid block signature: {err:?}"
+            ))
+        })?;
 
         Ok(generator)
     }
