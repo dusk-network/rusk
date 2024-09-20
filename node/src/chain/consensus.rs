@@ -10,7 +10,8 @@ use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
-    self, CallParams, Error, Operations, Output, VerificationOutput, Voter,
+    self, CallParams, Error, HeaderError, Operations, Output,
+    VerificationOutput, Voter,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
@@ -280,7 +281,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error> {
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
@@ -290,7 +291,6 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         validator
             .execute_checks(candidate_header, expected_generator, true)
             .await
-            .map_err(operations::Error::InvalidHeader)
     }
 
     async fn verify_faults(
