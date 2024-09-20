@@ -26,13 +26,43 @@ pub enum Error {
     #[error("failed to call EST {0}")]
     InvalidEST(anyhow::Error),
     #[error("failed to verify header {0}")]
-    InvalidHeader(anyhow::Error),
+    InvalidHeader(HeaderError),
     #[error("Unable to update metrics {0}")]
     MetricsUpdate(anyhow::Error),
     #[error("Invalid Iteration Info {0}")]
     InvalidIterationInfo(io::Error),
     #[error("Invalid Faults {0}")]
     InvalidFaults(InvalidFault),
+}
+
+#[derive(Debug, Error)]
+pub enum HeaderError {
+    #[error("unsupported block version")]
+    UnsupportedVersion,
+    #[error("empty block hash")]
+    EmptyHash,
+    #[error("invalid block height block_height: {0}, curr_height: {0}")]
+    MismatchHeight(u64, u64),
+    #[error("block time is less than minimum block time")]
+    BlockTimeLess,
+    #[error("block timestamp {0} is higher than local time")]
+    BlockTimeHigher(u64),
+    #[error("invalid previous block hash")]
+    PrevBlockHash,
+    #[error("block already exists")]
+    BlockExists,
+    #[error("invalid block signature: {0}")]
+    InvalidBlockSignature(String),
+    #[error("invalid seed: {0}")]
+    InvalidSeed(String),
+    #[error("Generic error in header verification: {0}")]
+    Generic(anyhow::Error),
+}
+
+impl From<anyhow::Error> for HeaderError {
+    fn from(value: anyhow::Error) -> Self {
+        Self::Generic(value)
+    }
 }
 
 impl From<io::Error> for Error {
