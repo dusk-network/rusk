@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 
-import { rejectAfter, resolveAfter } from "$lib/dusk/test-helpers";
+import { rejectAfter, resolveAfter } from "$lib/dusk/promise";
 
 import { OperationResult } from "..";
 

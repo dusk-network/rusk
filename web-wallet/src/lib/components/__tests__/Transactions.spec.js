@@ -3,7 +3,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { base } from "$app/paths";
 
-import { resolveAfter } from "$lib/dusk/test-helpers";
+import { resolveAfter } from "$lib/dusk/promise";
 import { settingsStore } from "$lib/stores";
 import { transactions } from "$lib/mock-data";
 import { sortByHeightDesc } from "$lib/transactions";
