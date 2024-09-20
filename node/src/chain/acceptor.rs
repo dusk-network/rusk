@@ -7,8 +7,9 @@
 use crate::database::{self, Candidate, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
-use dusk_consensus::commons::{ConsensusError, TimeoutSet};
+use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
+use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
 use node_data::events::{
@@ -21,7 +22,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
 use core::panic;
-use dusk_consensus::operations::{HeaderError, Voter};
+use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;

@@ -11,7 +11,8 @@ use dusk_consensus::config::{
     EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
     RELAX_ITERATION_THRESHOLD,
 };
-use dusk_consensus::operations::{AttestationError, HeaderError, Voter};
+use dusk_consensus::errors::{AttestationError, HeaderError};
+use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;

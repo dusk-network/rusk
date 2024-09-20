@@ -22,7 +22,7 @@ use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::Result;
 use async_trait::async_trait;
-use dusk_consensus::commons::ConsensusError;
+use dusk_consensus::errors::ConsensusError;
 pub use header_validation::verify_att;
 use node_data::events::Event;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
