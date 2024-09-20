@@ -11,7 +11,7 @@ use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
 use tracing::error;
 
-use crate::commons::StepSigError;
+use crate::errors::StepSigError;
 use crate::operations::Voter;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
@@ -69,17 +69,17 @@ pub async fn verify_step_votes(
         verify_votes(header, step, vote, sv, committee)
         .map_err(|e|
             {
-            error!( "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
-            step,
-            vote,
-            header.round,
-            header.iteration,
-            to_str(seed.inner()),
-            sv,
-            e);
-            e
-           
-             }
+                error!( "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
+                    step,
+                    vote,
+                    header.round,
+                    header.iteration,
+                    to_str(seed.inner()),
+                    sv,
+                    e
+                );
+                e
+            }
         )?;
 
     Ok((quorum_result, voters))

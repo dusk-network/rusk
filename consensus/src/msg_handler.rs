@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::RoundUpdate;
 use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::proposal;
 use crate::ratification::handler::RatificationHandler;

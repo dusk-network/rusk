@@ -8,19 +8,14 @@
 // Provisioners, the BidList, the Seed and the Hash.
 
 use node_data::ledger::*;
-use node_data::message::payload::{QuorumType, Vote};
 use std::collections::HashMap;
 
 use std::time::Duration;
-use thiserror::Error;
 
-use execution_core::signatures::bls::{
-    Error as BlsSigError, SecretKey as BlsSecretKey,
-};
+use execution_core::signatures::bls::SecretKey as BlsSecretKey;
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
-use tracing::error;
 
 use crate::operations::Voter;
 
@@ -84,59 +79,6 @@ impl RoundUpdate {
 
     pub fn att_voters(&self) -> &Vec<Voter> {
         &self.att_voters
-    }
-}
-
-#[derive(Debug, Clone, Copy, Error)]
-pub enum StepSigError {
-    #[error("Failed to reach a quorum")]
-    VoteSetTooSmall,
-    #[error("Verification error {0}")]
-    VerificationFailed(BlsSigError),
-    #[error("Invalid Type")]
-    InvalidType,
-}
-
-impl From<BlsSigError> for StepSigError {
-    fn from(inner: BlsSigError) -> Self {
-        Self::VerificationFailed(inner)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ConsensusError {
-    InvalidBlock,
-    InvalidBlockHash,
-    InvalidBlockSize(usize),
-    InvalidSignature(BlsSigError),
-    InvalidMsgType,
-    InvalidValidationStepVotes(StepSigError),
-    InvalidValidation(QuorumType),
-    InvalidPrevBlockHash(Hash),
-    InvalidQuorumType,
-    InvalidVote(Vote),
-    InvalidMsgIteration(u8),
-    FutureEvent,
-    PastEvent,
-    NotCommitteeMember,
-    NotImplemented,
-    NotReady,
-    ChildTaskTerminated,
-    Canceled(u64),
-    VoteAlreadyCollected,
-    TooManyTransactions(usize),
-    TooManyFaults(usize),
-    UnknownBlockSize,
-}
-
-impl From<StepSigError> for ConsensusError {
-    fn from(e: StepSigError) -> Self {
-        Self::InvalidValidationStepVotes(e)
-    }
-}
-impl From<BlsSigError> for ConsensusError {
-    fn from(e: BlsSigError) -> Self {
-        Self::InvalidSignature(e)
     }
 }
 

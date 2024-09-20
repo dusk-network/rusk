@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database};
+use crate::commons::Database;
+use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use crate::{proposal, ratification, validation};

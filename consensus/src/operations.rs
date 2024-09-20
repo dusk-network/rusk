@@ -5,117 +5,20 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt;
-use std::io;
 use std::time::Duration;
 
 use node_data::bls::PublicKey;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::Hash;
 use node_data::ledger::{
-    Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
+    Block, Fault, Header, Slash, SpentTransaction, Transaction,
 };
-use node_data::message::payload::RatificationResult;
 use node_data::StepName;
-use thiserror::Error;
 
-use crate::commons::StepSigError;
+use crate::errors::*;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
 pub type Voter = (PublicKey, usize);
-
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("failed to call VST {0}")]
-    InvalidVST(anyhow::Error),
-    #[error("failed to call EST {0}")]
-    InvalidEST(anyhow::Error),
-    #[error("failed to verify header {0}")]
-    InvalidHeader(HeaderError),
-    #[error("Unable to update metrics {0}")]
-    MetricsUpdate(anyhow::Error),
-    #[error("Invalid Iteration Info {0}")]
-    InvalidIterationInfo(io::Error),
-    #[error("Invalid Faults {0}")]
-    InvalidFaults(InvalidFault),
-}
-
-#[derive(Debug, Error)]
-pub enum HeaderError {
-    #[error("unsupported block version")]
-    UnsupportedVersion,
-    #[error("empty block hash")]
-    EmptyHash,
-    #[error("invalid block height block_height: {0}, curr_height: {0}")]
-    MismatchHeight(u64, u64),
-    #[error("block time is less than minimum block time")]
-    BlockTimeLess,
-    #[error("block timestamp {0} is higher than local time")]
-    BlockTimeHigher(u64),
-    #[error("invalid previous block hash")]
-    PrevBlockHash,
-    #[error("block already exists")]
-    BlockExists,
-    #[error("invalid block signature: {0}")]
-    InvalidBlockSignature(String),
-    #[error("invalid seed: {0}")]
-    InvalidSeed(String),
-
-    #[error("Invalid Attestation: {0}")]
-    InvalidAttestation(AttestationError),
-
-    #[error("Generic error in header verification: {0}")]
-    Generic(anyhow::Error),
-}
-
-impl HeaderError {
-    pub fn must_vote(&self) -> bool {
-        match self {
-            HeaderError::MismatchHeight(_, _) => false,
-            HeaderError::BlockTimeHigher(_) => false,
-            HeaderError::PrevBlockHash => false,
-            HeaderError::BlockExists => false,
-            HeaderError::InvalidBlockSignature(_) => false,
-
-            HeaderError::BlockTimeLess => true,
-            HeaderError::UnsupportedVersion => true,
-            HeaderError::EmptyHash => true,
-            HeaderError::InvalidSeed(_) => true,
-            HeaderError::InvalidAttestation(_) => true,
-
-            // TODO: This must be removed as soon as we remove all anyhow errors
-            HeaderError::Generic(_) => true,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Error)]
-pub enum AttestationError {
-    #[error("Invalid votes for {0:?}: {1:?}")]
-    InvalidVotes(StepName, StepSigError),
-    #[error("Expected block hash: {0:?}, Got: {1:?}")]
-    InvalidHash(Hash, Hash),
-    #[error("Result: {0:?}, Expected: {1:?}")]
-    InvalidResult(RatificationResult, RatificationResult),
-}
-
-impl From<AttestationError> for HeaderError {
-    fn from(value: AttestationError) -> Self {
-        Self::InvalidAttestation(value)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(value: io::Error) -> Self {
-        Self::InvalidIterationInfo(value)
-    }
-}
-
-impl From<InvalidFault> for Error {
-    fn from(value: InvalidFault) -> Self {
-        Self::InvalidFaults(value)
-    }
-}
 
 #[derive(Default, Clone, Debug)]
 pub struct CallParams {
@@ -162,25 +65,25 @@ pub trait Operations: Send + Sync {
         &self,
         block_height: u64,
         faults: &[Fault],
-    ) -> Result<(), Error>;
+    ) -> Result<(), OperationError>;
 
     async fn verify_state_transition(
         &self,
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, Error>;
+    ) -> Result<VerificationOutput, OperationError>;
 
     async fn execute_state_transition(
         &self,
         params: CallParams,
-    ) -> Result<Output, Error>;
+    ) -> Result<Output, OperationError>;
 
     async fn add_step_elapsed_time(
         &self,
         round: u64,
         step_name: StepName,
         elapsed: Duration,
-    ) -> Result<(), Error>;
+    ) -> Result<(), OperationError>;
 
     async fn get_block_gas_limit(&self) -> u64;
 }

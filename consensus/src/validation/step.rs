@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{self, EMERGENCY_MODE_ITERATION_THRESHOLD};
+use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
