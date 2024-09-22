@@ -71,7 +71,7 @@
       locale={language}
       tokenCurrency="DUSK"
       tokens={balance.value}
-      shieldedTokensPercentage={import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED
+      shieldedTokensPercentage={import.meta.env.VITE_FEATURE_ALLOCATE || false
         ? (balance.value / balance.value) * 100
         : undefined}
     />

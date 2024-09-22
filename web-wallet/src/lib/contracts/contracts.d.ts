@@ -1,5 +1,5 @@
 type ContractDescriptor = {
-  disabled: boolean;
+  enabled: boolean;
   id: string;
   label: string;
   operations: ContractOperation[];

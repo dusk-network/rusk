@@ -50,7 +50,7 @@
   export let gasLimits;
 
   /** @type {boolean} */
-  export let disableAllocateButton = false;
+  export let enableAllocateButton = false;
 
   /** @type {number} */
   let amount = 1;
@@ -188,7 +188,7 @@
     >
       <div in:fade|global class="operation__send">
         <ContractStatusesList items={statuses}>
-          {#if !disableAllocateButton}
+          {#if enableAllocateButton}
             <AppAnchorButton
               className="allocate-button"
               href="/dashboard/allocate"
