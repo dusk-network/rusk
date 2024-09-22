@@ -1813,7 +1813,7 @@ exports[`Create > ensures the Network Syncing step renders as expected 1`] = `
         This can later be retrieved from Settings. Find out more in our 
         <a
           class="dusk-anchor dusk-anchor--on-surface"
-          href="#"
+          href="https://docs.dusk.network/learn/guides/restore-height"
           rel="noopener noreferrer"
           target="_blank"
         >

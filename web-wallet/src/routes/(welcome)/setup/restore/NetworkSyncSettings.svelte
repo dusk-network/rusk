@@ -2,6 +2,7 @@
 
 <script>
   import { AppAnchor } from "$lib/components";
+  import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { ToggleableCard } from "$lib/containers/Cards";
   import { Icon, Textbox } from "$lib/dusk/components";
   import { createNumberFormatter } from "$lib/dusk/number";
@@ -55,7 +56,7 @@
     Syncing from a custom block height is optional. Doing so can significantly
     reduce sync times. However, setting a wrong block can lead to wrong balance
     or missing transactions. Find out more in our <AppAnchor
-      href="#"
+      href={DOCUMENTATION_LINKS.RESTORE_BLOCK_HEIGHT}
       rel="noopener noreferrer"
       target="_blank">documentation</AppAnchor
     >.
