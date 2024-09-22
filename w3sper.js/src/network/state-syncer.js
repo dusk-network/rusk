@@ -47,7 +47,7 @@ export class StateSyncer extends EventTarget {
   }
 
   async accounts(users) {
-    await ProtocolDriver.accountsIntoRaw(users);
+    // await ProtocolDriver.accountsIntoRaw(users);
     // const url = new URL(
     //   `/on/contracts:${TRANSFER}/account`,
     //   this.#network.url,
