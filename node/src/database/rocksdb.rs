@@ -40,7 +40,6 @@ const CF_LEDGER_FAULTS: &str = "cf_ledger_faults";
 const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_CANDIDATES_HEIGHT: &str = "cf_candidates_height";
-const CF_CANDIDATES_ITERATION: &str = "cf_candidates_iteration";
 const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
@@ -95,11 +94,6 @@ impl Backend {
             .cf_handle(CF_CANDIDATES_HEIGHT)
             .expect("candidates column family must exist");
 
-        let candidates_iteration_cf = self
-            .rocksdb
-            .cf_handle(CF_CANDIDATES_ITERATION)
-            .expect("candidates iteration family must exist");
-
         let mempool_cf = self
             .rocksdb
             .cf_handle(CF_MEMPOOL)
@@ -131,7 +125,6 @@ impl Backend {
             inner,
             candidates_cf,
             candidates_height_cf,
-            candidates_iteration_cf,
             ledger_cf,
             ledger_txs_cf,
             ledger_faults_cf,
@@ -211,10 +204,6 @@ impl DB for Backend {
                 CF_CANDIDATES_HEIGHT,
                 blocks_cf_opts.clone(),
             ),
-            ColumnFamilyDescriptor::new(
-                CF_CANDIDATES_ITERATION,
-                blocks_cf_opts.clone(),
-            ),
             ColumnFamilyDescriptor::new(CF_METADATA, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
@@ -273,7 +262,6 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     // Candidates column family
     candidates_cf: &'db ColumnFamily,
     candidates_height_cf: &'db ColumnFamily,
-    candidates_iteration_cf: &'db ColumnFamily,
 
     // Ledger column families
     ledger_cf: &'db ColumnFamily,
@@ -595,17 +583,6 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         self.inner
             .put_cf(self.candidates_height_cf, key, b.header().hash)?;
 
-        // KV (iteration, prev_block_hash) -> hash
-        let key = serialize_key(
-            b.header().iteration as u64,
-            b.header().prev_block_hash,
-        )?;
-        self.inner.put_cf(
-            self.candidates_iteration_cf,
-            key,
-            b.header().hash,
-        )?;
-
         Ok(())
     }
 
@@ -637,11 +614,19 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         prev_block_hash: [u8; 32],
         iteration: u8,
     ) -> Result<Option<ledger::Block>> {
-        let key = serialize_key(iteration as u64, prev_block_hash)?; // TOOD: Use u8
-        if let Some(hash) =
-            self.snapshot.get_cf(self.candidates_iteration_cf, key)?
-        {
-            return self.fetch_candidate_block(&hash);
+        let iter = self
+            .inner
+            .iterator_cf(self.candidates_cf, IteratorMode::Start);
+
+        for (_, blob) in iter.map(Result::unwrap) {
+            let b = ledger::Block::read(&mut &blob[..])?;
+
+            let header = b.header();
+            if header.prev_block_hash == prev_block_hash
+                && header.iteration == iteration
+            {
+                return Ok(Some(b));
+            }
         }
 
         Ok(None)
