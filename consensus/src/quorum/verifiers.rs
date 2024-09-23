@@ -7,7 +7,7 @@
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Seed, StepVotes};
 use node_data::message::payload::{self, Vote};
-use node_data::message::{ConsensusHeader, StepMessage};
+use node_data::message::{ConsensusHeader, SignedStepMessage};
 use node_data::{Serializable, StepName};
 use tracing::error;
 
