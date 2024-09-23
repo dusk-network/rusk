@@ -211,6 +211,10 @@ impl DB for Backend {
                 CF_CANDIDATES_HEIGHT,
                 blocks_cf_opts.clone(),
             ),
+            ColumnFamilyDescriptor::new(
+                CF_CANDIDATES_ITERATION,
+                blocks_cf_opts.clone(),
+            ),
             ColumnFamilyDescriptor::new(CF_METADATA, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
