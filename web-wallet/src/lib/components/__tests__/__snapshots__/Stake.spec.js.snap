@@ -7,6 +7,60 @@ exports[`Stake > should render the Stake component 1`] = `
   <div
     class="dusk-wizard"
   >
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 3; --progress-width: 0%;"
+      >
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Overview
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
      
      
      
@@ -276,6 +330,74 @@ exports[`Stake > should render the Stake notice 1`] = `
   <div
     class="dusk-wizard"
   >
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 4; --progress-width: 0%;"
+      >
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Notice
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Overview
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          4
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
      
      
      
@@ -416,6 +538,60 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
   <div
     class="dusk-wizard"
   >
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 3; --progress-width: 33.333333333333336%;"
+      >
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Overview
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
      
      
     

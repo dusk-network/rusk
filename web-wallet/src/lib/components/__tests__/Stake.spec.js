@@ -21,6 +21,16 @@ import { Stake } from "..";
 const fireInput = (input, value) =>
   fireEvent.input(input, { target: { value } });
 
+vi.mock("$lib/dusk/string", async (importOriginal) => {
+  /** @type {typeof import("$lib/dusk/string")} */
+  const original = await importOriginal();
+
+  return {
+    ...original,
+    randomUUID: () => "some-generated-id",
+  };
+});
+
 describe("Stake", () => {
   const formatter = createCurrencyFormatter("en", "DUSK", 9);
   const lastTxId = "some-id";
