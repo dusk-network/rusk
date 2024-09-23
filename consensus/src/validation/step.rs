@@ -15,7 +15,7 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
-    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, StepMessage,
+    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;

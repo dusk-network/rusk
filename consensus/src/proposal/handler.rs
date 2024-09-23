@@ -20,7 +20,7 @@ use node_data::message::payload::{Candidate, GetResource, Inv};
 use tracing::info;
 
 use crate::iteration_ctx::RoundCommittees;
-use node_data::message::{Message, Payload, StepMessage, WireMessage};
+use node_data::message::{Message, Payload, SignedStepMessage, StepMessage, WireMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

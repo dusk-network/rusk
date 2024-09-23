@@ -19,7 +19,9 @@ use crate::aggregator::{Aggregator, StepVote};
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
-use node_data::message::{payload, Message, Payload, StepMessage};
+use node_data::message::{
+    payload, Message, Payload, SignedStepMessage, StepMessage,
+};
 
 use crate::user::committee::Committee;
 
