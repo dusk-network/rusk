@@ -338,9 +338,9 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 Ok(ret)
             })
             .map_err(OperationError::InvalidEST)?;
-        let _ = db.update(|m| {
+        let _ = db.update(|db| {
             for t in &discarded_txs {
-                let _ = m.delete_tx(t.id());
+                let _ = db.delete_mempool_tx(t.id());
             }
             Ok(())
         });
