@@ -87,6 +87,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   <h2
     class="h1"
     slot="heading"

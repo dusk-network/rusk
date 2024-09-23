@@ -8,22 +8,25 @@
   export let items;
 </script>
 
-<dl class="contract-statuses">
-  {#each items as status (status.label)}
-    <dt class="contract-statuses__label">
-      {status.label}
-    </dt>
-    <dd class="contract-statuses__value">
-      <span>{status.value}</span>
-      <Icon
-        className="contract-statuses__icon"
-        path={logo}
-        data-tooltip-id="main-tooltip"
-        data-tooltip-text="DUSK"
-      />
-    </dd>
-  {/each}
-</dl>
+<div class="contract-statuses">
+  <dl class="contract-statuses__list">
+    {#each items as status (status.label)}
+      <dt class="contract-statuses__label">
+        {status.label}
+      </dt>
+      <dd class="contract-statuses__value">
+        <span>{status.value}</span>
+        <Icon
+          className="contract-statuses__icon"
+          path={logo}
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="DUSK"
+        />
+      </dd>
+    {/each}
+  </dl>
+  <slot />
+</div>
 
 <style lang="postcss">
   .contract-statuses {
@@ -34,11 +37,20 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.625em;
+    gap: var(--small-gap);
+
+    &__list {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 0.625em;
+    }
 
     &__label,
     &__value {
       flex: 1 1 calc(50% - 0.625em / 2);
+      line-height: 150%;
     }
 
     &__label {

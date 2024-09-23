@@ -64,6 +64,10 @@
   color: var(--stepper-on-filler-color);
 }
 
+.dusk-stepper__step-label--invisible {
+  visibility: hidden;
+}
+
 .dusk-stepper__step-label {
   grid-row: 2;
   white-space: nowrap;

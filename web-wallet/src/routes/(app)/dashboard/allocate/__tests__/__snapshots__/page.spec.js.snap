@@ -50,6 +50,7 @@ exports[`Allocate > should render the allocation page 1`] = `
       >
          
          
+         
         <div
           class="operation__send svelte-d2yng8"
         >

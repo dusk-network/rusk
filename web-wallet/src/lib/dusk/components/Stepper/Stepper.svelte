@@ -23,6 +23,12 @@
   export let showStepNumbers = true;
 
   /**
+   * Whether to show the step label when the step is inactive.
+   * @type {boolean}
+   */
+  export let showStepLabelWhenInactive = true;
+
+  /**
    * The number of steps, greater or equal to two,
    * if a number is passed.
    * An array of `StepperStep` objects otherwise.
@@ -82,7 +88,15 @@
             {showStepNumbers ? idx + 1 : ""}
           {/if}
         </span>
-        <span class="dusk-stepper__step-label" {id}>{currentStep.label}</span>
+
+        <span
+          class="dusk-stepper__step-label"
+          class:dusk-stepper__step-label--invisible={showStepLabelWhenInactive ||
+            idx !== activeStep}
+          {id}
+        >
+          {currentStep.label}
+        </span>
       {/each}
     {:else}
       {#each Array(steps).keys() as idx (idx)}
