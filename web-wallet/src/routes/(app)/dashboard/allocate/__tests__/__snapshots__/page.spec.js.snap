@@ -43,7 +43,7 @@ exports[`Allocate > should render the allocation page 1`] = `
     class="dusk-card__body-container"
   >
     <div
-      class="operation svelte-d2yng8"
+      class="operation svelte-1tqzaaf"
     >
       <div
         class="dusk-wizard"
@@ -52,7 +52,7 @@ exports[`Allocate > should render the allocation page 1`] = `
          
          
         <div
-          class="operation__send svelte-d2yng8"
+          class="operation__send svelte-1tqzaaf"
         >
           <p>
             Edit the value to change the allocation of your Dusk between your
@@ -60,16 +60,16 @@ exports[`Allocate > should render the allocation page 1`] = `
           </p>
            
           <fieldset
-            class="operation__fieldset svelte-d2yng8"
+            class="operation__fieldset svelte-1tqzaaf"
           >
             <div
-              class="operation__send-amount operation__label svelte-d2yng8"
+              class="operation__send-amount operation__label svelte-1tqzaaf"
             >
               Shielded
             </div>
              
             <div
-              class="operation__send-amount operation__address operation__space-between svelte-d2yng8"
+              class="operation__send-amount operation__address operation__space-between svelte-1tqzaaf"
             >
               <svg
                 class="dusk-icon dusk-icon--size--default"
@@ -86,7 +86,7 @@ exports[`Allocate > should render the allocation page 1`] = `
             </div>
              
             <div
-              class="operation__send-amount operation__input svelte-d2yng8"
+              class="operation__send-amount operation__input svelte-1tqzaaf"
             >
               <input
                 class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -113,17 +113,17 @@ exports[`Allocate > should render the allocation page 1`] = `
             </div>
              
             <hr
-              class="glyph svelte-d2yng8"
+              class="glyph svelte-1tqzaaf"
             />
              
             <div
-              class="operation__send-amount operation__label svelte-d2yng8"
+              class="operation__send-amount operation__label svelte-1tqzaaf"
             >
               Unshielded
             </div>
              
             <div
-              class="operation__send-amount operation__address operation__space-between svelte-d2yng8"
+              class="operation__send-amount operation__address operation__space-between svelte-1tqzaaf"
             >
               <svg
                 class="dusk-icon dusk-icon--size--default"
@@ -140,7 +140,7 @@ exports[`Allocate > should render the allocation page 1`] = `
             </div>
              
             <div
-              class="operation__send-amount operation__input svelte-d2yng8"
+              class="operation__send-amount operation__input svelte-1tqzaaf"
             >
               <input
                 class="dusk-textbox dusk-textbox-number operation__input-field"
