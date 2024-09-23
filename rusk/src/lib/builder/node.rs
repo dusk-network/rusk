@@ -21,6 +21,8 @@ use node::Node;
 
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
+#[cfg(feature = "archive")]
+use {node::archivist::ArchivistSrv, node::database::archive::SQLiteArchive};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, Services};
@@ -145,6 +147,7 @@ impl RuskNodeBuilder {
         self
     }
 
+    /// Build the RuskNode and corresponding services
     pub async fn build_and_run(self) -> anyhow::Result<()> {
         let channel_cap = self
             .http
@@ -152,18 +155,22 @@ impl RuskNodeBuilder {
             .map(|h| h.ws_event_channel_cap)
             .unwrap_or(1);
         let (rues_sender, rues_receiver) = broadcast::channel(channel_cap);
+        let (node_sender, node_receiver) = mpsc::channel(1000);
 
-        let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
+        #[cfg(feature = "archive")]
+        let (archive_sender, archive_receiver) = mpsc::channel(1000);
 
         let rusk = Rusk::new(
             self.state_dir,
-            chain_id,
+            self.kadcast.kadcast_id.unwrap_or_default(),
             self.generation_timeout,
             self.gas_per_deploy_byte,
             self.min_deployment_gas_price,
             self.block_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),
+            #[cfg(feature = "archive")]
+            archive_sender.clone(),
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");
@@ -177,13 +184,12 @@ impl RuskNodeBuilder {
             RuskNode::new(Node::new(net, db, rusk.clone()))
         };
 
-        let (sender, node_receiver) = mpsc::channel(1000);
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool, sender.clone())),
+            Box::new(MempoolSrv::new(self.mempool, node_sender.clone())),
             Box::new(ChainSrv::new(
                 self.consensus_keys_path,
                 self.max_chain_queue_size,
-                sender.clone(),
+                node_sender.clone(),
                 self.genesis_timestamp,
             )),
             Box::new(DataBrokerSrv::new(self.databroker)),
@@ -197,6 +203,8 @@ impl RuskNodeBuilder {
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
                 rues_sender,
+                #[cfg(feature = "archive")]
+                archivist_sender: archive_sender,
             }));
 
             let mut handler = DataSources::default();
@@ -222,6 +230,13 @@ impl RuskNodeBuilder {
                 .await?,
             );
         }
+
+        #[cfg(feature = "archive")]
+        service_list.push(Box::new(ArchivistSrv {
+            archive_receiver,
+            archivist: SQLiteArchive::create_or_open(self.db_path.clone())
+                .await,
+        }));
 
         node.inner().initialize(&mut service_list).await?;
         node.inner().spawn_all(service_list).await?;

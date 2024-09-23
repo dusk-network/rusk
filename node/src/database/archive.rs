@@ -83,7 +83,7 @@ impl Archivist for SQLiteArchive {
         let block_height: i64 = block_height as i64;
         let hex_block_hash = hex::encode(block_hash);
         // Serialize the events to a json string
-        let json_contract_events = serde_json::to_string(&events).unwrap();
+        let json_contract_events = serde_json::to_string(&events)?;
 
         let mut conn = self.archive_db.acquire().await?;
 
@@ -190,13 +190,19 @@ impl Archivist for SQLiteArchive {
 mod util {
     /// Truncate a string to at most 35 characters.
     pub fn truncate_string(s: &str) -> String {
-        if s.len() <= 32 {
+        if s.len() <= 35 {
             return s.to_string();
         }
 
-        let first_part = &s[..16];
-        let last_part = &s[s.len() - 16..];
-        format!("{}...{}", first_part, last_part)
+        s.chars().take(16).collect::<String>()
+            + "..."
+            + &s.chars()
+                .rev()
+                .take(16)
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect::<String>()
     }
 }
 

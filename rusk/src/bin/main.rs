@@ -10,8 +10,8 @@ mod config;
 mod ephemeral;
 mod log;
 
-#[cfg(feature = "archive")]
-use tokio::sync::mpsc;
+#[cfg(feature = "chain")]
+use tracing::info;
 
 use clap::Parser;
 
@@ -50,37 +50,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
 
-    let channel_cap = config.http.ws_event_channel_cap;
-
-    // Broadcast channel used for RUES (node events & VM events)
-    let (_event_sender, event_receiver) = broadcast::channel(channel_cap);
-
-    // MPSC channel used for VM events (& in the future maybe other data) sent
-    // to the archivist
-    #[cfg(feature = "archive")]
-    let (archive_sender, archive_receiver) = mpsc::channel(1000);
-
     let mut node_builder = Builder::default();
 
     #[cfg(feature = "chain")]
     {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
-
-        let rusk = Rusk::new(
-            state_dir,
-            config.kadcast.chain_id(),
-            config.chain.generation_timeout(),
-            config.chain.gas_per_deploy_byte(),
-            config.chain.min_deployment_gas_price(),
-            config.chain.block_gas_limit(),
-            config.http.feeder_call_gas,
-            _event_sender.clone(),
-            #[cfg(feature = "archive")]
-            archive_sender.clone(),
-        )?;
-
-        info!("Rusk VM loaded");
 
         #[cfg(feature = "ephemeral")]
         let db_path = tempdir.as_ref().map_or_else(
@@ -91,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(feature = "ephemeral"))]
         let db_path = config.chain.db_path();
 
-        let node_builder = node_builder
+        node_builder = node_builder
             .with_feeder_call_gas(config.http.feeder_call_gas)
             .with_db_path(db_path)
             .with_db_options(config.chain.db_options())
@@ -108,18 +83,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_min_deployment_gas_price(
                 config.chain.min_deployment_gas_price(),
             )
-            .with_block_gas_limit(config.chain.block_gas_limit())
-            .with_rues(_event_sender);
-
-        #[cfg(feature = "archive")]
-        let node_builder =
-            node_builder.with_archivist(archive_sender, archive_receiver);
-
-        #[allow(clippy::let_and_return)]
-        node_builder
+            .with_block_gas_limit(config.chain.block_gas_limit());
     };
 
-    let mut _ws_server = None;
     if config.http.listen {
         let http_builder = HttpServerConfig {
             address: config.http.listen_addr(),
@@ -133,46 +99,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = node_builder.build_and_run().await {
         tracing::error!("node terminated with err: {}", e);
         return Err(e.into());
-        info!("Configuring HTTP");
-
-        #[allow(unused_mut)]
-        let mut handler = DataSources::default();
-
-        #[cfg(feature = "prover")]
-        handler.sources.push(Box::new(rusk_prover::LocalProver));
-
-        #[cfg(feature = "node")]
-        handler.sources.extend(node_builder.build_data_sources()?);
-
-        let listen_addr = config.http.listen_addr();
-
-        let cert_and_key = match (config.http.cert, config.http.key) {
-            (Some(cert), Some(key)) => Some((cert, key)),
-            _ => None,
-        };
-
-        let ws_event_channel_cap = config.http.ws_event_channel_cap;
-
-        _ws_server = Some(
-            HttpServer::bind(
-                handler,
-                event_receiver,
-                ws_event_channel_cap,
-                listen_addr,
-                cert_and_key,
-            )
-            .await?,
-        );
-    }
-
-    // Build & run the Node
-    #[cfg(feature = "node")]
-    {
-        let (mut node, service_list) = node_builder.build().await?;
-        if let Err(e) = node.run(service_list).await {
-            tracing::error!("node terminated with err: {}", e);
-            return Err(e.into());
-        }
     }
 
     Ok(())

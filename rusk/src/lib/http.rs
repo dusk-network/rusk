@@ -921,7 +921,9 @@ mod tests {
     use event::Event as EventRequest;
 
     use execution_core::ContractId;
-    use node_data::events::contract::{ContractTxEvent, WrappedContractId};
+    use node_data::events::contract::{
+        ContractEvent, ContractTxEvent, WrappedContractId,
+    };
     use std::net::TcpStream;
     use tungstenite::client;
 

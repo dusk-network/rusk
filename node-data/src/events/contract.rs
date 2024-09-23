@@ -7,8 +7,7 @@
 //! This module defines the contract event type and related types.
 
 use anyhow::Result;
-use execution_core::ContractId;
-use execution_core::Event;
+use execution_core::{ContractId, Event, CONTRACT_ID_BYTES};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Contract event with optional origin (tx hash).
@@ -41,11 +40,12 @@ impl<'de> Deserialize<'de> for WrappedContractId {
         let source_hex: String = Deserialize::deserialize(deserializer)?;
         let source_bytes =
             hex::decode(source_hex).map_err(serde::de::Error::custom)?;
-        let mut source_array = [0u8; 32];
+        let mut source_array = [0u8; CONTRACT_ID_BYTES];
 
-        if source_bytes.len() != 32 {
+        if source_bytes.len() != CONTRACT_ID_BYTES {
             return Err(serde::de::Error::custom(format!(
-                "Invalid length: expected 32 bytes, got {}",
+                "Invalid length: expected {} bytes, got {}",
+                CONTRACT_ID_BYTES,
                 source_bytes.len()
             )));
         }
@@ -93,7 +93,7 @@ mod tests {
 
     fn exec_core_event() -> Event {
         Event {
-            source: ContractId::from_bytes([0; 32]),
+            source: ContractId::from_bytes([0; CONTRACT_ID_BYTES]),
             topic: "contract".to_string(),
             data: vec![1, 2, 3],
         }

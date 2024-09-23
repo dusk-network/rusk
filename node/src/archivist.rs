@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use node_data::archive::ArchivalData;
 use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::RwLock;
 use tracing::error;
 
 pub struct ArchivistSrv {
@@ -24,9 +25,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 {
     async fn execute(
         &mut self,
-        _: Arc<tokio::sync::RwLock<N>>,
-        _: Arc<tokio::sync::RwLock<DB>>,
-        _: Arc<tokio::sync::RwLock<VM>>,
+        _: Arc<RwLock<N>>,
+        _: Arc<RwLock<DB>>,
+        _: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         loop {
             if let Some(msg) = self.archive_receiver.recv().await {
