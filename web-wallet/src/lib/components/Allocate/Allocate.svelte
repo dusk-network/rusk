@@ -403,7 +403,20 @@
     color: var(--error-color);
   }
 
-  hr.glyph:after {
+  .glyph {
+    margin: var(--default-gap) 0;
+    height: 1px;
+  }
+
+  .glyph:after {
     content: "↑↓";
+    display: inline-block;
+    position: relative;
+    top: -1.2em;
+    color: var(--divider-border-color);
+    border: 1px solid var(--divider-border-color);
+    border-radius: 2em;
+    padding: 0.5em 1.25em;
+    background-color: var(--divider-background-color);
   }
 </style>
