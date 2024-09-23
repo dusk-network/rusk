@@ -1145,7 +1145,7 @@ pub mod payload {
         }
 
         pub fn clone_with_hop_decrement(&self) -> Option<Self> {
-            if self.hops_limit == 1 {
+            if self.hops_limit <= 1 {
                 return None;
             }
             let mut req = self.clone();
