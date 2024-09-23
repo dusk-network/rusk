@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::RoundUpdate;
 use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::proposal;
 use crate::ratification::handler::RatificationHandler;
@@ -73,7 +74,7 @@ pub trait MsgHandler {
                 }
 
                 // Ensure the message originates from a committee member.
-                if !committee.is_member(signer) {
+                if !committee.is_member(&signer) {
                     return Err(ConsensusError::NotCommitteeMember);
                 }
 
@@ -113,7 +114,7 @@ pub trait MsgHandler {
             if let Some(committee) = round_committees.get_committee(step) {
                 // Ensure the message originates from a committee
                 // member.
-                if !committee.is_member(signer) {
+                if !committee.is_member(&signer) {
                     return Err(ConsensusError::NotCommitteeMember);
                 }
 

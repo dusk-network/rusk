@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
 - Restrict mnemonic step input to alphabetical characters (Restore Flow) [#2355]
 - Newly created Wallet does not sync from genesis [#1567]
 - Update font-display to swap for custom fonts to improve performance [#2026]
@@ -29,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dashboard to use routes instead of `Tabs` for navigation pattern [#2075]
 - Update dashboard by splitting the transfer operations into send and receive operations [#2175]
 - Update decimals shown for migration balance [#2406]
+- Update `Balance` UI to include an optional `UsageIndicator` for Moonlight tokens [#2234]
+- Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
+- Update `Send` to use `Stepper` [#2110]
+- Update `Send` to include allocation button [#2420]
 
 ### Fixed
 
@@ -261,7 +264,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2310]: https://github.com/dusk-network/rusk/issues/2310
 [#2355]: https://github.com/dusk-network/rusk/issues/2355
 [#2406]: https://github.com/dusk-network/rusk/issues/2406
-[#2421]: https://github.com/dusk-network/rusk/issues/2421
+[#2234]: https://github.com/dusk-network/rusk/issues/2234
+[#2110]: https://github.com/dusk-network/rusk/issues/2110
+[#2420]: https://github.com/dusk-network/rusk/issues/2420
 
 <!-- VERSIONS -->
 

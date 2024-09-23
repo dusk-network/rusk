@@ -5,47 +5,20 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt;
-use std::io;
 use std::time::Duration;
 
 use node_data::bls::PublicKey;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
-    Block, Fault, Header, InvalidFault, Slash, SpentTransaction, Transaction,
+    Block, Fault, Header, Slash, SpentTransaction, Transaction,
 };
 use node_data::StepName;
-use thiserror::Error;
+
+use crate::errors::*;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
 pub type Voter = (PublicKey, usize);
-
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("failed to call VST {0}")]
-    InvalidVST(anyhow::Error),
-    #[error("failed to call EST {0}")]
-    InvalidEST(anyhow::Error),
-    #[error("failed to verify header {0}")]
-    InvalidHeader(anyhow::Error),
-    #[error("Unable to update metrics {0}")]
-    MetricsUpdate(anyhow::Error),
-    #[error("Invalid Iteration Info {0}")]
-    InvalidIterationInfo(io::Error),
-    #[error("Invalid Faults {0}")]
-    InvalidFaults(InvalidFault),
-}
-
-impl From<io::Error> for Error {
-    fn from(value: io::Error) -> Self {
-        Self::InvalidIterationInfo(value)
-    }
-}
-
-impl From<InvalidFault> for Error {
-    fn from(value: InvalidFault) -> Self {
-        Self::InvalidFaults(value)
-    }
-}
 
 #[derive(Default, Clone, Debug)]
 pub struct CallParams {
@@ -85,31 +58,32 @@ pub trait Operations: Send + Sync {
     async fn verify_candidate_header(
         &self,
         candidate_header: &Header,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error>;
+        expected_generator: &PublicKeyBytes,
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError>;
 
     async fn verify_faults(
         &self,
         block_height: u64,
         faults: &[Fault],
-    ) -> Result<(), Error>;
+    ) -> Result<(), OperationError>;
 
     async fn verify_state_transition(
         &self,
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, Error>;
+    ) -> Result<VerificationOutput, OperationError>;
 
     async fn execute_state_transition(
         &self,
         params: CallParams,
-    ) -> Result<Output, Error>;
+    ) -> Result<Output, OperationError>;
 
     async fn add_step_elapsed_time(
         &self,
         round: u64,
         step_name: StepName,
         elapsed: Duration,
-    ) -> Result<(), Error>;
+    ) -> Result<(), OperationError>;
 
     async fn get_block_gas_limit(&self) -> u64;
 }

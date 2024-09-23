@@ -71,6 +71,8 @@ impl Rusk {
         #[cfg(feature = "archive")] archive_sender: Sender<ArchivalData>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
+        info!("Using state from {dir:?}");
+
         let commit_id_path = to_rusk_state_id_path(dir);
 
         let base_commit_bytes = fs::read(commit_id_path)?;

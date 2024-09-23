@@ -117,7 +117,7 @@
   /* Dividers */
 
   --divider-color-primary: var(--smokey-black);
-  --divider-background-color: var(--light-gray);
+  --divider-background-color: var(--light-grey);
   --divider-border-color: var(--smokey-black);
 
   /* Home animation */

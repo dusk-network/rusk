@@ -10,91 +10,97 @@ exports[`Stake > should render the Stake component 1`] = `
      
      
      
-    <dl
-      class="contract-statuses svelte-19157rx"
+     
+    <div
+      class="contract-statuses svelte-1up3579"
     >
-      <dt
-        class="contract-statuses__label svelte-19157rx"
+      <dl
+        class="contract-statuses__list svelte-1up3579"
       >
-        Spendable
-         
-      </dt>
-      <dd
-        class="contract-statuses__value svelte-19157rx"
-      >
-        <span>
-          1,000.000000000
-        </span>
-         
-        <svg
-          class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-text="DUSK"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+        <dt
+          class="contract-statuses__label svelte-1up3579"
         >
-          <path
-            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-          />
-        </svg>
-        
-         
-      </dd>
-      <dt
-        class="contract-statuses__label svelte-19157rx"
-      >
-        Total Locked
-         
-      </dt>
-      <dd
-        class="contract-statuses__value svelte-19157rx"
-      >
-        <span>
-          278.000000000
-        </span>
-         
-        <svg
-          class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-text="DUSK"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+          Spendable
+           
+        </dt>
+        <dd
+          class="contract-statuses__value svelte-1up3579"
         >
-          <path
-            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-          />
-        </svg>
-        
-         
-      </dd>
-      <dt
-        class="contract-statuses__label svelte-19157rx"
-      >
-        Rewards
-         
-      </dt>
-      <dd
-        class="contract-statuses__value svelte-19157rx"
-      >
-        <span>
-          345.000000000
-        </span>
-         
-        <svg
-          class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-text="DUSK"
-          role="graphics-symbol"
-          viewBox="0 0 24 24"
+          <span>
+            1,000.000000000
+          </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="DUSK"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+            />
+          </svg>
+          
+           
+        </dd>
+        <dt
+          class="contract-statuses__label svelte-1up3579"
         >
-          <path
-            d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-          />
-        </svg>
-        
-         
-      </dd>
-    </dl>
+          Total Locked
+           
+        </dt>
+        <dd
+          class="contract-statuses__value svelte-1up3579"
+        >
+          <span>
+            278.000000000
+          </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="DUSK"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+            />
+          </svg>
+          
+           
+        </dd>
+        <dt
+          class="contract-statuses__label svelte-1up3579"
+        >
+          Rewards
+           
+        </dt>
+        <dd
+          class="contract-statuses__value svelte-1up3579"
+        >
+          <span>
+            345.000000000
+          </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="DUSK"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+            />
+          </svg>
+          
+           
+        </dd>
+      </dl>
+       
+    </div>
      
     <div
       class="operation__amount operation__space-between svelte-1i0y9qj"
@@ -272,6 +278,7 @@ exports[`Stake > should render the Stake notice 1`] = `
   >
      
      
+     
     <span
       class="dusk-badge dusk-badge--variant-warning"
     >
@@ -410,6 +417,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
     class="dusk-wizard"
   >
      
+     
     
      
      
@@ -418,91 +426,96 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
       class="operation__stake svelte-1i0y9qj"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
-      <dl
-        class="contract-statuses svelte-19157rx"
+      <div
+        class="contract-statuses svelte-1up3579"
       >
-        <dt
-          class="contract-statuses__label svelte-19157rx"
+        <dl
+          class="contract-statuses__list svelte-1up3579"
         >
-          Spendable
-           
-        </dt>
-        <dd
-          class="contract-statuses__value svelte-19157rx"
-        >
-          <span>
-            1,000.000000000
-          </span>
-           
-          <svg
-            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <dt
+            class="contract-statuses__label svelte-1up3579"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
-           
-        </dd>
-        <dt
-          class="contract-statuses__label svelte-19157rx"
-        >
-          Total Locked
-           
-        </dt>
-        <dd
-          class="contract-statuses__value svelte-19157rx"
-        >
-          <span>
-            278.000000000
-          </span>
-           
-          <svg
-            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+            Spendable
+             
+          </dt>
+          <dd
+            class="contract-statuses__value svelte-1up3579"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
-           
-        </dd>
-        <dt
-          class="contract-statuses__label svelte-19157rx"
-        >
-          Rewards
-           
-        </dt>
-        <dd
-          class="contract-statuses__value svelte-19157rx"
-        >
-          <span>
-            345.000000000
-          </span>
-           
-          <svg
-            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+            <span>
+              1,000.000000000
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+             
+          </dd>
+          <dt
+            class="contract-statuses__label svelte-1up3579"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
-           
-        </dd>
-      </dl>
+            Total Locked
+             
+          </dt>
+          <dd
+            class="contract-statuses__value svelte-1up3579"
+          >
+            <span>
+              278.000000000
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+             
+          </dd>
+          <dt
+            class="contract-statuses__label svelte-1up3579"
+          >
+            Rewards
+             
+          </dt>
+          <dd
+            class="contract-statuses__value svelte-1up3579"
+          >
+            <span>
+              345.000000000
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+             
+          </dd>
+        </dl>
+         
+      </div>
        
       <span
         class="dusk-badge dusk-badge--variant-warning"

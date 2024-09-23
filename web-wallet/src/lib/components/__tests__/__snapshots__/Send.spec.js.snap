@@ -2,53 +2,87 @@
 
 exports[`Send > Address step > should render the Send component Address step 1`] = `
 <div
-  class="operation svelte-1y886qs"
+  class="operation svelte-131a88q"
 >
   <div
     class="dusk-wizard"
   >
-    
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 4; --progress-width: 0%;"
+      >
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Address
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Review
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          4
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
      
      
      
     <div
-      class="operation__send svelte-1y886qs"
-      style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
+      class="operation__send svelte-131a88q"
     >
-      <dl
-        class="contract-statuses svelte-19157rx"
-      >
-        <dt
-          class="contract-statuses__label svelte-19157rx"
-        >
-          Spendable
-           
-        </dt>
-        <dd
-          class="contract-statuses__value svelte-19157rx"
-        >
-          <span>
-            1,000.000000000
-          </span>
-           
-          <svg
-            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
-           
-        </dd>
-      </dl>
-       
       <div
-        class="operation__send-amount operation__space-between svelte-1y886qs"
+        class="operation__send-amount operation__space-between svelte-131a88q"
       >
         <p>
           Enter address:
@@ -69,7 +103,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
        
       <textarea
         class="dusk-textbox dusk-textbox-multiline operation__send-address
-						operation__send-address--invalid"
+          operation__send-address--invalid"
       />
       
        
@@ -104,12 +138,13 @@ exports[`Send > Address step > should render the Send component Address step 1`]
     <div
       class="dusk-wizard__step-navigation"
     >
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-        type="button"
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+        href="/some-base-path/dashboard"
       >
         <svg
-          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -120,12 +155,13 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         
          
         <span
-          class="dusk-button__text"
+          class="dusk-anchor-button__text"
         >
           Back
         </span>
         
-      </button>
+        
+      </a>
       
        
       <button
@@ -157,56 +193,148 @@ exports[`Send > Address step > should render the Send component Address step 1`]
     
      
     
+     
+    
   </div>
 </div>
 `;
 
 exports[`Send > Amount step > should render the Send component Amount step 1`] = `
 <div
-  class="operation svelte-1y886qs"
+  class="operation svelte-131a88q"
 >
   <div
     class="dusk-wizard"
   >
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 4; --progress-width: 25%;"
+      >
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Address
+           
+        </span>
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Review
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          4
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
+     
+    
+     
      
      
     <div
-      class="operation__send svelte-1y886qs"
+      class="operation__send svelte-131a88q"
+      style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
-      <dl
-        class="contract-statuses svelte-19157rx"
+      <div
+        class="contract-statuses svelte-1up3579"
       >
-        <dt
-          class="contract-statuses__label svelte-19157rx"
+        <dl
+          class="contract-statuses__list svelte-1up3579"
         >
-          Spendable
-           
-        </dt>
-        <dd
-          class="contract-statuses__value svelte-19157rx"
-        >
-          <span>
-            1,000.000000000
-          </span>
-           
-          <svg
-            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <dt
+            class="contract-statuses__label svelte-1up3579"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
+            Spendable
+             
+          </dt>
+          <dd
+            class="contract-statuses__value svelte-1up3579"
+          >
+            <span>
+              1,000.000000000
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+             
+          </dd>
+        </dl>
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default allocate-button"
+          href="/some-base-path/dashboard/allocate"
+        >
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Shield more DUSK
+          </span>
           
-           
-        </dd>
-      </dl>
+        </a>
+        
+      </div>
        
       <div
-        class="operation__send-amount operation__space-between svelte-1y886qs"
+        class="operation__send-amount operation__space-between svelte-131a88q"
       >
         <p>
           Enter amount:
@@ -225,7 +353,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__send-amount operation__input svelte-1y886qs"
+        class="operation__send-amount operation__input svelte-131a88q"
       >
         <input
           class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -317,13 +445,12 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
     <div
       class="dusk-wizard__step-navigation"
     >
-      <a
-        aria-disabled="false"
-        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
-        href="/some-base-path/dashboard"
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+        type="button"
       >
         <svg
-          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -334,13 +461,12 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         
          
         <span
-          class="dusk-anchor-button__text"
+          class="dusk-button__text"
         >
           Back
         </span>
         
-        
-      </a>
+      </button>
       
        
       <button
@@ -371,19 +497,86 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
     
      
     
-     
-    
   </div>
 </div>
 `;
 
 exports[`Send > Review step > should render the Send component Review step 1`] = `
 <div
-  class="operation svelte-1y886qs"
+  class="operation svelte-131a88q"
 >
   <div
     class="dusk-wizard"
   >
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 4; --progress-width: 50%;"
+      >
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Address
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Review
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          4
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
+     
     
      
     
@@ -391,40 +584,45 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
      
      
     <div
-      class="operation__send svelte-1y886qs"
+      class="operation__send svelte-131a88q"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
-      <dl
-        class="contract-statuses svelte-19157rx"
+      <div
+        class="contract-statuses svelte-1up3579"
       >
-        <dt
-          class="contract-statuses__label svelte-19157rx"
+        <dl
+          class="contract-statuses__list svelte-1up3579"
         >
-          Spendable
-           
-        </dt>
-        <dd
-          class="contract-statuses__value svelte-19157rx"
-        >
-          <span>
-            1,000.000000000
-          </span>
-           
-          <svg
-            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
+          <dt
+            class="contract-statuses__label svelte-1up3579"
           >
-            <path
-              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-            />
-          </svg>
-          
-           
-        </dd>
-      </dl>
+            Spendable
+             
+          </dt>
+          <dd
+            class="contract-statuses__value svelte-1up3579"
+          >
+            <span>
+              1,000.000000000
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+             
+          </dd>
+        </dl>
+         
+      </div>
        
       <span
         class="dusk-badge dusk-badge--variant-warning operation__review-notice"
@@ -433,10 +631,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </span>
        
       <dl
-        class="operation__review-transaction svelte-1y886qs"
+        class="operation__review-transaction svelte-131a88q"
       >
         <dt
-          class="review-transaction__label svelte-1y886qs"
+          class="review-transaction__label svelte-131a88q"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -455,7 +653,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="review-transaction__value operation__review-amount svelte-1y886qs"
+          class="review-transaction__value operation__review-amount svelte-131a88q"
         >
           <span>
             2,345.000000000
@@ -477,10 +675,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <dl
-        class="operation__review-transaction svelte-1y886qs"
+        class="operation__review-transaction svelte-131a88q"
       >
         <dt
-          class="review-transaction__label svelte-1y886qs"
+          class="review-transaction__label svelte-131a88q"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -499,7 +697,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="operation__review-address svelte-1y886qs"
+          class="operation__review-address svelte-131a88q"
         >
           <span>
             47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM

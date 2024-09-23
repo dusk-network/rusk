@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(lazy_cell)]
-
 mod args;
 mod config;
 #[cfg(feature = "ephemeral")]
@@ -19,15 +17,10 @@ use clap::Parser;
 
 use log::Log;
 
-#[cfg(feature = "node")]
-use rusk::node::{Rusk, RuskNodeBuilder};
+use rusk::Builder;
 
-use rusk::http::{DataSources, HttpServer};
+use rusk::http::HttpServerConfig;
 use rusk::Result;
-
-use tokio::sync::broadcast;
-
-use tracing::info;
 
 use crate::config::Config;
 
@@ -67,8 +60,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "archive")]
     let (archive_sender, archive_receiver) = mpsc::channel(1000);
 
-    #[cfg(feature = "node")]
-    let mut node_builder = {
+    let mut node_builder = Builder::default();
+
+    #[cfg(feature = "chain")]
+    {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
 
@@ -96,7 +91,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(feature = "ephemeral"))]
         let db_path = config.chain.db_path();
 
-        let node_builder = RuskNodeBuilder::new(rusk)
+        let node_builder = node_builder
+            .with_feeder_call_gas(config.http.feeder_call_gas)
             .with_db_path(db_path)
             .with_db_options(config.chain.db_options())
             .with_kadcast(config.kadcast)
@@ -104,7 +100,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_databroker(config.databroker)
             .with_telemetry(config.telemetry.listen_addr())
             .with_chain_queue_size(config.chain.max_queue_size())
+            .with_genesis_timestamp(config.chain.genesis_timestamp())
             .with_mempool(config.mempool.into())
+            .with_state_dir(state_dir)
+            .with_generation_timeout(config.chain.generation_timeout())
+            .with_gas_per_deploy_byte(config.chain.gas_per_deploy_byte())
+            .with_min_deployment_gas_price(
+                config.chain.min_deployment_gas_price(),
+            )
+            .with_block_gas_limit(config.chain.block_gas_limit())
             .with_rues(_event_sender);
 
         #[cfg(feature = "archive")]
@@ -117,6 +121,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut _ws_server = None;
     if config.http.listen {
+        let http_builder = HttpServerConfig {
+            address: config.http.listen_addr(),
+            cert: config.http.cert,
+            key: config.http.key,
+            ws_event_channel_cap: config.http.ws_event_channel_cap,
+        };
+        node_builder = node_builder.with_http(http_builder)
+    }
+
+    if let Err(e) = node_builder.build_and_run().await {
+        tracing::error!("node terminated with err: {}", e);
+        return Err(e.into());
         info!("Configuring HTTP");
 
         #[allow(unused_mut)]
@@ -157,11 +173,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tracing::error!("node terminated with err: {}", e);
             return Err(e.into());
         }
-    }
-
-    #[cfg(not(feature = "node"))]
-    if let Some(s) = _ws_server {
-        s.handle.await?;
     }
 
     Ok(())

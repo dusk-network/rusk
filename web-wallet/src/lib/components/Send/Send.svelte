@@ -16,6 +16,7 @@
     Badge,
     Button,
     Icon,
+    Stepper,
     Textbox,
     Wizard,
     WizardStep,
@@ -48,6 +49,9 @@
   /** @type {GasStoreContent} */
   export let gasLimits;
 
+  /** @type {boolean} */
+  export let disableAllocateButton = false;
+
   /** @type {number} */
   let amount = 1;
 
@@ -72,6 +76,12 @@
   let { gasLimit, gasPrice } = gasSettings;
 
   const minAmount = 0.000000001;
+  const steps = [
+    { label: "Address" },
+    { label: "Amount" },
+    { label: "Review" },
+    { label: "Done" },
+  ];
 
   onMount(() => {
     amountInput = document.querySelector(".operation__input-field");
@@ -108,10 +118,15 @@
 
     amount = maxSpendable;
   }
+
+  let activeStep = 0;
 </script>
 
 <div class="operation">
-  <Wizard steps={4} let:key>
+  <Wizard steps={steps.length} let:key>
+    <div slot="stepper">
+      <Stepper {activeStep} {steps} showStepLabelWhenInactive={false} />
+    </div>
     <WizardStep
       step={0}
       {key}
@@ -120,10 +135,69 @@
         href: "/dashboard",
         isAnchor: true,
       }}
-      nextButton={{ disabled: isNextButtonDisabled }}
+      nextButton={{
+        action: () => {
+          activeStep = 1;
+        },
+        disabled: !addressValidationResult.isValid,
+      }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList items={statuses} />
+        <div class="operation__send-amount operation__space-between">
+          <p>Enter address:</p>
+          <Button
+            disabled={!scanner}
+            size="small"
+            on:click={() => {
+              scanQrComponent.startScan();
+            }}
+            text="SCAN QR"
+          />
+        </div>
+        <Textbox
+          className="operation__send-address
+          {!addressValidationResult.isValid
+            ? 'operation__send-address--invalid'
+            : ''}"
+          type="multiline"
+          bind:value={address}
+        />
+        <ScanQR
+          bind:this={scanQrComponent}
+          bind:scanner
+          on:scan={(event) => {
+            address = event.detail;
+          }}
+        />
+      </div>
+    </WizardStep>
+    <WizardStep
+      step={1}
+      {key}
+      backButton={{
+        action: () => {
+          activeStep = 0;
+        },
+      }}
+      nextButton={{
+        action: () => {
+          activeStep = 2;
+        },
+        disabled: isNextButtonDisabled,
+      }}
+    >
+      <div in:fade|global class="operation__send">
+        <ContractStatusesList items={statuses}>
+          {#if !disableAllocateButton}
+            <AppAnchorButton
+              className="allocate-button"
+              href="/dashboard/allocate"
+              text="Shield more DUSK"
+              variant="tertiary"
+            />
+          {/if}
+        </ContractStatusesList>
+
         <div class="operation__send-amount operation__space-between">
           <p>Enter amount:</p>
           <Button
@@ -173,43 +247,17 @@
       </div>
     </WizardStep>
     <WizardStep
-      step={1}
-      {key}
-      nextButton={{ disabled: !addressValidationResult.isValid }}
-    >
-      <div in:fade|global class="operation__send">
-        <ContractStatusesList items={statuses} />
-
-        <div class="operation__send-amount operation__space-between">
-          <p>Enter address:</p>
-          <Button
-            disabled={!scanner}
-            size="small"
-            on:click={() => {
-              scanQrComponent.startScan();
-            }}
-            text="SCAN QR"
-          />
-        </div>
-        <Textbox
-          className="operation__send-address
-						{!addressValidationResult.isValid ? 'operation__send-address--invalid' : ''}"
-          type="multiline"
-          bind:value={address}
-        />
-        <ScanQR
-          bind:this={scanQrComponent}
-          bind:scanner
-          on:scan={(event) => {
-            address = event.detail;
-          }}
-        />
-      </div>
-    </WizardStep>
-    <WizardStep
       step={2}
       {key}
+      backButton={{
+        action: () => {
+          activeStep = 1;
+        },
+      }}
       nextButton={{
+        action: () => {
+          activeStep = 3;
+        },
         icon: { path: mdiArrowUpBoldBoxOutline, position: "before" },
         label: "SEND",
         variant: "primary",
@@ -351,7 +399,17 @@
     font-weight: bold;
   }
 
+  :global(.operation__send-address) {
+    resize: vertical;
+    min-height: 5em;
+    max-height: 10em;
+  }
+
   :global(.operation__send-address--invalid) {
     color: var(--error-color);
+  }
+
+  :global(.allocate-button) {
+    width: 100%;
   }
 </style>

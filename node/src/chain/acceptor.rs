@@ -7,8 +7,9 @@
 use crate::database::{self, Candidate, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
-use dusk_consensus::commons::{ConsensusError, TimeoutSet};
+use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
+use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::bls::PublicKey;
 use node_data::events::{
@@ -1148,7 +1149,14 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
-) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
+) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
     let validator = Validator::new(db, prev_header, provisioners);
-    validator.execute_checks(header, false).await
+    let expected_generator = provisioners.current().get_generator(
+        header.iteration,
+        prev_header.seed,
+        header.height,
+    );
+    validator
+        .execute_checks(header, &expected_generator, false)
+        .await
 }

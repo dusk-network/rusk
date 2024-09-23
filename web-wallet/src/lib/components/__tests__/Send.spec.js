@@ -7,6 +7,16 @@ import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 import { Send } from "..";
 import { tick } from "svelte";
 
+vi.mock("$lib/dusk/string", async (importOriginal) => {
+  /** @type {typeof import("$lib/dusk/string")} */
+  const original = await importOriginal();
+
+  return {
+    ...original,
+    randomUUID: () => "some-generated-id",
+  };
+});
+
 describe("Send", () => {
   const formatter = createCurrencyFormatter("en", "DUSK", 9);
   const lastTxId = "some-id";
@@ -42,9 +52,41 @@ describe("Send", () => {
     baseProps.execute.mockClear();
   });
 
-  describe("Amount step", () => {
-    it("should render the Send component Amount step", () => {
+  describe("Address step", () => {
+    it("should render the Send component Address step", () => {
       const { container } = render(Send, baseProps);
+
+      expect(container.firstChild).toMatchSnapshot();
+    });
+
+    it("should disable the next button if the address is empty", () => {
+      const { getByRole } = render(Send, baseProps);
+      const nextButton = getByRole("button", { name: "Next" });
+      const addressInput = getByRole("textbox");
+
+      expect(addressInput).toHaveValue("");
+      expect(nextButton).toBeDisabled();
+    });
+
+    it("should disable the next button if the address is invalid empty", async () => {
+      const { getByRole } = render(Send, baseProps);
+      const nextButton = getByRole("button", { name: "Next" });
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, {
+        target: { value: invalidAddress },
+      });
+
+      expect(addressInput).toHaveValue(invalidAddress);
+      expect(nextButton).toBeDisabled();
+    });
+  });
+
+  describe("Amount step", () => {
+    it("should render the Send component Amount step", async () => {
+      const { container, getByRole } = render(Send, baseProps);
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
 
       expect(container.firstChild).toMatchSnapshot();
     });
@@ -59,9 +101,13 @@ describe("Send", () => {
         },
       };
       const { getByRole } = render(Send, props);
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const next = getByRole("button", { name: "Next" });
 
       await tick();
+
       expect(next).toBeDisabled();
     });
 
@@ -71,6 +117,9 @@ describe("Send", () => {
         baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
       );
       const { getByRole } = render(Send, baseProps);
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const useMaxButton = getByRole("button", { name: "USE MAX" });
       const nextButton = getByRole("button", { name: "Next" });
       const amountInput = getByRole("spinbutton");
@@ -87,6 +136,8 @@ describe("Send", () => {
         spendable: 0,
       };
       const { getByRole } = render(Send, props);
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const useMaxButton = getByRole("button", { name: "USE MAX" });
       const amountInput = getByRole("spinbutton");
@@ -109,6 +160,9 @@ describe("Send", () => {
       };
 
       const { getByRole } = render(Send, props);
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const useMaxButton = getByRole("button", { name: "USE MAX" });
       const amountInput = getByRole("spinbutton");
 
@@ -121,6 +175,9 @@ describe("Send", () => {
 
     it("should disable the next button if the user enters an invalid amount", async () => {
       const { getByRole } = render(Send, baseProps);
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const nextButton = getByRole("button", { name: "Next" });
       const amountInput = getByRole("spinbutton");
 
@@ -133,74 +190,18 @@ describe("Send", () => {
     });
   });
 
-  describe("Address step", () => {
-    it("should render the Send component Address step", async () => {
-      const { container, getByRole } = render(Send, baseProps);
-      const nextButton = getByRole("button", { name: "Next" });
-
-      await fireEvent.click(nextButton);
-
-      expect(container.firstChild).toMatchSnapshot();
-    });
-
-    it("should disable the next button if the address is empty", async () => {
-      const { getByRole } = render(Send, baseProps);
-
-      await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      const nextButton = getByRole("button", { name: "Next" });
-      const addressInput = getByRole("textbox");
-
-      expect(addressInput).toHaveValue("");
-      expect(nextButton).toBeDisabled();
-    });
-
-    it("should disable the next button if the address is invalid empty", async () => {
-      const { getByRole } = render(Send, baseProps);
-
-      await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      const nextButton = getByRole("button", { name: "Next" });
-      const addressInput = getByRole("textbox");
-
-      await fireEvent.input(addressInput, {
-        target: { value: invalidAddress },
-      });
-
-      expect(addressInput).toHaveValue(invalidAddress);
-
-      expect(nextButton).toBeDisabled();
-    });
-
-    it("should enable the next button if the user inputs a valid address", async () => {
-      const { getByRole } = render(Send, baseProps);
-
-      await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      const nextButton = getByRole("button", { name: "Next" });
-      const addressInput = getByRole("textbox");
-
-      expect(nextButton).toBeDisabled();
-
-      await fireEvent.input(addressInput, { target: { value: address } });
-
-      expect(addressInput).toHaveValue(address);
-      expect(nextButton).toBeEnabled();
-    });
-  });
-
   describe("Review step", () => {
     it("should render the Send component Review step", async () => {
       const amount = 2345;
       const { container, getByRole } = render(Send, baseProps);
-      const amountInput = getByRole("spinbutton");
-
-      await fireEvent.input(amountInput, { target: { value: amount } });
-      await fireEvent.click(getByRole("button", { name: "Next" }));
-
       const addressInput = getByRole("textbox");
 
       await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
+      const amountInput = getByRole("spinbutton");
+
+      await fireEvent.input(amountInput, { target: { value: amount } });
       await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const value = getAsHTMLElement(
@@ -230,14 +231,14 @@ describe("Send", () => {
 
     it("should perform a transfer for the desired amount, give a success message and supply a link to see the transaction in the explorer", async () => {
       const { getByRole, getByText } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const amountInput = getByRole("spinbutton");
 
       await fireEvent.input(amountInput, { target: { value: amount } });
-      await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      const input = getByRole("textbox");
-
-      await fireEvent.input(input, { target: { value: address } });
       await fireEvent.click(getByRole("button", { name: "Next" }));
       await fireEvent.click(getByRole("button", { name: "SEND" }));
 
@@ -264,17 +265,16 @@ describe("Send", () => {
       baseProps.execute.mockRejectedValueOnce(new Error(errorMessage));
 
       const { getByRole, getByText } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const amountInput = getByRole("spinbutton");
 
       await fireEvent.input(amountInput, { target: { value: amount } });
       await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      const input = getByRole("textbox");
-
-      await fireEvent.input(input, { target: { value: address } });
-      await fireEvent.click(getByRole("button", { name: "Next" }));
       await fireEvent.click(getByRole("button", { name: "SEND" }));
-
       await vi.advanceTimersToNextTimerAsync();
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
@@ -292,17 +292,16 @@ describe("Send", () => {
       baseProps.execute.mockResolvedValueOnce(void 0);
 
       const { getByRole, getByText } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       const amountInput = getByRole("spinbutton");
 
       await fireEvent.input(amountInput, { target: { value: amount } });
       await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      const input = getByRole("textbox");
-
-      await fireEvent.input(input, { target: { value: address } });
-      await fireEvent.click(getByRole("button", { name: "Next" }));
       await fireEvent.click(getByRole("button", { name: "SEND" }));
-
       await vi.advanceTimersToNextTimerAsync();
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);

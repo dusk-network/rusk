@@ -7,13 +7,15 @@
 use crate::database::{self, Candidate, Mempool, Metadata};
 use crate::{vm, Message};
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
+use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
+use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError};
 use dusk_consensus::operations::{
-    self, CallParams, Error, Operations, Output, VerificationOutput, Voter,
+    CallParams, Operations, Output, VerificationOutput, Voter,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Block, Fault, Hash, Header};
 use node_data::message::AsyncQueue;
 
@@ -278,7 +280,8 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     async fn verify_candidate_header(
         &self,
         candidate_header: &Header,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), Error> {
+        expected_generator: &PublicKeyBytes,
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
@@ -286,16 +289,15 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         );
 
         validator
-            .execute_checks(candidate_header, true)
+            .execute_checks(candidate_header, expected_generator, true)
             .await
-            .map_err(operations::Error::InvalidHeader)
     }
 
     async fn verify_faults(
         &self,
         block_height: u64,
         faults: &[Fault],
-    ) -> Result<(), Error> {
+    ) -> Result<(), OperationError> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
@@ -308,19 +310,19 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, dusk_consensus::operations::Error> {
+    ) -> Result<VerificationOutput, OperationError> {
         info!("verifying state");
 
         let vm = self.vm.read().await;
 
         vm.verify_state_transition(blk, Some(voters))
-            .map_err(operations::Error::InvalidVST)
+            .map_err(OperationError::InvalidVST)
     }
 
     async fn execute_state_transition(
         &self,
         params: CallParams,
-    ) -> Result<Output, Error> {
+    ) -> Result<Output, OperationError> {
         info!("executing state transition");
         let vm = self.vm.read().await;
 
@@ -335,7 +337,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 )?;
                 Ok(ret)
             })
-            .map_err(Error::InvalidEST)?;
+            .map_err(OperationError::InvalidEST)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
                 let _ = m.delete_tx(t.id());
@@ -355,7 +357,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         _round: u64,
         step_name: StepName,
         elapsed: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<(), OperationError> {
         let db_key = match step_name {
             StepName::Proposal => MD_AVG_PROPOSAL,
             StepName::Validation => MD_AVG_VALIDATION,
@@ -379,7 +381,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
                 t.op_write(db_key, bytes)
             })
-            .map_err(Error::MetricsUpdate)?;
+            .map_err(OperationError::MetricsUpdate)?;
 
         Ok(())
     }

@@ -12,21 +12,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use events::ChainEventStreamer;
 use execution_core::{dusk, Dusk};
 use kadcast::config::Config as KadcastConfig;
 
 use node::chain::ChainSrv;
 
 use node::database::rocksdb::{self, Backend};
-use node::database::{DatabaseOptions, DB};
-use node::databroker::conf::Params as BrokerParam;
-use node::databroker::DataBrokerSrv;
-use node::mempool::conf::Params as MempoolParam;
-use node::mempool::MempoolSrv;
 use node::network::Kadcast;
-use node::telemetry::TelemetrySrv;
-use node::{LongLivedService, Node};
+use node::LongLivedService;
 use parking_lot::RwLock;
 use rusk_abi::VM;
 use tokio::sync::{broadcast, mpsc};
@@ -36,7 +29,10 @@ use {
     node_data::archive::ArchivalData,
 };
 
-use crate::http::{HandleRequest, RuesEvent};
+use crate::http::RuesEvent;
+
+pub(crate) use events::ChainEventStreamer;
+pub use vm::ContractTxEvent;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -60,8 +56,10 @@ pub struct Rusk {
     pub(crate) archive_sender: mpsc::Sender<ArchivalData>,
 }
 
-type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
+pub(crate) type Services =
+    dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
 
+#[derive(Clone)]
 pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
 }
@@ -77,6 +75,9 @@ impl RuskNode {
 
         Ok(())
     }
+
+    pub fn new(inner: node::Node<Kadcast<255>, Backend, Rusk>) -> Self {
+        Self { inner }
 }
 
 pub struct RuskNodeBuilder {
@@ -264,6 +265,10 @@ impl RuskNode {
 
     pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {
         self.inner.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
+    }
+
+    pub fn inner(&self) -> &node::Node<Kadcast<255>, Backend, Rusk> {
+        &self.inner
     }
 }
 

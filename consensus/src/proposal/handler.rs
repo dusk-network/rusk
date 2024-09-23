@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{
     MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
 };
+use crate::errors::ConsensusError;
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -35,7 +36,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
-        let iteration = p.header.iteration;
+        let iteration = p.header().iteration;
         let generator = round_committees
             .get_generator(iteration)
             .expect("committee to be created before run");
@@ -109,7 +110,7 @@ fn verify_new_block(
     p: &Candidate,
     expected_generator: &PublicKeyBytes,
 ) -> Result<(), ConsensusError> {
-    if expected_generator != p.sign_info.signer.bytes() {
+    if expected_generator != p.sign_info().signer.bytes() {
         return Err(ConsensusError::NotCommitteeMember);
     }
 
@@ -161,7 +162,7 @@ pub fn verify_stateless(
     c: &Candidate,
     round_committees: &RoundCommittees,
 ) -> Result<(), ConsensusError> {
-    let iteration = c.header.iteration;
+    let iteration = c.header().iteration;
     let generator = round_committees
         .get_generator(iteration)
         .expect("committee to be created before run");

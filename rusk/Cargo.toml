@@ -92,14 +92,14 @@ criterion = "0.5"
 rustc_tools_util = "0.3"
 
 [features]
-default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "node", "http-wasm"]
-ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "node"]
+default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "chain", "http-wasm"]
+ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover"]
 testwallet = ["dep:futures"]
-node = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
-archive = ["node", "node/archive"]
+chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
+archive = ["chain", "node/archive"]
 http-wasm = []
 
 [[bench]]

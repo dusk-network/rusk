@@ -13,5 +13,6 @@
 </script>
 
 <div class="dusk-wizard" class:dusk-wizard--full-height={fullHeight}>
+  <slot name="stepper" />
   <slot key={storeKey} />
 </div>

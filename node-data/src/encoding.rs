@@ -10,8 +10,8 @@ use execution_core::transfer::Transaction as ProtocolTransaction;
 
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
-    Attestation, Block, Fault, Header, IterationsInfo, Label, SpentTransaction,
-    StepVotes, Transaction,
+    Attestation, Block, Fault, Header, IterationsInfo, Label, Signature,
+    SpentTransaction, StepVotes, Transaction,
 };
 use crate::message::payload::{
     QuorumType, Ratification, RatificationResult, ValidationResult, Vote,
@@ -155,6 +155,7 @@ impl Serializable for Header {
         self.marshal_hashable(w)?;
         self.att.write(w)?;
         w.write_all(&self.hash)?;
+        w.write_all(self.signature.inner())?;
 
         Ok(())
     }
@@ -166,6 +167,7 @@ impl Serializable for Header {
         let mut header = Self::unmarshal_hashable(r)?;
         header.att = Attestation::read(r)?;
         header.hash = Self::read_bytes(r)?;
+        header.signature = Signature::from(Self::read_bytes(r)?);
         Ok(header)
     }
 }

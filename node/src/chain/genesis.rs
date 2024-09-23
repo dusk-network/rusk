@@ -7,11 +7,10 @@
 use node_data::ledger::{Block, Header};
 
 /// Generates the genesis state for the chain per specified network type
-pub(crate) fn generate_block(state_hash: [u8; 32]) -> Block {
+pub(crate) fn generate_block(state_hash: [u8; 32], timestamp: u64) -> Block {
     Block::new(
         Header {
-            // Tue Sep 10 2024 20:00:00 GMT+0000
-            timestamp: 1725998400,
+            timestamp,
             state_hash,
             ..Default::default()
         },

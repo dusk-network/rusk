@@ -2,7 +2,7 @@
 
 <script>
   import { fade } from "svelte/transition";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import {
     mdiArrowUpBoldBoxOutline,
     mdiShieldLock,
@@ -68,8 +68,6 @@
   let screenWidth = window.innerWidth;
 
   const minAmount = 0.000000001;
-  const dispatch = createEventDispatcher();
-  const resetOperation = () => dispatch("operationChange", "");
 
   onMount(() => {
     isGasValid = areValidGasSettings(gasPrice, gasLimit);
@@ -280,7 +278,6 @@
     <WizardStep step={2} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        onBeforeLeave={resetOperation}
         operation={execute(
           isFromShielded ? unshieldedAddress : shieldedAddress,
           isFromShielded ? unshieldedAmount : shieldedAmount,
@@ -294,7 +291,6 @@
           {#if hash}
             <AppAnchorButton
               href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
-              on:click={resetOperation}
               text="VIEW ON BLOCK EXPLORER"
               rel="noopener noreferrer"
               target="_blank"
@@ -407,7 +403,20 @@
     color: var(--error-color);
   }
 
-  hr.glyph:after {
+  .glyph {
+    margin: var(--default-gap) 0;
+    height: 1px;
+  }
+
+  .glyph:after {
     content: "↑↓";
+    display: inline-block;
+    position: relative;
+    top: -1.2em;
+    color: var(--divider-border-color);
+    border: 1px solid var(--divider-border-color);
+    border-radius: 2em;
+    padding: 0.5em 1.25em;
+    background-color: var(--divider-background-color);
   }
 </style>
