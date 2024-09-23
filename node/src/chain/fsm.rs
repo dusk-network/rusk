@@ -514,13 +514,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         // check if remote_blk has higher priority. If so, we revert to its
         // prev_block, and accept it as the new tip
         if remote_height <= tip_header.height {
-            // Ensure remote_blk is higher than the last finalized
-            if remote_height
-                <= acc.get_latest_final_block().await?.header().height
-            {
-                return Ok(None);
-            }
-
             // Ensure the block is different from what we have in our chain
             if remote_height == tip_header.height {
                 if remote_header.hash == tip_header.hash {
@@ -536,6 +529,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 if blk_exists {
                     return Ok(None);
                 }
+            }
+
+            // Ensure remote_blk is higher than the last finalized
+            // We do this check after the previous one because
+            // get_latest_final_block if heavy
+            if remote_height
+                <= acc.get_latest_final_block().await?.header().height
+            {
+                return Ok(None);
             }
 
             // Check if prev_blk is in our chain
