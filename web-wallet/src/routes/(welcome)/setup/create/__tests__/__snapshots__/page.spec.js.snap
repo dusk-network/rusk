@@ -4,6 +4,7 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   <h2
@@ -241,6 +242,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -654,6 +656,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -1096,6 +1099,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -1519,6 +1523,7 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -1660,6 +1665,7 @@ exports[`Create > ensures the Network Syncing step renders as expected 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -1880,6 +1886,7 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -2073,6 +2080,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -2301,6 +2309,7 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -2457,6 +2466,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   
    
   
@@ -2880,6 +2890,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
+   
   <h2
     class="h1"
     slot="heading"

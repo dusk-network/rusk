@@ -26,10 +26,7 @@
   /** @type {string} */
   export let successMessage = "Operation completed";
 
-  /** @param {Event} event */
-  function handleGoHomeClick(event) {
-    event.preventDefault();
-
+  function handleGoHomeClick() {
     onBeforeLeave && onBeforeLeave();
   }
 
