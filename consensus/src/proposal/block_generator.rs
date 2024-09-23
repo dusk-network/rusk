@@ -130,7 +130,7 @@ impl<T: Operations> Generator<T> {
             round: ru.round,
             generator_pubkey: ru.pubkey_bls.clone(),
             to_slash,
-            voters_pubkey: Some(voters.to_owned()),
+            voters_pubkey: voters.to_owned(),
             max_txs_bytes,
         };
 
