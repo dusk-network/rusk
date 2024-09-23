@@ -4,12 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{path::PathBuf, time::Duration};
+use std::{
+    path::PathBuf,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
+
+// Tue Sep 10 2024 20:00:00 GMT+0000
+pub const DEFAULT_GENESIS_TIMESTAMP: u64 = 1725998400;
 
 use crate::args::Args;
 
@@ -29,6 +35,9 @@ pub(crate) struct ChainConfig {
     gas_per_deploy_byte: Option<u64>,
     min_deployment_gas_price: Option<u64>,
     block_gas_limit: Option<u64>,
+
+    #[serde(with = "humantime_serde")]
+    genesis_timestamp: Option<SystemTime>,
 }
 
 impl ChainConfig {
@@ -90,5 +99,15 @@ impl ChainConfig {
 
     pub(crate) fn block_gas_limit(&self) -> u64 {
         self.block_gas_limit.unwrap_or(DEFAULT_BLOCK_GAS_LIMIT)
+    }
+
+    pub(crate) fn genesis_timestamp(&self) -> u64 {
+        self.genesis_timestamp
+            .map(|t| {
+                t.duration_since(UNIX_EPOCH)
+                    .map(|n| n.as_secs())
+                    .expect("This is heavy.")
+            })
+            .unwrap_or(DEFAULT_GENESIS_TIMESTAMP)
     }
 }

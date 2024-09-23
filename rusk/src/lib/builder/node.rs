@@ -36,6 +36,7 @@ pub struct RuskNodeBuilder {
     db_path: PathBuf,
     db_options: DatabaseOptions,
     max_chain_queue_size: usize,
+    genesis_timestamp: u64,
 
     generation_timeout: Option<Duration>,
     gas_per_deploy_byte: Option<u64>,
@@ -97,7 +98,11 @@ impl RuskNodeBuilder {
         self
     }
 
-    //new
+    pub fn with_genesis_timestamp(mut self, genesis_timestamp: u64) -> Self {
+        self.genesis_timestamp = genesis_timestamp;
+        self
+    }
+
     pub fn with_generation_timeout(
         mut self,
         generation_timeout: Option<Duration>,
@@ -179,6 +184,7 @@ impl RuskNodeBuilder {
                 self.consensus_keys_path,
                 self.max_chain_queue_size,
                 sender.clone(),
+                self.genesis_timestamp,
             )),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
@@ -217,16 +223,8 @@ impl RuskNodeBuilder {
             );
         }
 
-        #[cfg(feature = "chain")]
-        {
-            node.inner().initialize(&mut service_list).await?;
-            node.inner().spawn_all(service_list).await?;
-        }
-
-        #[cfg(not(feature = "chain"))]
-        if let Some(s) = _ws_server {
-            s.wait().await?;
-        }
+        node.inner().initialize(&mut service_list).await?;
+        node.inner().spawn_all(service_list).await?;
 
         Ok(())
     }
