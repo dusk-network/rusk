@@ -64,7 +64,7 @@ exports[`GasSettings > renders the GasSettings component closed 1`] = `
 </div>
 `;
 
-exports[`GasSettings > renders the GasSettings component opened 1`] = `
+exports[`GasSettings > renders the GasSettings component expanded 1`] = `
 <div
   class="gas-settings svelte-1daay07"
 >
@@ -129,6 +129,40 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
     class="gas-settings svelte-1daay07"
     style="animation: __svelte_276924520_0 400ms linear 0ms 1 both;"
   >
+    <div
+      class="dusk-exclusive-choice"
+      role="radiogroup"
+    >
+      <input
+        class="dusk-exclusive-choice__radio"
+        id="2d814b13-5fe4-4036-b003-a4383070bebd-normal"
+        name="2d814b13-5fe4-4036-b003-a4383070bebd"
+        type="radio"
+        value="normal"
+      />
+       
+      <label
+        class="dusk-exclusive-choice__label"
+        for="2d814b13-5fe4-4036-b003-a4383070bebd-normal"
+      >
+        Normal
+      </label>
+      <input
+        class="dusk-exclusive-choice__radio"
+        id="2d814b13-5fe4-4036-b003-a4383070bebd-fast"
+        name="2d814b13-5fe4-4036-b003-a4383070bebd"
+        type="radio"
+        value="fast"
+      />
+       
+      <label
+        class="dusk-exclusive-choice__label"
+        for="2d814b13-5fe4-4036-b003-a4383070bebd-fast"
+      >
+        Fast
+      </label>
+    </div>
+     
     <label
       class="gas-control svelte-14slcjg"
     >

@@ -1,6 +1,6 @@
 <script>
   import { slide } from "svelte/transition";
-  import { Button } from "$lib/dusk/components";
+  import { Button, ExclusiveChoice } from "$lib/dusk/components";
   import { GasControls, GasFee } from "$lib/components";
   import { areValidGasSettings } from "$lib/contracts";
   import { onMount } from "svelte";
@@ -23,8 +23,16 @@
   /** @type {string} */
   export let fee;
 
+  /** @type {"normal" | "fast"} */
+  export let speed;
+
   /** @type {boolean} */
   let isExpanded = false;
+
+  const speedOptions = [
+    { disabled: false, label: "Normal", value: "normal" },
+    { disabled: false, label: "Fast", value: "fast" },
+  ];
 
   onMount(() => {
     if (!areValidGasSettings(price, limit)) {
@@ -47,8 +55,11 @@
       />
     </dd>
   </dl>
+
   {#if isExpanded}
     <div in:slide|global class="gas-settings">
+      <ExclusiveChoice options={speedOptions} bind:value={speed} />
+
       <GasControls
         on:gasSettings
         {limit}
