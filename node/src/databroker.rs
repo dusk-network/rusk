@@ -12,14 +12,13 @@ use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
 use std::cmp::min;
 
-use node_data::message::payload::{GetResource, InvParam, InvType};
+use node_data::message::payload::{self, GetResource, InvParam, InvType};
+use node_data::message::{AsyncQueue, Payload, Topics};
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use node_data::message::{payload, AsyncQueue, ConsensusHeader, SignInfo};
-use node_data::message::{Payload, Topics};
 use tokio::sync::{RwLock, Semaphore};
 use tracing::{debug, info, warn};
 
@@ -509,20 +508,7 @@ impl DataBrokerSrv {
                             .ok()
                             .flatten()
                             .map(|candidate| {
-                                let round = candidate.header().height;
-                                let iteration = candidate.header().iteration;
-                                let prev_block_hash =
-                                    candidate.header().prev_block_hash;
-
-                                Message::from(payload::Candidate {
-                                    candidate,
-                                    header: ConsensusHeader {
-                                        prev_block_hash,
-                                        round,
-                                        iteration,
-                                    },
-                                    sign_info: SignInfo::default(), // TODO: Use Block::Signature here
-                                })
+                                Message::from(payload::Candidate { candidate })
                             })
                         } else {
                             None
