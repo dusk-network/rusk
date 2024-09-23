@@ -1392,16 +1392,19 @@ impl<M: Clone> AsyncQueue<M> {
 }
 
 pub trait StepMessage {
-    const SIGN_SEED: &'static [u8];
     const STEP_NAME: StepName;
-    fn signable(&self) -> Vec<u8>;
     fn header(&self) -> ConsensusHeader;
-    fn sign_info(&self) -> SignInfo;
-    fn sign_info_mut(&mut self) -> &mut SignInfo;
 
     fn get_step(&self) -> u8 {
         Self::STEP_NAME.to_step(self.header().iteration)
     }
+}
+
+pub trait SignedStepMessage: StepMessage {
+    const SIGN_SEED: &'static [u8];
+    fn signable(&self) -> Vec<u8>;
+    fn sign_info(&self) -> SignInfo;
+    fn sign_info_mut(&mut self) -> &mut SignInfo;
 
     fn verify_signature(&self) -> Result<(), BlsSigError> {
         let signature = self.sign_info().signature;
@@ -1424,8 +1427,15 @@ pub trait StepMessage {
 }
 
 impl StepMessage for Validation {
-    const SIGN_SEED: &'static [u8] = &[1u8];
     const STEP_NAME: StepName = StepName::Validation;
+
+    fn header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl SignedStepMessage for Validation {
+    const SIGN_SEED: &'static [u8] = &[1u8];
 
     fn sign_info(&self) -> SignInfo {
         self.sign_info.clone()
@@ -1440,15 +1450,19 @@ impl StepMessage for Validation {
             .write(&mut signable)
             .expect("Writing to vec should succeed");
         signable
-    }
-    fn header(&self) -> ConsensusHeader {
-        self.header.clone()
     }
 }
 
 impl StepMessage for Ratification {
-    const SIGN_SEED: &'static [u8] = &[2u8];
     const STEP_NAME: StepName = StepName::Ratification;
+
+    fn header(&self) -> ConsensusHeader {
+        self.header.clone()
+    }
+}
+
+impl SignedStepMessage for Ratification {
+    const SIGN_SEED: &'static [u8] = &[2u8];
     fn sign_info(&self) -> SignInfo {
         self.sign_info.clone()
     }
@@ -1463,14 +1477,22 @@ impl StepMessage for Ratification {
             .expect("Writing to vec should succeed");
         signable
     }
-    fn header(&self) -> ConsensusHeader {
-        self.header.clone()
-    }
 }
 
 impl StepMessage for Candidate {
-    const SIGN_SEED: &'static [u8] = &[];
     const STEP_NAME: StepName = StepName::Proposal;
+
+    fn header(&self) -> ConsensusHeader {
+        ConsensusHeader {
+            iteration: self.candidate.header().iteration,
+            prev_block_hash: self.candidate.header().prev_block_hash,
+            round: self.candidate.header().height,
+        }
+    }
+}
+
+impl SignedStepMessage for Candidate {
+    const SIGN_SEED: &'static [u8] = &[];
     fn sign_info(&self) -> SignInfo {
         let header = self.candidate.header();
         SignInfo {
@@ -1484,13 +1506,6 @@ impl StepMessage for Candidate {
     }
     fn signable(&self) -> Vec<u8> {
         self.candidate.header().hash.to_vec()
-    }
-    fn header(&self) -> ConsensusHeader {
-        ConsensusHeader {
-            iteration: self.candidate.header().iteration,
-            prev_block_hash: self.candidate.header().prev_block_hash,
-            round: self.candidate.header().height,
-        }
     }
 
     fn sign(&mut self, sk: &BlsSecretKey, pk: &BlsPublicKey) {
