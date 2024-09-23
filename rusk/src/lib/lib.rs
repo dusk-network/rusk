@@ -9,16 +9,20 @@
 mod error;
 pub mod gen_id;
 pub mod http;
-#[cfg(feature = "node")]
+#[cfg(feature = "chain")]
 pub mod node;
+
+mod builder;
 pub mod verifier;
 mod version;
 
 pub use crate::error::Error;
 pub use version::{VERSION, VERSION_BUILD};
 
+pub use builder::Builder;
 pub type Result<T, E = Error> = core::result::Result<T, E>;
-#[cfg(feature = "node")]
+
+#[cfg(feature = "chain")]
 pub use node::Rusk;
 
 pub const DELETING_VM_FNAME: &str = ".delete";
