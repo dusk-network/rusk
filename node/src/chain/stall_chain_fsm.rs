@@ -289,7 +289,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
             .acc
             .read()
             .await
-            .get_latest_final_block()
+            .get_last_final_block()
             .await?
             .header()
             .clone();

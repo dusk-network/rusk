@@ -533,9 +533,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // Ensure remote_blk is higher than the last finalized
             // We do this check after the previous one because
-            // get_latest_final_block if heavy
+            // get_last_final_block if heavy
             if remote_height
-                <= acc.get_latest_final_block().await?.header().height
+                <= acc.get_last_final_block().await?.header().height
             {
                 return Ok(None);
             }

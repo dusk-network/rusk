@@ -31,7 +31,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, info, warn};
 
 use super::consensus::Task;
@@ -950,14 +950,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.tip.read().await.inner().header().hash
     }
 
-    pub(crate) async fn get_latest_final_block(&self) -> Result<Block> {
-        let tip: tokio::sync::RwLockReadGuard<'_, BlockWithLabel> =
-            self.tip.read().await;
+    pub(crate) async fn get_last_final_block(&self) -> Result<Block> {
+        let tip: RwLockReadGuard<'_, BlockWithLabel> = self.tip.read().await;
         if tip.is_final() {
             return Ok(tip.inner().clone());
         }
 
-        // Retrieve the latest final block from the database
+        // Retrieve the last final block from the database
         let final_block = self.db.read().await.view(|v| {
             let prev_height = tip.inner().header().height - 1;
 
@@ -969,13 +968,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         return Ok(blk);
                     } else {
                         return Err(anyhow::anyhow!(
-                            "could not fetch the latest final block by height"
+                            "could not fetch the last final block by height"
                         ));
                     }
                 }
             }
 
-            Err(anyhow::anyhow!("could not find the latest final block"))
+            Err(anyhow::anyhow!("could not find the last final block"))
         })?;
 
         Ok(final_block)
