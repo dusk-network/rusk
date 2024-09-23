@@ -130,7 +130,7 @@ pub fn generator_procedure(
         round,
         generator_pubkey,
         to_slash,
-        voters_pubkey: Some(voters.clone()),
+        voters_pubkey: voters.clone(),
         max_txs_bytes: usize::MAX,
     };
 
@@ -162,10 +162,10 @@ pub fn generator_procedure(
     )
     .expect("valid block");
 
-    let verify_output = rusk.verify_state_transition(&block, Some(&voters))?;
+    let verify_output = rusk.verify_state_transition(&block, &voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output) = rusk.accept(&block, Some(&voters))?;
+    let (accept_txs, accept_output) = rusk.accept(&block, &voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 

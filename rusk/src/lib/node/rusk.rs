@@ -120,7 +120,7 @@ impl Rusk {
         let generator = params.generator_pubkey.inner();
         let to_slash = params.to_slash.clone();
 
-        let voters = params.voters_pubkey.as_ref().map(|voters| &voters[..]);
+        let voters = &params.voters_pubkey[..];
 
         let mut session = self.session(block_height, None)?;
 
@@ -280,7 +280,7 @@ impl Rusk {
         generator: &BlsPublicKey,
         txs: &[Transaction],
         slashing: Vec<Slash>,
-        voters: Option<&[Voter]>,
+        voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -312,7 +312,7 @@ impl Rusk {
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
         slashing: Vec<Slash>,
-        voters: Option<&[Voter]>,
+        voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.session(block_height, None)?;
 
@@ -524,7 +524,7 @@ fn accept(
     generator: &BlsPublicKey,
     txs: &[Transaction],
     slashing: Vec<Slash>,
-    voters: Option<&[Voter]>,
+    voters: &[Voter],
     gas_per_deploy_byte: Option<u64>,
     min_deployment_gas_price: Option<u64>,
 ) -> Result<(
@@ -793,18 +793,17 @@ fn reward_slash_and_update_root(
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
     slashing: Vec<Slash>,
-    voters: Option<&[Voter]>,
+    voters: &[Voter],
 ) -> Result<Vec<Event>> {
     let (dusk_value, generator_reward, generator_extra_reward, voters_reward) =
         coinbase_value(block_height, dusk_spent);
 
     let credits = voters
-        .unwrap_or_default()
         .iter()
         .map(|(_, credits)| *credits as u64)
         .sum::<u64>();
 
-    if voters.is_some() && credits == 0 && block_height > 1 {
+    if !voters.is_empty() && credits == 0 && block_height > 1 {
         return Err(InvalidCreditsCount(block_height, 0));
     }
 
@@ -820,9 +819,7 @@ fn reward_slash_and_update_root(
     }
 
     // Additionally we also reward the voters.
-    if let Some(voters) = &voters {
-        num_rewards += voters.len();
-    }
+    num_rewards += voters.len();
 
     let mut rewards = Vec::with_capacity(num_rewards);
 
@@ -850,7 +847,7 @@ fn reward_slash_and_update_root(
         / (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
             as u64;
 
-    for (to_voter, credits) in voters.unwrap_or_default() {
+    for (to_voter, credits) in voters {
         let voter = to_voter.inner();
         let voter_reward = *credits as u64 * credit_reward;
         rewards.push(Reward {
