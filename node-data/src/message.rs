@@ -1323,18 +1323,6 @@ pub enum Topics {
     Unknown = 255,
 }
 
-impl Topics {
-    pub fn is_consensus_msg(&self) -> bool {
-        matches!(
-            &self,
-            Topics::Candidate
-                | Topics::Validation
-                | Topics::Ratification
-                | Topics::Quorum
-        )
-    }
-}
-
 impl From<u8> for Topics {
     fn from(v: u8) -> Self {
         map_topic!(v, Topics::GetResource);
