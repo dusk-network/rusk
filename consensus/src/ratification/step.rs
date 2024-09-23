@@ -13,7 +13,7 @@ use crate::operations::Operations;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
 use node_data::message::payload::{self, QuorumType, ValidationResult};
-use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
+use node_data::message::{AsyncQueue, Message, Payload, SignedStepMessage};
 use node_data::{get_current_timestamp, message};
 use std::sync::Arc;
 use tokio::sync::Mutex;
