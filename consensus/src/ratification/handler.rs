@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::RoundUpdate;
+use crate::errors::ConsensusError;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;

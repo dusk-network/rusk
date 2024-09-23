@@ -255,7 +255,8 @@ impl<DB: Database> IterationCtx<DB> {
         let step = StepName::Proposal.to_step(iter);
         self.committees
             .get_committee(step)
-            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
+            .and_then(|c| c.iter().next())
+            .map(|p| *p.bytes())
     }
 
     /// Collects a message from a past iteration

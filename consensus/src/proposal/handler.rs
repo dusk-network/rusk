@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{
     MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
 };
+use crate::errors::ConsensusError;
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;

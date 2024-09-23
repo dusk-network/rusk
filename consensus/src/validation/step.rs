@@ -4,12 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{self, EMERGENCY_MODE_ITERATION_THRESHOLD};
+use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
 use anyhow::anyhow;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
@@ -26,6 +28,7 @@ pub struct ValidationStep<T> {
 }
 
 impl<T: Operations + 'static> ValidationStep<T> {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
         iteration: u8,
@@ -34,6 +37,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<T>,
+        expected_generator: PublicKeyBytes,
     ) {
         let hash = to_str(
             &candidate
@@ -50,6 +54,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
                     outbound,
                     inbound,
                     executor,
+                    expected_generator,
                 )
                 .await
             }
@@ -64,6 +69,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<T>,
+        expected_generator: PublicKeyBytes,
     ) {
         if candidate.is_none() {
             Self::cast_vote(
@@ -80,7 +86,10 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let header = candidate.header();
 
         // Verify candidate header
-        let vote = match executor.verify_candidate_header(header).await {
+        let vote = match executor
+            .verify_candidate_header(header, &expected_generator)
+            .await
+        {
             Ok((_, voters, _)) => {
                 // Call Verify State Transition to make sure transactions set is
                 // valid
@@ -102,11 +111,11 @@ impl<T: Operations + 'static> ValidationStep<T> {
                 }
             }
             Err(err) => {
-                error!(event = "invalid_header", ?err, ?header);
-                // We should not vote Invalid if the candidate is not signed by
-                // the block producer.
-                // However, this is already verified in the Candidate message
-                // verification, so it's safe to vote invalid here
+                let voting = err.must_vote();
+                error!(event = "invalid_header", ?err, ?header, voting);
+                if !voting {
+                    return;
+                }
                 Vote::Invalid(header.hash)
             }
         };
@@ -242,6 +251,10 @@ impl<T: Operations + 'static> ValidationStep<T> {
             let voting_enabled = candidate.is_some()
                 || ctx.iteration < config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 
+            let current_generator = ctx
+                .iter_ctx
+                .get_generator(ctx.iteration)
+                .expect("Generator to be created ");
             if voting_enabled {
                 Self::spawn_try_vote(
                     &mut ctx.iter_ctx.join_set,
@@ -251,6 +264,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
                     self.executor.clone(),
+                    current_generator,
                 );
             }
         }

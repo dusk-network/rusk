@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
+use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
+use crate::errors::ConsensusError;
 use crate::operations::Operations;
 use crate::phase::Phase;
 

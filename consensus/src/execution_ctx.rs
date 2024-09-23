@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
+use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 
+use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
@@ -191,6 +192,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
+                let expected_generator = self
+                    .iter_ctx
+                    .get_generator(msg_iteration)
+                    .expect("generator to exists");
                 ValidationStep::try_vote(
                     msg_iteration,
                     Some(candidate),
@@ -198,6 +203,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     self.outbound.clone(),
                     self.inbound.clone(),
                     self.client.clone(),
+                    expected_generator,
                 )
                 .await;
             };

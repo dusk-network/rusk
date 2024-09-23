@@ -6,11 +6,13 @@
 
 use crate::database;
 use crate::database::Ledger;
-use anyhow::anyhow;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
     EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
     RELAX_ITERATION_THRESHOLD,
+};
+use dusk_consensus::errors::{
+    AttestationError, FailedIterationError, HeaderError,
 };
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
@@ -21,6 +23,7 @@ use execution_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
 };
 use execution_core::stake::EPOCH;
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
@@ -64,49 +67,95 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// * `disable_winner_att_check` - disables the check of the winning
     /// attestation
     ///
-    /// Returns the number of Previous Non-Attested Iterations (PNI)
+    /// Returns a tuple containing:
+    ///   - the number of Previous Non-Attested Iterations (PNI)
+    ///   - previous block voters
+    ///   - current block voters (if not `disable_winner_att_check`)
     pub async fn execute_checks(
         &self,
-        candidate_block: &ledger::Header,
+        header: &ledger::Header,
+        expected_generator: &PublicKeyBytes,
         disable_att_check: bool,
-    ) -> anyhow::Result<(u8, Vec<Voter>, Vec<Voter>)> {
-        self.verify_basic_fields(candidate_block).await?;
+    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
+        let generator =
+            self.verify_block_generator(header, expected_generator)?;
+        self.verify_basic_fields(header, &generator).await?;
 
-        let prev_block_voters =
-            self.verify_prev_block_cert(candidate_block).await?;
+        let prev_block_voters = self.verify_prev_block_cert(header).await?;
 
-        let mut candidate_block_voters = vec![];
+        let mut block_voters = vec![];
         if !disable_att_check {
-            (_, _, candidate_block_voters) = verify_att(
-                &candidate_block.att,
-                candidate_block.to_consensus_header(),
+            (_, _, block_voters) = verify_att(
+                &header.att,
+                header.to_consensus_header(),
                 self.prev_header.seed,
                 self.provisioners.current(),
-                RatificationResult::Success(Vote::Valid(candidate_block.hash)),
+                RatificationResult::Success(Vote::Valid(header.hash)),
             )
             .await?;
         }
 
-        let pni = self.verify_failed_iterations(candidate_block).await?;
-        Ok((pni, prev_block_voters, candidate_block_voters))
+        let pni = self.verify_failed_iterations(header).await?;
+        Ok((pni, prev_block_voters, block_voters))
+    }
+
+    fn verify_block_generator(
+        &self,
+        header: &'a ledger::Header,
+        expected_generator: &PublicKeyBytes,
+    ) -> Result<MultisigPublicKey, HeaderError> {
+        if expected_generator != &header.generator_bls_pubkey {
+            return Err(HeaderError::InvalidBlockSignature(
+                "Signed by a different generator:".into(),
+            ));
+        }
+
+        // Get generator MultisigPublicKey
+        let generator = header.generator_bls_pubkey.inner();
+        let generator = BlsPublicKey::from_bytes(generator).map_err(|err| {
+            HeaderError::InvalidBlockSignature(format!(
+                "invalid pk bytes: {err:?}"
+            ))
+        })?;
+        let generator =
+            MultisigPublicKey::aggregate(&[generator]).map_err(|err| {
+                HeaderError::InvalidBlockSignature(format!(
+                    "failed aggregating single key: {err:?}"
+                ))
+            })?;
+
+        // Verify block signature
+        let block_sig = MultisigSignature::from_bytes(header.signature.inner())
+            .map_err(|err| {
+                HeaderError::InvalidBlockSignature(format!(
+                    "invalid block signature bytes: {err:?}"
+                ))
+            })?;
+        generator.verify(&block_sig, &header.hash).map_err(|err| {
+            HeaderError::InvalidBlockSignature(format!(
+                "invalid block signature: {err:?}"
+            ))
+        })?;
+
+        Ok(generator)
     }
 
     /// Verifies any non-attestation field
-    pub async fn verify_basic_fields(
+    async fn verify_basic_fields(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<()> {
+        generator: &MultisigPublicKey,
+    ) -> Result<(), HeaderError> {
         if candidate_block.version != BLOCK_HEADER_VERSION {
-            return Err(anyhow!("unsupported block version"));
+            return Err(HeaderError::UnsupportedVersion);
         }
 
         if candidate_block.hash == [0u8; 32] {
-            return Err(anyhow!("empty block hash"));
+            return Err(HeaderError::EmptyHash);
         }
 
         if candidate_block.height != self.prev_header.height + 1 {
-            return Err(anyhow!(
-                "invalid block height block_height: {:?}, curr_height: {:?}",
+            return Err(HeaderError::MismatchHeight(
                 candidate_block.height,
                 self.prev_header.height,
             ));
@@ -116,50 +165,40 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         if candidate_block.timestamp
             < self.prev_header.timestamp + MINIMUM_BLOCK_TIME
         {
-            return Err(anyhow!("block time is less than minimum block time"));
+            return Err(HeaderError::BlockTimeLess);
         }
 
         let local_time = get_current_timestamp();
 
         if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
-            return Err(anyhow!(
-                "block timestamp {} is higher than local time",
-                candidate_block.timestamp
+            return Err(HeaderError::BlockTimeHigher(
+                candidate_block.timestamp,
             ));
         }
 
         if candidate_block.prev_block_hash != self.prev_header.hash {
-            return Err(anyhow!("invalid previous block hash"));
+            return Err(HeaderError::PrevBlockHash);
         }
 
         // Ensure block is not already in the ledger
-        self.db.read().await.view(|v| {
-            if Ledger::get_block_exists(&v, &candidate_block.hash)? {
-                return Err(anyhow!("block already exists"));
-            }
+        let block_exists = self
+            .db
+            .read()
+            .await
+            .view(|db| db.get_block_exists(&candidate_block.hash))
+            .map_err(|e| {
+                HeaderError::Storage(
+                    "error checking Ledger::get_block_exists",
+                    e,
+                )
+            })?;
 
-            Ok(())
-        })?;
-
-        // Get generator MultisigPublicKey
-        let generator = candidate_block.generator_bls_pubkey.inner();
-        let generator = BlsPublicKey::from_bytes(generator)
-            .map_err(|err| anyhow!("invalid pk bytes: {err:?}"))?;
-        let generator = MultisigPublicKey::aggregate(&[generator])
-            .map_err(|err| anyhow!("failed aggregating single key: {err}"))?;
-
-        // Verify block signature
-        let block_sig =
-            MultisigSignature::from_bytes(candidate_block.signature.inner())
-                .map_err(|err| {
-                    anyhow!("invalid block signature bytes: {err}")
-                })?;
-        generator
-            .verify(&block_sig, &candidate_block.hash)
-            .map_err(|err| anyhow!("invalid block signature: {err}"))?;
+        if block_exists {
+            return Err(HeaderError::BlockExists);
+        }
 
         // Verify seed field
-        self.verify_seed_field(candidate_block.seed.inner(), &generator)?;
+        self.verify_seed_field(candidate_block.seed.inner(), generator)?;
 
         Ok(())
     }
@@ -168,31 +207,44 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         seed: &[u8; 48],
         pk: &MultisigPublicKey,
-    ) -> anyhow::Result<()> {
-        let signature = MultisigSignature::from_bytes(seed)
-            .map_err(|err| anyhow!("invalid seed signature bytes: {err}"))?;
+    ) -> Result<(), HeaderError> {
+        let signature = MultisigSignature::from_bytes(seed).map_err(|err| {
+            HeaderError::InvalidSeed(format!(
+                "invalid seed signature bytes: {err:?}"
+            ))
+        })?;
 
         pk.verify(&signature, self.prev_header.seed.inner())
-            .map_err(|err| anyhow!("invalid seed: {err:?}"))?;
+            .map_err(|err| {
+                HeaderError::InvalidSeed(format!("invalid seed: {err:?}"))
+            })?;
 
         Ok(())
     }
 
-    pub async fn verify_prev_block_cert(
+    async fn verify_prev_block_cert(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<Vec<Voter>> {
+    ) -> Result<Vec<Voter>, HeaderError> {
         if self.prev_header.height == 0 {
             return Ok(vec![]);
         }
 
         let prev_block_hash = candidate_block.prev_block_hash;
 
-        let prev_block_seed = self.db.read().await.view(|v| {
-            v.fetch_block_header(&self.prev_header.prev_block_hash)?
-                .ok_or_else(|| anyhow::anyhow!("Header not found"))
-                .map(|h| h.seed)
-        })?;
+        let prev_block_seed = self
+            .db
+            .read()
+            .await
+            .view(|v| v.fetch_block_header(&self.prev_header.prev_block_hash))
+            .map_err(|e| {
+                HeaderError::Storage(
+                    "error checking Ledger::fetch_block_header",
+                    e,
+                )
+            })?
+            .ok_or(HeaderError::Generic("Header not found"))
+            .map(|h| h.seed)?;
 
         let (_, _, voters) = verify_att(
             &candidate_block.prev_block_cert,
@@ -210,16 +262,16 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// ratification phase
     ///
     /// We refer to this number as Previous Non-Attested Iterations, or PNI
-    pub async fn verify_failed_iterations(
+    async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
-    ) -> anyhow::Result<u8> {
+    ) -> Result<u8, FailedIterationError> {
         let mut failed_atts = 0u8;
 
         let att_list = &candidate_block.failed_iterations.att_list;
 
         if att_list.len() > RELAX_ITERATION_THRESHOLD as usize {
-            anyhow::bail!("Too many failed iterations {}", att_list.len())
+            return Err(FailedIterationError::TooMany(att_list.len()));
         }
 
         for (iter, att) in att_list.iter().enumerate() {
@@ -232,7 +284,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     candidate_block.height,
                 );
 
-                anyhow::ensure!(pk == &expected_pk, "Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
+                if pk != &expected_pk {
+                    return Err(FailedIterationError::InvalidGenerator(
+                        expected_pk,
+                    ));
+                }
 
                 let mut consensus_header =
                     candidate_block.to_consensus_header();
@@ -345,7 +401,7 @@ pub async fn verify_att(
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
     expected_result: RatificationResult,
-) -> anyhow::Result<(QuorumResult, QuorumResult, Vec<Voter>)> {
+) -> Result<(QuorumResult, QuorumResult, Vec<Voter>), AttestationError> {
     // Check expected result
     match (att.result, expected_result) {
         // Both are Success and the inner Valid(Hash) values match
@@ -354,21 +410,18 @@ pub async fn verify_att(
             RatificationResult::Success(Vote::Valid(e_hash)),
         ) => {
             if r_hash != e_hash {
-                anyhow::bail!(
-                    "Invalid Attestation: Expected block hash: {:?}, Got: {:?}",
-                    e_hash,
-                    r_hash
-                )
+                return Err(AttestationError::InvalidHash(e_hash, r_hash));
             }
         }
         // Both are Fail
         (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
         // All other mismatches
-        _ => anyhow::bail!(
-            "Invalid Attestation: Result: {:?}, Expected: {:?}",
-            att.result,
-            expected_result
-        ),
+        _ => {
+            return Err(AttestationError::InvalidResult(
+                att.result,
+                expected_result,
+            ));
+        }
     }
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
@@ -383,7 +436,8 @@ pub async fn verify_att(
         curr_seed,
         StepName::Validation,
     )
-    .await?;
+    .await
+    .map_err(|s| AttestationError::InvalidVotes(StepName::Validation, s))?;
 
     // Verify ratification
     let (rat_result, ratification_voters) = verifiers::verify_step_votes(
@@ -394,7 +448,8 @@ pub async fn verify_att(
         curr_seed,
         StepName::Ratification,
     )
-    .await?;
+    .await
+    .map_err(|s| AttestationError::InvalidVotes(StepName::Ratification, s))?;
 
     let voters = merge_voters(validation_voters, ratification_voters);
     Ok((val_result, rat_result, voters))

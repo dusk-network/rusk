@@ -34,7 +34,7 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         iteration: u8,
         failed_iterations: IterationsInfo,
-    ) -> Result<Message, crate::operations::Error> {
+    ) -> Result<Message, crate::errors::OperationError> {
         // Sign seed
         let seed = ru
             .secret_key
@@ -79,7 +79,7 @@ impl<T: Operations> Generator<T> {
         failed_iterations: IterationsInfo,
         faults: &[Fault],
         voters: &[Voter],
-    ) -> Result<Block, crate::operations::Error> {
+    ) -> Result<Block, crate::errors::OperationError> {
         // Limit number of faults in the block
         let faults = if faults.len() > MAX_NUMBER_OF_FAULTS {
             &faults[..MAX_NUMBER_OF_FAULTS]
@@ -106,7 +106,7 @@ impl<T: Operations> Generator<T> {
         };
 
         let header_size = blk_header.size().map_err(|e| {
-            crate::operations::Error::InvalidEST(anyhow::anyhow!(
+            crate::errors::OperationError::InvalidEST(anyhow::anyhow!(
                 "Cannot get header size {e}. This should be a bug"
             ))
         })?;
@@ -149,7 +149,7 @@ impl<T: Operations> Generator<T> {
             max(ru.timestamp() + MINIMUM_BLOCK_TIME, get_current_timestamp());
 
         Block::new(blk_header, txs, faults.to_vec()).map_err(|e| {
-            crate::operations::Error::InvalidEST(anyhow::anyhow!(
+            crate::errors::OperationError::InvalidEST(anyhow::anyhow!(
                 "Cannot create new block {e}",
             ))
         })
