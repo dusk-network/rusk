@@ -10,7 +10,7 @@ use crate::{
         payload::{
             Candidate, Ratification, RatificationResult, Validation, Vote,
         },
-        ConsensusHeader, SignInfo, StepMessage,
+        ConsensusHeader, SignInfo, SignedStepMessage,
     },
 };
 
