@@ -1063,7 +1063,12 @@ pub mod payload {
                         inv.add_candidate_from_hash(Self::read_bytes(r)?);
                     }
                     InvType::CandidateFromIteration => {
-                        inv.add_candidate_from_hash(Self::read_bytes(r)?);
+                        let prev_block_hash = Self::read_bytes(r)?;
+                        let iteration = Self::read_u8(r)?;
+                        inv.add_candidate_from_iteration(
+                            prev_block_hash,
+                            iteration,
+                        );
                     }
                 }
             }
