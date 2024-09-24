@@ -43,6 +43,7 @@ const TOPICS: &[u8] = &[
     Topics::Validation as u8,
     Topics::Ratification as u8,
     Topics::Quorum as u8,
+    Topics::ValidationQuorum as u8,
 ];
 
 const HEARTBEAT_SEC: Duration = Duration::from_secs(3);
