@@ -20,7 +20,7 @@ use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
 use node_data::message::{
-    payload, Message, Payload, SignedStepMessage, StepMessage,
+    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
 
 use crate::user::committee::Committee;
@@ -57,6 +57,12 @@ impl RatificationHandler {
                     .votes_for(signer)
                     .ok_or(ConsensusError::NotCommitteeMember)?;
             }
+
+            Payload::ValidationQuorum(q) => Self::verify_validation_result(
+                &q.header,
+                &q.result,
+                round_committees,
+            )?,
             Payload::Empty => (),
             _ => {
                 info!("cannot verify in validation handler");
