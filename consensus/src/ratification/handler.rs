@@ -81,7 +81,11 @@ impl MsgHandler for RatificationHandler {
             }
 
             p.verify_signature()?;
-            Self::verify_validation_result(p, round_committees)?;
+            Self::verify_validation_result(
+                &p.header,
+                &p.validation_result,
+                round_committees,
+            )?;
 
             return Ok(());
         }
@@ -254,12 +258,11 @@ impl RatificationHandler {
     }
 
     /// Verifies either valid or nil quorum of validation output
-    fn verify_validation_result(
-        ratification: &Ratification,
+    pub(crate) fn verify_validation_result(
+        header: &ConsensusHeader,
+        result: &ValidationResult,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let header = &ratification.header;
-        let result = &ratification.validation_result;
         let iter = header.iteration;
         let validation_committee = round_committees
             .get_validation_committee(iter)
