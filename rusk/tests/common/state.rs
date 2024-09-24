@@ -11,7 +11,10 @@ use node::vm::VMExecution;
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot, DUSK_CONSENSUS_KEY};
 
-use dusk_consensus::operations::CallParams;
+use dusk_consensus::{
+    config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
+    operations::CallParams,
+};
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
 };
@@ -118,11 +121,16 @@ pub fn generator_procedure(
     let to_slash =
         Slash::from_iterations_and_faults(&failed_iterations, &faults)?;
 
+    let voter = (generator_pubkey.clone(), 1);
+    let voters_size =
+        VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS;
+    let voters = vec![voter; voters_size];
+
     let call_params = CallParams {
         round,
         generator_pubkey,
         to_slash,
-        voters_pubkey: None,
+        voters_pubkey: Some(voters.clone()),
         max_txs_bytes: usize::MAX,
     };
 
@@ -154,10 +162,10 @@ pub fn generator_procedure(
     )
     .expect("valid block");
 
-    let verify_output = rusk.verify_state_transition(&block, None)?;
+    let verify_output = rusk.verify_state_transition(&block, Some(&voters))?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output) = rusk.accept(&block, None)?;
+    let (accept_txs, accept_output) = rusk.accept(&block, Some(&voters))?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
