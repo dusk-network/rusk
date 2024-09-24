@@ -11,6 +11,7 @@ use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
 use crate::queue::{MsgRegistry, MsgRegistryError};
+use crate::ratification::handler::RatificationHandler;
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -401,7 +402,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
-                RatificationStep::try_vote(
+                // Should we collect our own vote?
+                let _msg = RatificationStep::try_vote(
                     &self.round_update,
                     msg_iteration,
                     validation,
@@ -435,11 +437,42 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
     /// Handles a consensus message in emergency mode
     async fn on_emergency_mode(&mut self, msg: Message) {
+        let mut msg = msg;
         // Try to vote for a candidate block from former iteration
         if let Payload::Candidate(p) = &msg.payload {
             self.try_cast_validation_vote(&p.candidate).await;
         }
         let msg_iteration = msg.header.iteration;
+
+        // Try to vote for a validation result from former iteration
+        // This is not implemented yet, no one is requesting it
+        if let Payload::ValidationQuorum(p) = &msg.payload {
+            if !p.result.vote().is_valid() {
+                return;
+            }
+            if let Err(e) = RatificationHandler::verify_validation_result(
+                &p.header,
+                &p.result,
+                &self.iter_ctx.committees,
+            ) {
+                warn!(
+                    event = "invalid validation result",
+                    src = "emergency_iter",
+                    msg_iteration,
+                    ?e
+                );
+                return;
+            }
+            info!(
+                event = "Validation Result from ValidationQuorum",
+                src = "emergency_iter",
+                msg_iteration,
+            );
+            msg = p.result.clone().into();
+        }
+
+        // Rebroadcast emergency message if it's not invalid
+        self.outbound.try_send(msg.clone());
 
         // Collect message from a previous iteration/step.
         if let Some(m) = self
