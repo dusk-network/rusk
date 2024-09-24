@@ -102,18 +102,16 @@
       }}
       nextButton={{ disabled: isNextButtonDisabled }}
     >
-      <div in:fade|global class="operation__send">
+      <div in:fade|global class="operation__allocate">
         <p>
           Edit the value to change the allocation of your Dusk between your
           shielded or public account.
         </p>
 
         <fieldset class="operation__fieldset">
-          <div class="operation__send-amount operation__label">Shielded</div>
+          <p class="operation__label">Shielded</p>
 
-          <div
-            class="operation__send-amount operation__address operation__space-between"
-          >
+          <div class="operation__address-wrapper">
             <Icon path={mdiShieldLock} />
             {middleEllipsis(
               shieldedAddress,
@@ -121,7 +119,7 @@
             )}
           </div>
 
-          <div class="operation__send-amount operation__input">
+          <div class="operation__input-wrapper">
             <Textbox
               className="operation__input-field"
               bind:value={shieldedAmount}
@@ -150,11 +148,9 @@
 
           <hr class="glyph" />
 
-          <div class="operation__send-amount operation__label">Unshielded</div>
+          <p class="operation__label">Unshielded</p>
 
-          <div
-            class="operation__send-amount operation__address operation__space-between"
-          >
+          <div class="operation__address-wrapper">
             <Icon path={mdiShieldLockOpenOutline} />
             {middleEllipsis(
               unshieldedAddress,
@@ -162,7 +158,7 @@
             )}
           </div>
 
-          <div class="operation__send-amount operation__input">
+          <div class="operation__input-wrapper">
             <Textbox
               className="operation__input-field"
               bind:value={unshieldedAmount}
@@ -221,7 +217,7 @@
         variant: "primary",
       }}
     >
-      <div in:fade|global class="operation__send">
+      <div in:fade|global class="operation__allocate">
         <Badge
           className="operation__review-notice"
           text="REVIEW TRANSACTION"
@@ -317,8 +313,16 @@
       background: var(--fieldset-background-color);
     }
 
-    &__address {
+    &__address-wrapper,
+    &__input-wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    &__address-wrapper {
       font-family: var(--mono-font-family);
+      justify-content: space-between;
     }
 
     &__review-address {
@@ -340,7 +344,7 @@
       justify-content: flex-start;
     }
 
-    &__send {
+    &__allocate {
       display: flex;
       flex-direction: column;
       gap: 1.2em;
@@ -350,31 +354,17 @@
       font-family: var(--mono-font-family);
     }
 
-    &__send-amount {
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-
-    &__space-between {
-      justify-content: space-between;
-    }
-
-    &__input {
+    &__input-wrapper {
       column-gap: var(--default-gap);
     }
 
-    :global(&__input &__input-field) {
+    :global(&__input-field) {
       width: 100%;
       padding: 0.5em 1em;
     }
 
     :global(&__input-field:invalid) {
       color: var(--error-color);
-    }
-
-    :global(&__send-address) {
-      width: 100%;
     }
 
     :global(&__review-notice) {
@@ -397,10 +387,6 @@
 
   .review-transaction__value {
     font-weight: bold;
-  }
-
-  :global(.operation__send-address--invalid) {
-    color: var(--error-color);
   }
 
   .glyph {

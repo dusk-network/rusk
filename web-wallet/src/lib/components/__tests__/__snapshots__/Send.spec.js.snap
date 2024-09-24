@@ -2,7 +2,7 @@
 
 exports[`Send > Address step > should render the Send component Address step 1`] = `
 <div
-  class="operation svelte-131a88q"
+  class="operation svelte-172bpxb"
 >
   <div
     class="dusk-wizard"
@@ -79,10 +79,10 @@ exports[`Send > Address step > should render the Send component Address step 1`]
      
      
     <div
-      class="operation__send svelte-131a88q"
+      class="operation__send svelte-172bpxb"
     >
       <div
-        class="operation__send-amount operation__space-between svelte-131a88q"
+        class="operation__address-wrapper svelte-172bpxb"
       >
         <p>
           Enter address:
@@ -201,7 +201,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
 
 exports[`Send > Amount step > should render the Send component Amount step 1`] = `
 <div
-  class="operation svelte-131a88q"
+  class="operation svelte-172bpxb"
 >
   <div
     class="dusk-wizard"
@@ -280,7 +280,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
      
      
     <div
-      class="operation__send svelte-131a88q"
+      class="operation__send svelte-172bpxb"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
@@ -334,7 +334,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__send-amount operation__space-between svelte-131a88q"
+        class="operation__amount-wrapper svelte-172bpxb"
       >
         <p>
           Enter amount:
@@ -353,7 +353,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__send-amount operation__input svelte-131a88q"
+        class="operation__input-wrapper svelte-172bpxb"
       >
         <input
           class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -503,7 +503,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
 
 exports[`Send > Review step > should render the Send component Review step 1`] = `
 <div
-  class="operation svelte-131a88q"
+  class="operation svelte-172bpxb"
 >
   <div
     class="dusk-wizard"
@@ -584,7 +584,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
      
      
     <div
-      class="operation__send svelte-131a88q"
+      class="operation__send svelte-172bpxb"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
@@ -631,10 +631,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </span>
        
       <dl
-        class="operation__review-transaction svelte-131a88q"
+        class="operation__review-transaction svelte-172bpxb"
       >
         <dt
-          class="review-transaction__label svelte-131a88q"
+          class="review-transaction__label svelte-172bpxb"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -653,7 +653,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="review-transaction__value operation__review-amount svelte-131a88q"
+          class="review-transaction__value operation__review-amount svelte-172bpxb"
         >
           <span>
             2,345.000000000
@@ -675,10 +675,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <dl
-        class="operation__review-transaction svelte-131a88q"
+        class="operation__review-transaction svelte-172bpxb"
       >
         <dt
-          class="review-transaction__label svelte-131a88q"
+          class="review-transaction__label svelte-172bpxb"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -697,7 +697,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="operation__review-address svelte-131a88q"
+          class="operation__review-address svelte-172bpxb"
         >
           <span>
             47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM

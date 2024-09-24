@@ -44,7 +44,7 @@ exports[`Send > should render the send page 1`] = `
     class="dusk-card__body-container"
   >
     <div
-      class="operation svelte-131a88q"
+      class="operation svelte-172bpxb"
     >
       <div
         class="dusk-wizard"
@@ -121,10 +121,10 @@ exports[`Send > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-131a88q"
+          class="operation__send svelte-172bpxb"
         >
           <div
-            class="operation__send-amount operation__space-between svelte-131a88q"
+            class="operation__address-wrapper svelte-172bpxb"
           >
             <p>
               Enter address:
