@@ -13,7 +13,7 @@ use crate::user::committee::Committee;
 use crate::validation::handler::ValidationHandler;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::message::{Message, Status};
+use node_data::message::{Message, Payload, Status};
 use node_data::StepName;
 use tracing::{debug, warn};
 
@@ -42,10 +42,12 @@ pub trait MsgHandler {
         committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let signer = msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
+        let signer = msg.get_signer().map(|s| s.to_bs58()).unwrap_or_default();
+
         debug!(
             event = "validating msg",
-            signer = signer.to_bs58(),
+            signer,
+            src_addr = ?msg.metadata.as_ref().map(|m| m.src_addr),
             topic = ?msg.topic(),
             step = msg.get_step(),
             ray_id = msg.ray_id(),
@@ -63,6 +65,8 @@ pub trait MsgHandler {
                 if msg_tip != ru.hash() {
                     return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
                 }
+                let signer =
+                    msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
 
                 // Ensure the message originates from a committee member.
                 if !committee.is_member(&signer) {
@@ -93,8 +97,7 @@ pub trait MsgHandler {
         round_committees: &RoundCommittees,
         status: Status,
     ) -> Result<(), ConsensusError> {
-        let signer = msg.get_signer().expect("signer to exist");
-
+        // Pre-verify messages for the current round with different iteration
         if msg.header.round == ru.round {
             let msg_tip = msg.header.prev_block_hash;
             if msg_tip != ru.hash() {
@@ -103,14 +106,21 @@ pub trait MsgHandler {
 
             let step = msg.get_step();
             if let Some(committee) = round_committees.get_committee(step) {
-                // Ensure the message originates from a committee
-                // member.
-                if !committee.is_member(&signer) {
-                    return Err(ConsensusError::NotCommitteeMember);
+                if let Payload::ValidationQuorum(_) = &msg.payload {
+                    // skip signer verification for ValidationQuorum, since
+                    // there's no signer
+                } else {
+                    let signer = msg.get_signer().expect("signer to exist");
+                    // Ensure the message originates from a committee
+                    // member.
+                    if !committee.is_member(&signer) {
+                        return Err(ConsensusError::NotCommitteeMember);
+                    }
                 }
 
                 match &msg.payload {
-                    node_data::message::Payload::Ratification(_) => {
+                    node_data::message::Payload::Ratification(_)
+                    | node_data::message::Payload::ValidationQuorum(_) => {
                         RatificationHandler::verify_stateless(
                             msg,
                             round_committees,
