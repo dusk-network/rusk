@@ -21,9 +21,6 @@ ff = { version = "0.13", default-features = false }
 
 # zk-dependencies
 
-# `ark-groth` has a `parallel` feature, but we can't turn it on since it brings
-# in `std` for contracts, even when we don't technically use it. This is due to
-# Cargo's poor dependency resolution in our regime.
 ark-groth16 = { version = "0.4", default-features = false, features = [], optional = true }
 ark-bn254 = { version = "0.4", default-features = false, features = ["curve"], optional = true }
 ark-relations = { version = "0.4", default-features = false, features = [], optional = true }
@@ -35,8 +32,12 @@ dusk-plonk = { version = "0.20", default-features = false, features = ["rkyv-imp
 rand = "0.8"
 
 [features]
-# It enables parallel thread aggregation of BlsPublicKey
-parallel = ["bls12_381-bls/parallel"]
+parallel = [
+    # It enables parallel thread aggregation of BlsPublicKey
+    "bls12_381-bls/parallel", 
+    # It enables parallel feature for ark-groth16
+    "ark-groth16/parallel"
+]
 
 # It enables zk-capabilities
 zk = [
