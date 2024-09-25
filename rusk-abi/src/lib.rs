@@ -15,6 +15,8 @@
 #![cfg_attr(not(feature = "host"), no_std)]
 #![deny(missing_docs)]
 #![deny(clippy::all)]
+#![cfg_attr(not(target_family = "wasm"), deny(unused_crate_dependencies))]
+#![deny(unused_extern_crates)]
 
 #[cfg(all(feature = "host", feature = "abi"))]
 compile_error!("features \"host\" and \"abi\" are mutually exclusive");
@@ -64,17 +66,19 @@ pub use piecrust::{
     PageOpening, Session, VM,
 };
 
+#[cfg(any(feature = "host", feature = "abi"))]
 enum Metadata {}
 
-#[allow(dead_code)]
+#[cfg(any(feature = "host", feature = "abi"))]
 impl Metadata {
     pub const CHAIN_ID: &'static str = "chain_id";
     pub const BLOCK_HEIGHT: &'static str = "block_height";
 }
 
+#[cfg(any(feature = "host", feature = "abi"))]
 enum Query {}
 
-#[allow(dead_code)]
+#[cfg(any(feature = "host", feature = "abi"))]
 impl Query {
     pub const HASH: &'static str = "hash";
     pub const POSEIDON_HASH: &'static str = "poseidon_hash";
@@ -83,4 +87,13 @@ impl Query {
     pub const VERIFY_SCHNORR: &'static str = "verify_schnorr";
     pub const VERIFY_BLS: &'static str = "verify_bls";
     pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
+}
+
+#[cfg(test)]
+mod tests {
+    // rust doesn't allow for optional dev-dependencies so we need to add this
+    // work-around to satisfy the `unused_crate_dependencies` lint
+    use ff as _;
+    use once_cell as _;
+    use rand as _;
 }

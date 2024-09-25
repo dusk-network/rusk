@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![deny(clippy::all)]
-#![cfg(feature = "host")]
 
 use std::sync::OnceLock;
 
