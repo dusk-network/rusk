@@ -45,7 +45,7 @@ impl VMExecution for Rusk {
     fn verify_state_transition(
         &self,
         blk: &Block,
-        voters: Option<&[Voter]>,
+        voters: &[Voter],
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
@@ -71,7 +71,7 @@ impl VMExecution for Rusk {
     fn accept(
         &self,
         blk: &Block,
-        voters: Option<&[Voter]>,
+        voters: &[Voter],
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;

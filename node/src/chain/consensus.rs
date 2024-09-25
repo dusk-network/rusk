@@ -310,7 +310,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         let vm = self.vm.read().await;
 
-        vm.verify_state_transition(blk, Some(voters))
+        vm.verify_state_transition(blk, voters)
             .map_err(OperationError::InvalidVST)
     }
 

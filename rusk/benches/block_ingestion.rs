@@ -143,7 +143,7 @@ fn bench_accept(
                         txs,
                         None,
                         vec![],
-                        None,
+                        &[],
                     )
                     .expect("Accepting transactions should succeed");
 

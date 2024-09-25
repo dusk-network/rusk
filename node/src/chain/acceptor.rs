@@ -478,7 +478,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let (txs, rolling_result) = self.db.read().await.update(|db| {
                 let (txs, verification_output) =
-                    vm.accept(blk, Some(&prev_block_voters[..]))?;
+                    vm.accept(blk, &prev_block_voters[..])?;
                 for spent_tx in txs.iter() {
                     events.push(TransactionEvent::Executed(spent_tx).into());
                 }

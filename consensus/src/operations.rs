@@ -25,7 +25,7 @@ pub struct CallParams {
     pub round: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
     pub to_slash: Vec<Slash>,
-    pub voters_pubkey: Option<Vec<Voter>>,
+    pub voters_pubkey: Vec<Voter>,
     pub max_txs_bytes: usize,
 }
 
