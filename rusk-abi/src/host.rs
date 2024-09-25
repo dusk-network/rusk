@@ -84,7 +84,10 @@ fn register_host_queries(vm: &mut VM) {
     vm.register_host_query(Query::HASH, host_hash);
     vm.register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
     vm.register_host_query(Query::VERIFY_PLONK, host_verify_plonk);
-    vm.register_host_query(Query::VERIFY_GROTH16, host_verify_groth16);
+    vm.register_host_query(
+        Query::VERIFY_GROTH16_BN254,
+        host_verify_groth16_bn254,
+    );
     vm.register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
     vm.register_host_query(Query::VERIFY_BLS, host_verify_bls);
     vm.register_host_query(
@@ -131,13 +134,13 @@ fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     })
 }
 
-fn host_verify_groth16(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+fn host_verify_groth16_bn254(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
     let cached = cache::get_groth16_verification(hash);
 
     wrap_host_query(arg_buf, arg_len, |(pvk, proof, inputs)| {
         let is_valid =
-            cached.unwrap_or_else(|| verify_groth16(pvk, proof, inputs));
+            cached.unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
         cache::put_groth16_verification(hash, is_valid);
         is_valid
     })
@@ -199,7 +202,11 @@ pub fn verify_plonk(
 ///
 /// # Panics
 /// This will panic if `pvk`, `proof` or `inputs` are not valid.
-pub fn verify_groth16(pvk: Vec<u8>, proof: Vec<u8>, inputs: Vec<u8>) -> bool {
+pub fn verify_groth16_bn254(
+    pvk: Vec<u8>,
+    proof: Vec<u8>,
+    inputs: Vec<u8>,
+) -> bool {
     let pvk = PreparedVerifyingKey::deserialize_compressed(&pvk[..])
         .expect("verifying key must be valid");
     let proof = Groth16Proof::deserialize_compressed(&proof[..])

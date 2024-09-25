@@ -430,7 +430,7 @@ fn groth16_proof() {
     let mut arg = (pvk_bytes, proof_bytes, inputs_bytes);
 
     let is_proof_valid: bool = session
-        .call(contract_id, "verify_groth16", &arg, POINT_LIMIT)
+        .call(contract_id, "verify_groth16_bn254", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 
@@ -451,7 +451,7 @@ fn groth16_proof() {
     arg.2 = wrong_inputs_bytes;
 
     let is_proof_valid: bool = session
-        .call(contract_id, "verify_groth16", &arg, POINT_LIMIT)
+        .call(contract_id, "verify_groth16_bn254", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 

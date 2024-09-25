@@ -36,8 +36,12 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 
 /// Verify that a Groth16 proof in the BN254 pairing is valid for a given
 /// circuit and inputs.
-pub fn verify_groth16(pvk: Vec<u8>, proof: Vec<u8>, inputs: Vec<u8>) -> bool {
-    host_query(Query::VERIFY_GROTH16, (pvk, proof, inputs))
+pub fn verify_groth16_bn254(
+    pvk: Vec<u8>,
+    proof: Vec<u8>,
+    inputs: Vec<u8>,
+) -> bool {
+    host_query(Query::VERIFY_GROTH16_BN254, (pvk, proof, inputs))
 }
 
 /// Verify a Plonk proof is valid for a given circuit type and public inputs

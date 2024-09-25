@@ -45,13 +45,13 @@ impl HostFnTest {
         rusk_abi::verify_plonk(verifier_data, proof, public_inputs)
     }
 
-    pub fn verify_groth16(
+    pub fn verify_groth16_bn254(
         &self,
         pvk: Vec<u8>,
         proof: Vec<u8>,
         inputs: Vec<u8>,
     ) -> bool {
-        rusk_abi::verify_groth16(pvk, proof, inputs)
+        rusk_abi::verify_groth16_bn254(pvk, proof, inputs)
     }
 
     pub fn verify_schnorr(
@@ -107,9 +107,9 @@ unsafe fn verify_plonk(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn verify_groth16(arg_len: u32) -> u32 {
+unsafe fn verify_groth16_bn254(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(pvk, proof, inputs)| {
-        STATE.verify_groth16(pvk, proof, inputs)
+        STATE.verify_groth16_bn254(pvk, proof, inputs)
     })
 }
 

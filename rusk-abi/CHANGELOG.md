@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add the `verify_groth16` host function
+- Add the `verify_groth16_bn254` host function
 - Memoize the `verify_bls` function
 - Memoize the `verify_proof` function [#1228]
 - New ABIs: `owner_raw`, `self_owner_raw` [#1710]
