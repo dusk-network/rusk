@@ -883,7 +883,7 @@ fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
         .to_vec();
 
     // verify the proof
-    rusk_abi::verify_proof(vd, tx.proof().to_vec(), tx.public_inputs())
+    rusk_abi::verify_plonk(vd, tx.proof().to_vec(), tx.public_inputs())
 }
 
 #[cfg(test)]
