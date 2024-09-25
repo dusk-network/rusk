@@ -17,7 +17,7 @@ use node::mempool::conf::Params as MempoolParam;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
-use node::Node;
+use node::{LongLivedService, Node};
 
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
@@ -48,6 +48,8 @@ pub struct RuskNodeBuilder {
     state_dir: PathBuf,
 
     http: Option<HttpServerConfig>,
+
+    command_revert: bool,
 }
 
 impl RuskNodeBuilder {
@@ -147,6 +149,11 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_revert(mut self) -> Self {
+        self.command_revert = true;
+        self
+    }
+
     /// Build the RuskNode and corresponding services
     pub async fn build_and_run(self) -> anyhow::Result<()> {
         let channel_cap = self
@@ -184,14 +191,26 @@ impl RuskNodeBuilder {
             RuskNode::new(Node::new(net, db, rusk.clone()))
         };
 
+        let mut chain_srv = ChainSrv::new(
+            self.consensus_keys_path,
+            self.max_chain_queue_size,
+            node_sender.clone(),
+            self.genesis_timestamp,
+        );
+        if self.command_revert {
+            chain_srv
+                .initialize(
+                    node.inner().network(),
+                    node.inner().database(),
+                    node.inner().vm_handler(),
+                )
+                .await?;
+            return chain_srv.revert_last_final().await;
+        }
+
         let mut service_list: Vec<Box<Services>> = vec![
             Box::new(MempoolSrv::new(self.mempool, node_sender.clone())),
-            Box::new(ChainSrv::new(
-                self.consensus_keys_path,
-                self.max_chain_queue_size,
-                node_sender.clone(),
-                self.genesis_timestamp,
-            )),
+            Box::new(chain_srv),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];
