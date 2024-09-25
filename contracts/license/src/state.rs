@@ -139,7 +139,7 @@ impl LicenseContractState {
         proof: Vec<u8>,
         public_inputs: Vec<BlsScalar>,
     ) -> Result<(), Error> {
-        rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
+        rusk_abi::verify_plonk(verifier_data.to_vec(), proof, public_inputs)
             .then_some(())
             .ok_or(Error::ProofVerification)
     }
