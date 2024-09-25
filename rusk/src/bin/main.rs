@@ -35,10 +35,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log = Log::new(config.log_level(), config.log_filter());
 
     #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
-    // Set custom tracing format if subcommand is specified
-    if let Some(command) = args.command {
+    if let Some(args::command::Command::Recovery(recovery)) =
+        args.command.clone()
+    {
+        // Set custom tracing format if subcommand is specified
         log.register()?;
-        command.run()?;
+        recovery.run()?;
         return Ok(());
     }
 
@@ -94,6 +96,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ws_event_channel_cap: config.http.ws_event_channel_cap,
         };
         node_builder = node_builder.with_http(http_builder)
+    }
+
+    #[cfg(feature = "chain")]
+    if let Some(args::command::Command::Chain(
+        args::command::chain::ChainCommand::Revert,
+    )) = args.command.as_ref()
+    {
+        node_builder = node_builder.with_revert();
     }
 
     if let Err(e) = node_builder.build_and_run().await {
