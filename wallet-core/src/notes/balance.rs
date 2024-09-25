@@ -23,6 +23,33 @@ where
     T: AsRef<Note>,
 {
     let mut values: Vec<u64> = notes
+        .filter_map(|note| {
+            vk.owns(note.as_ref().stealth_address())
+                .then_some(true)
+                .and(note.as_ref().value(Some(vk)).ok())
+        })
+        .collect();
+
+    values.sort_by(|a, b| b.cmp(a));
+
+    let spendable = values.iter().take(MAX_INPUT_NOTES).sum();
+    let value = spendable + values.iter().skip(MAX_INPUT_NOTES).sum::<u64>();
+
+    TotalAmount { value, spendable }
+}
+
+/// Calculate the sum for all the given [`Note`]s without
+/// performing any ownership checks. The [`PhoenixViewKey`]
+/// is used solely for decrypting the values of obfuscated
+/// notes.
+pub fn calculate_unchecked<T>(
+    vk: &PhoenixViewKey,
+    notes: impl Iterator<Item = T>,
+) -> TotalAmount
+where
+    T: AsRef<Note>,
+{
+    let mut values: Vec<u64> = notes
         .filter_map(|note| note.as_ref().value(Some(vk)).ok())
         .collect();
 
