@@ -177,7 +177,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     if open_consensus_mode {
                         error!("Timeout detected during last step running. This should never happen")
                     } else {
-                        return self.process_timeout_event(phase).await;
+                        self.process_timeout_event(phase).await;
+                        return Ok(Message::empty());
                     }
                 }
             }
@@ -413,7 +414,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     async fn process_timeout_event<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
-    ) -> Result<Message, ConsensusError> {
+    ) {
         self.iter_ctx.on_timeout_event(self.step_name());
 
         if let Some(msg) = phase
@@ -423,8 +424,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         {
             self.outbound.try_send(msg.clone());
         }
-
-        Ok(Message::empty())
     }
 
     /// Handles all messages stored in future_msgs queue that belongs to the
