@@ -11,11 +11,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use execution_core::{plonk::Proof, BlsScalar};
 
-use poseidon_merkle::Item;
-
-#[allow(dead_code)]
-pub type PoseidonItem = Item<()>;
-
 /// Use License Argument.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]

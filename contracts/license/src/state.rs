@@ -9,18 +9,16 @@ use core::ops::Range;
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use poseidon_merkle::{Opening, Tree};
 
-use execution_core::BlsScalar;
+use execution_core::{
+    license::{LicenseOpening, LicenseTree, LicenseTreeItem},
+    BlsScalar,
+};
 
 use crate::collection::Map;
 use crate::error::Error;
-use crate::license_types::{
-    LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
-};
+use crate::license_types::{LicenseSession, LicenseSessionId, UseLicenseArg};
 use crate::verifier_data_license_circuit;
-
-const DEPTH: usize = 17; // depth of the Merkle tree
 
 #[derive(Debug, Clone)]
 pub struct RequestEntry {
@@ -38,7 +36,7 @@ pub struct LicenseEntry {
 pub struct LicenseContractState {
     pub sessions: Map<LicenseSessionId, LicenseSession>,
     pub licenses: Map<u64, LicenseEntry>,
-    pub tree: Tree<(), DEPTH>,
+    pub tree: LicenseTree,
 }
 
 #[allow(dead_code)]
@@ -47,7 +45,7 @@ impl LicenseContractState {
         Self {
             sessions: Map::new(),
             licenses: Map::new(),
-            tree: Tree::<(), DEPTH>::new(),
+            tree: LicenseTree::new(),
         }
     }
 
@@ -61,7 +59,7 @@ impl LicenseContractState {
     /// Inserts a license into the collection of licenses.
     /// Method intended to be called by the License Provider.
     pub fn issue_license(&mut self, license: Vec<u8>, hash: BlsScalar) {
-        let item = PoseidonItem { hash, data: () };
+        let item = LicenseTreeItem { hash, data: () };
         let mut pos = self.tree.len();
         while self.tree.contains(pos) {
             pos += 1;
@@ -95,7 +93,7 @@ impl LicenseContractState {
     pub fn get_merkle_opening(
         &mut self,
         position: u64,
-    ) -> Option<Opening<(), DEPTH>> {
+    ) -> Option<LicenseOpening> {
         self.tree.opening(position)
     }
 
