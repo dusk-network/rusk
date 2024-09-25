@@ -7,6 +7,6 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-execution-core = { version = "0.1.0", path = "../../execution-core" }
-dusk-bytes = "0.1"
-rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi" }
+execution-core = { workspace = true }
+dusk-bytes = { workspace = true }
+rusk-abi = { workspace = true, features = ["abi", "dlmalloc"]}
