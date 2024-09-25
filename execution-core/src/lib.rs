@@ -65,6 +65,15 @@ pub mod plonk {
     };
 }
 
+/// Groth16 circuitry
+#[cfg(feature = "zk")]
+pub mod groth16 {
+    pub use ark_bn254 as bn254;
+    pub use ark_groth16::*;
+    pub use ark_relations as relations;
+    pub use ark_serialize as serialize;
+}
+
 #[inline]
 const fn reserved(b: u8) -> ContractId {
     let mut bytes = [0u8; CONTRACT_ID_BYTES];
