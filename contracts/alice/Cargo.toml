@@ -2,11 +2,10 @@
 name = "alice"
 version = "0.3.0"
 edition = "2021"
-resolver = "2"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-execution-core = { version = "0.1.0", path = "../../execution-core" }
-rusk-abi = { version = "0.13.0-rc", path = "../../rusk-abi", features = ["dlmalloc"] }
+execution-core = { workspace = true }
+rusk-abi = { workspace = true, features = ["abi", "dlmalloc"] }
