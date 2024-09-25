@@ -9,35 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add validation for "Use Max" button on Send / Stake flows [#2310]
-- Add option to sync from a custom block height on Wallet Restoration [#1568]
 - Show current block height on Wallet Creation [#1561]
+- Add option to sync from a custom block height on Wallet Restoration [#1568]
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
-- Added allocation (shield/unshield) page and UI [#2196]
 - Added token migration contract bindings [#2014]
+- Added allocation (shield/unshield) page and UI [#2196]
+- Add validation for "Use Max" button on Send / Stake flows [#2310]
 
 ### Changed
 
-- Restrict mnemonic step input to alphabetical characters (Restore Flow) [#2355]
 - Newly created Wallet does not sync from genesis [#1567]
-- Update font-display to swap for custom fonts to improve performance [#2026]
+- Update Buttons to match the design system [#1606]
 - Update anchor colors to ensure better accessibility [#1765]
 - Update Transactions list design [#1922]
-- Update Buttons to match the design system [#1606]
+- Update font-display to swap for custom fonts to improve performance [#2026]
 - Update `Stepper` component to new design [#2071]
-- Update dashboard to use routes instead of `Tabs` for navigation pattern [#2075]
-- Update dashboard by splitting the transfer operations into send and receive operations [#2175]
-- Update decimals shown for migration balance [#2406]
-- Update `Balance` UI to include an optional `UsageIndicator` for Moonlight tokens [#2234]
-- Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
+- Update dashboard to use routes instead of Tabs for navigation pattern [#2075]
 - Update `Send` to use `Stepper` [#2110]
+- Update dashboard by splitting the transfer operations into send and receive operations [#2175]
+- Update Balance UI to include an optional UsageIndicator for Moonlight tokens [#2234]
+- Restrict mnemonic step input to alphabetical characters (Restore Flow) [#2355]
 - Update `Send` to include allocation button [#2420]
+- Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
+- Make address field only vertically resizable (Send flow) [#2435]
 
 ### Fixed
 
 - Fix Receive tab content overflows [#1901]
-- Add missing "Soehne Mono" and its `@font-face` definition [#2071]
-- The sync promise should be set to `null` after aborting a sync [#2118]
+- Add missing "Soehne Mono" and its @font-face definition [#2071]
+- The sync promise should be set to null after aborting a sync [#2118]
 - Fix rounding errors in migration amount input [#2303]
 - Fix number of leading zeros in migration amount input [#2406]
 
@@ -237,14 +237,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1533]: https://github.com/dusk-network/rusk/issues/1533
 [#1535]: https://github.com/dusk-network/rusk/issues/1535
 [#1537]: https://github.com/dusk-network/rusk/issues/1537
-[#1551]: https://github.com/dusk-network/rusk/issues/1551
 [#1545]: https://github.com/dusk-network/rusk/issues/1545
 [#1547]: https://github.com/dusk-network/rusk/issues/1547
+[#1551]: https://github.com/dusk-network/rusk/issues/1551
 [#1552]: https://github.com/dusk-network/rusk/issues/1552
 [#1561]: https://github.com/dusk-network/rusk/issues/1561
 [#1565]: https://github.com/dusk-network/rusk/issues/1565
-[#1568]: https://github.com/dusk-network/rusk/issues/1568
 [#1567]: https://github.com/dusk-network/rusk/issues/1567
+[#1568]: https://github.com/dusk-network/rusk/issues/1568
 [#1576]: https://github.com/dusk-network/rusk/issues/1576
 [#1591]: https://github.com/dusk-network/rusk/issues/1591
 [#1598]: https://github.com/dusk-network/rusk/issues/1598
@@ -254,19 +254,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1922]: https://github.com/dusk-network/rusk/issues/1922
 [#2026]: https://github.com/dusk-network/rusk/issues/2026
 [#2000]: https://github.com/dusk-network/rusk/issues/2000
-[#2071]: https://github.com/dusk-network/rusk/issues/2071
-[#2071]: https://github.com/dusk-network/rusk/issues/2075
-[#2118]: https://github.com/dusk-network/rusk/issues/2118
-[#2118]: https://github.com/dusk-network/rusk/issues/2175
-[#2196]: https://github.com/dusk-network/rusk/issues/2196
 [#2014]: https://github.com/dusk-network/rusk/issues/2014
+[#2071]: https://github.com/dusk-network/rusk/issues/2071
+[#2075]: https://github.com/dusk-network/rusk/issues/2075
+[#2110]: https://github.com/dusk-network/rusk/issues/2110
+[#2118]: https://github.com/dusk-network/rusk/issues/2118
+[#2175]: https://github.com/dusk-network/rusk/issues/2175
+[#2196]: https://github.com/dusk-network/rusk/issues/2196
+[#2234]: https://github.com/dusk-network/rusk/issues/2234
 [#2303]: https://github.com/dusk-network/rusk/issues/2303
 [#2310]: https://github.com/dusk-network/rusk/issues/2310
 [#2355]: https://github.com/dusk-network/rusk/issues/2355
 [#2406]: https://github.com/dusk-network/rusk/issues/2406
-[#2234]: https://github.com/dusk-network/rusk/issues/2234
-[#2110]: https://github.com/dusk-network/rusk/issues/2110
 [#2420]: https://github.com/dusk-network/rusk/issues/2420
+[#2435]: https://github.com/dusk-network/rusk/issues/2435
 
 <!-- VERSIONS -->
 
