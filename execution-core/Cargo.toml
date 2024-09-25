@@ -39,14 +39,22 @@ parallel = [
     "ark-groth16/parallel"
 ]
 
-# It enables zk-capabilities
+# Enables all zero-knowledge proof system libraries supported
 zk = [
+    "plonk",
+    "groth16",
+]
+
+plonk = [
+    "dusk-plonk",
+    "phoenix-circuits/plonk",
+]
+
+groth16 = [
     "ark-groth16",
     "ark-bn254",
     "ark-relations",
     "ark-serialize",
-    "dusk-plonk",
-    "phoenix-circuits/plonk"
 ]
 
 # Enables std feature for dusk-plonk

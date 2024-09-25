@@ -57,7 +57,7 @@ pub use piecrust_uplink::{
 
 /// Types and traits to create plonk circuits and generate and verify plonk
 /// proofs.
-#[cfg(feature = "zk")]
+#[cfg(feature = "plonk")]
 pub mod plonk {
     pub use dusk_plonk::prelude::{
         Circuit, Compiler, Composer, Constraint, Error, Proof, Prover,
@@ -66,7 +66,7 @@ pub mod plonk {
 }
 
 /// Groth16 circuitry
-#[cfg(feature = "zk")]
+#[cfg(feature = "groth16")]
 pub mod groth16 {
     pub use ark_bn254 as bn254;
     pub use ark_groth16::*;
