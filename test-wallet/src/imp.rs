@@ -12,7 +12,7 @@ use alloc::string::FromUtf8Error;
 use alloc::vec::Vec;
 
 use dusk_bytes::Error as BytesError;
-use rand_core::{CryptoRng, Error as RngError, RngCore};
+use rand::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
     AllocScratchError, CompositeSerializerError, SharedSerializeMapError,
 };
