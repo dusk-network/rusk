@@ -36,13 +36,22 @@ impl HostFnTest {
         rusk_abi::poseidon_hash(scalars)
     }
 
-    pub fn verify_proof(
+    pub fn verify_plonk(
         &self,
         verifier_data: Vec<u8>,
         proof: Vec<u8>,
         public_inputs: Vec<BlsScalar>,
     ) -> bool {
-        rusk_abi::verify_proof(verifier_data, proof, public_inputs)
+        rusk_abi::verify_plonk(verifier_data, proof, public_inputs)
+    }
+
+    pub fn verify_groth16(
+        &self,
+        pvk: Vec<u8>,
+        proof: Vec<u8>,
+        inputs: Vec<u8>,
+    ) -> bool {
+        rusk_abi::verify_groth16(pvk, proof, inputs)
     }
 
     pub fn verify_schnorr(
@@ -91,9 +100,16 @@ unsafe fn poseidon_hash(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn verify_proof(arg_len: u32) -> u32 {
+unsafe fn verify_plonk(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(verifier_data, proof, public_inputs)| {
-        STATE.verify_proof(verifier_data, proof, public_inputs)
+        STATE.verify_plonk(verifier_data, proof, public_inputs)
+    })
+}
+
+#[no_mangle]
+unsafe fn verify_groth16(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(pvk, proof, inputs)| {
+        STATE.verify_groth16(pvk, proof, inputs)
     })
 }
 

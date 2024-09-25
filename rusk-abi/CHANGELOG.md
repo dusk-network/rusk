@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add the `verify_groth16` host function
 - Memoize the `verify_bls` function
 - Memoize the `verify_proof` function [#1228]
 - New ABIs: `owner_raw`, `self_owner_raw` [#1710]
 
 ### Changed
 
+- Rename `verify_proof` to `verify_plonk`
 - Update `piecrust` to `0.22`
 - Update `piecrust-uplink` to `0.15`
 - Change dependencies declarations enforce bytecheck [#1371]

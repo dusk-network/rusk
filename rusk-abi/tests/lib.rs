@@ -9,10 +9,23 @@
 
 use std::sync::OnceLock;
 
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 
 use dusk_bytes::{ParseHexStr, Serializable};
 use execution_core::{
+    groth16::{
+        bn254::{Bn254, Fr as Bn254Fr},
+        relations::{
+            lc,
+            r1cs::{
+                ConstraintSynthesizer, ConstraintSystemRef,
+                Field as Groth16Field, SynthesisError, Variable,
+            },
+        },
+        serialize::{CanonicalSerialize, Compress},
+        verifier::prepare_verifying_key,
+        Groth16,
+    },
     plonk::{
         Circuit, Compiler, Composer, Constraint, Error as PlonkError,
         PublicParameters,
@@ -215,13 +228,13 @@ fn bls_signature() {
 }
 
 #[derive(Debug, Default)]
-pub struct TestCircuit {
+pub struct PlonkTestCircuit {
     pub a: BlsScalar,
     pub b: BlsScalar,
     pub c: BlsScalar,
 }
 
-impl TestCircuit {
+impl PlonkTestCircuit {
     pub fn new(a: u64, b: u64) -> Self {
         let a = a.into();
         let b = b.into();
@@ -231,7 +244,7 @@ impl TestCircuit {
     }
 }
 
-impl Circuit for TestCircuit {
+impl Circuit for PlonkTestCircuit {
     fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         // append 3 gates that always evaluate to true
 
@@ -289,13 +302,13 @@ fn plonk_proof() {
 
     let label = b"dusk-network";
 
-    let (prover, verifier) = Compiler::compile::<TestCircuit>(&pp, label)
+    let (prover, verifier) = Compiler::compile::<PlonkTestCircuit>(&pp, label)
         .expect("Circuit should compile successfully");
 
     let a = 1u64;
     let b = 2u64;
     let expected_pi = vec![BlsScalar::from(a) + BlsScalar::from(b)];
-    let circuit = TestCircuit::new(a, b);
+    let circuit = PlonkTestCircuit::new(a, b);
 
     let (proof, prover_pi) = prover
         .prove(&mut OsRng, &circuit)
@@ -317,7 +330,7 @@ fn plonk_proof() {
 
     let arg = (verifier, proof, expected_pi);
     let valid: bool = session
-        .call(contract_id, "verify_proof", &arg, POINT_LIMIT)
+        .call(contract_id, "verify_plonk", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 
@@ -327,11 +340,125 @@ fn plonk_proof() {
 
     let arg = (arg.0, arg.1, wrong_public_inputs);
     let valid: bool = session
-        .call(contract_id, "verify_proof", &arg, POINT_LIMIT)
+        .call(contract_id, "verify_plonk", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 
     assert!(!valid, "The proof should be invalid");
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Groth16TestCircuit<F> {
+    a: F,
+    b: F,
+    c: F,
+}
+
+impl<F: Groth16Field> ConstraintSynthesizer<F> for Groth16TestCircuit<F> {
+    fn generate_constraints(
+        self,
+        cs: ConstraintSystemRef<F>,
+    ) -> Result<(), SynthesisError> {
+        let a = cs.new_witness_variable(|| Ok(self.a))?;
+        let b = cs.new_witness_variable(|| Ok(self.b))?;
+        let c = cs.new_input_variable(|| Ok(self.c))?;
+
+        cs.enforce_constraint(lc!() + a + b, lc!() + Variable::One, lc!() + c)?;
+        cs.finalize();
+
+        Ok(())
+    }
+}
+
+#[test]
+fn groth16_proof() {
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let test_circuit = Groth16TestCircuit {
+        a: Bn254Fr::from(1u8),
+        b: Bn254Fr::from(2u8),
+        c: Bn254Fr::from(3u8),
+    };
+
+    let pk = Groth16::<Bn254>::generate_random_parameters_with_reduction(
+        test_circuit,
+        &mut OsRng,
+    )
+    .expect("generating random parameters should succeed");
+
+    let proof = Groth16::<Bn254>::create_random_proof_with_reduction(
+        test_circuit,
+        &pk,
+        &mut OsRng,
+    )
+    .expect("creating proof should succeed");
+
+    let pvk = prepare_verifying_key(&pk.vk);
+    let inputs = Groth16::<Bn254>::prepare_inputs(&pvk, &[test_circuit.c])
+        .expect("preparing inputs should succeed");
+
+    // integrity check
+    let is_proof_valid = Groth16::<Bn254>::verify_proof_with_prepared_inputs(
+        &pvk, &proof, &inputs,
+    )
+    .expect("verifying the proof should succeed");
+
+    assert!(
+        is_proof_valid,
+        "the proof should be valid for a valid circuit"
+    );
+
+    let mut pvk_bytes: Vec<u8> =
+        Vec::with_capacity(pvk.serialized_size(Compress::Yes));
+    pvk.serialize_compressed(&mut pvk_bytes)
+        .expect("serializing should succeed");
+
+    let mut proof_bytes: Vec<u8> =
+        Vec::with_capacity(proof.serialized_size(Compress::Yes));
+    proof
+        .serialize_compressed(&mut proof_bytes)
+        .expect("serializing should succeed");
+
+    let mut inputs_bytes: Vec<u8> =
+        Vec::with_capacity(inputs.serialized_size(Compress::Yes));
+    inputs
+        .serialize_compressed(&mut inputs_bytes)
+        .expect("serializing should succeed");
+
+    let mut arg = (pvk_bytes, proof_bytes, inputs_bytes);
+
+    let is_proof_valid: bool = session
+        .call(contract_id, "verify_groth16", &arg, POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
+
+    assert!(
+        is_proof_valid,
+        "the proof should be valid for a valid circuit"
+    );
+
+    let wrong_inputs =
+        Groth16::<Bn254>::prepare_inputs(&pvk, &[test_circuit.a])
+            .expect("preparing inputs should succeed");
+    let mut wrong_inputs_bytes: Vec<u8> =
+        Vec::with_capacity(wrong_inputs.serialized_size(Compress::Yes));
+    wrong_inputs
+        .serialize_compressed(&mut wrong_inputs_bytes)
+        .expect("serializing should succeed");
+
+    arg.2 = wrong_inputs_bytes;
+
+    let is_proof_valid: bool = session
+        .call(contract_id, "verify_groth16", &arg, POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
+
+    assert!(
+        !is_proof_valid,
+        "the proof should be invalid with wrong inputs"
+    );
 }
 
 #[test]
