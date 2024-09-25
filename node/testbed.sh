@@ -77,6 +77,8 @@ for ((i = 0; i < PROV_NUM; i++)); do
     fi
 
     run_node "$BOOTSTRAP_ADDR" "127.0.0.1:$PORT" "info" "$DUSK_WALLET_DIR" "$i" "$TEMPD" "127.0.0.1:$WS_PORT" "127.0.0.1:$TELEMETRY_PORT" "$TOOL_BIN" &
+
+    sleep 30
 done
 
 # Monitor nodes

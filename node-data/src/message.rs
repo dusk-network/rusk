@@ -31,7 +31,7 @@ pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
 pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
 
 /// Max value for iteration.
-pub const MESSAGE_MAX_ITER: u8 = 50;
+pub const MESSAGE_MAX_ITER: u8 = 21;
 
 /// Block version
 pub const BLOCK_HEADER_VERSION: u8 = 1;

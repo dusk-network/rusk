@@ -208,6 +208,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 debug!(event = "restored iteration", ru.round, iter);
             }
 
+            iter = CONSENSUS_MAX_ITER-1;
             loop {
                 Self::consensus_delay().await;
                 db.lock().await.store_last_iter((ru.hash(), iter)).await;
