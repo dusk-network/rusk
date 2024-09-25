@@ -37,6 +37,7 @@ pub(crate) struct ChainConfig {
     block_gas_limit: Option<u64>,
 
     #[serde(with = "humantime_serde")]
+    #[serde(default)]
     genesis_timestamp: Option<SystemTime>,
 }
 
