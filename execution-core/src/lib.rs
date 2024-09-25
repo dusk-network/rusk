@@ -57,12 +57,25 @@ pub use piecrust_uplink::{
 
 /// Types and traits to create plonk circuits and generate and verify plonk
 /// proofs.
-#[cfg(feature = "zk")]
+#[cfg(feature = "plonk")]
 pub mod plonk {
     pub use dusk_plonk::prelude::{
         Circuit, Compiler, Composer, Constraint, Error, Proof, Prover,
         PublicParameters, Verifier, Witness, WitnessPoint,
     };
+}
+
+/// Groth16 circuitry
+#[cfg(feature = "groth16")]
+pub mod groth16 {
+    pub use ark_bn254 as bn254;
+    pub use ark_groth16::{
+        data_structures, generator, prepare_verifying_key, prover, r1cs_to_qap,
+        verifier, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
+        VerifyingKey,
+    };
+    pub use ark_relations as relations;
+    pub use ark_serialize as serialize;
 }
 
 #[inline]

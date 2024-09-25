@@ -20,19 +20,41 @@ rand = { version = "0.8", default-features = false }
 ff = { version = "0.13", default-features = false }
 
 # zk-dependencies
+
+ark-groth16 = { version = "0.4", default-features = false, features = [], optional = true }
+ark-bn254 = { version = "0.4", default-features = false, features = ["curve"], optional = true }
+ark-relations = { version = "0.4", default-features = false, features = [], optional = true }
+ark-serialize = { version = "0.4", default-features = false, features = [], optional = true }
+
 dusk-plonk = { version = "0.20", default-features = false, features = ["rkyv-impl", "alloc"], optional = true }
 
 [dev-dependencies]
 rand = "0.8"
 
 [features]
-# It enables parallel thread aggregation of BlsPublicKey
-parallel = ["bls12_381-bls/parallel"]
+parallel = [
+    # It enables parallel thread aggregation of BlsPublicKey
+    "bls12_381-bls/parallel", 
+    # It enables parallel feature for ark-groth16
+    "ark-groth16/parallel"
+]
 
-# It enables zk-capabilities
+# Enables all zero-knowledge proof system libraries supported
 zk = [
+    "plonk",
+    "groth16",
+]
+
+plonk = [
     "dusk-plonk",
-    "phoenix-circuits/plonk"
+    "phoenix-circuits/plonk",
+]
+
+groth16 = [
+    "ark-groth16",
+    "ark-bn254",
+    "ark-relations",
+    "ark-serialize",
 ]
 
 # Enables std feature for dusk-plonk

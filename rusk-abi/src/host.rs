@@ -10,7 +10,12 @@ use std::path::{Path, PathBuf};
 use dusk_bytes::DeserializableSlice;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use execution_core::{
-    plonk::{Proof, Verifier},
+    groth16::{
+        bn254::{Bn254, G1Projective},
+        serialize::CanonicalDeserialize,
+        Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
+    },
+    plonk::{Proof as PlonkProof, Verifier},
     signatures::{
         bls::{
             MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
@@ -78,7 +83,11 @@ pub fn new_ephemeral_vm() -> Result<VM, PiecrustError> {
 fn register_host_queries(vm: &mut VM) {
     vm.register_host_query(Query::HASH, host_hash);
     vm.register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
-    vm.register_host_query(Query::VERIFY_PROOF, host_verify_proof);
+    vm.register_host_query(Query::VERIFY_PLONK, host_verify_plonk);
+    vm.register_host_query(
+        Query::VERIFY_GROTH16_BN254,
+        host_verify_groth16_bn254,
+    );
     vm.register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
     vm.register_host_query(Query::VERIFY_BLS, host_verify_bls);
     vm.register_host_query(
@@ -114,13 +123,25 @@ fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, poseidon_hash)
 }
 
-fn host_verify_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
     let cached = cache::get_plonk_verification(hash);
 
     wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        let is_valid = cached.unwrap_or_else(|| verify_proof(vd, proof, pis));
+        let is_valid = cached.unwrap_or_else(|| verify_plonk(vd, proof, pis));
         cache::put_plonk_verification(hash, is_valid);
+        is_valid
+    })
+}
+
+fn host_verify_groth16_bn254(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_groth16_verification(hash);
+
+    wrap_host_query(arg_buf, arg_len, |(pvk, proof, inputs)| {
+        let is_valid =
+            cached.unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
+        cache::put_groth16_verification(hash, is_valid);
         is_valid
     })
 }
@@ -160,20 +181,43 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     PoseidonHash::digest(Domain::Other, &scalars)[0]
 }
 
-/// Verify a proof is valid for a given circuit type and public inputs
+/// Verify a Plonk proof is valid for a given circuit type and public inputs
 ///
 /// # Panics
-/// This will panic if `verifier_data` is not valid.
-pub fn verify_proof(
+/// This will panic if `verifier_data` or `proof` are not valid.
+pub fn verify_plonk(
     verifier_data: Vec<u8>,
     proof: Vec<u8>,
     public_inputs: Vec<BlsScalar>,
 ) -> bool {
     let verifier = Verifier::try_from_bytes(verifier_data)
         .expect("Verifier data coming from the contract should be valid");
-    let proof = Proof::from_slice(&proof).expect("Proof should be valid");
+    let proof = PlonkProof::from_slice(&proof).expect("Proof should be valid");
 
     verifier.verify(&proof, &public_inputs[..]).is_ok()
+}
+
+/// Verify that a Groth16 proof in the BN254 pairing is valid for a given
+/// circuit and inputs.
+///
+/// `proof` and `inputs` should be in compressed form, while `pvk` uncompressed.
+///
+/// # Panics
+/// This will panic if `pvk`, `proof` or `inputs` are not valid.
+pub fn verify_groth16_bn254(
+    pvk: Vec<u8>,
+    proof: Vec<u8>,
+    inputs: Vec<u8>,
+) -> bool {
+    let pvk = PreparedVerifyingKey::deserialize_uncompressed(&pvk[..])
+        .expect("verifying key must be valid");
+    let proof = Groth16Proof::deserialize_compressed(&proof[..])
+        .expect("proof must be valid");
+    let inputs = G1Projective::deserialize_compressed(&inputs[..])
+        .expect("inputs must be valid");
+
+    Groth16::<Bn254>::verify_proof_with_prepared_inputs(&pvk, &proof, &inputs)
+        .expect("verifying proof should succeed")
 }
 
 /// Verify a schnorr signature is valid for the given public key and message

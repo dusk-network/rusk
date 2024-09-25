@@ -79,6 +79,14 @@ define_cache!(
     "RUSK_ABI_PLONK_CACHE_SIZE"
 );
 define_cache!(
+    get_groth16_verification,
+    put_groth16_verification,
+    with_groth16_cache,
+    bool,
+    512,
+    "RUSK_ABI_GROTH16_CACHE_SIZE"
+);
+define_cache!(
     get_bls_verification,
     put_bls_verification,
     with_bls_cache,

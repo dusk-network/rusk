@@ -29,8 +29,8 @@ mod abi;
 #[cfg(feature = "abi")]
 pub use abi::{
     block_height, chain_id, hash, owner, owner_raw, poseidon_hash, self_owner,
-    self_owner_raw, verify_bls, verify_bls_multisig, verify_proof,
-    verify_schnorr,
+    self_owner_raw, verify_bls, verify_bls_multisig, verify_groth16_bn254,
+    verify_plonk, verify_schnorr,
 };
 
 #[cfg(feature = "abi")]
@@ -55,7 +55,7 @@ mod host;
 #[cfg(feature = "host")]
 pub use host::{
     hash, new_ephemeral_vm, new_genesis_session, new_session, new_vm,
-    poseidon_hash, verify_bls, verify_bls_multisig, verify_proof,
+    poseidon_hash, verify_bls, verify_bls_multisig, verify_plonk,
     verify_schnorr,
 };
 #[cfg(feature = "host")]
@@ -78,7 +78,8 @@ enum Query {}
 impl Query {
     pub const HASH: &'static str = "hash";
     pub const POSEIDON_HASH: &'static str = "poseidon_hash";
-    pub const VERIFY_PROOF: &'static str = "verify_proof";
+    pub const VERIFY_PLONK: &'static str = "verify_plonk";
+    pub const VERIFY_GROTH16_BN254: &'static str = "verify_groth16_bn254";
     pub const VERIFY_SCHNORR: &'static str = "verify_schnorr";
     pub const VERIFY_BLS: &'static str = "verify_bls";
     pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
