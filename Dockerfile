@@ -49,4 +49,4 @@ COPY --from=build-stage /opt/rusk/target/release/rusk /opt/rusk/
 COPY --from=build-stage /opt/rusk/examples/consensus.keys /opt/rusk/consensus.keys
 COPY --from=build-stage /opt/rusk/examples/genesis.toml /opt/rusk/state.toml
 
-CMD ./rusk recovery-state --init /opt/rusk/state.toml -o /tmp/state; ./rusk -s /tmp/state --consensus-keys-path /opt/rusk/consensus.keys --http-listen-addr 0.0.0.0:8080
+CMD ./rusk recovery state --init /opt/rusk/state.toml -o /tmp/state; ./rusk -s /tmp/state --consensus-keys-path /opt/rusk/consensus.keys --http-listen-addr 0.0.0.0:8080
