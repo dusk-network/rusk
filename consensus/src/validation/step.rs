@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{Database, RoundUpdate};
-use crate::config::{self, EMERGENCY_MODE_ITERATION_THRESHOLD};
+use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{Operations, Voter};
@@ -135,7 +135,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         info!(event = "send_vote", vote = ?validation.vote);
         let msg = Message::from(validation);
 
-        if vote.is_valid() || iteration < EMERGENCY_MODE_ITERATION_THRESHOLD {
+        if vote.is_valid() || !is_emergency_iter(iteration) {
             // Publish
             outbound.try_send(msg.clone());
 
@@ -248,8 +248,8 @@ impl<T: Operations + 'static> ValidationStep<T> {
             let candidate = self.handler.lock().await.candidate.clone();
 
             // Casting a NIL vote is disabled in Emergency Mode
-            let voting_enabled = candidate.is_some()
-                || ctx.iteration < config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+            let voting_enabled =
+                candidate.is_some() || !is_emergency_iter(ctx.iteration);
 
             let current_generator = ctx
                 .iter_ctx
