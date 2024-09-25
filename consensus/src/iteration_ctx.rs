@@ -228,6 +228,8 @@ impl<DB: Database> IterationCtx<DB> {
 
         debug!(
             event = "committee_generated",
+            step = config_step.step,
+            config = ?config_step,
             members = format!("{}", &step_committee)
         );
 

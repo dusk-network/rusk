@@ -123,7 +123,8 @@ pub fn verify_votes(
     if !skip_quorum && !quorum_result.quorum_reached() {
         tracing::error!(
             desc = "vote_set_too_small",
-            committee = format!("{:#?}", sub_committee),
+            committee = format!("{committee}"),
+            sub_committee = format!("{:#?}", sub_committee),
             bitset,
             target_quorum,
             total,
