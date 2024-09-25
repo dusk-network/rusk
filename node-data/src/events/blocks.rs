@@ -10,46 +10,6 @@ use crate::ledger::{Block, Hash};
 pub const BLOCK_FINALIZED: &str = "finalized";
 pub const BLOCK_CONFIRMED: &str = "confirmed";
 
-impl EventSource for BlockEvent<'_> {
-    const COMPONENT: &'static str = "blocks";
-
-    fn topic(&self) -> &'static str {
-        match self {
-            Self::Accepted(_) => "accepted",
-            Self::StateChange { .. } => "statechange",
-        }
-    }
-    fn data(&self) -> Option<serde_json::Value> {
-        let data = match self {
-            Self::Accepted(b) => {
-                let header = b.header();
-                let header = serde_json::to_value(header)
-                    .expect("json to be serialized");
-                let txs: Vec<_> =
-                    b.txs().iter().map(|t| hex::encode(t.id())).collect();
-                serde_json::json!({
-                    "header": header,
-                    "transactions": txs,
-                })
-            }
-            Self::StateChange { state, height, .. } => {
-                serde_json::json!({
-                    "state": state,
-                    "atHeight": height,
-                })
-            }
-        };
-        Some(data)
-    }
-    fn entity(&self) -> String {
-        let hash = match self {
-            Self::Accepted(block) => block.header().hash,
-            Self::StateChange { hash, .. } => *hash,
-        };
-        hex::encode(hash)
-    }
-}
-
 /// Represents events related to blocks in the chain.
 ///
 /// - `Accepted(&'b Block)`
@@ -75,4 +35,55 @@ pub enum BlockEvent<'b> {
         state: &'static str,
         height: u64,
     },
+    Deleted {
+        hash: Hash,
+        height: u64,
+    },
+}
+
+impl EventSource for BlockEvent<'_> {
+    const COMPONENT: &'static str = "blocks";
+
+    fn topic(&self) -> &'static str {
+        match self {
+            Self::Accepted(_) => "accepted",
+            Self::StateChange { .. } => "statechange",
+            BlockEvent::Deleted { .. } => "deleted",
+        }
+    }
+    fn data(&self) -> Option<serde_json::Value> {
+        let data = match self {
+            Self::Accepted(b) => {
+                let header = b.header();
+                let header = serde_json::to_value(header)
+                    .expect("json to be serialized");
+                let txs: Vec<_> =
+                    b.txs().iter().map(|t| hex::encode(t.id())).collect();
+                serde_json::json!({
+                    "header": header,
+                    "transactions": txs,
+                })
+            }
+            Self::StateChange { state, height, .. } => {
+                serde_json::json!({
+                    "state": state,
+                    "atHeight": height,
+                })
+            }
+            BlockEvent::Deleted { height, .. } => {
+                serde_json::json!({
+                    "atHeight": height,
+                })
+            }
+        };
+        Some(data)
+    }
+    fn entity(&self) -> String {
+        let hash = match self {
+            Self::Accepted(block) => block.header().hash,
+            Self::StateChange { hash, .. } => *hash,
+            Self::Deleted { hash, .. } => *hash,
+        };
+        hex::encode(hash)
+    }
 }

@@ -34,15 +34,17 @@ use execution_core::{
     },
     BlsScalar, ContractError, Dusk, Event,
 };
-use node_data::ledger::{Slash, SpentTransaction, Transaction};
+use node_data::events::contract::ContractTxEvent;
+use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
+#[cfg(feature = "archive")]
+use {node_data::archive::ArchivalData, tokio::sync::mpsc::Sender};
 
-use super::vm::ContractTxEvent;
-use super::{coinbase_value, Rusk, RuskTip};
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
+use crate::node::{coinbase_value, Rusk, RuskTip};
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result, DELETING_VM_FNAME};
 
@@ -66,6 +68,7 @@ impl Rusk {
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
+        #[cfg(feature = "archive")] archive_sender: Sender<ArchivalData>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
@@ -103,6 +106,8 @@ impl Rusk {
             min_deployment_gas_price,
             feeder_gas_limit,
             event_sender,
+            #[cfg(feature = "archive")]
+            archive_sender,
             block_gas_limit,
         })
     }
@@ -205,7 +210,7 @@ impl Rusk {
                         .events
                         .into_iter()
                         .map(|event| ContractTxEvent {
-                            event,
+                            event: event.into(),
                             origin: Some(tx_id),
                         })
                         .collect();
@@ -253,7 +258,7 @@ impl Rusk {
         let coinbase_events: Vec<_> = coinbase_events
             .into_iter()
             .map(|event| ContractTxEvent {
-                event,
+                event: event.into(),
                 origin: None,
             })
             .collect();
@@ -308,6 +313,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
+        _archive_block_hash: Hash,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
@@ -338,8 +344,20 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
+        // Sent events to archivist
+        #[cfg(feature = "archive")]
+        {
+            let _ = self.archive_sender.try_send(ArchivalData::ArchivedEvents(
+                block_height,
+                _archive_block_hash,
+                events.clone(),
+            ));
+        }
+
         for event in events {
-            let _ = self.event_sender.send(event.into());
+            // Send VN event to RUES
+            let event = RuesEvent::from(event);
+            let _ = self.event_sender.send(event);
         }
 
         Ok((spent_txs, verification_output))
@@ -557,7 +575,7 @@ fn accept(
             .events
             .into_iter()
             .map(|event| ContractTxEvent {
-                event,
+                event: event.into(),
                 origin: Some(tx_id),
             })
             .collect();
@@ -593,7 +611,7 @@ fn accept(
     let coinbase_events: Vec<_> = coinbase_events
         .into_iter()
         .map(|event| ContractTxEvent {
-            event,
+            event: event.into(),
             origin: None,
         })
         .collect();
@@ -781,7 +799,7 @@ fn update_hasher(hasher: &mut Sha3_256, events: &[ContractTxEvent]) {
             hasher.update(origin);
         }
         let event = &tx_event.event;
-        hasher.update(event.source.as_bytes());
+        hasher.update(event.target.0);
         hasher.update(event.topic.as_bytes());
         hasher.update(&event.data);
     }

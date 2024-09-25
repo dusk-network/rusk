@@ -664,7 +664,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// - List of the new finalized state root
     fn rolling_finality<D: database::DB>(
         &self,
-        pni: u8,
+        pni: u8, // Previous Non-Attested Iterations
         blk: &Block,
         db: &D::P<'_>,
         events: &mut Vec<Event>,
@@ -857,6 +857,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 if height == 0 {
                     panic!("revert to genesis block failed");
                 }
+
+                if let Err(e) = self.event_sender.try_send(
+                    BlockEvent::Deleted {
+                        hash: h.hash,
+                        height: h.height,
+                    }
+                    .into(),
+                ) {
+                    warn!("cannot notify event {e}")
+                };
 
                 info!(
                     event = "block deleted",

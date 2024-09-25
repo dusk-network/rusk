@@ -10,6 +10,9 @@ mod config;
 mod ephemeral;
 mod log;
 
+#[cfg(feature = "chain")]
+use tracing::info;
+
 use clap::Parser;
 
 use log::Log;
@@ -52,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "chain")]
     {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
+        info!("Using state from {state_dir:?}");
 
         #[cfg(feature = "ephemeral")]
         let db_path = tempdir.as_ref().map_or_else(
@@ -79,8 +83,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_min_deployment_gas_price(
                 config.chain.min_deployment_gas_price(),
             )
-            .with_block_gas_limit(config.chain.block_gas_limit())
-    }
+            .with_block_gas_limit(config.chain.block_gas_limit());
+    };
 
     if config.http.listen {
         let http_builder = HttpServerConfig {

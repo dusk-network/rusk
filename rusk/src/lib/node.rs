@@ -13,6 +13,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use execution_core::{dusk, Dusk};
+
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use node::LongLivedService;
@@ -21,9 +22,9 @@ use rusk_abi::VM;
 use tokio::sync::broadcast;
 
 use crate::http::RuesEvent;
-
 pub(crate) use events::ChainEventStreamer;
-pub use vm::ContractTxEvent;
+#[cfg(feature = "archive")]
+use {node_data::archive::ArchivalData, tokio::sync::mpsc};
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -43,6 +44,8 @@ pub struct Rusk {
     pub(crate) feeder_gas_limit: u64,
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
+    #[cfg(feature = "archive")]
+    pub(crate) archive_sender: mpsc::Sender<ArchivalData>,
 }
 
 pub(crate) type Services =
@@ -57,17 +60,19 @@ impl RuskNode {
     pub fn new(inner: node::Node<Kadcast<255>, Backend, Rusk>) -> Self {
         Self { inner }
     }
+}
 
-    pub fn inner(&self) -> &node::Node<Kadcast<255>, Backend, Rusk> {
-        &self.inner
-    }
-
+impl RuskNode {
     pub fn db(&self) -> Arc<tokio::sync::RwLock<Backend>> {
         self.inner.database() as Arc<tokio::sync::RwLock<Backend>>
     }
 
     pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {
         self.inner.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
+    }
+
+    pub fn inner(&self) -> &node::Node<Kadcast<255>, Backend, Rusk> {
+        &self.inner
     }
 }
 

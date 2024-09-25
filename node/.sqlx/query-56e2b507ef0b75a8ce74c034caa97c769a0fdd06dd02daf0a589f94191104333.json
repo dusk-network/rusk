@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE archive SET finalized = 1 WHERE block_hash = ?\n            RETURNING block_height\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_height",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "56e2b507ef0b75a8ce74c034caa97c769a0fdd06dd02daf0a589f94191104333"
+}

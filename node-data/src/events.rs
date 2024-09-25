@@ -7,6 +7,8 @@
 mod blocks;
 mod transactions;
 
+pub mod contract;
+
 pub use blocks::{BlockEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED};
 pub use transactions::TransactionEvent;
 

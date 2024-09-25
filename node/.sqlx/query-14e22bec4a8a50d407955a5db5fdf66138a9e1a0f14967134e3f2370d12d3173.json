@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM archive WHERE block_hash = ? AND (finalized IS NULL OR finalized = 0)\n            RETURNING block_height\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_height",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "14e22bec4a8a50d407955a5db5fdf66138a9e1a0f14967134e3f2370d12d3173"
+}

@@ -99,6 +99,7 @@ recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover"]
 testwallet = ["dep:futures"]
 chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
+archive = ["chain", "node/archive"]
 http-wasm = []
 
 [[bench]]
