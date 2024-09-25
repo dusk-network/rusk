@@ -7,7 +7,9 @@
 use crate::commons::{Database, RoundUpdate, TimeoutSet};
 use std::cmp;
 
-use crate::config::{CONSENSUS_MAX_ITER, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE};
+use crate::config::{
+    exclude_next_generator, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE,
+};
 use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
 
@@ -168,7 +170,7 @@ impl<DB: Database> IterationCtx<DB> {
         // generator for the exclusion list. So we extract, it if necessary.
         //
         // This is not necessary in the last iteration, so we skip it
-        if step_name != StepName::Proposal && iteration < CONSENSUS_MAX_ITER - 1
+        if step_name != StepName::Proposal && exclude_next_generator(iteration)
         {
             let prop = StepName::Proposal;
             let next_prop_step = prop.to_step(iteration + 1);
@@ -202,7 +204,7 @@ impl<DB: Database> IterationCtx<DB> {
                 exclusion_list.push(cur_generator);
 
                 // Exclude generator for next iteration
-                if iteration < CONSENSUS_MAX_ITER - 1 {
+                if exclude_next_generator(iteration) {
                     let next_generator =
                         self.get_generator(iteration + 1).expect(
                             "Next Proposal committee to be already generated",
@@ -228,6 +230,8 @@ impl<DB: Database> IterationCtx<DB> {
 
         debug!(
             event = "committee_generated",
+            step = config_step.step,
+            config = ?config_step,
             members = format!("{}", &step_committee)
         );
 

@@ -66,6 +66,11 @@ pub fn is_emergency_iter(iter: u8) -> bool {
     iter >= EMERGENCY_MODE_ITERATION_THRESHOLD
 }
 
+/// Returns if the next iteration generator needs to be excluded
+pub fn exclude_next_generator(iter: u8) -> bool {
+    iter < CONSENSUS_MAX_ITER - 1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

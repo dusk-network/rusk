@@ -16,7 +16,7 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::Block;
+use node_data::ledger::{to_str, Block};
 use node_data::message::{AsyncQueue, Message, Payload};
 
 use node_data::StepName;
@@ -136,7 +136,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // emergency block is accepted
         let timeout = if open_consensus_mode {
             let dur = Duration::new(u32::MAX as u64, 0);
-            info!(event = "run event_loop in open_mode", ?dur);
+            info!(event = "run event_loop", ?dur, mode = "open_consensus",);
             dur
         } else {
             let dur = self.iter_ctx.get_timeout(self.step_name());
@@ -156,15 +156,39 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         self.process_inbound_msg(phase.clone(), msg).await
                     {
                         if open_consensus_mode {
+                            info!(
+                                mode = "open_consensus",
+                                event = "message received",
+                                topic = ?step_result.topic()
+                            );
+                            if let Payload::Quorum(q) = &step_result.payload {
+                                let vote = q.att.result.vote();
+                                if let Vote::Valid(hash) = vote {
+                                    info!(
+                                        mode = "open_consensus",
+                                        event = "send quorum",
+                                        hash = to_str(hash)
+                                    );
+                                    self.quorum_sender
+                                        .send_quorum(step_result)
+                                        .await;
+                                } else {
+                                    info!(
+                                        mode = "open_consensus",
+                                        event = "ignoring failed quorum",
+                                        ?vote
+                                    );
+                                }
+                            }
                             // In open consensus mode, consensus step is never
                             // terminated.
                             // The acceptor will cancel the consensus if a
                             // block is accepted
                             continue;
+                        } else {
+                            self.report_elapsed_time().await;
+                            return Ok(step_result);
                         }
-
-                        self.report_elapsed_time().await;
-                        return Ok(step_result);
                     }
                 }
                 Ok(Err(e)) => {

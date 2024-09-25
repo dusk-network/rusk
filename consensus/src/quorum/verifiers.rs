@@ -17,7 +17,7 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
 
-use crate::config::CONSENSUS_MAX_ITER;
+use crate::config::exclude_next_generator;
 use dusk_bytes::Serializable as BytesSerializable;
 use execution_core::signatures::bls::{
     MultisigPublicKey as BlsMultisigPublicKey,
@@ -45,7 +45,7 @@ pub async fn verify_step_votes(
 
     exclusion_list.push(generator);
 
-    if iteration < CONSENSUS_MAX_ITER {
+    if exclude_next_generator(iteration) {
         let next_generator = committees_set
             .read()
             .await
@@ -123,7 +123,8 @@ pub fn verify_votes(
     if !skip_quorum && !quorum_result.quorum_reached() {
         tracing::error!(
             desc = "vote_set_too_small",
-            committee = format!("{:#?}", sub_committee),
+            committee = format!("{committee}"),
+            sub_committee = format!("{:#?}", sub_committee),
             bitset,
             target_quorum,
             total,
@@ -220,7 +221,7 @@ async fn get_step_committee(
     exclusion_list.push(generator);
 
     // exclude next-iteration generator
-    if iteration < CONSENSUS_MAX_ITER {
+    if exclude_next_generator(iteration) {
         let next_generator = committees_set
             .read()
             .await
