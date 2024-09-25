@@ -176,6 +176,9 @@ impl AttInfoRegistry {
         quorum_reached: bool,
         generator: &PublicKeyBytes,
     ) -> Option<Message> {
+        if sv == StepVotes::default() {
+            return None;
+        }
         let att = self
             .att_list
             .entry(iteration)
