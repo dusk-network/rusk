@@ -210,9 +210,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         };
                     }
 
-                    if let Err(e) = network.read().await.broadcast(&msg).await {
-                        warn!("Unable to re-route message {e}");
+                    if let Payload::GetResource(res) = &msg.payload {
+                        if let Err(e) = network.read().await.flood_request(res.get_inv(), None, 16).await {
+                            warn!("Unable to re-route message {e}");
+                        }
+                    } else if let Err(e) = network.read().await.broadcast(&msg).await {
+                            warn!("Unable to broadcast message {e}");
                     }
+
                 },
                  // Handles heartbeat event
                 _ = sleep_until(heartbeat) => {

@@ -6,6 +6,7 @@
 
 use crate::aggregator::{Aggregator, StepVote};
 use crate::commons::RoundUpdate;
+use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
@@ -233,7 +234,20 @@ impl MsgHandler for ValidationHandler {
     }
 
     /// Handles of an event of step execution timeout
-    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::Ready(Message::empty()))
+    fn handle_timeout(
+        &self,
+        _ru: &RoundUpdate,
+        curr_iteration: u8,
+    ) -> Option<Message> {
+        if is_emergency_iter(curr_iteration) {
+            // While we are in Emergency mode but still the candidate is missing
+            // then we request it
+
+            // TODO: Request ValidationResult by prev_block_hash, iteration
+            // lockup key TODO: Should we also request the candidate
+            // block, if it's still missing?
+        }
+
+        None
     }
 }

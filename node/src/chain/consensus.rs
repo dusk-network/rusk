@@ -200,18 +200,13 @@ impl<DB: database::DB> CandidateDB<DB> {
 
 #[async_trait]
 impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
-    fn store_candidate_block(&mut self, b: Block) {
-        tracing::trace!("store candidate block: {:?}", b);
-        match self.db.try_read() {
-            Ok(db) => {
-                if let Err(e) = db.update(|t| t.store_candidate_block(b)) {
-                    warn!("Unable to store candidate block: {e}");
-                };
-            }
-            Err(e) => {
-                warn!("Cannot acquire lock to store candidate block: {e}");
-            }
-        }
+    async fn store_candidate_block(&mut self, b: Block) {
+        tracing::debug!("store candidate block: {:?}", b);
+        let _ = self
+            .db
+            .read()
+            .await
+            .update(|txn| txn.store_candidate_block(b));
     }
     async fn get_last_iter(&self) -> (Hash, u8) {
         let data = self

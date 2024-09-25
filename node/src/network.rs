@@ -211,7 +211,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         let msg = GetResource::new(
             msg_inv.clone(),
-            self.public_addr,
+            Some(self.public_addr),
             ttl_as_sec,
             hops_limit,
         );

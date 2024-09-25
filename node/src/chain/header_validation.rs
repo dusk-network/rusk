@@ -8,8 +8,7 @@ use crate::database;
 use crate::database::Ledger;
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
-    EMERGENCY_MODE_ITERATION_THRESHOLD, MINIMUM_BLOCK_TIME,
-    RELAX_ITERATION_THRESHOLD,
+    is_emergency_iter, MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
 };
 use dusk_consensus::errors::{
     AttestationError, FailedIterationError, HeaderError,
@@ -364,7 +363,7 @@ pub async fn verify_faults<DB: database::DB>(
 ) -> Result<(), InvalidFault> {
     for f in faults {
         let fault_header = f.validate(current_height)?;
-        if fault_header.iteration >= EMERGENCY_MODE_ITERATION_THRESHOLD {
+        if is_emergency_iter(fault_header.iteration) {
             return Err(InvalidFault::EmergencyIteration);
         }
         db.read()

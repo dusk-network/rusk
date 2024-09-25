@@ -188,8 +188,12 @@ impl MsgHandler for RatificationHandler {
     }
 
     /// Handle of an event of step execution timeout
-    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::Ready(Message::empty()))
+    fn handle_timeout(
+        &self,
+        _ru: &RoundUpdate,
+        _curr_iteration: u8,
+    ) -> Option<Message> {
+        None
     }
 }
 

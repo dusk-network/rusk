@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
-use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::proposal;
@@ -58,7 +58,7 @@ pub trait MsgHandler {
         let msg_tip = msg.header.prev_block_hash;
         match msg.compare(ru.round, current_iteration, step) {
             Status::Past => {
-                if msg.header.iteration >= EMERGENCY_MODE_ITERATION_THRESHOLD {
+                if is_emergency_iter(msg.header.iteration) {
                     Self::verify_message(
                         msg,
                         ru,
@@ -181,5 +181,10 @@ pub trait MsgHandler {
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
-    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError>;
+    /// Returned Message here is sent to outboud queue.
+    fn handle_timeout(
+        &self,
+        ru: &RoundUpdate,
+        curr_iteration: u8,
+    ) -> Option<Message>;
 }

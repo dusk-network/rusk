@@ -725,7 +725,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let mut inv = Inv::new(1);
         inv.add_block_from_height(height);
         let this_peer = *network.read().await.public_addr();
-        let req = GetResource::new(inv, this_peer, u64::MAX, 1);
+        let req = GetResource::new(inv, Some(this_peer), u64::MAX, 1);
         debug!(event = "request block by height", ?req, ?peer_addr);
 
         if let Err(err) = network

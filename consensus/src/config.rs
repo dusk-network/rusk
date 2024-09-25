@@ -61,6 +61,11 @@ pub fn ratification_extra() -> usize {
     RATIFICATION_COMMITTEE_CREDITS - ratification_quorum()
 }
 
+/// Returns whether the current iteration is an emergency iteration
+pub fn is_emergency_iter(iter: u8) -> bool {
+    iter >= EMERGENCY_MODE_ITERATION_THRESHOLD
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

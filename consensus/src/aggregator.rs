@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::config::is_emergency_iter;
 use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
@@ -85,7 +85,7 @@ impl<V: StepVote> Aggregator<V> {
 
         let iter = v.header().iteration;
 
-        let emergency = iter >= EMERGENCY_MODE_ITERATION_THRESHOLD;
+        let emergency = is_emergency_iter(iter);
 
         let msg_step = v.get_step();
         let vote = v.vote();

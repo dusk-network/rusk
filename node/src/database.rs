@@ -109,6 +109,14 @@ pub trait Candidate {
         &self,
         hash: &[u8],
     ) -> Result<Option<ledger::Block>>;
+
+    /// Fetches a candidate block by lookup key (prev_block_hash, iteration).
+    fn fetch_candidate_block_by_iteration(
+        &self,
+        prev_block_hash: [u8; 32],
+        iteration: u8,
+    ) -> Result<Option<ledger::Block>>;
+
     fn clear_candidates(&self) -> Result<()>;
 
     fn delete<F>(&self, closure: F) -> Result<()>

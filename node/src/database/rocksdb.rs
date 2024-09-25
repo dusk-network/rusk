@@ -609,6 +609,29 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(None)
     }
 
+    fn fetch_candidate_block_by_iteration(
+        &self,
+        prev_block_hash: [u8; 32],
+        iteration: u8,
+    ) -> Result<Option<ledger::Block>> {
+        let iter = self
+            .inner
+            .iterator_cf(self.candidates_cf, IteratorMode::Start);
+
+        for (_, blob) in iter.map(Result::unwrap) {
+            let b = ledger::Block::read(&mut &blob[..])?;
+
+            let header = b.header();
+            if header.prev_block_hash == prev_block_hash
+                && header.iteration == iteration
+            {
+                return Ok(Some(b));
+            }
+        }
+
+        Ok(None)
+    }
+
     /// Deletes candidate-related items from the database based on a closure.
     ///
     /// # Arguments
