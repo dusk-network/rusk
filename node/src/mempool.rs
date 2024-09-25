@@ -114,7 +114,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         let expired_txs = db.get_expired_txs(expiration_time)?;
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
-                            if db.delete_tx(tx_id)? {
+                            if db.delete_mempool_tx(tx_id)? {
                                 let event = TransactionEvent::Removed(tx_id);
                                 if let Err(e) = self.event_sender.try_send(event.into()) {
                                     warn!("cannot notify mempool removed transaction {e}")
@@ -171,7 +171,7 @@ impl MempoolSrv {
             }
 
             // ensure transaction does not exist in the mempool
-            if view.get_tx_exists(tx_id)? {
+            if view.mempool_tx_exists(tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInMempool);
             }
 
@@ -196,9 +196,9 @@ impl MempoolSrv {
 
             // ensure spend_ids do not exist in the mempool
             for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
-                if let Some(m_tx) = db.get_tx(m_tx_id)? {
+                if let Some(m_tx) = db.mempool_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        if db.delete_tx(m_tx_id)? {
+                        if db.delete_mempool_tx(m_tx_id)? {
                             events.push(TransactionEvent::Removed(m_tx_id));
                         };
                     } else {
@@ -214,7 +214,7 @@ impl MempoolSrv {
 
             let now = get_current_timestamp();
 
-            db.add_tx(tx, now)
+            db.add_mempool_tx(tx, now)
         })?;
 
         tracing::info!(

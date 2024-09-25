@@ -74,6 +74,6 @@ pub async fn mempool_by_hash<'a>(
     let db = ctx.data::<DBContext>()?;
     let hash = &hex::decode(hash)?[..];
     let hash = hash.try_into()?;
-    let tx = db.read().await.view(|t| t.get_tx(hash))?;
+    let tx = db.read().await.view(|t| t.mempool_tx(hash))?;
     Ok(tx.map(|t| t.into()))
 }

@@ -562,7 +562,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .db
             .read()
             .await
-            .update(|t| {
+            .update(|db| {
                 // Delete any candidate block older than TIP - OFFSET
                 let threshold = tip
                     .inner()
@@ -570,13 +570,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .height
                     .saturating_sub(CANDIDATES_DELETION_OFFSET);
 
-                Candidate::delete(t, |height| height <= threshold)?;
+                db.delete_candidate(|height| height <= threshold)?;
 
                 // Delete from mempool any transaction already included in the
                 // block
                 for tx in tip.inner().txs().iter() {
                     let tx_id = tx.id();
-                    let deleted = Mempool::delete_tx(t, tx_id)
+                    let deleted = db
+                        .delete_mempool_tx(tx_id)
                         .map_err(|e| warn!("Error while deleting tx: {e}"))
                         .unwrap_or_default();
                     if deleted {
@@ -584,8 +585,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     }
 
                     let spend_ids = tx.to_spend_ids();
-                    for orphan_tx in t.get_txs_by_spendable_ids(&spend_ids) {
-                        let deleted = Mempool::delete_tx(t, orphan_tx)
+                    for orphan_tx in db.get_txs_by_spendable_ids(&spend_ids) {
+                        let deleted = db
+                            .delete_mempool_tx(orphan_tx)
                             .map_err(|e| {
                                 warn!("Error while deleting orphan_tx: {e}")
                             })
@@ -597,7 +599,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         }
                     }
                 }
-                Ok(Candidate::count(t))
+                Ok(db.count_candidates())
             })
             .map_err(|e| warn!("Error while cleaning up the database: {e}"));
 
@@ -838,14 +840,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
-        let (blk, (_, label)) = self.db.read().await.update(|t| {
+        let (blk, (_, label)) = self.db.read().await.update(|db| {
             let mut height = curr_height;
             loop {
-                let b = Ledger::fetch_block_by_height(t, height)?
+                let b = db
+                    .fetch_block_by_height(height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
                 let label =
-                    t.fetch_block_label_by_height(h.height)?.ok_or_else(
+                    db.fetch_block_label_by_height(h.height)?.ok_or_else(
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
 
@@ -867,7 +870,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
 
                 // Delete any rocksdb record related to this block
-                t.delete_block(&b)?;
+                db.delete_block(&b)?;
 
                 let now = get_current_timestamp();
 
@@ -875,7 +878,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // An error here is not considered critical.
                 // Txs timestamp is reset here
                 for tx in b.txs().iter() {
-                    if let Err(e) = Mempool::add_tx(t, tx, now) {
+                    if let Err(e) = db.add_mempool_tx(tx, now) {
                         warn!("failed to resubmit transactions: {e}")
                     };
                 }

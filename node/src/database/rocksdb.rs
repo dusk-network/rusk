@@ -11,7 +11,7 @@ use anyhow::Result;
 use std::cell::RefCell;
 
 use node_data::ledger::{
-    self, Fault, Header, Label, SpendingId, SpentTransaction,
+    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
 use node_data::Serializable;
 
@@ -21,7 +21,7 @@ use rocksdb_lib::{
     AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
     DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
     OptimisticTransactionDB, OptimisticTransactionOptions, Options,
-    SnapshotWithThreadMode, Transaction, WriteOptions,
+    SnapshotWithThreadMode, WriteOptions,
 };
 
 use std::collections::HashSet;
@@ -282,7 +282,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(
         &self,
-        header: &ledger::Header,
+        header: &Header,
         txs: &[SpentTransaction],
         faults: &[Fault],
         label: Label,
@@ -382,7 +382,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn delete_block(&self, b: &ledger::Block) -> Result<()> {
+    fn delete_block(&self, b: &Block) -> Result<()> {
         self.inner.delete_cf(
             self.ledger_height_cf,
             b.header().height.to_le_bytes(),
@@ -419,14 +419,14 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         let mut faults = vec![];
         for buf in faults_buffer {
             let buf = buf?.unwrap();
-            let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+            let fault = Fault::read(&mut &buf.to_vec()[..])?;
             faults.push(fault);
         }
 
         Ok(faults)
     }
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
+    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
@@ -443,8 +443,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 let mut txs = vec![];
                 for buf in txs_buffers {
                     let buf = buf?.unwrap();
-                    let tx =
-                        ledger::SpentTransaction::read(&mut &buf.to_vec()[..])?;
+                    let tx = SpentTransaction::read(&mut &buf.to_vec()[..])?;
                     txs.push(tx.inner);
                 }
 
@@ -459,12 +458,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 let mut faults = vec![];
                 for buf in faults_buffer {
                     let buf = buf?.unwrap();
-                    let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+                    let fault = Fault::read(&mut &buf.to_vec()[..])?;
                     faults.push(fault);
                 }
 
                 Ok(Some(
-                    ledger::Block::new(record.header, txs, faults)
+                    Block::new(record.header, txs, faults)
                         .expect("block should be valid"),
                 ))
             }
@@ -510,11 +509,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn get_ledger_tx_by_hash(
         &self,
         tx_id: &[u8],
-    ) -> Result<Option<ledger::SpentTransaction>> {
+    ) -> Result<Option<SpentTransaction>> {
         let tx = self
             .snapshot
             .get_cf(self.ledger_txs_cf, tx_id)?
-            .map(|blob| ledger::SpentTransaction::read(&mut &blob[..]))
+            .map(|blob| SpentTransaction::read(&mut &blob[..]))
             .transpose()?;
 
         Ok(tx)
@@ -529,10 +528,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_id)?.is_some())
     }
 
-    fn fetch_block_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<ledger::Block>> {
+    fn fetch_block_by_height(&self, height: u64) -> Result<Option<Block>> {
         let hash = self.fetch_block_hash_by_height(height)?;
         let block = match hash {
             Some(hash) => self.fetch_block(&hash)?,
@@ -572,7 +568,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the block is successfully stored, or an error if the
     /// operation fails.
-    fn store_candidate_block(&self, b: ledger::Block) -> Result<()> {
+    fn store_candidate_block(&self, b: Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
@@ -596,12 +592,9 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(Some(block))` if the block is found, `Ok(None)` if the block
     /// is not found, or an error if the operation fails.
-    fn fetch_candidate_block(
-        &self,
-        hash: &[u8],
-    ) -> Result<Option<ledger::Block>> {
+    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
-            let b = ledger::Block::read(&mut &blob[..])?;
+            let b = Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
 
@@ -619,7 +612,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn delete<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy,
     {
@@ -638,7 +631,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn count(&self) -> usize {
+    fn count_candidates(&self) -> usize {
         let iter = self
             .inner
             .iterator_cf(self.candidates_height_cf, IteratorMode::Start);
@@ -653,7 +646,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
     fn clear_candidates(&self) -> Result<()> {
-        self.delete(|_| true)
+        self.delete_candidate(|_| true)
     }
 }
 
@@ -682,7 +675,7 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
-    fn add_tx(&self, tx: &ledger::Transaction, timestamp: u64) -> Result<()> {
+    fn add_mempool_tx(&self, tx: &Transaction, timestamp: u64) -> Result<()> {
         // Map Hash to serialized transaction
         let mut tx_data = vec![];
         tx.write(&mut tx_data)?;
@@ -711,24 +704,22 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn get_tx(&self, hash: [u8; 32]) -> Result<Option<ledger::Transaction>> {
+    fn mempool_tx(&self, hash: [u8; 32]) -> Result<Option<Transaction>> {
         let data = self.inner.get_cf(self.mempool_cf, hash)?;
 
         match data {
             // None has a meaning key not found
             None => Ok(None),
-            Some(blob) => {
-                Ok(Some(ledger::Transaction::read(&mut &blob.to_vec()[..])?))
-            }
+            Some(blob) => Ok(Some(Transaction::read(&mut &blob.to_vec()[..])?)),
         }
     }
 
-    fn get_tx_exists(&self, h: [u8; 32]) -> Result<bool> {
+    fn mempool_tx_exists(&self, h: [u8; 32]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.mempool_cf, h)?.is_some())
     }
 
-    fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
-        let tx = self.get_tx(h)?;
+    fn delete_mempool_tx(&self, h: [u8; 32]) -> Result<bool> {
+        let tx = self.mempool_tx(h)?;
         if let Some(tx) = tx {
             let hash = tx.id();
 
@@ -766,7 +757,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
     fn get_txs_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = ledger::Transaction> + '_>> {
+    ) -> Result<Box<dyn Iterator<Item = Transaction> + '_>> {
         let iter = MemPoolIterator::new(&self.inner, self.fees_cf, self);
 
         Ok(Box::new(iter))
@@ -852,7 +843,7 @@ pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
 
 impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
     fn new(
-        db: &'db Transaction<DB>,
+        db: &'db rocksdb_lib::Transaction<DB>,
         fees_cf: &ColumnFamily,
         mempool: &'db M,
     ) -> Self {
@@ -862,11 +853,11 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
 }
 
 impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
-    type Item = ledger::Transaction;
+    type Item = Transaction;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .and_then(|(_, tx_id)| self.mempool.get_tx(tx_id).ok().flatten())
+        self.iter.next().and_then(|(_, tx_id)| {
+            self.mempool.mempool_tx(tx_id).ok().flatten()
+        })
     }
 }
 
@@ -875,7 +866,10 @@ pub struct MemPoolFeeIterator<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> MemPoolFeeIterator<'db, DB> {
-    fn new(db: &'db Transaction<DB>, fees_cf: &ColumnFamily) -> Self {
+    fn new(
+        db: &'db rocksdb_lib::Transaction<DB>,
+        fees_cf: &ColumnFamily,
+    ) -> Self {
         let mut iter = db.raw_iterator_cf(fees_cf);
         iter.seek_to_last();
         MemPoolFeeIterator { iter }
@@ -910,7 +904,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
             if let Ok(Some(blob)) =
                 self.snapshot.get_cf(self.ledger_cf, &hash[..])
             {
-                let b = ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                let b = Block::read(&mut &blob[..]).unwrap_or_default();
                 writeln!(f, "ledger_block [{}]: {:#?}", b.header().height, b)
             } else {
                 Ok(())
@@ -927,8 +921,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
                 if let Ok(Some(blob)) =
                     self.snapshot.get_cf(self.candidates_cf, &hash[..])
                 {
-                    let b =
-                        ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                    let b = Block::read(&mut &blob[..]).unwrap_or_default();
                     writeln!(
                         f,
                         "candidate_block [{}]: {:#?}",
@@ -1023,7 +1016,7 @@ impl node_data::Serializable for LightBlock {
         Self: Sized,
     {
         // Read block header
-        let header = ledger::Header::read(r)?;
+        let header = Header::read(r)?;
 
         // Read transactions count
         let len = Self::read_u32_le(r)?;
@@ -1064,7 +1057,6 @@ mod tests {
     use node_data::ledger;
 
     use fake::{Fake, Faker};
-    use node_data::ledger::Transaction;
 
     #[test]
     fn test_store_block() {
@@ -1072,7 +1064,7 @@ mod tests {
             let db: Backend =
                 Backend::create_or_open(path, DatabaseOptions::default());
 
-            let b: ledger::Block = Faker.fake();
+            let b: Block = Faker.fake();
             assert!(!b.txs().is_empty());
 
             let hash = b.header().hash;
@@ -1212,13 +1204,15 @@ mod tests {
                 Backend::create_or_open(path, DatabaseOptions::default());
             let t: ledger::Transaction = Faker.fake();
 
-            assert!(db.update(|txn| { txn.add_tx(&t, 0) }).is_ok());
+            assert!(db.update(|txn| { txn.add_mempool_tx(&t, 0) }).is_ok());
 
-            db.view(|vq| {
-                assert!(Mempool::get_tx_exists(&vq, t.id()).unwrap());
+            db.view(|db| {
+                assert!(db.mempool_tx_exists(t.id()).unwrap());
 
-                let fetched_tx =
-                    vq.get_tx(t.id()).expect("valid contract call").unwrap();
+                let fetched_tx = db
+                    .mempool_tx(t.id())
+                    .expect("valid contract call")
+                    .unwrap();
 
                 assert_eq!(
                     fetched_tx.id(),
@@ -1228,8 +1222,8 @@ mod tests {
             });
 
             // Delete a contract call
-            db.update(|txn| {
-                assert!(txn.delete_tx(t.id()).expect("valid tx"));
+            db.update(|db| {
+                assert!(db.delete_mempool_tx(t.id()).expect("valid tx"));
                 Ok(())
             })
             .unwrap();
@@ -1246,7 +1240,7 @@ mod tests {
             db.update(|txn| {
                 for _i in 0..10u32 {
                     let t: ledger::Transaction = Faker.fake();
-                    txn.add_tx(&t, 0)?;
+                    txn.add_mempool_tx(&t, 0)?;
                 }
                 Ok(())
             })
@@ -1286,7 +1280,7 @@ mod tests {
             db.update(|db| {
                 assert_eq!(db.txs_count(), 0);
                 txs.iter().for_each(|t| {
-                    db.add_tx(&t, 0).expect("tx should be added")
+                    db.add_mempool_tx(&t, 0).expect("tx should be added")
                 });
                 Ok(())
             })
@@ -1298,7 +1292,7 @@ mod tests {
 
                 txs.iter().take(D).for_each(|tx| {
                     assert!(db
-                        .delete_tx(tx.id())
+                        .delete_mempool_tx(tx.id())
                         .expect("transaction should be deleted"));
                 });
 
@@ -1324,7 +1318,7 @@ mod tests {
             db.update(|txn| {
                 for i in 0..10u32 {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t, 0)?;
+                    txn.add_mempool_tx(&t, 0)?;
                 }
                 Ok(())
             })
@@ -1353,25 +1347,25 @@ mod tests {
             let _ = db.update(|txn| {
                 (1..101).for_each(|i| {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t, i).expect("tx should be added");
+                    txn.add_mempool_tx(&t, i).expect("tx should be added");
                     expiry_list.insert(t.id());
                 });
 
                 (1000..1100).for_each(|i| {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t, i).expect("tx should be added");
+                    txn.add_mempool_tx(&t, i).expect("tx should be added");
                 });
 
                 Ok(())
             });
 
-            db.view(|vq| {
-                let expired: HashSet<[u8; 32]> =
-                    Mempool::get_expired_txs(&vq, 100)
-                        .unwrap()
-                        .into_iter()
-                        .map(|id| id)
-                        .collect();
+            db.view(|db| {
+                let expired: HashSet<[u8; 32]> = db
+                    .get_expired_txs(100)
+                    .unwrap()
+                    .into_iter()
+                    .map(|id| id)
+                    .collect();
 
                 assert_eq!(expiry_list, expired);
             });
