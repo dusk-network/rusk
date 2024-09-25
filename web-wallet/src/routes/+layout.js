@@ -22,3 +22,7 @@ export async function load({ fetch }) {
     .then((buffer) => ProtocolDriver.load(new Uint8Array(buffer)))
     .then(() => networkStore.connect());
 }
+
+// export async function load() {
+//   await networkStore.connect();
+// }

@@ -22,4 +22,8 @@ describe("notesArrayToMap", () => {
       expect(Array.from(noteMap.values())).toStrictEqual(expectedValues);
     });
   });
+
+  it("should return an empty map if supplied with an empty array", () => {
+    expect(notesArrayToMap([])).toStrictEqual(new Map());
+  });
 });

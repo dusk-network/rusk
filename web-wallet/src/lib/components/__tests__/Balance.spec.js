@@ -9,7 +9,7 @@ describe("Balance", () => {
     fiatPrice: 10,
     locale: "en",
     tokenCurrency: "DUSK",
-    tokens: 2000000,
+    tokens: 2_000_000,
   };
   const baseOptions = {
     props: baseProps,
@@ -34,7 +34,7 @@ describe("Balance", () => {
       fiatPrice: 20,
       locale: "it",
       tokenCurrency: "DUSK",
-      tokens: 4000000,
+      tokens: 4_000_000,
     });
 
     expect(container.firstChild).toMatchSnapshot();
@@ -78,7 +78,11 @@ describe("Balance", () => {
   });
 
   it("should display the usage indicator if there are shielded tokens", () => {
-    const props = { ...baseProps, shieldedTokensPercentage: 50, tokens: 100 };
+    const props = {
+      ...baseProps,
+      shieldedTokensPercentage: 50,
+      tokens: 100,
+    };
     const { container } = render(Balance, { ...baseOptions, props });
 
     expect(container.querySelector(".dusk-balance__usage")).toBeInTheDocument();

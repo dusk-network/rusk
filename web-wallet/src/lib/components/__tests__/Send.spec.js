@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { deductLuxFeeFrom } from "$lib/contracts";
-import { createCurrencyFormatter } from "$lib/dusk/currency";
+import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 
 import { Send } from "..";
@@ -32,7 +32,7 @@ describe("Send", () => {
       gasLimit: 20000000,
       gasPrice: 1,
     },
-    spendable: 1000,
+    spendable: 1_000_000_000_000n,
     statuses: [
       {
         label: "Spendable",
@@ -123,7 +123,7 @@ describe("Send", () => {
 
     it("should set the max amount in the textbox if the user clicks the related button", async () => {
       const maxSpendable = deductLuxFeeFrom(
-        baseProps.spendable,
+        luxToDusk(baseProps.spendable),
         baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
       );
       const { getByRole } = render(Send, baseProps);
@@ -143,7 +143,7 @@ describe("Send", () => {
     it("should not change the default amount (1) in the textbox if the user clicks the related button and the balance is zero", async () => {
       const props = {
         ...baseProps,
-        spendable: 0,
+        spendable: 0n,
       };
       const { getByRole } = render(Send, props);
 
