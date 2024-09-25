@@ -48,7 +48,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
     // Maybe we want to handle internal serialization error too,
     // currently they map to `false`.
-    Ok(rusk_abi::verify_proof(
+    Ok(rusk_abi::verify_plonk(
         vd.to_vec(),
         tx.proof().to_vec(),
         tx.public_inputs(),
