@@ -43,7 +43,7 @@ dlmalloc = ["piecrust-uplink/dlmalloc"]
 
 # These are the features available for when one wishes to use `rusk-abi` as a
 # host.
-host = ["piecrust", "lru"]
+host = ["piecrust", "lru", "execution-core/parallel"]
 host_debug = ["piecrust/debug", "lru"]
 
 [[test]]
