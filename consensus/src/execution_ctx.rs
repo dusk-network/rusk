@@ -157,15 +157,29 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         self.process_inbound_msg(phase.clone(), msg).await
                     {
                         if open_consensus_mode {
+                            info!(
+                                "Received message in open consensus: {:?}",
+                                step_result.topic()
+                            );
+                            if let Payload::Quorum(q) = &step_result.payload {
+                                if !q.att.result.failed() {
+                                    info!("Sending quorum in open consensus",);
+                                    self.quorum_sender
+                                        .send_quorum(step_result)
+                                        .await;
+                                } else {
+                                    info!("Failed quorum ignore in open consensus");
+                                }
+                            }
                             // In open consensus mode, consensus step is never
                             // terminated.
                             // The acceptor will cancel the consensus if a
                             // block is accepted
                             continue;
+                        } else {
+                            self.report_elapsed_time().await;
+                            return Ok(step_result);
                         }
-
-                        self.report_elapsed_time().await;
-                        return Ok(step_result);
                     }
                 }
                 Ok(Err(e)) => {
