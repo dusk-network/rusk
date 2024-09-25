@@ -4,39 +4,37 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
-dusk-poseidon = "0.40"
-bls12_381-bls = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
-jubjub-schnorr = { version = "0.5", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.32", default-features = false, features = ["rkyv-impl", "alloc"] }
-phoenix-circuits = { version = "0.4", default-features = false }
-poseidon-merkle = { version = "0.7", features = ["rkyv-impl"] }
-piecrust-uplink = { version = "0.17" }
-dusk-bytes = "0.1"
-rkyv = { version = "0.7", default-features = false,  features = ["size_32"] }
-bytecheck = { version = "0.6", default-features = false }
-rand = { version = "0.8", default-features = false }
-ff = { version = "0.13", default-features = false }
+dusk-bls12_381 = { workspace = true, features = ["rkyv-impl"] }
+dusk-jubjub = { workspace = true, features = ["rkyv-impl"] }
+dusk-poseidon = { workspace = true }
+bls12_381-bls = { workspace = true, features = ["rkyv-impl"] }
+jubjub-schnorr = { workspace = true, features = ["rkyv-impl"] }
+phoenix-core = { workspace = true, features = ["rkyv-impl", "alloc"] }
+phoenix-circuits = { workspace = true }
+poseidon-merkle = { workspace = true, features = ["rkyv-impl"] }
+piecrust-uplink = { workspace = true }
+dusk-bytes = { workspace = true }
+rkyv = { workspace = true,  features = ["size_32"] }
+bytecheck = { workspace = true }
+rand = { workspace = true }
+ff = { workspace = true }
 
-# zk-dependencies
+# plonk dependencies
+dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"], optional = true }
 
-ark-groth16 = { version = "0.4", default-features = false, features = [], optional = true }
-ark-bn254 = { version = "0.4", default-features = false, features = ["curve"], optional = true }
-ark-relations = { version = "0.4", default-features = false, features = [], optional = true }
-ark-serialize = { version = "0.4", default-features = false, features = [], optional = true }
-
-dusk-plonk = { version = "0.20", default-features = false, features = ["rkyv-impl", "alloc"], optional = true }
+# groth dependencies
+ark-groth16 = { workspace = true, optional = true }
+ark-bn254 = { workspace = true, features = ["curve"], optional = true }
+ark-relations = { workspace = true, optional = true }
+ark-serialize = { workspace = true, optional = true }
 
 [dev-dependencies]
-rand = "0.8"
+rand = { workspace = true, features = ["std", "std_rng"] }
 
 [features]
 parallel = [
     # It enables parallel thread aggregation of BlsPublicKey
     "bls12_381-bls/parallel", 
-    # It enables parallel feature for ark-groth16
-    "ark-groth16/parallel"
 ]
 
 # Enables all zero-knowledge proof system libraries supported

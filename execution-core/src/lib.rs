@@ -12,6 +12,8 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![feature(const_fn_floating_point_arithmetic)]
+#![cfg_attr(not(target_family = "wasm"), deny(unused_crate_dependencies))]
+#![deny(unused_extern_crates)]
 
 extern crate alloc;
 
