@@ -11,6 +11,8 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
 #![feature(try_trait_v2)]
+#![cfg_attr(not(target_family = "wasm"), deny(unused_crate_dependencies))]
+#![deny(unused_extern_crates)]
 
 #[cfg(target_family = "wasm")]
 #[global_allocator]
