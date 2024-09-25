@@ -200,6 +200,8 @@ pub fn verify_plonk(
 /// Verify that a Groth16 proof in the BN254 pairing is valid for a given
 /// circuit and inputs.
 ///
+/// `proof` and `inputs` should be in compressed form, while `pvk` uncompressed.
+///
 /// # Panics
 /// This will panic if `pvk`, `proof` or `inputs` are not valid.
 pub fn verify_groth16_bn254(
@@ -207,7 +209,7 @@ pub fn verify_groth16_bn254(
     proof: Vec<u8>,
     inputs: Vec<u8>,
 ) -> bool {
-    let pvk = PreparedVerifyingKey::deserialize_compressed(&pvk[..])
+    let pvk = PreparedVerifyingKey::deserialize_uncompressed(&pvk[..])
         .expect("verifying key must be valid");
     let proof = Groth16Proof::deserialize_compressed(&proof[..])
         .expect("proof must be valid");

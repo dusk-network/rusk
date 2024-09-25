@@ -36,6 +36,8 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 
 /// Verify that a Groth16 proof in the BN254 pairing is valid for a given
 /// circuit and inputs.
+///
+/// `proof` and `inputs` should be in compressed form, while `pvk` uncompressed.
 pub fn verify_groth16_bn254(
     pvk: Vec<u8>,
     proof: Vec<u8>,

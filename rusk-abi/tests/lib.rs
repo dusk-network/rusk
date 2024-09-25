@@ -411,8 +411,8 @@ fn groth16_proof() {
     );
 
     let mut pvk_bytes: Vec<u8> =
-        Vec::with_capacity(pvk.serialized_size(Compress::Yes));
-    pvk.serialize_compressed(&mut pvk_bytes)
+        Vec::with_capacity(pvk.serialized_size(Compress::No));
+    pvk.serialize_uncompressed(&mut pvk_bytes)
         .expect("serializing should succeed");
 
     let mut proof_bytes: Vec<u8> =
