@@ -69,7 +69,11 @@ pub mod plonk {
 #[cfg(feature = "groth16")]
 pub mod groth16 {
     pub use ark_bn254 as bn254;
-    pub use ark_groth16::*;
+    pub use ark_groth16::{
+        data_structures, generator, prepare_verifying_key, prover, r1cs_to_qap,
+        verifier, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
+        VerifyingKey,
+    };
     pub use ark_relations as relations;
     pub use ark_serialize as serialize;
 }
