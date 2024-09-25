@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
+
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
 use tracing::{info, warn};
