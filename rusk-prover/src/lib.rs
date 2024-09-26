@@ -5,6 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
 
 extern crate alloc;
 #[cfg(feature = "std")]
