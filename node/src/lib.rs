@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
 #![feature(lazy_cell)]
 
 #[cfg(feature = "archive")]
@@ -243,4 +245,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    // need to add the benchmark dep here so that the
+    // `unused_crate_dependencies` lint is satisfied
+    use criterion as _;
+}

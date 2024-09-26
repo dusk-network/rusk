@@ -17,7 +17,7 @@ use node_data::Serializable;
 
 use crate::database::Mempool;
 
-use rocksdb_lib::{
+use rocksdb::{
     AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
     DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
     OptimisticTransactionDB, OptimisticTransactionOptions, Options,
@@ -212,7 +212,7 @@ impl DB for Backend {
 
         Self {
             rocksdb: Arc::new(
-                rocksdb_lib::OptimisticTransactionDB::open_cf_descriptors(
+                OptimisticTransactionDB::open_cf_descriptors(
                     &blocks_cf_opts,
                     path,
                     cfs,
@@ -254,7 +254,7 @@ impl DB for Backend {
 }
 
 pub struct DBTransaction<'db, DB: DBAccess> {
-    inner: rocksdb_lib::Transaction<'db, DB>,
+    inner: Transaction<'db, DB>,
     /// cumulative size of transaction footprint
     cumulative_inner_size: RefCell<usize>,
 
@@ -894,7 +894,7 @@ impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
 }
 
 pub struct MemPoolFeeIterator<'db, DB: DBAccess> {
-    iter: DBRawIteratorWithThreadMode<'db, rocksdb_lib::Transaction<'db, DB>>,
+    iter: DBRawIteratorWithThreadMode<'db, Transaction<'db, DB>>,
 }
 
 impl<'db, DB: DBAccess> MemPoolFeeIterator<'db, DB> {
@@ -1543,11 +1543,11 @@ mod tests {
         let path = t.get_path();
         let opts = Options::default();
 
-        let vec = rocksdb_lib::DB::list_cf(&opts, &path).unwrap();
+        let vec = rocksdb::DB::list_cf(&opts, &path).unwrap();
         assert!(!vec.is_empty());
 
         // Ensure no block fields leak after its deletion
-        let db = rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();
+        let db = rocksdb::DB::open_cf(&opts, &path, vec.clone()).unwrap();
         vec.into_iter()
             .map(|cf_name| {
                 if cf_name == CF_METADATA {
