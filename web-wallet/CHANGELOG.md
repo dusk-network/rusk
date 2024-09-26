@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `Send` to include allocation button [#2420]
 - Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
 - Make address field only vertically resizable (Send flow) [#2435]
+- Update `Stake` to use `Stepper` [#2436]
 
 ### Fixed
 
@@ -268,6 +269,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2406]: https://github.com/dusk-network/rusk/issues/2406
 [#2420]: https://github.com/dusk-network/rusk/issues/2420
 [#2435]: https://github.com/dusk-network/rusk/issues/2435
+[#2436]: https://github.com/dusk-network/rusk/issues/2436
 
 <!-- VERSIONS -->
 

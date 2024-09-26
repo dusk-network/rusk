@@ -18,6 +18,7 @@
     Badge,
     Button,
     Icon,
+    Stepper,
     Textbox,
     Wizard,
     WizardStep,
@@ -147,6 +148,21 @@
     return 2;
   }
 
+  function getStepperSteps() {
+    if (flow === "stake") {
+      return hideStakingNotice
+        ? [{ label: "Amount" }, { label: "Overview" }, { label: "Done" }]
+        : [
+            { label: "Notice" },
+            { label: "Amount" },
+            { label: "Overview" },
+            { label: "Done" },
+          ];
+    }
+
+    return [{ label: "Overview" }, { label: "Done" }];
+  }
+
   function setMaxAmount() {
     if (!isGasValid) {
       toast("error", "Please set valid gas settings first", mdiAlertOutline);
@@ -168,10 +184,17 @@
 
     stakeAmount = maxSpendable;
   }
+
+  const steps = getStepperSteps();
+  let activeStep = 0;
 </script>
 
 <div class="operation">
   <Wizard steps={getWizardSteps()} let:key>
+    <div slot="stepper">
+      <Stepper {activeStep} {steps} showStepLabelWhenInactive={false} />
+    </div>
+
     {#if flow === "stake"}
       {#if !hideStakingNotice}
         <!-- STAKING NOTICE STEP -->
@@ -184,6 +207,7 @@
           }}
           nextButton={{
             action: () => {
+              activeStep++;
               if (hideStakingNoticeNextTime) {
                 suppressStakingNotice();
               }
@@ -222,13 +246,20 @@
       <WizardStep
         step={hideStakingNotice ? 0 : 1}
         {key}
-        backButton={hideStakingNotice
-          ? {
-              action: resetOperation,
-              disabled: false,
+        backButton={{
+          action: () => {
+            if (hideStakingNotice) {
+              resetOperation();
+            } else {
+              activeStep--;
             }
-          : undefined}
-        nextButton={{ disabled: isNextButtonDisabled }}
+          },
+          disabled: false,
+        }}
+        nextButton={{
+          action: () => activeStep++,
+          disabled: isNextButtonDisabled,
+        }}
       >
         <ContractStatusesList items={statuses} />
         <div class="operation__amount operation__space-between">
@@ -274,10 +305,18 @@
     <WizardStep
       step={flow === "stake" ? (hideStakingNotice ? 1 : 2) : 0}
       {key}
-      backButton={flow !== "stake"
-        ? { action: resetOperation, disabled: false }
-        : undefined}
+      backButton={{
+        action: () => {
+          if (flow === "stake") {
+            activeStep--;
+          } else {
+            resetOperation();
+          }
+        },
+        disabled: false,
+      }}
       nextButton={{
+        action: () => activeStep++,
         disabled: flow === "stake" ? stakeAmount === 0 : !isGasValid,
         icon: {
           path:
