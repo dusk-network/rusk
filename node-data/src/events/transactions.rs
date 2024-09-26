@@ -94,6 +94,8 @@ impl Serialize for Transaction {
                 state.serialize_field("to", &to)?;
 
                 state.serialize_field("value", &m.value())?;
+
+                state.serialize_field("nonce", &m.nonce())?;
             }
         }
 
