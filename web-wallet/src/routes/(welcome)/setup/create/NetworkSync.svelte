@@ -2,6 +2,7 @@
 
 <script>
   import { AppAnchor, CopyField } from "$lib/components";
+  import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { createNumberFormatter } from "$lib/dusk/number";
   import { settingsStore, walletStore } from "$lib/stores";
@@ -33,7 +34,7 @@
 
   <small>
     This can later be retrieved from Settings. Find out more in our <AppAnchor
-      href="#"
+      href={DOCUMENTATION_LINKS.RESTORE_BLOCK_HEIGHT}
       rel="noopener noreferrer"
       target="_blank">documentation</AppAnchor
     >.
