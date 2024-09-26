@@ -37,6 +37,11 @@ clippy: ## Run clippy
 		--features chain \
 		--release \
 		-- -D warnings
+	@cargo clippy \
+		--no-default-features \
+		--features archive \
+		--release \
+		-- -D warnings
 	@cargo check --benches --features testwallet
 
 doc: ## Run doc gen
@@ -59,14 +64,14 @@ recovery-keys: ## Build circuit keys
 		--no-default-features \
 		--features recovery-keys \
 		--release \
-		-- recovery-keys
+		-- recovery keys
 
 recovery-state: ## Build network state
 	@cargo r \
 		--no-default-features \
 		--features recovery-state \
 		--release \
-		-- recovery-state \
+		-- recovery state \
 		--init $(INITFILE)
 
 .PHONY: test help clippy build build-bench bench recovery-keys recovery-state rusk

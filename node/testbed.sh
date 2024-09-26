@@ -14,7 +14,7 @@ run_node() {
     local NODE_FOLDER="${TEMPD}/node_${ID}"
     local RUSK_STATE_PATH="${NODE_FOLDER}/state"
 
-    RUSK_STATE_PATH="${RUSK_STATE_PATH}" cargo r --release -p rusk -- recovery-state --init "$GENESIS_PATH"
+    RUSK_STATE_PATH="${RUSK_STATE_PATH}" cargo r --release -p rusk -- recovery state --init "$GENESIS_PATH"
     
     echo "Starting node $ID ..."
     RUSK_STATE_PATH="${RUSK_STATE_PATH}" $TOOL_BIN \

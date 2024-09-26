@@ -318,4 +318,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
 
         Ok(block)
     }
+
+    pub async fn revert_last_final(&self) -> anyhow::Result<()> {
+        self.acceptor
+            .as_ref()
+            .expect("Chain to be initialized")
+            .read()
+            .await
+            .try_revert(acceptor::RevertTarget::LastFinalizedState)
+            .await
+    }
 }

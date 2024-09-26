@@ -69,7 +69,7 @@ Run a single full-node cluster with example state.
 
 ```bash
 # Generate genesis state
-cargo r --release -p rusk -- recovery-state --init examples/genesis.toml -o /tmp/example.state
+cargo r --release -p rusk -- recovery state --init examples/genesis.toml -o /tmp/example.state
 
 # Launch a local ephemeral node
 DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p rusk -- -s /tmp/example.state

@@ -168,6 +168,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
         self.network.clone()
     }
 
+    pub fn vm_handler(&self) -> Arc<RwLock<VM>> {
+        self.vm_handler.clone()
+    }
+
     pub async fn initialize(
         &self,
         services: &mut [Box<dyn LongLivedService<N, DB, VM>>],
