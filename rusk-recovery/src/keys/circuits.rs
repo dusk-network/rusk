@@ -9,7 +9,7 @@ use std::io::{self, ErrorKind};
 use cargo_toml::{Dependency, Manifest};
 use tracing::info;
 
-use execution_core::plonk::Circuit;
+use dusk_plonk::prelude::Circuit;
 use execution_core::transfer::phoenix::{TxCircuit, NOTES_TREE_DEPTH};
 
 use license_circuits::LicenseCircuit;
@@ -86,17 +86,24 @@ where
     Ok(())
 }
 
+// Returns that string that defines the plonk-version
 fn parse_plonk_version() -> io::Result<String> {
-    let cargo_toml = include_bytes!("../../Cargo.toml");
+    let cargo_toml = include_bytes!("../../../Cargo.toml");
     let cargo_toml = Manifest::from_slice(cargo_toml).map_err(|e| {
         io::Error::new(
             ErrorKind::InvalidInput,
-            format!("Couldn't read manifest: {e}"),
+            format!("Couldn't parse workspace manifest: {e}"),
         )
     })?;
 
-    let plonk_dep = &cargo_toml.dependencies["dusk-plonk"];
-    let version = match plonk_dep {
+    let plonk_dep = &cargo_toml
+        .workspace
+        .ok_or(io::Error::new(
+            ErrorKind::InvalidInput,
+            "Cargo.toml at crate root should define a workspace",
+        ))?
+        .dependencies["dusk-plonk"];
+    let mut version = match plonk_dep {
         Dependency::Simple(v) => v.clone(),
         Dependency::Detailed(d) => {
             let v = &d.version;
@@ -116,5 +123,9 @@ fn parse_plonk_version() -> io::Result<String> {
             ))
         }
     };
+    // sanitize plonk version
+    if version.starts_with('=') {
+        version.remove(0);
+    }
     Ok(version)
 }

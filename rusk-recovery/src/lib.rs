@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
+
 #[cfg(feature = "keys")]
 pub mod keys;
 #[cfg(feature = "state")]
