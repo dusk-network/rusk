@@ -4,34 +4,31 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dusk-bytes = "^0.1"
-sha3 = "0.10"
-sha2 = "0.10"
-fake = { version = "2.5", features = ['derive'], optional = true }
-rand = { version = "0.8", optional = true }
-hex = { version = "0.4", optional = true }
-execution-core = { version = "0.1.0", path = "../execution-core" }
+dusk-bytes = { workspace = true }
+sha3 = { workspace = true }
+sha2 = { workspace = true }
+rand = { workspace = true, features = ["std_rng"] }
+hex = { workspace = true }
+execution-core = { workspace = true }
 
-rand_core = { version = "0.6", default-features = false }
-block-modes = "0.8"
-aes = "0.7"
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_with = { version = "3.1", features = ["hex"] }
-base64 = "0.13"
-async-channel = "1.7"
-chrono = "0.4"
-bs58 = { version = "0.4" }
-tracing = "0.1"
-anyhow = "1"
-thiserror = "1"
+block-modes = { workspace = true }
+aes = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_with = { workspace = true, features = ["hex"] }
+base64 = { workspace = true }
+async-channel = { workspace = true }
+chrono = { workspace = true }
+bs58 = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
 
+# faker feature dependencies
+fake = { workspace = true, features = ['derive'], optional = true }
 
 [dev-dependencies]
-fake = { version = "2.5", features = ['derive'] }
-rand = "0.8"
-hex = "0.4"
+fake = { workspace = true, features = ['derive'] }
 
 [features]
-default = ["dep:rand", "dep:hex"]
-faker = ["dep:fake", "dep:rand", "dep:hex"]
+faker = ["dep:fake"]

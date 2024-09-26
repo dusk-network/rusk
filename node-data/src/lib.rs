@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
+
 pub mod archive;
 pub mod bls;
 pub mod encoding;

@@ -5,12 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use aes::Aes256;
+use base64::{engine::general_purpose::STANDARD as BASE64_ENGINE, Engine};
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, BlockModeError, Cbc};
 use dusk_bytes::{DeserializableSlice, Serializable};
 
 use rand::rngs::StdRng;
-use rand_core::SeedableRng;
+use rand::SeedableRng;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
@@ -193,14 +194,16 @@ fn read_from_file(
     let keys: BlsKeyPair = serde_json::from_slice(&bytes)
         .map_err(|e| anyhow::anyhow!("keys files should contain json {e}"))?;
 
-    let sk_bytes = base64::decode(keys.secret_key_bls)
+    let sk_bytes = BASE64_ENGINE
+        .decode(keys.secret_key_bls)
         .map_err(|e| anyhow::anyhow!("sk should be base64 {e}"))?;
 
     let sk = BlsSecretKey::from_slice(&sk_bytes)
         .map_err(|e| anyhow::anyhow!("sk should be valid {e:?}"))?;
 
     let pk = BlsPublicKey::from_slice(
-        &base64::decode(keys.public_key_bls)
+        &BASE64_ENGINE
+            .decode(keys.public_key_bls)
             .map_err(|e| anyhow::anyhow!("pk should be base64 {e}"))?[..],
     )
     .map_err(|e| anyhow::anyhow!("pk should be valid {e:?}"))?;

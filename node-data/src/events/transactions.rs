@@ -56,9 +56,9 @@ impl EventSource for TransactionEvent<'_> {
         hex::encode(hash)
     }
 }
+use base64::{engine::general_purpose::STANDARD as BASE64_ENGINE, Engine};
 use dusk_bytes::Serializable;
 use execution_core::transfer::Transaction as ProtocolTransaction;
-
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 impl Serialize for Transaction {
@@ -132,7 +132,7 @@ impl Serialize for Transaction {
             let mut call = HashMap::new();
             call.insert("contract", hex::encode(c.contract));
             call.insert("fn_name", c.fn_name.to_string());
-            call.insert("fn_args", base64::encode(&c.fn_args));
+            call.insert("fn_args", BASE64_ENGINE.encode(&c.fn_args));
             call
         });
         state.serialize_field("call", &call)?;
