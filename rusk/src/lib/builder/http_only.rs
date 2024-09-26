@@ -44,6 +44,7 @@ impl RuskHttpBuilder {
                     rues_receiver,
                     http.ws_event_channel_cap,
                     http.address,
+                    http.headers,
                     cert_and_key,
                 )
                 .await?,

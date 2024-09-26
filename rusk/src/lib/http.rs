@@ -51,7 +51,7 @@ use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{
     body::{self, Body, Bytes, Incoming},
-    Method, Request, Response, StatusCode,
+    HeaderMap, Method, Request, Response, StatusCode,
 };
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
 use hyper_util::server::conn::auto::Builder as HttpBuilder;
@@ -89,6 +89,7 @@ pub struct HttpServerConfig {
     pub address: String,
     pub cert: Option<PathBuf>,
     pub key: Option<PathBuf>,
+    pub headers: HeaderMap,
     pub ws_event_channel_cap: usize,
 }
 
@@ -102,6 +103,7 @@ impl HttpServer {
         event_receiver: broadcast::Receiver<RuesEvent>,
         ws_event_channel_cap: usize,
         addr: A,
+        headers: HeaderMap,
         cert_and_key: Option<(P1, P2)>,
     ) -> io::Result<Self>
     where
@@ -126,6 +128,7 @@ impl HttpServer {
             listener,
             event_receiver,
             shutdown_receiver,
+            headers,
             ws_event_channel_cap,
         ));
 
@@ -201,6 +204,7 @@ async fn listening_loop<H>(
     listener: Listener,
     events: broadcast::Receiver<RuesEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
+    headers: HeaderMap,
     ws_event_channel_cap: usize,
 ) where
     H: HandleRequest,
@@ -213,6 +217,7 @@ async fn listening_loop<H>(
         sockets_map: sockets_map.clone(),
         events: events.resubscribe(),
         shutdown: shutdown.resubscribe(),
+        headers: Arc::new(headers),
         ws_event_channel_cap,
     };
 
@@ -396,6 +401,7 @@ struct ExecutionService<H> {
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
     events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
+    headers: Arc<HeaderMap>,
     ws_event_channel_cap: usize,
 }
 
@@ -406,6 +412,7 @@ impl<H> Clone for ExecutionService<H> {
             sockets_map: self.sockets_map.clone(),
             events: self.events.resubscribe(),
             shutdown: self.shutdown.resubscribe(),
+            headers: self.headers.clone(),
             ws_event_channel_cap: self.ws_event_channel_cap,
         }
     }
@@ -436,9 +443,10 @@ where
         let events = self.events.resubscribe();
         let shutdown = self.shutdown.resubscribe();
         let ws_event_channel_cap = self.ws_event_channel_cap;
+        let headers = self.headers.clone();
 
         Box::pin(async move {
-            let response = handle_request(
+            let mut rsp = handle_request(
                 req,
                 sources,
                 sockets_map,
@@ -447,11 +455,19 @@ where
                 ws_event_channel_cap,
             )
             .await;
-            response.map(Into::into).or_else(|error| {
-                Ok(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Full::new(error.to_string().into()).into())
-                    .expect("Failed to build response"))
+
+            // We insert all the custom headers set in the configuration here,
+            // skipping the ones that are invalid.
+            rsp.map(|mut rsp| {
+                rsp.headers_mut().extend(headers.as_ref().clone());
+                rsp
+            })
+            .or_else(|error| {
+                Ok(response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    error.to_string(),
+                )
+                .expect("Failed to build response"))
             })
         })
     }
@@ -985,6 +1001,7 @@ mod tests {
             event_receiver,
             ws_event_channel_cap,
             "localhost:0",
+            HeaderMap::new(),
             cert_and_key,
         )
         .await
@@ -1039,6 +1056,7 @@ mod tests {
             event_receiver,
             ws_event_channel_cap,
             "localhost:0",
+            HeaderMap::new(),
             Some((cert_path, key_path)),
         )
         .await
@@ -1096,6 +1114,7 @@ mod tests {
             event_receiver,
             ws_event_channel_cap,
             "localhost:0",
+            HeaderMap::new(),
             cert_and_key,
         )
         .await
@@ -1179,6 +1198,7 @@ mod tests {
             event_receiver,
             ws_event_channel_cap,
             "localhost:0",
+            HeaderMap::new(),
             cert_and_key,
         )
         .await
