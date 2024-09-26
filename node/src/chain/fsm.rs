@@ -18,6 +18,7 @@ use node_data::message::payload::{
 };
 
 use node_data::message::{payload, Message, Metadata};
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
@@ -505,168 +506,165 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         metadata: Option<Metadata>,
     ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
         let mut acc = self.acc.write().await;
-        let local_header = acc.tip_header().await;
-        let remote_height = remote_blk.header().height;
+        let tip_header = acc.tip_header().await;
+        let remote_header = remote_blk.header();
+        let remote_height = remote_header.height;
 
-        if remote_height < local_header.height {
-            // Ensure that the block does not exist in the local state
-            let exists = acc
-                .db
-                .read()
-                .await
-                .view(|t| t.get_block_exists(&remote_blk.header().hash))?;
+        // If we already accepted a block with the same height as remote_blk,
+        // check if remote_blk has higher priority. If so, we revert to its
+        // prev_block, and accept it as the new tip
+        if remote_height <= tip_header.height {
+            // Ensure the block is different from what we have in our chain
+            if remote_height == tip_header.height {
+                if remote_header.hash == tip_header.hash {
+                    return Ok(None);
+                }
+            } else {
+                let blk_exists = acc
+                    .db
+                    .read()
+                    .await
+                    .view(|t| t.get_block_exists(&remote_header.hash))?;
 
-            if exists {
-                // Already exists in local state
-                return Ok(None);
+                if blk_exists {
+                    return Ok(None);
+                }
             }
 
-            // Ensure that the block height is higher than the last finalized
+            // Ensure remote_blk is higher than the last finalized
+            // We do this check after the previous one because
+            // get_last_final_block if heavy
             if remote_height
-                <= acc.get_latest_final_block().await?.header().height
+                <= acc.get_last_final_block().await?.header().height
             {
                 return Ok(None);
             }
 
-            // If our local chain has a block L_B with ConsensusState not Final,
-            // and we receive a block R_B such that:
-            //
-            // R_B.PrevBlock == L_B.PrevBlock
-            // R_B.Iteration < L_B.Iteration
-            //
-            // Then we fallback to N_B.PrevBlock and accept N_B
-            let result = acc.db.read().await.view(|t| {
-                if let Some(prev_header) =
-                    t.fetch_block_header(&remote_blk.header().prev_block_hash)?
-                {
-                    let local_height = prev_header.height + 1;
-                    if let Some(l_b) = t.fetch_block_by_height(local_height)? {
-                        if remote_blk.header().iteration
-                            < l_b.header().iteration
-                        {
-                            return Ok(Some((
-                                l_b.header().clone(),
-                                prev_header.state_hash,
-                            )));
+            // Check if prev_blk is in our chain
+            // If not, remote_blk is on a fork
+            let prev_blk_exists =
+                acc.db.read().await.view(|t| {
+                    t.get_block_exists(&remote_header.prev_block_hash)
+                })?;
+
+            if !prev_blk_exists {
+                warn!(
+                    "received block from fork at height {remote_height}: {}",
+                    to_str(&remote_header.hash)
+                );
+                return Ok(None);
+            }
+
+            // Fetch the chain block at the same height as remote_blk
+            let local_blk = if remote_height == tip_header.height {
+                acc.tip.read().await.inner().clone()
+            } else {
+                acc.db
+                    .read()
+                    .await
+                    .view(|t| t.fetch_block_by_height(remote_height))?
+                    .expect("local block should exist")
+            };
+            let local_header = local_blk.header();
+            let local_height = local_header.height;
+
+            match remote_header.iteration.cmp(&local_header.iteration) {
+                Ordering::Less => {
+                    // If remote_blk.iteration < local_blk.iteration, then we
+                    // fallback to prev_blk and accept remote_blk
+                    info!(
+                        event = "entering fallback",
+                        height = local_height,
+                        iter = local_header.iteration,
+                        new_iter = remote_header.iteration,
+                    );
+
+                    // Retrieve prev_block state
+                    let prev_state = acc
+                        .db
+                        .read()
+                        .await
+                        .view(|t| {
+                            let res = t
+                                .fetch_block_header(
+                                    &remote_header.prev_block_hash,
+                                )?
+                                .map(|prev| prev.state_hash);
+
+                            anyhow::Ok(res)
+                        })?
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("could not retrieve state_hash")
+                        })?;
+
+                    match fallback::WithContext::new(acc.deref())
+                        .try_revert(
+                            local_header,
+                            remote_header,
+                            RevertTarget::Commit(prev_state),
+                        )
+                        .await
+                    {
+                        Ok(_) => {
+                            // Successfully fallbacked to prev_blk
+                            counter!("dusk_fallback_count").increment(1);
+
+                            // Blacklist the local_blk so we discard it if
+                            // we receive it again
+                            self.blacklisted_blocks
+                                .write()
+                                .await
+                                .insert(local_header.hash);
+
+                            // After reverting we can accept `remote_blk` as the
+                            // new tip
+                            acc.try_accept_block(remote_blk, true).await?;
+                            return Ok(None);
+                        }
+                        Err(e) => {
+                            error!(
+                                event = "fallback failed",
+                                height = local_height,
+                                remote_height,
+                                err = format!("{:?}", e)
+                            );
+                            return Ok(None);
                         }
                     }
                 }
 
-                anyhow::Ok(None)
-            })?;
+                Ordering::Greater => {
+                    // If remote_blk.iteration > local_blk.iteration, we send
+                    // the sender our local block. This
+                    // behavior is intended to make the peer
+                    // switch to our higher-priority block.
+                    if let Some(meta) = metadata {
+                        let remote_source = meta.src_addr;
 
-            if let Some((local_header, state_hash)) = result {
-                match fallback::WithContext::new(acc.deref())
-                    .try_revert(
-                        &local_header,
-                        remote_blk.header(),
-                        RevertTarget::Commit(state_hash),
-                    )
-                    .await
-                {
-                    Ok(_) => {
-                        counter!("dusk_fallback_count").increment(1);
-                        if remote_height == acc.get_curr_height().await + 1 {
-                            acc.try_accept_block(remote_blk, true).await?;
-                            return Ok(None);
-                        }
+                        debug!("sending our lower-iteration block at height {local_height} to {remote_source}");
+
+                        let msg = Message::from(local_blk);
+                        let net = self.network.read().await;
+                        let send = net.send_to_peer(msg, remote_source);
+                        if let Err(e) = send.await {
+                            warn!("Unable to send_to_peer {e}")
+                        };
                     }
-                    Err(e) => {
-                        error!(
-                            event = "fallback failed",
-                            height = local_header.height,
-                            remote_height,
-                            err = format!("{:?}", e)
-                        );
-                        return Ok(None);
-                    }
+                }
+                Ordering::Equal => {
+                    // If remote_blk and local_blk have the same iteration, it
+                    // means two conflicting candidates have been generated
+                    let local_hash = to_str(&local_header.hash);
+                    let remote_hash = to_str(&remote_header.hash);
+                    warn!("Double candidate detected. Local block: {local_hash}, remote block {remote_hash}");
                 }
             }
 
             return Ok(None);
         }
 
-        if remote_height == local_header.height {
-            if remote_blk.header().hash == local_header.hash {
-                // Duplicated block.
-                // Node has already accepted it.
-                return Ok(None);
-            }
-
-            info!(
-                event = "entering fallback",
-                height = local_header.height,
-                iter = local_header.iteration,
-                new_iter = remote_blk.header().iteration,
-            );
-
-            let state_hash = acc
-                .db
-                .read()
-                .await
-                .view(|t| {
-                    let res = t
-                        .fetch_block_header(
-                            &remote_blk.header().prev_block_hash,
-                        )?
-                        .map(|prev| prev.state_hash);
-
-                    anyhow::Ok(res)
-                })?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("could not retrieve state_hash")
-                })?;
-
-            match fallback::WithContext::new(acc.deref())
-                .try_revert(
-                    &local_header,
-                    remote_blk.header(),
-                    RevertTarget::Commit(state_hash),
-                )
-                .await
-            {
-                Err(e) => {
-                    // Fallback execution has failed. The block is ignored and
-                    // Node remains in InSync state.
-                    error!(event = "fallback failed", err = format!("{:?}", e));
-                    return Ok(None);
-                }
-                Ok(_) => {
-                    // Fallback has completed successfully. Node has managed to
-                    // fallback to the most recent finalized block and state.
-
-                    // Blacklist the old-block hash so that if it's again
-                    // sent then this node does not try to accept it.
-                    self.blacklisted_blocks
-                        .write()
-                        .await
-                        .insert(local_header.hash);
-
-                    if remote_height == acc.get_curr_height().await + 1 {
-                        // If we have fallback-ed to previous block only, then
-                        // accepting the new block would be enough to continue
-                        // in in_Sync mode instead of switching to Out-Of-Sync
-                        // mode.
-
-                        acc.try_accept_block(remote_blk, true).await?;
-                        return Ok(None);
-                    }
-
-                    // By switching to OutOfSync mode, we trigger the
-                    // sync-up procedure to download all missing blocks from the
-                    // main chain.
-                    if let Some(metadata) = &metadata {
-                        let res = (remote_blk.clone(), metadata.src_addr);
-                        return Ok(Some(res));
-                    } else {
-                        return Ok(None);
-                    };
-                }
-            }
-        }
-
-        // Try accepting consecutive block
-        if remote_height == local_header.height + 1 {
+        // If remote_blk is a successor of our tip, we try to accept it
+        if remote_height == tip_header.height + 1 {
             let finalized = acc.try_accept_block(remote_blk, true).await?;
 
             // On first final block accepted while we're inSync, clear
@@ -693,21 +691,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             return Ok(None);
         }
 
-        // Block with height higher than (tip + 1) is received
+        // If remote_blk.height > tip.height+1, we might be out of sync.
         // Before switching to outOfSync mode and download missing blocks,
-        // ensure that the Peer does know next valid block
+        // we ensure that the peer has a valid successor of tip
         if let Some(metadata) = &metadata {
             if self.presync.is_none() {
                 self.presync = Some(PresyncInfo::new(
                     metadata.src_addr,
                     remote_blk.clone(),
-                    local_header.height,
+                    tip_header.height,
                 ));
             }
 
             Self::request_block_by_height(
                 &self.network,
-                local_header.height + 1,
+                tip_header.height + 1,
                 metadata.src_addr,
             )
             .await;
