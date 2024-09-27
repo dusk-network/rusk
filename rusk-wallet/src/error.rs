@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rand_core::Error as RngError;
+use rand::Error as RngError;
 use std::io;
 use std::str::Utf8Error;
 
