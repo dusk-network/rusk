@@ -48,8 +48,8 @@
 .dusk-button--size--small,
 .dusk-anchor-button--size--small,
 .dusk-anchor-button--size--small:visited {
-  font-size: var(--control-small-font-size);
-  gap: calc(var(--control-small-font-size) / 2);
+  font-size: var(--control-font-size);
+  gap: calc(var(--control-font-size) / 2);
   padding: var(--control-small-padding);
 }
 

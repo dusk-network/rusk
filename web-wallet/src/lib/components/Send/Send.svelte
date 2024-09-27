@@ -362,10 +362,6 @@
       justify-content: flex-start;
     }
 
-    :global(&__input-wrapper &__input-field) {
-      padding: 0.5em 1em;
-    }
-
     :global(&__input-field:invalid) {
       color: var(--error-color);
     }

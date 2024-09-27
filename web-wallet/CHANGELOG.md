@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update ENV variables to the `VITE_FEATURE_*` naming convention [#2434]
 - Make address field only vertically resizable (Send flow) [#2435]
 - Update `Stake` to use `Stepper` [#2436]
+- Update textfield input to use the small control sizing [#2498]
 
 ### Fixed
 
@@ -272,6 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2434]: https://github.com/dusk-network/rusk/issues/2434
 [#2435]: https://github.com/dusk-network/rusk/issues/2435
 [#2436]: https://github.com/dusk-network/rusk/issues/2436
+[#2498]: https://github.com/dusk-network/rusk/issues/2498
 
 <!-- VERSIONS -->
 

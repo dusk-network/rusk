@@ -2,13 +2,14 @@
   font-family: inherit;
   font-size: var(--control-font-size);
   letter-spacing: inherit;
-  padding: var(--control-padding);
+  padding: var(--control-small-padding);
   background-color: var(--non-button-control-bg-color);
   border-color: var(--control-border-color);
   border-radius: var(--control-border-radius-size);
   border-style: solid;
   border-width: var(--control-border-size);
   color: var(--non-button-control-text-color);
+  min-height: 44px;
 }
 
 .dusk-textbox:disabled,

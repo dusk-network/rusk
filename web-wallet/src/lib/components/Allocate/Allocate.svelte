@@ -360,7 +360,6 @@
 
     :global(&__input-field) {
       width: 100%;
-      padding: 0.5em 1em;
     }
 
     :global(&__input-field:invalid) {
