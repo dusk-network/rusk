@@ -152,9 +152,8 @@ impl StakeState {
             .amount
             .as_ref()
             .expect("There must be an amount to unstake");
-        let withdrawal_value = stake.locked + stake.value;
 
-        if value != withdrawal_value {
+        if value != stake.total_funds() {
             panic!("Value withdrawn different from staked amount");
         }
 
