@@ -13,83 +13,82 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "fs", "macros"] }
-futures-util = "0.3"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3.0", features = [
+tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+futures-util = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = [
     "fmt",
     "env-filter",
     "json",
 ] }
-clap = { version = "=4.4", features = ["env", "string", "derive"] }
-semver = "1.0"
-anyhow = "1.0"
-rustc_tools_util = "0.3"
-rand = "0.8"
-toml = "0.5"
-serde = "1"
-serde_json = "1"
-serde_with = { version = "3.1", features = ["hex"] }
-humantime-serde = "1"
-bs58 = "0.4"
-base64 = "0.22"
-hex = "0.4"
-parking_lot = "0.12"
-rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
-bytecheck = { version = "0.6", default-features = false }
-dirs = "4"
-blake3 = "1"
-blake2b_simd = { version = "1", default-features = false }
+clap = { workspace = true, features = ["env", "string", "derive"] }
+semver = { workspace = true }
+anyhow = { workspace = true }
+rustc_tools_util = { workspace = true }
+rand = { workspace = true }
+toml = "=0.5.11"
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_with = { workspace = true, features = ["hex"] }
+humantime-serde = { workspace = true }
+bs58 = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+parking_lot = { workspace = true }
+rkyv = { workspace = true, features = ["size_32"] }
+bytecheck = { workspace = true }
+dirs = { workspace = true }
+blake3 = { workspace = true }
+blake2b_simd = { workspace = true }
 
-sha3 = "0.10"
-dusk-bytes = "0.1"
-kadcast = "0.7.0-rc.5"
-pin-project = "1"
-tungstenite = "0.21"
-hyper-tungstenite = "0.13"
-hyper = { version = "1", features = ["server", "http1", "http2"] }
-hyper-util = { version = "0.1", features = ["server", "http1", "http2"] }
-http-body-util = "0.1"
+sha3 = { workspace = true }
+dusk-bytes = { workspace = true }
+kadcast = { workspace = true }
+pin-project = { workspace = true }
+tungstenite = { workspace = true }
+hyper-tungstenite = { workspace = true }
+hyper = { workspace = true, features = ["server", "http1", "http2"] }
+hyper-util = { workspace = true, features = ["server", "http1", "http2"] }
+http-body-util = { workspace = true }
 
-tokio-stream = { version = "0.1", features = ["sync"] }
-tokio-util = { version = "0.7", features = ["rt"] }
-tokio-rustls = "0.25"
-rustls-pemfile = "2"
-async-trait = "0.1"
+tokio-stream = { workspace = true, features = ["sync"] }
+tokio-util = { workspace = true, features = ["rt"] }
+tokio-rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+async-trait = { workspace = true }
 
-execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
-rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.13.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
-rusk-prover = { version = "0.5", path = "../rusk-prover", features = ["std"], optional = true }
+execution-core = { workspace = true, features = ["zk"] }
+rusk-profile = { workspace = true }
+rusk-abi = { workspace = true, features = ["host"] }
+rusk-prover = { workspace = true, features = ["std"], optional = true }
 
 ## node dependencies
-node = { version = "0.1", path = "../node", optional = true }
-dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus", optional = true }
-node-data = { version = "0.1", path = "../node-data", optional = true }
+node = { workspace = true, optional = true }
+dusk-consensus = { workspace = true, optional = true }
+node-data = { workspace = true, optional = true }
 
 
 ## GraphQL deps
-async-graphql = "5.0"
+async-graphql = { workspace = true }
 
 
 ## Ephemeral dependencies
-tempfile = { version = "3.2", optional = true }
-rusk-recovery = { version = "0.6", path = "../rusk-recovery", optional = true }
+tempfile = { workspace = true, optional = true }
+rusk-recovery = { workspace = true, optional = true }
 
 ## testwallet dependencies
-futures = { version = "0.3", optional = true }
+futures = { workspace = true, optional = true }
 
 [dev-dependencies]
 test-wallet = { version = "0.1.0", path = "../test-wallet" }
-test-context = "0.1"
-reqwest = "0.12"
-rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
-ff = { version = "0.13", default-features = false }
-rusk-prover = { version = "0.5", path = "../rusk-prover", features = ["no_random"] }
-criterion = "0.5"
+reqwest = { workspace = true }
+rusk-recovery = { workspace = true, features = ["state"] }
+ff = { workspace = true }
+rusk-prover = { workspace = true, features = ["no_random"] }
+criterion = { workspace = true }
 
 [build-dependencies]
-rustc_tools_util = "0.3"
+rustc_tools_util = { workspace = true }
 
 [features]
 default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "chain", "http-wasm"]
