@@ -807,8 +807,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .fetch_stake(&AccountPublicKey::from(&stake_sk))
             .await?
             .and_then(|s| s.amount)
-            .map(|s| s.value)
-            .unwrap_or(0);
+            .map(|s| s.total_funds())
+            .unwrap_or_default();
+
+        if unstake_value == 0 {
+            return Err(Error::NotStaked);
+        }
 
         let inputs = state.inputs(index, gas.limit * gas.price).await?;
 
@@ -859,8 +863,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .fetch_stake(pk)
             .await?
             .and_then(|s| s.amount)
-            .map(|s| s.value)
-            .unwrap_or(0);
+            .map(|s| s.total_funds())
+            .unwrap_or_default();
+
+        if unstake_value == 0 {
+            return Err(Error::NotStaked);
+        }
 
         let unstake = moonlight_unstake(
             &mut rng,
