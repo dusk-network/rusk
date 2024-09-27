@@ -459,10 +459,17 @@ impl StakeAmount {
         let maturity_blocks = EPOCH;
         next_epoch(block_height) + maturity_blocks
     }
+
     /// Move `amount` to locked value
     pub fn lock_amount(&mut self, amount: u64) {
         self.value -= amount;
         self.locked += amount;
+    }
+
+    /// Get the total funds belonging to the stake (value + locked)
+    #[must_use]
+    pub fn total_funds(&self) -> u64 {
+        self.value + self.locked
     }
 }
 
