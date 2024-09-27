@@ -202,6 +202,173 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
     Ok(menu.answer(&answer).to_owned())
 }
 
+/// Allows the user to choose an operation to perform with the selected
+/// transction type
+fn transaction_op_menu_moonlight(
+    addr: Address,
+    moonlight_bal: Dusk,
+) -> anyhow::Result<AddrOp> {
+    use TransctionOp::*;
+    let menu = Menu::title("Moonlight Transaction Operations")
+        .add(Transfer, "Moonlight Transfer")
+        .add(Stake, "Moonlight Stake")
+        .add(Unstake, "Moonlight Unstake")
+        .add(Withdraw, "Moonlight Withdraw")
+        .add(ContractDeploy, "Moonlight Contract Deploy")
+        .add(ContractCall, "Moonlight Contract call")
+        .add(Memo, "Attach Memo to transction")
+        //.add(History, "Moonlight Transction History")
+        .separator()
+        .add(Back, "Back");
+
+    let questions = Question::select("theme")
+        .message("Please select an operation")
+        .choices(menu.clone())
+        .build();
+
+    let answer = requestty::prompt_one(questions)?;
+
+    let val = menu.answer(&answer).to_owned();
+
+    let x = match val {
+        Transfer => AddrOp::Run(Box::new(Command::MoonlightTransfer {
+            sndr: Some(addr),
+            rcvr: prompt::request_rcvr_addr("recipient")?,
+            amt: prompt::request_token_amt("transfer", moonlight_bal)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Stake => AddrOp::Run(Box::new(Command::MoonlightStake {
+            addr: Some(addr),
+            amt: prompt::request_token_amt("stake", moonlight_bal)?,
+            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Unstake => AddrOp::Run(Box::new(Command::MoonlightUnstake {
+            addr: Some(addr),
+            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Withdraw => AddrOp::Run(Box::new(Command::MoonlightWithdraw {
+            addr: Some(addr),
+            amt: prompt::request_token_amt("withdraw", moonlight_bal)?,
+            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        ContractDeploy => {
+            AddrOp::Run(Box::new(Command::MoonlightContractDeploy {
+                addr: Some(addr),
+                code: prompt::request_contract_code()?,
+                init_args: prompt::request_bytes("init arguments")?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        ContractCall => AddrOp::Run(Box::new(Command::MoonlightContractCall {
+            addr: Some(addr),
+            contract_id: prompt::request_bytes("contract id")?,
+            fn_name: prompt::request_str("function name to call")?,
+            fn_args: prompt::request_bytes("arguments of calling function")?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        History => AddrOp::Back,
+        Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
+            addr: Some(addr),
+            memo: prompt::request_bytes("memo")?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Back => AddrOp::Back,
+    };
+
+    Ok(x)
+}
+
+/// Allows the user to choose an operation to perform with the selected
+/// transction type
+fn transaction_op_menu_phoenix(
+    addr: Address,
+    phoenix_balance: Dusk,
+) -> anyhow::Result<AddrOp> {
+    use TransctionOp::*;
+    let menu = Menu::title("Phoenix Transaction Operations")
+        .add(Transfer, "Phoenix Transfer")
+        .add(Stake, "Phoenix Stake")
+        .add(Unstake, "Phoenix Unstake")
+        .add(Withdraw, "Phoenix Withdraw")
+        .add(ContractDeploy, "Phoenix Contract Deploy")
+        .add(ContractCall, "Phoenix Contract call")
+        .add(Memo, "Attach Memo to transction")
+        .add(History, "Phoenix Transction History")
+        .separator()
+        .add(Back, "Back");
+
+    let questions = Question::select("theme")
+        .message("Please select an operation")
+        .choices(menu.clone())
+        .build();
+
+    let answer = requestty::prompt_one(questions)?;
+
+    let val = menu.answer(&answer).to_owned();
+
+    let x = match val {
+        Transfer => AddrOp::Run(Box::new(Command::PhoenixTransfer {
+            sndr: Some(addr),
+            rcvr: prompt::request_rcvr_addr("recipient")?,
+            amt: prompt::request_token_amt("transfer", phoenix_balance)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Stake => AddrOp::Run(Box::new(Command::PhoenixStake {
+            addr: Some(addr),
+            amt: prompt::request_token_amt("stake", phoenix_balance)?,
+            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Unstake => AddrOp::Run(Box::new(Command::PhoenixUnstake {
+            addr: Some(addr),
+            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Withdraw => AddrOp::Run(Box::new(Command::PhoenixWithdraw {
+            addr: Some(addr),
+            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        ContractDeploy => {
+            AddrOp::Run(Box::new(Command::PhoenixContractDeploy {
+                addr: Some(addr),
+                code: prompt::request_contract_code()?,
+                init_args: prompt::request_bytes("init arguments")?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        ContractCall => AddrOp::Run(Box::new(Command::PhoenixContractCall {
+            addr: Some(addr),
+            contract_id: prompt::request_bytes("contract id")?,
+            fn_name: prompt::request_str("function name to cal")?,
+            fn_args: prompt::request_bytes("arguments of calling function")?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        History => {
+            AddrOp::Run(Box::new(Command::PhoenixHistory { addr: Some(addr) }))
+        }
+        Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
+            addr: Some(addr),
+            memo: prompt::request_bytes("memo")?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Back => AddrOp::Back,
+    };
+
+    Ok(x)
+}
+
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum AddrOp {
     Run(Box<Command>),
@@ -211,26 +378,29 @@ enum AddrOp {
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum CommandMenuItem {
     // Phoenix
-    PhoenixHistory,
-    PhoenixTransfer,
-    PhoenixStake,
-    PhoenixUnstake,
-    PhoenixWithdraw,
-    PhoenixContractDeploy,
-    PhoenixContractCall,
+    PhoenixTransactions,
     // Moonlight
-    MoonlightTransfer,
-    MoonlightStake,
-    MoonlightUnstake,
-    MoonlightWithdraw,
-    MoonlightContractDeploy,
-    MoonlightContractCall,
+    MoonlightTransactions,
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
     // Others
     StakeInfo,
     Export,
+    Back,
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+enum TransctionOp {
+    Transfer,
+    Stake,
+    Unstake,
+    Withdraw,
+    ContractDeploy,
+    ContractCall,
+    // nor a deployment or a call
+    Memo,
+    History,
     Back,
 }
 
@@ -246,19 +416,8 @@ fn menu_op(
 
     let cmd_menu = Menu::new()
         .add(CMI::StakeInfo, "Check Existing Stake")
-        .add(CMI::PhoenixHistory, "Phoenix Transaction History")
-        .add(CMI::PhoenixTransfer, "Phoenix Transfer Dusk")
-        .add(CMI::PhoenixStake, "Phoenix Stake Dusk")
-        .add(CMI::PhoenixUnstake, "Phoenix Unstake Dusk")
-        .add(CMI::PhoenixWithdraw, "Phoenix Withdraw Staking reward")
-        .add(CMI::PhoenixContractDeploy, "Phoenix Deploy Contract")
-        .add(CMI::PhoenixContractCall, "Phoenix Contract Call")
-        .add(CMI::MoonlightTransfer, "Moonlight Transfer Dusk")
-        .add(CMI::MoonlightStake, "Moonlight Stake Dusk")
-        .add(CMI::MoonlightUnstake, "Moonlight Unstake Dusk")
-        .add(CMI::MoonlightWithdraw, "Moonlight Withdraw Staking reward")
-        .add(CMI::MoonlightContractDeploy, "Moonlight Deploy Contract")
-        .add(CMI::MoonlightContractCall, "Moonlight Contract call")
+        .add(CMI::PhoenixTransactions, "Phoenix Transactions")
+        .add(CMI::MoonlightTransactions, "Moonlight Transctions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
         .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
         .add(CMI::Export, "Export provisioner key-pair")
@@ -275,112 +434,16 @@ fn menu_op(
     let cmd = cmd_menu.answer(&answer).to_owned();
 
     let res = match cmd {
-        CMI::PhoenixHistory => {
-            AddrOp::Run(Box::new(Command::PhoenixHistory { addr: Some(addr) }))
+        CMI::PhoenixTransactions => {
+            transaction_op_menu_phoenix(addr, phoenix_balance)?
         }
-        CMI::PhoenixTransfer => {
-            AddrOp::Run(Box::new(Command::PhoenixTransfer {
-                sndr: Some(addr),
-                rcvr: prompt::request_rcvr_addr("recipient")?,
-                amt: prompt::request_token_amt("transfer", phoenix_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::MoonlightTransfer => {
-            AddrOp::Run(Box::new(Command::MoonlightTransfer {
-                sndr: Some(addr),
-                rcvr: prompt::request_rcvr_addr("recipient")?,
-                amt: prompt::request_token_amt("transfer", moonlight_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::PhoenixContractDeploy => {
-            AddrOp::Run(Box::new(Command::PhoenixContractDeploy {
-                addr: Some(addr),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::PhoenixStake => AddrOp::Run(Box::new(Command::PhoenixStake {
-            addr: Some(addr),
-            amt: prompt::request_token_amt("stake", phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        CMI::MoonlightStake => AddrOp::Run(Box::new(Command::MoonlightStake {
-            addr: Some(addr),
-            amt: prompt::request_token_amt("stake", moonlight_balance)?,
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        CMI::MoonlightUnstake => {
-            AddrOp::Run(Box::new(Command::MoonlightUnstake {
-                addr: Some(addr),
-                gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::MoonlightContractDeploy => {
-            AddrOp::Run(Box::new(Command::MoonlightContractDeploy {
-                addr: Some(addr),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::MoonlightWithdraw => {
-            AddrOp::Run(Box::new(Command::MoonlightWithdraw {
-                addr: Some(addr),
-                amt: prompt::request_token_amt("withdraw", moonlight_balance)?,
-                gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::PhoenixContractCall => {
-            AddrOp::Run(Box::new(Command::PhoenixContractCall {
-                addr: Some(addr),
-                contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to cal")?,
-                fn_args: prompt::request_bytes(
-                    "arguments of calling function",
-                )?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::MoonlightContractCall => {
-            AddrOp::Run(Box::new(Command::MoonlightContractCall {
-                addr: Some(addr),
-                contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to call")?,
-                fn_args: prompt::request_bytes(
-                    "arguments of calling function",
-                )?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
+        CMI::MoonlightTransactions => {
+            transaction_op_menu_moonlight(addr, moonlight_balance)?
         }
         CMI::StakeInfo => AddrOp::Run(Box::new(Command::StakeInfo {
             addr: Some(addr),
             reward: false,
         })),
-        CMI::PhoenixUnstake => AddrOp::Run(Box::new(Command::PhoenixUnstake {
-            addr: Some(addr),
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        CMI::PhoenixWithdraw => {
-            AddrOp::Run(Box::new(Command::PhoenixWithdraw {
-                addr: Some(addr),
-                gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         CMI::MoonlightToPhoenix => {
             AddrOp::Run(Box::new(Command::MoonlightToPhoenix {
                 addr: Some(addr),

@@ -7,7 +7,7 @@
 mod history;
 
 use clap::Subcommand;
-use execution_core::transfer::data::ContractCall;
+use execution_core::transfer::data::{ContractCall, TransactionData};
 use std::{fmt, path::PathBuf};
 
 use crate::io::prompt;
@@ -206,6 +206,25 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
+    /// Attach a memo to a transaction
+    PhoenixMemo {
+        /// Phoenix address from which to call the contract [default: first]
+        #[clap(short, long)]
+        addr: Option<Address>,
+
+        /// memo to attach to the transaction
+        #[clap(short, long)]
+        memo: Vec<u8>,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
     /// Check your stake information
     StakeInfo {
         /// Address used to stake [default: first address]
@@ -337,6 +356,24 @@ pub(crate) enum Command {
         /// Function arguments for this call
         #[clap(short, long)]
         fn_args: Vec<u8>,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    MoonlightMemo {
+        /// Moonlight address from which to send DUSK [default: first address]
+        #[clap(short, long)]
+        addr: Option<Address>,
+
+        /// Memo is additonal info attached to transaction
+        #[clap(short, long)]
+        memo: Vec<u8>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
@@ -778,6 +815,56 @@ impl Command {
 
                 let tx =
                     wallet.moonlight_deploy(addr, code, init_args, gas).await?;
+
+                Ok(RunResult::Tx(tx.hash()))
+            }
+            Self::MoonlightMemo {
+                addr,
+                memo,
+                gas_limit,
+                gas_price,
+            } => {
+                let addr = match addr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let tx = wallet
+                    .moonlight_execute(
+                        addr,
+                        None,
+                        Dusk::from(0),
+                        Dusk::from(0),
+                        gas,
+                        Some(TransactionData::Memo(memo)),
+                    )
+                    .await?;
+
+                Ok(RunResult::Tx(tx.hash()))
+            }
+            Self::PhoenixMemo {
+                addr,
+                memo,
+                gas_limit,
+                gas_price,
+            } => {
+                let addr = match addr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let tx = wallet
+                    .phoenix_execute(
+                        addr,
+                        Dusk::from(0),
+                        gas,
+                        TransactionData::Memo(memo),
+                    )
+                    .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
