@@ -808,25 +808,26 @@ impl fmt::Display for RunResult {
         use RunResult::*;
         match self {
             PhoenixBalance(balance, _) => {
+                let total = Dusk::from(balance.value);
+                let spendable = Dusk::from(balance.spendable);
                 write!(
                     f,
-                    "> Total Phoenix balance is: {} DUSK\n> Maximum spendable per TX is: {} DUSK",
-                    Dusk::from(balance.value),
-                    Dusk::from(balance.spendable)
+                    "> Total Phoenix balance is: {total} DUSK\n\
+                     > Maximum spendable per TX is: {spendable} DUSK",
                 )
             }
             MoonlightBalance(balance) => {
-                write!(f, "> Total Moonlight balance is: {} DUSK", balance)
+                write!(f, "> Total Moonlight balance is: {balance} DUSK")
             }
             Address(addr) => {
-                write!(f, "> {}", addr)
+                write!(f, "> {addr}")
             }
             Addresses(addrs) => {
                 let str_addrs = addrs
                     .iter()
-                    .map(|a| format!("{}", a))
+                    .map(|a| format!("{a}"))
                     .collect::<Vec<String>>()
-                    .join("\n>");
+                    .join("\n> ");
                 write!(f, "> {}", str_addrs)
             }
             Tx(hash) => {
@@ -853,11 +854,12 @@ impl fmt::Display for RunResult {
                 write!(f, "> Accumulated reward is: {reward} DUSK")
             }
             ExportedKeys(pk, kp) => {
+                let pk = pk.display();
+                let kp = kp.display();
                 write!(
                     f,
-                    "> Public key exported to: {}\n> Key pair exported to: {}",
-                    pk.display(),
-                    kp.display()
+                    "> Public key exported to: {pk}\n\
+                     > Key pair exported to: {kp}",
                 )
             }
             PhoenixHistory(transactions) => {
