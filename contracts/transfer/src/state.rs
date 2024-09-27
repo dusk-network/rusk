@@ -30,8 +30,10 @@ use execution_core::{
         ConvertEvent, DepositEvent, MoonlightTransactionEvent,
         PhoenixTransactionEvent, ReceiveFromContract, Transaction,
         TransferToAccount, TransferToAccountEvent, TransferToContract,
-        TransferToContractEvent, WithdrawEvent, PANIC_NONCE_NOT_READY,
-        TRANSFER_CONTRACT,
+        TransferToContractEvent, WithdrawEvent, CONVERT_TOPIC, DEPOSIT_TOPIC,
+        MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY, PHOENIX_TOPIC,
+        TRANSFER_CONTRACT, TRANSFER_TO_ACCOUNT_TOPIC,
+        TRANSFER_TO_CONTRACT_TOPIC, WITHDRAW_TOPIC,
     },
     BlsScalar, ContractError, ContractId,
 };
@@ -178,7 +180,7 @@ impl TransferState {
 
         self.mint_withdrawal("mint", &mint);
 
-        rusk_abi::emit("mint", WithdrawEvent::from(mint));
+        rusk_abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
     }
 
     /// Withdraw from a contract's balance to a Phoenix note or a Moonlight
@@ -212,7 +214,7 @@ impl TransferState {
 
         self.mint_withdrawal("withdraw", &withdraw);
 
-        rusk_abi::emit("withdraw", WithdrawEvent::from(withdraw));
+        rusk_abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
     }
 
     /// Takes the deposit addressed to this contract, and immediately withdraws
@@ -266,11 +268,11 @@ impl TransferState {
                 // deposit as being taken. Interesting to note is that we don't
                 // need to change the value held by the contract at all, since
                 // it never changes.
-                self.mint_withdrawal("CONVERT", &convert);
+                self.mint_withdrawal("convert", &convert);
                 deposit.set_taken();
 
                 rusk_abi::emit(
-                    "convert",
+                    CONVERT_TOPIC,
                     ConvertEvent::from_withdraw_and_sender(sender, &convert),
                 );
             }
@@ -322,7 +324,7 @@ impl TransferState {
                 deposit.set_taken();
 
                 rusk_abi::emit(
-                    "deposit",
+                    DEPOSIT_TOPIC,
                     DepositEvent {
                         sender,
                         value: deposit_value,
@@ -354,31 +356,31 @@ impl TransferState {
     /// receiving contract fails, or if the sending contract doesn't have enough
     /// funds.
     pub fn transfer_to_contract(&mut self, transfer: TransferToContract) {
-        let from = rusk_abi::caller()
+        let sender_contract = rusk_abi::caller()
             .expect("A transfer to a contract must happen in the context of a transaction");
 
-        if from == TRANSFER_CONTRACT {
+        if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
         }
 
-        let from_balance = self
+        let sender_balance = self
             .contract_balances
-            .get_mut(&from)
+            .get_mut(&sender_contract)
             .expect("Caller must have a balance");
 
-        if *from_balance < transfer.value {
+        if *sender_balance < transfer.value {
             panic!("Caller must have enough balance");
         }
 
-        *from_balance -= transfer.value;
+        *sender_balance -= transfer.value;
 
-        let to_balance =
+        let receiver_balance =
             self.contract_balances.entry(transfer.contract).or_insert(0);
 
-        *to_balance += transfer.value;
+        *receiver_balance += transfer.value;
 
         let receive = ReceiveFromContract {
-            contract: from,
+            contract: sender_contract,
             value: transfer.value,
             data: transfer.data,
         };
@@ -387,11 +389,11 @@ impl TransferState {
             .expect("Calling receiver should succeed");
 
         rusk_abi::emit(
-            "transfer_to_contract",
+            TRANSFER_TO_CONTRACT_TOPIC,
             TransferToContractEvent {
-                sender: from,
-                value: transfer.value,
+                sender: sender_contract,
                 receiver: transfer.contract,
+                value: transfer.value,
             },
         );
     }
@@ -406,19 +408,19 @@ impl TransferState {
     /// is called by the transfer contract itself, or if the calling contract
     /// doesn't have enough funds.
     pub fn transfer_to_account(&mut self, transfer: TransferToAccount) {
-        let from = rusk_abi::caller()
+        let sender_contract = rusk_abi::caller()
             .expect("A transfer to an account must happen in the context of a transaction");
 
-        if from == TRANSFER_CONTRACT {
+        if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
         }
 
-        let from_balance = self
+        let sender_balance = self
             .contract_balances
-            .get_mut(&from)
+            .get_mut(&sender_contract)
             .expect("Caller must have a balance");
 
-        if *from_balance < transfer.value {
+        if *sender_balance < transfer.value {
             panic!("Caller must have enough balance");
         }
 
@@ -427,15 +429,15 @@ impl TransferState {
             .entry(transfer.account.to_raw_bytes())
             .or_insert(EMPTY_ACCOUNT);
 
-        *from_balance -= transfer.value;
+        *sender_balance -= transfer.value;
         account.balance += transfer.value;
 
         rusk_abi::emit(
-            "transfer_to_account",
+            TRANSFER_TO_ACCOUNT_TOPIC,
             TransferToAccountEvent {
-                sender: from,
-                value: transfer.value,
+                sender: sender_contract,
                 receiver: transfer.account,
+                value: transfer.value,
             },
         );
     }
@@ -536,16 +538,16 @@ impl TransferState {
             panic!("The tx must target the correct chain");
         }
 
-        // check the signature is valid and made by `from`
+        // check the signature is valid and made by `sender`
         if !rusk_abi::verify_bls(
             moonlight_tx.signature_message(),
-            *moonlight_tx.from_account(),
+            *moonlight_tx.sender(),
             *moonlight_tx.signature(),
         ) {
             panic!("Invalid signature!");
         }
 
-        // check `from` has the funds necessary to suppress the total value
+        // check `sender` has the funds necessary to suppress the total value
         // available in this transaction, and that the `nonce` is higher than
         // the currently held number. If these conditions are violated we panic
         // since the transaction is invalid - either because the account doesn't
@@ -559,7 +561,7 @@ impl TransferState {
         // TODO: this is expensive, maybe we should address the fact that
         //       `AccountPublicKey` doesn't `impl Ord` so we can just use it
         //       directly as a key in the `BTreeMap`
-        let from_bytes = moonlight_tx.from_account().to_raw_bytes();
+        let from_bytes = moonlight_tx.sender().to_raw_bytes();
 
         // the total value carried by a transaction is the sum of the value, the
         // deposit, and gas_limit * gas_price.
@@ -592,9 +594,9 @@ impl TransferState {
         }
 
         // if there is a value carried by the transaction but no key specified
-        // in the `to` field, we just give the value back to `from`.
+        // in the `receiver` field, we just give the value back to `sender`.
         if moonlight_tx.value() > 0 {
-            let key = match moonlight_tx.to_account() {
+            let key = match moonlight_tx.receiver() {
                 Some(to) => to.to_raw_bytes(),
                 None => from_bytes,
             };
@@ -629,7 +631,7 @@ impl TransferState {
 
         // in phoenix, a refund note is with the unspent amount to the stealth
         // address in the `Fee` structure, while in moonlight we simply refund
-        // the `from` account for what it didn't spend
+        // the `sender` account for what it didn't spend
         //
         // any eventual deposit that failed to be "picked up" is refunded in the
         // same way - in phoenix the same note is reused, in moonlight the
@@ -651,7 +653,7 @@ impl TransferState {
                 }
 
                 rusk_abi::emit(
-                    "phoenix",
+                    PHOENIX_TOPIC,
                     PhoenixTransactionEvent {
                         nullifiers: tx.nullifiers().to_vec(),
                         notes,
@@ -661,7 +663,7 @@ impl TransferState {
                 );
             }
             Transaction::Moonlight(tx) => {
-                let from_bytes = tx.from_account().to_raw_bytes();
+                let from_bytes = tx.sender().to_raw_bytes();
 
                 let remaining_gas = tx.gas_limit() - gas_spent;
                 let remaining = remaining_gas * tx.gas_price()
@@ -674,10 +676,10 @@ impl TransferState {
                 account.balance += remaining;
 
                 rusk_abi::emit(
-                    "moonlight",
+                    MOONLIGHT_TOPIC,
                     MoonlightTransactionEvent {
-                        from: *tx.from_account(),
-                        to: tx.to_account().copied(),
+                        sender: *tx.sender(),
+                        receiver: tx.receiver().copied(),
                         value: tx.value(),
                         memo,
                         gas_spent,

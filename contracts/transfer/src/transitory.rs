@@ -92,7 +92,7 @@ pub fn put_transaction(tx: impl Into<Transaction>) {
     unsafe {
         let tx = tx.into();
 
-        let sender = tx.from_account().copied();
+        let sender = tx.moonlight_sender().copied();
         let value = tx.deposit();
 
         let mut deposit = Deposit::None;
