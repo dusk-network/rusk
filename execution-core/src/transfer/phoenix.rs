@@ -108,7 +108,6 @@ impl Transaction {
     /// - the `inputs` vector contains duplicate `Note`s
     /// - the `prover` is implemented incorrectly
     /// - the memo, if given, is too large
-    #[allow(clippy::too_many_lines)]
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::similar_names)]
     pub fn new<R: RngCore + CryptoRng, P: Prove>(
@@ -127,197 +126,39 @@ impl Transaction {
         data: Option<impl Into<TransactionData>>,
         prover: &P,
     ) -> Result<Self, Error> {
-        let data = data.map(Into::into);
-
-        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
-            if memo.len() > MAX_MEMO_SIZE {
-                return Err(Error::MemoTooLarge(memo.len()));
-            }
-        }
-
-        let sender_pk = PublicKey::from(sender_sk);
-        let sender_vk = ViewKey::from(sender_sk);
-
-        // get input note values, value-blinders and nullifiers
-        let input_len = inputs.len();
-        let mut input_values = Vec::with_capacity(input_len);
-        let mut input_value_blinders = Vec::with_capacity(input_len);
-        let mut input_nullifiers = Vec::with_capacity(input_len);
-        for (note, _opening) in &inputs {
-            let note_nullifier = note.gen_nullifier(sender_sk);
-            for nullifier in &input_nullifiers {
-                if note_nullifier == *nullifier {
-                    return Err(Error::Replay);
-                }
-            }
-            input_nullifiers.push(note_nullifier);
-            input_values.push(note.value(Some(&sender_vk))?);
-            input_value_blinders.push(note.value_blinder(Some(&sender_vk))?);
-        }
-        let input_value: u64 = input_values.iter().sum();
-
-        // --- Create the transaction payload
-
-        // Set the fee.
-        let fee = Fee::new(rng, change_pk, gas_limit, gas_price);
-        let max_fee = fee.max_fee();
-
-        if input_value < transfer_value + max_fee + deposit {
-            return Err(Error::InsufficientBalance);
-        }
-
-        // Generate output notes:
-        let transfer_value_blinder = if obfuscated_transaction {
-            JubJubScalar::random(&mut *rng)
-        } else {
-            JubJubScalar::zero()
-        };
-        let transfer_sender_blinder = [
-            JubJubScalar::random(&mut *rng),
-            JubJubScalar::random(&mut *rng),
-        ];
-        let change_sender_blinder = [
-            JubJubScalar::random(&mut *rng),
-            JubJubScalar::random(&mut *rng),
-        ];
-        let transfer_note = if obfuscated_transaction {
-            Note::obfuscated(
-                rng,
-                &sender_pk,
-                receiver_pk,
-                transfer_value,
-                transfer_value_blinder,
-                transfer_sender_blinder,
-            )
-        } else {
-            Note::transparent(
-                rng,
-                &sender_pk,
-                receiver_pk,
-                transfer_value,
-                transfer_sender_blinder,
-            )
-        };
-        // The change note should have the value of the input note, minus what
-        // is maximally spent.
-        let change_value = input_value - transfer_value - max_fee - deposit;
-        let change_value_blinder = JubJubScalar::random(&mut *rng);
-        let change_note = Note::obfuscated(
+        let unproven = UnprovenTransaction::new(
             rng,
-            &sender_pk,
+            sender_sk,
             change_pk,
-            change_value,
-            change_value_blinder,
-            change_sender_blinder,
-        );
-        let outputs = [transfer_note.clone(), change_note.clone()];
-
-        // Now we can set the tx-skeleton, payload and get the payload-hash
-        let tx_skeleton = TxSkeleton {
+            receiver_pk,
+            inputs,
             root,
-            // we also need the nullifiers for the tx-circuit, hence the clone
-            nullifiers: input_nullifiers.clone(),
-            outputs,
-            max_fee,
+            transfer_value,
+            obfuscated_transaction,
             deposit,
-        };
-        let payload = Payload {
+            gas_limit,
+            gas_price,
             chain_id,
-            tx_skeleton,
-            fee,
             data,
-        };
-        let payload_hash = payload.hash();
-
-        // --- Create the transaction proof
-
-        // Create a vector with all the information for the input-notes
-        let mut input_notes_info = Vec::with_capacity(input_len);
-        inputs
-            .into_iter()
-            .zip(input_nullifiers)
-            .zip(input_values)
-            .zip(input_value_blinders)
-            .for_each(
-                |(
-                    (((note, merkle_opening), nullifier), value),
-                    value_blinder,
-                )| {
-                    let note_sk = sender_sk.gen_note_sk(note.stealth_address());
-                    let note_pk_p = JubJubAffine::from(
-                        crate::GENERATOR_NUMS_EXTENDED * note_sk.as_ref(),
-                    );
-                    let signature = note_sk.sign_double(rng, payload_hash);
-                    input_notes_info.push(InputNoteInfo {
-                        merkle_opening,
-                        note,
-                        note_pk_p,
-                        value,
-                        value_blinder,
-                        nullifier,
-                        signature,
-                    });
-                },
-            );
-
-        // Create the information for the output-notes
-        let transfer_value_commitment =
-            value_commitment(transfer_value, transfer_value_blinder);
-        let transfer_note_sender_enc = match transfer_note.sender() {
-            Sender::Encryption(enc) => enc,
-            Sender::ContractInfo(_) => unreachable!("The sender is encrypted"),
-        };
-        let change_value_commitment =
-            value_commitment(change_value, change_value_blinder);
-        let change_note_sender_enc = match change_note.sender() {
-            Sender::Encryption(enc) => enc,
-            Sender::ContractInfo(_) => unreachable!("The sender is encrypted"),
-        };
-        let output_notes_info = [
-            OutputNoteInfo {
-                value: transfer_value,
-                value_commitment: transfer_value_commitment,
-                value_blinder: transfer_value_blinder,
-                note_pk: JubJubAffine::from(
-                    transfer_note.stealth_address().note_pk().as_ref(),
-                ),
-                sender_enc: *transfer_note_sender_enc,
-                sender_blinder: transfer_sender_blinder,
-            },
-            OutputNoteInfo {
-                value: change_value,
-                value_commitment: change_value_commitment,
-                value_blinder: change_value_blinder,
-                note_pk: JubJubAffine::from(
-                    change_note.stealth_address().note_pk().as_ref(),
-                ),
-                sender_enc: *change_note_sender_enc,
-                sender_blinder: change_sender_blinder,
-            },
-        ];
-
-        // Sign the payload hash using both 'a' and 'b' of the sender_sk
-        let schnorr_sk_a = SchnorrSecretKey::from(sender_sk.a());
-        let sig_a = schnorr_sk_a.sign(rng, payload_hash);
-        let schnorr_sk_b = SchnorrSecretKey::from(sender_sk.b());
-        let sig_b = schnorr_sk_b.sign(rng, payload_hash);
+        )?;
 
         Ok(Self {
-            payload,
-            proof: prover.prove(
-                &TxCircuitVec {
-                    input_notes_info,
-                    output_notes_info,
-                    payload_hash,
-                    root,
-                    deposit,
-                    max_fee,
-                    sender_pk,
-                    signatures: (sig_a, sig_b),
-                }
-                .to_var_bytes(),
-            )?,
+            payload: unproven.payload,
+            proof: prover.prove(&unproven.circuit)?,
         })
+    }
+
+    /// Generates a [`Transaction`] from an [`UnprovenTransaction`] and the
+    /// proof as bytes.
+    #[must_use]
+    pub fn from_unproven(
+        unproven: UnprovenTransaction,
+        proof: Vec<u8>,
+    ) -> Self {
+        Self {
+            payload: unproven.payload,
+            proof,
+        }
     }
 
     /// Creates a new phoenix transaction given the [`Payload`] and proof. Note
@@ -326,19 +167,6 @@ impl Transaction {
     #[must_use]
     pub fn from_payload_and_proof(payload: Payload, proof: Vec<u8>) -> Self {
         Self { payload, proof }
-    }
-
-    /// Replaces the inner `proof` bytes for a given `proof`.
-    ///
-    /// This can be used to delegate the proof generation after a
-    /// [`Transaction`] is created.
-    /// In order to do that, the transaction would be created using the
-    /// serialized circuit-bytes for the proof-field. Those bytes can be
-    /// sent to a 3rd-party prover-service that generates the proof-bytes
-    /// and sends them back. The proof-bytes will then replace the
-    /// circuit-bytes in the transaction using this function.
-    pub fn set_proof(&mut self, proof: Vec<u8>) {
-        self.proof = proof;
     }
 
     /// The proof of the transaction.
@@ -612,6 +440,269 @@ impl Transaction {
         });
 
         pis
+    }
+}
+
+/// Unproven Phoenix transaction to be used to decouple transaction creation
+/// from proof generation.
+///
+/// To generate a [`Transaction`] use [`Transaction::from_unproven`] with the
+/// proof-bytes generated by passing the `circuit` bytes to an external prover.
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct UnprovenTransaction {
+    payload: Payload,
+    /// The transaction-circuit as bytes.
+    pub circuit: Vec<u8>,
+}
+
+impl PartialEq for UnprovenTransaction {
+    fn eq(&self, other: &Self) -> bool {
+        self.hash() == other.hash()
+    }
+}
+
+impl Eq for UnprovenTransaction {}
+
+impl UnprovenTransaction {
+    /// Create a new unproven phoenix transaction given the sender secret-key,
+    /// receiver public-key, the input note positions in the transaction
+    /// tree and the new output-notes.
+    /// In contrast to a proven [`Transaction`], an unproven transaction doesn't
+    /// carry a `proof` but the transaction-circuit as bytes. These
+    /// circuit-bytes can be passed to a prover to generate a proof.
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - one of the input-notes cannot be decrypted using the `sender_sk`
+    /// - the transaction input doesn't cover the transaction costs
+    /// - the `inputs` vector is either empty or larger than 4 elements
+    /// - the `inputs` vector contains duplicate `Note`s
+    /// - the memo, if given, is too large
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::similar_names)]
+    pub fn new<R: RngCore + CryptoRng>(
+        rng: &mut R,
+        sender_sk: &SecretKey,
+        change_pk: &PublicKey,
+        receiver_pk: &PublicKey,
+        inputs: Vec<(Note, NoteOpening)>,
+        root: BlsScalar,
+        transfer_value: u64,
+        obfuscated_transaction: bool,
+        deposit: u64,
+        gas_limit: u64,
+        gas_price: u64,
+        chain_id: u8,
+        data: Option<impl Into<TransactionData>>,
+    ) -> Result<Self, Error> {
+        let data = data.map(Into::into);
+
+        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
+            if memo.len() > MAX_MEMO_SIZE {
+                return Err(Error::MemoTooLarge(memo.len()));
+            }
+        }
+
+        let sender_pk = PublicKey::from(sender_sk);
+        let sender_vk = ViewKey::from(sender_sk);
+
+        // get input note values, value-blinders and nullifiers
+        let input_len = inputs.len();
+        let mut input_values = Vec::with_capacity(input_len);
+        let mut input_value_blinders = Vec::with_capacity(input_len);
+        let mut input_nullifiers = Vec::with_capacity(input_len);
+        for (note, _opening) in &inputs {
+            let note_nullifier = note.gen_nullifier(sender_sk);
+            for nullifier in &input_nullifiers {
+                if note_nullifier == *nullifier {
+                    return Err(Error::Replay);
+                }
+            }
+            input_nullifiers.push(note_nullifier);
+            input_values.push(note.value(Some(&sender_vk))?);
+            input_value_blinders.push(note.value_blinder(Some(&sender_vk))?);
+        }
+        let input_value: u64 = input_values.iter().sum();
+
+        // --- Create the transaction payload
+
+        // Set the fee.
+        let fee = Fee::new(rng, change_pk, gas_limit, gas_price);
+        let max_fee = fee.max_fee();
+
+        if input_value < transfer_value + max_fee + deposit {
+            return Err(Error::InsufficientBalance);
+        }
+
+        // Generate output notes:
+        let transfer_value_blinder = if obfuscated_transaction {
+            JubJubScalar::random(&mut *rng)
+        } else {
+            JubJubScalar::zero()
+        };
+        let transfer_sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+        let change_sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+        let transfer_note = if obfuscated_transaction {
+            Note::obfuscated(
+                rng,
+                &sender_pk,
+                receiver_pk,
+                transfer_value,
+                transfer_value_blinder,
+                transfer_sender_blinder,
+            )
+        } else {
+            Note::transparent(
+                rng,
+                &sender_pk,
+                receiver_pk,
+                transfer_value,
+                transfer_sender_blinder,
+            )
+        };
+        // The change note should have the value of the input note, minus what
+        // is maximally spent.
+        let change_value = input_value - transfer_value - max_fee - deposit;
+        let change_value_blinder = JubJubScalar::random(&mut *rng);
+        let change_note = Note::obfuscated(
+            rng,
+            &sender_pk,
+            change_pk,
+            change_value,
+            change_value_blinder,
+            change_sender_blinder,
+        );
+        let outputs = [transfer_note.clone(), change_note.clone()];
+
+        // Now we can set the tx-skeleton, payload and get the payload-hash
+        let tx_skeleton = TxSkeleton {
+            root,
+            // we also need the nullifiers for the tx-circuit, hence the clone
+            nullifiers: input_nullifiers.clone(),
+            outputs,
+            max_fee,
+            deposit,
+        };
+        let payload = Payload {
+            chain_id,
+            tx_skeleton,
+            fee,
+            data,
+        };
+        let payload_hash = payload.hash();
+
+        // --- Create the transaction proof
+
+        // Create a vector with all the information for the input-notes
+        let mut input_notes_info = Vec::with_capacity(input_len);
+        inputs
+            .into_iter()
+            .zip(input_nullifiers)
+            .zip(input_values)
+            .zip(input_value_blinders)
+            .for_each(
+                |(
+                    (((note, merkle_opening), nullifier), value),
+                    value_blinder,
+                )| {
+                    let note_sk = sender_sk.gen_note_sk(note.stealth_address());
+                    let note_pk_p = JubJubAffine::from(
+                        crate::GENERATOR_NUMS_EXTENDED * note_sk.as_ref(),
+                    );
+                    let signature = note_sk.sign_double(rng, payload_hash);
+                    input_notes_info.push(InputNoteInfo {
+                        merkle_opening,
+                        note,
+                        note_pk_p,
+                        value,
+                        value_blinder,
+                        nullifier,
+                        signature,
+                    });
+                },
+            );
+
+        // Create the information for the output-notes
+        let transfer_value_commitment =
+            value_commitment(transfer_value, transfer_value_blinder);
+        let transfer_note_sender_enc = match transfer_note.sender() {
+            Sender::Encryption(enc) => enc,
+            Sender::ContractInfo(_) => unreachable!("The sender is encrypted"),
+        };
+        let change_value_commitment =
+            value_commitment(change_value, change_value_blinder);
+        let change_note_sender_enc = match change_note.sender() {
+            Sender::Encryption(enc) => enc,
+            Sender::ContractInfo(_) => unreachable!("The sender is encrypted"),
+        };
+        let output_notes_info = [
+            OutputNoteInfo {
+                value: transfer_value,
+                value_commitment: transfer_value_commitment,
+                value_blinder: transfer_value_blinder,
+                note_pk: JubJubAffine::from(
+                    transfer_note.stealth_address().note_pk().as_ref(),
+                ),
+                sender_enc: *transfer_note_sender_enc,
+                sender_blinder: transfer_sender_blinder,
+            },
+            OutputNoteInfo {
+                value: change_value,
+                value_commitment: change_value_commitment,
+                value_blinder: change_value_blinder,
+                note_pk: JubJubAffine::from(
+                    change_note.stealth_address().note_pk().as_ref(),
+                ),
+                sender_enc: *change_note_sender_enc,
+                sender_blinder: change_sender_blinder,
+            },
+        ];
+
+        // Sign the payload hash using both 'a' and 'b' of the sender_sk
+        let schnorr_sk_a = SchnorrSecretKey::from(sender_sk.a());
+        let sig_a = schnorr_sk_a.sign(rng, payload_hash);
+        let schnorr_sk_b = SchnorrSecretKey::from(sender_sk.b());
+        let sig_b = schnorr_sk_b.sign(rng, payload_hash);
+
+        Ok(Self {
+            payload,
+            circuit: TxCircuitVec {
+                input_notes_info,
+                output_notes_info,
+                payload_hash,
+                root,
+                deposit,
+                max_fee,
+                sender_pk,
+                signatures: (sig_a, sig_b),
+            }
+            .to_var_bytes(),
+        })
+    }
+
+    /// Return input bytes to hash the Transaction.
+    ///
+    /// Note: The result of this function is *only* meant to be used as an input
+    /// for hashing and *cannot* be used to deserialize the `Transaction` again.
+    #[must_use]
+    pub fn to_hash_input_bytes(&self) -> Vec<u8> {
+        let mut bytes = self.payload.to_hash_input_bytes();
+        bytes.extend(&self.circuit);
+        bytes
+    }
+
+    /// Create the `Transaction`-hash.
+    #[must_use]
+    pub fn hash(&self) -> BlsScalar {
+        BlsScalar::hash_to_scalar(&self.to_hash_input_bytes())
     }
 }
 

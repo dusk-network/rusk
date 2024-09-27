@@ -11,7 +11,10 @@ use execution_core::{
     signatures::bls::PublicKey as AccountPublicKey,
     transfer::{
         moonlight::AccountData,
-        phoenix::{Note, NoteLeaf, Prove},
+        phoenix::{
+            Note, NoteLeaf, Transaction as PhoenixTransaction,
+            UnprovenTransaction,
+        },
         Transaction,
     },
     Error as ExecutionCoreError,
@@ -55,20 +58,6 @@ const SYNC_INTERVAL_SECONDS: u64 = 3;
 
 /// SIZE of the tree leaf
 pub const TREE_LEAF: usize = std::mem::size_of::<ArchivedNoteLeaf>();
-
-/// A prover struct that has the `Prove` trait from executio-core implemented.
-/// It currently uses a hardcoded prover which delegates the proving to the
-/// `prove_execute`
-pub struct Prover;
-
-impl Prove for Prover {
-    fn prove(
-        &self,
-        tx_circuit_vec_bytes: &[u8],
-    ) -> Result<Vec<u8>, ExecutionCoreError> {
-        Ok(tx_circuit_vec_bytes.to_vec())
-    }
-}
 
 /// The state struct is responsible for managing the state of the wallet
 pub struct State {
@@ -152,33 +141,36 @@ impl State {
         sync_db(&self.client, &self.cache(), &self.store, self.status).await
     }
 
-    /// Requests that a node prove the given transaction and later propagates it
-    /// Skips writing the proof for non phoenix transactions
-    pub async fn prove_and_propagate(
+    /// Requests that a node prove the given phoenix-transaction.
+    pub async fn prove_unproven(
+        &self,
+        utx: UnprovenTransaction,
+    ) -> Result<Transaction, Error> {
+        let status = self.status;
+        let prover = &self.prover;
+
+        status("Attempt to prove unproven tx...");
+
+        let prove_req = RuskRequest::new("prove_execute", utx.circuit.clone());
+
+        let proof = prover
+            .call(2, "rusk", &prove_req)
+            .await
+            .map_err(|e| ExecutionCoreError::PhoenixCircuit(e.to_string()))?;
+
+        let tx = PhoenixTransaction::from_unproven(utx, proof);
+
+        status("Proving sucesss!");
+
+        Ok(tx.into())
+    }
+
+    /// Requests that a node propagates a given transaction.
+    pub async fn propagate(
         &self,
         tx: Transaction,
     ) -> Result<Transaction, Error> {
         let status = self.status;
-        let prover = &self.prover;
-        let mut tx = tx;
-
-        if let Transaction::Phoenix(utx) = &mut tx {
-            let status = self.status;
-            let proof = utx.proof();
-
-            status("Attempt to prove tx...");
-
-            let prove_req = RuskRequest::new("prove_execute", proof.to_vec());
-
-            let proof =
-                prover.call(2, "rusk", &prove_req).await.map_err(|e| {
-                    ExecutionCoreError::PhoenixCircuit(e.to_string())
-                })?;
-
-            utx.set_proof(proof);
-
-            status("Proving sucesss!");
-        }
 
         let tx_bytes = tx.to_var_bytes();
 

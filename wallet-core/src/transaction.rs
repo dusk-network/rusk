@@ -6,6 +6,8 @@
 
 //! Implementations of basic wallet functionalities to create transactions.
 
+pub mod unproven;
+
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
@@ -31,16 +33,8 @@ use execution_core::{
     BlsScalar, ContractId, Error, JubJubScalar,
 };
 
-/// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
-/// the only difference being that it carries a serialized [`TxCircuitVec`]
-/// instead of the proof bytes.
-/// This way it is possible to delegate the proof generation of the
-/// [`TxCircuitVec`] after the unproven transaction was created while at the
-/// same time ensuring non-malleability of the transaction, as the transaction's
-/// payload-hash is part of the public inputs of the circuit.
-/// Once the proof is generated from the [`TxCircuitVec`] bytes, it can
-/// replace the serialized circuit in the transaction by calling
-/// [`Transaction::replace_proof`].
+/// Create a generic Phoenix [`Transaction`] with a proof being generated right
+/// away by the given `prover`.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
@@ -151,33 +145,22 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     current_nonce: u64,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
-
-    let transfer_value = 0;
-    let obfuscated_transaction = false;
-    let deposit = stake_value;
-
-    let stake = Stake::new(stake_sk, stake_value, current_nonce, chain_id);
-
-    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
-
-    phoenix::<R, P>(
+    let utx = unproven::phoenix_stake(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        stake_sk,
         inputs,
         root,
-        transfer_value,
-        obfuscated_transaction,
-        deposit,
         gas_limit,
         gas_price,
         chain_id,
-        Some(contract_call),
-        prover,
-    )
+        stake_value,
+        current_nonce,
+    )?;
+
+    let proof = prover.prove(&utx.circuit)?;
+
+    Ok(PhoenixTransaction::from_unproven(utx, proof).into())
 }
 
 /// Create a [`Transaction`] to stake from a Moonlight account.
@@ -222,8 +205,7 @@ pub fn moonlight_stake(
     )
 }
 
-/// Create an unproven [`Transaction`] to withdraw stake rewards into a
-/// phoenix-note.
+/// Create a [`Transaction`] to withdraw stake rewards into a phoenix-note.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
@@ -245,49 +227,21 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
-
-    let transfer_value = 0;
-    let obfuscated_transaction = false;
-    let deposit = 0;
-
-    // split the input notes and openings from the nullifiers
-    let mut nullifiers = Vec::with_capacity(inputs.len());
-    let inputs = inputs
-        .into_iter()
-        .map(|(note, opening, nullifier)| {
-            nullifiers.push(nullifier);
-            (note, opening)
-        })
-        .collect();
-
-    let gas_payment_token = WithdrawReplayToken::Phoenix(nullifiers);
-
-    let contract_call = stake_reward_to_phoenix(
+    let utx = unproven::phoenix_stake_reward(
         rng,
         phoenix_sender_sk,
         stake_sk,
-        gas_payment_token,
-        reward_amount,
-    )?;
-
-    phoenix::<R, P>(
-        rng,
-        phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
         inputs,
         root,
-        transfer_value,
-        obfuscated_transaction,
-        deposit,
+        reward_amount,
         gas_limit,
         gas_price,
         chain_id,
-        Some(contract_call),
-        prover,
-    )
+    )?;
+
+    let proof = prover.prove(&utx.circuit)?;
+
+    Ok(PhoenixTransaction::from_unproven(utx, proof).into())
 }
 
 /// Create a [`Transaction`] to withdraw stake rewards into Moonlight account.
@@ -336,7 +290,7 @@ pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
     )
 }
 
-/// Create an unproven [`Transaction`] to unstake into a phoenix-note.
+/// Create a [`Transaction`] to unstake into a phoenix-note.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
@@ -358,49 +312,21 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
-
-    let transfer_value = 0;
-    let obfuscated_transaction = false;
-    let deposit = 0;
-
-    // split the input notes and openings from the nullifiers
-    let mut nullifiers = Vec::with_capacity(inputs.len());
-    let inputs = inputs
-        .into_iter()
-        .map(|(note, opening, nullifier)| {
-            nullifiers.push(nullifier);
-            (note, opening)
-        })
-        .collect();
-
-    let gas_payment_token = WithdrawReplayToken::Phoenix(nullifiers);
-
-    let contract_call = unstake_to_phoenix(
+    let utx = unproven::phoenix_unstake(
         rng,
         phoenix_sender_sk,
         stake_sk,
-        gas_payment_token,
-        unstake_value,
-    )?;
-
-    phoenix::<R, P>(
-        rng,
-        phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
         inputs,
         root,
-        transfer_value,
-        obfuscated_transaction,
-        deposit,
+        unstake_value,
         gas_limit,
         gas_price,
         chain_id,
-        Some(contract_call),
-        prover,
-    )
+    )?;
+
+    let proof = prover.prove(&utx.circuit)?;
+
+    Ok(PhoenixTransaction::from_unproven(utx, proof).into())
 }
 
 /// Create a [`Transaction`] to unstake into a Moonlight account.
@@ -449,8 +375,7 @@ pub fn moonlight_unstake<R: RngCore + CryptoRng>(
     )
 }
 
-/// Create an unproven [`Transaction`] to convert Phoenix Dusk into Moonlight
-/// Dusk.
+/// Create a [`Transaction`] to convert Phoenix Dusk into Moonlight Dusk.
 ///
 /// # Note
 /// The ownership of both sender and receiver keys is required, and
@@ -476,49 +401,21 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
-
-    let transfer_value = 0;
-    let obfuscated_transaction = true;
-    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
-                                 // transfer contract
-
-    // split the input notes and openings from the nullifiers
-    let mut nullifiers = Vec::with_capacity(inputs.len());
-    let inputs = inputs
-        .into_iter()
-        .map(|(note, opening, nullifier)| {
-            nullifiers.push(nullifier);
-            (note, opening)
-        })
-        .collect();
-
-    let gas_payment_token = WithdrawReplayToken::Phoenix(nullifiers);
-
-    let contract_call = convert_to_moonlight(
-        rng,
-        moonlight_receiver_sk,
-        gas_payment_token,
-        convert_value,
-    )?;
-
-    phoenix::<R, P>(
+    let utx = unproven::phoenix_to_moonlight(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        moonlight_receiver_sk,
         inputs,
         root,
-        transfer_value,
-        obfuscated_transaction,
-        deposit,
+        convert_value,
         gas_limit,
         gas_price,
         chain_id,
-        Some(contract_call),
-        prover,
-    )
+    )?;
+
+    let proof = prover.prove(&utx.circuit)?;
+
+    Ok(PhoenixTransaction::from_unproven(utx, proof).into())
 }
 
 /// Create a [`Transaction`] to convert Moonlight Dusk into Phoenix Dusk.
@@ -569,7 +466,7 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
     )
 }
 
-/// Create a new unproven [`Transaction`] to deploy a contract to the network.
+/// Create a [`Transaction`] to deploy a contract to the network.
 ///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
@@ -593,50 +490,23 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
-
-    let transfer_value = 0;
-    let obfuscated_transaction = true;
-    let deposit = 0;
-
-    // split the input notes and openings from the nullifiers
-    let mut nullifiers = Vec::with_capacity(inputs.len());
-    let inputs = inputs
-        .into_iter()
-        .map(|(note, opening, nullifier)| {
-            nullifiers.push(nullifier);
-            (note, opening)
-        })
-        .collect();
-
-    let bytes = bytecode.into();
-    let deploy = ContractDeploy {
-        bytecode: ContractBytecode {
-            hash: blake3::hash(&bytes).into(),
-            bytes,
-        },
-        owner: owner.to_bytes().to_vec(),
-        init_args: Some(init_args),
-        nonce,
-    };
-
-    phoenix(
+    let utx = unproven::phoenix_deployment(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
         inputs,
         root,
-        transfer_value,
-        obfuscated_transaction,
-        deposit,
+        bytecode,
+        owner,
+        init_args,
+        nonce,
         gas_limit,
         gas_price,
         chain_id,
-        Some(deploy),
-        prover,
-    )
+    )?;
+
+    let proof = prover.prove(&utx.circuit)?;
+
+    Ok(PhoenixTransaction::from_unproven(utx, proof).into())
 }
 
 /// Create a new [`Transaction`] to deploy a contract to the network.
