@@ -834,21 +834,23 @@ impl fmt::Display for RunResult {
                 write!(f, "> Transaction sent: {hash}",)
             }
             StakeInfo(data, _) => {
-                let stake_str = match data.amount {
-                    Some(amt) => format!(
-                        "Current stake amount is: {} DUSK\n> Stake eligibility from block #{} (Epoch {})",
-                        Dusk::from(amt.value),
-                        amt.eligibility,
-                        amt.eligibility / EPOCH
-                    ),
-                    None => "No active stake found for this key".to_string(),
-                };
-                write!(
-                    f,
-                    "> {}\n> Accumulated reward is: {} DUSK",
-                    stake_str,
-                    Dusk::from(data.reward)
-                )
+                match data.amount {
+                    Some(amt) => {
+                        let amount = Dusk::from(amt.value);
+                        let locked = Dusk::from(amt.locked);
+                        let eligibility = amt.eligibility;
+                        let epoch = amt.eligibility / EPOCH;
+
+                        writeln!(f, "> Eligible stake amount: {amount} DUSK")?;
+                        if locked > 0 {
+                            writeln!(f, "> Locked amount: {locked} DUSK")?;
+                        };
+                        writeln!(f, "> Stake eligibility from block #{eligibility} (Epoch {epoch})")
+                    }
+                    None => writeln!(f, "> No active stake found for this key"),
+                }?;
+                let reward = Dusk::from(data.reward);
+                write!(f, "> Accumulated reward is: {reward} DUSK")
             }
             ExportedKeys(pk, kp) => {
                 write!(
