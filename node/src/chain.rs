@@ -143,6 +143,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 recv = self.inbound.recv() => {
                     let msg = recv?;
 
+                    if fsm.is_out_of_sync() {
+                        if let Err(e) = network.read().await.broadcast(&msg).await {
+                            warn!("Unable to broadcast message while outofsync {e}");
+                        }
+                    };
+
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
