@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import * as ProtocolDriver from "../src/protocol-driver.js";
+import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import { ProfileGenerator } from "./profile.js";
 
 export class Bookkeeper {

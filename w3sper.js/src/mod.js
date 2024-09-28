@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-export * from "./network.js";
+export * from "./network/mod.js";
 export * from "./profile.js";
 export * from "./bookkeeper.js";
-export * from "./network/state-syncer.js";

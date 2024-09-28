@@ -4,25 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import * as ProtocolDriver from "../protocol-driver.js";
-import { getBYOBReader } from "../protocol-driver/stream.js";
-import { Bookmark } from "./state-syncer/bookmark.js";
-
+import { SyncEvent } from "./event.js";
+import { getBYOBReader } from "../../protocol-driver/stream.js";
+import * as ProtocolDriver from "../../protocol-driver/mod.js";
+import { Bookmark } from "../bookmark.js";
 export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
 
-export class SyncEvent extends CustomEvent {
-  constructor(type, detail) {
-    super(type, { detail });
-  }
-}
-
-export class StateSyncer extends EventTarget {
+export class AddressSyncer extends EventTarget {
   #network;
 
   constructor(network, options = {}) {
-    const { signal } = options;
-
     super();
     this.#network = network;
   }
@@ -46,22 +38,7 @@ export class StateSyncer extends EventTarget {
       .then((buffer) => new Bookmark(new Uint8Array(buffer)));
   }
 
-  async accounts(users) {
-    // await ProtocolDriver.accountsIntoRaw(users);
-    // const url = new URL(
-    //   `/on/contracts:${TRANSFER}/account`,
-    //   this.#network.url,
-    //   pub fn account(&self, key: &AccountPublicKey) -> AccountData {
-    //       let key_bytes = key.to_raw_bytes();
-    //       self.accounts
-    //           .get(&key_bytes)
-    //           .cloned()
-    //           .unwrap_or(EMPTY_ACCOUNT)
-    //   }
-    // );
-  }
-
-  async notes(owners, options = {}) {
+  async notes(profiles, options = {}) {
     const from = options.from ?? 0n;
     const lastBookmark = await this.#bookmark;
     const lastBlock = await this.#network.blockHeight;
@@ -111,7 +88,7 @@ export class StateSyncer extends EventTarget {
           }
 
           const [owned, syncInfo] = await ProtocolDriver.mapOwned(
-            owners,
+            profiles,
             value,
           ).catch(console.error);
 

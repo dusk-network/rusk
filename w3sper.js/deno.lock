@@ -2,6 +2,12 @@
   "version": "3",
   "remote": {
     "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js": "b3a4ef318038bb186610b894c13f417850190ed926caf5e72ae1733ef0879b6c",
+    "https://deno.land/std@0.136.0/_util/assert.ts": "e94f2eb37cebd7f199952e242c77654e43333c1ac4c5c700e929ea3aa5489f74",
+    "https://deno.land/std@0.136.0/bytes/bytes_list.ts": "67eb118e0b7891d2f389dad4add35856f4ad5faab46318ff99653456c23b025d",
+    "https://deno.land/std@0.136.0/bytes/equals.ts": "a60ef9f01fb6e06a4e0343fc44d53d39d12dd66bc3f09ac8e6eb9cc1a6335e48",
+    "https://deno.land/std@0.136.0/bytes/mod.ts": "4cef6fe8f0de217b9babbcbb0a566402b667f18a8e6d094a45e5fb3fc1afff70",
+    "https://deno.land/std@0.136.0/io/buffer.ts": "bd0c4bf53db4b4be916ca5963e454bddfd3fcd45039041ea161dbf826817822b",
+    "https://deno.land/std@0.136.0/streams/conversion.ts": "712585bfa0172a97fb68dd46e784ae8ad59d11b88079d6a4ab098ff42e697d21",
     "https://deno.land/std@0.210.0/assert/_constants.ts": "8a9da298c26750b28b326b297316cdde860bc237533b07e1337c021379e6b2a9",
     "https://deno.land/std@0.210.0/assert/_diff.ts": "2c9371f17cf08cbb843c924bc31ca77af422ec4fe162f73d42c651d547573fa8",
     "https://deno.land/std@0.210.0/assert/_format.ts": "335ce8e15c65b679ad142dbc9e5e97e5d58602c39dd3c9175cef6c85fe22d6d5",

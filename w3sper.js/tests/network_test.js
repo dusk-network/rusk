@@ -5,16 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import {
-  test,
-  assert,
-} from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
-
-import {
   Network,
   ProfileGenerator,
   Bookkeeper,
-  StateSyncer,
+  AddressSyncer,
+  AccountSyncer,
 } from "../src/mod.js";
+
+import { test, assert } from "./harness.js";
 
 const once = (target, topic) =>
   new Promise((resolve) =>
@@ -30,6 +28,8 @@ const SEED = new Uint8Array([
 ]);
 
 const seeder = () => SEED;
+
+test.withLocalWasm = "release";
 
 // Test case for default profile
 test("Network connection", async () => {
@@ -63,15 +63,6 @@ test("Network block height", async () => {
 
 test("Network synchronization", async () => {
   const network = await Network.connect("http://localhost:8080/");
-  const syncer = new StateSyncer(network);
-
-  let iterationOwnedCountTotal = 0;
-  syncer.addEventListener("synciteration", ({ detail }) => {
-    const { ownedCount } = detail;
-
-    iterationOwnedCountTotal += ownedCount;
-  });
-
   const profiles = new ProfileGenerator(seeder);
 
   const owners = await Promise.all([
@@ -80,24 +71,35 @@ test("Network synchronization", async () => {
     profiles.next(),
   ]);
 
-  const notes = await syncer.notes(owners, { from: 0n });
-  //const accounts = await syncer.accounts(owners);
+  const addresses = new AddressSyncer(network);
+  const accounts = new AccountSyncer(network);
+
+  let iterationOwnedCountTotal = 0;
+  addresses.addEventListener("synciteration", ({ detail }) => {
+    const { ownedCount } = detail;
+
+    iterationOwnedCountTotal += ownedCount;
+  });
 
   let ownedNotes = new Map();
-  for await (let [owned, _syncInfo] of notes) {
-    ownedNotes = new Map([...ownedNotes, ...owned]);
+  for await (let [notes, _syncInfo] of await addresses.notes(owners, {
+    from: 0n,
+  })) {
+    ownedNotes = new Map([...ownedNotes, ...notes]);
   }
 
-  assert.ok(iterationOwnedCountTotal, 1857);
-  assert.ok(ownedNotes.size, iterationOwnedCountTotal);
+  assert.equal(iterationOwnedCountTotal, 1857);
+  assert.equal(ownedNotes.size, iterationOwnedCountTotal);
+
+  const balances = await accounts.balances(owners);
 
   const bookkeeper = new Bookkeeper({
     address(_profile) {
       return ownedNotes;
     },
-    // account(profile) {
-    //   return accounts.get(profile);
-    // },
+    account(profile) {
+      return balances.at(+profile);
+    },
   });
 
   const addressBalances = await Promise.all(
@@ -108,13 +110,13 @@ test("Network synchronization", async () => {
   assert.equal(addressBalances[1].value, 1419179830115057n);
   assert.equal(addressBalances[2].value, 512720219906168n);
 
-  // const accountBalances = await Promise.all(
-  //   owners.map((owner) => bookkeeper.balance(owner.account)),
-  // );
+  const accountBalances = await Promise.all(
+    owners.map((owner) => bookkeeper.balance(owner.account)),
+  );
 
-  // assert.equal(accountBalances[0].value, 0n);
-  // assert.equal(accountBalances[1].value, 0n);
-  // assert.equal(accountBalances[2].value, 0n);
+  assert.equal(accountBalances[0].value, 10100000000n);
+  assert.equal(accountBalances[1].value, 8800000000n);
+  assert.equal(accountBalances[2].value, 6060000000n);
 
   await network.disconnect();
 });

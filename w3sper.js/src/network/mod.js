@@ -6,10 +6,12 @@
 
 // Return a promised rejected if the signal is aborted, resolved otherwise
 
-import { GraphQLRequest } from "./network/graphql.js";
-import * as ProtocolDriver from "./protocol-driver.js";
+import * as ProtocolDriver from "../protocol-driver/mod.js";
 
-export { Bookmark } from "./network/state-syncer/bookmark.js";
+import { GraphQLRequest } from "./graphql.js";
+
+export { AddressSyncer } from "./syncer/address.js";
+export { AccountSyncer } from "./syncer/account.js";
 
 const protocol = { "https:": "wss:", "http:": "ws:" };
 
@@ -167,13 +169,14 @@ export class Network {
       // We only want to check if this is a version mismatch, but since we
       // have to *consume* the body stream in order to check it, we have to
       // clone the response in case it's not a version mismatch.'
+
       const resp = response.clone();
       const body = await resp.text();
 
       if (body.startsWith("Mismatched rusk version:")) {
         throw new Error(body);
       } else {
-        console.error(body);
+        console.error("Server error: ", body);
       }
     }
 
