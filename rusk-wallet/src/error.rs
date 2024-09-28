@@ -114,7 +114,7 @@ pub enum Error {
     #[error("Cache database corrupted")]
     CacheDatabaseCorrupted,
     /// Prover errors from execution-core
-    #[error("Prover Error")]
+    #[error("Prover Error: {0}")]
     ProverError(String),
     /// Memo provided is too large
     #[error("Memo too large {0}")]
