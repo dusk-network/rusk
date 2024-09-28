@@ -54,7 +54,7 @@ dusk-merkle = "=0.5.3"
 dusk-plonk = { version = "=0.20.0", default-features = false }
 dusk-poseidon = "=0.40.0"
 jubjub-schnorr = { version = "=0.5.0", default-features = false }
-kadcast = "=0.7.0-rc.5"
+kadcast = "=0.7.0-rc.7"
 phoenix-circuits = { version = "=0.4.0", default-features = false }
 phoenix-core = { version = "=0.32.0", default-features = false }
 piecrust = "=0.24.0"

@@ -147,7 +147,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 },
                 // Handles any inbound wire.
                 // Component should either process it or re-route it to the next upper layer
-                recv =  self.inbound.recv() => {
+                recv = self.inbound.recv() => {
                     let msg = recv?;
                     match msg.payload {
                         Payload::Block(blk) => {
