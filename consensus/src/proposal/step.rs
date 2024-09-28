@@ -127,6 +127,6 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     }
 
     pub fn name(&self) -> &'static str {
-        "sel"
+        "proposal"
     }
 }
