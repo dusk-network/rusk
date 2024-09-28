@@ -444,8 +444,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     /// Returns the height of the last block requested, if any.
     async fn request_pool_missing_blocks(&mut self) {
         let mut inv = Inv::new(0);
-
         let mut inv_count = 0;
+
+        let mut first_request = None;
+        let mut last_request = None;
+
         for height in self.range.0..=self.range.1 {
             if self.pool.contains_key(&height) {
                 // already received
@@ -453,6 +456,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             }
             inv.add_block_from_height(height);
             inv_count += 1;
+            if first_request.is_none() {
+                first_request = Some(height);
+            }
             last_request = Some(height);
             if inv_count >= MAX_BLOCKS_TO_REQUEST {
                 break;
@@ -461,8 +467,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         if !inv.inv_list.is_empty() {
             debug!(
-                event = "request blocks",
-                target = last_request.unwrap_or_default(),
+                event = "request missing blocks",
+                first_request = first_request.unwrap_or_default(),
+                last_request = last_request.unwrap_or_default(),
                 mode = "out_of_sync",
             );
 
