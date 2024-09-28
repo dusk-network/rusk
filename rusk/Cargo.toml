@@ -43,7 +43,7 @@ blake2b_simd = { version = "1", default-features = false }
 
 sha3 = "0.10"
 dusk-bytes = "0.1"
-kadcast = "0.7.0-rc.5"
+kadcast = "0.7.0-rc.7"
 pin-project = "1"
 tungstenite = "0.21"
 hyper-tungstenite = "0.13"
