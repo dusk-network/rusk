@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Status};
 use node_data::StepName;
-use tracing::{debug, trace, warn};
+use tracing::{debug, warn};
 
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)
@@ -45,13 +45,12 @@ pub trait MsgHandler {
     ) -> Result<(), ConsensusError> {
         let signer = msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
         debug!(
-            event = "msg received",
+            event = "validating msg",
             signer = signer.to_bs58(),
             topic = ?msg.topic(),
             step = msg.get_step(),
+            ray_id = msg.ray_id(),
         );
-
-        trace!(event = "msg received", msg = format!("{:#?}", msg),);
 
         // We don't verify the tip here, otherwise future round messages will be
         // discarded and not put into the queue
