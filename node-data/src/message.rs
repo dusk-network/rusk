@@ -152,6 +152,13 @@ impl Message {
         &self.version
     }
 
+    pub fn ray_id(&self) -> &str {
+        self.metadata
+            .as_ref()
+            .map(|m| m.ray_id.as_str())
+            .unwrap_or_default()
+    }
+
     pub fn with_version(mut self, v: Version) -> Self {
         self.version = v;
         self
@@ -164,6 +171,7 @@ impl Message {
 pub struct Metadata {
     pub height: u8,
     pub src_addr: SocketAddr,
+    pub ray_id: String,
 }
 
 impl Serializable for Message {
