@@ -7,8 +7,8 @@
 use dusk_bytes::Serializable;
 
 use wallet_core::keys::{
-    derive_bls_sk, derive_multiple_phoenix_sk, derive_phoenix_pk,
-    derive_phoenix_sk, derive_phoenix_vk,
+    derive_bls_pk, derive_bls_sk, derive_multiple_phoenix_sk,
+    derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };
 
 const SEED: [u8; 64] = [0; 64];
@@ -85,4 +85,16 @@ fn test_derive_bls_sk() {
         86,
     ];
     assert_eq!(derive_bls_sk(&SEED, INDEX).to_bytes(), sk_bytes);
+
+    let seed = [
+        153, 16, 102, 99, 133, 196, 55, 237, 42, 2, 163, 116, 233, 89, 10, 115,
+        19, 81, 140, 31, 38, 81, 10, 46, 118, 112, 151, 244, 145, 90, 145, 168,
+        214, 242, 68, 123, 116, 76, 223, 56, 200, 60, 188, 217, 34, 113, 55,
+        172, 27, 255, 184, 55, 143, 233, 109, 20, 137, 34, 20, 196, 252, 117,
+        221, 221,
+    ];
+
+    let key = rkyv::to_bytes::<_, 256>(&derive_bls_pk(&seed, 0)).unwrap();
+
+    println!("[{}] {:?}", key.len(), key);
 }

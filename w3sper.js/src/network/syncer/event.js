@@ -3,3 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
+export class SyncEvent extends CustomEvent {
+  constructor(type, detail) {
+    super(type, { detail });
+  }
+}

@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+export const intoBookmark = Symbol("bookmark::into");
+
 export class Bookmark {
   #data = new Uint8Array(8).fill(0xff);
 
@@ -16,7 +18,9 @@ export class Bookmark {
   }
 
   static from(source) {
-    if (typeof source === "bigint" || typeof source === "number") {
+    if (typeof source?.[intoBookmark] === "function") {
+      return source[intoBookmark]();
+    } else if (typeof source === "bigint" || typeof source === "number") {
       let buffer = new ArrayBuffer(8);
       new DataView(buffer).setBigUint64(0, BigInt(source), true);
       return new Bookmark(new Uint8Array(buffer));
@@ -42,6 +46,7 @@ export class Bookmark {
       .join("");
   }
 
+  // TODO: change name
   isNone() {
     return this.#data.every((byte) => byte === 0xff);
   }

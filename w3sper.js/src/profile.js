@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import * as ProtocolDriver from "../src/protocol-driver.js";
+import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import * as base58 from "./b58.js";
 
 const _index = Symbol("profile::index");

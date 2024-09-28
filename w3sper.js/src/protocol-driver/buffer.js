@@ -87,7 +87,7 @@ const itemsByteLength = (items) =>
  *        returned without modification. Otherwise, the function will merge all
  *        contained `Uint8Array` objects into one continuous `Uint8Array`.
  */
-function flatten(item) {
+export function flatten(item) {
   // If the input is already a Uint8Array, return it as-is.
   if (item instanceof Uint8Array) {
     return item;

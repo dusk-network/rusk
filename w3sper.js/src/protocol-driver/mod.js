@@ -8,9 +8,9 @@ import * as exu from "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/mod
 // import * as exu from "../../../exu/src/mod.js";
 import { none } from "./none.js";
 
-import { DriverError } from "./protocol-driver/error.js";
-import * as DataBuffer from "./protocol-driver/buffer.js";
-import { withAllocator } from "./protocol-driver/alloc.js";
+import { DriverError } from "./error.js";
+import * as DataBuffer from "./buffer.js";
+import { withAllocator } from "./alloc.js";
 
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
@@ -146,8 +146,7 @@ export const generateProfile = (seed, n) =>
 export const mapOwned = (owners, notes) =>
   protocolDriverModule.task(
     withAllocator(async function ({ map_owned }, allocator) {
-      const { memcpy, malloc } = allocator;
-      const { box, capacity } = allocator.types;
+      const { box, capacity, u64, u32x, ptrx, databuffer } = allocator.types;
 
       if (owners.length === 0) {
         return new Map();
@@ -191,10 +190,8 @@ export const mapOwned = (owners, notes) =>
       );
 
       let idx_ptr = await box(indexes);
-      // let idx = await malloc(indexes.byteLength);
-      // await memcpy(idx, indexes, indexes.byteLength);
 
-      let out_ptr = await box(capacity(4)); //malloc(4);
+      let out_ptr = await box(u32x);
 
       let info_ptr = await box(capacity(16)); //malloc(16);
 
@@ -207,27 +204,16 @@ export const mapOwned = (owners, notes) =>
       );
       if (code > 0) throw DriverError.from(code);
 
-      out_ptr = new DataView((await out_ptr.valueOf()).buffer).getUint32(
-        0,
-        true,
-      );
+      out_ptr = await out_ptr.valueOf();
+      // let len = await u32x(out_ptr);
 
-      let len = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
-        0,
-        true,
-      );
+      let [buff, layout] = await databuffer(out_ptr);
 
-      notesBuffer = await memcpy(null, out_ptr + 4, len);
+      notesBuffer = buff;
+      let notesLen = layout.size;
 
-      let notesLen = new DataView(notesBuffer.buffer).getUint32(
-        notesBuffer.byteLength - 4,
-        true,
-      );
-
-      let info = new Uint8Array(await info_ptr.valueOf());
-
-      let blockHeight = new DataView(info.buffer).getBigUint64(0, true);
-      let bookmark = new DataView(info.buffer).getBigUint64(8, true);
+      let blockHeight = await u64(+info_ptr);
+      let bookmark = await u64(+info_ptr + 8);
 
       let result = new Map();
       for (let i = 0; i < entrySize * notesLen; i += entrySize) {
@@ -272,48 +258,45 @@ export async function balance(seed, n, notes) {
   return await task();
 }
 
-// export async function accountsIntoRaw(users) {
-//   const task = await protocolDriverModule.task(async function (
-//     { malloc, accounts_into_raw },
-//     { memcpy },
-//   ) {
-//     let buffer = new Uint8Array(
-//       DataBuffer.from(users.map((user) => user.account.valueOf())),
-//     );
-
-//     // copy buffer into WASM memory
-//     let ptr = await malloc(buffer.byteLength);
-//     await memcpy(ptr, buffer);
-
-//     // allocate pointer for result
-//     let out_ptr = await malloc(4);
-
-//     // call the WASM function
-//     await accounts_into_raw(ptr, out_ptr);
-
-//     // Copy the result from WASM memory
-//     //
-//   });
-
-//   return await task();
-// }
-
-export async function bookmarkFrom(note) {
-  const task = await protocolDriverModule.task(async function (
-    { malloc, bookmark },
+export const accountsIntoRaw = async (users) =>
+  protocolDriverModule.task(async function (
+    { malloc, accounts_into_raw },
     { memcpy },
   ) {
-    let data = new Uint8Array(note.byteLength + 4);
-    new DataView(data.buffer).setUint32(0, note.byteLength, true);
-    data.set(note, 4);
+    let buffer = new Uint8Array(
+      DataBuffer.from(
+        DataBuffer.flatten(users.map((user) => user.account.valueOf())),
+      ),
+    );
 
-    let ptr = await malloc(data.length);
-    await memcpy(ptr, data, data.length);
-    let bookmark_ptr = await malloc(8);
+    // copy buffer into WASM memory
+    let ptr = await malloc(buffer.byteLength);
+    await memcpy(ptr, buffer);
 
-    const result = await bookmark(ptr, bookmark_ptr);
+    // allocate pointer for result
+    let out_ptr = await malloc(4);
 
-    return await memcpy(null, bookmark_ptr, 8);
-  });
-  return await task();
-}
+    // call the WASM function
+    const code = await accounts_into_raw(ptr, out_ptr);
+    if (code > 0) throw DriverError.from(code);
+
+    // Copy the result from WASM memory
+    out_ptr = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    let len = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    buffer = await memcpy(null, out_ptr + 4, len);
+    const size = buffer.byteLength / users.length;
+
+    let result = [];
+    for (let i = 0; i < buffer.byteLength; i += size) {
+      result.push(new Uint8Array(buffer.subarray(i, i + size)));
+    }
+    return result;
+  })();

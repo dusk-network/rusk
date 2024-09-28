@@ -30,7 +30,7 @@ use error::ErrorCode;
 
 use alloc::vec::Vec;
 use core::{ptr, slice};
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     transfer::phoenix::{
@@ -153,21 +153,23 @@ pub unsafe fn accounts_into_raw(
     accounts_ptr: *const u8,
     raws_ptr: *mut *mut u8,
 ) -> ErrorCode {
-    let accounts =
-        mem::from_buffer::<Vec<[u8; BlsPublicKey::SIZE]>>(accounts_ptr)?
-            .iter()
-            .map(|bpk| {
-                BlsPublicKey::from_bytes(bpk).map(|key| key.to_raw_bytes())
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .or(Err(ErrorCode::DeserializationError))?;
-
-    let bytes =
-        to_bytes::<_, 4096>(&accounts).or(Err(ErrorCode::ArchivingError))?;
+    let bytes: Vec<u8> = mem::read_buffer(accounts_ptr)
+        .chunks(BlsPublicKey::SIZE)
+        .map(BlsPublicKey::from_slice)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ErrorCode::DeserializationError)?
+        .into_iter()
+        .map(|bpk| to_bytes::<_, 256>(&bpk))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ErrorCode::ArchivingError)?
+        .iter()
+        .fold(Vec::new(), |mut vec, aligned| {
+            vec.extend_from_slice(aligned.as_slice());
+            vec
+        });
 
     let len = bytes.len().to_le_bytes();
     let ptr = mem::malloc(4 + bytes.len() as u32);
-
     let ptr = ptr as *mut u8;
 
     *raws_ptr = ptr;
@@ -243,8 +245,8 @@ pub unsafe fn phoenix(
     seed: &Seed,
     sender_index: u8,
     receiver: &[u8; PhoenixPublicKey::SIZE],
-    inputs: *const u8, // NoteOpening?
-    opening: *const u8,
+    inputs: *const u8,
+    openings: *const u8,
     root: &[u8; BlsScalar::SIZE],
     transfer_value: *const u64,
     obfuscated_transaction: bool, // ?
