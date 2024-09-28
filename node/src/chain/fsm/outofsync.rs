@@ -240,6 +240,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             return Ok(false);
         }
 
+        // If we receive a block higher than the current target, we "extend" the
+        // range of the syncing process
+        //
+        // NOTE: the block could be coming from a different peer than the one we
+        // are currently syncing with. This means the current peer could
+        // actually not have blocks up to the new target. We might want to
+        // handle this update differently in the future, e.g. by also updating
+        // the sync peer.
         if block_height > self.range.1 {
             debug!(
                 event = "update sync target",
@@ -329,7 +337,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             return Ok(false);
         }
 
-        let block_height = blk.header().height;
         let pool_len = self.pool.len();
 
         if self.pool.contains_key(&block_height) {
