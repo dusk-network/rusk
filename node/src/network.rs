@@ -17,7 +17,7 @@ use node_data::message::payload::{GetResource, Inv, Nonce};
 use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
 use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 
 /// Number of alive peers randomly selected which a `flood_request` is sent to
 const REDUNDANCY_PEER_COUNT: usize = 8;
@@ -65,10 +65,20 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 counter!(format!("dusk_inbound_{:?}_count", msg.topic()))
                     .increment(1);
 
+                let ray_id = hex::encode(md.ray_id());
+                debug!(
+                    event = "msg received",
+                    topic = ?msg.topic(),
+                    src = ?md.src(),
+                    height = md.height(),
+                    ray_id
+                );
+
                 // Update Transport Data
                 msg.metadata = Some(Metadata {
                     height: md.height(),
                     src_addr: md.src(),
+                    ray_id,
                 });
 
                 // Allow upper layers to fast-discard a message before queueing
