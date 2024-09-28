@@ -31,6 +31,9 @@ impl HandleRequest for Rusk {
             // here just for backward compatibility
             return false;
         }
+        if route.2.starts_with("prove_") {
+            return false;
+        }
         matches!(
             route,
             (Target::Contract(_), ..) | (Target::Host(_), "rusk", _)
