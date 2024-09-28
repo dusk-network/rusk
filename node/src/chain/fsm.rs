@@ -4,6 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod outofsync;
+
+use outofsync::OutOfSyncImpl;
+
 use super::acceptor::{Acceptor, RevertTarget};
 use super::stall_chain_fsm::{self, StalledChainFSM};
 use crate::chain::fallback;
@@ -13,23 +17,19 @@ use crate::{vm, Network};
 use crate::database::{Candidate, Ledger};
 use metrics::counter;
 use node_data::ledger::{to_str, Attestation, Block};
-use node_data::message::payload::{
-    GetBlocks, GetResource, Inv, RatificationResult, Vote,
-};
+use node_data::message::payload::{GetResource, Inv, RatificationResult, Vote};
 
 use node_data::message::{payload, Message, Metadata};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::SocketAddr;
 use std::ops::Deref;
+use std::sync::Arc;
 use std::time::Duration;
-use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 use tracing::{debug, error, info, warn};
 
-const MAX_BLOCKS_TO_REQUEST: i16 = 50;
-const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
 /// Maximum number of hops between the requester and the node that contains the
@@ -145,7 +145,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         if let Some(blk) = blk.as_ref() {
             let fsm_res = match &mut self.curr {
                 State::InSync(ref mut curr) => {
-                    if let Some((b, peer_addr)) =
+                    if let Some((target_block, peer_addr)) =
                         curr.on_block_event(blk, metadata).await?
                     {
                         // Transition from InSync to OutOfSync state
@@ -155,8 +155,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         let mut next = OutOfSyncImpl::new(
                             self.acc.clone(),
                             self.network.clone(),
-                        );
-                        next.on_entering(b, peer_addr).await;
+                        )
+                        .await;
+                        next.on_entering(target_block, peer_addr).await;
                         self.curr = State::OutOfSync(next);
                     }
                     anyhow::Ok(())
@@ -402,7 +403,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     let next = OutOfSyncImpl::new(
                         self.acc.clone(),
                         self.network.clone(),
-                    );
+                    )
+                    .await;
                     self.curr = State::OutOfSync(next);
                 }
             }
@@ -742,205 +744,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 // Reset presync if it timed out
                 self.presync = None;
             }
-        }
-
-        Ok(false)
-    }
-}
-
-struct OutOfSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
-    range: (u64, u64),
-    start_time: SystemTime,
-    pool: HashMap<u64, Block>,
-    peer_addr: SocketAddr,
-    attempts: u8,
-
-    acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
-    network: Arc<RwLock<N>>,
-}
-
-impl<DB: database::DB, VM: vm::VMExecution, N: Network>
-    OutOfSyncImpl<DB, VM, N>
-{
-    fn new(
-        acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
-        network: Arc<RwLock<N>>,
-    ) -> Self {
-        Self {
-            start_time: SystemTime::now(),
-            range: (0, 0),
-            pool: HashMap::new(),
-            acc,
-            network,
-            peer_addr: SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::new(127, 0, 0, 1),
-                8000,
-            )),
-            attempts: 3,
-        }
-    }
-    /// performed when entering the OutOfSync state
-    async fn on_entering(&mut self, blk: Block, peer_addr: SocketAddr) {
-        let (curr_height, locator) = {
-            let acc = self.acc.read().await;
-            (acc.get_curr_height().await, acc.get_curr_hash().await)
-        };
-
-        self.range = (
-            curr_height,
-            std::cmp::min(
-                curr_height + MAX_BLOCKS_TO_REQUEST as u64,
-                blk.header().height,
-            ),
-        );
-
-        // Request missing blocks from source peer
-        let gb_msg = GetBlocks::new(locator).into();
-
-        if let Err(e) = self
-            .network
-            .read()
-            .await
-            .send_to_peer(gb_msg, peer_addr)
-            .await
-        {
-            warn!("Unable to send GetBlocks: {e}")
-        };
-
-        // add to the pool
-        let key = blk.header().height;
-        self.pool.clear();
-        self.pool.insert(key, blk);
-        self.peer_addr = peer_addr;
-
-        let (from, to) = &self.range;
-        info!(event = "entering out-of-sync", from, to, ?peer_addr);
-    }
-
-    /// performed when exiting the state
-    async fn on_exiting(&mut self) {
-        self.pool.clear();
-    }
-
-    /// Return true if a transit back to InSync mode is needed
-    pub async fn on_block_event(
-        &mut self,
-        blk: &Block,
-        metadata: Option<Metadata>,
-    ) -> anyhow::Result<bool> {
-        let mut acc = self.acc.write().await;
-        let h = blk.header().height;
-
-        if self
-            .start_time
-            .checked_add(Duration::from_millis(EXPIRY_TIMEOUT_MILLIS as u64))
-            .unwrap()
-            <= SystemTime::now()
-        {
-            acc.restart_consensus().await;
-            // Timeout-ed sync-up
-            // Transit back to InSync mode
-            return Ok(true);
-        }
-
-        if h <= acc.get_curr_height().await {
-            return Ok(false);
-        }
-
-        // Try accepting consecutive block
-        if h == acc.get_curr_height().await + 1 {
-            acc.try_accept_block(blk, false).await?;
-
-            if let Some(metadata) = &metadata {
-                if metadata.src_addr == self.peer_addr {
-                    // reset expiry_time only if we receive a valid block from
-                    // the syncing peer.
-                    self.start_time = SystemTime::now();
-                }
-            }
-
-            // Try to accept other consecutive blocks from the pool, if
-            // available
-            for height in (h + 1)..(self.range.1 + 1) {
-                if let Some(blk) = self.pool.get(&height) {
-                    acc.try_accept_block(blk, false).await?;
-                } else {
-                    break;
-                }
-            }
-
-            let tip = acc.get_curr_height().await;
-            // Check target height is reached
-            if tip >= self.range.1 {
-                debug!(event = "sync target reached", height = tip);
-
-                // Block sync-up procedure manages to download all requested
-                acc.restart_consensus().await;
-
-                // Transit to InSync mode
-                return Ok(true);
-            }
-
-            return Ok(false);
-        }
-
-        // add block to the pool
-        if self.pool.len() < MAX_BLOCKS_TO_REQUEST as usize {
-            let key = blk.header().height;
-            self.pool.insert(key, blk.clone());
-        }
-
-        debug!(event = "block saved", len = self.pool.len());
-
-        Ok(false)
-    }
-
-    async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
-        if self
-            .start_time
-            .checked_add(Duration::from_millis(EXPIRY_TIMEOUT_MILLIS as u64))
-            .unwrap()
-            <= SystemTime::now()
-        {
-            if self.attempts == 0 {
-                debug!(
-                    event = format!(
-                        "out_of_sync timer expired for {} attempts",
-                        self.attempts
-                    )
-                );
-                // sync-up has timed out, recover consensus task
-                self.acc.write().await.restart_consensus().await;
-
-                // sync-up timed out for N attempts
-                // Transit back to InSync mode as a fail-over
-                return Ok(true);
-            }
-
-            // Request missing from local_pool blocks
-            let mut inv = Inv::new(0);
-            let from = self.range.0 + 1;
-            let to = self.range.1 + 1;
-
-            for height in from..=to {
-                if self.pool.contains_key(&height) {
-                    // already received
-                    continue;
-                }
-                inv.add_block_from_height(height);
-            }
-
-            let network = self.acc.read().await.network.clone();
-            if !inv.inv_list.is_empty() {
-                if let Err(e) =
-                    network.read().await.flood_request(&inv, None, 8).await
-                {
-                    warn!("Unable to request missing blocks {e}");
-                }
-            }
-
-            self.start_time = SystemTime::now();
-            self.attempts -= 1;
         }
 
         Ok(false)
