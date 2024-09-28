@@ -131,7 +131,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             Payload::Transaction(tx) => {
                                 let accept = self.accept_tx(&db, &vm, tx);
                                 if let Err(e) = accept.await {
-                                    error!("{}", e);
+                                    error!("Tx {} not accepted: {e}", hex::encode(tx.id()));
                                     continue;
                                 }
 
