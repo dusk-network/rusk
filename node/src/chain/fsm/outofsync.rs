@@ -196,9 +196,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.insert(key, target_block);
         self.remote_peer = peer_addr;
 
-        if let Some(last_request) = self.request_pool_missing_blocks().await {
-            self.last_request = last_request
-        }
+        self.request_pool_missing_blocks().await;
 
         let (from, to) = &self.range;
         info!(event = "entering out-of-sync", from, to, ?peer_addr);
@@ -227,7 +225,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         blk: &Block,
         metadata: Option<Metadata>,
     ) -> anyhow::Result<bool> {
-        let mut acc = self.acc.write().await;
+        let acceptor = self.acc.clone();
+        let mut acc = acceptor.write().await;
         let block_height = blk.header().height;
 
         if self.attempts == 0 && self.is_timeout_expired() {
@@ -346,10 +345,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         // If we almost dequeued all requested blocks (2/3)
         if self.last_request < current_height + (MAX_BLOCKS_TO_REQUEST / 3) {
-            if let Some(last_request) = self.request_pool_missing_blocks().await
-            {
-                self.last_request = last_request
-            }
+            self.request_pool_missing_blocks().await;
         }
 
         // if the pool is full, check if the new block has higher priority
@@ -410,11 +406,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 return Ok(true);
             }
 
-            // Request missing from local_pool blocks
-            if let Some(last_request) = self.request_pool_missing_blocks().await
-            {
-                self.last_request = last_request
-            }
+        // Request missing from local_pool blocks
+        self.request_pool_missing_blocks().await;
 
             self.start_time = SystemTime::now();
             self.attempts -= 1;
@@ -449,8 +442,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     /// present in the pool and requests them from the `remote_peer`.
     ///
     /// Returns the height of the last block requested, if any.
-    async fn request_pool_missing_blocks(&self) -> Option<u64> {
-        let mut last_request = None;
+    async fn request_pool_missing_blocks(&mut self) {
         let mut inv = Inv::new(0);
 
         let mut inv_count = 0;
@@ -490,9 +482,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                     mode = "out_of_sync",
                 );
                 warn!("Unable to request missing blocks {e}");
-                return None;
+            } else {
+                self.last_request = last_request.unwrap();
             }
         }
-        last_request
     }
 }
