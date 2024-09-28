@@ -229,10 +229,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         let mut acc = acceptor.write().await;
         let block_height = blk.header().height;
 
-        if self.attempts == 0 && self.is_timeout_expired() {
-            acc.restart_consensus().await;
-            // Timeout-ed sync-up
-            // Transit back to InSync mode
+        // We check the timeout here to prevent the peer from keeping us in
+        // outofsync by flooding our node with blocks
+        if self.on_sync_timeout().await {
             return Ok(true);
         }
 
@@ -392,28 +391,35 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
     pub async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
         if self.is_timeout_expired() {
-            if self.attempts == 0 {
-                debug!(
-                    event = "out_of_sync timer expired",
-                    attempts = self.attempts,
-                    mode = "out_of_sync"
-                );
-                // sync-up has timed out, recover consensus task
-                self.acc.write().await.restart_consensus().await;
+            return Ok(self.on_sync_timeout().await);
+        }
 
-                // sync-up timed out for N attempts
-                // Transit back to InSync mode as a fail-over
-                return Ok(true);
-            }
+        Ok(false)
+    }
+
+    async fn on_sync_timeout(&mut self) -> bool {
+        debug!(
+            event = "out_of_sync timer expired",
+            attempts = self.attempts,
+            mode = "out_of_sync"
+        );
+
+        if self.attempts == 0 {
+            // sync-up has timed out, recover consensus task
+            self.acc.write().await.restart_consensus().await;
+
+            // sync-up timed out for N attempts
+            // Transit back to InSync mode as a fail-over
+            return true;
+        }
 
         // Request missing from local_pool blocks
         self.request_pool_missing_blocks().await;
 
-            self.start_time = SystemTime::now();
-            self.attempts -= 1;
-        }
+        self.start_time = SystemTime::now();
+        self.attempts -= 1;
 
-        Ok(false)
+        false
     }
 
     async fn request_missing_block(&self, height: u64) {
