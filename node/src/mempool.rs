@@ -26,7 +26,7 @@ use tracing::{error, info, warn};
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
 #[derive(Debug, Error)]
-enum TxAcceptanceError {
+pub enum TxAcceptanceError {
     #[error("this transaction exists in the mempool")]
     AlreadyExistsInMempool,
     #[error("this transaction exists in the ledger")]
@@ -129,9 +129,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     if let Ok(msg) = msg {
                         match &msg.payload {
                             Payload::Transaction(tx) => {
-                                let accept = self.accept_tx::<DB, VM>(&db, &vm, tx);
+                                let accept = self.accept_tx(&db, &vm, tx);
                                 if let Err(e) = accept.await {
-                                    error!("{}", e);
+                                    error!("Tx {} not accepted: {e}", hex::encode(tx.id()));
                                     continue;
                                 }
 
@@ -161,12 +161,40 @@ impl MempoolSrv {
         vm: &Arc<RwLock<VM>>,
         tx: &Transaction,
     ) -> Result<(), TxAcceptanceError> {
+        let max_mempool_txn_count = self.conf.max_mempool_txn_count;
+
+        let events =
+            MempoolSrv::check_tx(db, vm, tx, false, max_mempool_txn_count)
+                .await?;
+
+        tracing::info!(
+            event = "transaction accepted",
+            hash = hex::encode(tx.id())
+        );
+
+        for tx_event in events {
+            let node_event = tx_event.into();
+            if let Err(e) = self.event_sender.try_send(node_event) {
+                warn!("cannot notify mempool accepted transaction {e}")
+            };
+        }
+
+        Ok(())
+    }
+
+    pub async fn check_tx<'t, DB: database::DB, VM: vm::VMExecution>(
+        db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
+        tx: &'t Transaction,
+        dry_run: bool,
+        max_mempool_txn_count: usize,
+    ) -> Result<Vec<TransactionEvent<'t>>, TxAcceptanceError> {
         let tx_id = tx.id();
 
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
             let count = view.txs_count();
-            if count >= self.conf.max_mempool_txn_count {
+            if count >= max_mempool_txn_count {
                 return Err(TxAcceptanceError::MaxTxnCountExceeded(count));
             }
 
@@ -191,7 +219,7 @@ impl MempoolSrv {
         let mut events = vec![];
 
         // Try to add the transaction to the mempool
-        db.read().await.update(|db| {
+        db.read().await.update_dry_run(dry_run, |db| {
             let spend_ids = tx.to_spend_ids();
 
             // ensure spend_ids do not exist in the mempool
@@ -216,20 +244,7 @@ impl MempoolSrv {
 
             db.add_tx(tx, now)
         })?;
-
-        tracing::info!(
-            event = "transaction accepted",
-            hash = hex::encode(tx_id)
-        );
-
-        for tx_event in events {
-            let node_event = tx_event.into();
-            if let Err(e) = self.event_sender.try_send(node_event) {
-                warn!("cannot notify mempool accepted transaction {e}")
-            };
-        }
-
-        Ok(())
+        Ok(events)
     }
 
     /// Requests full mempool data from N alive peers

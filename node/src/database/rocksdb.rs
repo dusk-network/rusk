@@ -237,6 +237,13 @@ impl DB for Backend {
     where
         F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
     {
+        self.update_dry_run(false, execute)
+    }
+
+    fn update_dry_run<F, T>(&self, dry_run: bool, execute: F) -> Result<T>
+    where
+        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
+    {
         // Create read-write transaction
         let tx = self.begin_tx();
 
@@ -244,8 +251,12 @@ impl DB for Backend {
         // storage
         let ret = execute(&tx)?;
 
-        // Apply changes in atomic way
-        tx.commit()?;
+        if dry_run {
+            tx.rollback()?;
+        } else {
+            // Apply changes in atomic way
+            tx.commit()?;
+        }
 
         Ok(ret)
     }
@@ -698,6 +709,14 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
     fn commit(self) -> Result<()> {
         if let Err(e) = self.inner.commit() {
             return Err(anyhow::Error::new(e).context("failed to commit"));
+        }
+
+        Ok(())
+    }
+
+    fn rollback(self) -> Result<()> {
+        if let Err(e) = self.inner.rollback() {
+            return Err(anyhow::Error::new(e).context("failed to rollback"));
         }
 
         Ok(())

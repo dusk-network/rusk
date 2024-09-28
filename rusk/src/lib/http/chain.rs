@@ -13,6 +13,7 @@ use std::sync::Arc;
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use node::database::rocksdb::{Backend, DBTransaction};
 use node::database::{Mempool, DB};
+use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Network;
 use node_data::ledger::Transaction;
@@ -51,13 +52,18 @@ fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
 #[async_trait]
 impl HandleRequest for RuskNode {
     fn can_handle(&self, request: &MessageRequest) -> bool {
-        matches!(request.event.to_route(), (Target::Host(_), "Chain", _))
+        let route = request.event.to_route();
+        if matches!(route, (Target::Host(_), "rusk", "preverify")) {
+            return true;
+        }
+        matches!(route, (Target::Host(_), "Chain", _))
     }
 
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
         #[allow(clippy::match_like_matches_macro)]
         match request.uri.inner() {
             ("graphql", _, "query") => true,
+            ("transactions", _, "preverify") => true,
             ("transactions", _, "propagate") => true,
             ("network", _, "peers") => true,
             ("node", _, "info") => true,
@@ -72,6 +78,9 @@ impl HandleRequest for RuskNode {
         match request.uri.inner() {
             ("graphql", _, "query") => {
                 self.handle_gql(&request.data, &request.headers).await
+            }
+            ("transactions", _, "preverify") => {
+                self.handle_preverify(request.data.as_bytes()).await
             }
             ("transactions", _, "propagate") => {
                 self.propagate_tx(request.data.as_bytes()).await
@@ -100,6 +109,9 @@ impl HandleRequest for RuskNode {
         match &request.event.to_route() {
             (Target::Host(_), "Chain", "gql") => {
                 self.handle_gql(&request.event.data, &request.headers).await
+            }
+            (Target::Host(_), "rusk", "preverify") => {
+                self.handle_preverify(request.event_data()).await
             }
             (Target::Host(_), "Chain", "propagate_tx") => {
                 self.propagate_tx(request.event_data()).await
@@ -151,6 +163,18 @@ impl RuskNode {
         let data = serde_json::to_value(&data)
             .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
         Ok(ResponseData::new(data))
+    }
+
+    async fn handle_preverify(
+        &self,
+        data: &[u8],
+    ) -> anyhow::Result<ResponseData> {
+        let tx = execution_core::transfer::Transaction::from_slice(data)
+            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
+        let db = self.inner().database();
+        let vm = self.inner().vm_handler();
+        MempoolSrv::check_tx(&db, &vm, &tx.into(), true, usize::MAX).await?;
+        Ok(ResponseData::new(DataType::None))
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {

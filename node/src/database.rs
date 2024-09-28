@@ -51,6 +51,10 @@ pub trait DB: Send + Sync + 'static {
     where
         F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>;
 
+    fn update_dry_run<F, T>(&self, dry_run: bool, f: F) -> Result<T>
+    where
+        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>;
+
     fn close(&mut self);
 }
 
@@ -183,6 +187,7 @@ pub trait Persist:
 
     fn clear_database(&self) -> Result<()>;
     fn commit(self) -> Result<()>;
+    fn rollback(self) -> Result<()>;
 }
 
 pub fn into_array<const N: usize>(value: &[u8]) -> [u8; N] {

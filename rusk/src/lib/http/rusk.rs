@@ -25,8 +25,17 @@ const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 #[async_trait]
 impl HandleRequest for Rusk {
     fn can_handle(&self, request: &MessageRequest) -> bool {
+        let route = request.event.to_route();
+        if matches!(route, (Target::Host(_), "rusk", "preverify")) {
+            // moved to chain
+            // here just for backward compatibility
+            return false;
+        }
+        if route.2.starts_with("prove_") {
+            return false;
+        }
         matches!(
-            &request.event.to_route(),
+            route,
             (Target::Contract(_), ..) | (Target::Host(_), "rusk", _)
         )
     }
@@ -34,7 +43,6 @@ impl HandleRequest for Rusk {
         #[allow(clippy::match_like_matches_macro)]
         match request.uri.inner() {
             ("contracts", Some(_), _) => true,
-            ("transactions", _, "preverify") => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -50,9 +58,6 @@ impl HandleRequest for Rusk {
                 let data = request.data.as_bytes();
                 self.handle_contract_query(contract_id, method, data, feeder)
             }
-            ("transactions", _, "preverify") => {
-                self.handle_preverify(request.data.as_bytes())
-            }
             ("node", _, "provisioners") => self.get_provisioners(),
             ("node", _, "crs") => self.get_crs(),
             _ => Err(anyhow::anyhow!("Unsupported")),
@@ -67,9 +72,6 @@ impl HandleRequest for Rusk {
             (Target::Contract(_), ..) => {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
                 self.handle_contract_query_legacy(&request.event, feeder)
-            }
-            (Target::Host(_), "rusk", "preverify") => {
-                self.handle_preverify(request.event_data())
             }
             (Target::Host(_), "rusk", "provisioners") => {
                 self.get_provisioners()
@@ -122,13 +124,6 @@ impl Rusk {
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             Ok(ResponseData::new(data))
         }
-    }
-
-    fn handle_preverify(&self, data: &[u8]) -> anyhow::Result<ResponseData> {
-        let tx = execution_core::transfer::Transaction::from_slice(data)
-            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
-        self.preverify(&tx.into())?;
-        Ok(ResponseData::new(DataType::None))
     }
 
     fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
