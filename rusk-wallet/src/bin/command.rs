@@ -236,7 +236,7 @@ pub(crate) enum Command {
         reward: bool,
     },
 
-    /// Moonlight transaction commands
+    // Moonlight transaction commands
     /// Send DUSK publicly through the network using Moonlight
     MoonlightTransfer {
         /// Moonlight Address from which to send DUSK [default: first address]
