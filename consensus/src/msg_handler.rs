@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
-use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::proposal;
@@ -57,14 +56,7 @@ pub trait MsgHandler {
         let msg_tip = msg.header.prev_block_hash;
         match msg.compare(ru.round, current_iteration, step) {
             Status::Past => {
-                if is_emergency_iter(msg.header.iteration) {
-                    Self::verify_message(
-                        msg,
-                        ru,
-                        round_committees,
-                        Status::Past,
-                    )?;
-                }
+                Self::verify_message(msg, ru, round_committees, Status::Past)?;
                 Err(ConsensusError::PastEvent)
             }
             Status::Present => {
@@ -94,6 +86,7 @@ pub trait MsgHandler {
         }
     }
 
+    /// Verify step message for the current round with different iteration
     fn verify_message(
         msg: &Message,
         ru: &RoundUpdate,
@@ -102,7 +95,6 @@ pub trait MsgHandler {
     ) -> Result<(), ConsensusError> {
         let signer = msg.get_signer().expect("signer to exist");
 
-        // Pre-verify messages for the current round with different iteration
         if msg.header.round == ru.round {
             let msg_tip = msg.header.prev_block_hash;
             if msg_tip != ru.hash() {
@@ -136,8 +128,6 @@ pub trait MsgHandler {
                             round_committees,
                         )?;
                     }
-                    node_data::message::Payload::Quorum(_) => {}
-                    node_data::message::Payload::Block(_) => {}
                     _ => {
                         warn!(
                             "{status:?} message not repropagated {:?}",
