@@ -491,6 +491,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         msg_step = msg.get_step(),
                         msg_round = msg.header.round,
                         msg_topic = ?msg.topic(),
+                        ray_id = msg.ray_id()
                     );
 
                     self.outbound.try_send(msg.clone());
