@@ -6,6 +6,7 @@
 
 //! Provides functions and types to handle notes' ownership.
 
+use alloc::vec;
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
@@ -95,18 +96,18 @@ impl From<Vec<(BlsScalar, NoteLeaf)>> for NoteList {
 pub fn map(
     keys: impl AsRef<[PhoenixSecretKey]>,
     notes: impl AsRef<[NoteLeaf]>,
-) -> NoteList {
+) -> Vec<NoteList> {
     notes.as_ref().iter().fold(
-        NoteList::default(),
-        |mut notes_map, note_leaf| {
-            for sk in keys.as_ref() {
+        vec![NoteList::default(); keys.as_ref().len()],
+        |mut notes_maps, note_leaf| {
+            for (i, sk) in keys.as_ref().iter().enumerate() {
                 if sk.owns(note_leaf.note.stealth_address()) {
                     let nullifier = note_leaf.note.gen_nullifier(sk);
-                    notes_map.insert(nullifier, note_leaf.clone());
+                    notes_maps[i].insert(nullifier, note_leaf.clone());
                     break;
                 }
             }
-            notes_map
+            notes_maps
         },
     )
 }

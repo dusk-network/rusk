@@ -8,8 +8,11 @@ import { SyncEvent } from "./event.js";
 import { getBYOBReader } from "../../protocol-driver/stream.js";
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
 import { Bookmark } from "../bookmark.js";
+
 export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
+
+const size = (array) => array.reduce((sum, { size }) => sum + size, 0);
 
 export class AddressSyncer extends EventTarget {
   #network;
@@ -36,6 +39,48 @@ export class AddressSyncer extends EventTarget {
       .dispatch(request)
       .then((response) => response.arrayBuffer())
       .then((buffer) => new Bookmark(new Uint8Array(buffer)));
+  }
+
+  async root() {
+    const network = this.#network;
+    const url = new URL(`/on/contracts:${TRANSFER}/root`, network.url);
+
+    const req = new Request(url, {
+      headers: { "Content-Type": "application/octet-stream" },
+      method: "POST",
+    });
+
+    const response = await network.dispatch(req);
+    return await response.arrayBuffer();
+  }
+
+  async openings(notes, options = {}) {
+    const network = this.#network;
+    // Get the bookmarks for each notes
+    const bookmarks = await ProtocolDriver.bookmarks(notes);
+
+    // Fetch the openings for each picked notes
+    let requests = [];
+    console.log("bookmarks", bookmarks);
+    for (let i = 0; i < bookmarks.length; i += 8) {
+      const body = bookmarks.subarray(i, i + 8);
+      console.log(body);
+      const url = new URL(`/on/contracts:${TRANSFER}/opening`, network.url);
+
+      const req = new Request(url, {
+        headers: { "Content-Type": "application/octet-stream" },
+        method: "POST",
+        body,
+      });
+
+      requests.push(network.dispatch(req));
+    }
+
+    const result = Promise.all(requests)
+      .then((responses) => responses.map((response) => response.arrayBuffer()))
+      .then((buffers) => Promise.all(buffers));
+    console.log(await result);
+    return result;
   }
 
   async notes(profiles, options = {}) {
@@ -99,7 +144,7 @@ export class AddressSyncer extends EventTarget {
 
           this.dispatchEvent(
             new SyncEvent("synciteration", {
-              ownedCount: owned.size,
+              ownedCount: size(owned),
               progress,
               bookmarks: {
                 current: syncInfo.bookmark,

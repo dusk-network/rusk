@@ -9,8 +9,10 @@
  *
  * @class Gas
  *
- * @property {number} limit The gas limit of the wallet. If a value less than or equal to 0, null, or undefined is passed, it defaults to 2,900,000,000.
- * @property {number} price The gas price of the wallet. If a value less than or equal to 0, null, or undefined is passed, it defaults to 1.
+ * @property {number} limit The gas limit of the wallet.
+ *      If a value less than or equal to 0, null, or undefined is passed, it defaults to 2,900,000,000.
+ * @property {number} price The gas price of the wallet.
+ *      If a value less than or equal to 0, null, or undefined is passed, it defaults to 1.
  *
  * @example
  * const gas = new Gas({ limit: 3000000, price: 2 });
@@ -22,17 +24,20 @@
  * // defaultGas.price = 1
  */
 export class Gas {
-  static DEFAULT_LIMIT = 2_900_000_000;
-  static DEFAULT_PRICE = 1;
+  static DEFAULT_LIMIT = 2_900_000_000n;
+  static DEFAULT_PRICE = 1n;
 
   limit = NaN;
   price = NaN;
 
   // Passing null/undefined/0 or negative values will set the default value for price and limit
   constructor({ limit, price } = {}) {
-    this.limit = Math.max(limit, 0) || Gas.DEFAULT_LIMIT;
-    this.price = Math.max(price, 0) || Gas.DEFAULT_PRICE;
+    this.limit = max(limit, 0n) || Gas.DEFAULT_LIMIT;
+    this.price = max(price, 0n) || Gas.DEFAULT_PRICE;
+    this.total = this.limit * this.price;
 
     Object.freeze(this);
   }
 }
+
+const max = (a, b) => (a > b ? a : b);

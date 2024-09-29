@@ -5,12 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as exu from "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/mod.js";
-// import * as exu from "../../../exu/src/mod.js";
 import { none } from "./none.js";
 
 import { DriverError } from "./error.js";
 import * as DataBuffer from "./buffer.js";
 import { withAllocator } from "./alloc.js";
+
+const rng = () => crypto.getRandomValues(new Uint8Array(32));
 
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
@@ -56,6 +57,38 @@ export function unload() {
       [protocolDriverModule, driverEntrySize] = uninit;
     });
   }
+}
+
+export async function bookmarks(notes) {
+  const task = protocolDriverModule.task(async function (
+    { malloc, bookmarks },
+    { memcpy },
+  ) {
+    if (notes.length === 0) {
+      return [];
+    }
+
+    // Prepare the notes buffer
+    let notesBuffer = new Uint8Array(DataBuffer.from(notes.values()));
+
+    // Allocate memory for the notes + 4 bytes for the length
+    let ptr = await malloc(notesBuffer.byteLength);
+
+    // Copy the notes to the WASM memory
+    await memcpy(ptr, notesBuffer, notesBuffer.byteLength);
+
+    let bookmarks_ptr = await malloc(8);
+
+    let code = await bookmarks(ptr, bookmarks_ptr);
+    if (code > 0) throw DriverError.from(code);
+    bookmarks_ptr = new DataView(
+      (await memcpy(null, bookmarks_ptr, 4)).buffer,
+    ).getUint32(0, true);
+
+    return await memcpy(null, bookmarks_ptr, notes.size * 8);
+  });
+
+  return await task();
 }
 
 export async function pickNotes(owner, notes, value) {
@@ -207,25 +240,36 @@ export const mapOwned = (owners, notes) =>
       out_ptr = await out_ptr.valueOf();
       // let len = await u32x(out_ptr);
 
-      let [buff, layout] = await databuffer(out_ptr);
+      let [buff] = await databuffer(out_ptr);
+
+      const { size, totalLength } = DataBuffer.layout(buff);
+
+      const sizes = [];
+      for (let i = totalLength; i > 0; i -= totalLength / size) {
+        const vecLayout = DataBuffer.layout(buff.slice(0, -i));
+        sizes.push(vecLayout.size);
+      }
 
       notesBuffer = buff;
-      let notesLen = layout.size;
+      let totalLen = buff.byteLength - (size + 1) * 8;
 
       let blockHeight = await u64(+info_ptr);
       let bookmark = await u64(+info_ptr + 8);
 
-      let result = new Map();
-      for (let i = 0; i < entrySize * notesLen; i += entrySize) {
+      let results = sizes.map((_) => new Map());
+      let j = 0;
+      for (let i = 0; i < totalLen; i += entrySize) {
         let key = new Uint8Array(keySize);
         let value = new Uint8Array(itemSize);
         key.set(notesBuffer.subarray(i, i + keySize));
         value.set(notesBuffer.subarray(i + keySize, i + entrySize));
 
-        result.set(key, value);
+        while (j < sizes.length && sizes[j] === 0) j++;
+        results[j].set(key, value);
+        sizes[j]--;
       }
 
-      return [result, { blockHeight, bookmark }];
+      return [results, { blockHeight, bookmark }];
     }),
   )();
 
@@ -299,4 +343,94 @@ export const accountsIntoRaw = async (users) =>
       result.push(new Uint8Array(buffer.subarray(i, i + size)));
     }
     return result;
+  })();
+
+export const phoenix = async (info) =>
+  protocolDriverModule.task(async function ({ malloc, phoenix }, { memcpy }) {
+    const ptr = Object.create(null);
+
+    const seed = new Uint8Array(await info.sender.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    ptr.rng = await malloc(32);
+    await memcpy(ptr.rng, new Uint8Array(rng()));
+
+    const sender_index = +info.sender;
+    const receiver = info.receiver.valueOf();
+    ptr.receiver = await malloc(receiver.byteLength);
+    await memcpy(ptr.receiver, receiver);
+
+    const inputs = DataBuffer.from(info.inputs);
+
+    ptr.inputs = await malloc(inputs.byteLength);
+    await memcpy(ptr.inputs, new Uint8Array(inputs));
+
+    const openings = DataBuffer.from(info.openings);
+    ptr.openings = await malloc(openings.byteLength);
+    await memcpy(ptr.openings, new Uint8Array(openings));
+
+    const root = info.root;
+    ptr.root = await malloc(root.byteLength);
+    await memcpy(ptr.root, new Uint8Array(root));
+
+    const transfer_value = new Uint8Array(8);
+    new DataView(transfer_value.buffer).setBigUint64(
+      0,
+      info.transfer_value,
+      true,
+    );
+    ptr.transfer_value = await malloc(8);
+    await memcpy(ptr.transfer_value, transfer_value);
+
+    const deposit = new Uint8Array(8);
+    new DataView(deposit.buffer).setBigUint64(0, info.deposit, true);
+    ptr.deposit = await malloc(8);
+    await memcpy(ptr.deposit, deposit);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    // Copy the value to the WASM memory
+    const code = await phoenix(
+      ptr.rng,
+      ptr.seed,
+      sender_index,
+      ptr.receiver,
+      ptr.inputs,
+      ptr.openings,
+      ptr.root,
+      ptr.transfer_value,
+      info.obfuscated_transaction,
+      ptr.deposit,
+      ptr.gas_limit,
+      ptr.gas_price,
+      info.chainId,
+      info.data,
+    );
+    if (code > 0) throw DriverError.from(code);
+
+    // pub unsafe fn phoenix(
+    //     rng: &[u8; 32],
+    //     seed: &Seed,
+    //     sender_index: u8,
+    //     receiver: &[u8; PhoenixPublicKey::SIZE],
+    //     inputs: *const u8,
+    //     openings: *const u8,
+    //     root: &[u8; BlsScalar::SIZE],
+    //     transfer_value: *const u64,
+    //     obfuscated_transaction: bool, // ?
+    //     deposit: *const u64,          // ?
+    //     gas_limit: *const u64,
+    //     gas_price: *const u64,
+    //     chain_id: u8,    // ?
+    //     data: *const u8, // ?
   })();

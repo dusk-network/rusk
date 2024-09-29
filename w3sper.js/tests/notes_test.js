@@ -3,38 +3,27 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {
-  test,
-  assert,
-} from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
+import { test, assert } from "./harness.js";
+import { ProfileGenerator, Bookkeeper } from "../src/mod.js";
 
 const hex = (bytes) =>
   Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 
-import { ProfileGenerator, Bookkeeper } from "../src/mod.js";
-
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64).fill(1);
 const seeder = async () => SEED;
 
 const NOTES_RKYV = "./tests/assets/notes.rkyv";
-const WASM_PATH = "../target/wasm32-unknown-unknown/release/wallet_core.wasm";
-
 const notesBuffer = await Deno.readFile(NOTES_RKYV);
 
-const wasm = await Deno.readFile(WASM_PATH);
+import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 
-import * as ProtocolDriver from "../src/protocol-driver.js";
+test.withLocalWasm = "release";
 
 // Test case for default profile
 test("owened notes balance", async () => {
-  ProtocolDriver.load(
-    wasm,
-    new URL("./assets/debug-imports.js", import.meta.url),
-  );
-
   const profiles = new ProfileGenerator(seeder);
 
   const owner1 = await Promise.all([
@@ -48,12 +37,11 @@ test("owened notes balance", async () => {
   const owner4 = [await profiles.next()];
 
   let [notes1] = await ProtocolDriver.mapOwned(owner1, notesBuffer);
+  assert.equal(notes1.length, 3);
 
-  assert.equal(notes1.size, 14);
-  assert.equal([...notes1.keys()].map(hex), [
+  assert.equal(notes1[0].size, 12);
+  assert.equal([...notes1[0].keys()].map(hex), [
     "b3063d50864e5e138db87447e0bdaf4cf345c17dd2da0b7ac7abbc08b090e62b",
-    "1afa317b0d0c8bcf2c08890380954adabb19ffd4bf721422179b6f08b664394a",
-    "7a70d19b83c4722a6b27e2f5712e9ad3b7573656d32ccf847ec95d3ae942955b",
     "f628a8d5bafffe9943fa61672d00019a136efc418bbbb157df3f08bd964fc13c",
     "275f94a9b14a4b87e9b1921246a55f6095972fefb12a246554d6c276dd8a0f68",
     "e3aa198c485f2c874b8592eb1accf96bddae24787df3c4f300b660d1be97c55b",
@@ -67,35 +55,49 @@ test("owened notes balance", async () => {
     "7cd032f0160e0a54ca1de4d86ee8c9981289121982c28a916752ffc06c9fc72a",
   ]);
 
+  assert.equal(notes1[1].size, 1);
+  assert.equal([...notes1[1].keys()].map(hex), [
+    "1afa317b0d0c8bcf2c08890380954adabb19ffd4bf721422179b6f08b664394a",
+  ]);
+
+  assert.equal(notes1[2].size, 1);
+  assert.equal([...notes1[2].keys()].map(hex), [
+    "7a70d19b83c4722a6b27e2f5712e9ad3b7573656d32ccf847ec95d3ae942955b",
+  ]);
+
   let [notes2] = await ProtocolDriver.mapOwned(owner2, notesBuffer);
 
-  assert.equal(notes2.size, 2);
-  assert.equal([...notes2.keys()].map(hex), [
+  assert.equal(notes2.length, 2);
+  assert.equal([...notes2[0].keys()].map(hex), [
     "cc7a09800474fc6668fba1f1b631e940f00309d88a9424fe1c84ca93d627b518",
+  ]);
+
+  assert.equal([...notes2[1].keys()].map(hex), [
     "96c24f81d2587017726ec7bbcbbfa80d5f300002c5d8dabe53870e97379d873f",
   ]);
 
   let [notes3] = await ProtocolDriver.mapOwned(owner3, notesBuffer);
 
-  assert.equal(notes3.size, 1);
-  assert.equal([...notes3.keys()].map(hex), [
+  assert.equal(notes3.length, 1);
+  assert.equal([...notes3[0].keys()].map(hex), [
     "81d45c11c5e9b20c2ebba17eaa4f720c669bfd4876cf620280c296225b721c18",
   ]);
 
   let [notes4] = await ProtocolDriver.mapOwned(owner4, notesBuffer);
-  assert.equal(notes4.size, 0);
+  assert.equal(notes4.length, 1);
+  assert.equal(notes4[0].size, 0);
 
   // Create a treasury object for testing
   let treasury = {
     data: {
       "62b5giMnKSpczFSdeLAouS76DZRB6Ny755WTUbJ7sp9dXMJptfe3gknP3XRubWkT1apSZ4YPanSVFjBJBP2SV6wU":
-        notes1,
+        notes1[0],
       "2cjjDfHEqP3nBQNXqukyKRCJ466VoWGyJmiCbgWuinnK6JEmftzuoHBNjs1gej19A8dgZN8XfGLvKDam2AxJuhya":
-        notes2,
+        notes2[0],
       "5LGVg71BfjmqV6GEB5pov1ZFNaaVUNsqmmBj1uGCTEND6kbh4w2aq13vXfYtDjNM4VpvpWZdagm7b4XbnxVUJZfU":
-        notes3,
+        notes3[0],
       "2BqT2oxcE56deFGjKxEpPy3E9NapkiFjzEzDoQAjcmhss4pmYGrfAgRuTrAPe3feGvysymjgP8QFD9M7GcbS2qKi":
-        notes4,
+        notes4[0],
     },
 
     address(profile) {
@@ -125,7 +127,11 @@ test("owened notes balance", async () => {
     spendable: 0n,
   });
 
-  let picked = await ProtocolDriver.pickNotes(owner1[0], notes1, 10n);
+  let picked = await ProtocolDriver.pickNotes(
+    owner1[0].address,
+    notes1[0],
+    10n,
+  );
   assert.equal(picked.size, 4);
 
   assert.equal(
@@ -136,7 +142,7 @@ test("owened notes balance", async () => {
     },
   );
 
-  picked = await ProtocolDriver.pickNotes(owner1[0], notes1, 14n);
+  picked = await ProtocolDriver.pickNotes(owner1[0], notes1[0], 14n);
   assert.equal(picked.size, 4);
 
   assert.equal(
@@ -147,7 +153,7 @@ test("owened notes balance", async () => {
     },
   );
 
-  picked = await ProtocolDriver.pickNotes(owner3[0], notes3, 14n);
+  picked = await ProtocolDriver.pickNotes(owner3[0], notes3[0], 14n);
   assert.equal(picked.size, 1);
 
   assert.equal(
@@ -158,8 +164,6 @@ test("owened notes balance", async () => {
     },
   );
 
-  picked = await ProtocolDriver.pickNotes(owner4, notes4, 1n);
+  picked = await ProtocolDriver.pickNotes(owner4, notes4[0], 1n);
   assert.equal(picked.size, 0);
-
-  await ProtocolDriver.unload();
 });

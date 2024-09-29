@@ -12,26 +12,10 @@ import {
   AccountSyncer,
 } from "../src/mod.js";
 
-import { test, assert } from "./harness.js";
-
-const once = (target, topic) =>
-  new Promise((resolve) =>
-    target.addEventListener(topic, resolve, { once: true }),
-  );
-
-// Define a seed for deterministic profile generation
-const SEED = new Uint8Array([
-  153, 16, 102, 99, 133, 196, 55, 237, 42, 2, 163, 116, 233, 89, 10, 115, 19,
-  81, 140, 31, 38, 81, 10, 46, 118, 112, 151, 244, 145, 90, 145, 168, 214, 242,
-  68, 123, 116, 76, 223, 56, 200, 60, 188, 217, 34, 113, 55, 172, 27, 255, 184,
-  55, 143, 233, 109, 20, 137, 34, 20, 196, 252, 117, 221, 221,
-]);
-
-const seeder = () => SEED;
+import { test, assert, seeder, Treasury } from "./harness.js";
 
 test.withLocalWasm = "release";
 
-// Test case for default profile
 test("Network connection", async () => {
   const network = new Network("http://localhost:8080/");
 
@@ -81,26 +65,13 @@ test("Network synchronization", async () => {
     iterationOwnedCountTotal += ownedCount;
   });
 
-  let ownedNotes = new Map();
-  for await (let [notes, _syncInfo] of await addresses.notes(owners, {
-    from: 0n,
-  })) {
-    ownedNotes = new Map([...ownedNotes, ...notes]);
-  }
+  const treasury = new Treasury(owners);
+
+  await treasury.read({ from: 0n, addresses, accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
 
   assert.equal(iterationOwnedCountTotal, 1857);
-  assert.equal(ownedNotes.size, iterationOwnedCountTotal);
-
-  const balances = await accounts.balances(owners);
-
-  const bookkeeper = new Bookkeeper({
-    address(_profile) {
-      return ownedNotes;
-    },
-    account(profile) {
-      return balances.at(+profile);
-    },
-  });
 
   const addressBalances = await Promise.all(
     owners.map((owner) => bookkeeper.balance(owner.address)),

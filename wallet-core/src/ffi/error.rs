@@ -23,6 +23,10 @@ pub enum ErrorCode {
     UnarchivingError = 254,
     // Deserialization (dusk-bytes deserialization) error
     DeserializationError = 253,
+    // Phoenix Transaction error
+    PhoenixTransactionError = 252,
+    // Opening error
+    NoneOpeningError = 251,
     // Success
     Ok = 0,
 }

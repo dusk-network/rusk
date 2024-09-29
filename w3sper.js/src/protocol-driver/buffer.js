@@ -4,15 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/**
- * Calculates and sets layout for the given typed array and size.
- * The typed array buffer should have enough space to store the layout.
- *
- * @param {Uint8Array} dest - The destination typed array where the layout will be applied.
- * @param {number} size - The size to be set in the layout.
- * @returns {ArrayBuffer} - The buffer with the layout applied.
- */
-function layout(dest, size) {
+const unbind = Function.call.bind(Function.bind, Function.call);
+
+function setLayout(dest, size) {
   // Subtract 8 bytes to exclude the space reserved for alignment and size
   const totalLength = dest.byteLength - 8;
   // Calculate the alignment value
@@ -23,6 +17,30 @@ function layout(dest, size) {
   // Set alignment and size at the end of the buffer
   view.setUint32(view.byteLength - 8, align, true);
   view.setUint32(view.byteLength - 4, size, true);
+}
+
+function getLayout(source) {
+  const view = new DataView(source.buffer);
+
+  // Retrieve the alignment and size values from the end of the buffer
+  const align = view.getUint32(view.byteLength - 8, true);
+  const size = view.getUint32(view.byteLength - 4, true);
+
+  // Now we need to reverse the alignment calculation to get the original totalLength
+  const totalLength = (2 ** 32 - align) & ~3;
+
+  // The actual byte length of the content before the reserved 8 bytes for alignment and size
+  const actualLength = totalLength; //- 3;
+
+  return { align, size, totalLength: actualLength };
+}
+
+export function layout(dest, size) {
+  if (arguments.length < 2) {
+    return getLayout(dest);
+  } else {
+    return setLayout(dest, size);
+  }
 }
 
 /**
@@ -89,7 +107,7 @@ const itemsByteLength = (items) =>
  */
 export function flatten(item) {
   // If the input is already a Uint8Array, return it as-is.
-  if (item instanceof Uint8Array) {
+  if (item instanceof Uint8Array || item instanceof ArrayBuffer) {
     return item;
   }
 

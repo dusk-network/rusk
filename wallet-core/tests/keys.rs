@@ -93,8 +93,4 @@ fn test_derive_bls_sk() {
         172, 27, 255, 184, 55, 143, 233, 109, 20, 137, 34, 20, 196, 252, 117,
         221, 221,
     ];
-
-    let key = rkyv::to_bytes::<_, 256>(&derive_bls_pk(&seed, 0)).unwrap();
-
-    println!("[{}] {:?}", key.len(), key);
 }
