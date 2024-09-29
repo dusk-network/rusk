@@ -214,7 +214,7 @@ pub(crate) enum Command {
 
         /// memo to attach to the transaction
         #[clap(short, long)]
-        memo: Vec<u8>,
+        memo: String,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
@@ -373,7 +373,7 @@ pub(crate) enum Command {
 
         /// Memo is additonal info attached to transaction
         #[clap(short, long)]
-        memo: Vec<u8>,
+        memo: String,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
@@ -831,6 +831,8 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
+                let memo = memo.as_bytes().to_vec();
+
                 let tx = wallet
                     .moonlight_execute(
                         addr,
@@ -856,6 +858,8 @@ impl Command {
                 };
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let memo = memo.as_bytes().to_vec();
 
                 let tx = wallet
                     .phoenix_execute(

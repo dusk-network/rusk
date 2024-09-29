@@ -275,7 +275,7 @@ fn transaction_op_menu_moonlight(
         History => AddrOp::Back,
         Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
             addr: Some(addr),
-            memo: prompt::request_bytes("memo")?,
+            memo: prompt::request_str("memo")?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -359,7 +359,7 @@ fn transaction_op_menu_phoenix(
         }
         Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
             addr: Some(addr),
-            memo: prompt::request_bytes("memo")?,
+            memo: prompt::request_str("memo")?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
