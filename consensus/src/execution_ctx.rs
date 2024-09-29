@@ -414,7 +414,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let msg_topic = msg.topic();
         let msg_iter = msg.header.iteration;
         let msg_step = msg.get_step();
-        let msg_round = msg.header.round;
+        let msg_height = msg.header.round;
         trace!("collecting msg {msg:#?}");
 
         let collected = phase
@@ -431,7 +431,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             Ok(HandleMsgOutput::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
-                error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_round,);
+                error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_height,);
                 None
             }
         }
@@ -493,7 +493,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         event = "republish",
                         src = "future_msgs",
                         msg_step = msg.get_step(),
-                        msg_round = msg.header.round,
+                        msg_iter = msg.get_iteration(),
+                        msg_height = msg.get_height(),
                         msg_topic = ?msg.topic(),
                         ray_id = msg.ray_id()
                     );
