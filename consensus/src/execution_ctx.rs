@@ -263,29 +263,14 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// current round
     async fn process_past_events(&mut self, msg: Message) {
         if msg.header.round != self.round_update.round {
-            debug!(
-                event = "discarded message",
-                src = "process_past_events",
-                msg_step = msg.get_step(),
-                msg_iter = msg.get_iteration(),
-                msg_height = msg.get_height(),
-                msg_topic = ?msg.topic(),
-                ray_id = msg.ray_id()
-            );
+            log_msg("discarded message", "process_past_events", &msg);
             // should we send current tip to the msg sender?
             return;
         }
         // Repropagate past iteration messages (they have been already
         // validated)
-        debug!(
-            event = "outbound send",
-            src = "process_past_events",
-            msg_step = msg.get_step(),
-            msg_iter = msg.get_iteration(),
-            msg_height = msg.get_height(),
-            msg_topic = ?msg.topic(),
-            ray_id = msg.ray_id()
-        );
+
+        log_msg("outbound send", "process_past_events", &msg);
         self.outbound.try_send(msg.clone());
 
         if is_emergency_iter(msg.header.iteration) {
@@ -392,15 +377,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             Ok(_) => {
                 // Repropagate past iteration messages (they have been already
                 // validated)
-                debug!(
-                    event = "outbound send",
-                    src = "inbound message",
-                    msg_step = msg.get_step(),
-                    msg_iter = msg.get_iteration(),
-                    msg_height = msg.get_height(),
-                    msg_topic = ?msg.topic(),
-                    ray_id = msg.ray_id()
-                );
+
+                log_msg("outbound send", "inbound message", &msg);
                 // Re-publish the returned message
                 self.outbound.try_send(msg.clone());
             }
@@ -408,32 +386,19 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // Save it in future_msgs to be processed when we reach
             // same round/step.
             Err(ConsensusError::FutureEvent) => {
-                trace!("future msg {:?}", msg);
-
                 // Re-propagate messages from future iterations of the current
                 // round
                 if msg.header.round == self.round_update.round {
                     // Repropagate past iteration messages (they have been
                     // already validated)
-                    debug!(
-                        event = "outbound send",
-                        src = "inbound future message",
-                        msg_step = msg.get_step(),
-                        msg_iter = msg.get_iteration(),
-                        msg_height = msg.get_height(),
-                        msg_topic = ?msg.topic(),
-                        ray_id = msg.ray_id()
-                    );
+
+                    log_msg("outbound send", "inbound future message", &msg);
                     self.outbound.try_send(msg.clone());
                 } else {
-                    debug!(
-                        event = "postponed message",
-                        src = "inbound future message",
-                        msg_step = msg.get_step(),
-                        msg_iter = msg.get_iteration(),
-                        msg_height = msg.get_height(),
-                        msg_topic = ?msg.topic(),
-                        ray_id = msg.ray_id()
+                    log_msg(
+                        "postponed message",
+                        "inbound future message",
+                        &msg,
                     );
                 }
 
@@ -500,15 +465,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             .await
             .handle_timeout(&self.round_update, self.iteration)
         {
-            debug!(
-                event = "outbound send",
-                src = "process timeout event",
-                msg_step = msg.get_step(),
-                msg_iter = msg.get_iteration(),
-                msg_height = msg.get_height(),
-                msg_topic = ?msg.topic(),
-                ray_id = msg.ray_id()
-            );
+            log_msg("outbound send", "process timeout event", &msg);
             self.outbound.try_send(msg.clone());
         }
     }
@@ -548,15 +505,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 );
                 if ret.is_ok() {
                     // Re-publish a drained message
-                    debug!(
-                        event = "outbound send",
-                        src = "future_msgs",
-                        msg_step = msg.get_step(),
-                        msg_iter = msg.get_iteration(),
-                        msg_height = msg.get_height(),
-                        msg_topic = ?msg.topic(),
-                        ray_id = msg.ray_id()
-                    );
+                    log_msg("outbound send", "future_msgs", &msg);
 
                     self.outbound.try_send(msg.clone());
 
@@ -596,4 +545,17 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     pub(crate) fn get_curr_generator(&self) -> Option<PublicKeyBytes> {
         self.iter_ctx.get_generator(self.iteration)
     }
+}
+
+#[inline(always)]
+fn log_msg(event: &str, src: &str, msg: &Message) {
+    debug!(
+        event,
+        src,
+        msg_step = msg.get_step(),
+        msg_iter = msg.get_iteration(),
+        msg_height = msg.get_height(),
+        msg_topic = ?msg.topic(),
+        ray_id = msg.ray_id()
+    );
 }
