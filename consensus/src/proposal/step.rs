@@ -79,7 +79,6 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             {
                 ctx.outbound.try_send(msg.clone());
 
-                Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
                 // register new candidate in local state
                 match self
                     .handler
@@ -88,7 +87,13 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .collect(msg, &ctx.round_update, committee, None)
                     .await
                 {
-                    Ok(HandleMsgOutput::Ready(msg)) => return Ok(msg),
+                    Ok(HandleMsgOutput::Ready(msg)) => {
+                        Self::wait_until_next_slot(
+                            ctx.round_update.timestamp(),
+                        )
+                        .await;
+                        return Ok(msg);
+                    }
                     Err(e) => {
                         error!("invalid candidate generated due to {:?}", e)
                     }
@@ -99,14 +104,20 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             }
         }
 
-        Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
-
         // handle queued messages for current round and step.
         if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
+            Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone()).await
+        match ctx.event_loop(self.handler.clone()).await {
+            Ok(msg) => {
+                Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
+
+                Ok(msg)
+            }
+            Err(err) => Err(err),
+        }
     }
 
     /// Waits until the next slot is reached
