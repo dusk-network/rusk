@@ -10,15 +10,18 @@ use anyhow::Result;
 use execution_core::{ContractId, Event, CONTRACT_ID_BYTES};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+pub const TX_HASH_BYTES: usize = 32;
+pub type TxHash = [u8; TX_HASH_BYTES];
+
 /// Contract event with optional origin (tx hash).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractTxEvent {
     pub event: ContractEvent,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub origin: Option<[u8; 32]>,
+    pub origin: Option<TxHash>,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 #[repr(C)]
 pub struct WrappedContractId(pub ContractId);
 
@@ -58,7 +61,7 @@ impl<'de> Deserialize<'de> for WrappedContractId {
 /// Wrapper around a contract event that is to be archived or sent to a
 /// websocket client.
 #[serde_with::serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractEvent {
     pub target: WrappedContractId,
     pub topic: String,
