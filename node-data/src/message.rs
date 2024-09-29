@@ -147,6 +147,14 @@ impl Message {
             _ => StepName::Proposal.to_step(self.header.iteration),
         }
     }
+    
+    pub fn get_iteration(&self) -> u8 {
+        self.header.iteration
+    }
+
+    pub fn get_height(&self) -> u64 {
+        self.header.round
+    }
 
     pub fn version(&self) -> &Version {
         &self.version
