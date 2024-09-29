@@ -262,17 +262,21 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Ignores messages that do not originate from emergency iteration of
     /// current round
     async fn process_past_events(&mut self, msg: Message) {
-        if msg.header.round == self.round_update.round
-            && is_emergency_iter(msg.header.iteration)
-        {
+        if msg.header.round != self.round_update.round {
+            // should we send current tip to the msg sender?
+            return;
+        }
+        // Repropagate past iteration messages (they have been already
+        // validated)
+        self.outbound.try_send(msg.clone());
+
+        if is_emergency_iter(msg.header.iteration) {
             self.on_emergency_mode(msg).await;
         }
     }
 
     /// Handles a consensus message in emergency mode
     async fn on_emergency_mode(&mut self, msg: Message) {
-        self.outbound.try_send(msg.clone());
-
         // Try to vote for a candidate block from former iteration
         if let Payload::Candidate(p) = &msg.payload {
             self.try_cast_validation_vote(&p.candidate).await;
