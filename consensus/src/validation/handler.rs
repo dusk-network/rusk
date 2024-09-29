@@ -152,7 +152,8 @@ impl MsgHandler for ValidationHandler {
                     from = p.sign_info().signer.to_bs58(),
                     vote = ?p.vote,
                     msg_step = p.get_step(),
-                    msg_round = p.header().round,
+                    msg_iter = p.header().iteration,
+                    msg_height = p.header().round,
                 );
                 ConsensusError::InvalidVote(p.vote)
             })?;
@@ -226,7 +227,8 @@ impl MsgHandler for ValidationHandler {
                     from = p.sign_info().signer.to_bs58(),
                     vote = ?p.vote,
                     msg_step = p.get_step(),
-                    msg_round = p.header().round,
+                    msg_iter = p.header().iteration,
+                    msg_height = p.header().round,
                 );
             }
         }
