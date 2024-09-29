@@ -68,10 +68,12 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 let ray_id = hex::encode(md.ray_id());
                 debug!(
                     event = "msg received",
-                    topic = ?msg.topic(),
                     src = ?md.src(),
-                    height = md.height(),
-                    ray_id
+                    kad_height = md.height(),
+                    ray_id,
+                    topic = ?msg.topic(),
+                    height = msg.get_height(),
+                    iteration = msg.get_iteration(),
                 );
 
                 // Update Transport Data
@@ -175,9 +177,19 @@ impl<const N: usize> Kadcast<N> {
 #[async_trait]
 impl<const N: usize> crate::Network for Kadcast<N> {
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()> {
-        let height = match msg.metadata {
-            Some(Metadata { height: 0, .. }) => return Ok(()),
-            Some(Metadata { height, .. }) => Some(height - 1),
+        let kad_height = msg.metadata.as_ref().map(|m| m.height);
+        debug!(
+            event = "broadcasting msg",
+            kad_height,
+            ray_id = msg.ray_id(),
+            topic = ?msg.topic(),
+            height = msg.get_height(),
+            iteration = msg.get_iteration(),
+        );
+
+        let height = match kad_height {
+            Some(0) => return Ok(()),
+            Some(height) => Some(height - 1),
             None => None,
         };
 
@@ -191,7 +203,6 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         counter!(format!("dusk_outbound_{:?}_size", msg.topic()))
             .increment(encoded.len() as u64);
 
-        trace!("broadcasting msg ({:?})", msg.topic());
         self.peer.broadcast(&encoded, height).await;
 
         Ok(())
