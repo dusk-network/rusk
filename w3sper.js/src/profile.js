@@ -33,6 +33,10 @@ class Key {
     }
     return null;
   }
+
+  get seed() {
+    return ProfileGenerator.seedFrom(this);
+  }
 }
 
 export class Profile {

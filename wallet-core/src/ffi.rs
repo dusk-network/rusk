@@ -23,8 +23,7 @@ pub mod panic;
 use crate::keys::{
     derive_bls_pk, derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };
-use crate::notes::{self, owned, pick};
-use crate::phoenix_balance;
+use crate::notes::{self, balance, owned, pick};
 use crate::Seed;
 use error::ErrorCode;
 
@@ -33,11 +32,14 @@ use core::{ptr, slice};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
+    transfer::data::TransactionData,
     transfer::phoenix::{
-        ArchivedNoteLeaf, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
+        ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
+        PublicKey as PhoenixPublicKey,
     },
     BlsScalar,
 };
+
 use zeroize::Zeroize;
 
 use rkyv::to_bytes;
@@ -75,7 +77,6 @@ pub unsafe extern "C" fn generate_profile(
 ) -> ErrorCode {
     let ppk = derive_phoenix_pk(seed, index).to_bytes();
     let bpk = derive_bls_pk(seed, index).to_bytes();
-    let bpk2 = derive_bls_pk(seed, index).to_raw_bytes();
 
     ptr::copy_nonoverlapping(
         &ppk[0],
@@ -193,7 +194,7 @@ pub unsafe fn balance(
 
     let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
 
-    let info = phoenix_balance(&vk, notes.iter());
+    let info = balance::calculate_unchecked(&vk, notes.iter());
 
     ptr::copy_nonoverlapping(
         info.to_bytes().as_ptr(),
@@ -231,12 +232,36 @@ pub unsafe fn pick_notes(
 
 /// Gets the bookmark from the given note.
 #[no_mangle]
-pub unsafe fn bookmark(leaf_ptr: *const u8, bookmark: *mut u64) -> ErrorCode {
-    let leaf: NoteLeaf = mem::from_buffer(leaf_ptr)?;
+pub unsafe fn bookmarks(
+    notes_ptr: *const u8,
+    bookmarks_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
 
-    *bookmark = *leaf.note.pos();
+    let bookmarks: Vec<u64> =
+        notes.into_iter().map(|leaf| *leaf.note.pos()).collect();
+
+    let bytes: Vec<u8> = bookmarks
+        .iter()
+        .flat_map(|&num| num.to_le_bytes())
+        .collect();
+
+    let ptr = mem::malloc(bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *bookmarks_ptr = ptr;
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes.len());
 
     ErrorCode::Ok
+}
+
+struct NoOpProver {}
+
+impl Prove for NoOpProver {
+    fn prove(&self, circuits: &[u8]) -> Result<Vec<u8>, execution_core::Error> {
+        Ok(circuits.to_vec())
+    }
 }
 
 #[no_mangle]
@@ -256,13 +281,52 @@ pub unsafe fn phoenix(
     chain_id: u8,    // ?
     data: *const u8, // ?
 ) -> ErrorCode {
-    let rng = ChaCha12Rng::from_seed(*rng);
+    let mut rng = ChaCha12Rng::from_seed(*rng);
 
     let sender_sk = derive_phoenix_sk(&seed, sender_index);
-    let receiver_pk = PhoenixPublicKey::from_bytes(receiver);
-    let root = BlsScalar::from_bytes(root);
+    let change_pk = PhoenixPublicKey::from(&sender_sk);
+    let receiver_pk = PhoenixPublicKey::from_bytes(receiver)
+        .or(Err(ErrorCode::DeserializationError))?;
 
-    let NoteOpening = mem::from_buffer(opening)?;
+    let root = BlsScalar::from_bytes(root)
+        .into_option()
+        .ok_or(ErrorCode::DeserializationError)?;
+
+    let openings: Vec<NoteOpening> = mem::from_buffer(openings)?;
+
+    let notes: Vec<NoteLeaf> = mem::from_buffer(inputs)?;
+
+    let vk = derive_phoenix_vk(seed, sender_index);
+    eprintln!("{:?}", balance::calculate_unchecked(&vk, notes.iter()));
+    eprintln!("{}", *transfer_value);
+    let inputs: Vec<(Note, NoteOpening)> = notes
+        .into_iter()
+        .map(|note_leaf| note_leaf.note)
+        .zip(openings.into_iter())
+        .collect();
+
+    let data: Option<TransactionData> =
+        if data.is_null() { None } else { todo!() };
+
+    let tx = crate::transaction::phoenix(
+        &mut rng,
+        &sender_sk,
+        &change_pk,
+        &receiver_pk,
+        inputs,
+        root,
+        *transfer_value,
+        obfuscated_transaction,
+        *deposit,
+        *gas_limit,
+        *gas_price,
+        chain_id,
+        data,
+        &NoOpProver {},
+    )
+    .unwrap();
+
+    eprintln!("{:?}", tx);
 
     ErrorCode::Ok
 }

@@ -6,12 +6,15 @@
 
 // Return a promised rejected if the signal is aborted, resolved otherwise
 
+import { ProfileGenerator } from "../profile.js";
 import * as ProtocolDriver from "../protocol-driver/mod.js";
 
 import { GraphQLRequest } from "./graphql.js";
 
 export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
+export { Bookmark } from "./bookmark.js";
+export { Gas } from "./gas.js";
 
 const protocol = { "https:": "wss:", "http:": "ws:" };
 
@@ -139,13 +142,9 @@ export class Network {
     );
   }
 
-  // async sync(options = {}) {
-  //   if (!("to" in options)) {
-  //     options.to = await this.blockHeight;
-  //   }
-
-  //   return new Syncer(this, options);
-  // }
+  async execute(builder) {
+    await builder.build(this);
+  }
 
   async dispatch(resource, options = {}) {
     const { signal } = options;
