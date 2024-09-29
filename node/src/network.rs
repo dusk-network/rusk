@@ -13,6 +13,7 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
+use node_data::ledger::to_str;
 use node_data::message::payload::{GetResource, Inv, Nonce};
 use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
 use node_data::{get_current_timestamp, Serializable};
@@ -65,7 +66,7 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 counter!(format!("dusk_inbound_{:?}_count", msg.topic()))
                     .increment(1);
 
-                let ray_id = hex::encode(md.ray_id());
+                let ray_id = to_str(md.ray_id());
                 debug!(
                     event = "msg received",
                     src = ?md.src(),
