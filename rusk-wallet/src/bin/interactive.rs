@@ -203,12 +203,12 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
 }
 
 /// Allows the user to choose an operation to perform with the selected
-/// transction type
+/// transaction type
 fn transaction_op_menu_moonlight(
     addr: Address,
     moonlight_bal: Dusk,
 ) -> anyhow::Result<AddrOp> {
-    use TransctionOp::*;
+    use TransactionOp::*;
     let menu = Menu::title("Moonlight Transaction Operations")
         .add(Transfer, "Moonlight Transfer")
         .add(Stake, "Moonlight Stake")
@@ -216,8 +216,8 @@ fn transaction_op_menu_moonlight(
         .add(Withdraw, "Moonlight Withdraw")
         .add(ContractDeploy, "Moonlight Contract Deploy")
         .add(ContractCall, "Moonlight Contract call")
-        .add(Memo, "Attach Memo to transction")
-        //.add(History, "Moonlight Transction History")
+        .add(Memo, "Attach Memo to transaction")
+        //.add(History, "Moonlight Transaction History")
         .separator()
         .add(Back, "Back");
 
@@ -286,12 +286,12 @@ fn transaction_op_menu_moonlight(
 }
 
 /// Allows the user to choose an operation to perform with the selected
-/// transction type
+/// transaction type
 fn transaction_op_menu_phoenix(
     addr: Address,
     phoenix_balance: Dusk,
 ) -> anyhow::Result<AddrOp> {
-    use TransctionOp::*;
+    use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
         .add(Transfer, "Phoenix Transfer")
         .add(Stake, "Phoenix Stake")
@@ -299,8 +299,8 @@ fn transaction_op_menu_phoenix(
         .add(Withdraw, "Phoenix Withdraw")
         .add(ContractDeploy, "Phoenix Contract Deploy")
         .add(ContractCall, "Phoenix Contract call")
-        .add(Memo, "Attach Memo to transction")
-        .add(History, "Phoenix Transction History")
+        .add(Memo, "Attach Memo to transaction")
+        .add(History, "Phoenix Transaction History")
         .separator()
         .add(Back, "Back");
 
@@ -349,7 +349,7 @@ fn transaction_op_menu_phoenix(
         ContractCall => AddrOp::Run(Box::new(Command::PhoenixContractCall {
             addr: Some(addr),
             contract_id: prompt::request_bytes("contract id")?,
-            fn_name: prompt::request_str("function name to cal")?,
+            fn_name: prompt::request_str("function name to call")?,
             fn_args: prompt::request_bytes("arguments of calling function")?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
@@ -391,7 +391,7 @@ enum CommandMenuItem {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
-enum TransctionOp {
+enum TransactionOp {
     Transfer,
     Stake,
     Unstake,
@@ -417,7 +417,7 @@ fn menu_op(
     let cmd_menu = Menu::new()
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
-        .add(CMI::MoonlightTransactions, "Moonlight Transctions")
+        .add(CMI::MoonlightTransactions, "Moonlight Transactions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
         .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
         .add(CMI::Export, "Export provisioner key-pair")
