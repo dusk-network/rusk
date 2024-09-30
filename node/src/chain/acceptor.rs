@@ -485,7 +485,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 est_elapsed_time = start.elapsed();
 
                 assert_eq!(header.state_hash, verification_output.state_root);
-                assert_eq!(header.event_hash, verification_output.event_hash);
+                assert_eq!(header.event_bloom, verification_output.event_bloom);
 
                 let rolling_results =
                     self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
