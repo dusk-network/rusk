@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use node_data::message::Message;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt::Debug;
 use tracing::warn;
@@ -14,14 +15,29 @@ type RoundMap<T> = BTreeMap<u64, StepMap<T>>;
 const MAX_MESSAGES_PER_QUEUE: usize = 1000;
 
 #[derive(Debug, Default)]
-pub struct MsgRegistry<T: ?Sized>(RoundMap<T>)
-where
-    T: Debug + Clone;
+pub struct MsgRegistry<T: QueueMessage>(RoundMap<T>);
+
+pub trait QueueMessage: Debug + Clone {
+    fn step(&self) -> u8;
+
+    fn round(&self) -> u64;
+}
+
+impl QueueMessage for Message {
+    fn round(&self) -> u64 {
+        self.header.round
+    }
+    fn step(&self) -> u8 {
+        self.get_step()
+    }
+}
 
 /// A message registry that stores messages based on their round and step.
-impl<T: Debug + Clone> MsgRegistry<T> {
+impl<T: QueueMessage> MsgRegistry<T> {
     /// Inserts a message into the registry based on its round and step.
-    pub fn put_msg(&mut self, round: u64, step: u8, msg: T) {
+    pub fn put_msg(&mut self, msg: T) {
+        let round = msg.round();
+        let step = msg.step();
         let vec = self
             .0
             .entry(round)
@@ -84,30 +100,40 @@ impl<T: Debug + Clone> MsgRegistry<T> {
 mod tests {
     use crate::queue::MsgRegistry;
 
+    use super::QueueMessage;
+
+    #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+    struct Item(u64, u8, i32);
+
+    impl QueueMessage for Item {
+        fn round(&self) -> u64 {
+            self.0
+        }
+        fn step(&self) -> u8 {
+            self.1
+        }
+    }
     #[test]
     fn test_push_event() {
-        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-        struct Item(i32);
-
         let round = 55555;
 
         let mut reg = MsgRegistry::<Item>::default();
-        reg.put_msg(round, 2, Item(5));
-        reg.put_msg(round, 2, Item(4));
-        reg.put_msg(round, 2, Item(3));
+        reg.put_msg(Item(round, 2, 5));
+        reg.put_msg(Item(round, 2, 4));
+        reg.put_msg(Item(round, 2, 3));
 
         assert_eq!(reg.msg_count(), 3);
         assert!(reg.drain_msg_by_round_step(round, 3).is_none());
         assert!(reg.drain_msg_by_round_step(4444, 2).is_none());
 
         for i in 1..100 {
-            reg.put_msg(4444, i as u8, Item(i));
+            reg.put_msg(Item(4444, i as u8, i));
         }
 
         assert_eq!(reg.msg_count(), 100 + 2);
         assert_eq!(
             reg.drain_msg_by_round_step(round, 2).unwrap(),
-            vec![Item(5), Item(4), Item(3)],
+            vec![Item(round, 2, 5), Item(round, 2, 4), Item(round, 2, 3)],
         );
         assert_eq!(reg.msg_count(), 99);
 
@@ -118,16 +144,13 @@ mod tests {
 
     #[test]
     fn test_remove_msgs_out_of_range() {
-        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-        struct Item(i32);
-
         let round = 100;
 
         let mut reg = MsgRegistry::<Item>::default();
-        reg.put_msg(round + 1, 1, Item(1));
-        reg.put_msg(round + 2, 1, Item(1));
-        reg.put_msg(round * 3, 1, Item(1));
-        reg.put_msg(round, 1, Item(1));
+        reg.put_msg(Item(round + 1, 1, 1));
+        reg.put_msg(Item(round + 2, 1, 1));
+        reg.put_msg(Item(round * 3, 1, 1));
+        reg.put_msg(Item(round, 1, 1));
         assert_eq!(reg.msg_count(), 4);
 
         reg.remove_msgs_out_of_range(round + 1, 1);

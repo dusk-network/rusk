@@ -402,11 +402,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     );
                 }
 
-                self.future_msgs.lock().await.put_msg(
-                    msg.header.round,
-                    msg.get_step(),
-                    msg,
-                );
+                self.future_msgs.lock().await.put_msg(msg);
 
                 return None;
             }
