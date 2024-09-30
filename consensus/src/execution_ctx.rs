@@ -10,7 +10,7 @@ use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
-use crate::queue::MsgRegistry;
+use crate::queue::{MsgRegistry, MsgRegistryError};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -386,23 +386,31 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // Save it in future_msgs to be processed when we reach
             // same round/step.
             Err(ConsensusError::FutureEvent) => {
-                // Re-propagate messages from future iterations of the current
-                // round
-                if msg.header.round == self.round_update.round {
-                    // Repropagate past iteration messages (they have been
-                    // already validated)
-
-                    log_msg("outbound send", "inbound future message", &msg);
-                    self.outbound.try_send(msg.clone());
-                } else {
-                    log_msg(
-                        "postponed message",
-                        "inbound future message",
-                        &msg,
-                    );
+                // TODO: add additional Error to discard future messages too far
+                match self.future_msgs.lock().await.put_msg(msg) {
+                    Ok(msg) => {
+                        log_msg(
+                            "outbound send",
+                            "inbound future message",
+                            &msg,
+                        );
+                        self.outbound.try_send(msg);
+                    }
+                    Err(MsgRegistryError::NoSigner(msg)) => {
+                        log_msg(
+                            "discarded msg (no signer)",
+                            "inbound future message",
+                            &msg,
+                        );
+                    }
+                    Err(MsgRegistryError::SignerAlreadyEnqueue(msg)) => {
+                        log_msg(
+                            "discarded msg (duplicated)",
+                            "inbound future message",
+                            &msg,
+                        );
+                    }
                 }
-
-                self.future_msgs.lock().await.put_msg(msg);
 
                 return None;
             }
