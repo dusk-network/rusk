@@ -9,7 +9,7 @@
 #![feature(lazy_cell)]
 
 #[cfg(feature = "archive")]
-pub mod archivist;
+pub mod archive;
 pub mod chain;
 pub mod database;
 pub mod databroker;

@@ -4,46 +4,46 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
+use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqlitePool},
+    Pool, Sqlite,
+};
 use tracing::{info, warn};
 
-use super::Archivist;
+use crate::archive::transformer::MoonlightTxEvents;
+use crate::archive::{Archive, Archivist};
 
-const ARCHIVE_FOLDER_NAME: &str = "archive";
-const SQLITE_DB_NAME: &str = "archive.sqlite3";
+/// The name of the archive SQLite database.
+const SQLITEARCHIVE_DB_NAME: &str = "archive.sqlite3";
 
-#[derive(Debug)]
-pub struct SQLiteArchive {
-    archive_db: SqlitePool,
-}
-
-impl SQLiteArchive {
-    pub async fn create_or_open<T>(path: T) -> Self
-    where
-        T: AsRef<Path>,
-    {
-        let path = path.as_ref().join(ARCHIVE_FOLDER_NAME);
-        info!("Opening archive db in {path:?}");
-
-        // Recursively create the archive folder if it doesn't exist already
-        fs::create_dir_all(&path)
-            .expect("creating directory in {path} should not fail");
+impl Archive {
+    /// Create or open the SQLite database.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path to the archive folder.
+    pub(super) async fn create_or_open_sqlite<
+        P: AsRef<Path> + std::fmt::Debug,
+    >(
+        path: P,
+    ) -> Pool<Sqlite> {
+        info!("Opening SQLite archive db in {path:?}");
 
         let db_options = SqliteConnectOptions::new()
             // append the database name to the path
-            .filename(path.join(SQLITE_DB_NAME))
+            .filename(path.as_ref().join(SQLITEARCHIVE_DB_NAME))
             .create_if_missing(true);
 
         // Open the database, create it if it doesn't exist
         let archive_db = SqlitePool::connect_with(db_options)
             .await
-            .expect("Failed to open database");
+            .expect("Failed to open archive database");
 
         // Run the migrations
         sqlx::migrate!("./migrations")
@@ -51,17 +51,17 @@ impl SQLiteArchive {
             .await
             .expect("Failed to run migrations");
 
-        Self { archive_db }
+        archive_db
     }
 
-    /// Fetch the json string of all vm events form a given block height
+    /// Fetch the json string of all vm events from a given block height
     pub async fn fetch_json_vm_events(
         &self,
         block_height: u64,
     ) -> Result<String> {
         let block_height: i64 = block_height as i64;
 
-        let mut conn = self.archive_db.acquire().await?;
+        let mut conn = self.sqlite_archive.acquire().await?;
 
         let events = sqlx::query!(
             r#"SELECT json_contract_events FROM archive WHERE block_height = ?"#,
@@ -70,9 +70,26 @@ impl SQLiteArchive {
 
         Ok(events.json_contract_events)
     }
+
+    /// Fetch all vm events from a given block hash
+    pub async fn fetch_vm_events_by_blk_hash(
+        &self,
+        hex_block_hash: &str,
+    ) -> Result<Vec<ContractTxEvent>> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let events = sqlx::query!(
+            r#"SELECT json_contract_events FROM archive WHERE block_hash = ?"#,
+            hex_block_hash
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(serde_json::from_str(&events.json_contract_events)?)
+    }
 }
 
-impl Archivist for SQLiteArchive {
+impl Archivist for Archive {
     /// Store the list of all vm events from the block of the given height.
     async fn store_vm_events(
         &self,
@@ -85,7 +102,7 @@ impl Archivist for SQLiteArchive {
         // Serialize the events to a json string
         let json_contract_events = serde_json::to_string(&events)?;
 
-        let mut conn = self.archive_db.acquire().await?;
+        let mut conn = self.sqlite_archive.acquire().await?;
 
         sqlx::query!(
              r#"INSERT INTO archive (block_height, block_hash, json_contract_events) VALUES (?, ?, ?)"#,
@@ -108,7 +125,7 @@ impl Archivist for SQLiteArchive {
     ) -> Result<Vec<ContractTxEvent>> {
         let block_height: i64 = block_height as i64;
 
-        let mut conn = self.archive_db.acquire().await?;
+        let mut conn = self.sqlite_archive.acquire().await?;
 
         let events = sqlx::query!(
             r#"SELECT json_contract_events FROM archive WHERE block_height = ?"#,
@@ -119,21 +136,24 @@ impl Archivist for SQLiteArchive {
         Ok(serde_json::from_str(&events.json_contract_events)?)
     }
 
-    /// Mark the block of the given height and hash as finalized in the archive.
+    /// Mark the block of the given hash as finalized in the archive.
+    ///
+    /// This also triggers the loading of the MoonlightTxEvents into the
+    /// moonlight db.
     async fn mark_block_finalized(
         &self,
-        block_height: u64,
-        hex_block_hash: String,
+        current_block_height: u64,
+        hex_block_hash: &str,
     ) -> Result<()> {
-        let block_height: i64 = block_height as i64;
+        let block_height: i64 = current_block_height as i64;
 
-        let mut conn = self.archive_db.acquire().await?;
+        let mut conn = self.sqlite_archive.acquire().await?;
 
         // Set finalized to true for the block with the given hash
         // Return the block height
         let r = sqlx::query!(
             r#"UPDATE archive SET finalized = 1 WHERE block_hash = ?
-            RETURNING block_height
+            RETURNING block_height, json_contract_events
             "#,
             hex_block_hash
         )
@@ -142,23 +162,26 @@ impl Archivist for SQLiteArchive {
 
         info!(
             "Marked block {} as finalized at height {}. After {} blocks",
-            util::truncate_string(&hex_block_hash),
+            util::truncate_string(hex_block_hash),
             block_height,
             block_height - r.block_height
         );
 
+        // Get the MoonlightTxEvents and load it into the moonlight db
+        self.tl_moonlight(serde_json::from_str(&r.json_contract_events)?)?;
+
         Ok(())
     }
 
-    /// Remove the block of the given height and hash from the archive.
+    /// Remove the block of the given hash from the archive.
     async fn remove_deleted_block(
         &self,
-        block_height: u64,
-        hex_block_hash: String,
+        current_block_height: u64,
+        hex_block_hash: &str,
     ) -> Result<bool> {
-        let block_height: i64 = block_height as i64;
+        let block_height: i64 = current_block_height as i64;
 
-        let mut conn = self.archive_db.acquire().await?;
+        let mut conn = self.sqlite_archive.acquire().await?;
 
         let r = sqlx::query!(
             r#"DELETE FROM archive WHERE block_hash = ? AND (finalized IS NULL OR finalized = 0)
@@ -172,7 +195,7 @@ impl Archivist for SQLiteArchive {
         if let Some(r) = r {
             info!(
                 "Deleted events from block {} with block height: {} at height {}",
-                util::truncate_string(&hex_block_hash),
+                util::truncate_string(hex_block_hash),
                 r.block_height,
                 block_height
             );
@@ -180,16 +203,25 @@ impl Archivist for SQLiteArchive {
         } else {
             warn!(
                 "Trying to delete Block {} which is finalized or does not exist in the archive",
-                util::truncate_string(&hex_block_hash)
+                util::truncate_string(hex_block_hash)
             );
             Ok(false)
         }
+    }
+
+    /// Fetch the moonlight events for the given public key
+    fn fetch_moonlight_historys(
+        &self,
+        address: AccountPublicKey,
+    ) -> Result<Option<Vec<MoonlightTxEvents>>> {
+        // Get the moonlight events for the given public key from rocksdb
+        self.get_moonlight_events(address)
     }
 }
 
 mod util {
     /// Truncate a string to at most 35 characters.
-    pub fn truncate_string(s: &str) -> String {
+    pub(super) fn truncate_string(s: &str) -> String {
         if s.len() <= 35 {
             return s.to_string();
         }
@@ -214,10 +246,31 @@ mod tests {
     use rand::{distributions::Alphanumeric, Rng};
     use std::env;
     use std::path::PathBuf;
+    use util::truncate_string;
+
+    #[test]
+    fn test_truncate_string() {
+        let s = "0123456789abcdef0123456789abcdef0123456789abcdef";
+        assert_eq!(
+            util::truncate_string(s),
+            "0123456789abcdef...0123456789abcdef"
+        );
+
+        let s = "1";
+        assert_eq!(util::truncate_string(s), "1");
+
+        let mut s = String::new();
+        truncate_string(&s);
+
+        for _ in 0..100 {
+            s.push_str(&"0");
+            util::truncate_string(&s);
+        }
+    }
 
     // Construct a random test directory path in the temp folder of the OS
-    fn get_test_dir() -> PathBuf {
-        let mut test_dir = "archive-db-test-".to_owned();
+    fn test_dir() -> PathBuf {
+        let mut test_dir = "archive-sqlite-db-test-".to_owned();
         let rand_string: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(20)
@@ -228,7 +281,7 @@ mod tests {
         env::temp_dir().join(test_dir)
     }
 
-    fn get_dummy_data() -> Vec<ContractTxEvent> {
+    fn dummy_data() -> Vec<ContractTxEvent> {
         vec![
             ContractTxEvent {
                 event: ContractEvent {
@@ -251,11 +304,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_store_fetch_vm_events() {
-        let path = get_test_dir();
+        let path = test_dir();
 
-        let archive = SQLiteArchive::create_or_open(path).await;
+        let archive = Archive::create_or_open(path).await;
 
-        let events = get_dummy_data();
+        let events = dummy_data();
 
         archive
             .store_vm_events(1, [5; 32], events.clone())
@@ -283,12 +336,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_vm_events() {
-        let path = get_test_dir();
-        let archive = SQLiteArchive::create_or_open(path).await;
+        let path = test_dir();
+        let archive = Archive::create_or_open(path).await;
         let blk_height = 1;
         let blk_hash = [5; 32];
         let hex_blk_hash = hex::encode(blk_hash);
-        let events = get_dummy_data();
+        let events = dummy_data();
 
         archive
             .store_vm_events(blk_height, blk_hash, events.clone())
@@ -296,7 +349,7 @@ mod tests {
             .unwrap();
 
         assert!(archive
-            .remove_deleted_block(blk_height, hex_blk_hash.clone())
+            .remove_deleted_block(blk_height, &hex_blk_hash)
             .await
             .unwrap());
 
@@ -310,12 +363,12 @@ mod tests {
             .unwrap();
 
         archive
-            .mark_block_finalized(blk_height, hex_blk_hash.clone())
+            .mark_block_finalized(blk_height, &hex_blk_hash)
             .await
             .unwrap();
 
         assert!(!archive
-            .remove_deleted_block(blk_height, hex_blk_hash)
+            .remove_deleted_block(blk_height, &hex_blk_hash)
             .await
             .unwrap());
     }

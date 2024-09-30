@@ -4,19 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::archive::SQLiteArchive;
-use crate::database::Archivist;
-use crate::{database, vm, LongLivedService, Network};
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use node_data::archive::ArchivalData;
-use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::RwLock;
 use tracing::error;
 
+use crate::archive::{Archive, Archivist};
+use crate::{database, vm, LongLivedService, Network};
+
 pub struct ArchivistSrv {
     pub archive_receiver: Receiver<ArchivalData>,
-    pub archivist: SQLiteArchive,
+    pub archivist: Archive,
 }
 
 #[async_trait]
@@ -51,7 +52,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ArchivalData::DeletedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist
-                            .remove_deleted_block(blk_height, hex_blk_hash)
+                            .remove_deleted_block(blk_height, &hex_blk_hash)
                             .await
                         {
                             error!(
@@ -63,7 +64,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ArchivalData::FinalizedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist
-                            .mark_block_finalized(blk_height, hex_blk_hash)
+                            .mark_block_finalized(blk_height, &hex_blk_hash)
                             .await
                         {
                             error!(
