@@ -73,6 +73,8 @@ pub(crate) async fn run_loop(
             addr: wallet.bls_public_key(addr.index()?),
         };
 
+        let is_synced = wallet.is_synced().await?;
+
         loop {
             // get balance for this address
             prompt::hide_cursor()?;
@@ -82,25 +84,46 @@ pub(crate) async fn run_loop(
             let spendable = phoenix_bal.spendable.into();
             let total: Dusk = phoenix_bal.value.into();
 
+            let mut spendable_str = format!("{}", spendable);
+            let mut total_str = format!("{}", total);
+            let mut moonlight_bal_str = format!("{}", moonlight_bal);
+
+            // display placeholders if not synced yet
+            if !is_synced {
+                moonlight_bal_str = String::from("XXX");
+                spendable_str = String::from("XXX");
+                total_str = String::from("XXX");
+            }
+
             prompt::hide_cursor()?;
 
             // display address information
             println!();
             println!();
-            println!("{0: <20} - Total: {moonlight_bal}", "Moonlight Balance");
+            println!(
+                "{0: <20} - Total: {moonlight_bal_str}",
+                "Moonlight Balance"
+            );
             println!("{0: <20} {moonlight}", "Moonlight Address");
 
             println!();
-            println!("{0: <20} - Spendable: {spendable}", "Phoenix Balance",);
-            println!("{0: <20} - Total: {total}", "");
+            println!(
+                "{0: <20} - Spendable: {spendable_str}",
+                "Phoenix Balance",
+            );
+            println!("{0: <20} - Total: {total_str}", "");
             println!("{0: <20} {addr}", "Phoenix Address");
             println!();
 
             // request operation to perform
             let op = match wallet.is_online().await {
-                true => {
-                    menu_op(addr.clone(), spendable, moonlight_bal, settings)
-                }
+                true => menu_op(
+                    addr.clone(),
+                    spendable,
+                    moonlight_bal,
+                    settings,
+                    is_synced,
+                ),
                 false => menu_op_offline(addr.clone(), settings),
             };
 
@@ -417,6 +440,7 @@ fn menu_op(
     phoenix_balance: Dusk,
     moonlight_balance: Dusk,
     settings: &Settings,
+    is_synced: bool,
 ) -> anyhow::Result<AddrOp> {
     use CommandMenuItem as CMI;
 
@@ -431,8 +455,14 @@ fn menu_op(
         .add(CMI::Back, "Back")
         .separator();
 
+    let mut msg = "What do you want to do?";
+
+    if !is_synced {
+        msg = "Not Synced yet, wait before peroforming any operation.";
+    }
+
     let q = Question::select("theme")
-        .message("What would you like to do?")
+        .message(msg)
         .choices(cmd_menu.clone())
         .build();
 
