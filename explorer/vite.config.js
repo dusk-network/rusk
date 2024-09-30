@@ -27,7 +27,9 @@ export default defineConfig(({ mode }) => {
         API_ENDPOINT: env.VITE_API_ENDPOINT,
         VITE_BLOCKS_LIST_ENTRIES: env.VITE_BLOCKS_LIST_ENTRIES,
         VITE_CHAIN_INFO_ENTRIES: env.VITE_CHAIN_INFO_ENTRIES,
+        VITE_DEFAULT_NETWORK: env.VITE_DEFAULT_NETWORK,
         VITE_DUSK_DEVNET_NODE: env.VITE_DUSK_DEVNET_NODE,
+        VITE_DUSK_MAINNET_NODE: env.VITE_DUSK_MAINNET_NODE,
         VITE_DUSK_TESTNET_NODE: env.VITE_DUSK_TESTNET_NODE,
         VITE_MARKET_DATA_REFETCH_INTERVAL:
           env.VITE_MARKET_DATA_REFETCH_INTERVAL,
@@ -37,6 +39,14 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: commonPlugins,
+    server: {
+      proxy: {
+        "/rusk": {
+          rewrite: (path) => path.replace(/^\/rusk/, ""),
+          target: "http://localhost:8080/",
+        },
+      },
+    },
     test: {
       /** @see https://github.com/vitest-dev/vitest/issues/2834 */
       alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
@@ -51,7 +61,9 @@ export default defineConfig(({ mode }) => {
         VITE_API_ENDPOINT: "https://api.dusk.network/v1",
         VITE_BLOCKS_LIST_ENTRIES: "100",
         VITE_CHAIN_INFO_ENTRIES: "15",
+        VITE_DEFAULT_NETWORK: "1", // To prevent snapshot mismatches on localhost
         VITE_DUSK_DEVNET_NODE: "devnet.nodes.dusk.network",
+        VITE_DUSK_MAINNET_NODE: "nodes.dusk.network",
         VITE_DUSK_TESTNET_NODE: "nodes.dusk.network",
         VITE_MARKET_DATA_REFETCH_INTERVAL: "120000",
         VITE_REFETCH_INTERVAL: "1000",

@@ -41,23 +41,11 @@ exports[`Navbar > renders the Navbar component 1`] = `
     class="dusk-navbar__menu dusk-navbar__menu--hidden"
     id="dusk-navbar-menu"
   >
-    <select
-      class="dusk-select dusk-navbar__menu--network"
+    <span
+      class="dusk-badge dusk-badge--variant-success dusk-navbar__menu--network"
     >
-      <option
-        value="nodes.dusk.network"
-      >
-        Testnet
-         
-      </option>
-      <option
-        value="devnet.nodes.dusk.network"
-      >
-        Devnet
-         
-      </option>
-      
-    </select>
+      Devnet
+    </span>
      
     <nav
       class="dusk-nav-list dusk-navbar__menu--links"

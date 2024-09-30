@@ -64,10 +64,6 @@
   order: 3;
 }
 
-.dark .dusk-navbar__menu--network {
-  background-color: #000;
-}
-
 .dusk-navbar__menu--links {
   width: 100%;
   order: 2;
