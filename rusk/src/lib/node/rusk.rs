@@ -503,7 +503,7 @@ impl Rusk {
         base: [u8; 32],
         to_delete: Vec<[u8; 32]>,
     ) {
-        self.tip.write().base = base.clone();
+        self.tip.write().base = base;
         task::spawn(finalize_commit(self.vm.clone(), base));
 
         for c in &to_delete {
