@@ -191,11 +191,11 @@ pub(crate) enum Command {
 
         /// Function name to call
         #[clap(short, long)]
-        fn_name: String,
+        name: String,
 
         /// Function arguments for this call
-        #[clap(short, long)]
-        fn_args: Vec<u8>,
+        #[clap(short = 'f', long)]
+        param: Vec<u8>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
@@ -347,11 +347,11 @@ pub(crate) enum Command {
 
         /// Function name to call
         #[clap(short, long)]
-        fn_name: String,
+        name: String,
 
         /// Function arguments for this call
-        #[clap(short, long)]
-        fn_args: Vec<u8>,
+        #[clap(short = 'f', long)]
+        param: Vec<u8>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
@@ -384,7 +384,7 @@ pub(crate) enum Command {
     /// Convert Phoenix DUSK to Moonlight for the same owned address
     PhoenixToMoonlight {
         /// Moonlight or Phoenix address from which to convert DUSK to
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         addr: Option<Address>,
 
         /// Amount of DUSK to transfer to your Moonlight account
@@ -403,7 +403,7 @@ pub(crate) enum Command {
     /// Convert Moonlight DUSK to Phoenix for the same owned address
     MoonlightToPhoenix {
         /// Moonlight or Phoenix Address from which to convert DUSK to
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         addr: Option<Address>,
 
         /// Amount of DUSK to transfer to your phoenix account
@@ -700,8 +700,8 @@ impl Command {
             Command::PhoenixContractCall {
                 addr,
                 contract_id,
-                fn_name,
-                fn_args,
+                name,
+                param,
                 gas_limit,
                 gas_price,
             } => {
@@ -716,7 +716,7 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new(contract_id, fn_name, &fn_args)
+                let call = ContractCall::new(contract_id, name, &param)
                     .map_err(|_| Error::Rkyv)?;
 
                 let tx = wallet
@@ -728,8 +728,8 @@ impl Command {
             Command::MoonlightContractCall {
                 addr,
                 contract_id,
-                fn_name,
-                fn_args,
+                name,
+                param,
                 gas_limit,
                 gas_price,
             } => {
@@ -744,7 +744,7 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new(contract_id, fn_name, &fn_args)
+                let call = ContractCall::new(contract_id, name, &param)
                     .map_err(|_| Error::Rkyv)?;
 
                 let tx = wallet
