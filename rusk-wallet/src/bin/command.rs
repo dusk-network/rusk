@@ -302,10 +302,6 @@ pub(crate) enum Command {
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Amount of DUSK to withdraw
-        #[clap(short, long)]
-        amt: Dusk,
-
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
@@ -687,7 +683,6 @@ impl Command {
             }
             Command::MoonlightWithdraw {
                 addr,
-                amt,
                 gas_limit,
                 gas_price,
             } => {
@@ -698,8 +693,7 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx =
-                    wallet.moonlight_stake_withdraw(addr, amt, gas).await?;
+                let tx = wallet.moonlight_stake_withdraw(addr, gas).await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
