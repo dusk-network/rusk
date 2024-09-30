@@ -1027,15 +1027,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
         let sender_index = sender.index()?;
-        let pk = sender.apk()?;
-        let nonce = state.fetch_account(pk).await?.nonce + 1;
+        let pk = &self.bls_public_key(sender_index);
+        let nonce = state.fetch_account(&pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let mut sender_sk = self.bls_secret_key(sender_index);
 
         let deploy = moonlight_deployment(
-            &sender_sk, bytes_code, pk, init_args, gas.limit, gas.price, nonce,
-            0, chain_id,
+            &sender_sk, bytes_code, &pk, init_args, gas.limit, gas.price,
+            nonce, 0, chain_id,
         )?;
 
         sender_sk.zeroize();

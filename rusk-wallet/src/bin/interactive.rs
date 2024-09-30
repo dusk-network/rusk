@@ -459,6 +459,7 @@ fn menu_op(
 
     if !is_synced {
         cmd_menu = Menu::new()
+            .separator()
             .add(CMI::StakeInfo, "Check Existing Stake")
             .add(CMI::Export, "Export provisioner key-pair")
             .separator()
