@@ -1,8 +1,9 @@
 import { getCacheDatabase } from ".";
 
 import {
-  cacheHistory,
+  cachePendingNotesInfo,
   cacheSpentNotes,
+  cacheSyncInfo,
   cacheUnspentNotes,
 } from "$lib/mock-data";
 
@@ -13,11 +14,16 @@ async function fillCacheDatabase() {
   await db.open();
 
   return db
-    .transaction("rw", ["history", "spentNotes", "unspentNotes"], async () => {
-      await db.table("history").bulkPut(cacheHistory);
-      await db.table("spentNotes").bulkPut(cacheSpentNotes);
-      await db.table("unspentNotes").bulkPut(cacheUnspentNotes);
-    })
+    .transaction(
+      "rw",
+      ["pendingNotesInfo", "spentNotes", "syncInfo", "unspentNotes"],
+      async () => {
+        await db.table("pendingNotesInfo").bulkPut(cachePendingNotesInfo);
+        await db.table("spentNotes").bulkPut(cacheSpentNotes);
+        await db.table("syncInfo").bulkPut(cacheSyncInfo);
+        await db.table("unspentNotes").bulkPut(cacheUnspentNotes);
+      }
+    )
     .finally(() => {
       db.close();
     });

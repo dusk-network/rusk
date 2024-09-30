@@ -1,21 +1,23 @@
-import { describe, expect, it } from "vitest";
-import { getKey, sortWith } from "lamb";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
-  cacheHistory,
+  cachePendingNotesInfo,
   cacheSpentNotes,
+  cacheSyncInfo,
   cacheUnspentNotes,
 } from "$lib/mock-data";
 
-import { fillCacheDatabase, getCacheDatabase, sortCacheNotes } from "..";
-
-const sortHistory = sortWith([getKey("id")]);
+import { fillCacheDatabase, getCacheDatabase, sortByNullifier } from "..";
 
 describe("fillCacheDatabase", () => {
+  beforeEach(async () => {
+    await getCacheDatabase().delete();
+  });
+
   it("should fill the database tables with mock data", async () => {
-    const expectedHistory = sortHistory(cacheHistory);
-    const expectedSpentNotes = sortCacheNotes(cacheSpentNotes);
-    const expectedUnspentNotes = sortCacheNotes(cacheUnspentNotes);
+    const expectedPendingNotesInfo = sortByNullifier(cachePendingNotesInfo);
+    const expectedSpentNotes = sortByNullifier(cacheSpentNotes);
+    const expectedUnspentNotes = sortByNullifier(cacheUnspentNotes);
 
     await fillCacheDatabase();
 
@@ -24,13 +26,16 @@ describe("fillCacheDatabase", () => {
     await db.open();
 
     await expect(
-      db.table("history").toArray().then(sortHistory)
-    ).resolves.toStrictEqual(expectedHistory);
+      db.table("pendingNotesInfo").toArray().then(sortByNullifier)
+    ).resolves.toStrictEqual(expectedPendingNotesInfo);
     await expect(
-      db.table("spentNotes").toArray().then(sortCacheNotes)
+      db.table("spentNotes").toArray().then(sortByNullifier)
     ).resolves.toStrictEqual(expectedSpentNotes);
+    await expect(db.table("syncInfo").toArray()).resolves.toStrictEqual(
+      cacheSyncInfo
+    );
     await expect(
-      db.table("unspentNotes").toArray().then(sortCacheNotes)
+      db.table("unspentNotes").toArray().then(sortByNullifier)
     ).resolves.toStrictEqual(expectedUnspentNotes);
 
     db.close();

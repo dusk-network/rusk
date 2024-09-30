@@ -11,8 +11,9 @@ describe("getCacheDatabase", () => {
 
     expect(db.tables.map(getKey("name"))).toMatchInlineSnapshot(`
       [
-        "history",
+        "pendingNotesInfo",
         "spentNotes",
+        "syncInfo",
         "unspentNotes",
       ]
     `);

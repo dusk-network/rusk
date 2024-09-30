@@ -10,6 +10,9 @@ import crypto from "node:crypto";
 import "jsdom-worker";
 import "vitest-canvas-mock";
 
+// see https://github.com/dumbmatter/fakeIndexedDB?tab=readme-ov-file#jsdom-often-used-with-jest
+import "core-js/stable/structured-clone";
+
 // adds in-memory replacement for IndexedDB
 import "fake-indexeddb/auto";
 

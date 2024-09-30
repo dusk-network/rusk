@@ -1,7 +1,19 @@
 import { Dexie } from "dexie";
-import { getKey, head, pluckFrom, uniquesBy } from "lamb";
+import { head, isUndefined, pairs, pipe, skipIf, unless, when } from "lamb";
 
-const uniquesById = uniquesBy(getKey("id"));
+/** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] }} RawCriteria */
+/** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | undefined} Criteria */
+
+/** @type {(rawCriteria: RawCriteria) => Criteria} */
+const toCriteria = pipe([
+  skipIf(isUndefined),
+  pairs,
+  head,
+  unless(isUndefined, (pair) => ({
+    field: pair[0] === "nullifiers" ? "nullifier" : "address",
+    values: pair[1],
+  })),
+]);
 
 class WalletCache {
   /** @type {Dexie} */
@@ -9,17 +21,27 @@ class WalletCache {
 
   /**
    * @template {WalletCacheTableName} TName
+   * @template {boolean} PK
    * @param {TName} tableName
-   * @param {string} [psk]
-   * @returns {Promise<TName extends "history" ? WalletCacheHistoryEntry[] : WalletCacheNote[]>}
+   * @param {PK} primaryKeysOnly
+   * @param {RawCriteria} [rawCriteria]
+   * @returns {Promise<WalletCacheGetEntriesReturnType<TName, PK>>}
    */
-  async #getEntriesFrom(tableName, psk) {
+  async #getEntriesFrom(tableName, primaryKeysOnly, rawCriteria) {
     await this.#db.open();
 
+    const criteria = rawCriteria && toCriteria(rawCriteria);
     const table = this.#db.table(tableName);
     const data =
-      /** @type {import("dexie").PromiseExtended<TName extends "history" ? WalletCacheHistoryEntry[] : WalletCacheNote[]>} */ (
-        (psk ? table.where("psk").equals(psk) : table).toArray()
+      /** @type {import("dexie").PromiseExtended<WalletCacheGetEntriesReturnType<TName, PK>>} */ (
+        criteria && criteria.values.length
+          ? table
+              .where(criteria.field)
+              .anyOf(criteria.values)
+              [primaryKeysOnly ? "primaryKeys" : "toArray"]()
+          : primaryKeysOnly
+            ? table.toCollection().primaryKeys()
+            : table.toArray()
       );
 
     return data.finally(() => this.#db.close());
@@ -29,31 +51,13 @@ class WalletCache {
     const db = new Dexie("@dusk-network/wallet-cache");
 
     db.version(1).stores({
-      history: "psk",
-      spentNotes: "nullifier,&pos,psk",
-      unspentNotes: "nullifier,&pos,psk",
+      pendingNotesInfo: "nullifier,txId",
+      spentNotes: "nullifier,address",
+      syncInfo: "++",
+      unspentNotes: "nullifier,address",
     });
 
     this.#db = db;
-  }
-
-  /**
-   * @param {WalletCacheNote[]} notes
-   * @returns {Promise<void>}
-   */
-  async addSpentNotes(notes) {
-    const keysToRemove = pluckFrom(notes, "nullifier");
-
-    await this.#db.open();
-
-    return this.#db
-      .transaction("rw", ["spentNotes", "unspentNotes"], async () => {
-        await Promise.all([
-          this.#db.table("spentNotes").bulkPut(notes),
-          this.#db.table("unspentNotes").bulkDelete(keysToRemove),
-        ]);
-      })
-      .finally(() => this.#db.close());
   }
 
   /**
@@ -76,70 +80,50 @@ class WalletCache {
   }
 
   /**
-   * @param {string} [psk] bs58 encoded public spend key to fetch the notes of
+   * @param {Uint8Array[]} [nullifiers]
+   * @returns {Promise<WalletCachePendingNoteInfo[]>}
+   */
+  getPendingNotesInfo(nullifiers) {
+    return this.#getEntriesFrom("pendingNotesInfo", false, { nullifiers });
+  }
+
+  /**
+   * @param {string[]} [addresses] Base58 encoded addresses to fetch the spent notes of
    * @returns {Promise<WalletCacheNote[]>}
    */
-  getAllNotes(psk) {
-    return Promise.all([
-      this.getUnspentNotes(psk),
-      this.getSpentNotes(psk),
-    ]).then(([unspent, spent]) => unspent.concat(spent));
+  getSpentNotes(addresses) {
+    return this.#getEntriesFrom("spentNotes", false, { addresses });
   }
 
   /**
-   * @param {string} psk bs58 encoded public spend key to fetch the tx history of
-   * @return {Promise<WalletCacheHistoryEntry | undefined>}
+   * @param {string[]} [addresses] Base58 encoded addresses to fetch the spent notes of
+   * @returns {Promise<Uint8Array[]>}
    */
-  async getHistoryEntry(psk) {
-    return this.#getEntriesFrom("history", psk).then(head);
+  getSpentNotesNullifiers(addresses) {
+    return this.#getEntriesFrom("spentNotes", true, { addresses });
+  }
+
+  /** @returns {Promise<WalletCacheSyncInfo>} */
+  getSyncInfo() {
+    return this.#getEntriesFrom("syncInfo", false)
+      .then(head)
+      .then(when(isUndefined, () => ({ blockHeight: 0n, bookmark: 0n })));
   }
 
   /**
-   * @param {string} [psk] bs58 encoded public spend key to fetch the spent notes of
+   * @param {string[]} [addresses] Base58 encoded addresses to fetch the unspent notes of
    * @returns {Promise<WalletCacheNote[]>}
    */
-  getSpentNotes(psk) {
-    return this.#getEntriesFrom("spentNotes", psk);
+  getUnspentNotes(addresses) {
+    return this.#getEntriesFrom("unspentNotes", false, { addresses });
   }
 
   /**
-   * @param {string} [psk] bs58 encoded public spend key to fetch the unspent notes of
-   * @returns {Promise<WalletCacheNote[]>}
+   * @param {string[]} [addresses] Base58 encoded addresses to fetch the unspent notes of
+   * @returns {Promise<Uint8Array[]>}
    */
-  getUnspentNotes(psk) {
-    return this.#getEntriesFrom("unspentNotes", psk);
-  }
-
-  /**
-   * @param {WalletCacheHistoryEntry} entry
-   * @returns {Promise<void>}
-   */
-  async setHistoryEntry(entry) {
-    await this.#db.open();
-
-    return this.#db
-      .transaction("rw", "history", async () => {
-        const { psk } = entry;
-
-        /**
-         * Typescript here doesn't get the `undefined` case
-         * so we set the type explicitely.
-         *
-         * @type {WalletCacheHistoryEntry | undefined}
-         */
-        const current = await this.#getEntriesFrom("history", psk).then(head);
-
-        await this.#db.table("history").put({
-          history: uniquesById(
-            current ? entry.history.concat(current.history) : entry.history
-          ),
-          lastBlockHeight: current
-            ? Math.max(current.lastBlockHeight, entry.lastBlockHeight)
-            : entry.lastBlockHeight,
-          psk,
-        });
-      })
-      .finally(() => this.#db.close());
+  getUnspentNotesNullifiers(addresses) {
+    return this.#getEntriesFrom("unspentNotes", true, { addresses });
   }
 }
 
