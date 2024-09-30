@@ -51,7 +51,7 @@ pub enum Error {
     CoinbaseDuskSpent(Dusk, Dusk),
     /// Failed to produce proper state
     #[cfg(feature = "chain")]
-    InconsistentState(dusk_consensus::operations::VerificationOutput),
+    InconsistentState(Box<dusk_consensus::operations::VerificationOutput>),
     /// Other
     Other(Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits

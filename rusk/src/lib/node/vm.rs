@@ -89,7 +89,7 @@ impl VMExecution for Rusk {
                 blk.txs().clone(),
                 Some(VerificationOutput {
                     state_root: blk.header().state_hash,
-                    event_hash: blk.header().event_hash,
+                    event_bloom: blk.header().event_bloom,
                 }),
                 slashing,
                 voters,

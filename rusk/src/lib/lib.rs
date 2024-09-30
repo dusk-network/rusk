@@ -6,6 +6,7 @@
 
 #![feature(lazy_cell)]
 
+mod bloom;
 mod error;
 pub mod gen_id;
 pub mod http;
