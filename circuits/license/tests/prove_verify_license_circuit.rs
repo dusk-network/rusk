@@ -7,12 +7,12 @@
 use dusk_plonk::prelude::*;
 use dusk_poseidon::{Domain, Hash};
 use execution_core::{
+    license::{LicenseOpening, LicenseTree, LicenseTreeItem},
     transfer::phoenix::{PublicKey, SecretKey},
     JubJubAffine, GENERATOR_EXTENDED,
 };
 use ff::Field;
 use license_circuits::{Error, LicenseCircuit, DEPTH};
-use poseidon_merkle::{Item, Opening, Tree};
 use zk_citadel::license::{
     CitadelProverParameters, License, Request, SessionCookie,
 };
@@ -25,7 +25,7 @@ fn compute_citadel_parameters(
     sk: &SecretKey,
     pk_lp: &PublicKey,
     lic: &License,
-    merkle_proof: Opening<(), DEPTH>,
+    merkle_proof: LicenseOpening,
 ) -> (CitadelProverParameters<DEPTH>, SessionCookie) {
     const CHALLENGE: u64 = 20221126u64;
     let c = JubJubScalar::from(CHALLENGE);
@@ -48,7 +48,7 @@ fn compute_random_license<R: RngCore + CryptoRng, const DEPTH: usize>(
     pk: PublicKey,
     sk_lp: &SecretKey,
     pk_lp: PublicKey,
-) -> (License, Opening<(), DEPTH>) {
+) -> (License, LicenseOpening) {
     const ATTRIBUTE_DATA: u64 = 112233445566778899u64;
     // First, the user computes these values and requests a License
     let lsa = pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
@@ -64,10 +64,10 @@ fn compute_random_license<R: RngCore + CryptoRng, const DEPTH: usize>(
     let attr_data = JubJubScalar::from(ATTRIBUTE_DATA);
     let lic = License::new(&attr_data, &sk_lp, &req, rng).unwrap();
 
-    let mut tree = Tree::<(), DEPTH>::new();
+    let mut tree = LicenseTree::new();
     let lpk = JubJubAffine::from(lic.lsa.note_pk().as_ref());
 
-    let item = Item {
+    let item = LicenseTreeItem {
         hash: Hash::digest(Domain::Other, &[lpk.get_u(), lpk.get_v()])[0],
         data: (),
     };

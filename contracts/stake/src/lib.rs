@@ -7,6 +7,8 @@
 #![cfg_attr(target_family = "wasm", no_std)]
 #![cfg(target_family = "wasm")]
 #![feature(arbitrary_self_types)]
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
 
 extern crate alloc;
 

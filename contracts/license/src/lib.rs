@@ -7,6 +7,8 @@
 #![cfg_attr(target_family = "wasm", no_std)]
 #![cfg(target_family = "wasm")]
 #![feature(arbitrary_self_types)]
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
 
 extern crate alloc;
 
@@ -16,9 +18,7 @@ mod license_types;
 #[cfg(target_family = "wasm")]
 mod state;
 
-pub use license_types::{
-    LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
-};
+pub use license_types::{LicenseSession, LicenseSessionId, UseLicenseArg};
 
 const VD_LICENSE_CIRCUIT: &[u8] = include_bytes!(concat!(
     env!("RUSK_BUILT_KEYS_PATH"),

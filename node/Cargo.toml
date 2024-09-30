@@ -9,45 +9,43 @@ keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 license = "MPL-2.0"
 
 [dependencies]
-tracing = "0.1"
-hex = "0.4"
-dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
-kadcast = "0.7.0-rc.5"
-sha3 = { version = "0.10" }
-anyhow = "1.0"
-async-trait = "0.1"
-tokio = { version = "1", features = ["full"] }
-async-channel = "1.7"
+tracing = { workspace = true }
+hex = { workspace = true }
+dusk-consensus = { workspace = true }
+kadcast = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+async-channel = { workspace = true }
 
-rkyv = "0.7"
+rkyv = { workspace = true }
 
-rocksdb_lib = { package = "rocksdb", version = "0.22", default-features = false }
-dusk-bytes = "^0.1"
-node-data = { version = "0.1", path = "../node-data" }
-execution-core = { version = "0.1.0", path = "../execution-core" }
-blake2 = "0.10.5"
-console-subscriber = { version = "0.1.8", optional = true }
-smallvec = "1.10.0"
+rocksdb = { workspace = true }
+dusk-bytes = { workspace = true }
+node-data = { workspace = true }
+execution-core = { workspace = true }
+smallvec = { workspace = true }
 
-serde = "1.0"
-humantime-serde = "1"
-thiserror = "1"
-metrics = "0.22"
-metrics-exporter-prometheus = "0.14"
-memory-stats = "1.0"
-sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "sqlite", "migrate"], optional = true }
-serde_json = { version = "1.0", optional = true }
+serde = { workspace = true }
+humantime-serde = { workspace = true }
+thiserror = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+memory-stats = { workspace = true }
+
+# archive feature dependencies
+sqlx = { version = "=0.7.4", features = [ "runtime-tokio", "tls-native-tls", "sqlite", "migrate"], optional = true }
+serde_json = { workspace = true, optional = true }
 
 [dev-dependencies]
-fake = { version = "2.5", features = ['derive'] }
-node-data = { version = "0.1", path = "../node-data", features = ["faker"] }
-rand = "0.8"
-rand_core = "0.6"
-tempdir = "0.3"
-criterion = { version = "0.5", features = ["async_futures"] }
+fake = { workspace = true, features = ['derive'] }
+node-data = { workspace = true, features = ["faker"] }
+rand = { workspace = true }
+tempdir = { workspace = true }
+criterion = { workspace = true, features = ["async_futures"] }
 
 [features]
-with_telemetry = ["dep:console-subscriber"]
+with_telemetry = []
 archive = ["dep:sqlx", "dep:serde_json"]
 
 [[bench]]

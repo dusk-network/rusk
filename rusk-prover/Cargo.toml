@@ -5,16 +5,15 @@ edition = "2021"
 autobins = false
 
 [dependencies]
-dusk-bytes = "0.1"
-once_cell = { version = "1.9" }
-rand = { version = "0.8", default-features = false, features = ["getrandom"] }
-dusk-plonk = { version = "0.20", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-profile = { version = "0.6", path = "../rusk-profile" }
-execution-core = { version = "0.1.0", path = "../execution-core", features = ["zk"] }
+dusk-bytes = { workspace = true }
+once_cell = { workspace = true }
+rand = { workspace = true, features = ["getrandom"] }
+dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"] }
+rusk-profile = { workspace = true }
+execution-core = { workspace = true, features = ["zk"] }
 
 [dev-dependencies]
-hex = "0.4"
-rand = "0.8"
+hex = { workspace = true }
 
 [features]
 no_random = []

@@ -11,33 +11,17 @@ pub mod gas;
 pub use address::Address;
 pub use file::{SecureWalletFile, WalletPath};
 
+use std::fmt::Debug;
+use std::fs;
+use std::path::{Path, PathBuf};
+
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-
 use rues::RuesHttpClient;
 use serde::Serialize;
-use std::fmt::Debug;
-use std::fs;
-use std::path::{Path, PathBuf};
-use wallet_core::transaction::{
-    moonlight_deployment, moonlight_stake_reward, phoenix_deployment,
-};
-
-use wallet_core::{
-    phoenix_balance,
-    prelude::keys::{
-        derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
-        derive_phoenix_vk,
-    },
-    transaction::{
-        moonlight, moonlight_stake, moonlight_to_phoenix, moonlight_unstake,
-        phoenix, phoenix_stake, phoenix_stake_reward, phoenix_to_moonlight,
-        phoenix_unstake,
-    },
-    BalanceInfo,
-};
+use zeroize::Zeroize;
 
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
@@ -46,11 +30,22 @@ use execution_core::{
         Transaction,
     },
 };
-
-use zeroize::Zeroize;
+use wallet_core::{
+    phoenix_balance,
+    prelude::keys::{
+        derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+        derive_phoenix_vk,
+    },
+    transaction::{
+        moonlight, moonlight_deployment, moonlight_stake,
+        moonlight_stake_reward, moonlight_to_phoenix, moonlight_unstake,
+        phoenix, phoenix_deployment, phoenix_stake, phoenix_stake_reward,
+        phoenix_to_moonlight, phoenix_unstake,
+    },
+    BalanceInfo,
+};
 
 use super::*;
-
 use crate::{
     clients::{Prover, State},
     crypto::encrypt,
@@ -62,7 +57,6 @@ use crate::{
     store::LocalStore,
     Error, RuskHttpClient,
 };
-
 use gas::Gas;
 
 /// The interface to the Dusk Network
@@ -1189,10 +1183,11 @@ struct BlsKeyPair {
 }
 
 mod base64 {
+    use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
     use serde::{Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
-        let base64 = base64::encode(v);
+        let base64 = BASE64.encode(v);
         String::serialize(&base64, s)
     }
 }

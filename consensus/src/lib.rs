@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-extern crate core;
+#![deny(unused_crate_dependencies)]
+#![deny(unused_extern_crates)]
 
 pub mod commons;
 pub mod consensus;
@@ -31,4 +32,9 @@ mod iteration_ctx;
 pub mod merkle;
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    // Adding benchmark dependencies here to satisfy `unused_crate_dependencies`
+    // lint
+    use criterion as _;
+    use rand as _;
+}

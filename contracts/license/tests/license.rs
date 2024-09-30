@@ -11,7 +11,6 @@ use std::sync::mpsc;
 
 use dusk_poseidon::{Domain, Hash};
 use ff::Field;
-use poseidon_merkle::Opening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rkyv::{check_archived_root, Deserialize, Infallible};
@@ -20,6 +19,7 @@ use zk_citadel::license::{
 };
 
 use execution_core::{
+    license::LicenseOpening,
     plonk::{Compiler, PublicParameters},
     transfer::phoenix::{PublicKey, SecretKey, StealthAddress, ViewKey},
     BlsScalar, ContractId, JubJubAffine, JubJubScalar, GENERATOR_EXTENDED,
@@ -129,7 +129,7 @@ fn compute_citadel_parameters(
     sk: &SecretKey,
     pk_lp: &PublicKey,
     lic: &License,
-    merkle_proof: Opening<(), DEPTH>,
+    merkle_proof: LicenseOpening,
 ) -> (CitadelProverParameters<DEPTH>, SessionCookie) {
     const CHALLENGE: u64 = 20221126u64;
     let c = JubJubScalar::from(CHALLENGE);
@@ -215,7 +215,7 @@ fn license_issue_get_merkle() {
     let (pos, _) = owned_license.unwrap();
 
     let _merkle_opening = session
-        .call::<u64, Opening<(), DEPTH>>(
+        .call::<u64, LicenseOpening>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &pos,
@@ -297,7 +297,7 @@ fn multiple_licenses_issue_get_merkle() {
     let (pos, _) = owned_license.unwrap();
 
     let _merkle_opening = session
-        .call::<u64, Opening<(), DEPTH>>(
+        .call::<u64, LicenseOpening>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &pos,
@@ -402,7 +402,7 @@ fn use_license_get_session() {
     let (pos, owned_license) = owned_license.unwrap();
 
     let merkle_opening = session
-        .call::<u64, Opening<(), DEPTH>>(
+        .call::<u64, LicenseOpening>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &pos,

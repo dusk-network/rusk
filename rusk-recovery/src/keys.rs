@@ -5,10 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::Theme;
-use execution_core::{
-    plonk::{Compiler, PublicParameters},
-    transfer::phoenix::TRANSCRIPT_LABEL,
-};
+use dusk_plonk::prelude::{Compiler, PublicParameters};
+use execution_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use once_cell::sync::Lazy;
 use std::{
     io,
