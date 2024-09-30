@@ -134,9 +134,8 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     rng: &mut R,
     data: Option<TransactionData>,
 ) -> Transaction {
-    let from_sk = AccountSecretKey::random(rng);
-    let to_account =
-        Some(AccountPublicKey::from(&AccountSecretKey::random(rng)));
+    let sender_sk = AccountSecretKey::random(rng);
+    let receiver = Some(AccountPublicKey::from(&AccountSecretKey::random(rng)));
 
     let value: u64 = rng.gen();
     let deposit: u64 = rng.gen();
@@ -145,7 +144,7 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     let nonce: u64 = rng.gen();
 
     Transaction::moonlight(
-        &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
+        &sender_sk, receiver, value, deposit, gas_limit, gas_price, nonce,
         CHAIN_ID, data,
     )
     .expect("transaction generation should work")

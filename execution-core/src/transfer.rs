@@ -37,6 +37,23 @@ pub const TRANSFER_CONTRACT: ContractId = crate::reserved(0x1);
 /// Panic of "Nonce not ready to be used yet"
 pub const PANIC_NONCE_NOT_READY: &str = "Nonce not ready to be used yet";
 
+/// Topic for the moonlight transaction event.
+pub const MOONLIGHT_TOPIC: &str = "moonlight";
+/// Topic for the phoenix transaction event.
+pub const PHOENIX_TOPIC: &str = "phoenix";
+/// Topic for the transfer to contract event.
+pub const TRANSFER_TO_CONTRACT_TOPIC: &str = "transfer_to_contract";
+/// Topic for the transfer to account event.
+pub const TRANSFER_TO_ACCOUNT_TOPIC: &str = "transfer_to_account";
+/// Topic for the withdraw event.
+pub const WITHDRAW_TOPIC: &str = "withdraw";
+/// Topic for the deposit event.
+pub const DEPOSIT_TOPIC: &str = "deposit";
+/// Topic for the convert event.
+pub const CONVERT_TOPIC: &str = "convert";
+/// Topic for the mint event.
+pub const MINT_TOPIC: &str = "mint";
+
 use data::{ContractCall, ContractDeploy, TransactionData};
 use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{
@@ -108,8 +125,8 @@ impl Transaction {
     /// - the memo, if given, is too large
     #[allow(clippy::too_many_arguments)]
     pub fn moonlight(
-        from_sk: &AccountSecretKey,
-        to_account: Option<AccountPublicKey>,
+        sender_sk: &AccountSecretKey,
+        receiver: Option<AccountPublicKey>,
         value: u64,
         deposit: u64,
         gas_limit: u64,
@@ -119,27 +136,27 @@ impl Transaction {
         data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
         Ok(Self::Moonlight(MoonlightTransaction::new(
-            from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
+            sender_sk, receiver, value, deposit, gas_limit, gas_price, nonce,
             chain_id, data,
         )?))
     }
 
     /// Return the sender of the account for Moonlight transactions.
     #[must_use]
-    pub fn from_account(&self) -> Option<&AccountPublicKey> {
+    pub fn moonlight_sender(&self) -> Option<&AccountPublicKey> {
         match self {
             Self::Phoenix(_) => None,
-            Self::Moonlight(tx) => Some(tx.from_account()),
+            Self::Moonlight(tx) => Some(tx.sender()),
         }
     }
 
     /// Return the receiver of the transaction for Moonlight transactions, if it
     /// exists.
     #[must_use]
-    pub fn to_account(&self) -> Option<&AccountPublicKey> {
+    pub fn moonlight_receiver(&self) -> Option<&AccountPublicKey> {
         match self {
             Self::Phoenix(_) => None,
-            Self::Moonlight(tx) => tx.to_account(),
+            Self::Moonlight(tx) => tx.receiver(),
         }
     }
 
@@ -191,7 +208,7 @@ impl Transaction {
 
     /// Returns the sender data for Phoenix transactions.
     #[must_use]
-    pub fn sender(&self) -> Option<&Sender> {
+    pub fn phoenix_sender(&self) -> Option<&Sender> {
         match self {
             Self::Phoenix(tx) => Some(tx.sender()),
             Self::Moonlight(_) => None,
@@ -378,19 +395,19 @@ pub struct TransferToAccount {
 #[archive_attr(derive(CheckBytes))]
 pub struct WithdrawEvent {
     /// The contract withdrawn from.
-    pub contract: ContractId,
-    /// The value withdrawn.
-    pub value: u64,
+    pub sender: ContractId,
     /// The receiver of the value.
     pub receiver: WithdrawReceiver,
+    /// The value withdrawn.
+    pub value: u64,
 }
 
 impl From<Withdraw> for WithdrawEvent {
     fn from(w: Withdraw) -> Self {
         Self {
-            contract: w.contract,
-            value: w.value,
+            sender: w.contract,
             receiver: w.receiver,
+            value: w.value,
         }
     }
 }
@@ -404,10 +421,10 @@ pub struct ConvertEvent {
     /// Moonlight to Phoenix it is possible, but the same cannot be done the
     /// other way round.
     pub sender: Option<AccountPublicKey>,
-    /// The value converted.
-    pub value: u64,
     /// The receiver of the value.
     pub receiver: WithdrawReceiver,
+    /// The value converted.
+    pub value: u64,
 }
 
 impl ConvertEvent {
@@ -419,8 +436,8 @@ impl ConvertEvent {
     ) -> Self {
         Self {
             sender,
-            value: withdraw.value,
             receiver: withdraw.receiver,
+            value: withdraw.value,
         }
     }
 }
@@ -433,10 +450,10 @@ pub struct DepositEvent {
     /// depositor is using Moonlight this will be available. If they're using
     /// Phoenix it will not.
     pub sender: Option<AccountPublicKey>,
-    /// The value deposited.
-    pub value: u64,
     /// The receiver of the value.
     pub receiver: ContractId,
+    /// The value deposited.
+    pub value: u64,
 }
 
 /// Event data emitted on a transfer from a contract to a contract.
@@ -445,10 +462,10 @@ pub struct DepositEvent {
 pub struct TransferToContractEvent {
     /// The sender of the funds.
     pub sender: ContractId,
-    /// The value transferred.
-    pub value: u64,
     /// The receiver of the funds.
     pub receiver: ContractId,
+    /// The value transferred.
+    pub value: u64,
 }
 
 /// Event data emitted on a transfer from a contract to a Moonlight account.
@@ -457,10 +474,10 @@ pub struct TransferToContractEvent {
 pub struct TransferToAccountEvent {
     /// The sender of the funds.
     pub sender: ContractId,
-    /// The value transferred.
-    pub value: u64,
     /// The receiver of the funds.
     pub receiver: AccountPublicKey,
+    /// The value transferred.
+    pub value: u64,
 }
 
 /// Event data emitted on a phoenix transaction's completion.
@@ -482,9 +499,9 @@ pub struct PhoenixTransactionEvent {
 #[archive_attr(derive(CheckBytes))]
 pub struct MoonlightTransactionEvent {
     /// The account that initiated the transaction.
-    pub from: AccountPublicKey,
+    pub sender: AccountPublicKey,
     /// The receiver of the funds if any were transferred.
-    pub to: Option<AccountPublicKey>,
+    pub receiver: Option<AccountPublicKey>,
     /// Transfer amount
     pub value: u64,
     /// The memo included in the transaction.

@@ -51,8 +51,8 @@ impl Transaction {
     /// - the memo, if given, is too large
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        from_sk: &AccountSecretKey,
-        to_account: Option<AccountPublicKey>,
+        sender_sk: &AccountSecretKey,
+        receiver: Option<AccountPublicKey>,
         value: u64,
         deposit: u64,
         gas_limit: u64,
@@ -65,8 +65,8 @@ impl Transaction {
 
         let payload = Payload {
             chain_id,
-            from_account: AccountPublicKey::from(from_sk),
-            to_account,
+            sender: AccountPublicKey::from(sender_sk),
+            receiver,
             value,
             deposit,
             gas_limit,
@@ -75,7 +75,7 @@ impl Transaction {
             data,
         };
 
-        Self::sign_payload(from_sk, payload)
+        Self::sign_payload(sender_sk, payload)
     }
 
     /// Create a transaction by signing a previously generated payload with a
@@ -83,13 +83,13 @@ impl Transaction {
     ///
     /// Note that this transaction will be invalid if the secret-key used for
     /// signing doesn't form a valid key-pair with the public-key of the
-    /// `from_account`.
+    /// `sender`.
     ///
     /// # Errors
     /// The creation of a transaction is not possible and will error if:
     /// - the payload memo, if given, is too large
     pub fn sign_payload(
-        from_sk: &AccountSecretKey,
+        sender_sk: &AccountSecretKey,
         payload: Payload,
     ) -> Result<Self, Error> {
         if let Some(TransactionData::Memo(memo)) = payload.data.as_ref() {
@@ -99,7 +99,7 @@ impl Transaction {
         }
 
         let digest = payload.signature_message();
-        let signature = from_sk.sign(&digest);
+        let signature = sender_sk.sign(&digest);
 
         Ok(Self { payload, signature })
     }
@@ -112,14 +112,14 @@ impl Transaction {
 
     /// Return the sender of the transaction.
     #[must_use]
-    pub fn from_account(&self) -> &AccountPublicKey {
-        &self.payload.from_account
+    pub fn sender(&self) -> &AccountPublicKey {
+        &self.payload.sender
     }
 
     /// Return the receiver of the transaction, if it exists.
     #[must_use]
-    pub fn to_account(&self) -> Option<&AccountPublicKey> {
-        self.payload.to_account.as_ref()
+    pub fn receiver(&self) -> Option<&AccountPublicKey> {
+        self.payload.receiver.as_ref()
     }
 
     /// Return the value transferred in the transaction.
@@ -288,9 +288,9 @@ pub struct Payload {
     /// ID of the chain for this transaction to execute on.
     pub chain_id: u8,
     /// Key of the sender of this transaction.
-    pub from_account: AccountPublicKey,
+    pub sender: AccountPublicKey,
     /// Key of the receiver of the funds.
-    pub to_account: Option<AccountPublicKey>,
+    pub receiver: Option<AccountPublicKey>,
     /// Value to be transferred.
     pub value: u64,
     /// Deposit for a contract.
@@ -315,10 +315,10 @@ impl Payload {
     pub fn to_var_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::from([self.chain_id]);
 
-        bytes.extend(self.from_account.to_bytes());
+        bytes.extend(self.sender.to_bytes());
 
         // serialize the recipient
-        match self.to_account {
+        match self.receiver {
             Some(to) => {
                 bytes.push(1);
                 bytes.extend(to.to_bytes());
@@ -364,10 +364,10 @@ impl Payload {
 
         let chain_id = u8::from_reader(&mut buf)?;
 
-        let from_account = AccountPublicKey::from_reader(&mut buf)?;
+        let sender = AccountPublicKey::from_reader(&mut buf)?;
 
         // deserialize recipient
-        let to_account = match u8::from_reader(&mut buf)? {
+        let receiver = match u8::from_reader(&mut buf)? {
             0 => None,
             1 => Some(AccountPublicKey::from_reader(&mut buf)?),
             _ => {
@@ -407,8 +407,8 @@ impl Payload {
 
         Ok(Self {
             chain_id,
-            from_account,
-            to_account,
+            sender,
+            receiver,
             value,
             deposit,
             gas_limit,
@@ -426,8 +426,8 @@ impl Payload {
     pub fn signature_message(&self) -> Vec<u8> {
         let mut bytes = Vec::from([self.chain_id]);
 
-        bytes.extend(self.from_account.to_bytes());
-        if let Some(to) = &self.to_account {
+        bytes.extend(self.sender.to_bytes());
+        if let Some(to) = &self.receiver {
             bytes.extend(to.to_bytes());
         }
         bytes.extend(self.value.to_bytes());
