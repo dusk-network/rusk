@@ -7,6 +7,7 @@
 use node_data::message::Message;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt::Debug;
+use thiserror::Error;
 use tracing::warn;
 
 type StepMap<T> = BTreeMap<u8, VecDeque<T>>;
@@ -21,6 +22,8 @@ pub trait QueueMessage: Debug + Clone {
     fn step(&self) -> u8;
 
     fn round(&self) -> u64;
+
+    fn signer(&self) -> Option<node_data::bls::PublicKeyBytes>;
 }
 
 impl QueueMessage for Message {
@@ -30,12 +33,23 @@ impl QueueMessage for Message {
     fn step(&self) -> u8 {
         self.get_step()
     }
+    fn signer(&self) -> Option<node_data::bls::PublicKeyBytes> {
+        self.get_signer().map(|s| *s.bytes())
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum MsgRegistryError<T> {
+    #[error("Msg already enqueued")]
+    SignerAlreadyEnqueue(T),
+    #[error("This msg has no signer")]
+    NoSigner(T),
 }
 
 /// A message registry that stores messages based on their round and step.
 impl<T: QueueMessage> MsgRegistry<T> {
     /// Inserts a message into the registry based on its round and step.
-    pub fn put_msg(&mut self, msg: T) {
+    pub fn put_msg(&mut self, msg: T) -> Result<T, MsgRegistryError<T>> {
         let round = msg.round();
         let step = msg.step();
         let vec = self
@@ -44,13 +58,21 @@ impl<T: QueueMessage> MsgRegistry<T> {
             .or_default()
             .entry(step)
             .or_insert(VecDeque::with_capacity(MAX_MESSAGES_PER_QUEUE));
+        if msg.signer().is_none() {
+            return Err(MsgRegistryError::NoSigner(msg));
+        }
+        if vec.iter().any(|m| m.signer() == msg.signer()) {
+            return Err(MsgRegistryError::SignerAlreadyEnqueue(msg));
+        }
 
         if vec.len() == vec.capacity() {
             warn!("queue ({}, {}) is full, dropping", round, step);
             vec.pop_front();
         }
 
+        let ret = msg.clone();
         vec.push_back(msg);
+        Ok(ret)
     }
 
     /// Drains and returns all messages that belong to the specified round and
@@ -98,12 +120,27 @@ impl<T: QueueMessage> MsgRegistry<T> {
 
 #[cfg(test)]
 mod tests {
+    use node_data::bls::PUBLIC_BLS_SIZE;
+
     use crate::queue::MsgRegistry;
 
     use super::QueueMessage;
 
     #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-    struct Item(u64, u8, i32);
+    struct Item(u64, u8, i32, node_data::bls::PublicKeyBytes);
+
+    impl Item {
+        fn new(round: u64, step: u8, data: i32) -> Self {
+            let mut buf = [0u8; PUBLIC_BLS_SIZE];
+            let data_bytes = data.to_le_bytes();
+
+            buf[0] = data_bytes[0];
+            buf[1] = data_bytes[1];
+            buf[2] = data_bytes[2];
+            buf[3] = data_bytes[3];
+            Self(round, step, data, node_data::bls::PublicKeyBytes(buf))
+        }
+    }
 
     impl QueueMessage for Item {
         fn round(&self) -> u64 {
@@ -112,45 +149,54 @@ mod tests {
         fn step(&self) -> u8 {
             self.1
         }
+        fn signer(&self) -> Option<node_data::bls::PublicKeyBytes> {
+            Some(self.3)
+        }
     }
     #[test]
-    fn test_push_event() {
+    fn test_push_event() -> Result<(), super::MsgRegistryError<Item>> {
         let round = 55555;
 
         let mut reg = MsgRegistry::<Item>::default();
-        reg.put_msg(Item(round, 2, 5));
-        reg.put_msg(Item(round, 2, 4));
-        reg.put_msg(Item(round, 2, 3));
+        reg.put_msg(Item::new(round, 2, 5))?;
+        reg.put_msg(Item::new(round, 2, 4))?;
+        reg.put_msg(Item::new(round, 2, 3))?;
 
         assert_eq!(reg.msg_count(), 3);
         assert!(reg.drain_msg_by_round_step(round, 3).is_none());
         assert!(reg.drain_msg_by_round_step(4444, 2).is_none());
 
         for i in 1..100 {
-            reg.put_msg(Item(4444, i as u8, i));
+            reg.put_msg(Item::new(4444, i as u8, i))?;
         }
 
         assert_eq!(reg.msg_count(), 100 + 2);
         assert_eq!(
             reg.drain_msg_by_round_step(round, 2).unwrap(),
-            vec![Item(round, 2, 5), Item(round, 2, 4), Item(round, 2, 3)],
+            vec![
+                Item::new(round, 2, 5),
+                Item::new(round, 2, 4),
+                Item::new(round, 2, 3)
+            ],
         );
         assert_eq!(reg.msg_count(), 99);
 
         reg.remove_msgs_by_round(4444);
         assert_eq!(reg.msg_count(), 0);
         assert!(reg.drain_msg_by_round_step(round, 2).is_none());
+        Ok(())
     }
 
     #[test]
-    fn test_remove_msgs_out_of_range() {
+    fn test_remove_msgs_out_of_range(
+    ) -> Result<(), super::MsgRegistryError<Item>> {
         let round = 100;
 
         let mut reg = MsgRegistry::<Item>::default();
-        reg.put_msg(Item(round + 1, 1, 1));
-        reg.put_msg(Item(round + 2, 1, 1));
-        reg.put_msg(Item(round * 3, 1, 1));
-        reg.put_msg(Item(round, 1, 1));
+        reg.put_msg(Item::new(round + 1, 1, 1))?;
+        reg.put_msg(Item::new(round + 2, 1, 1))?;
+        reg.put_msg(Item::new(round * 3, 1, 1))?;
+        reg.put_msg(Item::new(round, 1, 1))?;
         assert_eq!(reg.msg_count(), 4);
 
         reg.remove_msgs_out_of_range(round + 1, 1);
@@ -161,5 +207,6 @@ mod tests {
 
         assert!(reg.drain_msg_by_round_step(round + 1, 1).is_some());
         assert!(reg.drain_msg_by_round_step(round + 2, 1).is_some());
+        Ok(())
     }
 }
