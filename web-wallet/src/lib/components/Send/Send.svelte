@@ -155,10 +155,8 @@
           />
         </div>
         <Textbox
-          className="operation__send-address
-          {!addressValidationResult.isValid
-            ? 'operation__send-address--invalid'
-            : ''}"
+          required
+          className={`operation__send-address ${!addressValidationResult.isValid ? "operation__send-address--invalid" : ""}`}
           type="multiline"
           bind:value={address}
         />
@@ -388,13 +386,13 @@
     font-weight: bold;
   }
 
-  :global(.operation__send-address) {
+  :global(.dusk-textbox.operation__send-address) {
     resize: vertical;
     min-height: 5em;
     max-height: 10em;
   }
 
-  :global(.operation__send-address--invalid) {
+  :global(.dusk-textbox.operation__send-address--invalid) {
     color: var(--error-color);
   }
 

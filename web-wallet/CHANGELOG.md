@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The sync promise should be set to null after aborting a sync [#2118]
 - Fix rounding errors in migration amount input [#2303]
 - Fix number of leading zeros in migration amount input [#2406]
+- Fix Address field invalid state modifier not being applied [#2532]
 
 ## [0.5.0] - 2024-03-27
 
@@ -274,6 +275,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2435]: https://github.com/dusk-network/rusk/issues/2435
 [#2436]: https://github.com/dusk-network/rusk/issues/2436
 [#2498]: https://github.com/dusk-network/rusk/issues/2498
+[#2532]: https://github.com/dusk-network/rusk/issues/2532
 
 <!-- VERSIONS -->
 

@@ -44,7 +44,7 @@ exports[`Send > should render the send page 1`] = `
     class="dusk-card__body-container"
   >
     <div
-      class="operation svelte-1b3rqbs"
+      class="operation svelte-qsi9hi"
     >
       <div
         class="dusk-wizard"
@@ -121,10 +121,10 @@ exports[`Send > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-1b3rqbs"
+          class="operation__send svelte-qsi9hi"
         >
           <div
-            class="operation__address-wrapper svelte-1b3rqbs"
+            class="operation__address-wrapper svelte-qsi9hi"
           >
             <p>
               Enter address:
@@ -144,8 +144,8 @@ exports[`Send > should render the send page 1`] = `
           </div>
            
           <textarea
-            class="dusk-textbox dusk-textbox-multiline operation__send-address
-          operation__send-address--invalid"
+            class="dusk-textbox dusk-textbox-multiline operation__send-address operation__send-address--invalid"
+            required=""
           />
           
            
