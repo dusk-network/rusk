@@ -71,9 +71,5 @@
     &__label {
       line-height: 140%;
     }
-
-    :global(&__input:invalid) {
-      color: var(--error-color);
-    }
   }
 </style>

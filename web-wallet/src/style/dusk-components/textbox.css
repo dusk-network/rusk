@@ -17,6 +17,10 @@
   opacity: 0.5;
 }
 
+.dusk-textbox:invalid {
+  color: var(--error-color);
+}
+
 .dusk-textbox:read-only {
   outline: 0 none;
 }

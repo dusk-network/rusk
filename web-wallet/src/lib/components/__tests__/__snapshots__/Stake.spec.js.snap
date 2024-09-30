@@ -157,7 +157,7 @@ exports[`Stake > should render the Stake component 1`] = `
     </div>
      
     <div
-      class="operation__amount-wrapper svelte-b32npl"
+      class="operation__amount-wrapper svelte-xevz12"
     >
       <p>
         Enter amount:
@@ -176,7 +176,7 @@ exports[`Stake > should render the Stake component 1`] = `
     </div>
      
     <div
-      class="operation__input-wrapper svelte-b32npl"
+      class="operation__input-wrapper svelte-xevz12"
     >
       <input
         class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -444,7 +444,7 @@ exports[`Stake > should render the Stake notice 1`] = `
         class="dusk-card__body-container"
       >
         <p
-          class="staking-warning svelte-b32npl"
+          class="staking-warning svelte-xevz12"
         >
           I understand that I have set up a node properly, as described 
           <a
@@ -599,7 +599,7 @@ exports[`Stake > should render the review step of the Stake component 1`] = `
      
      
     <div
-      class="operation__stake svelte-b32npl"
+      class="operation__stake svelte-xevz12"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div

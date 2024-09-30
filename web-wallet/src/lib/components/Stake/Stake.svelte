@@ -404,10 +404,6 @@
     &__input-wrapper {
       column-gap: var(--default-gap);
     }
-
-    :global(&__input-field:invalid) {
-      color: var(--error-color);
-    }
   }
 
   .staking-warning {
