@@ -84,12 +84,12 @@ impl Serialize for Transaction {
             ProtocolTransaction::Moonlight(m) => {
                 state.serialize_field("type", "moonlight")?;
 
-                let from = m.from_account();
+                let from = m.sender();
                 let from = bs58::encode(from.to_bytes()).into_string();
                 state.serialize_field("from", &from)?;
 
                 let to = m
-                    .to_account()
+                    .receiver()
                     .map(|to| bs58::encode(to.to_bytes()).into_string());
                 state.serialize_field("to", &to)?;
 
@@ -120,7 +120,7 @@ impl Serialize for Transaction {
                     bs58::encode(stealth_address.to_bytes()).into_string(),
                 );
             }
-            if let Some(sender) = tx.sender() {
+            if let Some(sender) = tx.moonlight_sender() {
                 fee.insert("sender", hex::encode(sender.to_bytes()));
             }
             fee
