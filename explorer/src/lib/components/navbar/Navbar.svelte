@@ -3,7 +3,7 @@
   import { mdiClose, mdiMenu } from "@mdi/js";
   import { afterNavigate } from "$app/navigation";
 
-  import { Button, NavList, Select } from "$lib/dusk/components";
+  import { Badge, Button, NavList } from "$lib/dusk/components";
   import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
   import { appStore } from "$lib/stores";
@@ -46,21 +46,21 @@
     )[0]?.clientHeight;
   }
 
-  /**
-   * @param {Event} e
-   */
-  function handleNetworkChange(e) {
-    // @ts-ignore
-    appStore.setNetwork(e.target.value);
-  }
-
   afterNavigate(() => {
     hidden = true;
     dispatch("toggleMenu", hidden);
     showSearchNotification = false;
   });
 
-  $: ({ darkMode, networks } = $appStore);
+  $: ({ darkMode, network, networks } = $appStore);
+
+  /** @param {string} host */
+  function getNetworkLabelByHost(host) {
+    const currentNetwork = networks.find(
+      (networkOption) => networkOption.value.host === host
+    );
+    return currentNetwork?.label || "Offline";
+  }
 </script>
 
 <nav
@@ -93,10 +93,10 @@
     class:dusk-navbar__menu--hidden={hidden}
     id="dusk-navbar-menu"
   >
-    <Select
+    <Badge
       className="dusk-navbar__menu--network"
-      on:change={handleNetworkChange}
-      options={networks}
+      text={getNetworkLabelByHost(network)}
+      variant={network ? "success" : "warning"}
     />
     <NavList className="dusk-navbar__menu--links" {navigation} />
     <div class="dusk-navbar__menu--search">

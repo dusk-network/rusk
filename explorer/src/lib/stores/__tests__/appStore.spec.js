@@ -31,8 +31,25 @@ describe("appStore", () => {
     const { appStore } = await import("..");
     const { env } = import.meta;
     const expectedNetworks = [
-      { label: "Testnet", value: env.VITE_DUSK_TESTNET_NODE },
-      { label: "Devnet", value: env.VITE_DUSK_DEVNET_NODE },
+      { label: "Local", value: new URL("/", import.meta.url) },
+      {
+        label: "Devnet",
+        value: new URL(
+          `${window.location.protocol}${import.meta.env.VITE_DUSK_DEVNET_NODE}`
+        ),
+      },
+      {
+        label: "Testnet",
+        value: new URL(
+          `${window.location.protocol}${import.meta.env.VITE_DUSK_TESTNET_NODE}`
+        ),
+      },
+      {
+        label: "Mainnet",
+        value: new URL(
+          `${window.location.protocol}${import.meta.env.VITE_DUSK_MAINNET_NODE}`
+        ),
+      },
     ];
 
     expect(appStore).toHaveProperty("subscribe", expect.any(Function));
@@ -45,7 +62,10 @@ describe("appStore", () => {
       hasTouchSupport: false,
       isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
-      network: expectedNetworks[0].value,
+      network:
+        expectedNetworks[
+          parseInt(import.meta.env.VITE_DEFAULT_NETWORK, 10) ?? 0
+        ].value.host,
       networks: expectedNetworks,
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),

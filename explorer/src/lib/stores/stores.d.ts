@@ -31,5 +31,5 @@ type MarketDataStoreContent = {
 
 type NetworkOption = {
   label: string;
-  value: string;
+  value: URL;
 };
