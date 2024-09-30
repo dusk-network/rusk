@@ -7,6 +7,7 @@
 use super::*;
 
 pub type Hash = [u8; 32];
+pub type Bloom = [u8; 256];
 
 #[derive(Default, Debug, Clone)]
 pub struct Block {

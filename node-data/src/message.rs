@@ -1560,7 +1560,7 @@ mod tests {
             seed: ledger::Seed::from([2; 48]),
             generator_bls_pubkey: bls::PublicKeyBytes([5; 96]),
             state_hash: [4; 32],
-            event_hash: [5; 32],
+            event_bloom: [5; 256],
             hash: [6; 32],
             txroot: [7; 32],
             faultroot: [8; 32],
