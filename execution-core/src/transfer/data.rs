@@ -48,6 +48,18 @@ impl From<ContractDeploy> for TransactionData {
     }
 }
 
+impl From<Vec<u8>> for TransactionData {
+    fn from(d: Vec<u8>) -> Self {
+        TransactionData::Memo(d)
+    }
+}
+
+impl From<String> for TransactionData {
+    fn from(d: String) -> Self {
+        TransactionData::Memo(d.as_bytes().to_vec())
+    }
+}
+
 /// Data for performing a contract deployment
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
