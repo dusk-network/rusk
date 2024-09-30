@@ -190,12 +190,13 @@ pub(crate) enum Command {
         contract_id: Vec<u8>,
 
         /// Function name to call
-        #[clap(short, long)]
-        name: String,
+
+        #[clap(short = 'n', long)]
+        fn_name: String,
 
         /// Function arguments for this call
         #[clap(short = 'f', long)]
-        param: Vec<u8>,
+        fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
@@ -346,12 +347,12 @@ pub(crate) enum Command {
         contract_id: Vec<u8>,
 
         /// Function name to call
-        #[clap(short, long)]
-        name: String,
+        #[clap(short = 'n', long)]
+        fn_name: String,
 
         /// Function arguments for this call
         #[clap(short = 'f', long)]
-        param: Vec<u8>,
+        fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
@@ -700,8 +701,8 @@ impl Command {
             Command::PhoenixContractCall {
                 addr,
                 contract_id,
-                name,
-                param,
+                fn_name,
+                fn_args,
                 gas_limit,
                 gas_price,
             } => {
@@ -716,7 +717,7 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new(contract_id, name, &param)
+                let call = ContractCall::new(contract_id, fn_name, &fn_args)
                     .map_err(|_| Error::Rkyv)?;
 
                 let tx = wallet
@@ -728,8 +729,8 @@ impl Command {
             Command::MoonlightContractCall {
                 addr,
                 contract_id,
-                name,
-                param,
+                fn_name,
+                fn_args,
                 gas_limit,
                 gas_price,
             } => {
@@ -744,7 +745,7 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new(contract_id, name, &param)
+                let call = ContractCall::new(contract_id, fn_name, &fn_args)
                     .map_err(|_| Error::Rkyv)?;
 
                 let tx = wallet

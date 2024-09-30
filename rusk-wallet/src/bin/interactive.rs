@@ -266,8 +266,8 @@ fn transaction_op_menu_moonlight(
         ContractCall => AddrOp::Run(Box::new(Command::MoonlightContractCall {
             addr: Some(addr),
             contract_id: prompt::request_bytes("contract id")?,
-            name: prompt::request_str("function name to call")?,
-            param: prompt::request_bytes("arguments of calling function")?,
+            fn_name: prompt::request_str("function name to call")?,
+            fn_args: prompt::request_bytes("arguments of calling function")?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -348,8 +348,8 @@ fn transaction_op_menu_phoenix(
         ContractCall => AddrOp::Run(Box::new(Command::PhoenixContractCall {
             addr: Some(addr),
             contract_id: prompt::request_bytes("contract id")?,
-            name: prompt::request_str("function name to cal")?,
-            param: prompt::request_bytes("arguments of calling function")?,
+            fn_name: prompt::request_str("function name to cal")?,
+            fn_args: prompt::request_bytes("arguments of calling function")?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
