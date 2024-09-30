@@ -90,9 +90,9 @@ pub(crate) async fn run_loop(
 
             // display placeholders if not synced yet
             if !is_synced {
-                moonlight_bal_str = String::from("XXX");
-                spendable_str = String::from("XXX");
-                total_str = String::from("XXX");
+                moonlight_bal_str = String::from("syncing...");
+                spendable_str = moonlight_bal_str.clone();
+                total_str = moonlight_bal_str.clone();
             }
 
             prompt::hide_cursor()?;
