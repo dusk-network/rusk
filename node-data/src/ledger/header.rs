@@ -11,7 +11,7 @@ use crate::message::{ConsensusHeader, MESSAGE_MAX_ITER};
 use super::*;
 
 pub type Seed = Signature;
-#[derive(Default, Eq, PartialEq, Clone, Serialize)]
+#[derive(Eq, PartialEq, Clone, Serialize)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Header {
     // Hashable fields
@@ -24,7 +24,7 @@ pub struct Header {
     #[serde(serialize_with = "crate::serialize_hex")]
     pub state_hash: Hash,
     #[serde(serialize_with = "crate::serialize_hex")]
-    pub event_hash: Hash,
+    pub event_bloom: Bloom,
     pub generator_bls_pubkey: PublicKeyBytes,
     #[serde(serialize_with = "crate::serialize_hex")]
     pub txroot: Hash,
@@ -45,6 +45,30 @@ pub struct Header {
     // Non-hashable fields
     #[serde(skip_serializing)]
     pub att: Attestation,
+}
+
+impl Default for Header {
+    fn default() -> Self {
+        Self {
+            version: Default::default(),
+            height: Default::default(),
+            timestamp: Default::default(),
+            prev_block_hash: Default::default(),
+            seed: Default::default(),
+            state_hash: Default::default(),
+            event_bloom: [0u8; 256],
+            generator_bls_pubkey: Default::default(),
+            txroot: Default::default(),
+            faultroot: Default::default(),
+            gas_limit: Default::default(),
+            iteration: Default::default(),
+            prev_block_cert: Default::default(),
+            failed_iterations: Default::default(),
+            hash: Default::default(),
+            signature: Default::default(),
+            att: Default::default(),
+        }
+    }
 }
 
 impl Header {
@@ -68,7 +92,7 @@ impl std::fmt::Debug for Header {
             .field("prev_block_hash", &to_str(&self.prev_block_hash))
             .field("seed", &to_str(self.seed.inner()))
             .field("state_hash", &to_str(&self.state_hash))
-            .field("event_hash", &to_str(&self.event_hash))
+            .field("event_hash", &to_str(&self.event_bloom))
             .field("gen_bls_pubkey", &to_str(self.generator_bls_pubkey.inner()))
             .field("gas_limit", &self.gas_limit)
             .field("hash", &to_str(&self.hash))
@@ -103,7 +127,7 @@ impl Header {
         w.write_all(self.seed.inner())?;
 
         w.write_all(&self.state_hash)?;
-        w.write_all(&self.event_hash)?;
+        w.write_all(&self.event_bloom)?;
         w.write_all(self.generator_bls_pubkey.inner())?;
         w.write_all(&self.txroot)?;
         w.write_all(&self.faultroot)?;
@@ -151,7 +175,7 @@ impl Header {
             generator_bls_pubkey: PublicKeyBytes(generator_bls_pubkey),
             iteration,
             state_hash,
-            event_hash,
+            event_bloom: event_hash,
             txroot,
             faultroot,
             hash: [0; 32],

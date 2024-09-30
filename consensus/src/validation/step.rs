@@ -151,15 +151,15 @@ impl<T: Operations + 'static> ValidationStep<T> {
     ) -> anyhow::Result<()> {
         match executor.verify_state_transition(candidate, voters).await {
             Ok(output) => {
-                // Ensure the `event_hash` and `state_root` returned
+                // Ensure the `event_bloom` and `state_root` returned
                 // from the VST call are the
                 // ones we expect to have with the
                 // current candidate block.
-                if output.event_hash != candidate.header().event_hash {
+                if output.event_bloom != candidate.header().event_bloom {
                     return Err(anyhow!(
-                        "mismatch, event_hash: {}, candidate_event_hash: {}",
-                        hex::encode(output.event_hash),
-                        hex::encode(candidate.header().event_hash)
+                        "mismatch, event_bloom: {}, candidate_event_bloom: {}",
+                        hex::encode(output.event_bloom),
+                        hex::encode(candidate.header().event_bloom)
                     ));
                 }
 

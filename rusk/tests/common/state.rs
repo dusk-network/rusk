@@ -153,7 +153,7 @@ pub fn generator_procedure(
             gas_limit: block_gas_limit,
             generator_bls_pubkey: generator_pubkey_bytes,
             state_hash: execute_output.state_root,
-            event_hash: execute_output.event_hash,
+            event_bloom: execute_output.event_bloom,
             failed_iterations,
             ..Default::default()
         },

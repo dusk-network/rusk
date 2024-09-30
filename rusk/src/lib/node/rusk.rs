@@ -13,7 +13,6 @@ use std::{fs, io};
 use execution_core::stake::StakeKeys;
 use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
-use sha3::{Digest, Sha3_256};
 use tokio::task;
 use tracing::{debug, info, warn};
 
@@ -42,6 +41,7 @@ use tokio::sync::broadcast;
 #[cfg(feature = "archive")]
 use {node_data::archive::ArchivalData, tokio::sync::mpsc::Sender};
 
+use crate::bloom::Bloom;
 use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
@@ -136,7 +136,7 @@ impl Rusk {
 
         let mut dusk_spent = 0;
 
-        let mut event_hasher = Sha3_256::new();
+        let mut event_bloom = Bloom::new();
 
         // We always write the faults len in a u32
         let mut size_left = params.max_txs_bytes - u32::SIZE;
@@ -155,9 +155,7 @@ impl Rusk {
                 break;
             }
 
-            let tx_id = unspent_tx.id();
             let tx_id_hex = hex::encode(unspent_tx.id());
-
             let tx_len = unspent_tx.size().unwrap_or_default();
 
             if tx_len == 0 {
@@ -206,16 +204,7 @@ impl Rusk {
                     let err = receipt.data.err().map(|e| format!("{e}"));
                     info!("Tx {tx_id_hex} executed with {gas_spent} gas and err {err:?}");
 
-                    let tx_events: Vec<_> = receipt
-                        .events
-                        .into_iter()
-                        .map(|event| ContractTxEvent {
-                            event: event.into(),
-                            origin: Some(tx_id),
-                        })
-                        .collect();
-
-                    update_hasher(&mut event_hasher, &tx_events);
+                    event_bloom.add_events(&receipt.events);
 
                     block_gas_left -= gas_spent;
                     let gas_price = unspent_tx.inner.gas_price();
@@ -255,24 +244,16 @@ impl Rusk {
             voters,
         )?;
 
-        let coinbase_events: Vec<_> = coinbase_events
-            .into_iter()
-            .map(|event| ContractTxEvent {
-                event: event.into(),
-                origin: None,
-            })
-            .collect();
-        update_hasher(&mut event_hasher, &coinbase_events);
+        event_bloom.add_events(&coinbase_events);
 
         let state_root = session.root();
-        let event_hash = event_hasher.finalize().into();
 
         Ok((
             spent_txs,
             discarded_txs,
             VerificationOutput {
                 state_root,
-                event_hash,
+                event_bloom: event_bloom.into(),
             },
         ))
     }
@@ -338,7 +319,9 @@ impl Rusk {
             if expected_verification != verification_output {
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
-                return Err(Error::InconsistentState(verification_output));
+                return Err(Error::InconsistentState(Box::new(
+                    verification_output,
+                )));
             }
         }
 
@@ -559,7 +542,7 @@ fn accept(
     let mut dusk_spent = 0;
 
     let mut events = Vec::new();
-    let mut event_hasher = Sha3_256::new();
+    let mut event_bloom = Bloom::new();
 
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
@@ -571,6 +554,8 @@ fn accept(
             min_deployment_gas_price,
         )?;
 
+        event_bloom.add_events(&receipt.events);
+
         let tx_events: Vec<_> = receipt
             .events
             .into_iter()
@@ -580,7 +565,6 @@ fn accept(
             })
             .collect();
 
-        update_hasher(&mut event_hasher, &tx_events);
         events.extend(tx_events);
 
         let gas_spent = receipt.gas_spent;
@@ -608,6 +592,8 @@ fn accept(
         voters,
     )?;
 
+    event_bloom.add_events(&coinbase_events);
+
     let coinbase_events: Vec<_> = coinbase_events
         .into_iter()
         .map(|event| ContractTxEvent {
@@ -615,17 +601,15 @@ fn accept(
             origin: None,
         })
         .collect();
-    update_hasher(&mut event_hasher, &coinbase_events);
     events.extend(coinbase_events);
 
     let state_root = session.root();
-    let event_hash = event_hasher.finalize().into();
 
     Ok((
         spent_txs,
         VerificationOutput {
             state_root,
-            event_hash,
+            event_bloom: event_bloom.into(),
         },
         session,
         events,
@@ -791,18 +775,6 @@ fn execute(
     receipt.events.extend(refund_receipt.events);
 
     Ok(receipt)
-}
-
-fn update_hasher(hasher: &mut Sha3_256, events: &[ContractTxEvent]) {
-    for tx_event in events {
-        if let Some(origin) = tx_event.origin {
-            hasher.update(origin);
-        }
-        let event = &tx_event.event;
-        hasher.update(event.target.0);
-        hasher.update(event.topic.as_bytes());
-        hasher.update(&event.data);
-    }
 }
 
 fn reward_slash_and_update_root(
