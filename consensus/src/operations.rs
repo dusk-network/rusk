@@ -17,7 +17,7 @@ use node_data::StepName;
 use crate::errors::*;
 
 pub type StateRoot = [u8; 32];
-pub type EventHash = [u8; 32];
+pub type EventBloom = [u8; 256];
 pub type Voter = (PublicKey, usize);
 
 #[derive(Default, Clone, Debug)]
@@ -36,19 +36,28 @@ pub struct Output {
     pub discarded_txs: Vec<Transaction>,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct VerificationOutput {
     pub state_root: StateRoot,
-    pub event_hash: EventHash,
+    pub event_bloom: EventBloom,
+}
+
+impl Default for VerificationOutput {
+    fn default() -> Self {
+        Self {
+            state_root: [0u8; 32],
+            event_bloom: [0u8; 256],
+        }
+    }
 }
 
 impl fmt::Display for VerificationOutput {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VerificationOutput {{ state_root: {}, event_hash: {} }}",
+            "VerificationOutput {{ state_root: {}, event_bloom: {} }}",
             hex::encode(self.state_root),
-            hex::encode(self.event_hash)
+            hex::encode(self.event_bloom)
         )
     }
 }
