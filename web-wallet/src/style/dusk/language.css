@@ -53,8 +53,7 @@
   --control-font-size: 1em;
   --control-icon-size: 2em;
   --control-padding: 0.9em 1.25em;
-  --control-small-font-size: 0.875em;
-  --control-small-padding: 0.625em 0.875em;
+  --control-small-padding: 0.65em 0.875em;
 
   --non-button-control-bg-color: #fff;
   --non-button-control-text-color: var(--smokey-black);
