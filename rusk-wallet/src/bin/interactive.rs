@@ -444,7 +444,7 @@ fn menu_op(
 ) -> anyhow::Result<AddrOp> {
     use CommandMenuItem as CMI;
 
-    let cmd_menu = Menu::new()
+    let mut cmd_menu = Menu::new()
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
@@ -455,10 +455,19 @@ fn menu_op(
         .add(CMI::Back, "Back")
         .separator();
 
-    let mut msg = "What do you want to do?";
+    let msg;
 
     if !is_synced {
-        msg = "Not Synced yet, wait before peroforming any operation.";
+        cmd_menu = Menu::new()
+            .add(CMI::StakeInfo, "Check Existing Stake")
+            .add(CMI::Export, "Export provisioner key-pair")
+            .separator()
+            .add(CMI::Back, "Back")
+            .separator();
+
+        msg = "Not Synced yet, Come back after its done."
+    } else {
+        msg = "What do you want to do?"
     }
 
     let q = Question::select("theme")
