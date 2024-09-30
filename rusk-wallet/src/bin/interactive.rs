@@ -259,7 +259,6 @@ fn transaction_op_menu_moonlight(
         })),
         Withdraw => AddrOp::Run(Box::new(Command::MoonlightWithdraw {
             addr: Some(addr),
-            amt: prompt::request_token_amt("withdraw", moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),

@@ -217,11 +217,12 @@ pub(crate) enum Command {
         contract_id: Vec<u8>,
 
         /// Function name to call
-        #[clap(short, long)]
+
+        #[clap(short = 'n', long)]
         fn_name: String,
 
         /// Function arguments for this call
-        #[clap(short, long)]
+        #[clap(short = 'f', long)]
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
@@ -337,10 +338,6 @@ pub(crate) enum Command {
         #[clap(short, long)]
         addr: Option<Address>,
 
-        /// Amount of DUSK to withdraw
-        #[clap(short, long)]
-        amt: Dusk,
-
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
@@ -385,11 +382,11 @@ pub(crate) enum Command {
         contract_id: Vec<u8>,
 
         /// Function name to call
-        #[clap(short, long)]
+        #[clap(short = 'n', long)]
         fn_name: String,
 
         /// Function arguments for this call
-        #[clap(short, long)]
+        #[clap(short = 'f', long)]
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
@@ -405,7 +402,7 @@ pub(crate) enum Command {
     /// Convert Phoenix DUSK to Moonlight for the same owned address
     PhoenixToMoonlight {
         /// Moonlight or Phoenix address from which to convert DUSK to
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         addr: Option<Address>,
 
         /// Amount of DUSK to transfer to your Moonlight account
@@ -424,7 +421,7 @@ pub(crate) enum Command {
     /// Convert Moonlight DUSK to Phoenix for the same owned address
     MoonlightToPhoenix {
         /// Moonlight or Phoenix Address from which to convert DUSK to
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         addr: Option<Address>,
 
         /// Amount of DUSK to transfer to your phoenix account
@@ -746,7 +743,6 @@ impl Command {
             }
             Command::MoonlightWithdraw {
                 addr,
-                amt,
                 gas_limit,
                 gas_price,
             } => {
@@ -757,8 +753,7 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx =
-                    wallet.moonlight_stake_withdraw(addr, amt, gas).await?;
+                let tx = wallet.moonlight_stake_withdraw(addr, gas).await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }

@@ -993,20 +993,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn moonlight_stake_withdraw(
         &self,
         sender: &Address,
-        amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
         let sender_index = sender.index()?;
-        let pk = sender.apk()?;
-        let nonce = state.fetch_account(pk).await?.nonce + 1;
+        let pk = self.bls_public_key(sender_index);
+        let nonce = state.fetch_account(&pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
+        let stake_info = state.fetch_stake(&pk).await?;
+        let reward = stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
+        let reward = Dusk::from(reward);
 
         let mut sender_sk = self.bls_secret_key(sender_index);
 
         let withdraw = moonlight_stake_reward(
-            &mut rng, &sender_sk, &sender_sk, *amt, gas.limit, gas.price,
+            &mut rng, &sender_sk, &sender_sk, *reward, gas.limit, gas.price,
             nonce, chain_id,
         )?;
 
