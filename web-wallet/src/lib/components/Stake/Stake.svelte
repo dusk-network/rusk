@@ -262,7 +262,7 @@
         }}
       >
         <ContractStatusesList items={statuses} />
-        <div class="operation__amount operation__space-between">
+        <div class="operation__amount-wrapper">
           <p>Enter amount:</p>
           <Button
             size="small"
@@ -272,7 +272,7 @@
           />
         </div>
 
-        <div class="operation__amount operation__input">
+        <div class="operation__input-wrapper">
           <Textbox
             className="operation__input-field"
             bind:value={stakeAmount}
@@ -384,28 +384,28 @@
 
 <style lang="postcss">
   .operation {
-    &__amount {
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-
     &__stake {
       display: flex;
       flex-direction: column;
       gap: 1.2em;
     }
 
-    &__space-between {
+    &__amount-wrapper,
+    &__input-wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    &__amount-wrapper {
       justify-content: space-between;
     }
 
-    &__input {
+    &__input-wrapper {
       column-gap: var(--default-gap);
     }
 
-    :global(&__input &__input-field) {
-      width: 100%;
+    :global(&__input-wrapper &__input-field) {
       padding: 0.5em 1em;
     }
 

@@ -143,7 +143,7 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <div class="operation__send-amount operation__space-between">
+        <div class="operation__address-wrapper">
           <p>Enter address:</p>
           <Button
             disabled={!scanner}
@@ -198,7 +198,7 @@
           {/if}
         </ContractStatusesList>
 
-        <div class="operation__send-amount operation__space-between">
+        <div class="operation__amount-wrapper">
           <p>Enter amount:</p>
           <Button
             size="small"
@@ -208,7 +208,7 @@
           />
         </div>
 
-        <div class="operation__send-amount operation__input">
+        <div class="operation__input-wrapper">
           <Textbox
             className="operation__input-field"
             bind:value={amount}
@@ -325,6 +325,11 @@
 
 <style lang="postcss">
   .operation {
+    &__send {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2em;
+    }
     &__review-address {
       background-color: transparent;
       border: 1px solid var(--primary-color);
@@ -332,6 +337,19 @@
       padding: 0.75em 1em;
       width: 100%;
       line-break: anywhere;
+    }
+
+    &__address-wrapper,
+    &__amount-wrapper,
+    &__input-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    &__input-wrapper {
+      column-gap: var(--default-gap);
     }
 
     &__review-transaction {
@@ -344,37 +362,12 @@
       justify-content: flex-start;
     }
 
-    &__send {
-      display: flex;
-      flex-direction: column;
-      gap: 1.2em;
-    }
-
-    &__send-amount {
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-
-    &__space-between {
-      justify-content: space-between;
-    }
-
-    &__input {
-      column-gap: var(--default-gap);
-    }
-
-    :global(&__input &__input-field) {
-      width: 100%;
+    :global(&__input-wrapper &__input-field) {
       padding: 0.5em 1em;
     }
 
     :global(&__input-field:invalid) {
       color: var(--error-color);
-    }
-
-    :global(&__send-address) {
-      width: 100%;
     }
 
     :global(&__review-notice) {
