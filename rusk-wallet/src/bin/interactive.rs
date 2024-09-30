@@ -211,12 +211,12 @@ fn transaction_op_menu_moonlight(
     use TransactionOp::*;
     let menu = Menu::title("Moonlight Transaction Operations")
         .add(Transfer, "Moonlight Transfer")
+        .add(Memo, "Moonlight Transfer with Memo")
         .add(Stake, "Moonlight Stake")
         .add(Unstake, "Moonlight Unstake")
         .add(Withdraw, "Moonlight Withdraw")
         .add(ContractDeploy, "Moonlight Contract Deploy")
         .add(ContractCall, "Moonlight Contract call")
-        .add(Memo, "Attach Memo to transaction")
         //.add(History, "Moonlight Transaction History")
         .separator()
         .add(Back, "Back");
@@ -235,6 +235,14 @@ fn transaction_op_menu_moonlight(
             sndr: Some(addr),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", moonlight_bal)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
+            sndr: Some(addr),
+            memo: prompt::request_str("memo")?,
+            rcvr: prompt::request_rcvr_addr("recipient")?,
+            amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -273,12 +281,6 @@ fn transaction_op_menu_moonlight(
             gas_price: prompt::request_gas_price()?,
         })),
         History => AddrOp::Back,
-        Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
-            addr: Some(addr),
-            memo: prompt::request_str("memo")?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
         Back => AddrOp::Back,
     };
 
@@ -294,12 +296,12 @@ fn transaction_op_menu_phoenix(
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
         .add(Transfer, "Phoenix Transfer")
+        .add(Memo, "Phoenix Transfer with Memo")
         .add(Stake, "Phoenix Stake")
         .add(Unstake, "Phoenix Unstake")
         .add(Withdraw, "Phoenix Withdraw")
         .add(ContractDeploy, "Phoenix Contract Deploy")
         .add(ContractCall, "Phoenix Contract call")
-        .add(Memo, "Attach Memo to transaction")
         .add(History, "Phoenix Transaction History")
         .separator()
         .add(Back, "Back");
@@ -318,6 +320,17 @@ fn transaction_op_menu_phoenix(
             sndr: Some(addr),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", phoenix_balance)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
+            sndr: Some(addr),
+            memo: prompt::request_str("memo")?,
+            rcvr: prompt::request_rcvr_addr("recipient")?,
+            amt: prompt::request_optional_token_amt(
+                "transfer",
+                phoenix_balance,
+            )?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -357,12 +370,6 @@ fn transaction_op_menu_phoenix(
         History => {
             AddrOp::Run(Box::new(Command::PhoenixHistory { addr: Some(addr) }))
         }
-        Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
-            addr: Some(addr),
-            memo: prompt::request_str("memo")?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
         Back => AddrOp::Back,
     };
 
@@ -393,13 +400,13 @@ enum CommandMenuItem {
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
     Transfer,
+    Memo,
     Stake,
     Unstake,
     Withdraw,
     ContractDeploy,
     ContractCall,
     // nor a deployment or a call
-    Memo,
     History,
     Back,
 }

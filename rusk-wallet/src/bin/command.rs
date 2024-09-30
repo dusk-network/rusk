@@ -7,7 +7,7 @@
 mod history;
 
 use clap::Subcommand;
-use execution_core::transfer::data::{ContractCall, TransactionData};
+use execution_core::transfer::data::ContractCall;
 use std::{fmt, path::PathBuf};
 
 use crate::io::prompt;
@@ -97,11 +97,38 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Attach a memo to a Phoenix transaction
+    PhoenixMemo {
+        /// Phoenix address from which to send DUSK [default: first address]
+        #[clap(short, long)]
+        sndr: Option<Address>,
+
+        /// Optional memo to attach to the transaction
+        #[clap(short, long)]
+        memo: String,
+
+        /// Phoenix receiver address
+        #[clap(short, long)]
+        rcvr: Address,
+
+        /// Amount of DUSK to send
+        #[clap(short, long)]
+        amt: Dusk,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -116,11 +143,11 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -132,11 +159,11 @@ pub(crate) enum Command {
         addr: Option<Address>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -148,11 +175,11 @@ pub(crate) enum Command {
         addr: Option<Address>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -171,11 +198,11 @@ pub(crate) enum Command {
         init_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -198,30 +225,11 @@ pub(crate) enum Command {
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Attach a memo to a transaction
-    PhoenixMemo {
-        /// Phoenix address from which to call the contract [default: first]
-        #[clap(short, long)]
-        addr: Option<Address>,
-
-        /// memo to attach to the transaction
-        #[clap(short, long)]
-        memo: String,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -252,11 +260,38 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Attach a memo to a Moonlight transaction
+    MoonlightMemo {
+        /// Moonlight Address from which to send DUSK [default: first address]
+        #[clap(short, long)]
+        sndr: Option<Address>,
+
+        /// Optional memo to attach to the transaction
+        #[clap(short, long)]
+        memo: String,
+
+        /// Moonlight receiver address
+        #[clap(short, long)]
+        rcvr: Address,
+
+        /// Amount of DUSK to send
+        #[clap(short, long)]
+        amt: Dusk,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -271,11 +306,11 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -287,11 +322,11 @@ pub(crate) enum Command {
         addr: Option<Address>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -307,11 +342,11 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -331,11 +366,11 @@ pub(crate) enum Command {
         init_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -358,29 +393,11 @@ pub(crate) enum Command {
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    MoonlightMemo {
-        /// Moonlight address from which to send DUSK [default: first address]
-        #[clap(short, long)]
-        addr: Option<Address>,
-
-        /// Memo is additonal info attached to transaction
-        #[clap(short, long)]
-        memo: String,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_LIMIT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -396,11 +413,11 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -415,11 +432,11 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t= DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t= DEFAULT_PRICE)]
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -508,8 +525,29 @@ impl Command {
                 };
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let tx =
-                    wallet.phoenix_transfer(sender, &rcvr, amt, gas).await?;
+                let tx = wallet
+                    .phoenix_transfer(sender, &rcvr, None, amt, gas)
+                    .await?;
+                Ok(RunResult::Tx(tx.hash()))
+            }
+            Command::PhoenixMemo {
+                sndr,
+                memo,
+                rcvr,
+                amt,
+                gas_limit,
+                gas_price,
+            } => {
+                wallet.sync().await?;
+                let sender = match sndr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let tx = wallet
+                    .phoenix_transfer(sender, &rcvr, Some(memo), amt, gas)
+                    .await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::MoonlightTransfer {
@@ -525,8 +563,29 @@ impl Command {
                     None => wallet.default_address(),
                 };
 
-                let tx =
-                    wallet.moonlight_transfer(sender, &rcvr, amt, gas).await?;
+                let tx = wallet
+                    .moonlight_transfer(sender, &rcvr, None, amt, gas)
+                    .await?;
+
+                Ok(RunResult::Tx(tx.hash()))
+            }
+            Command::MoonlightMemo {
+                sndr,
+                memo,
+                rcvr,
+                amt,
+                gas_limit,
+                gas_price,
+            } => {
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+                let sender = match sndr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+
+                let tx = wallet
+                    .moonlight_transfer(sender, &rcvr, Some(memo), amt, gas)
+                    .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
@@ -815,60 +874,6 @@ impl Command {
 
                 let tx =
                     wallet.moonlight_deploy(addr, code, init_args, gas).await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Self::MoonlightMemo {
-                addr,
-                memo,
-                gas_limit,
-                gas_price,
-            } => {
-                let addr = match addr {
-                    Some(addr) => wallet.claim_as_address(addr)?,
-                    None => wallet.default_address(),
-                };
-
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-
-                let memo = memo.as_bytes().to_vec();
-
-                let tx = wallet
-                    .moonlight_execute(
-                        addr,
-                        None,
-                        Dusk::from(0),
-                        Dusk::from(0),
-                        gas,
-                        Some(TransactionData::Memo(memo)),
-                    )
-                    .await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Self::PhoenixMemo {
-                addr,
-                memo,
-                gas_limit,
-                gas_price,
-            } => {
-                let addr = match addr {
-                    Some(addr) => wallet.claim_as_address(addr)?,
-                    None => wallet.default_address(),
-                };
-
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-
-                let memo = memo.as_bytes().to_vec();
-
-                let tx = wallet
-                    .phoenix_execute(
-                        addr,
-                        Dusk::from(0),
-                        gas,
-                        TransactionData::Memo(memo),
-                    )
-                    .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }

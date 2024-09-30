@@ -220,9 +220,12 @@ pub(crate) fn request_rcvr_addr(addr_for: &str) -> anyhow::Result<Address> {
 }
 
 /// Checks for a valid DUSK denomination
-fn check_valid_denom(value: f64, balance: Dusk) -> Result<(), String> {
+fn check_valid_denom(
+    value: f64,
+    balance: Dusk,
+    min: Dusk,
+) -> Result<(), String> {
     let value = Dusk::from(value);
-    let min = MIN_CONVERTIBLE;
     let max = std::cmp::min(balance, MAX_CONVERTIBLE);
     match (min..=max).contains(&value) {
         true => Ok(()),
@@ -232,16 +235,35 @@ fn check_valid_denom(value: f64, balance: Dusk) -> Result<(), String> {
     }
 }
 
-/// Request amount of tokens
+/// Request amount of tokens that can be 0
+pub(crate) fn request_optional_token_amt(
+    action: &str,
+    balance: Dusk,
+) -> anyhow::Result<Dusk> {
+    let min = Dusk::from(0);
+    let question = requestty::Question::float("amt")
+        .message(format!("Introduce the amount of DUSK to {}:", action))
+        .default(MIN_CONVERTIBLE.into())
+        .validate_on_key(|f, _| check_valid_denom(f, balance, min).is_ok())
+        .validate(|f, _| check_valid_denom(f, balance, min))
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+
+    Ok(a.as_float().expect("answer to be a float").into())
+}
+
+/// Request a positive amount of tokens
 pub(crate) fn request_token_amt(
     action: &str,
     balance: Dusk,
 ) -> anyhow::Result<Dusk> {
+    let min = MIN_CONVERTIBLE;
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount of DUSK to {}:", action))
-        .default(MIN_CONVERTIBLE.into())
-        .validate_on_key(|f, _| check_valid_denom(f, balance).is_ok())
-        .validate(|f, _| check_valid_denom(f, balance))
+        .default(min.into())
+        .validate_on_key(|f, _| check_valid_denom(f, balance, min).is_ok())
+        .validate(|f, _| check_valid_denom(f, balance, min))
         .build();
 
     let a = requestty::prompt_one(question)?;
@@ -273,8 +295,10 @@ pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
     let question = requestty::Question::float("amt")
         .message("Introduce the gas price for this transaction:")
         .default(Dusk::from(gas::DEFAULT_PRICE).into())
-        .validate_on_key(|f, _| check_valid_denom(f, MAX_CONVERTIBLE).is_ok())
-        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE))
+        .validate_on_key(|f, _| {
+            check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
+        })
+        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE))
         .build();
 
     let a = requestty::prompt_one(question)?;
