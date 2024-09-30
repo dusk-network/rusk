@@ -21,7 +21,7 @@
   ];
 </script>
 
-{#if import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED === "false"}
+{#if import.meta.env.VITE_FEATURE_ALLOCATE || false}
   <IconHeadingCard
     gap="medium"
     heading="Receive"

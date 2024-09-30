@@ -24,7 +24,7 @@
   });
 </script>
 
-{#if !!import.meta.env.VITE_CONTRACT_STAKE_DISABLED}
+{#if import.meta.env.VITE_FEATURE_STAKE || false}
   <IconHeadingCard
     gap="medium"
     heading="Staking"

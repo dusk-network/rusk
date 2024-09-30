@@ -34,7 +34,6 @@
     {gasSettings}
     spendable={balance.maximum}
     {statuses}
-    disableAllocateButton={import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED ===
-      "true"}
+    enableAllocateButton={import.meta.env.VITE_FEATURE_ALLOCATE === "true"}
   />
 </IconHeadingCard>

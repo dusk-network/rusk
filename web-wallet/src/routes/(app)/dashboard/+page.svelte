@@ -1,7 +1,6 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { filterWith, hasKeyValue } from "lamb";
   import {
     mdiArrowBottomLeft,
     mdiArrowTopRight,
@@ -18,9 +17,7 @@
 
   const { dashboardTransactionLimit, language } = $settingsStore;
 
-  /**
-   * @param {string} contract
-   */
+  /** @param {string} contract */
   function getIconsForContract(contract) {
     /** @type {Array.<DashboardNavItemIconProp>} */
     let icons = [{ path: "" }];
@@ -51,21 +48,24 @@
     return icons;
   }
 
-  /** @type {(descriptors: ContractDescriptor[]) => ContractDescriptor[]} */
-  const getEnabledContracts = filterWith(hasKeyValue("disabled", false));
-  const enabledContracts = getEnabledContracts(contractDescriptors);
+  /** @type {ContractDescriptor[]} */
+  const enabledContracts = contractDescriptors.filter(
+    (contract) => contract.enabled === true
+  );
+
   const dashboardNavItems = enabledContracts.map(({ id, label }) => ({
     href: id,
     icons: getIconsForContract(id),
     id,
     label,
   }));
-  const hasNoEnabledContracts = enabledContracts.length === 0;
 
   $: ({ syncStatus } = $walletStore);
 </script>
 
-{#if hasNoEnabledContracts}
+{#if enabledContracts.length}
+  <DashboardNav items={dashboardNavItems} />
+{:else}
   <div class="no-contracts">
     <Icon path={mdiContain} size="large" />
     <h3>No Contracts Enabled</h3>
@@ -75,12 +75,13 @@
     </p>
     {#if import.meta.env.MODE === "development"}
       <h4>For Developers:</h4>
-      <p>No contracts are currently enabled.</p>
+      <p>
+        No contracts are currently enabled. Please check the environment
+        variables.
+      </p>
     {/if}
   </div>
 {/if}
-
-<DashboardNav items={dashboardNavItems} />
 
 <slot />
 

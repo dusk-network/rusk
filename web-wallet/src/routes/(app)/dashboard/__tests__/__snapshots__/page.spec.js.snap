@@ -2,7 +2,6 @@
 
 exports[`Dashboard > should render a card when there is an error getting transactions 1`] = `
 <div>
-   
   <nav
     class="dashboard-nav svelte-5szabu"
   >
@@ -224,7 +223,6 @@ exports[`Dashboard > should render a card when there is an error getting transac
 
 exports[`Dashboard > should render the dashboard page with the transactions after they are loaded 1`] = `
 <div>
-   
   <nav
     class="dashboard-nav svelte-5szabu"
   >

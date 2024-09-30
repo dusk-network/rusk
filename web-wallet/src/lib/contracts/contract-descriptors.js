@@ -7,25 +7,19 @@
  */
 export default [
   {
-    disabled:
-      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED &&
-      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED === "true",
+    enabled: import.meta.env.VITE_FEATURE_TRANSFER === "true",
     id: "send",
     label: "Send",
     operations: [],
   },
   {
-    disabled:
-      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED &&
-      import.meta.env.VITE_CONTRACT_TRANSFER_DISABLED === "true",
+    enabled: import.meta.env.VITE_FEATURE_TRANSFER === "true",
     id: "receive",
     label: "Receive",
     operations: [],
   },
   {
-    disabled:
-      import.meta.env.VITE_CONTRACT_STAKE_DISABLED &&
-      import.meta.env.VITE_CONTRACT_STAKE_DISABLED === "true",
+    enabled: import.meta.env.VITE_FEATURE_STAKE === "true",
     id: "staking",
     label: "Stake",
     operations: [
@@ -50,9 +44,7 @@ export default [
     ],
   },
   {
-    disabled:
-      import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED &&
-      import.meta.env.VITE_CONTRACT_ALLOCATE_DISABLED === "true",
+    enabled: import.meta.env.VITE_FEATURE_ALLOCATE === "true",
     id: "allocate",
     label: "Shield / Unshield",
     operations: [
@@ -65,9 +57,7 @@ export default [
     ],
   },
   {
-    disabled:
-      import.meta.env.VITE_CONTRACT_MIGRATE_DISABLED &&
-      import.meta.env.VITE_CONTRACT_MIGRATE_DISABLED === "true",
+    enabled: import.meta.env.VITE_FEATURE_MIGRATE === "true",
     id: "migrate",
     label: "Migrate",
     operations: [
