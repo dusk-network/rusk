@@ -345,10 +345,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // If it's a message from a future iteration of the current round, we
         // generate the committees so that we can pre-verify its validity.
         // We do it here because we need the IterationCtx
-        if msg.header.round == self.round_update.round
-            && msg.header.iteration > self.iteration
-            && msg.header.prev_block_hash == self.round_update.hash()
-        {
+
+        let same_prev_hash = msg.header.round == self.round_update.round
+            && msg.header.prev_block_hash == self.round_update.hash();
+
+        if same_prev_hash && msg.header.iteration > self.iteration {
             // Generate committees for the iteration
             self.iter_ctx.generate_iteration_committees(
                 msg.header.iteration,
@@ -386,29 +387,36 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // Save it in future_msgs to be processed when we reach
             // same round/step.
             Err(ConsensusError::FutureEvent) => {
+                const SRC: &str = "inbound future message";
+                if !same_prev_hash {
+                    if let Some(signer) = msg.get_signer() {
+                        if !self
+                            .provisioners
+                            .eligibles(msg.header.round)
+                            .any(|(p, _)| p == &signer)
+                        {
+                            log_msg("discarded msg (not eligible)", SRC, &msg);
+                            return None;
+                        }
+                    }
+                }
+
+                if msg.header.round > self.round_update.round + 10 {
+                    log_msg("discarded msg (signer not eligible)", SRC, &msg);
+                    return None;
+                }
+
                 // TODO: add additional Error to discard future messages too far
                 match self.future_msgs.lock().await.put_msg(msg) {
                     Ok(msg) => {
-                        log_msg(
-                            "outbound send",
-                            "inbound future message",
-                            &msg,
-                        );
+                        log_msg("outbound send", SRC, &msg);
                         self.outbound.try_send(msg);
                     }
                     Err(MsgRegistryError::NoSigner(msg)) => {
-                        log_msg(
-                            "discarded msg (no signer)",
-                            "inbound future message",
-                            &msg,
-                        );
+                        log_msg("discarded msg (no signer)", SRC, &msg);
                     }
                     Err(MsgRegistryError::SignerAlreadyEnqueue(msg)) => {
-                        log_msg(
-                            "discarded msg (duplicated)",
-                            "inbound future message",
-                            &msg,
-                        );
+                        log_msg("discarded msg (duplicated)", SRC, &msg);
                     }
                 }
 
