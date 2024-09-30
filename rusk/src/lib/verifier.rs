@@ -59,7 +59,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
     Ok(rusk_abi::verify_bls(
         tx.signature_message(),
-        *tx.from_account(),
+        *tx.sender(),
         *tx.signature(),
     ))
 }
