@@ -25,10 +25,7 @@ use zeroize::Zeroize;
 
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    transfer::{
-        data::ContractCall, data::TransactionData, phoenix::NoteLeaf,
-        Transaction,
-    },
+    transfer::{data::TransactionData, phoenix::NoteLeaf, Transaction},
 };
 use wallet_core::{
     phoenix_balance,
@@ -558,6 +555,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         sender: &Address,
         rcvr: &Address,
+        memo: Option<String>,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
@@ -566,7 +564,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::Unauthorized);
         }
         // make sure amount is positive
-        if amt == 0 {
+        if amt == 0 && memo.is_none() {
             return Err(Error::AmountIsZero);
         }
         // check gas limits
@@ -607,7 +605,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             chain_id,
-            None::<ContractCall>,
+            memo,
             &Prover,
         )?;
 
@@ -621,6 +619,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         sender: &Address,
         rcvr: &Address,
+        memo: Option<String>,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
@@ -629,7 +628,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::Unauthorized);
         }
         // make sure amount is positive
-        if amt == 0 {
+        if amt == 0 && memo.is_none() {
             return Err(Error::AmountIsZero);
         }
         // check gas limits
@@ -657,7 +656,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             nonce,
             chain_id,
-            None::<TransactionData>,
+            memo,
         )?;
 
         from_sk.zeroize();
