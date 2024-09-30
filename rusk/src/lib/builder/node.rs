@@ -22,7 +22,7 @@ use node::{LongLivedService, Node};
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 #[cfg(feature = "archive")]
-use {node::archivist::ArchivistSrv, node::database::archive::SQLiteArchive};
+use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, Services};
@@ -254,8 +254,7 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         service_list.push(Box::new(ArchivistSrv {
             archive_receiver,
-            archivist: SQLiteArchive::create_or_open(self.db_path.clone())
-                .await,
+            archivist: Archive::create_or_open(self.db_path.clone()).await,
         }));
 
         node.inner().initialize(&mut service_list).await?;
