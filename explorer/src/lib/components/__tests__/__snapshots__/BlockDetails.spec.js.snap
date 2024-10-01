@@ -410,16 +410,20 @@ exports[`Block Details > it renders the Block Details component with the payload
           </svg>
           
            
-          header
-
-        
           <div
-            aria-checked="true"
-            aria-disabled="false"
-            class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
-            role="switch"
-            tabindex="0"
-          />
+            class="block-details__switch-wrapper"
+          >
+            header
+
+          
+            <div
+              aria-checked="true"
+              aria-disabled="false"
+              class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
+              role="switch"
+              tabindex="0"
+            />
+          </div>
         </div>
       </dt>
        
@@ -883,16 +887,20 @@ exports[`Block Details > renders the Block Details component 1`] = `
           </svg>
           
            
-          header
-
-        
           <div
-            aria-checked="false"
-            aria-disabled="false"
-            class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
-            role="switch"
-            tabindex="0"
-          />
+            class="block-details__switch-wrapper"
+          >
+            header
+
+          
+            <div
+              aria-checked="false"
+              aria-disabled="false"
+              class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
+              role="switch"
+              tabindex="0"
+            />
+          </div>
         </div>
       </dt>
        

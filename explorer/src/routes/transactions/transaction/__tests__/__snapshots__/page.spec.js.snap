@@ -400,7 +400,21 @@ exports[`Transaction Details > should render the Transaction details page and qu
             </svg>
             
              
-            memo
+            <div
+              class="transaction-details__switch-wrapper"
+            >
+              memo
+
+          
+              <div
+                aria-checked="false"
+                aria-disabled="false"
+                class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
+                role="switch"
+                tabindex="0"
+              />
+            </div>
+             
           </div>
         </dt>
          
@@ -409,6 +423,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
         >
           some notes about the transaction
           
+           
         </dd>
         <dt
           class="details-list__term"
@@ -431,16 +446,20 @@ exports[`Transaction Details > should render the Transaction details page and qu
             </svg>
             
              
-            payload
-
-        
             <div
-              aria-checked="false"
-              aria-disabled="false"
-              class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
-              role="switch"
-              tabindex="0"
-            />
+              class="transaction-details__switch-wrapper"
+            >
+              payload
+
+          
+              <div
+                aria-checked="false"
+                aria-disabled="false"
+                class="dusk-switch transaction-details__payload-switch dusk-switch--on-surface"
+                role="switch"
+                tabindex="0"
+              />
+            </div>
           </div>
         </dt>
          

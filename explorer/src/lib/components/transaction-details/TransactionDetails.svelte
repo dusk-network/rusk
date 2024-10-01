@@ -19,6 +19,7 @@
   } from "$lib/dusk/currency";
   import {
     calculateAdaptiveCharCount,
+    decodeHexString,
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
@@ -52,6 +53,9 @@
 
   /** @type {boolean} */
   let isPayloadToggled = false;
+
+  /** @type {boolean} */
+  let isMemoDecoded = false;
 
   $: classes = makeClassName(["transaction-details", className]);
 
@@ -170,22 +174,42 @@
 
     <!-- MEMO -->
     <ListItem tooltipText="Transaction reference and additional notes">
-      <svelte:fragment slot="term">memo</svelte:fragment>
-      <svelte:fragment slot="definition"
-        ><DataGuard data={data.memo}>{data.memo}</DataGuard></svelte:fragment
-      >
+      <svelte:fragment slot="term">
+        <div class="transaction-details__switch-wrapper">
+          memo
+
+          <Switch
+            className="transaction-details__payload-switch"
+            onSurface={true}
+            bind:value={isMemoDecoded}
+            disabled={!data.memo}
+          />
+        </div>
+      </svelte:fragment>
+
+      <svelte:fragment slot="definition">
+        {#if isMemoDecoded}
+          <Card onSurface={true} className="transaction-details__memo">
+            <pre>{data.memo ? decodeHexString(data.memo) : "---"}</pre>
+          </Card>
+        {:else}
+          <DataGuard data={data.memo}>{data.memo}</DataGuard>
+        {/if}
+      </svelte:fragment>
     </ListItem>
 
     <!-- PAYLOAD -->
     <ListItem tooltipText="The transaction payload">
       <svelte:fragment slot="term">
-        payload
+        <div class="transaction-details__switch-wrapper">
+          payload
 
-        <Switch
-          className="transaction-details__payload-switch"
-          onSurface={true}
-          bind:value={isPayloadToggled}
-        />
+          <Switch
+            className="transaction-details__payload-switch"
+            onSurface={true}
+            bind:value={isPayloadToggled}
+          />
+        </div>
       </svelte:fragment>
 
       <svelte:fragment slot="definition">
