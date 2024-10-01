@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Suppress finalisation of a previous commit for loaded states [#2551]
 - Ported to Piecrust 0.25.0 [#2536]
 - Removed 'phoenix-core' dependency [#1139]
 - Added closure argument to the 'deploy' method [#1630]
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 2023-12-14
 
+[#2551]: https://github.com/dusk-network/rusk/issues/2551
 [#2536]: https://github.com/dusk-network/rusk/issues/2536
 [#1675]: https://github.com/dusk-network/rusk/issues/1675
 [#1630]: https://github.com/dusk-network/rusk/issues/1630
