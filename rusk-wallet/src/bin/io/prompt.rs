@@ -296,9 +296,9 @@ pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
         .message("Introduce the gas price for this transaction:")
         .default(Dusk::from(gas::DEFAULT_PRICE).into())
         .validate_on_key(|f, _| {
-            check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
+            check_valid_denom(f, MAX_CONVERTIBLE, MIN_CONVERTIBLE).is_ok()
         })
-        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE))
+        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE, MIN_CONVERTIBLE))
         .build();
 
     let a = requestty::prompt_one(question)?;
