@@ -165,7 +165,7 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
             println!("{s}");
         },
         client: RuesHttpClient::new(
-            "http://nodes.dusk.network:9500/graphql".to_string(),
+            "http://testnet.nodes.dusk.network:9500/graphql".to_string(),
         ),
     };
     let _ = gql
