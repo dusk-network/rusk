@@ -348,8 +348,8 @@ impl State {
         Ok(branch)
     }
 
-    /// Queries the transfer contract for the latest network position.
-    pub async fn fetch_network_pos(&self) -> Result<u64, Error> {
+    /// Queries the transfer contract for the number of notes.
+    pub async fn fetch_num_notes(&self) -> Result<u64, Error> {
         let status = self.status;
         status("Fetching latest note position...");
 
