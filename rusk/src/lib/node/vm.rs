@@ -143,10 +143,9 @@ impl VMExecution for Rusk {
                 }
             }
             ProtocolTransaction::Moonlight(tx) => {
-                let account_data =
-                    self.account(tx.from_account()).map_err(|e| {
-                        anyhow::anyhow!("Cannot check account: {e}")
-                    })?;
+                let account_data = self.account(tx.sender()).map_err(|e| {
+                    anyhow::anyhow!("Cannot check account: {e}")
+                })?;
 
                 let max_value =
                     tx.value() + tx.deposit() + tx.gas_limit() * tx.gas_price();
@@ -158,7 +157,7 @@ impl VMExecution for Rusk {
 
                 if tx.nonce() <= account_data.nonce {
                     let err = crate::Error::RepeatingNonce(
-                        (*tx.from_account()).into(),
+                        (*tx.sender()).into(),
                         tx.nonce(),
                     );
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));

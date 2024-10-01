@@ -92,7 +92,7 @@ impl Transaction {
                 .map(|n| SpendingId::Nullifier(n.to_bytes()))
                 .collect(),
             ProtocolTransaction::Moonlight(m) => {
-                vec![SpendingId::AccountNonce(*m.from_account(), m.nonce())]
+                vec![SpendingId::AccountNonce(*m.sender(), m.nonce())]
             }
         }
     }

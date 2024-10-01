@@ -442,15 +442,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(
         &self,
-        from_addr: &Address,
-        to_account: Option<BlsPublicKey>,
+        sender_addr: &Address,
+        receiver: Option<BlsPublicKey>,
         transfer_value: Dusk,
         deposit: Dusk,
         gas: Gas,
         exec: Option<impl Into<TransactionData>>,
     ) -> Result<Transaction, Error> {
         // make sure we own the sender address
-        if !from_addr.is_owned() {
+        if !sender_addr.is_owned() {
             return Err(Error::Unauthorized);
         }
 
@@ -462,11 +462,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let deposit = *deposit;
 
-        let from_index = from_addr.index()?;
-        let mut from_sk = self.bls_secret_key(from_index);
-        let from_account = self.bls_public_key(from_index);
+        let sender_index = sender_addr.index()?;
+        let mut sender_sk = self.bls_secret_key(sender_index);
+        let sender = self.bls_public_key(sender_index);
 
-        let account = state.fetch_account(&from_account).await?;
+        let account = state.fetch_account(&sender).await?;
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.
@@ -475,8 +475,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
-            &from_sk,
-            to_account,
+            &sender_sk,
+            receiver,
             *transfer_value,
             deposit,
             gas.limit,
@@ -486,7 +486,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             exec,
         )?;
 
-        from_sk.zeroize();
+        sender_sk.zeroize();
 
         state.prove_and_propagate(tx).await
     }
@@ -638,17 +638,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let sender = sender.index()?;
 
-        let mut from_sk = self.bls_secret_key(sender);
+        let mut sender_sk = self.bls_secret_key(sender);
         let apk = rcvr.apk()?;
-        let from_pk = self.bls_public_key(sender);
+        let sender_pk = self.bls_public_key(sender);
         let amt = *amt;
 
         let state = self.state()?;
-        let nonce = state.fetch_account(&from_pk).await?.nonce + 1;
+        let nonce = state.fetch_account(&sender_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
-            &from_sk,
+            &sender_sk,
             Some(*apk),
             amt,
             0,
@@ -659,7 +659,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             memo,
         )?;
 
-        from_sk.zeroize();
+        sender_sk.zeroize();
 
         state.prove_and_propagate(tx).await
     }
