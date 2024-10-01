@@ -355,7 +355,7 @@ impl From<MoonlightTransaction> for Transaction {
 /// its funds to another contract.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct TransferToContract {
+pub struct ContractToContract {
     /// Contract to transfer funds to.
     pub contract: ContractId,
     /// Amount to send to the contract.
@@ -383,7 +383,7 @@ pub struct ReceiveFromContract {
 /// its funds to an account.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct TransferToAccount {
+pub struct ContractToAccount {
     /// Account to transfer funds to.
     pub account: AccountPublicKey,
     /// Amount to send to the account.
@@ -459,7 +459,7 @@ pub struct DepositEvent {
 /// Event data emitted on a transfer from a contract to a contract.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct TransferToContractEvent {
+pub struct ContractToContractEvent {
     /// The sender of the funds.
     pub sender: ContractId,
     /// The receiver of the funds.
@@ -471,7 +471,7 @@ pub struct TransferToContractEvent {
 /// Event data emitted on a transfer from a contract to a Moonlight account.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct TransferToAccountEvent {
+pub struct ContractToAccountEvent {
     /// The sender of the funds.
     pub sender: ContractId,
     /// The receiver of the funds.
