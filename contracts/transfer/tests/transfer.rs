@@ -30,7 +30,7 @@ use execution_core::{
             ViewKey as PhoenixViewKey,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        TransferToAccount, TransferToContract, TRANSFER_CONTRACT,
+        ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
     },
     ContractError, ContractId, JubJubScalar, LUX,
 };
@@ -913,10 +913,10 @@ fn swap_wrong_contract_targeted() {
 }
 
 /// In this test we deposit some Dusk to the Alice contract, and subsequently
-/// proceed to call Alice's `transfer_to_contract` function, targetting Bob as
+/// proceed to call Alice's `contract_to_contract` function, targeting Bob as
 /// the receiver of the transfer.
 #[test]
-fn transfer_to_contract() {
+fn contract_to_contract() {
     const DEPOSIT_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
     const TRANSFER_VALUE: u64 = DEPOSIT_VALUE / 2;
 
@@ -999,7 +999,7 @@ fn transfer_to_contract() {
     );
     assert_eq!(bob_balance, 0, "Bob must have a balance of zero");
 
-    let transfer = TransferToContract {
+    let transfer = ContractToContract {
         contract: BOB_ID,
         value: TRANSFER_VALUE,
         fn_name: String::from("recv_transfer"),
@@ -1010,7 +1010,7 @@ fn transfer_to_contract() {
         .to_vec();
     let contract_call = Some(ContractCall {
         contract: ALICE_ID,
-        fn_name: String::from("transfer_to_contract"),
+        fn_name: String::from("contract_to_contract"),
         fn_args,
     });
 
@@ -1063,7 +1063,7 @@ fn transfer_to_contract() {
 /// contract, and subsequently call the Alice contract to trigger a transfer
 /// back to the same account.
 #[test]
-fn transfer_to_account() {
+fn contract_to_account() {
     const DEPOSIT_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
     const TRANSFER_VALUE: u64 = DEPOSIT_VALUE / 2;
 
@@ -1140,7 +1140,7 @@ fn transfer_to_account() {
         "Alice must have the deposit in their balance"
     );
 
-    let transfer = TransferToAccount {
+    let transfer = ContractToAccount {
         account: moonlight_pk,
         value: TRANSFER_VALUE,
     };
@@ -1149,7 +1149,7 @@ fn transfer_to_account() {
         .to_vec();
     let contract_call = Some(ContractCall {
         contract: ALICE_ID,
-        fn_name: String::from("transfer_to_account"),
+        fn_name: String::from("contract_to_account"),
         fn_args,
     });
 
@@ -1197,7 +1197,7 @@ fn transfer_to_account() {
 /// In this test we try to transfer some Dusk from a contract to an account,
 /// when the contract doesn't have sufficient funds.
 #[test]
-fn transfer_to_account_insufficient_funds() {
+fn contract_to_account_insufficient_funds() {
     // Transfer value larger than DEPOSIT
     const DEPOSIT_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
     const TRANSFER_VALUE: u64 = 2 * DEPOSIT_VALUE;
@@ -1275,7 +1275,7 @@ fn transfer_to_account_insufficient_funds() {
         "Alice must have the deposit in their balance"
     );
 
-    let transfer = TransferToAccount {
+    let transfer = ContractToAccount {
         account: moonlight_pk,
         value: TRANSFER_VALUE,
     };
@@ -1284,7 +1284,7 @@ fn transfer_to_account_insufficient_funds() {
         .to_vec();
     let contract_call = Some(ContractCall {
         contract: ALICE_ID,
-        fn_name: String::from("transfer_to_account"),
+        fn_name: String::from("contract_to_account"),
         fn_args,
     });
 
@@ -1339,7 +1339,7 @@ fn transfer_to_account_insufficient_funds() {
 /// In this test we try to call the function directly - i.e. not initiated by a
 /// contract, but by the transaction itself.
 #[test]
-fn transfer_to_account_direct_call() {
+fn contract_to_account_direct_call() {
     const TRANSFER_VALUE: u64 = MOONLIGHT_GENESIS_VALUE / 2;
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
@@ -1362,7 +1362,7 @@ fn transfer_to_account_direct_call() {
         "The depositer account should have the genesis value"
     );
 
-    let transfer = TransferToAccount {
+    let transfer = ContractToAccount {
         account: moonlight_pk,
         value: TRANSFER_VALUE,
     };
@@ -1371,7 +1371,7 @@ fn transfer_to_account_direct_call() {
         .to_vec();
     let contract_call = Some(ContractCall {
         contract: TRANSFER_CONTRACT,
-        fn_name: String::from("transfer_to_account"),
+        fn_name: String::from("contract_to_account"),
         fn_args,
     });
 
