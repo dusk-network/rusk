@@ -695,8 +695,8 @@ where
     /// Transfer Dusk from one account to another using moonlight.
     pub fn moonlight_transfer(
         &self,
-        from_index: u8,
-        to_account: BlsPublicKey,
+        sender_index: u8,
+        receiver_account: BlsPublicKey,
         value: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -705,8 +705,8 @@ where
         let data: Option<TransactionData> = None;
 
         self.moonlight_transaction(
-            from_index,
-            Some(to_account),
+            sender_index,
+            Some(receiver_account),
             value,
             deposit,
             gas_limit,
@@ -719,8 +719,8 @@ where
     #[allow(clippy::too_many_arguments)]
     pub fn moonlight_transaction(
         &self,
-        from_index: u8,
-        to_account: Option<BlsPublicKey>,
+        sender_index: u8,
+        receiver_account: Option<BlsPublicKey>,
         value: u64,
         deposit: u64,
         gas_limit: u64,
@@ -728,12 +728,12 @@ where
         data: Option<impl Into<TransactionData>>,
     ) -> Result<Transaction, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
-        let mut from_sk = derive_bls_sk(&seed, from_index);
-        let from_account = BlsPublicKey::from(&from_sk);
+        let mut sender_sk = derive_bls_sk(&seed, sender_index);
+        let sender_account = BlsPublicKey::from(&sender_sk);
 
         let account = self
             .state
-            .fetch_account(&from_account)
+            .fetch_account(&sender_account)
             .map_err(Error::from_state_err)?;
 
         // technically this check is not necessary, but it's nice to not spam
@@ -748,12 +748,19 @@ where
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
         let tx = MoonlightTransaction::new(
-            &from_sk, to_account, value, deposit, gas_limit, gas_price, nonce,
-            chain_id, data,
+            &sender_sk,
+            receiver_account,
+            value,
+            deposit,
+            gas_limit,
+            gas_price,
+            nonce,
+            chain_id,
+            data,
         )?;
 
         seed.zeroize();
-        from_sk.zeroize();
+        sender_sk.zeroize();
 
         Ok(tx.into())
     }
