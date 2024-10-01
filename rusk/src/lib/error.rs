@@ -158,7 +158,7 @@ impl fmt::Display for Error {
             Error::ProofVerification => write!(f, "Proof verification failure"),
             Error::OutOfGas => write!(f, "Out of gas"),
             Error::RepeatingNullifiers(n) => {
-                write!(f, "Nullifiers repeat: {n:?}")
+                write!(f, "Nullifiers already spent: {n:?}")
             }
             Error::DoubleNullifiers => write!(f, "Double nullifiers"),
             Error::RepeatingNonce(account, nonce) => {
@@ -170,21 +170,14 @@ impl fmt::Display for Error {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
             }
             #[cfg(feature = "chain")]
-            Error::InconsistentState(verification_output) => {
-                write!(
-                    f,
-                    "Inconsistent state verification data {verification_output}",
-                )
+            Error::InconsistentState(vo) => {
+                write!(f, "Inconsistent state verification data {vo}",)
             }
             Error::CommitNotFound(commit_id) => {
                 write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
             }
             Error::InvalidCreditsCount(height, credits) => {
-                write!(
-                    f,
-                    "Invalid credits count, height = {}, credits = {}",
-                    height, credits
-                )
+                write!(f, "Invalid credits: H= {height}, credits= {credits}",)
             }
             Error::MemoTooLarge(size) => {
                 write!(f, "The memo size {size} is too large")
