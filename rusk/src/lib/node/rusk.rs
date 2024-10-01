@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fs::File;
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
@@ -14,7 +13,7 @@ use execution_core::stake::StakeKeys;
 use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use tokio::task;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
@@ -46,7 +45,7 @@ use crate::gen_id::gen_contract_id;
 use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
 use crate::Error::InvalidCreditsCount;
-use crate::{Error, Result, DELETING_VM_FNAME};
+use crate::{Error, Result};
 
 pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");
@@ -351,10 +350,10 @@ impl Rusk {
         commit: [u8; 32],
         to_delete: Vec<[u8; 32]>,
     ) -> Result<()> {
+        self.set_base_and_delete(commit, to_delete)?;
+
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
-
-        self.set_base_and_delete(commit, to_delete);
         Ok(())
     }
 
@@ -485,16 +484,9 @@ impl Rusk {
         &self,
         base: [u8; 32],
         to_delete: Vec<[u8; 32]>,
-    ) {
+    ) -> Result<()> {
+        self.vm.finalize_commit(base)?;
         self.tip.write().base = base;
-
-        for c in &to_delete {
-            if let Err(e) = File::create(
-                self.dir.join(hex::encode(c)).join(DELETING_VM_FNAME),
-            ) {
-                warn!("cannot mark state as in deletion: {e}");
-            }
-        }
 
         // Deleting commits is blocking, meaning it will wait until any process
         // using the commit is done. This includes any queries that are
@@ -502,6 +494,7 @@ impl Rusk {
         // Since we do want commits to be deleted, but don't want block
         // finalization to wait, we spawn a new task to delete the commits.
         task::spawn(delete_commits(self.vm.clone(), to_delete));
+        Ok(())
     }
 
     pub(crate) fn block_gas_limit(&self) -> u64 {
@@ -665,8 +658,8 @@ fn contract_deploy(
             Ok(_) => receipt.gas_spent += deploy_charge,
             Err(err) => {
                 info!("Tx caused deployment error {err:?}");
-                receipt.data =
-                    Err(ContractError::Panic("failed deployment".into()))
+                let msg = format!("failed deployment: {err:?}");
+                receipt.data = Err(ContractError::Panic(msg))
             }
         }
     }
