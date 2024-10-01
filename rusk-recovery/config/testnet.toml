@@ -465,6 +465,48 @@ amount = 500_000_000_000_000
 address = '23aykwjPGYfhwqkSWksDs1TmU2zkBgMn339shztJ14oXkUmwMcS1E7EMUaCg7HKpdAP4e3NuNruEEeN36t88f6oinwUPNaJqkTtLnPjH4yt2QJsssgpD8BRyusoLADWG7i5h'
 amount = 500_000_000_000_000
 
+# Dry run Stakes
+
+[[stake]]
+address = 'ykesisNk9pgYFQm65meee5TbTLvrxgS9Mzq1P4GKr4XFXXvN5iraQw1YaNV9H11nFytuGHmx7UngaaTuTnqEkDeGBHvgBE1SZ3PwTsQQRmYsdX2dCKEVxJQbZv47yntfvtQ'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'zERG7qf7STXTAKKiUbEvfj4YcpTttHASTxDXUBA1JYxdhpuU13FtgzDUpU5eMSt3qxYamQNZjiiiDKVN3zi5Mnz264ggAD3Ft9j3BwmcHArQpPdVhLpHCfnq5Pot6GCW9Vx'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'ord8D9WF21NPJmaDc3hN9wLnqRTcNsLwFVwUNZW9JuYmQhpbotxrBKXD25M4w76GXbTRS8nmr8y9jmriaw5tp2yhXLBHL47DK6S2eug2P3K5fYgCcJHEU2suaM8SaCTaek5'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'qeNnTyhWnvJBxSX8D5YS5QCLAtPoZQFCKEHVJoGiDTyFiGz6jnRuz9erafZxLSfWoJNwfz4HoHmKXBfcifHcF8F2sqG5LFSNopLJbkZzGXLaUFFikme1f1PiNiMxxMNkmqP'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'sX4JooVNAFov3Xx9cfZHtRemijsggdRKrywC14jfGyZn5k2wupNvyY9ZLu7YTuh3CpuyKsftbmzYPzdgptG6Rq9UayDXeaPwFHanmXpUqGdTyEvw5Cb3UqGEqfCFZMqQhtz'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = '25yVrGJKTjZzfiHewWbShsU5s2CpuUGfqG17YLt2sf158fc1EJJEYHnPJKFPjoTXYxe1jJymaYoRbnZ1hSCa1uvdsox36mgoKiBQsw2pVUbWmodz5D2EBzrtBKABBKkrChbK'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'pSnJHur5tnA4V88MGPBDCfPYSfSCGynJmbycW5mNeisABxgmZLErnfLuS5vvC6hBD3NKFvdCBhmNv5H8EzTAd5ApavNZeCoautkCDW4KUB8Ey6LNyHGCX19j9TLG8kPdKhf'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'thrWTo9XztqcpodzucqDjoEv2Wk8C6XEhw9DQKcZ8uMjF5NHBeFwysvboLuqbwQwESRVfzJBSvcTZNXTsr25zasagiuseY4tkF1HyK25rg73nJxq86gZQK14bFXMVPLwfpe'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'soPdMsNykSsrLcmHGBGfiajFNc5kJ7SheMEapCu9zjnTyiFaJLc2MTeq8ZQ9R91dgxFQJjkybY2ETgTU5Xv3J9RhoHqzNVnBCty5s2W87UdntXWiSSWPEEpXYrun5Pw7eML'
+amount = 100_000_000_000_000
+
+[[stake]]
+address = 'n3qToJrMkYCnUkJkFG2a7fEVn2Krj6arVUfuQbZNRk4gcDPQ9jESngvKQGZ4XToGAhS4qFsGzJtiZzDJ5E9TyYA5SZcCJGYfi5cZWBJkzmAmwiScS256TCMZZjmEq6aNuj6'
+amount = 100_000_000_000_000
+
 # Test deployment accounts (Milosz)
 
 [[moonlight_account]]
