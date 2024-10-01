@@ -35,12 +35,12 @@ mod wasm {
     }
 
     #[no_mangle]
-    unsafe fn transfer_to_contract(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_contract(arg))
+    unsafe fn contract_to_contract(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_contract(arg))
     }
 
     #[no_mangle]
-    unsafe fn transfer_to_account(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.transfer_to_account(arg))
+    unsafe fn contract_to_account(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_account(arg))
     }
 }

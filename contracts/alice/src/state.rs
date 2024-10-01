@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use execution_core::transfer::{
-    withdraw::Withdraw, TransferToAccount, TransferToContract,
+    withdraw::Withdraw, ContractToAccount, ContractToContract,
     TRANSFER_CONTRACT,
 };
 
@@ -28,19 +28,19 @@ impl Alice {
             .expect("Transparent deposit transaction should succeed");
     }
 
-    pub fn transfer_to_contract(&mut self, transfer: TransferToContract) {
+    pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
         let _: () = rusk_abi::call(
             TRANSFER_CONTRACT,
-            "transfer_to_contract",
+            "contract_to_contract",
             &transfer,
         )
         .expect("Transferring to contract should succeed");
     }
 
-    pub fn transfer_to_account(&mut self, transfer: TransferToAccount) {
+    pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
         rusk_abi::call::<_, ()>(
             TRANSFER_CONTRACT,
-            "transfer_to_account",
+            "contract_to_account",
             &transfer,
         )
         .expect("Transferring to account should succeed");

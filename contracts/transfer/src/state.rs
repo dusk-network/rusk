@@ -27,13 +27,13 @@ use execution_core::{
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
         },
-        ConvertEvent, DepositEvent, MoonlightTransactionEvent,
-        PhoenixTransactionEvent, ReceiveFromContract, Transaction,
-        TransferToAccount, TransferToAccountEvent, TransferToContract,
-        TransferToContractEvent, WithdrawEvent, CONVERT_TOPIC, DEPOSIT_TOPIC,
-        MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY, PHOENIX_TOPIC,
-        TRANSFER_CONTRACT, TRANSFER_TO_ACCOUNT_TOPIC,
-        TRANSFER_TO_CONTRACT_TOPIC, WITHDRAW_TOPIC,
+        ContractToAccount, ContractToAccountEvent, ContractToContract,
+        ContractToContractEvent, ConvertEvent, DepositEvent,
+        MoonlightTransactionEvent, PhoenixTransactionEvent,
+        ReceiveFromContract, Transaction, WithdrawEvent,
+        CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC,
+        DEPOSIT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY,
+        PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
     },
     BlsScalar, ContractError, ContractId,
 };
@@ -355,7 +355,7 @@ impl TransferState {
     /// it is called by the transfer contract itself), if the call to the
     /// receiving contract fails, or if the sending contract doesn't have enough
     /// funds.
-    pub fn transfer_to_contract(&mut self, transfer: TransferToContract) {
+    pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
         let sender_contract = rusk_abi::caller()
             .expect("A transfer to a contract must happen in the context of a transaction");
 
@@ -389,8 +389,8 @@ impl TransferState {
             .expect("Calling receiver should succeed");
 
         rusk_abi::emit(
-            TRANSFER_TO_CONTRACT_TOPIC,
-            TransferToContractEvent {
+            CONTRACT_TO_CONTRACT_TOPIC,
+            ContractToContractEvent {
                 sender: sender_contract,
                 receiver: transfer.contract,
                 value: transfer.value,
@@ -407,7 +407,7 @@ impl TransferState {
     /// The function will panic if it is not being called by a contract, if it
     /// is called by the transfer contract itself, or if the calling contract
     /// doesn't have enough funds.
-    pub fn transfer_to_account(&mut self, transfer: TransferToAccount) {
+    pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
         let sender_contract = rusk_abi::caller()
             .expect("A transfer to an account must happen in the context of a transaction");
 
@@ -433,8 +433,8 @@ impl TransferState {
         account.balance += transfer.value;
 
         rusk_abi::emit(
-            TRANSFER_TO_ACCOUNT_TOPIC,
-            TransferToAccountEvent {
+            CONTRACT_TO_ACCOUNT_TOPIC,
+            ContractToAccountEvent {
                 sender: sender_contract,
                 receiver: transfer.account,
                 value: transfer.value,
