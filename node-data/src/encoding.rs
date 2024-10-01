@@ -14,7 +14,8 @@ use crate::ledger::{
     SpentTransaction, StepVotes, Transaction,
 };
 use crate::message::payload::{
-    QuorumType, Ratification, RatificationResult, ValidationResult, Vote,
+    QuorumType, Ratification, RatificationResult, ValidationQuorum,
+    ValidationResult, Vote,
 };
 use crate::message::{
     ConsensusHeader, SignInfo, MESSAGE_MAX_FAILED_ITERATIONS,
@@ -411,6 +412,25 @@ impl Serializable for ValidationResult {
         let quorum = QuorumType::read(r)?;
 
         Ok(ValidationResult::new(sv, vote, quorum))
+    }
+}
+
+impl Serializable for ValidationQuorum {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.header.write(w)?;
+        self.result.write(w)?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let header = ConsensusHeader::read(r)?;
+        let result = ValidationResult::read(r)?;
+
+        Ok(ValidationQuorum { header, result })
     }
 }
 

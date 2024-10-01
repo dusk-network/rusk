@@ -19,7 +19,9 @@ use crate::aggregator::{Aggregator, StepVote};
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
-use node_data::message::{payload, Message, Payload, StepMessage};
+use node_data::message::{
+    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+};
 
 use crate::user::committee::Committee;
 
@@ -55,6 +57,12 @@ impl RatificationHandler {
                     .votes_for(signer)
                     .ok_or(ConsensusError::NotCommitteeMember)?;
             }
+
+            Payload::ValidationQuorum(q) => Self::verify_validation_result(
+                &q.header,
+                &q.result,
+                round_committees,
+            )?,
             Payload::Empty => (),
             _ => {
                 info!("cannot verify in validation handler");
@@ -79,7 +87,11 @@ impl MsgHandler for RatificationHandler {
             }
 
             p.verify_signature()?;
-            Self::verify_validation_result(p, round_committees)?;
+            Self::verify_validation_result(
+                &p.header,
+                &p.validation_result,
+                round_committees,
+            )?;
 
             return Ok(());
         }
@@ -250,12 +262,11 @@ impl RatificationHandler {
     }
 
     /// Verifies either valid or nil quorum of validation output
-    fn verify_validation_result(
-        ratification: &Ratification,
+    pub(crate) fn verify_validation_result(
+        header: &ConsensusHeader,
+        result: &ValidationResult,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let header = &ratification.header;
-        let result = &ratification.validation_result;
         let iter = header.iteration;
         let validation_committee = round_committees
             .get_validation_committee(iter)

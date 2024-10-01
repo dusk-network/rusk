@@ -14,7 +14,7 @@ use crate::merkle::merkle_root;
 use crate::config::{MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use dusk_bytes::Serializable;
 use node_data::message::payload::Candidate;
-use node_data::message::{Message, StepMessage, BLOCK_HEADER_VERSION};
+use node_data::message::{Message, SignedStepMessage, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger};
 use std::sync::Arc;
 use std::time::Instant;
