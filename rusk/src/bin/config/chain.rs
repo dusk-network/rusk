@@ -23,6 +23,7 @@ pub(crate) struct ChainConfig {
 
     consensus_keys_path: Option<PathBuf>,
     #[serde(with = "humantime_serde")]
+    #[serde(default)]
     generation_timeout: Option<Duration>,
 
     max_queue_size: Option<usize>,
