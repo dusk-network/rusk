@@ -148,8 +148,23 @@ impl Message {
         }
     }
 
+    pub fn get_iteration(&self) -> u8 {
+        self.header.iteration
+    }
+
+    pub fn get_height(&self) -> u64 {
+        self.header.round
+    }
+
     pub fn version(&self) -> &Version {
         &self.version
+    }
+
+    pub fn ray_id(&self) -> &str {
+        self.metadata
+            .as_ref()
+            .map(|m| m.ray_id.as_str())
+            .unwrap_or_default()
     }
 
     pub fn with_version(mut self, v: Version) -> Self {
@@ -164,6 +179,7 @@ impl Message {
 pub struct Metadata {
     pub height: u8,
     pub src_addr: SocketAddr,
+    pub ray_id: String,
 }
 
 impl Serializable for Message {

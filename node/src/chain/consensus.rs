@@ -16,7 +16,7 @@ use dusk_consensus::operations::{
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, Fault, Hash, Header};
+use node_data::ledger::{to_str, Block, Fault, Hash, Header};
 use node_data::message::AsyncQueue;
 
 use tokio::sync::{oneshot, Mutex, RwLock};
@@ -201,7 +201,14 @@ impl<DB: database::DB> CandidateDB<DB> {
 #[async_trait]
 impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
     async fn store_candidate_block(&mut self, b: Block) {
-        tracing::debug!("store candidate block: {:?}", b);
+        let iter = b.header().iteration;
+        let height = b.header().height;
+        let hash = to_str(&b.header().hash);
+        let prev_hash = to_str(&b.header().prev_block_hash);
+        debug!(
+            event = "store candidate block",
+            height, iter, hash, prev_hash
+        );
         let _ = self
             .db
             .read()

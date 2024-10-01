@@ -184,6 +184,14 @@ impl<DB: Database> IterationCtx<DB> {
                 next_cfg.step = next_prop_step;
 
                 let next_generator = Committee::new(provisioners, &next_cfg);
+
+                debug!(
+                  event = "committee_generated",
+                  step = next_cfg.step,
+                  config = ?next_cfg,
+                  members = format!("{}", &next_generator)
+                );
+
                 self.committees.insert(next_prop_step, next_generator);
             }
         }

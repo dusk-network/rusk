@@ -13,11 +13,12 @@ use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
+use node_data::ledger::to_str;
 use node_data::message::payload::{GetResource, Inv, Nonce};
 use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
 use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 
 /// Number of alive peers randomly selected which a `flood_request` is sent to
 const REDUNDANCY_PEER_COUNT: usize = 8;
@@ -65,10 +66,22 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 counter!(format!("dusk_inbound_{:?}_count", msg.topic()))
                     .increment(1);
 
+                let ray_id = to_str(md.ray_id());
+                debug!(
+                    event = "msg received",
+                    src = ?md.src(),
+                    kad_height = md.height(),
+                    ray_id,
+                    topic = ?msg.topic(),
+                    height = msg.get_height(),
+                    iteration = msg.get_iteration(),
+                );
+
                 // Update Transport Data
                 msg.metadata = Some(Metadata {
                     height: md.height(),
                     src_addr: md.src(),
+                    ray_id,
                 });
 
                 // Allow upper layers to fast-discard a message before queueing
@@ -165,9 +178,19 @@ impl<const N: usize> Kadcast<N> {
 #[async_trait]
 impl<const N: usize> crate::Network for Kadcast<N> {
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()> {
-        let height = match msg.metadata {
-            Some(Metadata { height: 0, .. }) => return Ok(()),
-            Some(Metadata { height, .. }) => Some(height - 1),
+        let kad_height = msg.metadata.as_ref().map(|m| m.height);
+        debug!(
+            event = "broadcasting msg",
+            kad_height,
+            ray_id = msg.ray_id(),
+            topic = ?msg.topic(),
+            height = msg.get_height(),
+            iteration = msg.get_iteration(),
+        );
+
+        let height = match kad_height {
+            Some(0) => return Ok(()),
+            Some(height) => Some(height - 1),
             None => None,
         };
 
@@ -181,7 +204,6 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         counter!(format!("dusk_outbound_{:?}_size", msg.topic()))
             .increment(encoded.len() as u64);
 
-        trace!("broadcasting msg ({:?})", msg.topic());
         self.peer.broadcast(&encoded, height).await;
 
         Ok(())

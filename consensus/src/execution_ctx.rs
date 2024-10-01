@@ -10,7 +10,7 @@ use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
-use crate::queue::MsgRegistry;
+use crate::queue::{MsgRegistry, MsgRegistryError};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -262,17 +262,24 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Ignores messages that do not originate from emergency iteration of
     /// current round
     async fn process_past_events(&mut self, msg: Message) {
-        if msg.header.round == self.round_update.round
-            && is_emergency_iter(msg.header.iteration)
-        {
+        if msg.header.round != self.round_update.round {
+            log_msg("discarded message", "process_past_events", &msg);
+            // should we send current tip to the msg sender?
+            return;
+        }
+        // Repropagate past iteration messages (they have been already
+        // validated)
+
+        log_msg("outbound send", "process_past_events", &msg);
+        self.outbound.try_send(msg.clone());
+
+        if is_emergency_iter(msg.header.iteration) {
             self.on_emergency_mode(msg).await;
         }
     }
 
     /// Handles a consensus message in emergency mode
     async fn on_emergency_mode(&mut self, msg: Message) {
-        self.outbound.try_send(msg.clone());
-
         // Try to vote for a candidate block from former iteration
         if let Payload::Candidate(p) = &msg.payload {
             self.try_cast_validation_vote(&p.candidate).await;
@@ -338,10 +345,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // If it's a message from a future iteration of the current round, we
         // generate the committees so that we can pre-verify its validity.
         // We do it here because we need the IterationCtx
-        if msg.header.round == self.round_update.round
-            && msg.header.iteration > self.iteration
-            && msg.header.prev_block_hash == self.round_update.hash()
-        {
+
+        let same_prev_hash = msg.header.round == self.round_update.round
+            && msg.header.prev_block_hash == self.round_update.hash();
+
+        if same_prev_hash && msg.header.iteration > self.iteration {
             // Generate committees for the iteration
             self.iter_ctx.generate_iteration_committees(
                 msg.header.iteration,
@@ -368,6 +376,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         match valid {
             Ok(_) => {
+                // Repropagate past iteration messages (they have been already
+                // validated)
+
+                log_msg("outbound send", "inbound message", &msg);
                 // Re-publish the returned message
                 self.outbound.try_send(msg.clone());
             }
@@ -375,19 +387,38 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // Save it in future_msgs to be processed when we reach
             // same round/step.
             Err(ConsensusError::FutureEvent) => {
-                trace!("future msg {:?}", msg);
-
-                // Re-propagate messages from future iterations of the current
-                // round
-                if msg.header.round == self.round_update.round {
-                    self.outbound.try_send(msg.clone());
+                const SRC: &str = "inbound future message";
+                if !same_prev_hash {
+                    if let Some(signer) = msg.get_signer() {
+                        if !self
+                            .provisioners
+                            .eligibles(msg.header.round)
+                            .any(|(p, _)| p == &signer)
+                        {
+                            log_msg("discarded msg (not eligible)", SRC, &msg);
+                            return None;
+                        }
+                    }
                 }
 
-                self.future_msgs.lock().await.put_msg(
-                    msg.header.round,
-                    msg.get_step(),
-                    msg,
-                );
+                if msg.header.round > self.round_update.round + 10 {
+                    log_msg("discarded msg (signer not eligible)", SRC, &msg);
+                    return None;
+                }
+
+                // TODO: add additional Error to discard future messages too far
+                match self.future_msgs.lock().await.put_msg(msg) {
+                    Ok(msg) => {
+                        log_msg("outbound send", SRC, &msg);
+                        self.outbound.try_send(msg);
+                    }
+                    Err(MsgRegistryError::NoSigner(msg)) => {
+                        log_msg("discarded msg (no signer)", SRC, &msg);
+                    }
+                    Err(MsgRegistryError::SignerAlreadyEnqueue(msg)) => {
+                        log_msg("discarded msg (duplicated)", SRC, &msg);
+                    }
+                }
 
                 return None;
             }
@@ -410,7 +441,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let msg_topic = msg.topic();
         let msg_iter = msg.header.iteration;
         let msg_step = msg.get_step();
-        let msg_round = msg.header.round;
+        let msg_height = msg.header.round;
         trace!("collecting msg {msg:#?}");
 
         let collected = phase
@@ -427,7 +458,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             Ok(HandleMsgOutput::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
-                error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_round,);
+                error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_height,);
                 None
             }
         }
@@ -446,6 +477,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             .await
             .handle_timeout(&self.round_update, self.iteration)
         {
+            log_msg("outbound send", "process timeout event", &msg);
             self.outbound.try_send(msg.clone());
         }
     }
@@ -485,13 +517,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 );
                 if ret.is_ok() {
                     // Re-publish a drained message
-                    debug!(
-                        event = "republish",
-                        src = "future_msgs",
-                        msg_step = msg.get_step(),
-                        msg_round = msg.header.round,
-                        msg_topic = ?msg.topic(),
-                    );
+                    log_msg("outbound send", "future_msgs", &msg);
 
                     self.outbound.try_send(msg.clone());
 
@@ -531,4 +557,17 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     pub(crate) fn get_curr_generator(&self) -> Option<PublicKeyBytes> {
         self.iter_ctx.get_generator(self.iteration)
     }
+}
+
+#[inline(always)]
+fn log_msg(event: &str, src: &str, msg: &Message) {
+    debug!(
+        event,
+        src,
+        msg_step = msg.get_step(),
+        msg_iter = msg.get_iteration(),
+        msg_height = msg.get_height(),
+        msg_topic = ?msg.topic(),
+        ray_id = msg.ray_id()
+    );
 }

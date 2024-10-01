@@ -31,10 +31,10 @@ use std::io::{self, Read, Write};
 use fake::{Dummy, Fake, Faker};
 
 /// Encode a byte array into a shortened HEX representation.
-pub fn to_str<const N: usize>(bytes: &[u8; N]) -> String {
+pub fn to_str(bytes: &[u8]) -> String {
     const OFFSET: usize = 16;
     let hex = hex::encode(bytes);
-    if N <= OFFSET {
+    if bytes.len() <= OFFSET {
         return hex;
     }
 

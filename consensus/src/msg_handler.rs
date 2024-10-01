@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
-use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::proposal;
@@ -16,7 +15,7 @@ use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Status};
 use node_data::StepName;
-use tracing::{debug, trace, warn};
+use tracing::{debug, warn};
 
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)
@@ -45,27 +44,19 @@ pub trait MsgHandler {
     ) -> Result<(), ConsensusError> {
         let signer = msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
         debug!(
-            event = "msg received",
+            event = "validating msg",
             signer = signer.to_bs58(),
             topic = ?msg.topic(),
             step = msg.get_step(),
+            ray_id = msg.ray_id(),
         );
-
-        trace!(event = "msg received", msg = format!("{:#?}", msg),);
 
         // We don't verify the tip here, otherwise future round messages will be
         // discarded and not put into the queue
         let msg_tip = msg.header.prev_block_hash;
         match msg.compare(ru.round, current_iteration, step) {
             Status::Past => {
-                if is_emergency_iter(msg.header.iteration) {
-                    Self::verify_message(
-                        msg,
-                        ru,
-                        round_committees,
-                        Status::Past,
-                    )?;
-                }
+                Self::verify_message(msg, ru, round_committees, Status::Past)?;
                 Err(ConsensusError::PastEvent)
             }
             Status::Present => {
@@ -95,6 +86,7 @@ pub trait MsgHandler {
         }
     }
 
+    /// Verify step message for the current round with different iteration
     fn verify_message(
         msg: &Message,
         ru: &RoundUpdate,
@@ -103,7 +95,6 @@ pub trait MsgHandler {
     ) -> Result<(), ConsensusError> {
         let signer = msg.get_signer().expect("signer to exist");
 
-        // Pre-verify messages for the current round with different iteration
         if msg.header.round == ru.round {
             let msg_tip = msg.header.prev_block_hash;
             if msg_tip != ru.hash() {
@@ -137,8 +128,6 @@ pub trait MsgHandler {
                             round_committees,
                         )?;
                     }
-                    node_data::message::Payload::Quorum(_) => {}
-                    node_data::message::Payload::Block(_) => {}
                     _ => {
                         warn!(
                             "{status:?} message not repropagated {:?}",
