@@ -23,7 +23,7 @@ pub enum RecoveryCommand {
         /// URL of the server to download the CRS from
         #[clap(
             long,
-            default_value = "https://nodes.dusk.network/trusted-setup",
+            default_value = "https://testnet.nodes.dusk.network/trusted-setup",
             env = "RUSK_CRS_URL"
         )]
         crs_url: String,
