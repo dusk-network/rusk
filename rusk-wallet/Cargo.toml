@@ -41,6 +41,7 @@ rocksdb = { workspace = true }
 flume = { workspace = true }
 reqwest = { workspace = true, features = ["stream"] }
 dusk-bytes = { workspace = true }
+blake2b_simd = { version = "1", default-features = false }
 
 zeroize = { workspace = true, features = ["derive"] }
 wallet-core = { workspace = true }
