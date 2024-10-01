@@ -14,9 +14,6 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
 
-// Tue Sep 10 2024 20:00:00 GMT+0000
-pub const DEFAULT_GENESIS_TIMESTAMP: u64 = 1725998400;
-
 use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -26,6 +23,7 @@ pub(crate) struct ChainConfig {
 
     consensus_keys_path: Option<PathBuf>,
     #[serde(with = "humantime_serde")]
+    #[serde(default)]
     generation_timeout: Option<Duration>,
 
     max_queue_size: Option<usize>,
@@ -109,6 +107,6 @@ impl ChainConfig {
                     .map(|n| n.as_secs())
                     .expect("This is heavy.")
             })
-            .unwrap_or(DEFAULT_GENESIS_TIMESTAMP)
+            .unwrap_or_default()
     }
 }

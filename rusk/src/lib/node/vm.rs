@@ -122,15 +122,20 @@ impl VMExecution for Rusk {
 
         match tx {
             ProtocolTransaction::Phoenix(tx) => {
-                let existing_nullifiers = self
-                    .existing_nullifiers(&tx.nullifiers().to_vec())
-                    .map_err(|e| {
+                let tx_nullifiers = tx.nullifiers().to_vec();
+                let existing_nullifiers =
+                    self.existing_nullifiers(&tx_nullifiers).map_err(|e| {
                         anyhow::anyhow!("Cannot check nullifiers: {e}")
                     })?;
 
                 if !existing_nullifiers.is_empty() {
                     let err =
                         crate::Error::RepeatingNullifiers(existing_nullifiers);
+                    return Err(anyhow::anyhow!("Invalid tx: {err}"));
+                }
+
+                if !has_unique_elements(tx_nullifiers) {
+                    let err = crate::Error::DoubleNullifiers;
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
 
@@ -226,6 +231,15 @@ impl VMExecution for Rusk {
     fn get_block_gas_limit(&self) -> u64 {
         self.block_gas_limit()
     }
+}
+
+fn has_unique_elements<T>(iter: T) -> bool
+where
+    T: IntoIterator,
+    T::Item: Eq + std::hash::Hash,
+{
+    let mut uniq = std::collections::HashSet::new();
+    iter.into_iter().all(move |x| uniq.insert(x))
 }
 
 impl Rusk {

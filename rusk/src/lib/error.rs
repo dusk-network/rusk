@@ -9,7 +9,7 @@ use std::{fmt, io};
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
-    BlsScalar, Dusk, Error as ExecErr,
+    BlsScalar, Error as ExecErr,
 };
 use rusk_abi::PiecrustError;
 
@@ -25,6 +25,8 @@ pub enum Error {
     OutOfGas,
     /// Repeated nullifier in transaction verification
     RepeatingNullifiers(Vec<BlsScalar>),
+    /// Repeated nullifier in the same transaction
+    DoubleNullifiers,
     /// Repeating a nonce that has already been used
     RepeatingNonce(Box<BlsPublicKey>, u64),
     /// Wrong inputs and/or outputs in the transaction verification
@@ -45,10 +47,6 @@ pub enum Error {
     Vm(PiecrustError),
     /// IO Errors
     Io(io::Error),
-    /// Bad block height in coinbase (got, expected)
-    CoinbaseBlockHeight(u64, u64),
-    /// Bad dusk spent in coinbase (got, expected).
-    CoinbaseDuskSpent(Dusk, Dusk),
     /// Failed to produce proper state
     #[cfg(feature = "chain")]
     InconsistentState(Box<dusk_consensus::operations::VerificationOutput>),
@@ -157,18 +155,12 @@ impl fmt::Display for Error {
             Error::Transaction(err) => write!(f, "Transaction Error: {err}"),
             Error::Phoenix(err) => write!(f, "Phoenix error: {err}"),
             Error::Other(err) => write!(f, "Other error: {err}"),
-            Error::CoinbaseBlockHeight(got, expected) => write!(
-                f,
-                "Coinbase has block height {got}, expected {expected}"
-            ),
-            Error::CoinbaseDuskSpent(got, expected) => {
-                write!(f, "Coinbase has dusk spent {got}, expected {expected}")
-            }
             Error::ProofVerification => write!(f, "Proof verification failure"),
             Error::OutOfGas => write!(f, "Out of gas"),
             Error::RepeatingNullifiers(n) => {
-                write!(f, "Nullifiers repeat: {n:?}")
+                write!(f, "Nullifiers already spent: {n:?}")
             }
+            Error::DoubleNullifiers => write!(f, "Double nullifiers"),
             Error::RepeatingNonce(account, nonce) => {
                 let encoded_account =
                     bs58::encode(&account.to_bytes()).into_string();
@@ -178,21 +170,14 @@ impl fmt::Display for Error {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
             }
             #[cfg(feature = "chain")]
-            Error::InconsistentState(verification_output) => {
-                write!(
-                    f,
-                    "Inconsistent state verification data {verification_output}",
-                )
+            Error::InconsistentState(vo) => {
+                write!(f, "Inconsistent state verification data {vo}",)
             }
             Error::CommitNotFound(commit_id) => {
                 write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
             }
             Error::InvalidCreditsCount(height, credits) => {
-                write!(
-                    f,
-                    "Invalid credits count, height = {}, credits = {}",
-                    height, credits
-                )
+                write!(f, "Invalid credits: H= {height}, credits= {credits}",)
             }
             Error::MemoTooLarge(size) => {
                 write!(f, "The memo size {size} is too large")
