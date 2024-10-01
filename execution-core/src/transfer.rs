@@ -41,10 +41,10 @@ pub const PANIC_NONCE_NOT_READY: &str = "Nonce not ready to be used yet";
 pub const MOONLIGHT_TOPIC: &str = "moonlight";
 /// Topic for the phoenix transaction event.
 pub const PHOENIX_TOPIC: &str = "phoenix";
-/// Topic for the transfer to contract event.
-pub const TRANSFER_TO_CONTRACT_TOPIC: &str = "transfer_to_contract";
-/// Topic for the transfer to account event.
-pub const TRANSFER_TO_ACCOUNT_TOPIC: &str = "transfer_to_account";
+/// Topic for the contract to contract transaction event.
+pub const CONTRACT_TO_CONTRACT_TOPIC: &str = "contract_to_contract";
+/// Topic for the contract to account transaction event.
+pub const CONTRACT_TO_ACCOUNT_TOPIC: &str = "contract_to_account";
 /// Topic for the withdraw event.
 pub const WITHDRAW_TOPIC: &str = "withdraw";
 /// Topic for the deposit event.
