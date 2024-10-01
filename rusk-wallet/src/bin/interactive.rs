@@ -186,20 +186,9 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
             .add(AddrSelect::Address(Box::new(addr.clone())), preview);
     }
 
-    let remaining_addresses =
-        MAX_ADDRESSES.saturating_sub(wallet.addresses().len());
     let mut action_menu = Menu::new()
         .separator()
         .add(AddrSelect::NewAddress, "New address");
-
-    // show warning if less than
-    if remaining_addresses < 5 {
-        action_menu = action_menu.separator().separator_msg(format!(
-            "\x1b[93m{}\x1b[0m This wallet only supports up to {MAX_ADDRESSES} addresses, you have {} addresses ",
-            "Warning:",
-            wallet.addresses().len()
-        ));
-    }
 
     if let Some(rx) = &wallet.state()?.sync_rx {
         if let Ok(status) = rx.try_recv() {
@@ -290,6 +279,7 @@ fn transaction_op_menu_moonlight(
                 addr: Some(addr),
                 code: prompt::request_contract_code()?,
                 init_args: prompt::request_bytes("init arguments")?,
+                deploy_nonce: prompt::request_nonce()?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
             }))
@@ -377,6 +367,7 @@ fn transaction_op_menu_phoenix(
                 addr: Some(addr),
                 code: prompt::request_contract_code()?,
                 init_args: prompt::request_bytes("init arguments")?,
+                deploy_nonce: prompt::request_nonce()?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
             }))
@@ -413,6 +404,8 @@ enum CommandMenuItem {
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
+    // Generate Contract ID.
+    CalculateContractId,
     // Others
     StakeInfo,
     Export,
@@ -450,6 +443,7 @@ fn menu_op(
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
         .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
+        .add(CMI::CalculateContractId, "Calculate Contract ID")
         .add(CMI::Export, "Export provisioner key-pair")
         .separator()
         .add(CMI::Back, "Back")
@@ -460,6 +454,7 @@ fn menu_op(
             .separator()
             .add(CMI::StakeInfo, "Check Existing Stake")
             .add(CMI::Export, "Export provisioner key-pair")
+            .add(CMI::CalculateContractId, "Calculate Contract ID")
             .separator()
             .add(CMI::Back, "Back")
             .separator();
@@ -502,6 +497,13 @@ fn menu_op(
                 amt: prompt::request_token_amt("convert", phoenix_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::CalculateContractId => {
+            AddrOp::Run(Box::new(Command::CalculateContractId {
+                addr: Some(addr),
+                deploy_nonce: prompt::request_nonce()?,
+                code: prompt::request_contract_code()?,
             }))
         }
         CMI::Export => AddrOp::Run(Box::new(Command::Export {
@@ -779,6 +781,7 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             addr,
             code,
             init_args,
+            deploy_nonce,
             gas_limit,
             gas_price,
         } => {
@@ -789,6 +792,7 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Wasm file length = {}", file_len);
             println!("   > Init args = {:?}", init_args);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > Deploy nonce = {:?}", deploy_nonce);
             println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             prompt::ask_confirm()
         }
@@ -796,6 +800,7 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             addr,
             code,
             init_args,
+            deploy_nonce,
             gas_limit,
             gas_price,
         } => {
@@ -805,6 +810,7 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Deploy contract from {}", addr.preview());
             println!("   > Wasm file length = {}", file_len);
             println!("   > Init args = {:?}", init_args);
+            println!("   > Deploy nonce = {:?}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }

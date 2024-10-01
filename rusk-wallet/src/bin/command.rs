@@ -8,6 +8,7 @@ mod history;
 
 use clap::Subcommand;
 use execution_core::transfer::data::ContractCall;
+use execution_core::CONTRACT_ID_BYTES;
 use std::{fmt, path::PathBuf};
 
 use crate::io::prompt;
@@ -197,6 +198,10 @@ pub(crate) enum Command {
         #[clap(short, long)]
         init_args: Vec<u8>,
 
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
+
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
         gas_limit: u64,
@@ -362,6 +367,10 @@ pub(crate) enum Command {
         #[clap(short, long)]
         init_args: Vec<u8>,
 
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
+
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
         gas_limit: u64,
@@ -416,6 +425,22 @@ pub(crate) enum Command {
         /// Price you're going to pay for each gas unit (in LUX)
         #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
+    },
+
+    /// Command to calculate the contract id
+    /// given the contract code and deploy nonce
+    CalculateContractId {
+        /// Address to keep as owner of the contract
+        #[clap(short = 's', long)]
+        addr: Option<Address>,
+
+        /// Path to the WASM contract code
+        #[clap(short, long)]
+        code: PathBuf,
+
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
     },
 
     /// Convert Moonlight DUSK to Phoenix for the same owned address
@@ -772,7 +797,7 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let contract_id: [u8; 32] = contract_id
+                let contract_id: [u8; CONTRACT_ID_BYTES] = contract_id
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
@@ -824,6 +849,7 @@ impl Command {
                 addr,
                 code,
                 init_args,
+                deploy_nonce,
                 gas_limit,
                 gas_price,
             } => {
@@ -841,8 +867,9 @@ impl Command {
                 let code = std::fs::read(code)
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
-                let tx =
-                    wallet.phoenix_deploy(addr, code, init_args, gas).await?;
+                let tx = wallet
+                    .phoenix_deploy(addr, code, init_args, deploy_nonce, gas)
+                    .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
@@ -850,6 +877,7 @@ impl Command {
                 addr,
                 code,
                 init_args,
+                deploy_nonce,
                 gas_limit,
                 gas_price,
             } => {
@@ -867,10 +895,33 @@ impl Command {
                 let code = std::fs::read(code)
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
-                let tx =
-                    wallet.moonlight_deploy(addr, code, init_args, gas).await?;
+                let tx = wallet
+                    .moonlight_deploy(addr, code, init_args, deploy_nonce, gas)
+                    .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
+            }
+            Self::CalculateContractId {
+                addr,
+                code,
+                deploy_nonce,
+            } => {
+                let addr = match addr {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+
+                if code.extension().unwrap_or_default() != "wasm" {
+                    return Err(Error::InvalidWasmContractPath.into());
+                }
+
+                let code = std::fs::read(code)
+                    .map_err(|_| Error::InvalidWasmContractPath)?;
+
+                let contract_id =
+                    wallet.get_contract_id(addr, code, deploy_nonce)?;
+
+                Ok(RunResult::ContractId(contract_id))
             }
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),
@@ -887,6 +938,7 @@ pub enum RunResult {
     StakeInfo(StakeData, bool),
     Address(Box<Address>),
     Addresses(Vec<Address>),
+    ContractId([u8; 32]),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
@@ -943,6 +995,9 @@ impl fmt::Display for RunResult {
                 }?;
                 let reward = Dusk::from(data.reward);
                 write!(f, "> Accumulated reward is: {reward} DUSK")
+            }
+            ContractId(bytes) => {
+                write!(f, "> Contract ID: {:?}", bytes)
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();

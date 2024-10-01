@@ -10,7 +10,7 @@
 use crate::currency::Lux;
 
 /// The minimum gas limit
-pub const MIN_LIMIT: u64 = 350_000_000;
+pub const MIN_LIMIT: u64 = 50_000_00;
 
 /// The default gas limit
 pub const DEFAULT_LIMIT: u64 = 500_000_000;
