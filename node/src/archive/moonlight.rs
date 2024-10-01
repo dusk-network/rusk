@@ -11,7 +11,7 @@ use anyhow::{anyhow, Result};
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::{ContractTxEvent, TxHash};
-use rocksdb_lib::{
+use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, LogLevel,
     OptimisticTransactionDB, Options,
 };
@@ -388,11 +388,11 @@ mod tests {
 
     fn moonlight_event(
         origin: [u8; 32],
-        to: Option<AccountPublicKey>,
+        receiver: Option<AccountPublicKey>,
     ) -> ContractTxEvent {
         let moonlight_tx_event = MoonlightTransactionEvent {
-            from: AccountPublicKey::default(),
-            to,
+            sender: AccountPublicKey::default(),
+            receiver,
             value: 500,
             memo: vec![0, 1, 1, 0],
             gas_spent: 500,
@@ -414,7 +414,7 @@ mod tests {
 
     fn withdraw_event_moonlight() -> ContractTxEvent {
         let withdraw_event = WithdrawEvent {
-            contract: ContractId::from_bytes([5; CONTRACT_ID_BYTES]),
+            sender: ContractId::from_bytes([5; CONTRACT_ID_BYTES]),
             value: 100,
             receiver: WithdrawReceiver::Moonlight(AccountPublicKey::default()),
         };

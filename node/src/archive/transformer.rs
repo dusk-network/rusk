@@ -9,7 +9,8 @@ use std::collections::BTreeMap;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use execution_core::transfer::withdraw::WithdrawReceiver;
 use execution_core::transfer::{
-    ConvertEvent, MoonlightTransactionEvent, WithdrawEvent,
+    ConvertEvent, MoonlightTransactionEvent, WithdrawEvent, CONVERT_TOPIC,
+    MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
 };
 use node_data::events::contract::{ContractEvent, ContractTxEvent, TxHash};
 use serde::{Deserialize, Serialize};
@@ -79,7 +80,7 @@ pub(super) fn group_by_origins_filter_and_convert(
     for (tx_hash, group) in moonlight_is_already_grouped {
         let is_moonlight = group.iter().any(|event| {
             // Make sure that the events originate from the transfer contract.
-            if event.target.0 != execution_core::transfer::TRANSFER_CONTRACT {
+            if event.target.0 != TRANSFER_CONTRACT {
                 return false;
             }
 
@@ -91,7 +92,7 @@ pub(super) fn group_by_origins_filter_and_convert(
             3. Any convert event where the receiver is moonlight. (from phoenix)
             */
             match event.topic.as_str() {
-                "moonlight" => {
+                MOONLIGHT_TOPIC => {
                     /*
                         This also catches deposits & converts.
                         For deposits & convert the sender will be Some(pk) where pk is the same as the from field of the MoonlightTransactionEvent
@@ -101,11 +102,12 @@ pub(super) fn group_by_origins_filter_and_convert(
                             &event.data,
                         )
                     {
-                        address_mappings.push((moonlight_event.from, tx_hash));
-                        if let Some(to) = moonlight_event.to {
-                            if moonlight_event.from != to {
+                        address_mappings
+                            .push((moonlight_event.sender, tx_hash));
+                        if let Some(receiver) = moonlight_event.receiver {
+                            if moonlight_event.sender != receiver {
                                 // don't push if tx is sent to self
-                                address_mappings.push((to, tx_hash));
+                                address_mappings.push((receiver, tx_hash));
                             }
                         }
 
@@ -117,7 +119,7 @@ pub(super) fn group_by_origins_filter_and_convert(
                     }
                     false
                 }
-                "withdraw" | "mint" => {
+                WITHDRAW_TOPIC | MINT_TOPIC => {
                     if let Ok(withdraw_event) =
                         rkyv::from_bytes::<WithdrawEvent>(&event.data)
                     {
@@ -130,7 +132,7 @@ pub(super) fn group_by_origins_filter_and_convert(
                     }
                     false
                 }
-                "convert" => {
+                CONVERT_TOPIC => {
                     if let Ok(convert_event) =
                         rkyv::from_bytes::<ConvertEvent>(&event.data)
                     {

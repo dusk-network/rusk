@@ -12,7 +12,7 @@ use anyhow::Result;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
-use rocksdb_lib::OptimisticTransactionDB;
+use rocksdb::OptimisticTransactionDB;
 use sqlx::sqlite::SqlitePool;
 
 mod archivist;
