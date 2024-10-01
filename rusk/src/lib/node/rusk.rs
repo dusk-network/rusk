@@ -674,8 +674,8 @@ fn contract_deploy(
             Ok(_) => receipt.gas_spent += deploy_charge,
             Err(err) => {
                 info!("Tx caused deployment error {err:?}");
-                receipt.data =
-                    Err(ContractError::Panic("failed deployment".into()))
+                let msg = format!("failed deployment: {err:?}");
+                receipt.data = Err(ContractError::Panic(msg))
             }
         }
     }
