@@ -7,10 +7,9 @@ notes = [1_000_000_000_000]
 
 # Faucet wallet
 
-[[phoenix_balance]]
-address = '4LULsDGr3CkeZcVDSfM9UtNr1Xa9DF7HqCEnfnbsDH2HXkkoCfdQWKpEwKwPF6enrSVoTTfb2bGCB8v2VyHHFoUJ'
-seed = 0xdead_beef
-notes = [500_000_000_000_000_000]
+[[moonlight_account]]
+address = 'tUWiZxKqtVrP2uxqUAc593p1T5BW5MhPzjh8D2M32WFYpqjtBLbTAw6VhMN7BKYpaDjcy82GizsQ2pAgmguGTF9Bks3qNCDF3sDrpVWMXTJTWNGWgueHezvopEvUtZUs4mC'
+balance = 500_000_000_000_000_000
 
 # Faucet wallets (Fulvio)
 
