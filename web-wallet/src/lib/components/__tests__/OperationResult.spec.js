@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render } from "@testing-library/svelte";
+import { cleanup, fireEvent, render } from "@testing-library/svelte";
 
 import { rejectAfter, resolveAfter } from "$lib/dusk/promise";
 
@@ -71,7 +71,11 @@ describe("OperationResult", () => {
 
     const homeBtn = getByRole("link");
 
-    homeBtn.click();
+    // prevents the browser from attempting to navigate
+    // to the link's href, which jsdom cannot handle
+    homeBtn.addEventListener("click", (event) => event.preventDefault());
+
+    await fireEvent.click(homeBtn);
 
     expect(baseProps.onBeforeLeave).toHaveBeenCalledTimes(1);
   });
