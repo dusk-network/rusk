@@ -9,7 +9,7 @@ use std::{fmt, io};
 use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
-    BlsScalar, Dusk, Error as ExecErr,
+    BlsScalar, Error as ExecErr,
 };
 use rusk_abi::PiecrustError;
 
@@ -47,10 +47,6 @@ pub enum Error {
     Vm(PiecrustError),
     /// IO Errors
     Io(io::Error),
-    /// Bad block height in coinbase (got, expected)
-    CoinbaseBlockHeight(u64, u64),
-    /// Bad dusk spent in coinbase (got, expected).
-    CoinbaseDuskSpent(Dusk, Dusk),
     /// Failed to produce proper state
     #[cfg(feature = "chain")]
     InconsistentState(Box<dusk_consensus::operations::VerificationOutput>),
@@ -159,13 +155,6 @@ impl fmt::Display for Error {
             Error::Transaction(err) => write!(f, "Transaction Error: {err}"),
             Error::Phoenix(err) => write!(f, "Phoenix error: {err}"),
             Error::Other(err) => write!(f, "Other error: {err}"),
-            Error::CoinbaseBlockHeight(got, expected) => write!(
-                f,
-                "Coinbase has block height {got}, expected {expected}"
-            ),
-            Error::CoinbaseDuskSpent(got, expected) => {
-                write!(f, "Coinbase has dusk spent {got}, expected {expected}")
-            }
             Error::ProofVerification => write!(f, "Proof verification failure"),
             Error::OutOfGas => write!(f, "Out of gas"),
             Error::RepeatingNullifiers(n) => {
