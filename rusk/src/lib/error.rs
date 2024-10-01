@@ -25,6 +25,8 @@ pub enum Error {
     OutOfGas,
     /// Repeated nullifier in transaction verification
     RepeatingNullifiers(Vec<BlsScalar>),
+    /// Repeated nullifier in the same transaction
+    DoubleNullifiers,
     /// Repeating a nonce that has already been used
     RepeatingNonce(Box<BlsPublicKey>, u64),
     /// Wrong inputs and/or outputs in the transaction verification
@@ -169,6 +171,7 @@ impl fmt::Display for Error {
             Error::RepeatingNullifiers(n) => {
                 write!(f, "Nullifiers repeat: {n:?}")
             }
+            Error::DoubleNullifiers => write!(f, "Double nullifiers"),
             Error::RepeatingNonce(account, nonce) => {
                 let encoded_account =
                     bs58::encode(&account.to_bytes()).into_string();
