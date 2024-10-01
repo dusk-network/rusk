@@ -84,14 +84,14 @@ impl Serialize for Transaction {
             ProtocolTransaction::Moonlight(m) => {
                 state.serialize_field("type", "moonlight")?;
 
-                let from = m.sender();
-                let from = bs58::encode(from.to_bytes()).into_string();
-                state.serialize_field("from", &from)?;
+                let sender = m.sender();
+                let sender = bs58::encode(sender.to_bytes()).into_string();
+                state.serialize_field("sender", &sender)?;
 
-                let to = m
-                    .receiver()
-                    .map(|to| bs58::encode(to.to_bytes()).into_string());
-                state.serialize_field("to", &to)?;
+                let receiver = m.receiver().map(|receiver| {
+                    bs58::encode(receiver.to_bytes()).into_string()
+                });
+                state.serialize_field("receiver", &receiver)?;
 
                 state.serialize_field("value", &m.value())?;
 
