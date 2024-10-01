@@ -455,9 +455,7 @@ fn menu_op(
         .add(CMI::Back, "Back")
         .separator();
 
-    let msg;
-
-    if !is_synced {
+    let msg = if !is_synced {
         cmd_menu = Menu::new()
             .separator()
             .add(CMI::StakeInfo, "Check Existing Stake")
@@ -466,10 +464,10 @@ fn menu_op(
             .add(CMI::Back, "Back")
             .separator();
 
-        msg = "Not Synced yet, Come back after its done."
+        "Not Synced yet, Come back after its done."
     } else {
-        msg = "What do you want to do?"
-    }
+        "What do you like to do?"
+    };
 
     let q = Question::select("theme")
         .message(msg)
