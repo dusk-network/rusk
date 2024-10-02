@@ -73,34 +73,50 @@ pub(crate) async fn run_loop(
             addr: wallet.bls_public_key(addr.index()?),
         };
 
+        let is_synced = wallet.is_synced().await?;
+
         loop {
             // get balance for this address
             prompt::hide_cursor()?;
-            let phoenix_bal = wallet.get_phoenix_balance(&addr).await?;
             let moonlight_bal =
                 wallet.get_moonlight_balance(&moonlight).await?;
-            let spendable = phoenix_bal.spendable.into();
-            let total: Dusk = phoenix_bal.value.into();
+            let phoenix_bal = wallet.get_phoenix_balance(&addr).await?;
+            let phoenix_spendable = phoenix_bal.spendable.into();
+            let phoenix_total: Dusk = phoenix_bal.value.into();
 
             prompt::hide_cursor()?;
 
             // display address information
             println!();
             println!();
-            println!("{0: <20} - Total: {moonlight_bal}", "Moonlight Balance");
+            if is_synced {
+                println!(
+                    "{0: <20} - Total: {moonlight_bal}",
+                    "Moonlight Balance",
+                );
+            }
             println!("{0: <20} {moonlight}", "Moonlight Address");
 
             println!();
-            println!("{0: <20} - Spendable: {spendable}", "Phoenix Balance",);
-            println!("{0: <20} - Total: {total}", "");
+            if is_synced {
+                println!(
+                    "{0: <20} - Spendable: {phoenix_spendable}",
+                    "Phoenix Balance",
+                );
+                println!("{0: <20} - Total: {phoenix_total}", "",);
+            }
             println!("{0: <20} {addr}", "Phoenix Address");
             println!();
 
             // request operation to perform
             let op = match wallet.is_online().await {
-                true => {
-                    menu_op(addr.clone(), spendable, moonlight_bal, settings)
-                }
+                true => menu_op(
+                    addr.clone(),
+                    phoenix_spendable,
+                    moonlight_bal,
+                    settings,
+                    is_synced,
+                ),
                 false => menu_op_offline(addr.clone(), settings),
             };
 
@@ -417,10 +433,11 @@ fn menu_op(
     phoenix_balance: Dusk,
     moonlight_balance: Dusk,
     settings: &Settings,
+    is_synced: bool,
 ) -> anyhow::Result<AddrOp> {
     use CommandMenuItem as CMI;
 
-    let cmd_menu = Menu::new()
+    let mut cmd_menu = Menu::new()
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
@@ -431,8 +448,21 @@ fn menu_op(
         .add(CMI::Back, "Back")
         .separator();
 
+    let msg = if !is_synced {
+        cmd_menu = Menu::new()
+            .add(CMI::StakeInfo, "Check Existing Stake")
+            .add(CMI::Export, "Export provisioner key-pair")
+            .separator()
+            .add(CMI::Back, "Back")
+            .separator();
+
+        "The wallet is still syncing. Please come back to display new information."
+    } else {
+        "What do you like to do?"
+    };
+
     let q = Question::select("theme")
-        .message("What would you like to do?")
+        .message(msg)
         .choices(cmd_menu.clone())
         .build();
 
