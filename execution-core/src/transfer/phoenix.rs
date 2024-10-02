@@ -21,9 +21,12 @@ use crate::{
     signatures::schnorr::{
         SecretKey as SchnorrSecretKey, Signature as SchnorrSignature,
     },
-    transfer::data::{
-        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-        MAX_MEMO_SIZE,
+    transfer::{
+        data::{
+            ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+            MAX_MEMO_SIZE,
+        },
+        MINIMUM_GAS_PRICE,
     },
     BlsScalar, Error, JubJubAffine, JubJubScalar,
 };
