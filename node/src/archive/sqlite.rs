@@ -243,7 +243,7 @@ impl Archivist for Archive {
         address: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
         // Get the moonlight events for the given public key from rocksdb
-        self.get_moonlight_events(address)
+        self.moonlight_txs_by_pk(address)
     }
 }
 

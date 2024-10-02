@@ -8,6 +8,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use core::result::Result as CoreResult;
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::{ContractTxEvent, TxHash};
@@ -15,7 +16,7 @@ use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, LogLevel,
     OptimisticTransactionDB, Options,
 };
-use tracing::{debug, info, warn};
+use tracing::{debug, info, warn, error};
 
 use crate::archive::transformer::{self, MoonlightTxEvents};
 use crate::archive::{Archive, ArchiveOptions};
@@ -215,12 +216,56 @@ impl Archive {
     /// This can be a "moonlight" event or
     /// a "withdraw", "mint" or "convert" event, where there is a Moonlight
     /// address as WithdrawReceiver
-    pub fn get_moonlight_events(
+    pub fn moonlight_txs_by_pk(
         &self,
         pk: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
         if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
-            self.get_moonlight_events_by_tx_ids(tx_hashes)
+            let raw = self.multi_get_moonlight_events(tx_hashes)?;
+
+            let mut deserialized_events =
+                Vec::with_capacity(raw.len());
+
+            for serialized_event in raw {
+                if let Ok(Some(e)) = serialized_event {
+                    deserialized_events
+                        .push(serde_json::from_slice::<MoonlightTxEvents>(&e)?);
+                } else {
+                    warn!("Serialized moonlight event not found");
+                    continue;
+                }
+            }
+
+            Ok(Some(deserialized_events))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn raw_moonlight_txs_by_pk(
+        &self,
+        pk: AccountPublicKey,
+    ) -> Result<Option<Vec<Vec<u8>>>> {
+        if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
+            let serialized_events = self.multi_get_moonlight_events(tx_hashes)?;
+
+            // Convert the Vec<Result<Option<Vec<u8>>> into a Vec<Vec<u8>> by throwing away the
+            // errors and None values
+            let mut cleaned_serialized_events = Vec::with_capacity(serialized_events.len());
+            let _ = serialized_events
+                .into_iter()
+                .map(|entry| match entry {
+                    Ok(Some(v)) => cleaned_serialized_events.push(v),
+                    Ok(None) => {
+                        warn!("Serialized moonlight event not found")
+                    },
+                    Err(e) => {
+                        error!("Error while fetching serialized moonlight event: {:?}", e)
+                    }
+                })
+                ;
+
+            Ok(Some(cleaned_serialized_events))
         } else {
             Ok(None)
         }
@@ -244,7 +289,7 @@ impl Archive {
     }
 
     /// Get MoonlightTxEvents for a given TxHash.
-    pub fn get_moonlight_events_by_tx_id(
+    pub fn get_moonlight_events(
         &self,
         tx_id: TxHash,
     ) -> Result<Option<MoonlightTxEvents>> {
@@ -260,28 +305,15 @@ impl Archive {
     }
 
     /// Get multiple MoonlightTxEvents for a given list of TxHash.
-    fn get_moonlight_events_by_tx_ids(
+    fn multi_get_moonlight_events(
         &self,
         tx_ids: Vec<TxHash>,
-    ) -> Result<Option<Vec<MoonlightTxEvents>>> {
+    ) -> Result<Vec<CoreResult<Option<Vec<u8>>, rocksdb::Error>>> {
         let txn = self.moonlight_db.transaction();
 
         let keys = self.tx_hashes_multiget_key_tuple(tx_ids)?;
 
-        let serialized_events = txn.multi_get_cf(keys);
-        let mut contract_events = Vec::with_capacity(serialized_events.len());
-
-        for serialized_event in serialized_events {
-            if let Ok(Some(e)) = serialized_event {
-                contract_events
-                    .push(serde_json::from_slice::<MoonlightTxEvents>(&e)?);
-            } else {
-                warn!("Serialized event not found");
-                continue;
-            }
-        }
-
-        Ok(Some(contract_events))
+        Ok(txn.multi_get_cf(keys))
     }
 }
 
@@ -519,7 +551,7 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let pk = AccountPublicKey::default();
-        assert!(archive.get_moonlight_events(pk).unwrap().is_none());
+        assert!(archive.moonlight_txs_by_pk(pk).unwrap().is_none());
 
         let block_events = block_events();
 
@@ -530,9 +562,7 @@ mod tests {
             archive.get_moonlight_tx_id(pk).unwrap().unwrap();
 
         let fetched_events_by_tx_hash = archive
-            .get_moonlight_events_by_tx_ids(fetched_tx_hashes.clone())
-            .unwrap()
-            .unwrap();
+            .moonlight_txs_by_pk(pk).unwrap().unwrap();
 
         assert_eq!(fetched_tx_hashes.len(), 5);
 
@@ -589,7 +619,7 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
         let pk = AccountPublicKey::default();
 
-        assert!(archive.get_moonlight_events(pk).unwrap().is_none());
+        assert!(archive.moonlight_txs_by_pk(pk).unwrap().is_none());
 
         let block_events = block_events();
 
@@ -599,7 +629,7 @@ mod tests {
             archive.get_moonlight_tx_id(pk).unwrap().unwrap();
 
         let fetched_events_by_tx_hash = archive
-            .get_moonlight_events_by_tx_id(fetched_tx_hashes[0])
+            .get_moonlight_events(fetched_tx_hashes[0])
             .unwrap()
             .unwrap();
 
