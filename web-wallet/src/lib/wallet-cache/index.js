@@ -1,6 +1,14 @@
 import { Dexie } from "dexie";
 import { head, isUndefined, pairs, pipe, skipIf, unless, when } from "lamb";
 
+/**
+ * Not importing from "$lib/wallet" because for some reason
+ * while running tests the export of `initializeWallet` there
+ * causes this bug to happen:
+ * https://github.com/nodejs/undici/issues/2663
+ */
+import notesArrayToMap from "$lib/wallet/notesArrayToMap";
+
 /** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] }} RawCriteria */
 /** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | undefined} Criteria */
 
@@ -18,6 +26,24 @@ const toCriteria = pipe([
 class WalletCache {
   /** @type {Dexie} */
   #db;
+
+  /** @type {WalletCacheTreasury} */
+  #treasury = {
+    address: async (profile) => {
+      /** @type {WalletCacheNote[]} */
+      const result = [];
+      const address = profile.address.toString();
+      const notes = await this.getUnspentNotes([address]);
+
+      for (const note of notes) {
+        if ((await this.getPendingNotesInfo([note.nullifier])).length === 0) {
+          result.push(note);
+        }
+      }
+
+      return notesArrayToMap(result);
+    },
+  };
 
   /**
    * @template {WalletCacheTableName} TName
@@ -72,6 +98,11 @@ class WalletCache {
         await this.#db.table("unspentNotes").bulkPut(notes);
       })
       .finally(() => this.#db.close());
+  }
+
+  /** @type {WalletCacheTreasury} */
+  get treasury() {
+    return this.#treasury;
   }
 
   /** @returns {Promise<void>} */
