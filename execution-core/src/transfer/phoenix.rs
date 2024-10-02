@@ -35,6 +35,9 @@ pub use phoenix_core::{
     StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
 };
 
+/// The minimum gas price
+pub const MINIMUM_GAS_PRICE: u64 = 1;
+
 /// The depth of the merkle tree of notes stored in the transfer-contract.
 pub const NOTES_TREE_DEPTH: usize = 17;
 /// The arity of the merkle tree of notes stored in the transfer-contract.
@@ -164,6 +167,11 @@ impl Transaction {
 
         if input_value < transfer_value + max_fee + deposit {
             return Err(Error::InsufficientBalance);
+        }
+
+        // Check if the gas price is lower than the minimum: 1
+        if gas_price < MINIMUM_GAS_PRICE {
+            return Err(Error::GasPriceTooLow);
         }
 
         // Generate output notes:

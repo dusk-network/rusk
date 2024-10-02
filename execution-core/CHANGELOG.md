@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `groth16` module allowing for proof generation and verification
 
+### Changed 
+
+- Moved the `gas_price` check back from the `econ_protocol` back to the transfer contract
+
 ## [0.1.0] - 2024-09-10
 
 ### Added

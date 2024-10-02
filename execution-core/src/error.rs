@@ -14,6 +14,8 @@ use core::fmt;
 pub enum Error {
     /// There is not sufficient balance to cover the transaction costs.
     InsufficientBalance,
+    /// Gas price is too low.
+    GasPriceTooLow,
     /// A transaction input has been used already.
     Replay,
     /// The input-note doesn't belong to the given key.
