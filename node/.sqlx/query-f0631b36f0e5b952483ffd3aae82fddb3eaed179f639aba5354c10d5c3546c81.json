@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT json_contract_events FROM archive WHERE block_hash = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "json_contract_events",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f0631b36f0e5b952483ffd3aae82fddb3eaed179f639aba5354c10d5c3546c81"
+}
