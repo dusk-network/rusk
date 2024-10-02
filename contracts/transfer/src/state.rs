@@ -22,7 +22,7 @@ use execution_core::{
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
             Note, NoteLeaf, NoteOpening, Sender,
-            Transaction as PhoenixTransaction,
+            Transaction as PhoenixTransaction, MINIMUM_GAS_PRICE,
         },
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
@@ -465,6 +465,10 @@ impl TransferState {
         &mut self,
         tx: Transaction,
     ) -> Result<Vec<u8>, ContractError> {
+        if tx.gas_price() < MINIMUM_GAS_PRICE {
+            panic!("Gas price is too low!");
+        }
+
         transitory::put_transaction(tx);
         let tx = transitory::transaction();
 

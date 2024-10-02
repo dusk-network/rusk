@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change dependencies declarations enforce bytecheck [#1371]
+- Moved the `gas_price` check back from the `econ_protocol` back to the transfer contract
 
 ### Removed
 
