@@ -26,7 +26,6 @@ use zeroize::Zeroize;
 use execution_core::{
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     transfer::{data::TransactionData, phoenix::NoteLeaf, Transaction},
-    CONTRACT_ID_BYTES,
 };
 use wallet_core::{
     phoenix_balance,
@@ -1024,27 +1023,19 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender: &Address,
         bytes_code: Vec<u8>,
         init_args: Vec<u8>,
-        deploy_nonce: u64,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
         let sender_index = sender.index()?;
-        let pk = &self.bls_public_key(sender_index);
+        let pk = sender.apk()?;
         let nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let mut sender_sk = self.bls_secret_key(sender_index);
 
         let deploy = moonlight_deployment(
-            &sender_sk,
-            bytes_code,
-            pk,
-            init_args,
-            gas.limit,
-            gas.price,
-            nonce,
-            deploy_nonce,
-            chain_id,
+            &sender_sk, bytes_code, pk, init_args, gas.limit, gas.price, nonce,
+            0, chain_id,
         )?;
 
         sender_sk.zeroize();
@@ -1058,7 +1049,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender: &Address,
         bytes_code: Vec<u8>,
         init_args: Vec<u8>,
-        deploy_nonce: u64,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
@@ -1074,18 +1064,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let apk = self.bls_public_key(sender_index);
 
         let deploy = phoenix_deployment(
-            &mut rng,
-            &sender_sk,
-            inputs,
-            root,
-            bytes_code,
-            &apk,
-            init_args,
-            deploy_nonce,
-            gas.limit,
-            gas.price,
-            chain_id,
-            &Prover,
+            &mut rng, &sender_sk, inputs, root, bytes_code, &apk, init_args, 0,
+            gas.limit, gas.price, chain_id, &Prover,
         )?;
 
         sender_sk.zeroize();
@@ -1159,29 +1139,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .ok_or(Error::AddressNotOwned)
     }
 
-    /// Generate a contract id given bytes and nonce
-    pub fn get_contract_id(
-        &self,
-        addr: &Address,
-        bytes: Vec<u8>,
-        nonce: u64,
-    ) -> Result<[u8; CONTRACT_ID_BYTES], Error> {
-        let index = addr.index()?;
-        let owner = self.bls_public_key(index).to_bytes();
-
-        let mut hasher = blake2b_simd::Params::new()
-            .hash_length(CONTRACT_ID_BYTES)
-            .to_state();
-        hasher.update(bytes.as_ref());
-        hasher.update(&nonce.to_le_bytes()[..]);
-        hasher.update(owner.as_ref());
-        hasher
-            .finalize()
-            .as_bytes()
-            .try_into()
-            .map_err(|_| Error::InvalidContractId)
-    }
-
     /// Return the dat file version from memory or by reading the file
     /// In order to not read the file version more than once per execution
     pub fn get_file_version(&self) -> Result<DatFileVersion, Error> {
@@ -1192,15 +1149,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         } else {
             Err(Error::WalletFileMissing)
         }
-    }
-
-    /// Check if the wallet is synced
-    pub async fn is_synced(&mut self) -> Result<bool, Error> {
-        let state = self.state()?;
-        let db_pos = state.cache().last_pos()?.unwrap_or(0);
-        let network_last_pos = state.fetch_num_notes().await? - 1;
-
-        Ok(network_last_pos == db_pos)
     }
 
     /// Close the wallet and zeroize the seed

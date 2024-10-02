@@ -296,9 +296,9 @@ pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
         .message("Introduce the gas price for this transaction:")
         .default(Dusk::from(gas::DEFAULT_PRICE).into())
         .validate_on_key(|f, _| {
-            check_valid_denom(f, MAX_CONVERTIBLE, MIN_CONVERTIBLE).is_ok()
+            check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
         })
-        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE, MIN_CONVERTIBLE))
+        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE))
         .build();
 
     let a = requestty::prompt_one(question)?;
@@ -348,24 +348,6 @@ pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
 
     let a = requestty::prompt_one(question)?;
     let bytes = hex::decode(a.as_string().expect("answer to be a string"))?;
-
-    Ok(bytes)
-}
-
-pub(crate) fn request_nonce() -> anyhow::Result<u64> {
-    let question = requestty::Question::input("Contract Deployment nonce")
-        .message("Introduce a number for nonce")
-        .validate_on_key(|f, _| u64::from_str(f).is_ok())
-        .validate(|f, _| {
-            u64::from_str(f)
-                .is_ok()
-                .then_some(())
-                .ok_or("Invalid number".to_owned())
-        })
-        .build();
-
-    let a = requestty::prompt_one(question)?;
-    let bytes = u64::from_str(a.as_string().expect("answer to be a string"))?;
 
     Ok(bytes)
 }
