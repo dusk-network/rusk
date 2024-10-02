@@ -264,7 +264,7 @@ fn transaction_op_menu_moonlight(
         })),
         Stake => AddrOp::Run(Box::new(Command::MoonlightStake {
             addr: Some(addr),
-            amt: prompt::request_token_amt("stake", moonlight_bal)?,
+            amt: prompt::request_stake_token_amt(moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -351,7 +351,7 @@ fn transaction_op_menu_phoenix(
         })),
         Stake => AddrOp::Run(Box::new(Command::PhoenixStake {
             addr: Some(addr),
-            amt: prompt::request_token_amt("stake", phoenix_balance)?,
+            amt: prompt::request_stake_token_amt(phoenix_balance)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
