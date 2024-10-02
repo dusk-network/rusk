@@ -230,9 +230,9 @@ fn transaction_op_menu_moonlight(
         .add(Memo, "Moonlight Transfer with Memo")
         .add(Stake, "Moonlight Stake")
         .add(Unstake, "Moonlight Unstake")
-        .add(Withdraw, "Moonlight Withdraw")
+        .add(Withdraw, "Moonlight Withdraw Stake Reward")
         .add(ContractDeploy, "Moonlight Contract Deploy")
-        .add(ContractCall, "Moonlight Contract call")
+        .add(ContractCall, "Moonlight Contract Call")
         //.add(History, "Moonlight Transaction History")
         .separator()
         .add(Back, "Back");
@@ -264,7 +264,7 @@ fn transaction_op_menu_moonlight(
         })),
         Stake => AddrOp::Run(Box::new(Command::MoonlightStake {
             addr: Some(addr),
-            amt: prompt::request_token_amt("stake", moonlight_bal)?,
+            amt: prompt::request_stake_token_amt(moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
@@ -314,9 +314,9 @@ fn transaction_op_menu_phoenix(
         .add(Memo, "Phoenix Transfer with Memo")
         .add(Stake, "Phoenix Stake")
         .add(Unstake, "Phoenix Unstake")
-        .add(Withdraw, "Phoenix Withdraw")
+        .add(Withdraw, "Phoenix Withdraw Stake Reward")
         .add(ContractDeploy, "Phoenix Contract Deploy")
-        .add(ContractCall, "Phoenix Contract call")
+        .add(ContractCall, "Phoenix Contract Call")
         .add(History, "Phoenix Transaction History")
         .separator()
         .add(Back, "Back");
@@ -351,7 +351,7 @@ fn transaction_op_menu_phoenix(
         })),
         Stake => AddrOp::Run(Box::new(Command::PhoenixStake {
             addr: Some(addr),
-            amt: prompt::request_token_amt("stake", phoenix_balance)?,
+            amt: prompt::request_stake_token_amt(phoenix_balance)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),

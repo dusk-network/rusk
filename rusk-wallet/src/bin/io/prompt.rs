@@ -15,6 +15,7 @@ use crossterm::{
 
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
+use execution_core::stake::MINIMUM_STAKE;
 use requestty::Question;
 
 use rusk_wallet::gas;
@@ -236,15 +237,15 @@ fn check_valid_denom(
     }
 }
 
-/// Request amount of tokens that can be 0
-pub(crate) fn request_optional_token_amt(
+/// Request an amount of token larger than a given min.
+fn request_token(
     action: &str,
+    min: Dusk,
     balance: Dusk,
 ) -> anyhow::Result<Dusk> {
-    let min = Dusk::from(0);
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount of DUSK to {}:", action))
-        .default(MIN_CONVERTIBLE.into())
+        .default(min.into())
         .validate_on_key(|f, _| check_valid_denom(f, min, balance).is_ok())
         .validate(|f, _| check_valid_denom(f, min, balance))
         .build();
@@ -260,16 +261,22 @@ pub(crate) fn request_token_amt(
     balance: Dusk,
 ) -> anyhow::Result<Dusk> {
     let min = MIN_CONVERTIBLE;
-    let question = requestty::Question::float("amt")
-        .message(format!("Introduce the amount of DUSK to {}:", action))
-        .default(min.into())
-        .validate_on_key(|f, _| check_valid_denom(f, min, balance).is_ok())
-        .validate(|f, _| check_valid_denom(f, min, balance))
-        .build();
+    request_token(action, min, balance)
+}
 
-    let a = requestty::prompt_one(question)?;
+/// Request amount of tokens that can be 0
+pub(crate) fn request_optional_token_amt(
+    action: &str,
+    balance: Dusk,
+) -> anyhow::Result<Dusk> {
+    let min = Dusk::from(0);
+    request_token(action, min, balance)
+}
 
-    Ok(a.as_float().expect("answer to be a float").into())
+/// Request amount of tokens that can be 0
+pub(crate) fn request_stake_token_amt(balance: Dusk) -> anyhow::Result<Dusk> {
+    let min: Dusk = MINIMUM_STAKE.into();
+    request_token("stake", min, balance)
 }
 
 /// Request gas limit
