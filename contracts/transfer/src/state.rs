@@ -22,7 +22,7 @@ use execution_core::{
         moonlight::{AccountData, Transaction as MoonlightTransaction},
         phoenix::{
             Note, NoteLeaf, NoteOpening, Sender,
-            Transaction as PhoenixTransaction, MINIMUM_GAS_PRICE,
+            Transaction as PhoenixTransaction,
         },
         withdraw::{
             Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
@@ -32,8 +32,9 @@ use execution_core::{
         MoonlightTransactionEvent, PhoenixTransactionEvent,
         ReceiveFromContract, Transaction, WithdrawEvent,
         CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC,
-        DEPOSIT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY,
-        PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
+        DEPOSIT_TOPIC, MINIMUM_GAS_PRICE, MINT_TOPIC, MOONLIGHT_TOPIC,
+        PANIC_NONCE_NOT_READY, PHOENIX_TOPIC, TRANSFER_CONTRACT,
+        WITHDRAW_TOPIC,
     },
     BlsScalar, ContractError, ContractId,
 };
