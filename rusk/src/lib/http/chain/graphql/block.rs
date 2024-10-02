@@ -12,7 +12,7 @@ pub async fn block_by_height(
     ctx: &Context<'_>,
     height: f64,
 ) -> OptResult<Block> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let block_hash = db.read().await.view(|t| {
         if height >= 0f64 {
             t.fetch_block_hash_by_height(height as u64)
@@ -29,7 +29,7 @@ pub async fn block_by_height(
 }
 
 pub async fn last_block(ctx: &Context<'_>) -> FieldResult<Block> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let block = db.read().await.view(|t| {
         let hash = t.op_read(MD_HASH_KEY)?;
         match hash {
@@ -47,7 +47,7 @@ pub async fn block_by_hash(
     ctx: &Context<'_>,
     hash: String,
 ) -> OptResult<Block> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
     let header = db.read().await.view(|t| t.fetch_light_block(&hash))?;
     Ok(header.map(Block::from))
@@ -60,7 +60,7 @@ pub async fn last_blocks(
     if (count < 1) {
         return Err(FieldError::new("count must be positive"));
     }
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let last_block = last_block(ctx).await?;
     let mut hash_to_search = last_block.header().prev_block_hash;
     let blocks = db.read().await.view(|t| {
@@ -86,7 +86,7 @@ pub async fn blocks_range(
     from: u64,
     to: u64,
 ) -> FieldResult<Vec<Block>> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let mut blocks = db.read().await.view(|t| {
         let mut blocks = vec![];
         let mut hash_to_search = None;

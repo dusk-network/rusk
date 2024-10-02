@@ -14,13 +14,19 @@ use tx::*;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
 use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
+#[cfg(feature = "archive")]
+use node::archive::{Archive, MoonlightTxEvents};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub type DBContext = Arc<RwLock<Backend>>;
+#[cfg(feature = "archive")]
+pub type DBContext = (Arc<RwLock<Backend>>, Archive);
+#[cfg(not(feature = "archive"))]
+pub type DBContext = (Arc<RwLock<Backend>>, ());
+
 pub type OptResult<T> = FieldResult<Option<T>>;
 
 pub struct Query;
