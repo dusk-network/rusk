@@ -232,7 +232,7 @@ fn transaction_op_menu_moonlight(
         .add(Unstake, "Moonlight Unstake")
         .add(Withdraw, "Moonlight Withdraw Stake Reward")
         .add(ContractDeploy, "Moonlight Contract Deploy")
-        .add(ContractCall, "Moonlight Contract call")
+        .add(ContractCall, "Moonlight Contract Call")
         //.add(History, "Moonlight Transaction History")
         .separator()
         .add(Back, "Back");
@@ -316,7 +316,7 @@ fn transaction_op_menu_phoenix(
         .add(Unstake, "Phoenix Unstake")
         .add(Withdraw, "Phoenix Withdraw Stake Reward")
         .add(ContractDeploy, "Phoenix Contract Deploy")
-        .add(ContractCall, "Phoenix Contract call")
+        .add(ContractCall, "Phoenix Contract Call")
         .add(History, "Phoenix Transaction History")
         .separator()
         .add(Back, "Back");
