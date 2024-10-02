@@ -101,10 +101,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         class="settings-group__multi-control-content svelte-1kathp5"
       >
         <label
-          class="gas-control svelte-14slcjg"
+          class="gas-control svelte-1p4ekyk"
         >
           <span
-            class="gas-control__label svelte-14slcjg"
+            class="gas-control__label svelte-1p4ekyk"
           >
             Price: (lux)
           </span>
@@ -120,10 +120,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         </label>
          
         <label
-          class="gas-control svelte-14slcjg"
+          class="gas-control svelte-1p4ekyk"
         >
           <span
-            class="gas-control__label svelte-14slcjg"
+            class="gas-control__label svelte-1p4ekyk"
           >
             Gas Limit: (unit)
           </span>
@@ -639,10 +639,10 @@ exports[`Settings > should render the settings page 1`] = `
         class="settings-group__multi-control-content svelte-1kathp5"
       >
         <label
-          class="gas-control svelte-14slcjg"
+          class="gas-control svelte-1p4ekyk"
         >
           <span
-            class="gas-control__label svelte-14slcjg"
+            class="gas-control__label svelte-1p4ekyk"
           >
             Price: (lux)
           </span>
@@ -658,10 +658,10 @@ exports[`Settings > should render the settings page 1`] = `
         </label>
          
         <label
-          class="gas-control svelte-14slcjg"
+          class="gas-control svelte-1p4ekyk"
         >
           <span
-            class="gas-control__label svelte-14slcjg"
+            class="gas-control__label svelte-1p4ekyk"
           >
             Gas Limit: (unit)
           </span>

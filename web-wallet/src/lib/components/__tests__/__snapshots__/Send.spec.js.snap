@@ -2,7 +2,7 @@
 
 exports[`Send > Address step > should render the Send component Address step 1`] = `
 <div
-  class="operation svelte-qsi9hi"
+  class="operation svelte-npcavd"
 >
   <div
     class="dusk-wizard"
@@ -79,10 +79,10 @@ exports[`Send > Address step > should render the Send component Address step 1`]
      
      
     <div
-      class="operation__send svelte-qsi9hi"
+      class="operation__send svelte-npcavd"
     >
       <div
-        class="operation__address-wrapper svelte-qsi9hi"
+        class="operation__address-wrapper svelte-npcavd"
       >
         <p>
           Enter address:
@@ -201,7 +201,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
 
 exports[`Send > Amount step > should render the Send component Amount state with Allocate option 1`] = `
 <div
-  class="operation svelte-qsi9hi"
+  class="operation svelte-npcavd"
 >
   <div
     class="dusk-wizard"
@@ -280,7 +280,7 @@ exports[`Send > Amount step > should render the Send component Amount state with
      
      
     <div
-      class="operation__send svelte-qsi9hi"
+      class="operation__send svelte-npcavd"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
@@ -334,7 +334,7 @@ exports[`Send > Amount step > should render the Send component Amount state with
       </div>
        
       <div
-        class="operation__amount-wrapper svelte-qsi9hi"
+        class="operation__amount-wrapper svelte-npcavd"
       >
         <p>
           Enter amount:
@@ -353,7 +353,7 @@ exports[`Send > Amount step > should render the Send component Amount state with
       </div>
        
       <div
-        class="operation__input-wrapper svelte-qsi9hi"
+        class="operation__input-wrapper svelte-npcavd"
       >
         <input
           class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -503,7 +503,7 @@ exports[`Send > Amount step > should render the Send component Amount state with
 
 exports[`Send > Amount step > should render the Send component Amount step 1`] = `
 <div
-  class="operation svelte-qsi9hi"
+  class="operation svelte-npcavd"
 >
   <div
     class="dusk-wizard"
@@ -582,7 +582,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
      
      
     <div
-      class="operation__send svelte-qsi9hi"
+      class="operation__send svelte-npcavd"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
@@ -624,7 +624,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__amount-wrapper svelte-qsi9hi"
+        class="operation__amount-wrapper svelte-npcavd"
       >
         <p>
           Enter amount:
@@ -643,7 +643,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__input-wrapper svelte-qsi9hi"
+        class="operation__input-wrapper svelte-npcavd"
       >
         <input
           class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -793,7 +793,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
 
 exports[`Send > Review step > should render the Send component Review step 1`] = `
 <div
-  class="operation svelte-qsi9hi"
+  class="operation svelte-npcavd"
 >
   <div
     class="dusk-wizard"
@@ -874,7 +874,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
      
      
     <div
-      class="operation__send svelte-qsi9hi"
+      class="operation__send svelte-npcavd"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
@@ -921,10 +921,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </span>
        
       <dl
-        class="operation__review-transaction svelte-qsi9hi"
+        class="operation__review-transaction svelte-npcavd"
       >
         <dt
-          class="review-transaction__label svelte-qsi9hi"
+          class="review-transaction__label svelte-npcavd"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -943,7 +943,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="review-transaction__value operation__review-amount svelte-qsi9hi"
+          class="review-transaction__value operation__review-amount svelte-npcavd"
         >
           <span>
             2,345.000000000
@@ -965,10 +965,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <dl
-        class="operation__review-transaction svelte-qsi9hi"
+        class="operation__review-transaction svelte-npcavd"
       >
         <dt
-          class="review-transaction__label svelte-qsi9hi"
+          class="review-transaction__label svelte-npcavd"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -987,7 +987,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="operation__review-address svelte-qsi9hi"
+          class="operation__review-address svelte-npcavd"
         >
           <span>
             47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM

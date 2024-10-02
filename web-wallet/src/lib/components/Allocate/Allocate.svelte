@@ -362,10 +362,6 @@
       width: 100%;
     }
 
-    :global(&__input-field:invalid) {
-      color: var(--error-color);
-    }
-
     :global(&__review-notice) {
       text-align: center;
     }

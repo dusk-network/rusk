@@ -360,10 +360,6 @@
       justify-content: flex-start;
     }
 
-    :global(&__input-field:invalid) {
-      color: var(--error-color);
-    }
-
     :global(&__review-notice) {
       text-align: center;
     }
