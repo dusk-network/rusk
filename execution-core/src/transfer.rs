@@ -53,6 +53,8 @@ pub const DEPOSIT_TOPIC: &str = "deposit";
 pub const CONVERT_TOPIC: &str = "convert";
 /// Topic for the mint event.
 pub const MINT_TOPIC: &str = "mint";
+/// The minimum gas price
+pub const MINIMUM_GAS_PRICE: u64 = 1;
 
 use data::{ContractCall, ContractDeploy, TransactionData};
 use moonlight::Transaction as MoonlightTransaction;

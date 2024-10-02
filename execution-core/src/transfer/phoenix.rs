@@ -35,9 +35,6 @@ pub use phoenix_core::{
     StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
 };
 
-/// The minimum gas price
-pub const MINIMUM_GAS_PRICE: u64 = 1;
-
 /// The depth of the merkle tree of notes stored in the transfer-contract.
 pub const NOTES_TREE_DEPTH: usize = 17;
 /// The arity of the merkle tree of notes stored in the transfer-contract.
