@@ -47,6 +47,9 @@ pub enum Error {
     /// Not enough balance to perform transaction
     #[error("Insufficient balance to perform this operation")]
     NotEnoughBalance,
+    /// Gas price is too low
+    #[error("Gas price is too low")]
+    GasPriceTooLow,
     /// Amount to transfer/stake cannot be zero
     #[error("Amount to transfer/stake cannot be zero")]
     AmountIsZero,
@@ -151,6 +154,7 @@ impl From<execution_core::Error> for Error {
 
         match e {
             InsufficientBalance => Self::NotEnoughBalance,
+            GasPriceTooLow => Self::GasPriceTooLow,
             Replay => Self::Transaction("Replay".to_string()),
             PhoenixOwnership => Self::AddressNotOwned,
             PhoenixCircuit(s) | PhoenixProver(s) => Self::ProverError(s),
