@@ -57,16 +57,44 @@ impl Archive {
     /// Fetch the json string of all vm events from a given block height
     pub async fn fetch_json_vm_events(
         &self,
-        block_height: u64,
+        block_height: i64,
     ) -> Result<String> {
-        let block_height: i64 = block_height as i64;
-
         let mut conn = self.sqlite_archive.acquire().await?;
 
         let events = sqlx::query!(
             r#"SELECT json_contract_events FROM archive WHERE block_height = ?"#,
             block_height
         ).fetch_one(&mut *conn).await?;
+
+        Ok(events.json_contract_events)
+    }
+
+    /// Fetch the json string of all vm events from the last finalized block
+    pub async fn fetch_json_last_vm_events(&self) -> Result<String> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let events = sqlx::query!(
+            r#"SELECT json_contract_events FROM archive WHERE finalized = 1 ORDER BY block_height DESC LIMIT 1"#
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(events.json_contract_events)
+    }
+
+    /// Fetch the json string of all vm events from a given block height
+    pub async fn fetch_json_vm_events_by_blk_hash(
+        &self,
+        hex_block_hash: &str,
+    ) -> Result<String> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let events = sqlx::query!(
+            r#"SELECT json_contract_events FROM archive WHERE block_hash = ?"#,
+            hex_block_hash
+        )
+        .fetch_one(&mut *conn)
+        .await?;
 
         Ok(events.json_contract_events)
     }

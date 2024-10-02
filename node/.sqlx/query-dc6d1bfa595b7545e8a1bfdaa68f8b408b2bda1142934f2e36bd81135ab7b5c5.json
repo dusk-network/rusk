@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT json_contract_events FROM archive WHERE finalized = 1 ORDER BY block_height DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "json_contract_events",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "dc6d1bfa595b7545e8a1bfdaa68f8b408b2bda1142934f2e36bd81135ab7b5c5"
+}

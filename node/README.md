@@ -26,3 +26,5 @@ This can be done through:
 1. Set DATABASE_URL or create .env file with ``DATABASE_URL=sqlite:///tmp/temp.sqlite3``
 2. Create a db with ``sqlx database create`` 
 3. Run the migrations with ``sqlx migrate run``
+
+> NB: You need to be in the /node folder of this project for sqlx to detect the migrations folder
