@@ -95,7 +95,7 @@ pub(crate) trait Archivist {
     ) -> Result<Vec<ContractTxEvent>>;
 
     /// Fetch the moonlight events for the given public key
-    fn fetch_moonlight_historys(
+    fn fetch_moonlight_histories(
         &self,
         address: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>>;
@@ -106,7 +106,7 @@ pub(crate) trait Archivist {
         hex_block_hash: &str,
     ) -> Result<()>;
 
-    async fn remove_deleted_block(
+    async fn remove_block(
         &self,
         current_block_height: u64,
         hex_block_hash: &str,

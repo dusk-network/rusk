@@ -52,7 +52,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ArchivalData::DeletedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist
-                            .remove_deleted_block(blk_height, &hex_blk_hash)
+                            .remove_block(blk_height, &hex_blk_hash)
                             .await
                         {
                             error!(

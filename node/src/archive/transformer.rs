@@ -64,9 +64,7 @@ pub(super) fn group_by_origins_filter_and_convert(
                 .entry(origin)
                 .or_default()
                 .push(event_to_analyze);
-        } else {
-            continue;
-        };
+        }
     }
 
     // 2nd Keep only the event groups which contain a moonlight in-

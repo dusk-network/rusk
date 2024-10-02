@@ -174,7 +174,7 @@ impl Archivist for Archive {
     }
 
     /// Remove the block of the given hash from the archive.
-    async fn remove_deleted_block(
+    async fn remove_block(
         &self,
         current_block_height: u64,
         hex_block_hash: &str,
@@ -210,7 +210,7 @@ impl Archivist for Archive {
     }
 
     /// Fetch the moonlight events for the given public key
-    fn fetch_moonlight_historys(
+    fn fetch_moonlight_histories(
         &self,
         address: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
@@ -349,7 +349,7 @@ mod tests {
             .unwrap();
 
         assert!(archive
-            .remove_deleted_block(blk_height, &hex_blk_hash)
+            .remove_block(blk_height, &hex_blk_hash)
             .await
             .unwrap());
 
@@ -368,7 +368,7 @@ mod tests {
             .unwrap();
 
         assert!(!archive
-            .remove_deleted_block(blk_height, &hex_blk_hash)
+            .remove_block(blk_height, &hex_blk_hash)
             .await
             .unwrap());
     }
