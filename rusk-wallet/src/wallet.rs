@@ -1151,6 +1151,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
     }
 
+    /// Check if the wallet is synced
+    pub async fn is_synced(&mut self) -> Result<bool, Error> {
+        let state = self.state()?;
+        let db_pos = state.cache().last_pos()?.unwrap_or(0);
+        let network_last_pos = state.fetch_num_notes().await? - 1;
+
+        Ok(network_last_pos == db_pos)
+    }
+
     /// Close the wallet and zeroize the seed
     pub fn close(&mut self) {
         self.store.inner_mut().zeroize();
