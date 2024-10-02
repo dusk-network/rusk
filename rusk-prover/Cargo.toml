@@ -12,6 +12,10 @@ dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"] }
 rusk-profile = { workspace = true }
 execution-core = { workspace = true, features = ["zk"] }
 
+# debug dependencies
+hex = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
+
 [dev-dependencies]
 hex = { workspace = true }
 
@@ -20,3 +24,4 @@ no_random = []
 std = [
     "dusk-plonk/std"
 ]
+debug = ["hex", "tracing"]
