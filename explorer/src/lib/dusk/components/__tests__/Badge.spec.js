@@ -44,4 +44,14 @@ describe("Badge", () => {
 
     expect(container.firstChild).toMatchSnapshot();
   });
+
+  it("should only display a string 10 characters long", () => {
+    const props = {
+      ...baseProps,
+      maxlength: 10,
+      text: "ABCDEFGHIJK",
+    };
+    const { container } = render(Badge, { ...props });
+    expect(container.firstChild?.textContent?.length).toBe(10);
+  });
 });

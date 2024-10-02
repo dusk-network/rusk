@@ -10,6 +10,9 @@
   /** @type {String | Undefined} */
   export let className = undefined;
 
+  /** @type {number | Undefined} */
+  export let maxlength = undefined;
+
   $: classes = makeClassName([
     "dusk-badge",
     `dusk-badge--variant-${variant}`,
@@ -17,4 +20,4 @@
   ]);
 </script>
 
-<span {...$$restProps} class={classes}>{text}</span>
+<span {...$$restProps} class={classes}>{text.substring(0, maxlength)}</span>

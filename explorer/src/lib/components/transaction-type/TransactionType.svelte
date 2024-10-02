@@ -7,6 +7,8 @@
 
   /** @type {boolean} */
   export let displayTooltips = false;
+
+  const BADGE_TEXT_MAX_LENGTH = 20;
 </script>
 
 <div class="transaction-type">
@@ -22,5 +24,5 @@
       : mdiShieldOutline}
     size="large"
   />
-  <Badge text={data.method} />
+  <Badge text={data.method} maxlength={BADGE_TEXT_MAX_LENGTH} />
 </div>
