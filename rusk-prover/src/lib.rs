@@ -51,6 +51,12 @@ impl Prove for LocalProver {
         #[cfg(feature = "no_random")]
         let rng = &mut StdRng::seed_from_u64(0xbeef);
 
+        #[cfg(feature = "debug")]
+        tracing::info!(
+            "tx_circuit_vec:\n{}",
+            hex::encode(tx_circuit_vec_bytes)
+        );
+
         let (proof, _pi) = match tx_circuit_vec.input_notes_info.len() {
             1 => TX_CIRCUIT_1_2_PROVER
                 .prove(rng, &create_circuit::<1>(tx_circuit_vec)?)
