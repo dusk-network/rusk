@@ -348,25 +348,6 @@ impl State {
         Ok(branch)
     }
 
-    /// Queries the transfer contract for the number of notes.
-    pub async fn fetch_num_notes(&self) -> Result<u64, Error> {
-        let status = self.status;
-        status("Fetching latest note position...");
-
-        let data = self
-            .client
-            .contract_query::<_, _, { u64::SIZE }>(
-                TRANSFER_CONTRACT,
-                "num_notes",
-                &(),
-            )
-            .await?;
-
-        let res: u64 = rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
-
-        Ok(res)
-    }
-
     pub fn close(&mut self) {
         // UNWRAP: its okay to panic here because we're closing the database
         // if there's an error we want an exception to happen
