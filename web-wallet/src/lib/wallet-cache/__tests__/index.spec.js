@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { filterWith, pluckFrom, setKey, takeFrom, uniques } from "lamb";
 
 import {
@@ -159,7 +159,7 @@ describe("Wallet cache", () => {
       });
     });
 
-    it("should expose a method to retrieve the unspent notes and optionally filter them by a `psk`", async () => {
+    it("should expose a method to retrieve the unspent notes and optionally filter them by their address", async () => {
       const unspentDbNotes = sortByNullifier(
         await walletCache.getUnspentNotes()
       );
@@ -281,6 +281,81 @@ describe("Wallet cache", () => {
 
       expect(sortByNullifier(cacheUnspentNotes)).toStrictEqual(
         sortByNullifier(await walletCache.getUnspentNotes())
+      );
+    });
+  });
+
+  describe("Treasury", async () => {
+    /** @type {string} */
+    let addressWithPendingNotes;
+
+    /** @type {WalletCacheNote[]} */
+    let expectedNotes;
+
+    const nullifierToExclude = cachePendingNotesInfo[1].nullifier;
+    const pendingNullifiersAsStrings = pluckFrom(
+      cachePendingNotesInfo,
+      "nullifier"
+    ).map(String);
+    const fakeKey = {
+      toString() {
+        return addressWithPendingNotes;
+      },
+    };
+    const fakeProfile = {
+      get address() {
+        return fakeKey;
+      },
+    };
+
+    beforeAll(async () => {
+      await db.open();
+
+      addressWithPendingNotes = (
+        await db
+          .table("unspentNotes")
+          .where("nullifier")
+          .equals(nullifierToExclude)
+          .first()
+      )?.address;
+
+      if (!addressWithPendingNotes) {
+        throw new Error(
+          "A pending note with a nullifier present in unspent notes is missing"
+        );
+      }
+
+      expectedNotes = await db
+        .table("unspentNotes")
+        .where("address")
+        .equals(addressWithPendingNotes)
+        .and(
+          (note) =>
+            !pendingNullifiersAsStrings.includes(note.nullifier.toString())
+        )
+        .toArray();
+
+      db.close();
+    });
+
+    it("should expose a treasury interface that allows to retrieve all non-pending unspent notes for a given profile", async () => {
+      const unspentNotesMap = await walletCache.treasury.address(fakeProfile);
+
+      expect(Array.from(unspentNotesMap.keys())).toStrictEqual([
+        addressWithPendingNotes,
+      ]);
+
+      const notesMap = /** @type {Map<Uint8Array, Uint8Array>} */ (
+        unspentNotesMap.get(addressWithPendingNotes)
+      );
+
+      expect(expectedNotes.length).toBe(notesMap.size);
+
+      expect(sortNullifiers(Array.from(notesMap.keys()))).toStrictEqual(
+        sortNullifiers(pluckFrom(expectedNotes, "nullifier"))
+      );
+      expect(sortNullifiers(Array.from(notesMap.values()))).toStrictEqual(
+        sortNullifiers(pluckFrom(expectedNotes, "note"))
       );
     });
   });

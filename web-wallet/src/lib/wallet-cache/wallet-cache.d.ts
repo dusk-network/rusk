@@ -26,6 +26,8 @@ type WalletCacheHistoryEntry = {
   psk: string;
 };
 
+type WalletCacheNotesMap = Map<string, Map<Uint8Array, Uint8Array>>;
+
 type WalletCachePendingNoteInfo = {
   nullifier: Uint8Array;
   txId: string;
@@ -36,8 +38,17 @@ type WalletCacheSyncInfo = {
   bookmark: bigint;
 };
 
+// We'll import this from w3sper.js in the future
+type TemporaryProfile = {
+  address: {};
+};
+
 type WalletCacheTableName =
   | "pendingNotesInfo"
   | "syncInfo"
   | "spentNotes"
   | "unspentNotes";
+
+type WalletCacheTreasury = {
+  address: (profile: TemporaryProfile) => Promise<WalletCacheNotesMap>;
+};
