@@ -143,8 +143,13 @@ impl RuskNode {
     ) -> anyhow::Result<ResponseData> {
         let gql_query = data.as_string();
 
+        #[cfg(feature = "archive")]
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
-            .data(self.db())
+            .data((self.db(), self.archive()))
+            .finish();
+        #[cfg(not(feature = "archive"))]
+        let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
+            .data((self.db(), ()))
             .finish();
 
         if gql_query.trim().is_empty() {

@@ -72,7 +72,7 @@ impl Block {
         &self,
         ctx: &async_graphql::Context<'_>,
     ) -> FieldResult<Vec<SpentTransaction>> {
-        let db = ctx.data::<super::DBContext>()?.read().await;
+        let db = ctx.data::<super::DBContext>()?.0.read().await;
         let mut ret = vec![];
 
         db.view(|t| {
@@ -189,7 +189,7 @@ impl SpentTransaction {
         &self,
         ctx: &async_graphql::Context<'_>,
     ) -> FieldResult<String> {
-        let db = ctx.data::<super::DBContext>()?.read().await;
+        let db = ctx.data::<super::DBContext>()?.0.read().await;
         let block_height = self.0.block_height;
 
         let block_hash = db.view(|t| {
@@ -209,7 +209,7 @@ impl SpentTransaction {
         &self,
         ctx: &async_graphql::Context<'_>,
     ) -> FieldResult<u64> {
-        let db = ctx.data::<super::DBContext>()?.read().await;
+        let db = ctx.data::<super::DBContext>()?.0.read().await;
         let block_height = self.0.block_height;
 
         let header = db.view(|t| {

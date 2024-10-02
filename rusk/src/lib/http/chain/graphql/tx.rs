@@ -13,7 +13,7 @@ pub async fn tx_by_hash(
     ctx: &Context<'_>,
     hash: String,
 ) -> OptResult<SpentTransaction> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
     let tx = db.read().await.view(|t| t.get_ledger_tx_by_hash(&hash))?;
     Ok(tx.map(SpentTransaction))
@@ -27,7 +27,7 @@ pub async fn last_transactions(
         return Err(FieldError::new("count must be positive"));
     }
 
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let transactions = db.read().await.view(|t| {
         let mut txs = vec![];
         let mut current_block =
@@ -59,7 +59,7 @@ pub async fn last_transactions(
 pub async fn mempool<'a>(
     ctx: &Context<'_>,
 ) -> FieldResult<Vec<Transaction<'a>>> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let transactions = db.read().await.view(|t| {
         let txs = t.get_txs_sorted_by_fee()?.map(|t| t.into()).collect();
         Ok::<_, async_graphql::Error>(txs)
@@ -71,7 +71,7 @@ pub async fn mempool_by_hash<'a>(
     ctx: &Context<'_>,
     hash: String,
 ) -> OptResult<Transaction<'a>> {
-    let db = ctx.data::<DBContext>()?;
+    let (db, _) = ctx.data::<DBContext>()?;
     let hash = &hex::decode(hash)?[..];
     let hash = hash.try_into()?;
     let tx = db.read().await.view(|t| t.get_tx(hash))?;

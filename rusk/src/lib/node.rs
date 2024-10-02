@@ -24,7 +24,9 @@ use tokio::sync::broadcast;
 use crate::http::RuesEvent;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
-use {node_data::archive::ArchivalData, tokio::sync::mpsc};
+use {
+    node::archive::Archive, node_data::archive::ArchivalData, tokio::sync::mpsc,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -54,17 +56,37 @@ pub(crate) type Services =
 #[derive(Clone)]
 pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
+    #[cfg(feature = "archive")]
+    archive: Archive,
 }
 
 impl RuskNode {
-    pub fn new(inner: node::Node<Kadcast<255>, Backend, Rusk>) -> Self {
-        Self { inner }
+    pub fn new(
+        inner: node::Node<Kadcast<255>, Backend, Rusk>,
+        #[cfg(feature = "archive")] archive: Archive,
+    ) -> Self {
+        Self {
+            inner,
+            #[cfg(feature = "archive")]
+            archive,
+        }
+    }
+
+    #[cfg(feature = "archive")]
+    pub fn with_archive(mut self, archive: Archive) -> Self {
+        self.archive = archive;
+        self
     }
 }
 
 impl RuskNode {
     pub fn db(&self) -> Arc<tokio::sync::RwLock<Backend>> {
         self.inner.database() as Arc<tokio::sync::RwLock<Backend>>
+    }
+
+    #[cfg(feature = "archive")]
+    pub fn archive(&self) -> Archive {
+        self.archive.clone()
     }
 
     pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {

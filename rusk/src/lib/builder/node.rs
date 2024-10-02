@@ -182,13 +182,20 @@ impl RuskNodeBuilder {
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");
 
+        #[cfg(feature = "archive")]
+        let archive = Archive::create_or_open(self.db_path.clone()).await;
+
         let node = {
             let db = rocksdb::Backend::create_or_open(
                 self.db_path.clone(),
                 self.db_options.clone(),
             );
             let net = Kadcast::new(self.kadcast.clone())?;
-            RuskNode::new(Node::new(net, db, rusk.clone()))
+            RuskNode::new(
+                Node::new(net, db, rusk.clone()),
+                #[cfg(feature = "archive")]
+                archive.clone(),
+            )
         };
 
         let mut chain_srv = ChainSrv::new(
@@ -254,7 +261,7 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         service_list.push(Box::new(ArchivistSrv {
             archive_receiver,
-            archivist: Archive::create_or_open(self.db_path.clone()).await,
+            archivist: archive,
         }));
 
         node.inner().initialize(&mut service_list).await?;
