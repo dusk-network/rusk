@@ -135,4 +135,27 @@ impl Query {
     ) -> OptResult<Transaction> {
         mempool_by_hash(ctx, hash).await
     }
+
+    #[cfg(feature = "archive")]
+    async fn all_moonlight_txs(
+        &self,
+        ctx: &Context<'_>,
+        address: String,
+    ) -> OptResult<MoonlightTransactions> {
+        moonlight_tx_by_address(ctx, address).await
+    }
+
+    #[cfg(feature = "archive")]
+    async fn block_events(
+        &self,
+        ctx: &Context<'_>,
+        height: Option<i64>,
+        hash: Option<String>,
+    ) -> OptResult<BlockEvents> {
+        match (height, hash) {
+            (Some(height), None) => block_events_by_height(ctx, height).await,
+            (None, Some(hash)) => block_events_by_hash(ctx, hash).await,
+            _ => Err(FieldError::new("Specify height or hash")),
+        }
+    }
 }
