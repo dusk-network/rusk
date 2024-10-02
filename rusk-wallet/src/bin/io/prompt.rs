@@ -219,11 +219,12 @@ pub(crate) fn request_rcvr_addr(addr_for: &str) -> anyhow::Result<Address> {
     )?)
 }
 
-/// Checks for a valid DUSK denomination
+/// Checks if the value is larger than the given min and smaller than the
+/// min of the balance and `MAX_CONVERTIBLE`.
 fn check_valid_denom(
     value: f64,
-    balance: Dusk,
     min: Dusk,
+    balance: Dusk,
 ) -> Result<(), String> {
     let value = Dusk::from(value);
     let max = std::cmp::min(balance, MAX_CONVERTIBLE);
@@ -244,8 +245,8 @@ pub(crate) fn request_optional_token_amt(
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount of DUSK to {}:", action))
         .default(MIN_CONVERTIBLE.into())
-        .validate_on_key(|f, _| check_valid_denom(f, balance, min).is_ok())
-        .validate(|f, _| check_valid_denom(f, balance, min))
+        .validate_on_key(|f, _| check_valid_denom(f, min, balance).is_ok())
+        .validate(|f, _| check_valid_denom(f, min, balance))
         .build();
 
     let a = requestty::prompt_one(question)?;
@@ -262,8 +263,8 @@ pub(crate) fn request_token_amt(
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount of DUSK to {}:", action))
         .default(min.into())
-        .validate_on_key(|f, _| check_valid_denom(f, balance, min).is_ok())
-        .validate(|f, _| check_valid_denom(f, balance, min))
+        .validate_on_key(|f, _| check_valid_denom(f, min, balance).is_ok())
+        .validate(|f, _| check_valid_denom(f, min, balance))
         .build();
 
     let a = requestty::prompt_one(question)?;
@@ -296,9 +297,9 @@ pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
         .message("Introduce the gas price for this transaction:")
         .default(Dusk::from(gas::DEFAULT_PRICE).into())
         .validate_on_key(|f, _| {
-            check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
+            check_valid_denom(f, MIN_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
         })
-        .validate(|f, _| check_valid_denom(f, MAX_CONVERTIBLE, MAX_CONVERTIBLE))
+        .validate(|f, _| check_valid_denom(f, MIN_CONVERTIBLE, MAX_CONVERTIBLE))
         .build();
 
     let a = requestty::prompt_one(question)?;
