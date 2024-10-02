@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add iteration generator to FailedIterations [#1257]
 - Add `node` feature flag [#1144]
 - Add `RUSK_CRS_URL` environment variable
+- Add gas price error
 
 ### Changed
 

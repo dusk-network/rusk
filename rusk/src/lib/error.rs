@@ -80,6 +80,9 @@ impl From<execution_core::Error> for Error {
             ExecErr::InsufficientBalance => {
                 Self::Transaction(ExecErr::InsufficientBalance)
             }
+            ExecErr::GasPriceTooLow => {
+                Self::Transaction(ExecErr::GasPriceTooLow)
+            }
             ExecErr::Replay => Self::Transaction(ExecErr::Replay),
             ExecErr::PhoenixOwnership => {
                 Self::Transaction(ExecErr::PhoenixOwnership)
