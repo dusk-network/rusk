@@ -18,9 +18,12 @@ use crate::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
         Signature as AccountSignature,
     },
-    transfer::data::{
-        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-        MAX_MEMO_SIZE,
+    transfer::{
+        data::{
+            ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+            MAX_MEMO_SIZE,
+        },
+        MINIMUM_GAS_PRICE,
     },
     BlsScalar, Error,
 };
@@ -61,6 +64,11 @@ impl Transaction {
         chain_id: u8,
         data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
+        // Check if the gas price is lower than the minimum: 1
+        if gas_price < MINIMUM_GAS_PRICE {
+            return Err(Error::GasPriceTooLow);
+        }
+
         let data = data.map(Into::into);
 
         let payload = Payload {
