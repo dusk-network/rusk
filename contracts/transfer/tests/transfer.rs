@@ -237,6 +237,91 @@ fn phoenix_transfer() {
 }
 
 #[test]
+fn phoenix_transfer_gas_fails() {
+    const TRANSFER_FEE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let phoenix_receiver_pk =
+        PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let session = &mut instantiate(rng, vm, &phoenix_sender_pk, &moonlight_pk);
+
+    let leaves = leaves_from_height(session, 0)
+        .expect("Getting leaves in the given range should succeed");
+
+    assert_eq!(leaves.len(), 1, "There should be one note in the state");
+
+    let total_num_notes =
+        num_notes(session).expect("Getting num_notes should succeed");
+    assert_eq!(
+        total_num_notes,
+        leaves.last().expect("note to exist").note.pos() + 1,
+        "num_notes should match position of last note + 1"
+    );
+
+    let gas_limit = TRANSFER_FEE;
+    let gas_price = 0;
+    let input_note_pos = 0;
+    let transfer_value = 42;
+    let is_obfuscated = true;
+    let deposit = 0;
+    let contract_call: Option<ContractCall> = None;
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_receiver_pk,
+        gas_limit,
+        gas_price,
+        [input_note_pos],
+        transfer_value,
+        is_obfuscated,
+        deposit,
+        contract_call,
+    );
+
+    let result = execute(session, tx);
+
+    assert!(
+        result.is_err(),
+        "Transaction should fail due to zero gas price"
+    );
+
+    // After the failed transaction, verify the state is unchanged
+    let leaves_after_fail = leaves_from_height(session, 0)
+        .expect("Getting the leaves should succeed after failed transaction");
+
+    assert_eq!(
+        leaves_after_fail.len(),
+        1, // The number of leaves should remain the same
+        "There should still be one note after the failed transaction"
+    );
+
+    let total_num_notes_after_fail =
+        num_notes(session).expect("Getting num_notes should succeed");
+
+    assert_eq!(
+        total_num_notes_after_fail,
+        total_num_notes, // The total number of notes should not have increased
+        "num_notes should not increase due to the failed transaction"
+    );
+}
+
+#[test]
 fn moonlight_transfer() {
     const TRANSFER_VALUE: u64 = dusk(1.0);
 
@@ -304,6 +389,78 @@ fn moonlight_transfer() {
     assert_eq!(
         receiver_account.balance, TRANSFER_VALUE,
         "The receiver account should have the transferred value"
+    );
+}
+
+#[test]
+fn moonlight_transfer_gas_fails() {
+    const TRANSFER_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sender_sk = AccountSecretKey::random(rng);
+    let moonlight_sender_pk = AccountPublicKey::from(&moonlight_sender_sk);
+
+    let moonlight_receiver_pk =
+        AccountPublicKey::from(&AccountSecretKey::random(rng));
+
+    let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_sender_pk);
+
+    let sender_account = account(session, &moonlight_sender_pk)
+        .expect("Getting the sender account should succeed");
+    let receiver_account = account(session, &moonlight_receiver_pk)
+        .expect("Getting the receiver account should succeed");
+
+    assert_eq!(
+        sender_account.balance, MOONLIGHT_GENESIS_VALUE,
+        "The sender account should have the genesis value"
+    );
+    assert_eq!(
+        receiver_account.balance, 0,
+        "The receiver account should be empty"
+    );
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
+    let transaction = MoonlightTransaction::new(
+        &moonlight_sender_sk,
+        Some(moonlight_receiver_pk),
+        TRANSFER_VALUE,
+        0,
+        GAS_LIMIT,
+        0,
+        sender_account.nonce + 1,
+        chain_id,
+        None::<TransactionData>,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let result = execute(session, transaction);
+
+    assert!(
+        result.is_err(),
+        "Transaction should fail due to zero gas price"
+    );
+
+    // Since the transaction failed, balances should remain the same
+    let sender_account = account(session, &moonlight_sender_pk)
+        .expect("Getting the sender account should succeed");
+    let receiver_account = account(session, &moonlight_receiver_pk)
+        .expect("Getting the receiver account should succeed");
+
+    assert_eq!(
+        sender_account.balance, MOONLIGHT_GENESIS_VALUE,
+        "The sender account should still have the genesis value"
+    );
+    assert_eq!(
+        receiver_account.balance, 0,
+        "The receiver account should still be empty"
     );
 }
 
