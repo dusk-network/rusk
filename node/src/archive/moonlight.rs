@@ -431,7 +431,9 @@ mod tests {
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     };
     use execution_core::{ContractId, CONTRACT_ID_BYTES};
-    use node_data::events::contract::{ContractEvent, WrappedContractId, TX_HASH_BYTES};
+    use node_data::events::contract::{
+        ContractEvent, WrappedContractId, TX_HASH_BYTES,
+    };
     use rand::{distributions::Alphanumeric, Rng};
     use std::env;
     use std::path::PathBuf;

@@ -146,6 +146,17 @@ impl Query {
     }
 
     #[cfg(feature = "archive")]
+    async fn transactions_by_memo(
+        &self,
+        ctx: &Context<'_>,
+        memo: String,
+    ) -> OptResult<MoonlightTransactions> {
+        // convert String to Vec<u8>
+        let memo = memo.into_bytes();
+        moonlight_tx_by_memo(ctx, memo).await
+    }
+
+    #[cfg(feature = "archive")]
     async fn block_events(
         &self,
         ctx: &Context<'_>,
