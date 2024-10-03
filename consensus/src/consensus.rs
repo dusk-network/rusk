@@ -8,7 +8,7 @@ use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::errors::ConsensusError;
 use crate::operations::Operations;
-use crate::phase::Phase;
+use crate::step::Step;
 
 use node_data::message::{AsyncQueue, Message, Topics};
 
@@ -158,17 +158,17 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 ),
             ));
 
-            let mut phases = [
-                Phase::Proposal(proposal::step::ProposalStep::new(
+            let mut steps = [
+                Step::Proposal(proposal::step::ProposalStep::new(
                     executor.clone(),
                     db.clone(),
                     proposal_handler.clone(),
                 )),
-                Phase::Validation(validation::step::ValidationStep::new(
+                Step::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
                     validation_handler.clone(),
                 )),
-                Phase::Ratification(ratification::step::RatificationStep::new(
+                Step::Ratification(ratification::step::RatificationStep::new(
                     ratification_handler.clone(),
                 )),
             ];
@@ -222,13 +222,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                 let mut msg = Message::empty();
                 // Execute a single iteration
-                for phase in phases.iter_mut() {
-                    let step_name = phase.to_step_name();
-                    // Initialize new phase with message returned by previous
-                    // phase.
-                    phase.reinitialize(msg, ru.round, iter).await;
+                for step in steps.iter_mut() {
+                    let step_name = step.to_step_name();
+                    // Initialize new step with message returned by previous
+                    // step.
+                    step.reinitialize(msg, ru.round, iter).await;
 
-                    // Construct phase execution context
+                    // Construct step execution context
                     let ctx = ExecutionCtx::new(
                         &mut iter_ctx,
                         inbound.clone(),
@@ -243,8 +243,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         sender.clone(),
                     );
 
-                    // Execute a phase
-                    msg = phase
+                    // Execute a step
+                    msg = step
                         .run(ctx)
                         .instrument(tracing::info_span!(
                             "main",

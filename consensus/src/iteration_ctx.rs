@@ -122,7 +122,7 @@ impl<DB: Database> IterationCtx<DB> {
         self.join_set.abort_all();
     }
 
-    /// Handles an event of a Phase timeout
+    /// Handles an event of a Step timeout
     pub(crate) fn on_timeout_event(&mut self, step_name: StepName) {
         let curr_step_timeout =
             self.timeouts.get_mut(&step_name).expect("valid timeout");

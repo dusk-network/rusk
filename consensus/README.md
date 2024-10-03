@@ -7,17 +7,17 @@ SA is permissionless, meaning that any eligible participant in the Dusk Network 
  - Have a pre-configured amount of DUSK locked as a stake (referred to as a _Provisioner_)
  - Have a stake with a maturity of at least two epochs (referred to as an _Eligible Provisioner_)
 
-The SA consensus is divided into _rounds_, each of which creates a new block. In turn, in each round, one or more _iterations_ of the following _phases_ are executed:
+The SA consensus is divided into _rounds_, each of which creates a new block. In turn, in each round, one or more _iterations_ of the following _steps_ are executed:
 
-  1. _Proposal_: in this phase, a _generator_, extracted from the _Eligible Provisioners_, creates a new candidate block $B$ for the current round, and broadcasts it to the network;
+  1. _Proposal_: in this step, a _generator_, extracted from the _Eligible Provisioners_, creates a new candidate block $B$ for the current round, and broadcasts it to the network;
   
-  2. _Validation_: in this phase, the members of a _committee_, extracted from the _Eligible Provisioners_, vote on the validity of the candidate block $B$; 
+  2. _Validation_: in this step, the members of a _committee_, extracted from the _Eligible Provisioners_, vote on the validity of the candidate block $B$; 
   if votes reach a quorum of $2/3$ (i.e., 67% of the committee), the validation outputs $B$, otherwise NIL;
 
-  3. _Ratification_: in this phase, if the output of the Validation is not NIL, a second _committee_, also extracted from the _Eligible Provisioners_, vote on the candidate block $B$;
-  if votes reach the quorum, a quorum message (containing the votes of the two Validation and Ratification phases) is broadcast;
+  3. _Ratification_: in this step, if the output of the Validation is not NIL, a second _committee_, also extracted from the _Eligible Provisioners_, vote on the candidate block $B$;
+  if votes reach the quorum, a quorum message (containing the votes of the two Validation and Ratification steps) is broadcast;
 
-Note: the extraction process, used in the all phases, is implemented using the _Deterministic Sortition_ algorithm [^3]. 
+Note: the extraction process, used in the all steps, is implemented using the _Deterministic Sortition_ algorithm [^3]. 
 
 
 # Repository structure
