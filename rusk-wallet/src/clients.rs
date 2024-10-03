@@ -95,7 +95,9 @@ impl State {
                 let pk: PhoenixPublicKey =
                     derive_phoenix_pk(store.get_seed(), i as u8);
 
-                [format!("{:?}", pk), format!("spent_{:?}", pk)]
+                let pk = bs58::encode(pk.to_bytes()).into_string();
+
+                [pk.clone(), format!("spent_{pk}")]
             })
             .collect();
 
