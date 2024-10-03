@@ -136,9 +136,12 @@ impl Rusk {
 
                 Provisioner {
                     amount: amount.value,
+                    locked_amt: amount.locked,
                     eligibility: amount.eligibility,
                     key,
                     reward: stake.reward,
+                    faults: stake.faults,
+                    hard_faults: stake.hard_faults,
                 }
             })
             .collect();
@@ -156,6 +159,9 @@ impl Rusk {
 struct Provisioner {
     key: String,
     amount: u64,
+    locked_amt: u64,
     eligibility: u64,
     reward: u64,
+    faults: u8,
+    hard_faults: u8,
 }
