@@ -465,6 +465,10 @@ impl TransferState {
         &mut self,
         tx: Transaction,
     ) -> Result<Vec<u8>, ContractError> {
+        if tx.gas_price() == 0 {
+            panic!("Gas price too low!");
+        }
+
         transitory::put_transaction(tx);
         let tx = transitory::transaction();
 
