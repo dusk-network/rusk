@@ -35,6 +35,8 @@ pub enum TxAcceptanceError {
     SpendIdExistsInMempool,
     #[error("this transaction is invalid {0}")]
     VerificationFailed(String),
+    #[error("gas price lower than minimum {0}")]
+    GasPriceTooLow(u64),
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
     #[error("A generic error occurred {0}")]
@@ -190,6 +192,10 @@ impl MempoolSrv {
         max_mempool_txn_count: usize,
     ) -> Result<Vec<TransactionEvent<'t>>, TxAcceptanceError> {
         let tx_id = tx.id();
+
+        if tx.gas_price() < 1 {
+            return Err(TxAcceptanceError::GasPriceTooLow(1));
+        }
 
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
