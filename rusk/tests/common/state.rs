@@ -30,6 +30,8 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 const CHAIN_ID: u8 = 0xFA;
+pub const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
+pub const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(
@@ -48,8 +50,8 @@ pub fn new_state<P: AsRef<Path>>(
         dir,
         CHAIN_ID,
         None,
-        None,
-        None,
+        DEFAULT_GAS_PER_DEPLOY_BYTE,
+        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         block_gas_limit,
         u64::MAX,
         sender,

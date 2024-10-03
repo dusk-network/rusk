@@ -31,6 +31,8 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
+use crate::common::state::DEFAULT_GAS_PER_DEPLOY_BYTE;
+use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
 use crate::common::wallet::{TestStateClient, TestStore};
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -78,8 +80,8 @@ fn initial_state<P: AsRef<Path>>(
         dir,
         CHAIN_ID,
         None,
-        None,
-        None,
+        DEFAULT_GAS_PER_DEPLOY_BYTE,
+        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         BLOCK_GAS_LIMIT,
         u64::MAX,
         sender,
