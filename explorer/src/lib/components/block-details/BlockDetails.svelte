@@ -187,13 +187,15 @@
     <!-- HEADER -->
     <ListItem tooltipText="The block header information">
       <svelte:fragment slot="term">
-        header
+        <div class="block-details__switch-wrapper">
+          header
 
-        <Switch
-          className="block-details__payload-switch"
-          onSurface={true}
-          bind:value={isPayloadToggled}
-        />
+          <Switch
+            className="block-details__payload-switch"
+            onSurface={true}
+            bind:value={isPayloadToggled}
+          />
+        </div>
       </svelte:fragment>
 
       <svelte:fragment slot="definition">

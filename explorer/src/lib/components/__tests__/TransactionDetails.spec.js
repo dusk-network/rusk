@@ -34,10 +34,18 @@ describe("Transaction Details", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("renders the Transaction Details component with the payload visible", async () => {
-    const { container, getByRole } = render(TransactionDetails, baseProps);
+  it("renders the Transaction Details component with the memo decoded", async () => {
+    const { container, getAllByRole } = render(TransactionDetails, baseProps);
 
-    await fireEvent.click(getByRole("switch"));
+    await fireEvent.click(getAllByRole("switch")[0]);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("renders the Transaction Details component with the payload visible", async () => {
+    const { container, getAllByRole } = render(TransactionDetails, baseProps);
+
+    await fireEvent.click(getAllByRole("switch")[1]);
 
     expect(container.firstChild).toMatchSnapshot();
   });

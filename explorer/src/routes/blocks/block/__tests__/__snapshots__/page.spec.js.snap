@@ -488,16 +488,20 @@ exports[`Block Details > should render the Block Details page and query the nece
               </svg>
               
                
-              header
-
-        
               <div
-                aria-checked="false"
-                aria-disabled="false"
-                class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
-                role="switch"
-                tabindex="0"
-              />
+                class="block-details__switch-wrapper"
+              >
+                header
+
+          
+                <div
+                  aria-checked="false"
+                  aria-disabled="false"
+                  class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
+                  role="switch"
+                  tabindex="0"
+                />
+              </div>
             </div>
           </dt>
            
@@ -1207,16 +1211,20 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               </svg>
               
                
-              header
-
-        
               <div
-                aria-checked="false"
-                aria-disabled="false"
-                class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
-                role="switch"
-                tabindex="0"
-              />
+                class="block-details__switch-wrapper"
+              >
+                header
+
+          
+                <div
+                  aria-checked="false"
+                  aria-disabled="false"
+                  class="dusk-switch block-details__payload-switch dusk-switch--on-surface"
+                  role="switch"
+                  tabindex="0"
+                />
+              </div>
             </div>
           </dt>
            
