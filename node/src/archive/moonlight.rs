@@ -16,7 +16,7 @@ use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, LogLevel,
     OptimisticTransactionDB, Options,
 };
-use tracing::{debug, info, warn, error};
+use tracing::{debug, error, info, warn};
 
 use crate::archive::transformer::{self, MoonlightTxEvents};
 use crate::archive::{Archive, ArchiveOptions};
@@ -106,11 +106,15 @@ impl Archive {
     pub(super) fn tl_moonlight(
         &self,
         block_events: Vec<ContractTxEvent>,
+        block_height: u64,
     ) -> Result<()> {
         debug!("Loading moonlight transaction events into the moonlight db");
 
         let (address_mappings, _, moonlight_groups) =
-            transformer::group_by_origins_filter_and_convert(block_events);
+            transformer::group_by_origins_filter_and_convert(
+                block_events,
+                block_height,
+            );
 
         debug!("Found {} moonlight transactions", moonlight_groups.len());
 
@@ -223,8 +227,7 @@ impl Archive {
         if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
             let raw = self.multi_get_moonlight_events(tx_hashes)?;
 
-            let mut deserialized_events =
-                Vec::with_capacity(raw.len());
+            let mut deserialized_events = Vec::with_capacity(raw.len());
 
             for serialized_event in raw {
                 if let Ok(Some(e)) = serialized_event {
@@ -247,23 +250,25 @@ impl Archive {
         pk: AccountPublicKey,
     ) -> Result<Option<Vec<Vec<u8>>>> {
         if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
-            let serialized_events = self.multi_get_moonlight_events(tx_hashes)?;
+            let serialized_events =
+                self.multi_get_moonlight_events(tx_hashes)?;
 
-            // Convert the Vec<Result<Option<Vec<u8>>> into a Vec<Vec<u8>> by throwing away the
-            // errors and None values
-            let mut cleaned_serialized_events = Vec::with_capacity(serialized_events.len());
-            let _ = serialized_events
-                .into_iter()
-                .map(|entry| match entry {
-                    Ok(Some(v)) => cleaned_serialized_events.push(v),
-                    Ok(None) => {
-                        warn!("Serialized moonlight event not found")
-                    },
-                    Err(e) => {
-                        error!("Error while fetching serialized moonlight event: {:?}", e)
-                    }
-                })
-                ;
+            // Convert the Vec<Result<Option<Vec<u8>>> into a Vec<Vec<u8>> by
+            // throwing away the errors and None values
+            let mut cleaned_serialized_events =
+                Vec::with_capacity(serialized_events.len());
+            let _ = serialized_events.into_iter().map(|entry| match entry {
+                Ok(Some(v)) => cleaned_serialized_events.push(v),
+                Ok(None) => {
+                    warn!("Serialized moonlight event not found")
+                }
+                Err(e) => {
+                    error!(
+                        "Error while fetching serialized moonlight event: {:?}",
+                        e
+                    )
+                }
+            });
 
             Ok(Some(cleaned_serialized_events))
         } else {
@@ -337,7 +342,7 @@ mod util {
         }
 
         if len != deduped.len() {
-            warn!("Found duplicates in address mappings for moonlight transactions");
+            warn!("Found duplicates in address mappings for moonlight transactions. Duplicates have been removed. This is a bug.");
         }
 
         deduped
@@ -537,7 +542,7 @@ mod tests {
         let block_events = block_events();
 
         let (mappings, _, moonlight_groups) =
-            group_by_origins_filter_and_convert(block_events);
+            group_by_origins_filter_and_convert(block_events, 1);
 
         // 5 moonlight groups means 5 transactions containing moonlight related
         // events
@@ -556,17 +561,19 @@ mod tests {
         let block_events = block_events();
 
         // Store block events in the archive
-        archive.tl_moonlight(block_events.clone()).unwrap();
+        archive.tl_moonlight(block_events.clone(), 1).unwrap();
 
         let fetched_tx_hashes =
             archive.get_moonlight_tx_id(pk).unwrap().unwrap();
 
-        let fetched_events_by_tx_hash = archive
-            .moonlight_txs_by_pk(pk).unwrap().unwrap();
+        let fetched_events_by_tx_hash =
+            archive.moonlight_txs_by_pk(pk).unwrap().unwrap();
 
         assert_eq!(fetched_tx_hashes.len(), 5);
 
         for contract_moonlight_events in fetched_events_by_tx_hash {
+            assert_eq!(contract_moonlight_events.block_height(), 1);
+
             match contract_moonlight_events.origin().as_ref() {
                 [1, 1, ..] => {
                     assert_eq!(contract_moonlight_events.events().len(), 1);
@@ -623,7 +630,7 @@ mod tests {
 
         let block_events = block_events();
 
-        archive.tl_moonlight(block_events.clone()).unwrap();
+        archive.tl_moonlight(block_events.clone(), 1).unwrap();
 
         let fetched_tx_hashes =
             archive.get_moonlight_tx_id(pk).unwrap().unwrap();
@@ -632,6 +639,8 @@ mod tests {
             .get_moonlight_events(fetched_tx_hashes[0])
             .unwrap()
             .unwrap();
+
+        assert_eq!(fetched_events_by_tx_hash.block_height(), 1);
 
         assert_eq!(fetched_events_by_tx_hash.events().len(), 1);
         assert_eq!(fetched_events_by_tx_hash.events()[0].topic, "convert");

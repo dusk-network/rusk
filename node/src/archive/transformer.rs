@@ -23,12 +23,21 @@ pub struct MoonlightTxEvents {
     events: Vec<ContractEvent>,
     #[serde_as(as = "serde_with::hex::Hex")]
     origin: TxHash,
+    block_height: u64,
 }
 
 impl MoonlightTxEvents {
     // Private on purpose
-    fn new(events: Vec<ContractEvent>, origin: TxHash) -> Self {
-        Self { events, origin }
+    fn new(
+        events: Vec<ContractEvent>,
+        origin: TxHash,
+        block_height: u64,
+    ) -> Self {
+        Self {
+            events,
+            origin,
+            block_height,
+        }
     }
 
     pub fn events(&self) -> &Vec<ContractEvent> {
@@ -37,6 +46,10 @@ impl MoonlightTxEvents {
 
     pub fn origin(&self) -> &TxHash {
         &self.origin
+    }
+
+    pub fn block_height(&self) -> u64 {
+        self.block_height
     }
 }
 
@@ -49,6 +62,7 @@ type MemoMapping = (Vec<u8>, TxHash);
 /// Returns the address mappings, memo mappings and groups
 pub(super) fn group_by_origins_filter_and_convert(
     block_events: Vec<ContractTxEvent>,
+    block_height: u64,
 ) -> (
     Vec<AddressMapping>,
     Vec<MemoMapping>,
@@ -150,7 +164,11 @@ pub(super) fn group_by_origins_filter_and_convert(
         });
 
         if is_moonlight {
-            moonlight_tx_groups.push(MoonlightTxEvents::new(group, tx_hash));
+            moonlight_tx_groups.push(MoonlightTxEvents::new(
+                group,
+                tx_hash,
+                block_height,
+            ));
         }
     }
 
