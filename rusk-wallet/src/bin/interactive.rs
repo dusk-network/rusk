@@ -29,8 +29,8 @@ pub(crate) async fn run_loop(
 ) -> anyhow::Result<()> {
     loop {
         // let the user choose (or create) an address
-        let addr = match menu_addr(wallet)? {
-            AddrSelect::Address(addr) => *addr,
+        let addr_idx = match menu_addr(wallet)? {
+            AddrSelect::AddressIndex(addr_idx) => addr_idx,
             AddrSelect::NewAddress => {
                 if wallet.addresses().len() >= MAX_ADDRESSES {
                     println!(
@@ -39,7 +39,7 @@ pub(crate) async fn run_loop(
                     std::process::exit(0);
                 }
 
-                let addr = wallet.new_address().clone();
+                let addr_idx = wallet.add_address();
                 let file_version = wallet.get_file_version()?;
 
                 let password = &settings.password;
@@ -61,16 +61,9 @@ pub(crate) async fn run_loop(
                     wallet.save()?;
                 }
 
-                addr
+                addr_idx
             }
             AddrSelect::Exit => std::process::exit(0),
-        };
-
-        let index = addr.index()?;
-
-        let moonlight = Address::Bls {
-            index: Some(index),
-            addr: wallet.bls_public_key(addr.index()?),
         };
 
         let is_synced = wallet.is_synced().await?;
@@ -78,9 +71,8 @@ pub(crate) async fn run_loop(
         loop {
             // get balance for this address
             prompt::hide_cursor()?;
-            let moonlight_bal =
-                wallet.get_moonlight_balance(&moonlight).await?;
-            let phoenix_bal = wallet.get_phoenix_balance(&addr).await?;
+            let moonlight_bal = wallet.get_moonlight_balance(addr_idx).await?;
+            let phoenix_bal = wallet.get_phoenix_balance(addr_idx).await?;
             let phoenix_spendable = phoenix_bal.spendable.into();
             let phoenix_total: Dusk = phoenix_bal.value.into();
 
@@ -89,35 +81,41 @@ pub(crate) async fn run_loop(
             // display address information
             println!();
             println!();
+            // display phoenix balance and keys information
             if is_synced {
                 println!(
-                    "{0: <20} - Total: {moonlight_bal}",
+                    "{0: <23} - Spendable: {phoenix_spendable}",
+                    "Phoenix Balance",
+                );
+                println!("{0: <23} - Total: {phoenix_total}", "",);
+            }
+            let phoenix_addr = Address::Phoenix {
+                pk: *wallet.phoenix_pk(addr_idx)?,
+            };
+            println!("{phoenix_addr}\n");
+
+            // display moonlight balance and keys information
+            if is_synced {
+                println!(
+                    "{0: <23} - Total: {moonlight_bal}",
                     "Moonlight Balance",
                 );
             }
-            println!("{0: <20} {moonlight}", "Moonlight Address");
-
-            println!();
-            if is_synced {
-                println!(
-                    "{0: <20} - Spendable: {phoenix_spendable}",
-                    "Phoenix Balance",
-                );
-                println!("{0: <20} - Total: {phoenix_total}", "",);
-            }
-            println!("{0: <20} {addr}", "Phoenix Address");
-            println!();
+            let moonlight_addr = Address::Bls {
+                pk: *wallet.bls_pk(addr_idx)?,
+            };
+            println!("{moonlight_addr}\n");
 
             // request operation to perform
             let op = match wallet.is_online().await {
                 true => menu_op(
-                    addr.clone(),
+                    addr_idx,
                     phoenix_spendable,
                     moonlight_bal,
                     settings,
                     is_synced,
                 ),
-                false => menu_op_offline(addr.clone(), settings),
+                false => menu_op_offline(addr_idx, settings),
             };
 
             // perform operations with this address
@@ -164,35 +162,42 @@ pub(crate) async fn run_loop(
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum AddrSelect {
-    Address(Box<Address>),
+    AddressIndex(u8),
     NewAddress,
     Exit,
+}
+
+fn address_idx_string(addr_idx: u8) -> String {
+    if addr_idx == 0 {
+        "Default Address".to_string()
+    } else {
+        format!("Address no {:4}", addr_idx)
+    }
 }
 
 /// Allows the user to choose an address from the selected wallet
 /// to start performing operations.
 fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
     let mut address_menu = Menu::title("Addresses");
-    for addr in wallet.addresses() {
-        let preview = addr.preview();
-        address_menu = address_menu
-            .add(AddrSelect::Address(Box::new(addr.clone())), preview);
+    let total_addresses = wallet.addresses().len() as u8;
+    for addr_idx in 0..total_addresses {
+        address_menu = address_menu.add(
+            AddrSelect::AddressIndex(addr_idx),
+            address_idx_string(addr_idx),
+        );
     }
 
     let remaining_addresses =
-        MAX_ADDRESSES.saturating_sub(wallet.addresses().len());
-    let mut action_menu = Menu::new()
-        .separator()
-        .add(AddrSelect::NewAddress, "New address");
+        MAX_ADDRESSES.saturating_sub(total_addresses as usize);
 
-    // show warning if less than
-    if remaining_addresses < 5 {
-        action_menu = action_menu.separator().separator_msg(format!(
-            "\x1b[93m{}\x1b[0m This wallet only supports up to {MAX_ADDRESSES} addresses, you have {} addresses ",
-            "Warning:",
-            wallet.addresses().len()
-        ));
-    }
+    let mut action_menu = Menu::new();
+    // only show the option to create a new address if we don't already have
+    // `MAX_ADDRESSES`
+    if remaining_addresses > 0 {
+        action_menu = action_menu
+            .separator()
+            .add(AddrSelect::NewAddress, "New address")
+    };
 
     if let Some(rx) = &wallet.state()?.sync_rx {
         if let Ok(status) = rx.try_recv() {
@@ -221,7 +226,7 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
 fn transaction_op_menu_moonlight(
-    addr: Address,
+    addr_idx: u8,
     moonlight_bal: Dusk,
 ) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
@@ -248,14 +253,14 @@ fn transaction_op_menu_moonlight(
 
     let x = match val {
         Transfer => AddrOp::Run(Box::new(Command::MoonlightTransfer {
-            sndr: Some(addr),
+            sndr_idx: Some(addr_idx),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
-            sndr: Some(addr),
+            sndr_idx: Some(addr_idx),
             memo: prompt::request_str("memo")?,
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
@@ -263,24 +268,24 @@ fn transaction_op_menu_moonlight(
             gas_price: prompt::request_gas_price()?,
         })),
         Stake => AddrOp::Run(Box::new(Command::MoonlightStake {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             amt: prompt::request_stake_token_amt(moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Unstake => AddrOp::Run(Box::new(Command::MoonlightUnstake {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Withdraw => AddrOp::Run(Box::new(Command::MoonlightWithdraw {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         ContractDeploy => {
             AddrOp::Run(Box::new(Command::MoonlightContractDeploy {
-                addr: Some(addr),
+                addr_idx: Some(addr_idx),
                 code: prompt::request_contract_code()?,
                 init_args: prompt::request_bytes("init arguments")?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
@@ -288,7 +293,7 @@ fn transaction_op_menu_moonlight(
             }))
         }
         ContractCall => AddrOp::Run(Box::new(Command::MoonlightContractCall {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             contract_id: prompt::request_bytes("contract id")?,
             fn_name: prompt::request_str("function name to call")?,
             fn_args: prompt::request_bytes("arguments of calling function")?,
@@ -305,7 +310,7 @@ fn transaction_op_menu_moonlight(
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
 fn transaction_op_menu_phoenix(
-    addr: Address,
+    addr_idx: u8,
     phoenix_balance: Dusk,
 ) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
@@ -332,14 +337,14 @@ fn transaction_op_menu_phoenix(
 
     let x = match val {
         Transfer => AddrOp::Run(Box::new(Command::PhoenixTransfer {
-            sndr: Some(addr),
+            sndr_idx: Some(addr_idx),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", phoenix_balance)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
-            sndr: Some(addr),
+            sndr_idx: Some(addr_idx),
             memo: prompt::request_str("memo")?,
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt(
@@ -350,24 +355,24 @@ fn transaction_op_menu_phoenix(
             gas_price: prompt::request_gas_price()?,
         })),
         Stake => AddrOp::Run(Box::new(Command::PhoenixStake {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             amt: prompt::request_stake_token_amt(phoenix_balance)?,
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Unstake => AddrOp::Run(Box::new(Command::PhoenixUnstake {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Withdraw => AddrOp::Run(Box::new(Command::PhoenixWithdraw {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
         ContractDeploy => {
             AddrOp::Run(Box::new(Command::PhoenixContractDeploy {
-                addr: Some(addr),
+                addr_idx: Some(addr_idx),
                 code: prompt::request_contract_code()?,
                 init_args: prompt::request_bytes("init arguments")?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
@@ -375,16 +380,16 @@ fn transaction_op_menu_phoenix(
             }))
         }
         ContractCall => AddrOp::Run(Box::new(Command::PhoenixContractCall {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             contract_id: prompt::request_bytes("contract id")?,
             fn_name: prompt::request_str("function name to call")?,
             fn_args: prompt::request_bytes("arguments of calling function")?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
             gas_price: prompt::request_gas_price()?,
         })),
-        History => {
-            AddrOp::Run(Box::new(Command::PhoenixHistory { addr: Some(addr) }))
-        }
+        History => AddrOp::Run(Box::new(Command::PhoenixHistory {
+            addr_idx: Some(addr_idx),
+        })),
         Back => AddrOp::Back,
     };
 
@@ -429,7 +434,7 @@ enum TransactionOp {
 /// Allows the user to choose the operation to perform for the
 /// selected address
 fn menu_op(
-    addr: Address,
+    addr_idx: u8,
     phoenix_balance: Dusk,
     moonlight_balance: Dusk,
     settings: &Settings,
@@ -471,18 +476,18 @@ fn menu_op(
 
     let res = match cmd {
         CMI::PhoenixTransactions => {
-            transaction_op_menu_phoenix(addr, phoenix_balance)?
+            transaction_op_menu_phoenix(addr_idx, phoenix_balance)?
         }
         CMI::MoonlightTransactions => {
-            transaction_op_menu_moonlight(addr, moonlight_balance)?
+            transaction_op_menu_moonlight(addr_idx, moonlight_balance)?
         }
         CMI::StakeInfo => AddrOp::Run(Box::new(Command::StakeInfo {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             reward: false,
         })),
         CMI::MoonlightToPhoenix => {
             AddrOp::Run(Box::new(Command::MoonlightToPhoenix {
-                addr: Some(addr),
+                addr_idx: Some(addr_idx),
                 amt: prompt::request_token_amt("convert", moonlight_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
@@ -490,14 +495,14 @@ fn menu_op(
         }
         CMI::PhoenixToMoonlight => {
             AddrOp::Run(Box::new(Command::PhoenixToMoonlight {
-                addr: Some(addr),
+                addr_idx: Some(addr_idx),
                 amt: prompt::request_token_amt("convert", phoenix_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
         CMI::Export => AddrOp::Run(Box::new(Command::Export {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             name: None,
             dir: prompt::request_dir("export keys", settings.profile.clone())?,
         })),
@@ -509,7 +514,7 @@ fn menu_op(
 /// Allows the user to choose the operation to perform for the
 /// selected address while in offline mode
 fn menu_op_offline(
-    addr: Address,
+    addr_idx: u8,
     settings: &Settings,
 ) -> anyhow::Result<AddrOp> {
     use CommandMenuItem as CMI;
@@ -530,7 +535,7 @@ fn menu_op_offline(
 
     let res = match cmd {
         CMI::Export => AddrOp::Run(Box::new(Command::Export {
-            addr: Some(addr),
+            addr_idx: Some(addr_idx),
             name: None,
             dir: prompt::request_dir("export keys", settings.profile.clone())?,
         })),
@@ -664,30 +669,34 @@ fn menu_wallet(wallet_found: Option<WalletPath>) -> anyhow::Result<MainMenu> {
 fn confirm(cmd: &Command) -> anyhow::Result<bool> {
     match cmd {
         Command::PhoenixTransfer {
-            sndr,
+            sndr_idx,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let sndr = sndr.as_ref().expect("sender to be a valid address");
             let max_fee = gas_limit * gas_price;
-            println!("   > Send from = {}", sndr.preview());
+            println!(
+                "   > Send from {}",
+                address_idx_string(sndr_idx.unwrap_or_default())
+            );
             println!("   > Recipient = {}", rcvr.preview());
             println!("   > Amount to transfer = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
         Command::MoonlightTransfer {
-            sndr,
+            sndr_idx,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let sndr = sndr.as_ref().expect("sender to be a valid address");
             let max_fee = gas_limit * gas_price;
-            println!("   > Send from = {}", sndr.preview());
+            println!(
+                "   > Send from {}",
+                address_idx_string(sndr_idx.unwrap_or_default())
+            );
             println!("   > Recipient = {}", rcvr.preview());
             println!("   > Amount to transfer = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
@@ -695,37 +704,43 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             prompt::ask_confirm()
         }
         Command::PhoenixStake {
-            addr,
+            addr_idx,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let addr = addr.as_ref().expect("address to be valid");
             let max_fee = gas_limit * gas_price;
-            println!("   > Stake from {}", addr.preview());
+            println!(
+                "   > Send from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
             println!("   > Amount to stake = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
         Command::PhoenixUnstake {
-            addr,
+            addr_idx,
             gas_limit,
             gas_price,
         } => {
-            let addr = addr.as_ref().expect("address to be valid");
             let max_fee = gas_limit * gas_price;
-            println!("   > Unstake from {}", addr.preview());
+            println!(
+                "   > Send from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
         Command::PhoenixWithdraw {
-            addr,
+            addr_idx,
             gas_limit,
             gas_price,
         } => {
-            let addr = addr.as_ref().expect("address to be valid");
             let max_fee = gas_limit * gas_price;
-            println!("   > Reward from {}", addr.preview());
+            println!(
+                "   > Send from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }

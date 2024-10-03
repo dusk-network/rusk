@@ -38,7 +38,6 @@ pub use wallet::{Address, DecodedNote, SecureWalletFile, Wallet, WalletPath};
 
 use execution_core::{
     dusk, from_dusk,
-    signatures::bls::PublicKey as AccountPublicKey,
     stake::StakeData,
     transfer::phoenix::{
         ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,

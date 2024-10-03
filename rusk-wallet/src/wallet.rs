@@ -70,7 +70,7 @@ use gas::Gas;
 /// able to perform common operations such as checking balance, transfernig
 /// funds, or staking Dusk.
 pub struct Wallet<F: SecureWalletFile + Debug> {
-    addresses: Vec<Address>,
+    addresses: Vec<(PhoenixPublicKey, BlsPublicKey)>,
     state: Option<State>,
     store: LocalStore,
     file: Option<F>,
@@ -81,30 +81,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Returns the file used for the wallet
     pub fn file(&self) -> &Option<F> {
         &self.file
-    }
-
-    /// Returns Phoenix key pair for a given address
-    ///
-    /// # Errors
-    ///
-    /// - If the Address provided is not a Phoenix address
-    /// - If the address is not owned
-    pub fn phoenix_keys(
-        &self,
-        addr: &Address,
-    ) -> Result<(PhoenixPublicKey, PhoenixSecretKey), Error> {
-        // make sure we own the address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
-        let index = addr.index()?;
-
-        // retrieve keys
-        let sk = self.phoenix_secret_key(index);
-        let pk = addr.pk()?;
-
-        Ok((*pk, sk))
     }
 }
 
@@ -123,19 +99,19 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             // derive the mnemonic seed
             let seed = Seed::new(&mnemonic, "");
             // Takes the mnemonic seed as bytes
-            let bytes = seed.as_bytes().try_into().unwrap();
+            let seed_bytes = seed.as_bytes().try_into().unwrap();
 
-            // Generate the default address
-            let address = Address::Phoenix {
-                index: Some(0),
-                addr: derive_phoenix_pk(&bytes, 0),
-            };
+            // Generate the default address at index 0
+            let addresses = vec![(
+                derive_phoenix_pk(&seed_bytes, 0),
+                derive_bls_pk(&seed_bytes, 0),
+            )];
 
             // return new wallet instance
             Ok(Wallet {
-                addresses: vec![address],
+                addresses,
                 state: None,
-                store: LocalStore::from(bytes),
+                store: LocalStore::from(seed_bytes),
                 file: None,
                 file_version: None,
             })
@@ -165,14 +141,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         // return early if its legacy
         if let DatFileVersion::Legacy = file_version {
-            let address = Address::Phoenix {
-                index: Some(0),
-                addr: derive_phoenix_pk(&seed, 0),
-            };
+            // Generate the default address at index 0
+            let addresses =
+                vec![(derive_phoenix_pk(&seed, 0), derive_bls_pk(&seed, 0))];
 
             // return the store
             return Ok(Self {
-                addresses: vec![address],
+                addresses,
                 store: LocalStore::from(seed),
                 state: None,
                 file: Some(file),
@@ -181,10 +156,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
 
         let addresses: Vec<_> = (0..address_count)
-            .map(|i| Address::Phoenix {
-                index: Some(i),
-                addr: derive_phoenix_pk(&seed, i),
-            })
+            .map(|i| (derive_phoenix_pk(&seed, i), derive_bls_pk(&seed, i)))
             .collect();
 
         // create and return
@@ -316,17 +288,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Fetches the notes from the state.
     pub async fn get_all_notes(
         &self,
-        addr: &Address,
+        addr_idx: u8,
     ) -> Result<Vec<DecodedNote>, Error> {
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
-        let seed = self.store.get_seed();
-
-        let index = addr.index()?;
-        let vk = derive_phoenix_vk(seed, index);
-        let pk = addr.pk()?;
+        let vk = self.derive_phoenix_vk(addr_idx);
+        let pk = self.phoenix_pk(addr_idx)?;
 
         let live_notes = self.state()?.fetch_notes(pk)?;
         let spent_notes = self.state()?.cache().spent_notes(pk)?;
@@ -358,21 +323,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Obtain balance information for a given address
     pub async fn get_phoenix_balance(
         &self,
-        addr: &Address,
+        addr_idx: u8,
     ) -> Result<BalanceInfo, Error> {
         let state = self.state()?;
-        // make sure we own this address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
 
-        let index = addr.index()?;
-        let notes = state.fetch_notes(addr.pk()?)?;
-
-        let seed = self.store.get_seed();
+        let notes = state.fetch_notes(self.phoenix_pk(addr_idx)?)?;
 
         Ok(phoenix_balance(
-            &derive_phoenix_vk(seed, index),
+            &self.derive_phoenix_vk(addr_idx),
             notes.iter(),
         ))
     }
@@ -380,80 +338,97 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Get Moonlight account balance
     pub async fn get_moonlight_balance(
         &self,
-        addr: &Address,
+        addr_idx: u8,
     ) -> Result<Dusk, Error> {
-        let pk = addr.apk()?;
+        let pk = self.bls_pk(addr_idx)?;
         let state = self.state()?;
         let account = state.fetch_account(pk).await?;
 
         Ok(Dusk::from(account.balance))
     }
 
-    /// Creates a new public address.
-    /// The addresses generated are deterministic across sessions.
-    pub fn new_address(&mut self) -> &Address {
+    /// Pushes a new entry to the internal address vector and returns its index.
+    pub fn add_address(&mut self) -> u8 {
         let seed = self.store.get_seed();
-        let len = self.addresses.len();
-        let pk = derive_phoenix_pk(seed, len as u8);
-        let addr = Address::Phoenix {
-            index: Some(len as u8),
-            addr: pk,
-        };
+        let index = self.addresses.len() as u8;
+        let addr = (derive_phoenix_pk(seed, index), derive_bls_pk(seed, index));
 
         self.addresses.push(addr);
-        self.addresses.last().unwrap()
+
+        index
     }
 
-    /// Default public address for this wallet
-    pub fn default_address(&self) -> &Address {
-        &self.addresses[0]
+    /// Default phoenix public key for this wallet
+    pub fn default_phoenix_pk(&self) -> &PhoenixPublicKey {
+        &self.addresses[0].0
+    }
+
+    /// Default bls public key for this wallet
+    pub fn default_bls_pk(&self) -> &BlsPublicKey {
+        &self.addresses[0].1
     }
 
     /// Addresses that have been generated by the user
-    pub fn addresses(&self) -> &Vec<Address> {
+    pub fn addresses(&self) -> &Vec<(PhoenixPublicKey, BlsPublicKey)> {
         &self.addresses
     }
 
     /// Returns the Phoenix secret-key for a given index
-    pub(crate) fn phoenix_secret_key(&self, index: u8) -> PhoenixSecretKey {
+    pub(crate) fn derive_phoenix_sk(&self, index: u8) -> PhoenixSecretKey {
         let seed = self.store.get_seed();
         derive_phoenix_sk(seed, index)
     }
 
-    /// Returns the Phoenix public-key for a given index
-    pub fn phoenix_public_key(&self, index: u8) -> PhoenixPublicKey {
+    /// Returns the Phoenix secret-key for a given index
+    pub(crate) fn derive_phoenix_vk(&self, index: u8) -> PhoenixViewKey {
         let seed = self.store.get_seed();
-        derive_phoenix_pk(seed, index)
+        derive_phoenix_vk(seed, index)
+    }
+
+    /// Returns the Phoenix public-key for a given index.
+    ///
+    /// # Errors
+    /// This will error if the wallet doesn't have addresses stored for the
+    /// given index.
+    pub fn phoenix_pk(&self, index: u8) -> Result<&PhoenixPublicKey, Error> {
+        let index = usize::from(index);
+        if index >= self.addresses.len() {
+            return Err(Error::AddressNotOwned);
+        }
+
+        Ok(&self.addresses()[index].0)
     }
 
     /// Returns the BLS secret-key for a given index
-    pub(crate) fn bls_secret_key(&self, index: u8) -> BlsSecretKey {
+    pub(crate) fn derive_bls_sk(&self, index: u8) -> BlsSecretKey {
         let seed = self.store.get_seed();
         derive_bls_sk(seed, index)
     }
 
     /// Returns the BLS public-key for a given index
-    pub fn bls_public_key(&self, index: u8) -> BlsPublicKey {
-        let seed = self.store.get_seed();
-        derive_bls_pk(seed, index)
+    ///
+    /// # Errors
+    /// This will error if the wallet doesn't have addresses stored for the
+    /// given index.
+    pub fn bls_pk(&self, index: u8) -> Result<&BlsPublicKey, Error> {
+        let index = usize::from(index);
+        if index >= self.addresses.len() {
+            return Err(Error::AddressNotOwned);
+        }
+
+        Ok(&self.addresses()[index].1)
     }
 
-    /// Creates a generic Moonlight transaction.
+    /// Creates a generic moonlight execution, paying gas with Moonlight tokens.
     #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(
         &self,
-        sender_addr: &Address,
-        receiver: Option<BlsPublicKey>,
+        sender_idx: u8,
         transfer_value: Dusk,
         deposit: Dusk,
         gas: Gas,
         exec: Option<impl Into<TransactionData>>,
     ) -> Result<Transaction, Error> {
-        // make sure we own the sender address
-        if !sender_addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
         // check gas limits
         if !gas.is_enough() {
             return Err(Error::NotEnoughGas);
@@ -462,11 +437,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let deposit = *deposit;
 
-        let sender_index = sender_addr.index()?;
-        let mut sender_sk = self.bls_secret_key(sender_index);
-        let sender = self.bls_public_key(sender_index);
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
+        let sender = self.bls_pk(sender_idx)?;
 
-        let account = state.fetch_account(&sender).await?;
+        let account = state.fetch_account(sender).await?;
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.
@@ -476,7 +450,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let tx = moonlight(
             &sender_sk,
-            receiver,
+            None,
             *transfer_value,
             deposit,
             gas.limit,
@@ -494,16 +468,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Executes a generic contract call, paying gas with phoenix notes
     pub async fn phoenix_execute(
         &self,
-        sender: &Address,
+        sender_idx: u8,
         deposit: Dusk,
         gas: Gas,
         data: TransactionData,
     ) -> Result<Transaction, Error> {
-        // make sure we own the sender address
-        if !sender.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
         // check gas limits
         if !gas.is_enough() {
             return Err(Error::NotEnoughGas);
@@ -513,13 +482,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let deposit = *deposit;
 
         let mut rng = StdRng::from_entropy();
-        let sender_index = sender.index()?;
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        // in a contract execution, the sender and receiver are the same
-        let receiver_pk = sender.pk()?;
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
+        // in a contract execution or deployment, the sender and receiver are
+        // the same
+        let receiver_pk = self.phoenix_pk(sender_idx)?;
 
         let inputs = state
-            .inputs(sender_index, deposit + gas.limit * gas.price)
+            .inputs(sender_idx, deposit + gas.limit * gas.price)
             .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
@@ -531,7 +500,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let tx = phoenix(
             &mut rng,
             &sender_sk,
-            sender.pk()?,
+            self.phoenix_pk(sender_idx)?,
             receiver_pk,
             inputs,
             root,
@@ -553,16 +522,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfers funds between Phoenix addresses
     pub async fn phoenix_transfer(
         &self,
-        sender: &Address,
-        rcvr: &Address,
+        sender_idx: u8,
+        receiver_pk: &PhoenixPublicKey,
         memo: Option<String>,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
-        // make sure we own the sender address
-        if !sender.is_owned() {
-            return Err(Error::Unauthorized);
-        }
         // make sure amount is positive
         if amt == 0 && memo.is_none() {
             return Err(Error::AmountIsZero);
@@ -575,15 +540,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
 
         let mut rng = StdRng::from_entropy();
-        let sender_index = sender.index()?;
         let amt = *amt;
 
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        let change_pk = sender.pk()?;
-        let reciever_pk = rcvr.pk()?;
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
+        let change_pk = self.phoenix_pk(sender_idx)?;
 
         let inputs = state
-            .inputs(sender_index, amt + gas.limit * gas.price)
+            .inputs(sender_idx, amt + gas.limit * gas.price)
             .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
@@ -596,7 +559,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &mut rng,
             &sender_sk,
             change_pk,
-            reciever_pk,
+            receiver_pk,
             inputs,
             root,
             amt,
@@ -617,16 +580,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfer through Moonlight
     pub async fn moonlight_transfer(
         &self,
-        sender: &Address,
-        rcvr: &Address,
+        sender_idx: u8,
+        rcvr: &BlsPublicKey,
         memo: Option<String>,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
-        // make sure we own the sender address
-        if !sender.is_owned() {
-            return Err(Error::Unauthorized);
-        }
         // make sure amount is positive
         if amt == 0 && memo.is_none() {
             return Err(Error::AmountIsZero);
@@ -636,20 +595,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotEnoughGas);
         }
 
-        let sender = sender.index()?;
-
-        let mut sender_sk = self.bls_secret_key(sender);
-        let apk = rcvr.apk()?;
-        let sender_pk = self.bls_public_key(sender);
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
+        let sender_pk = self.bls_pk(sender_idx)?;
         let amt = *amt;
 
         let state = self.state()?;
-        let nonce = state.fetch_account(&sender_pk).await?.nonce + 1;
+        let nonce = state.fetch_account(sender_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
             &sender_sk,
-            Some(*apk),
+            Some(*rcvr),
             amt,
             0,
             gas.limit,
@@ -667,14 +623,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Stakes Dusk using Phoenix notes
     pub async fn phoenix_stake(
         &self,
-        addr: &Address,
+        addr_idx: u8,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
-        // make sure we own the staking address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
         // make sure amount is positive
         if amt == 0 {
             return Err(Error::AmountIsZero);
@@ -688,19 +640,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let mut rng = StdRng::from_entropy();
         let amt = *amt;
-        let sender_index = addr.index()?;
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        let mut stake_sk = self.bls_secret_key(sender_index);
+        let mut sender_sk = self.derive_phoenix_sk(addr_idx);
+        let mut stake_sk = self.derive_bls_sk(addr_idx);
 
         let nonce = state
-            .fetch_stake(&AccountPublicKey::from(&stake_sk))
+            .fetch_stake(&BlsPublicKey::from(&stake_sk))
             .await?
             .map(|s| s.nonce)
             .unwrap_or(0)
             + 1;
 
         let inputs = state
-            .inputs(sender_index, amt + gas.limit * gas.price)
+            .inputs(addr_idx, amt + gas.limit * gas.price)
             .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
@@ -720,17 +671,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(stake).await
     }
 
-    /// Stake via Moonlight
+    /// Stake via Moonlight, using the moonlight public key to stake.
     pub async fn moonlight_stake(
         &self,
-        addr: &Address,
+        addr_idx: u8,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
-        // make sure we own the staking address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
         // make sure amount is positive
         if amt == 0 {
             return Err(Error::AmountIsZero);
@@ -742,14 +689,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let state = self.state()?;
         let amt = *amt;
-        let sender_index = addr.index()?;
-        let mut stake_sk = self.bls_secret_key(sender_index);
-        let pk = self.bls_public_key(sender_index);
+        let mut stake_sk = self.derive_bls_sk(addr_idx);
+        let stake_pk = self.bls_pk(addr_idx)?;
         let chain_id = state.fetch_chain_id().await?;
-        let moonlight_current_nonce = state.fetch_account(&pk).await?.nonce + 1;
+        let moonlight_current_nonce =
+            state.fetch_account(stake_pk).await?.nonce + 1;
 
-        let nonce =
-            state.fetch_stake(&pk).await?.map(|s| s.nonce).unwrap_or(0) + 1;
+        let nonce = state
+            .fetch_stake(stake_pk)
+            .await?
+            .map(|s| s.nonce)
+            .unwrap_or(0)
+            + 1;
 
         let stake = moonlight_stake(
             &stake_sk,
@@ -772,32 +723,24 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         addr_idx: u8,
     ) -> Result<Option<StakeData>, Error> {
-        self.state()?
-            .fetch_stake(&self.bls_public_key(addr_idx))
-            .await
+        self.state()?.fetch_stake(self.bls_pk(addr_idx)?).await
     }
 
     /// Unstakes Dusk into Phoenix notes
     pub async fn phoenix_unstake(
         &self,
-        addr: &Address,
+        addr_idx: u8,
         gas: Gas,
     ) -> Result<Transaction, Error> {
-        // make sure we own the staking address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
         let mut rng = StdRng::from_entropy();
-        let index = addr.index()?;
 
         let state = self.state()?;
 
-        let mut sender_sk = self.phoenix_secret_key(index);
-        let mut stake_sk = self.bls_secret_key(index);
+        let mut sender_sk = self.derive_phoenix_sk(addr_idx);
+        let mut stake_sk = self.derive_bls_sk(addr_idx);
 
         let unstake_value = state
-            .fetch_stake(&AccountPublicKey::from(&stake_sk))
+            .fetch_stake(&BlsPublicKey::from(&stake_sk))
             .await?
             .and_then(|s| s.amount)
             .map(|s| s.total_funds())
@@ -807,7 +750,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotStaked);
         }
 
-        let inputs = state.inputs(index, gas.limit * gas.price).await?;
+        let inputs = state.inputs(addr_idx, gas.limit * gas.price).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
@@ -831,23 +774,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.prove_and_propagate(unstake).await
     }
 
-    /// Unstakes Dusk through Moonlight
+    /// Unstakes Dusk through Moonlight, using the same key for the
+    /// Moonlight-account and Staking-account.
     pub async fn moonlight_unstake(
         &self,
-        addr: &Address,
+        addr_idx: u8,
         gas: Gas,
     ) -> Result<Transaction, Error> {
-        // make sure we own the staking address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
         let mut rng = StdRng::from_entropy();
-        let index = addr.index()?;
         let state = self.state()?;
-        let mut stake_sk = self.bls_secret_key(index);
+        let mut stake_sk = self.derive_bls_sk(addr_idx);
 
-        let pk = addr.apk()?;
+        let pk = self.bls_pk(addr_idx)?;
 
         let chain_id = state.fetch_chain_id().await?;
         let account_nonce = state.fetch_account(pk).await?.nonce + 1;
@@ -882,28 +820,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Withdraw accumulated staking reward for a given address to Phoenix
     pub async fn phoenix_stake_withdraw(
         &self,
-        sender_addr: &Address,
+        sender_idx: u8,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
-        // make sure we own the staking address
-        if !sender_addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
-
         let mut rng = StdRng::from_entropy();
-        let sender_index = sender_addr.index()?;
 
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        let mut stake_sk = self.bls_secret_key(sender_index);
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
+        let mut stake_sk = self.derive_bls_sk(sender_idx);
 
-        let inputs = state.inputs(sender_index, gas.limit * gas.price).await?;
+        let inputs = state.inputs(sender_idx, gas.limit * gas.price).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
         let reward_amount = state
-            .fetch_stake(&AccountPublicKey::from(&stake_sk))
+            .fetch_stake(&BlsPublicKey::from(&stake_sk))
             .await?
             .map(|s| s.reward)
             .unwrap_or(0);
@@ -930,31 +862,37 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Convert balance from Phoenix to Moonlight
     pub async fn phoenix_to_moonlight(
         &self,
-        sender_addr: &Address,
+        addr_idx: u8,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let sender_index = sender_addr.index()?;
         let amt = *amt;
-        let inputs = state
-            .inputs(sender_index, amt + gas.limit * gas.price)
-            .await?;
+        let inputs =
+            state.inputs(addr_idx, amt + gas.limit * gas.price).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        let mut stake_sk = self.bls_secret_key(sender_index);
+        let mut phoenix_sk = self.derive_phoenix_sk(addr_idx);
+        let mut moonlight_sk = self.derive_bls_sk(addr_idx);
 
         let convert = phoenix_to_moonlight(
-            &mut rng, &sender_sk, &stake_sk, inputs, root, amt, gas.limit,
-            gas.price, chain_id, &Prover,
+            &mut rng,
+            &phoenix_sk,
+            &moonlight_sk,
+            inputs,
+            root,
+            amt,
+            gas.limit,
+            gas.price,
+            chain_id,
+            &Prover,
         )?;
 
-        sender_sk.zeroize();
-        stake_sk.zeroize();
+        phoenix_sk.zeroize();
+        moonlight_sk.zeroize();
 
         state.prove_and_propagate(convert).await
     }
@@ -962,29 +900,34 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Convert balance from Moonlight to Phoenix
     pub async fn moonlight_to_phoenix(
         &self,
-        sender_addr: &Address,
+        addr_idx: u8,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let sender_index = sender_addr.index()?;
 
-        let pk = self.bls_public_key(sender_index);
+        let moonlight_pk = self.bls_pk(addr_idx)?;
 
-        let nonce = state.fetch_account(&pk).await?.nonce + 1;
+        let nonce = state.fetch_account(moonlight_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        let mut stake_sk = self.bls_secret_key(sender_index);
+        let mut phoenix_sk = self.derive_phoenix_sk(addr_idx);
+        let mut moonlight_sk = self.derive_bls_sk(addr_idx);
 
         let convert = moonlight_to_phoenix(
-            &mut rng, &stake_sk, &sender_sk, *amt, gas.limit, gas.price, nonce,
+            &mut rng,
+            &moonlight_sk,
+            &phoenix_sk,
+            *amt,
+            gas.limit,
+            gas.price,
+            nonce,
             chain_id,
         )?;
 
-        sender_sk.zeroize();
-        stake_sk.zeroize();
+        phoenix_sk.zeroize();
+        moonlight_sk.zeroize();
 
         state.prove_and_propagate(convert).await
     }
@@ -992,20 +935,20 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Withdraw accumulated staking reward for a given address to Moonlight
     pub async fn moonlight_stake_withdraw(
         &self,
-        sender: &Address,
+        sender_idx: u8,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let sender_index = sender.index()?;
-        let pk = self.bls_public_key(sender_index);
-        let nonce = state.fetch_account(&pk).await?.nonce + 1;
+
+        let pk = self.bls_pk(sender_idx)?;
+        let nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
-        let stake_info = state.fetch_stake(&pk).await?;
+        let stake_info = state.fetch_stake(pk).await?;
         let reward = stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
         let reward = Dusk::from(reward);
 
-        let mut sender_sk = self.bls_secret_key(sender_index);
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
 
         let withdraw = moonlight_stake_reward(
             &mut rng, &sender_sk, &sender_sk, *reward, gas.limit, gas.price,
@@ -1020,18 +963,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Deploy a contract using Moonlight
     pub async fn moonlight_deploy(
         &self,
-        sender: &Address,
+        sender_idx: u8,
         bytes_code: Vec<u8>,
         init_args: Vec<u8>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
-        let sender_index = sender.index()?;
-        let pk = sender.apk()?;
+
+        let pk = self.bls_pk(sender_idx)?;
         let nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
-        let mut sender_sk = self.bls_secret_key(sender_index);
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
 
         let deploy = moonlight_deployment(
             &sender_sk, bytes_code, pk, init_args, gas.limit, gas.price, nonce,
@@ -1046,26 +989,25 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Deploy a contract using Phoenix
     pub async fn phoenix_deploy(
         &self,
-        sender: &Address,
+        sender_idx: u8,
         bytes_code: Vec<u8>,
         init_args: Vec<u8>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let sender_index = sender.index()?;
 
         let chain_id = state.fetch_chain_id().await?;
         let root = state.fetch_root().await?;
 
-        let inputs = state.inputs(sender_index, gas.limit * gas.price).await?;
+        let inputs = state.inputs(sender_idx, gas.limit * gas.price).await?;
 
-        let mut sender_sk = self.phoenix_secret_key(sender_index);
-        let apk = self.bls_public_key(sender_index);
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
+        let owner_pk = self.bls_pk(sender_idx)?;
 
         let deploy = phoenix_deployment(
-            &mut rng, &sender_sk, inputs, root, bytes_code, &apk, init_args, 0,
-            gas.limit, gas.price, chain_id, &Prover,
+            &mut rng, &sender_sk, inputs, root, bytes_code, owner_pk,
+            init_args, 0, gas.limit, gas.price, chain_id, &Prover,
         )?;
 
         sender_sk.zeroize();
@@ -1076,16 +1018,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Returns BLS key-pair for provisioner nodes
     pub fn provisioner_keys(
         &self,
-        addr: &Address,
+        index: u8,
     ) -> Result<(BlsPublicKey, BlsSecretKey), Error> {
-        // make sure we own the staking address
-        if !addr.is_owned() {
-            return Err(Error::Unauthorized);
-        }
+        let pk = *self.bls_pk(index)?;
+        let sk = self.derive_bls_sk(index);
 
-        let index = addr.index()?;
-        let sk = self.bls_secret_key(index);
-        let pk = self.bls_public_key(index);
+        // make sure our internal addresses are not corrupted
+        if pk != BlsPublicKey::from(&sk) {
+            return Err(Error::AddressNotOwned);
+        }
 
         Ok((pk, sk))
     }
@@ -1093,7 +1034,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Export BLS key-pair for provisioners in node-compatible format
     pub fn export_provisioner_keys(
         &self,
-        addr: &Address,
+        addr_idx: u8,
         dir: &Path,
         filename: Option<String>,
         pwd: &[u8],
@@ -1104,11 +1045,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
 
         // get our keys for this address
-        let keys = self.provisioner_keys(addr)?;
+        let keys = self.provisioner_keys(addr_idx)?;
 
         // set up the path
         let mut path = PathBuf::from(dir);
-        path.push(filename.unwrap_or(addr.to_string()));
+        path.push(filename.unwrap_or(addr_idx.to_string()));
 
         // export public key to disk
         let bytes = keys.0.to_bytes();
@@ -1131,12 +1072,23 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok((path.with_extension("keys"), path.with_extension("cpk")))
     }
 
-    /// Obtain the owned `Address` for a given address
-    pub fn claim_as_address(&self, addr: Address) -> Result<&Address, Error> {
-        self.addresses()
-            .iter()
-            .find(|&a| a == &addr)
-            .ok_or(Error::AddressNotOwned)
+    /// Return the index of the address passed, returns an error if the address
+    /// is not in the wallet addresses.
+    pub fn find_index(&self, addr: &Address) -> Result<u8, Error> {
+        // check if the key is stored in our addresses, return its index if
+        // found
+        for (index, (phoenix_pk, bls_pk)) in self.addresses().iter().enumerate()
+        {
+            if match addr {
+                Address::Phoenix { pk } => pk == phoenix_pk,
+                Address::Bls { pk } => pk == bls_pk,
+            } {
+                return Ok(index as u8);
+            }
+        }
+
+        // return an error otherwise
+        Err(Error::AddressNotOwned)
     }
 
     /// Return the dat file version from memory or by reading the file
@@ -1208,7 +1160,7 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    const TEST_ADDR: &str = "2w7fRQW23Jn9Bgm1GQW9eC2bD9U883dAwqP7HAr2F8g1syzPQaPYrxSyyVZ81yDS5C1rv9L8KjdPBsvYawSx3QCW";
+    const TEST_ADDR: &str = "Phoenix Address         - 2w7fRQW23Jn9Bgm1GQW9eC2bD9U883dAwqP7HAr2F8g1syzPQaPYrxSyyVZ81yDS5C1rv9L8KjdPBsvYawSx3QCW";
 
     #[derive(Debug, Clone)]
     struct WalletFile {
@@ -1226,24 +1178,35 @@ mod tests {
         }
     }
 
+    fn default_phoenix_address(wallet: &Wallet<WalletFile>) -> Address {
+        Address::Phoenix {
+            pk: *wallet
+                .phoenix_pk(0)
+                .expect("There to be a key at the index"),
+        }
+    }
+
     #[test]
     fn wallet_basics() -> Result<(), Box<dyn std::error::Error>> {
         // create a wallet from a mnemonic phrase
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
 
         // check address generation
-        let default_addr = wallet.default_address().clone();
-        let other_addr = wallet.new_address();
+        let default_addr = default_phoenix_address(&wallet);
+        let other_addr_idx = wallet.add_address();
+        let other_addr = Address::Phoenix {
+            pk: *wallet.phoenix_pk(other_addr_idx)?,
+        };
 
-        assert!(format!("{}", default_addr).eq(TEST_ADDR));
-        assert_ne!(&default_addr, other_addr);
+        assert!(format!("{default_addr}").eq(TEST_ADDR));
+        assert_ne!(default_addr, other_addr);
         assert_eq!(wallet.addresses.len(), 2);
 
         // create another wallet with different mnemonic
         let wallet: Wallet<WalletFile> = Wallet::new("demise monitor elegant cradle squeeze cheap parrot venture stereo humor scout denial action receive flat")?;
 
         // check addresses are different
-        let addr = wallet.default_address();
+        let addr = default_phoenix_address(&wallet);
         assert!(format!("{}", addr).ne(TEST_ADDR));
 
         // attempt to create a wallet from an invalid mnemonic
@@ -1272,9 +1235,9 @@ mod tests {
         // load from file and check
         let loaded_wallet = Wallet::from_file(file)?;
 
-        let original_addr = wallet.default_address();
-        let loaded_addr = loaded_wallet.default_address();
-        assert!(original_addr.eq(loaded_addr));
+        let original_addr = default_phoenix_address(&wallet);
+        let loaded_addr = default_phoenix_address(&loaded_wallet);
+        assert!(original_addr.eq(&loaded_addr));
 
         Ok(())
     }
