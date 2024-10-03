@@ -97,7 +97,7 @@ impl State {
 
                 let pk = bs58::encode(pk.to_bytes()).into_string();
 
-                [format!("{:?}", pk), format!("spent_{pk}")]
+                [pk.clone(), format!("spent_{pk}")]
             })
             .collect();
 

@@ -84,6 +84,7 @@ pub(crate) async fn sync_db(
     }
 
     for (sk, vk, pk) in keys.iter() {
+        let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
         for (block_height, note) in note_data.iter() {
             if vk.owns(note.stealth_address()) {
                 let nullifier = note.gen_nullifier(sk);
@@ -95,8 +96,8 @@ pub(crate) async fn sync_db(
                 let note = (note.clone(), nullifier);
 
                 match spent {
-                    true => cache.insert_spent(pk, *block_height, note),
-                    false => cache.insert(pk, *block_height, note),
+                    true => cache.insert_spent(&pk_bs58, *block_height, note),
+                    false => cache.insert(&pk_bs58, *block_height, note),
                 }?;
             }
         }

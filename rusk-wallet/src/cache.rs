@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::transfer::phoenix::NoteLeaf;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
@@ -50,15 +50,15 @@ impl Cache {
     // representation of the tuple (NoteHeight, Note)
     pub(crate) fn insert(
         &self,
-        pk: &PhoenixPublicKey,
+        pk_bs58: &str,
         block_height: u64,
         note_data: (Note, BlsScalar),
     ) -> Result<(), Error> {
-        let cf_name = format!("{:?}", pk);
+        let cf_name = pk_bs58;
 
         let cf = self
             .db
-            .cf_handle(&cf_name)
+            .cf_handle(cf_name)
             .ok_or(Error::CacheDatabaseCorrupted)?;
 
         let (note, nullifier) = note_data;
@@ -80,11 +80,11 @@ impl Cache {
     // representation of the tuple (NoteHeight, Note)
     pub(crate) fn insert_spent(
         &self,
-        pk: &PhoenixPublicKey,
+        pk_bs58: &str,
         block_height: u64,
         note_data: (Note, BlsScalar),
     ) -> Result<(), Error> {
-        let cf_name = format!("spent_{:?}", pk);
+        let cf_name = format!("spent_{pk_bs58}");
 
         let cf = self
             .db
@@ -111,8 +111,11 @@ impl Cache {
         if nullifiers.is_empty() {
             return Ok(());
         }
-        let cf_name = format!("{:?}", pk);
-        let spent_cf_name = format!("spent_{:?}", pk);
+
+        let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
+
+        let spent_cf_name = format!("spent_{pk_bs58}");
+        let cf_name = pk_bs58;
 
         let cf = self
             .db
@@ -157,7 +160,7 @@ impl Cache {
         &self,
         pk: &PhoenixPublicKey,
     ) -> Result<Vec<BlsScalar>, Error> {
-        let cf_name = format!("{:?}", pk);
+        let cf_name = bs58::encode(pk.to_bytes()).into_string();
         let mut notes = vec![];
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
@@ -181,7 +184,7 @@ impl Cache {
         &self,
         pk: &PhoenixPublicKey,
     ) -> Result<BTreeSet<NoteLeaf>, Error> {
-        let cf_name = format!("{:?}", pk);
+        let cf_name = bs58::encode(pk.to_bytes()).into_string();
         let mut notes = BTreeSet::<NoteLeaf>::new();
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
@@ -207,7 +210,8 @@ impl Cache {
         &self,
         pk: &PhoenixPublicKey,
     ) -> Result<Vec<(BlsScalar, NoteLeaf)>, Error> {
-        let cf_name = format!("spent_{:?}", pk);
+        let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
+        let cf_name = format!("spent_{pk_bs58}");
         let mut notes = vec![];
 
         if let Some(cf) = self.db.cf_handle(&cf_name) {
