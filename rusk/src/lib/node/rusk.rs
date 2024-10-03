@@ -640,9 +640,10 @@ fn contract_deploy(
             deploy.bytecode.bytes.as_slice(),
             deploy.init_args.clone(),
             deploy.owner.clone(),
-            gas_limit - receipt.gas_spent,
+            gas_limit,
         );
         match result {
+            // Should the gas spent by the INIT method charged too?
             Ok(_) => receipt.gas_spent += deploy_charge,
             Err(err) => {
                 info!("Tx caused deployment error {err:?}");
@@ -722,11 +723,12 @@ fn execute(
 
     // Deploy if this is a deployment transaction and spend part is successful.
     if let Some(deploy) = tx.deploy() {
+        let gas_left = tx.gas_limit() - receipt.gas_spent;
         if receipt.data.is_ok() {
             contract_deploy(
                 session,
                 deploy,
-                tx.gas_limit(),
+                gas_left,
                 gas_per_deploy_byte,
                 &mut receipt,
             );
