@@ -101,7 +101,7 @@ pub(super) async fn moonlight_tx_by_address(
     let pk = AccountPublicKey::from_bytes(&pk_bytes)
         .map_err(|_| anyhow::anyhow!("Failed to serialize given public key"))?;
     
-    let moonlight_events = archive.get_moonlight_events(pk)?;
+    let moonlight_events = archive.moonlight_txs_by_pk(pk)?;
 
     if let Some(moonlight_events) = moonlight_events {
         Ok(Some(MoonlightTransactions(moonlight_events)))

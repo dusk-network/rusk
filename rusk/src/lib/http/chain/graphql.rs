@@ -137,7 +137,7 @@ impl Query {
     }
 
     #[cfg(feature = "archive")]
-    async fn all_moonlight_txs(
+    async fn full_moonlight_history(
         &self,
         ctx: &Context<'_>,
         address: String,
