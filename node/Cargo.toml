@@ -36,6 +36,7 @@ memory-stats = { workspace = true }
 # archive feature dependencies
 sqlx = { version = "=0.7.4", features = [ "runtime-tokio", "tls-native-tls", "sqlite", "migrate"], optional = true }
 serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, features = ["hex"], optional = true }
 
 [dev-dependencies]
 fake = { workspace = true, features = ['derive'] }
@@ -46,7 +47,7 @@ criterion = { workspace = true, features = ["async_futures"] }
 
 [features]
 with_telemetry = []
-archive = ["dep:sqlx", "dep:serde_json"]
+archive = ["dep:sqlx", "dep:serde_json", "dep:serde_with"]
 
 [[bench]]
 name = "accept"

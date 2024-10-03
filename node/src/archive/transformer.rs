@@ -17,9 +17,11 @@ use serde::{Deserialize, Serialize};
 
 /// More efficient format for events that belong to the same tx to not duplicate
 /// TxHash
+#[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MoonlightTxEvents {
     events: Vec<ContractEvent>,
+    #[serde_as(as = "serde_with::hex::Hex")]
     origin: TxHash,
 }
 

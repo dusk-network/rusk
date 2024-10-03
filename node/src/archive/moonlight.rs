@@ -15,7 +15,7 @@ use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, LogLevel,
     OptimisticTransactionDB, Options,
 };
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::archive::transformer::{self, MoonlightTxEvents};
 use crate::archive::{Archive, ArchiveOptions};
@@ -106,8 +106,12 @@ impl Archive {
         &self,
         block_events: Vec<ContractTxEvent>,
     ) -> Result<()> {
+        debug!("Loading moonlight transaction events into the moonlight db");
+
         let (address_mappings, _, moonlight_groups) =
             transformer::group_by_origins_filter_and_convert(block_events);
+
+        debug!("Found {} moonlight transactions", moonlight_groups.len());
 
         let address_mappings = util::check_duplicates(address_mappings);
 
