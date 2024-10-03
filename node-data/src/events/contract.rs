@@ -14,10 +14,12 @@ pub const TX_HASH_BYTES: usize = 32;
 pub type TxHash = [u8; TX_HASH_BYTES];
 
 /// Contract event with optional origin (tx hash).
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractTxEvent {
     pub event: ContractEvent,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<serde_with::hex::Hex>")]
     pub origin: Option<TxHash>,
 }
 
