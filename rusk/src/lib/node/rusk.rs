@@ -26,12 +26,12 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
     transfer::{
-        data::{ContractBytecode, ContractDeploy},
-        moonlight::AccountData,
+        data::ContractDeploy, moonlight::AccountData,
         Transaction as ProtocolTransaction, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractError, Dusk, Event,
 };
+use node::vm::bytecode_charge;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
@@ -53,17 +53,14 @@ pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
         .expect("Dusk consensus public key to be valid")
 });
 
-const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
-const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
-
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
         generation_timeout: Option<Duration>,
-        gas_per_deploy_byte: Option<u64>,
-        min_deployment_gas_price: Option<u64>,
+        gas_per_deploy_byte: u64,
+        min_deployment_gas_price: u64,
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
@@ -519,8 +516,8 @@ fn accept(
     txs: &[Transaction],
     slashing: Vec<Slash>,
     voters: &[Voter],
-    gas_per_deploy_byte: Option<u64>,
-    min_deployment_gas_price: Option<u64>,
+    gas_per_deploy_byte: u64,
+    min_deployment_gas_price: u64,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
@@ -609,15 +606,6 @@ fn accept(
     ))
 }
 
-// Returns gas charge for bytecode deployment.
-fn bytecode_charge(
-    bytecode: &ContractBytecode,
-    gas_per_deploy_byte: &Option<u64>,
-) -> u64 {
-    bytecode.bytes.len() as u64
-        * gas_per_deploy_byte.unwrap_or(DEFAULT_GAS_PER_DEPLOY_BYTE)
-}
-
 // Contract deployment will fail and charge full gas limit in the
 // following cases:
 // 1) Transaction gas limit is smaller than deploy charge plus gas used for
@@ -631,10 +619,10 @@ fn contract_deploy(
     session: &mut Session,
     deploy: &ContractDeploy,
     gas_limit: u64,
-    gas_per_deploy_byte: Option<u64>,
+    gas_per_deploy_byte: u64,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
 ) {
-    let deploy_charge = bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
+    let deploy_charge = bytecode_charge(&deploy.bytecode, gas_per_deploy_byte);
     let min_gas_limit = receipt.gas_spent + deploy_charge;
     let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
     if gas_limit < min_gas_limit {
@@ -702,18 +690,15 @@ fn contract_deploy(
 fn execute(
     session: &mut Session,
     tx: &ProtocolTransaction,
-    gas_per_deploy_byte: Option<u64>,
-    min_deployment_gas_price: Option<u64>,
+    gas_per_deploy_byte: u64,
+    min_deployment_gas_price: u64,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     if let Some(deploy) = tx.deploy() {
         let deploy_charge =
-            bytecode_charge(&deploy.bytecode, &gas_per_deploy_byte);
-        if tx.gas_price()
-            < min_deployment_gas_price
-                .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE)
-        {
+            bytecode_charge(&deploy.bytecode, gas_per_deploy_byte);
+        if tx.gas_price() < min_deployment_gas_price {
             return Err(PiecrustError::Panic(
                 "gas price too low to deploy".into(),
             ));

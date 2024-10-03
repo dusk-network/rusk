@@ -24,6 +24,8 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
+use crate::common::state::DEFAULT_GAS_PER_DEPLOY_BYTE;
+use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
 use crate::common::state::{generator_procedure, ExecuteResult};
 use crate::common::wallet::{TestStateClient, TestStore};
 
@@ -99,8 +101,8 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
         dir,
         CHAIN_ID,
         None,
-        None,
-        None,
+        DEFAULT_GAS_PER_DEPLOY_BYTE,
+        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         BLOCK_GAS_LIMIT,
         u64::MAX,
         sender,

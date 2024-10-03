@@ -10,6 +10,7 @@ use dusk_consensus::{
     user::{provisioners::Provisioners, stake::Stake},
 };
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::transfer::data::ContractBytecode;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 #[derive(Default)]
@@ -73,4 +74,15 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]>;
     fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]>;
+
+    fn gas_per_deploy_byte(&self) -> u64;
+    fn min_deployment_gas_price(&self) -> u64;
+}
+
+// Returns gas charge for bytecode deployment.
+pub fn bytecode_charge(
+    bytecode: &ContractBytecode,
+    gas_per_deploy_byte: u64,
+) -> u64 {
+    bytecode.bytes.len() as u64 * gas_per_deploy_byte
 }

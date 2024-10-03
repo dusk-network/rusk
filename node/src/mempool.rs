@@ -35,6 +35,10 @@ pub enum TxAcceptanceError {
     SpendIdExistsInMempool,
     #[error("this transaction is invalid {0}")]
     VerificationFailed(String),
+    #[error("gas price lower than minimum {0}")]
+    GasPriceTooLow(u64),
+    #[error("gas limit lower than minimum {0}")]
+    GasLimitTooLow(u64),
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
     #[error("A generic error occurred {0}")]
@@ -190,6 +194,27 @@ impl MempoolSrv {
         max_mempool_txn_count: usize,
     ) -> Result<Vec<TransactionEvent<'t>>, TxAcceptanceError> {
         let tx_id = tx.id();
+
+        if tx.gas_price() < 1 {
+            return Err(TxAcceptanceError::GasPriceTooLow(1));
+        }
+
+        if let Some(deploy) = tx.inner.deploy() {
+            let vm = vm.read().await;
+            let min_deployment_gas_price = vm.min_deployment_gas_price();
+            if tx.gas_price() < min_deployment_gas_price {
+                return Err(TxAcceptanceError::GasPriceTooLow(
+                    min_deployment_gas_price,
+                ));
+            }
+
+            let gas_per_deploy_byte = vm.gas_per_deploy_byte();
+            let min_gas_limit =
+                vm::bytecode_charge(&deploy.bytecode, gas_per_deploy_byte);
+            if tx.inner.gas_limit() < min_gas_limit {
+                return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
+            }
+        }
 
         // Perform basic checks on the transaction
         db.read().await.view(|view| {

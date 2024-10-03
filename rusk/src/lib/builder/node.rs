@@ -52,6 +52,9 @@ pub struct RuskNodeBuilder {
     command_revert: bool,
 }
 
+const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
+const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
+
 impl RuskNodeBuilder {
     pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
         self.consensus_keys_path = consensus_keys_path;
@@ -167,12 +170,19 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         let (archive_sender, archive_receiver) = mpsc::channel(1000);
 
+        let gas_per_deploy_byte = self
+            .gas_per_deploy_byte
+            .unwrap_or(DEFAULT_GAS_PER_DEPLOY_BYTE);
+        let min_deployment_gas_price = self
+            .min_deployment_gas_price
+            .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE);
+
         let rusk = Rusk::new(
             self.state_dir,
             self.kadcast.kadcast_id.unwrap_or_default(),
             self.generation_timeout,
-            self.gas_per_deploy_byte,
-            self.min_deployment_gas_price,
+            gas_per_deploy_byte,
+            min_deployment_gas_price,
             self.block_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),
