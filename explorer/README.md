@@ -28,7 +28,7 @@ VITE_API_ENDPOINT="https://api.dusk.network/v1"
 VITE_BLOCKS_LIST_ENTRIES=100
 VITE_CHAIN_INFO_ENTRIES=15
 VITE_DUSK_MAINNET_NODE="nodes.dusk.network"
-VITE_DUSK_TESTNET_NODE="nodes.dusk.network"
+VITE_DUSK_TESTNET_NODE="testnet.nodes.dusk.network"
 VITE_DUSK_DEVNET_NODE="devnet.nodes.dusk.network"
 VITE_DEFAULT_NETWORK=0 #0=localnet 1=devnet 2=testnet 3=mainnet
 VITE_MARKET_DATA_REFETCH_INTERVAL=120000
