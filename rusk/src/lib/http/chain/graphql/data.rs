@@ -32,6 +32,10 @@ impl Block {
 pub struct Header<'a>(&'a node_data::ledger::Header);
 pub struct SpentTransaction(pub node_data::ledger::SpentTransaction);
 pub struct Transaction<'a>(TransactionData<'a>);
+#[cfg(feature = "archive")]
+pub struct MoonlightTransactions(pub Vec<node::archive::MoonlightTxEvents>);
+#[cfg(feature = "archive")]
+pub struct BlockEvents(pub(super) serde_json::Value);
 
 impl<'a> From<&'a node_data::ledger::Transaction> for Transaction<'a> {
     fn from(value: &'a node_data::ledger::Transaction) -> Self {
@@ -167,6 +171,22 @@ impl Header<'_> {
 
     pub async fn json(&self) -> String {
         serde_json::to_string(self.0).unwrap_or_default()
+    }
+}
+
+#[cfg(feature = "archive")]
+#[Object]
+impl MoonlightTransactions {
+    pub async fn json(&self) -> serde_json::Value {
+        serde_json::to_value(&self.0).unwrap_or_default()
+    }
+}
+
+#[cfg(feature = "archive")]
+#[Object]
+impl BlockEvents {
+    pub async fn json(&self) -> serde_json::Value {
+        self.0.clone()
     }
 }
 

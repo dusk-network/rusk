@@ -6,6 +6,12 @@
 
 use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{Mempool, Metadata};
+#[cfg(feature = "archive")]
+use {
+    dusk_bytes::Serializable,
+    execution_core::signatures::bls::PublicKey as AccountPublicKey,
+    node::archive::MoonlightTxEvents,
+};
 
 use super::*;
 
@@ -76,4 +82,48 @@ pub async fn mempool_by_hash<'a>(
     let hash = hash.try_into()?;
     let tx = db.read().await.view(|t| t.get_tx(hash))?;
     Ok(tx.map(|t| t.into()))
+}
+
+#[cfg(feature = "archive")]
+pub(super) async fn moonlight_tx_by_address(
+    ctx: &Context<'_>,
+    address: String,
+) -> OptResult<MoonlightTransactions> {
+    use dusk_bytes::ParseHexStr;
+
+    let (_, archive) = ctx.data::<DBContext>()?;
+    let v = bs58::decode(address).into_vec()?;
+
+    let pk_bytes: [u8; 96] = v
+        .try_into()
+        .map_err(|_| FieldError::new("Invalid public key length"))?;
+
+    let pk = AccountPublicKey::from_bytes(&pk_bytes)
+        .map_err(|_| anyhow::anyhow!("Failed to serialize given public key"))?;
+
+    let moonlight_events = archive.moonlight_txs_by_pk(pk)?;
+
+    if let Some(moonlight_events) = moonlight_events {
+        Ok(Some(MoonlightTransactions(moonlight_events)))
+    } else {
+        Ok(None)
+    }
+}
+
+#[cfg(feature = "archive")]
+pub(super) async fn moonlight_tx_by_memo(
+    ctx: &Context<'_>,
+    memo: Vec<u8>,
+) -> OptResult<MoonlightTransactions> {
+    use dusk_bytes::ParseHexStr;
+
+    let (_, archive) = ctx.data::<DBContext>()?;
+
+    let moonlight_events = archive.moonlight_txs_by_memo(memo)?;
+
+    if let Some(moonlight_events) = moonlight_events {
+        Ok(Some(MoonlightTransactions(moonlight_events)))
+    } else {
+        Ok(None)
+    }
 }
