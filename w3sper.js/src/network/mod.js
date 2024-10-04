@@ -11,10 +11,12 @@ import * as ProtocolDriver from "../protocol-driver/mod.js";
 
 import { GraphQLRequest } from "./graphql.js";
 
+import { Gas } from "./gas.js";
+
+export { Gas };
 export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
 export { Bookmark } from "./bookmark.js";
-export { Gas } from "./gas.js";
 
 const protocol = { "https:": "wss:", "http:": "ws:" };
 
@@ -142,7 +144,11 @@ export class Network {
     );
   }
 
-  async execute(builder) {
+  async execute(builder, gas) {
+    if (gas instanceof Gas) {
+      builder.gas(gas);
+    }
+
     await builder.build(this);
   }
 

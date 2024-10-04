@@ -256,12 +256,34 @@ pub unsafe fn bookmarks(
     ErrorCode::Ok
 }
 
-struct NoOpProver {}
+#[derive(Default)]
+struct NoOpProver {
+    circuits: core::cell::RefCell<Vec<u8>>,
+}
 
 impl Prove for NoOpProver {
     fn prove(&self, circuits: &[u8]) -> Result<Vec<u8>, execution_core::Error> {
+        *self.circuits.borrow_mut() = circuits.to_vec();
+
         Ok(circuits.to_vec())
     }
+}
+
+#[no_mangle]
+pub unsafe fn opening(ptr: *const u8) -> ErrorCode {
+    let opening = mem::read_buffer(ptr);
+
+    // eprintln!("\nOpening Data [{}]: {:?}\n", opening.len(), opening);
+
+    let opening: Vec<Option<NoteOpening>> =
+        mem::parse_buffer(&opening).or(Err(ErrorCode::DeserializationError))?;
+
+    // let test = alloc::vec![opening, opening, opening, opening];
+    // let test = to_bytes::<_, 256>(&test).unwrap();
+
+    eprintln!("\nOpening: {:?}\n", opening);
+
+    ErrorCode::Ok
 }
 
 #[no_mangle]
@@ -280,6 +302,8 @@ pub unsafe fn phoenix(
     gas_price: *const u64,
     chain_id: u8,    // ?
     data: *const u8, // ?
+    tx_ptr: *mut *mut u8,
+    proof_ptr: *mut *mut u8,
 ) -> ErrorCode {
     let mut rng = ChaCha12Rng::from_seed(*rng);
 
@@ -288,25 +312,24 @@ pub unsafe fn phoenix(
     let receiver_pk = PhoenixPublicKey::from_bytes(receiver)
         .or(Err(ErrorCode::DeserializationError))?;
 
-    let root = BlsScalar::from_bytes(root)
-        .into_option()
-        .ok_or(ErrorCode::DeserializationError)?;
+    let root: BlsScalar =
+        rkyv::from_bytes(root).or(Err(ErrorCode::UnarchivingError))?;
 
-    let openings: Vec<NoteOpening> = mem::from_buffer(openings)?;
+    let openings: Vec<Option<NoteOpening>> = mem::from_buffer(openings)?;
 
     let notes: Vec<NoteLeaf> = mem::from_buffer(inputs)?;
 
-    let vk = derive_phoenix_vk(seed, sender_index);
-    eprintln!("{:?}", balance::calculate_unchecked(&vk, notes.iter()));
-    eprintln!("{}", *transfer_value);
     let inputs: Vec<(Note, NoteOpening)> = notes
         .into_iter()
         .map(|note_leaf| note_leaf.note)
         .zip(openings.into_iter())
+        .filter_map(|(note, opening)| opening.map(|op| (note, op)))
         .collect();
 
     let data: Option<TransactionData> =
         if data.is_null() { None } else { todo!() };
+
+    let prover = NoOpProver::default();
 
     let tx = crate::transaction::phoenix(
         &mut rng,
@@ -322,11 +345,32 @@ pub unsafe fn phoenix(
         *gas_price,
         chain_id,
         data,
-        &NoOpProver {},
+        &prover,
     )
-    .unwrap();
+    .or(Err(ErrorCode::PhoenixTransactionError))?;
 
-    eprintln!("{:?}", tx);
+    let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
+
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let bytes = prover.circuits.into_inner();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *proof_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
 
     ErrorCode::Ok
 }

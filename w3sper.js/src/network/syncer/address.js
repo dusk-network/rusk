@@ -63,8 +63,7 @@ export class AddressSyncer extends EventTarget {
     let requests = [];
     console.log("bookmarks", bookmarks);
     for (let i = 0; i < bookmarks.length; i += 8) {
-      const body = bookmarks.subarray(i, i + 8);
-      console.log(body);
+      const body = bookmarks.slice(i, i + 8);
       const url = new URL(`/on/contracts:${TRANSFER}/opening`, network.url);
 
       const req = new Request(url, {
@@ -79,7 +78,6 @@ export class AddressSyncer extends EventTarget {
     const result = Promise.all(requests)
       .then((responses) => responses.map((response) => response.arrayBuffer()))
       .then((buffers) => Promise.all(buffers));
-    console.log(await result);
     return result;
   }
 

@@ -28,3 +28,4 @@ rkyv = "0.7"
 bytecheck = "0.6"
 
 [features]
+debug = []

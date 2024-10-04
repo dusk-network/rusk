@@ -47,15 +47,13 @@ pub unsafe fn read_buffer<'a>(ptr: *const u8) -> &'a [u8] {
     slice::from_raw_parts(ptr.add(4), len)
 }
 
-/// Checks and deserializes a value from the given po
-pub unsafe fn from_buffer<T>(ptr: *const u8) -> Result<T, ErrorCode>
+/// Parse the buffer
+pub unsafe fn parse_buffer<T>(bytes: &[u8]) -> Result<T, ErrorCode>
 where
     T: Archive,
     for<'a> T::Archived:
         CheckBytes<DefaultValidator<'a>> + Deserialize<T, SharedDeserializeMap>,
 {
-    let bytes = read_buffer(ptr);
-
     let aligned = bytes.to_vec();
     let aligned_slice: &[u8] = &aligned;
 
@@ -65,4 +63,16 @@ where
         .or(Err(ErrorCode::UnarchivingError));
 
     result
+}
+
+/// Checks and deserializes a value from the given po
+pub unsafe fn from_buffer<T>(ptr: *const u8) -> Result<T, ErrorCode>
+where
+    T: Archive,
+    for<'a> T::Archived:
+        CheckBytes<DefaultValidator<'a>> + Deserialize<T, SharedDeserializeMap>,
+{
+    let bytes = read_buffer(ptr);
+
+    parse_buffer::<T>(bytes)
 }

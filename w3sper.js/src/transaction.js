@@ -62,8 +62,8 @@ export class TransactionBuilder {
 
     // Fetch the openings from the network for the picked notes
     const openings = (await syncer.openings(picked)).map((opening) => {
-      const data = new Uint8Array(opening.slice(4));
-      data[0] = 1;
+      const data = new Uint8Array(opening.slice(0));
+      // data[0] = 1;
       return data;
     });
 
@@ -74,7 +74,7 @@ export class TransactionBuilder {
     const inputs = picked.values();
     const { chainId } = network.nodeInfo;
 
-    await ProtocolDriver.phoenix({
+    let [tx, proof] = await ProtocolDriver.phoenix({
       sender,
       receiver,
       inputs,
@@ -88,5 +88,21 @@ export class TransactionBuilder {
       chainId,
       data: null,
     });
+
+    // const body = new Uint8Array(proof.byteLength + 8);
+    // new DataView(body.buffer).setUint32(0, proof.byteLength, true);
+    // body.set(proof, 8);
+
+    const body = proof;
+    const url = new URL("/on/prover/prove", network.url);
+
+    const req = new Request(url, {
+      headers: { "Content-Type": "application/octet-stream" },
+      method: "POST",
+      body,
+    });
+
+    const response = await network.dispatch(req);
+    console.log(response);
   }
 }

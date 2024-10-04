@@ -11,7 +11,7 @@ import { DriverError } from "./error.js";
 import * as DataBuffer from "./buffer.js";
 import { withAllocator } from "./alloc.js";
 
-const rng = () => crypto.getRandomValues(new Uint8Array(32));
+const rng = () => new Uint8Array(32); //crypto.getRandomValues(new Uint8Array(32));
 
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
@@ -57,6 +57,26 @@ export function unload() {
       [protocolDriverModule, driverEntrySize] = uninit;
     });
   }
+}
+
+export async function opening(bytes) {
+  const task = protocolDriverModule.task(async function (
+    { malloc, opening },
+    { memcpy },
+  ) {
+    const buffer = new Uint8Array(DataBuffer.from(bytes));
+
+    // Allocate memory for the notes + 4 bytes for the length
+    let ptr = await malloc(buffer.byteLength);
+
+    // Copy the notes to the WASM memory
+    await memcpy(ptr, buffer, buffer.byteLength);
+
+    let code = await opening(ptr);
+    if (code > 0) throw DriverError.from(code);
+  });
+
+  return await task();
 }
 
 export async function bookmarks(notes) {
@@ -399,6 +419,9 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
+    let tx = await malloc(4);
+    let proof = await malloc(4);
+
     // Copy the value to the WASM memory
     const code = await phoenix(
       ptr.rng,
@@ -415,22 +438,33 @@ export const phoenix = async (info) =>
       ptr.gas_price,
       info.chainId,
       info.data,
+      tx,
+      proof,
     );
+
     if (code > 0) throw DriverError.from(code);
 
-    // pub unsafe fn phoenix(
-    //     rng: &[u8; 32],
-    //     seed: &Seed,
-    //     sender_index: u8,
-    //     receiver: &[u8; PhoenixPublicKey::SIZE],
-    //     inputs: *const u8,
-    //     openings: *const u8,
-    //     root: &[u8; BlsScalar::SIZE],
-    //     transfer_value: *const u64,
-    //     obfuscated_transaction: bool, // ?
-    //     deposit: *const u64,          // ?
-    //     gas_limit: *const u64,
-    //     gas_price: *const u64,
-    //     chain_id: u8,    // ?
-    //     data: *const u8, // ?
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    let proof_ptr = new DataView(
+      (await memcpy(null, proof, 4)).buffer,
+    ).getUint32(0, true);
+
+    let proof_len = new DataView(
+      (await memcpy(null, proof_ptr, 4)).buffer,
+    ).getUint32(0, true);
+
+    const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
+
+    return [tx_buffer, proof_buffer];
   })();
