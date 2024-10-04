@@ -127,18 +127,6 @@ fn generate_stake_state(
     snapshot: &Snapshot,
 ) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
-    session
-        .call::<_, ()>(
-            STAKE_CONTRACT,
-            "insert_stake",
-            &(
-                *DUSK_CONSENSUS_KEY,
-                *DUSK_CONSENSUS_KEY,
-                StakeData::default(),
-            ),
-            u64::MAX,
-        )
-        .expect("stake to be inserted into the state");
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
 
@@ -231,6 +219,19 @@ fn generate_empty_state<P: AsRef<Path>>(
             .contract_id(LICENSE_CONTRACT),
         u64::MAX,
     )?;
+
+    session
+        .call::<_, ()>(
+            STAKE_CONTRACT,
+            "insert_stake",
+            &(
+                *DUSK_CONSENSUS_KEY,
+                *DUSK_CONSENSUS_KEY,
+                StakeData::default(),
+            ),
+            u64::MAX,
+        )
+        .expect("stake to be inserted into the state");
 
     session
         .call::<_, ()>(
