@@ -48,7 +48,10 @@ pub trait MsgHandler {
             signer = signer.to_bs58(),
             topic = ?msg.topic(),
             step = msg.get_step(),
-            ray_id = msg.ray_id(),
+            round = msg.header.round,
+            iteration = msg.header.iteration,
+            prev_block_hash = node_data::ledger::to_str(&msg.header.prev_block_hash),
+            ray_id = msg.ray_id()
         );
 
         // We don't verify the tip here, otherwise future round messages will be

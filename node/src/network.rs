@@ -188,23 +188,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             iteration = msg.get_iteration(),
         );
 
-        let height = match kad_height {
-            Some(0) => return Ok(()),
-            Some(height) => Some(height - 1),
-            None => None,
-        };
-
-        let mut encoded = vec![];
-        msg.write(&mut encoded).map_err(|err| {
-            error!("could not encode message {msg:?}: {err}");
-            anyhow::anyhow!("failed to broadcast: {err}")
-        })?;
-
-        counter!("dusk_bytes_cast").increment(encoded.len() as u64);
-        counter!(format!("dusk_outbound_{:?}_size", msg.topic()))
-            .increment(encoded.len() as u64);
-
-        self.peer.broadcast(&encoded, height).await;
+        let _ = self.send_to_alive_peers(msg.clone(), 200).await;
 
         Ok(())
     }
