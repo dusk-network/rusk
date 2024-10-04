@@ -53,8 +53,15 @@ impl MoonlightTxEvents {
     }
 }
 
-type AddressMapping = (AccountPublicKey, TxHash);
-type MemoMapping = (Vec<u8>, TxHash);
+pub(super) type AddressMapping = (AccountPublicKey, TxHash);
+pub(super) type MemoMapping = (Vec<u8>, TxHash);
+
+pub(super) struct TransormerResult {
+    pub address_outflow_mappings: Vec<AddressMapping>,
+    pub address_inflow_mappings: Vec<AddressMapping>,
+    pub memo_mappings: Vec<MemoMapping>,
+    pub moonlight_tx_groups: Vec<MoonlightTxEvents>,
+}
 
 /// Groups the events from a block by their origin and returns
 /// only the groups that contain a moonlight in- or outflow
@@ -63,11 +70,7 @@ type MemoMapping = (Vec<u8>, TxHash);
 pub(super) fn group_by_origins_filter_and_convert(
     block_events: Vec<ContractTxEvent>,
     block_height: u64,
-) -> (
-    Vec<AddressMapping>,
-    Vec<MemoMapping>,
-    Vec<MoonlightTxEvents>,
-) {
+) -> TransormerResult {
     // 1st Group events by origin (TxHash) & throw away the ones that
     // don't have an origin
     let mut moonlight_is_already_grouped: BTreeMap<TxHash, Vec<ContractEvent>> =
@@ -85,8 +88,8 @@ pub(super) fn group_by_origins_filter_and_convert(
 
     // 2nd Keep only the event groups which contain a moonlight in-
     // or outflow
-
-    let mut address_mappings: Vec<(AccountPublicKey, TxHash)> = vec![];
+    let mut address_inflow_mappings: Vec<(AccountPublicKey, TxHash)> = vec![];
+    let mut address_outflow_mappings: Vec<(AccountPublicKey, TxHash)> = vec![];
     let mut memo_mappings: Vec<(Vec<u8>, TxHash)> = vec![];
     let mut moonlight_tx_groups = vec![];
     // Iterate over the grouped events and push them to the groups vector in
@@ -116,12 +119,14 @@ pub(super) fn group_by_origins_filter_and_convert(
                             &event.data,
                         )
                     {
-                        address_mappings
+                        address_outflow_mappings
                             .push((moonlight_event.sender, tx_hash));
                         if let Some(receiver) = moonlight_event.receiver {
                             if moonlight_event.sender != receiver {
-                                // don't push if tx is sent to self
-                                address_mappings.push((receiver, tx_hash));
+                                // Note: Tx sent to self are only recorded as
+                                // outflows.
+                                address_inflow_mappings
+                                    .push((receiver, tx_hash));
                             }
                         }
 
@@ -140,7 +145,7 @@ pub(super) fn group_by_origins_filter_and_convert(
                         if let WithdrawReceiver::Moonlight(key) =
                             withdraw_event.receiver
                         {
-                            address_mappings.push((key, tx_hash));
+                            address_inflow_mappings.push((key, tx_hash));
                             return true;
                         }
                     }
@@ -153,7 +158,7 @@ pub(super) fn group_by_origins_filter_and_convert(
                         if let WithdrawReceiver::Moonlight(key) =
                             convert_event.receiver
                         {
-                            address_mappings.push((key, tx_hash));
+                            address_inflow_mappings.push((key, tx_hash));
                             return true;
                         }
                     }
@@ -172,5 +177,10 @@ pub(super) fn group_by_origins_filter_and_convert(
         }
     }
 
-    (address_mappings, memo_mappings, moonlight_tx_groups)
+    TransormerResult {
+        address_outflow_mappings,
+        address_inflow_mappings,
+        memo_mappings,
+        moonlight_tx_groups,
+    }
 }
