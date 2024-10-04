@@ -1,27 +1,16 @@
 import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
 
+import { makeNodeUrl } from "$lib/url";
+
+const nodeUrl = makeNodeUrl();
+
 /** @type {NetworkOption[]}*/
 const networks = [
-  { label: "Local", value: new URL("/", import.meta.url) },
-  {
-    label: "Devnet",
-    value: new URL(
-      `${window.location.protocol}${import.meta.env.VITE_DUSK_DEVNET_NODE}`
-    ),
-  },
-  {
-    label: "Testnet",
-    value: new URL(
-      `${window.location.protocol}${import.meta.env.VITE_DUSK_TESTNET_NODE}`
-    ),
-  },
-  {
-    label: "Mainnet",
-    value: new URL(
-      `${window.location.protocol}${import.meta.env.VITE_DUSK_MAINNET_NODE}`
-    ),
-  },
+  { label: "Local", value: nodeUrl },
+  { label: "Devnet", value: nodeUrl },
+  { label: "Testnet", value: nodeUrl },
+  { label: "Mainnet", value: nodeUrl },
 ];
 const maxWidthMediaQuery = window.matchMedia("(max-width: 1024px)");
 const browserDefaults = browser
@@ -33,15 +22,10 @@ const browserDefaults = browser
     };
 const DEFAULT_FETCH_INTERVAL = 1000;
 const DEFAULT_MARKET_FETCH_INTERVAL = 120000;
-const DEFAULT_NETWORK_INDEX = 0;
 const DEFAULT_STATS_FETCH_INTERVAL = DEFAULT_FETCH_INTERVAL;
 
-function getNetwork() {
-  const index =
-    Number(import.meta.env.VITE_DEFAULT_NETWORK) || DEFAULT_NETWORK_INDEX;
-  return (
-    networks[index]?.value.host || networks[DEFAULT_NETWORK_INDEX].value.host
-  );
+function getNetworkHost() {
+  return makeNodeUrl().host;
 }
 
 /** @type {AppStoreContent} */
@@ -56,7 +40,7 @@ const initialState = {
   marketDataFetchInterval:
     Number(import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL) ||
     DEFAULT_MARKET_FETCH_INTERVAL,
-  network: getNetwork(),
+  network: getNetworkHost(),
   networks,
   statsFetchInterval:
     Number(import.meta.env.VITE_STATS_REFETCH_INTERVAL) ||

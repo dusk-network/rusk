@@ -13,6 +13,8 @@ import {
 } from "lamb";
 
 import { failureToRejection } from "$lib/dusk/http";
+import { ensureTrailingSlash } from "$lib/dusk/string";
+import { makeNodeUrl } from "$lib/url";
 
 import {
   calculateStats,
@@ -28,9 +30,6 @@ const transformBlocks = mapWith(transformBlock);
 
 /** @type {(transactions: GQLTransaction[]) => Transaction[]} */
 const transformTransactions = mapWith(transformTransaction);
-
-/** @type {(s: string) => string} */
-const ensureTrailingSlash = (s) => (s.endsWith("/") ? s : `${s}/`);
 
 /**
  * Adds the `Rusk-gqlvar-` prefix to all
@@ -58,16 +57,28 @@ const toHeadersVariables = unless(
  */
 const makeAPIURL = (endpoint, params) =>
   new URL(
-    `${endpoint}?${new URLSearchParams(params)}`,
+    `${endpoint}${import.meta.env.VITE_RUSK_PATH || ""}?${new URLSearchParams(params)}`,
     ensureTrailingSlash(import.meta.env.VITE_API_ENDPOINT)
   );
+
+/**
+ * @param {string} node
+ * @param {string} endpoint
+ */
+function getNodeUrl(node, endpoint) {
+  const url = makeNodeUrl();
+
+  url.pathname = `${import.meta.env.VITE_RUSK_PATH || ""}${endpoint}`;
+
+  return url;
+}
 
 /**
  * @param {string} node
  * @param {{ query: string, variables?: Record<string, string | number> }} queryInfo
  */
 const gqlGet = (node, queryInfo) =>
-  fetch(`https://${node}/02/Chain`, {
+  fetch(getNodeUrl(node, "/02/Chain"), {
     body: JSON.stringify({
       data: queryInfo.query,
       topic: "gql",
@@ -85,12 +96,11 @@ const gqlGet = (node, queryInfo) =>
 
 /**
  * @param {string} node
- * @param {"Chain" | "rusk"} target
  * @param {"alive_nodes" | "provisioners"} topic
  * @param {any} data
  */
-const hostGet = (node, target, topic, data) =>
-  fetch(`https://${node}/2/${target}`, {
+const hostGet = (node, topic, data) =>
+  fetch(getNodeUrl(node, `/2/rusk`), {
     body: JSON.stringify({ data, topic }),
     headers: {
       Accept: "application/json",
@@ -119,7 +129,7 @@ const apiGet = (endpoint, params) =>
     .then((res) => res.json());
 
 /** @type {(node: string) => Promise<HostProvisioner[]>} */
-const getProvisioners = (node) => hostGet(node, "rusk", "provisioners", "");
+const getProvisioners = (node) => hostGet(node, "provisioners", "");
 
 /** @type {(node: string) => Promise<number>} */
 const getLastHeight = (node) =>
