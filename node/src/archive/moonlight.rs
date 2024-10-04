@@ -16,7 +16,7 @@ use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, LogLevel,
     OptimisticTransactionDB, Options,
 };
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 use crate::archive::transformer::{self, MoonlightTxEvents};
 use crate::archive::{Archive, ArchiveOptions};
@@ -27,6 +27,7 @@ const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
 // Column family names.
 const CF_TXHASH_MOONLIGHT_EVENTS: &str = "cf_txhash_mevents"; // TxHash to ContractMoonlightEvents mapping
 const CF_MOONLIGHT_ADDRESS_TXHASH: &str = "cf_maddress_txhash"; // AccountPublicKey to TxHash mapping
+const CF_MEMO_TXHASH: &str = "cf_memo_txhash"; // Memo to TxHash mapping
 
 impl Archive {
     /// Create or open the moonlight database.
@@ -74,6 +75,7 @@ impl Archive {
                 CF_MOONLIGHT_ADDRESS_TXHASH,
                 rocksdb_opts.clone(),
             ),
+            ColumnFamilyDescriptor::new(CF_MEMO_TXHASH, rocksdb_opts.clone()),
         ];
 
         Arc::new(
@@ -98,6 +100,12 @@ impl Archive {
             .ok_or(anyhow!("Column family not found"))
     }
 
+    fn cf_memo_txhash(&self) -> Result<&ColumnFamily> {
+        self.moonlight_db
+            .cf_handle(CF_MEMO_TXHASH)
+            .ok_or(anyhow!("Column family not found"))
+    }
+
     /// Transform & Load moonlight related events into the moonlight database.
     ///
     /// # Arguments
@@ -110,7 +118,7 @@ impl Archive {
     ) -> Result<()> {
         debug!("Loading moonlight transaction events into the moonlight db");
 
-        let (address_mappings, _, moonlight_groups) =
+        let (address_mappings, memo_mappings, moonlight_groups) =
             transformer::group_by_origins_filter_and_convert(
                 block_events,
                 block_height,
@@ -132,6 +140,11 @@ impl Archive {
             )?;
         }
 
+        for memo_mapping in memo_mappings {
+            let (memo, tx_hash) = memo_mapping;
+            self.update_memo_txhash(memo, tx_hash)?;
+        }
+
         Ok(())
     }
 
@@ -142,10 +155,10 @@ impl Archive {
         tx_hash: TxHash,
     ) -> Result<()> {
         let txn = self.moonlight_db.transaction();
-        let cf = self.cf_moonlight_address_txhash()?;
+        let cf_address = self.cf_moonlight_address_txhash()?;
         let key = pk.to_bytes();
 
-        let existing_tx_hashes = txn.get_cf(cf, key)?;
+        let existing_tx_hashes = txn.get_cf(cf_address, key)?;
 
         if let Some(tx_hashes) = existing_tx_hashes {
             let mut tx_hashes =
@@ -155,14 +168,45 @@ impl Archive {
             tx_hashes.push(tx_hash);
 
             // Put the updated tx hashes back into the database
-            txn.put_cf(cf, key, serde_json::to_vec(&tx_hashes)?)?;
+            txn.put_cf(cf_address, key, serde_json::to_vec(&tx_hashes)?)?;
 
             txn.commit()?;
 
             Ok(())
         } else {
             // Serialize the TxHash and put it into the database
-            txn.put_cf(cf, key, serde_json::to_vec(&vec![tx_hash])?)?;
+            txn.put_cf(cf_address, key, serde_json::to_vec(&vec![tx_hash])?)?;
+
+            txn.commit()?;
+
+            Ok(())
+        }
+    }
+
+    /// Insert or update a Memo to TxHash mapping.
+    fn update_memo_txhash(&self, memo: Vec<u8>, tx_hash: TxHash) -> Result<()> {
+        let txn = self.moonlight_db.transaction();
+        let cf_memo = self.cf_memo_txhash()?;
+        let key = memo;
+
+        let existing_tx_hashes = txn.get_cf(cf_memo, &key)?;
+
+        if let Some(tx_hashes) = existing_tx_hashes {
+            let mut tx_hashes =
+                serde_json::from_slice::<Vec<TxHash>>(&tx_hashes)?;
+
+            // Append the new TxHash to the existing tx hashes
+            tx_hashes.push(tx_hash);
+
+            // Put the updated tx hashes back into the database
+            txn.put_cf(cf_memo, key, serde_json::to_vec(&tx_hashes)?)?;
+
+            txn.commit()?;
+
+            Ok(())
+        } else {
+            // Serialize the TxHash and put it into the database
+            txn.put_cf(cf_memo, key, serde_json::to_vec(&vec![tx_hash])?)?;
 
             txn.commit()?;
 
@@ -197,20 +241,6 @@ impl Archive {
         Ok(())
     }
 
-    fn tx_hashes_multiget_key_tuple(
-        &self,
-        tx_hashes: Vec<TxHash>,
-    ) -> Result<Vec<(&ColumnFamily, [u8; 32])>> {
-        let mut keys = Vec::with_capacity(tx_hashes.len());
-        let cf = self.cf_txhash_moonlight_events()?;
-
-        for tx_hash in tx_hashes {
-            keys.push((cf, tx_hash));
-        }
-
-        Ok(keys)
-    }
-
     /// Get a vector of Vec<MoonlightTxEvents> for a given AccountPublicKey.
     ///
     /// Every MoonlightTxEvents is associated with a TxHash.
@@ -225,24 +255,46 @@ impl Archive {
         pk: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
         if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
-            let raw = self.multi_get_moonlight_events(tx_hashes)?;
-
-            let mut deserialized_events = Vec::with_capacity(raw.len());
-
-            for serialized_event in raw {
-                if let Ok(Some(e)) = serialized_event {
-                    deserialized_events
-                        .push(serde_json::from_slice::<MoonlightTxEvents>(&e)?);
-                } else {
-                    warn!("Serialized moonlight event not found");
-                    continue;
-                }
-            }
-
-            Ok(Some(deserialized_events))
+            self.moonlight_txs_by_txhash(tx_hashes)
         } else {
             Ok(None)
         }
+    }
+
+    /// Get a vector of Vec<MoonlightTxEvents> for a given memo.
+    ///
+    /// Clients are advised to check if the Vec is > 1, as memos are not unique.
+    pub fn moonlight_txs_by_memo(
+        &self,
+        memo: Vec<u8>,
+    ) -> Result<Option<Vec<MoonlightTxEvents>>> {
+        if let Some(tx_hashes) = self.get_memo_tx_id(memo)? {
+            self.moonlight_txs_by_txhash(tx_hashes)
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get a vector of Vec<MoonlightTxEvents> for a given list of TxHash.
+    pub fn moonlight_txs_by_txhash(
+        &self,
+        tx_hashes: Vec<TxHash>,
+    ) -> Result<Option<Vec<MoonlightTxEvents>>> {
+        let multi_get = self.multi_get_moonlight_events(tx_hashes)?;
+
+        let mut deserialized_events = Vec::with_capacity(multi_get.len());
+
+        for serialized_event in multi_get {
+            if let Ok(Some(e)) = serialized_event {
+                deserialized_events
+                    .push(serde_json::from_slice::<MoonlightTxEvents>(&e)?);
+            } else {
+                warn!("Serialized moonlight event not found");
+                continue;
+            }
+        }
+
+        Ok(Some(deserialized_events))
     }
 
     pub fn raw_moonlight_txs_by_pk(
@@ -250,27 +302,22 @@ impl Archive {
         pk: AccountPublicKey,
     ) -> Result<Option<Vec<Vec<u8>>>> {
         if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
-            let serialized_events =
-                self.multi_get_moonlight_events(tx_hashes)?;
+            let multi_get = self.multi_get_moonlight_events(tx_hashes)?;
 
             // Convert the Vec<Result<Option<Vec<u8>>> into a Vec<Vec<u8>> by
             // throwing away the errors and None values
-            let mut cleaned_serialized_events =
-                Vec::with_capacity(serialized_events.len());
-            let _ = serialized_events.into_iter().map(|entry| match entry {
-                Ok(Some(v)) => cleaned_serialized_events.push(v),
-                Ok(None) => {
-                    warn!("Serialized moonlight event not found")
-                }
-                Err(e) => {
-                    error!(
-                        "Error while fetching serialized moonlight event: {:?}",
-                        e
-                    )
-                }
-            });
+            let mut raw = Vec::with_capacity(multi_get.len());
 
-            Ok(Some(cleaned_serialized_events))
+            for serialized_event in multi_get {
+                if let Ok(Some(e)) = serialized_event {
+                    raw.push(e);
+                } else {
+                    warn!("Serialized moonlight event not found");
+                    continue;
+                }
+            }
+
+            Ok(Some(raw))
         } else {
             Ok(None)
         }
@@ -293,20 +340,46 @@ impl Archive {
         }
     }
 
+    /// Get a vector of TxHash that relate to moonlight
+    /// in- or outflows for a given memo.
+    pub fn get_memo_tx_id(&self, memo: Vec<u8>) -> Result<Option<Vec<TxHash>>> {
+        let txn = self.moonlight_db.transaction();
+
+        if let Some(tx_hashes) = txn.get_cf(self.cf_memo_txhash()?, memo)? {
+            Ok(Some(serde_json::from_slice::<Vec<TxHash>>(&tx_hashes)?))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Get MoonlightTxEvents for a given TxHash.
     pub fn get_moonlight_events(
         &self,
         tx_id: TxHash,
-    ) -> Result<Option<MoonlightTxEvents>> {
+    ) -> Result<Option<Vec<u8>>> {
         let txn = self.moonlight_db.transaction();
 
         if let Some(events) =
             txn.get_cf(self.cf_txhash_moonlight_events()?, tx_id)?
         {
-            Ok(Some(serde_json::from_slice::<MoonlightTxEvents>(&events)?))
+            Ok(Some(events))
         } else {
             Ok(None)
         }
+    }
+
+    fn tx_hashes_multiget_key_tuple(
+        &self,
+        tx_hashes: Vec<TxHash>,
+    ) -> Result<Vec<(&ColumnFamily, [u8; 32])>> {
+        let mut keys = Vec::with_capacity(tx_hashes.len());
+        let cf = self.cf_txhash_moonlight_events()?;
+
+        for tx_hash in tx_hashes {
+            keys.push((cf, tx_hash));
+        }
+
+        Ok(keys)
     }
 
     /// Get multiple MoonlightTxEvents for a given list of TxHash.
@@ -358,7 +431,7 @@ mod tests {
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     };
     use execution_core::{ContractId, CONTRACT_ID_BYTES};
-    use node_data::events::contract::{ContractEvent, WrappedContractId};
+    use node_data::events::contract::{ContractEvent, WrappedContractId, TX_HASH_BYTES};
     use rand::{distributions::Alphanumeric, Rng};
     use std::env;
     use std::path::PathBuf;
@@ -430,12 +503,13 @@ mod tests {
     fn moonlight_event(
         origin: [u8; 32],
         receiver: Option<AccountPublicKey>,
+        memo: Vec<u8>,
     ) -> ContractTxEvent {
         let moonlight_tx_event = MoonlightTransactionEvent {
             sender: AccountPublicKey::default(),
             receiver,
             value: 500,
-            memo: vec![0, 1, 1, 0],
+            memo,
             gas_spent: 500,
         };
 
@@ -528,12 +602,30 @@ mod tests {
             deposit_event_moonlight([4; 32]),
             // should count (5 in total)
             convert_event_moonlight(),
-            moonlight_event([2; 32], Some(AccountPublicKey::default())),
-            moonlight_event([9; 32], Some(AccountPublicKey::default())),
+            moonlight_event(
+                [2; 32],
+                Some(AccountPublicKey::default()),
+                vec![0, 1, 1, 0],
+            ),
+            moonlight_event(
+                [9; 32],
+                Some(AccountPublicKey::default()),
+                vec![0, 1, 1, 0],
+            ),
             withdraw_event_moonlight(),
             // belongs together with deposit_event_phoenix
-            moonlight_event([5; 32], None),
+            moonlight_event([5; 32], None, vec![0, 1, 1, 0]),
             deposit_event_phoenix(),
+        ]
+    }
+
+    fn memo_txs() -> Vec<ContractTxEvent> {
+        vec![
+            moonlight_event([0; 32], None, vec![0, 1, 1, 0]),
+            moonlight_event([1; 32], None, vec![0, 1, 1, 0]),
+            moonlight_event([2; 32], None, vec![0, 1, 1, 0]),
+            moonlight_event([3; 32], None, vec![0, 1, 1, 0]),
+            moonlight_event([4; 32], None, vec![1, 1, 1, 1]),
         ]
     }
 
@@ -571,49 +663,31 @@ mod tests {
 
         assert_eq!(fetched_tx_hashes.len(), 5);
 
-        for contract_moonlight_events in fetched_events_by_tx_hash {
-            assert_eq!(contract_moonlight_events.block_height(), 1);
+        for moonlight_events in fetched_events_by_tx_hash {
+            assert_eq!(moonlight_events.block_height(), 1);
 
-            match contract_moonlight_events.origin().as_ref() {
+            match moonlight_events.origin().as_ref() {
                 [1, 1, ..] => {
-                    assert_eq!(contract_moonlight_events.events().len(), 1);
+                    assert_eq!(moonlight_events.events().len(), 1);
 
-                    assert_eq!(
-                        contract_moonlight_events.events()[0].topic,
-                        "convert"
-                    );
+                    assert_eq!(moonlight_events.events()[0].topic, "convert");
                 }
                 [2, 2, ..] => {
-                    assert_eq!(contract_moonlight_events.events().len(), 1);
-                    assert_eq!(
-                        contract_moonlight_events.events()[0].topic,
-                        "moonlight"
-                    );
+                    assert_eq!(moonlight_events.events().len(), 1);
+                    assert_eq!(moonlight_events.events()[0].topic, "moonlight");
                 }
                 [3, 3, ..] => {
-                    assert_eq!(contract_moonlight_events.events().len(), 1);
-                    assert_eq!(
-                        contract_moonlight_events.events()[0].topic,
-                        "withdraw"
-                    );
+                    assert_eq!(moonlight_events.events().len(), 1);
+                    assert_eq!(moonlight_events.events()[0].topic, "withdraw");
                 }
                 [5, 5, ..] => {
-                    assert_eq!(contract_moonlight_events.events().len(), 2);
-                    assert_eq!(
-                        contract_moonlight_events.events()[0].topic,
-                        "moonlight"
-                    );
-                    assert_eq!(
-                        contract_moonlight_events.events()[1].topic,
-                        "deposit"
-                    );
+                    assert_eq!(moonlight_events.events().len(), 2);
+                    assert_eq!(moonlight_events.events()[0].topic, "moonlight");
+                    assert_eq!(moonlight_events.events()[1].topic, "deposit");
                 }
                 [9, 9, ..] => {
-                    assert_eq!(contract_moonlight_events.events().len(), 1);
-                    assert_eq!(
-                        contract_moonlight_events.events()[0].topic,
-                        "moonlight"
-                    );
+                    assert_eq!(moonlight_events.events().len(), 1);
+                    assert_eq!(moonlight_events.events()[0].topic, "moonlight");
                 }
                 _ => panic!("unexpected TxHash"),
             }
@@ -629,20 +703,78 @@ mod tests {
         assert!(archive.moonlight_txs_by_pk(pk).unwrap().is_none());
 
         let block_events = block_events();
-
         archive.tl_moonlight(block_events.clone(), 1).unwrap();
 
         let fetched_tx_hashes =
             archive.get_moonlight_tx_id(pk).unwrap().unwrap();
 
-        let fetched_events_by_tx_hash = archive
-            .get_moonlight_events(fetched_tx_hashes[0])
-            .unwrap()
+        let fetched_events_by_tx_hash =
+            serde_json::from_slice::<MoonlightTxEvents>(
+                &archive
+                    .get_moonlight_events(fetched_tx_hashes[0])
+                    .unwrap()
+                    .unwrap(),
+            )
             .unwrap();
 
         assert_eq!(fetched_events_by_tx_hash.block_height(), 1);
 
         assert_eq!(fetched_events_by_tx_hash.events().len(), 1);
         assert_eq!(fetched_events_by_tx_hash.events()[0].topic, "convert");
+    }
+
+    #[tokio::test]
+    async fn test_tl_memo_and_fetch_single() {
+        let path = test_dir();
+        let archive = Archive::create_or_open(path).await;
+
+        let block_events = memo_txs();
+        archive.tl_moonlight(block_events.clone(), 1).unwrap();
+
+        let fetched_tx1 = archive
+            .moonlight_txs_by_memo(vec![1, 1, 1, 1])
+            .unwrap()
+            .unwrap();
+        assert_eq!(fetched_tx1.len(), 1);
+        assert_eq!(fetched_tx1[0].origin(), &[4; 32]);
+        fetched_tx1[0].events().iter().for_each(|e| {
+            assert_eq!(e.topic, "moonlight");
+            assert_eq!(
+                e.target,
+                WrappedContractId(execution_core::transfer::TRANSFER_CONTRACT)
+            );
+
+            let moonlight_event =
+                rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data).unwrap();
+            assert_eq!(moonlight_event.memo, vec![1, 1, 1, 1]);
+            assert!(moonlight_event.receiver.is_none());
+            assert_eq!(moonlight_event.sender, AccountPublicKey::default());
+        });
+
+        let fetched_tx3 = archive
+            .moonlight_txs_by_memo(vec![0, 1, 1, 0])
+            .unwrap()
+            .unwrap();
+        assert_eq!(fetched_tx3.len(), 4);
+
+        for (i, fetched_tx) in fetched_tx3.iter().enumerate() {
+            assert_eq!(fetched_tx.origin(), &[i as u8; TX_HASH_BYTES]);
+            fetched_tx.events().iter().for_each(|e| {
+                assert_eq!(e.topic, "moonlight");
+                assert_eq!(
+                    e.target,
+                    WrappedContractId(
+                        execution_core::transfer::TRANSFER_CONTRACT
+                    )
+                );
+
+                let moonlight_event =
+                    rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data)
+                        .unwrap();
+                assert_eq!(moonlight_event.memo, vec![0, 1, 1, 0]);
+                assert!(moonlight_event.receiver.is_none());
+                assert_eq!(moonlight_event.sender, AccountPublicKey::default());
+            });
+        }
     }
 }
