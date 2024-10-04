@@ -24,10 +24,20 @@ use crate::archive::{Archive, ArchiveOptions};
 /// Subfolder containing the moonlight database.
 const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
 
-// Column family names.
-const CF_TXHASH_MOONLIGHT_EVENTS: &str = "cf_txhash_mevents"; // TxHash to ContractMoonlightEvents mapping
-const CF_MOONLIGHT_ADDRESS_TXHASH: &str = "cf_maddress_txhash"; // AccountPublicKey to TxHash mapping
-const CF_MEMO_TXHASH: &str = "cf_memo_txhash"; // Memo to TxHash mapping
+/*
+ * Column family names.
+ */
+// Moonlight TxHash to ContractMoonlightEvents mapping
+const CF_MTXHASH_MEVENTS: &str = "cf_mtxhash_mevents";
+
+// AccountPublicKey to Moonlight TxHashes mapping
+const CF_MADDRESS_MTXHASH: &str = "cf_maddress_mtxhash";
+// AccountPublicKey to Moonlight Inflow TxHashes mapping
+const CF_M_INFLOW_ADDRESS_TXHASH: &str = "cf_m_inflow_address_txhash";
+// AccountPublicKey to Moonlight Outflow TxHashes mapping
+const CF_M_OUTFLOW_ADDRESS_TXHASH: &str = "cf_m_outflow_address_txhash";
+// Memo to Moonlight TxHashes mapping (in- & outlfows)
+const CF_M_MEMO_TXHASH: &str = "cf_m_memo_txhash";
 
 impl Archive {
     /// Create or open the moonlight database.
@@ -68,14 +78,22 @@ impl Archive {
 
         let cfs = vec![
             ColumnFamilyDescriptor::new(
-                CF_TXHASH_MOONLIGHT_EVENTS,
+                CF_MTXHASH_MEVENTS,
                 rocksdb_opts.clone(),
             ),
             ColumnFamilyDescriptor::new(
-                CF_MOONLIGHT_ADDRESS_TXHASH,
+                CF_MADDRESS_MTXHASH,
                 rocksdb_opts.clone(),
             ),
-            ColumnFamilyDescriptor::new(CF_MEMO_TXHASH, rocksdb_opts.clone()),
+            ColumnFamilyDescriptor::new(
+                CF_M_INFLOW_ADDRESS_TXHASH,
+                rocksdb_opts.clone(),
+            ),
+            ColumnFamilyDescriptor::new(
+                CF_M_OUTFLOW_ADDRESS_TXHASH,
+                rocksdb_opts.clone(),
+            ),
+            ColumnFamilyDescriptor::new(CF_M_MEMO_TXHASH, rocksdb_opts.clone()),
         ];
 
         Arc::new(
@@ -90,19 +108,31 @@ impl Archive {
 
     fn cf_txhash_moonlight_events(&self) -> Result<&ColumnFamily> {
         self.moonlight_db
-            .cf_handle(CF_TXHASH_MOONLIGHT_EVENTS)
+            .cf_handle(CF_MTXHASH_MEVENTS)
+            .ok_or(anyhow!("Column family not found"))
+    }
+
+    fn cf_m_inflow_address_txhash(&self) -> Result<&ColumnFamily> {
+        self.moonlight_db
+            .cf_handle(CF_M_INFLOW_ADDRESS_TXHASH)
+            .ok_or(anyhow!("Column family not found"))
+    }
+
+    fn cf_m_outflow_address_txhash(&self) -> Result<&ColumnFamily> {
+        self.moonlight_db
+            .cf_handle(CF_M_OUTFLOW_ADDRESS_TXHASH)
             .ok_or(anyhow!("Column family not found"))
     }
 
     fn cf_moonlight_address_txhash(&self) -> Result<&ColumnFamily> {
         self.moonlight_db
-            .cf_handle(CF_MOONLIGHT_ADDRESS_TXHASH)
+            .cf_handle(CF_MADDRESS_MTXHASH)
             .ok_or(anyhow!("Column family not found"))
     }
 
     fn cf_memo_txhash(&self) -> Result<&ColumnFamily> {
         self.moonlight_db
-            .cf_handle(CF_MEMO_TXHASH)
+            .cf_handle(CF_M_MEMO_TXHASH)
             .ok_or(anyhow!("Column family not found"))
     }
 
@@ -154,42 +184,53 @@ impl Archive {
         pk: AccountPublicKey,
         tx_hash: TxHash,
     ) -> Result<()> {
-        let txn = self.moonlight_db.transaction();
         let cf_address = self.cf_moonlight_address_txhash()?;
         let key = pk.to_bytes();
 
-        let existing_tx_hashes = txn.get_cf(cf_address, key)?;
+        self.append_txhash(cf_address, &key, tx_hash)
+    }
 
-        if let Some(tx_hashes) = existing_tx_hashes {
-            let mut tx_hashes =
-                serde_json::from_slice::<Vec<TxHash>>(&tx_hashes)?;
+    /// Insert or update an AccountPublicKey to TxHash mapping for inflows.
+    fn update_inflow_address_txhash(
+        &self,
+        pk: AccountPublicKey,
+        tx_hash: TxHash,
+    ) -> Result<()> {
+        let cf_inflow = self.cf_m_inflow_address_txhash()?;
+        let key = pk.to_bytes();
 
-            // Append the new TxHash to the existing tx hashes
-            tx_hashes.push(tx_hash);
+        self.append_txhash(cf_inflow, &key, tx_hash)
+    }
 
-            // Put the updated tx hashes back into the database
-            txn.put_cf(cf_address, key, serde_json::to_vec(&tx_hashes)?)?;
+    /// Insert or update an AccountPublicKey to TxHash mapping for outflows.
+    fn update_outflow_address_txhash(
+        &self,
+        pk: AccountPublicKey,
+        tx_hash: TxHash,
+    ) -> Result<()> {
+        let cf_outflow = self.cf_m_outflow_address_txhash()?;
+        let key = pk.to_bytes();
 
-            txn.commit()?;
-
-            Ok(())
-        } else {
-            // Serialize the TxHash and put it into the database
-            txn.put_cf(cf_address, key, serde_json::to_vec(&vec![tx_hash])?)?;
-
-            txn.commit()?;
-
-            Ok(())
-        }
+        self.append_txhash(cf_outflow, &key, tx_hash)
     }
 
     /// Insert or update a Memo to TxHash mapping.
     fn update_memo_txhash(&self, memo: Vec<u8>, tx_hash: TxHash) -> Result<()> {
-        let txn = self.moonlight_db.transaction();
         let cf_memo = self.cf_memo_txhash()?;
         let key = memo;
 
-        let existing_tx_hashes = txn.get_cf(cf_memo, &key)?;
+        self.append_txhash(cf_memo, &key, tx_hash)
+    }
+
+    fn append_txhash(
+        &self,
+        cf: &ColumnFamily,
+        key: &[u8],
+        tx_hash: TxHash,
+    ) -> Result<()> {
+        let txn = self.moonlight_db.transaction();
+
+        let existing_tx_hashes = txn.get_cf(cf, key)?;
 
         if let Some(tx_hashes) = existing_tx_hashes {
             let mut tx_hashes =
@@ -198,15 +239,15 @@ impl Archive {
             // Append the new TxHash to the existing tx hashes
             tx_hashes.push(tx_hash);
 
-            // Put the updated tx hashes back into the database
-            txn.put_cf(cf_memo, key, serde_json::to_vec(&tx_hashes)?)?;
+            // Put the updated tx hashes back into the CF
+            txn.put_cf(cf, key, serde_json::to_vec(&tx_hashes)?)?;
 
             txn.commit()?;
 
             Ok(())
         } else {
-            // Serialize the TxHash and put it into the database
-            txn.put_cf(cf_memo, key, serde_json::to_vec(&vec![tx_hash])?)?;
+            // Serialize the TxHash and put it into the CF
+            txn.put_cf(cf, key, serde_json::to_vec(&vec![tx_hash])?)?;
 
             txn.commit()?;
 
