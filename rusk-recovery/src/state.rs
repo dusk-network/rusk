@@ -127,18 +127,6 @@ fn generate_stake_state(
     snapshot: &Snapshot,
 ) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
-    session
-        .call::<_, ()>(
-            STAKE_CONTRACT,
-            "insert_stake",
-            &(
-                *DUSK_CONSENSUS_KEY,
-                *DUSK_CONSENSUS_KEY,
-                StakeData::default(),
-            ),
-            u64::MAX,
-        )
-        .expect("stake to be inserted into the state");
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
 
@@ -234,6 +222,19 @@ fn generate_empty_state<P: AsRef<Path>>(
 
     session
         .call::<_, ()>(
+            STAKE_CONTRACT,
+            "insert_stake",
+            &(
+                *DUSK_CONSENSUS_KEY,
+                *DUSK_CONSENSUS_KEY,
+                StakeData::default(),
+            ),
+            u64::MAX,
+        )
+        .expect("stake to be inserted into the state");
+
+    session
+        .call::<_, ()>(
             TRANSFER_CONTRACT,
             "add_contract_balance",
             &(STAKE_CONTRACT, 0u64),
@@ -274,12 +275,8 @@ where
     let state_dir = state_dir.as_ref();
     let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
 
-    let mut loaded = false;
     let (vm, old_commit_id) = match snapshot.base_state() {
-        Some(state) => {
-            loaded = true;
-            load_state(state_dir, state)
-        }
+        Some(state) => load_state(state_dir, state),
         None => generate_empty_state(state_dir, snapshot),
     }?;
 
@@ -300,12 +297,13 @@ where
     fs::write(state_id_path, commit_id)?;
 
     if old_commit_id != commit_id {
-        if !loaded {
-            vm.finalize_commit(old_commit_id)?;
-        }
-        vm.delete_commit(old_commit_id)?;
+        info!(
+            "{} {}",
+            theme.action("Finalizing"),
+            hex::encode(old_commit_id)
+        );
+        vm.finalize_commit(old_commit_id)?;
     }
-    vm.finalize_commit(commit_id)?;
 
     info!("{} {}", theme.action("Init Root"), hex::encode(commit_id));
 

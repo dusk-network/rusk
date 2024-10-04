@@ -12,8 +12,7 @@ use std::{fs, io};
 use execution_core::stake::StakeKeys;
 use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
-use tokio::task;
-use tracing::{debug, info};
+use tracing::info;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
@@ -34,7 +33,7 @@ use execution_core::{
 use node::vm::bytecode_charge;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
-use rusk_abi::{CallReceipt, PiecrustError, Session, VM};
+use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 #[cfg(feature = "archive")]
@@ -482,28 +481,15 @@ impl Rusk {
         base: [u8; 32],
         to_delete: Vec<[u8; 32]>,
     ) -> Result<()> {
-        self.vm.finalize_commit(base)?;
         self.tip.write().base = base;
-
-        // Deleting commits is blocking, meaning it will wait until any process
-        // using the commit is done. This includes any queries that are
-        // currently executing.
-        // Since we do want commits to be deleted, but don't want block
-        // finalization to wait, we spawn a new task to delete the commits.
-        task::spawn(delete_commits(self.vm.clone(), to_delete));
+        for d in to_delete {
+            self.vm.finalize_commit(d)?;
+        }
         Ok(())
     }
 
     pub(crate) fn block_gas_limit(&self) -> u64 {
         self.block_gas_limit
-    }
-}
-
-async fn delete_commits(vm: Arc<VM>, commits: Vec<[u8; 32]>) {
-    for commit in commits {
-        if let Err(err) = vm.delete_commit(commit) {
-            debug!("failed deleting commit {}: {err}", hex::encode(commit));
-        }
     }
 }
 

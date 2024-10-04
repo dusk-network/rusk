@@ -534,11 +534,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             if let Some((prev_final_state, mut new_finals)) = final_results {
                 let (_, new_final_state) =
                     new_finals.pop_last().expect("new_finals to be not empty");
-                let states_to_forget = new_finals
+                let old_finals_to_merge = new_finals
                     .into_values()
                     .chain([prev_final_state])
                     .collect::<Vec<_>>();
-                vm.finalize_state(new_final_state, states_to_forget)?;
+                vm.finalize_state(new_final_state, old_finals_to_merge)?;
             }
 
             anyhow::Ok((label, finalized))
