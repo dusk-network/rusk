@@ -14,7 +14,7 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePool},
     Pool, Sqlite,
 };
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::archive::transformer::MoonlightTxEvents;
 use crate::archive::{Archive, Archivist};
@@ -81,6 +81,10 @@ impl Archive {
 
         Ok(events.json_contract_events)
     }
+
+    /*
+    todo: Implement fetch json last vm events where finalized = 0?
+     */
 
     /// Fetch the json string of all vm events from a given block height
     pub async fn fetch_json_vm_events_by_blk_hash(
@@ -173,7 +177,7 @@ impl Archivist for Archive {
         current_block_height: u64,
         hex_block_hash: &str,
     ) -> Result<()> {
-        let block_height: i64 = current_block_height as i64;
+        let current_block_height: i64 = current_block_height as i64;
 
         let mut conn = self.sqlite_archive.acquire().await?;
 
@@ -189,14 +193,22 @@ impl Archivist for Archive {
         .await?;
 
         info!(
-            "Marked block {} as finalized at height {}. After {} blocks",
+            "Marked block {} with height {} as finalized. After {} blocks at height {}",
             util::truncate_string(hex_block_hash),
-            block_height,
-            block_height - r.block_height
+            r.block_height,
+            (current_block_height - r.block_height),
+            current_block_height
         );
 
+        if r.block_height < 0 {
+            error!("Block height is negative. This is a bug.");
+        }
+
         // Get the MoonlightTxEvents and load it into the moonlight db
-        self.tl_moonlight(serde_json::from_str(&r.json_contract_events)?)?;
+        self.tl_moonlight(
+            serde_json::from_str(&r.json_contract_events)?,
+            r.block_height as u64,
+        )?;
 
         Ok(())
     }
@@ -243,7 +255,7 @@ impl Archivist for Archive {
         address: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
         // Get the moonlight events for the given public key from rocksdb
-        self.get_moonlight_events(address)
+        self.moonlight_txs_by_pk(address)
     }
 }
 
