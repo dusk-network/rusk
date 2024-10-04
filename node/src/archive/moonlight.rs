@@ -29,15 +29,17 @@ const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
  */
 // Moonlight TxHash to ContractMoonlightEvents mapping
 const CF_MTXHASH_MEVENTS: &str = "cf_mtxhash_mevents";
-
-// AccountPublicKey to Moonlight TxHashes mapping
-const CF_MADDRESS_MTXHASH: &str = "cf_maddress_mtxhash";
 // AccountPublicKey to Moonlight Inflow TxHashes mapping
 const CF_M_INFLOW_ADDRESS_TXHASH: &str = "cf_m_inflow_address_txhash";
 // AccountPublicKey to Moonlight Outflow TxHashes mapping
 const CF_M_OUTFLOW_ADDRESS_TXHASH: &str = "cf_m_outflow_address_txhash";
 // Memo to Moonlight TxHashes mapping (in- & outlfows)
 const CF_M_MEMO_TXHASH: &str = "cf_m_memo_txhash";
+
+pub struct MoonlightFlows {
+    pub inflows: Option<Vec<TxHash>>,
+    pub outflows: Option<Vec<TxHash>>,
+}
 
 impl Archive {
     /// Create or open the moonlight database.
@@ -82,10 +84,6 @@ impl Archive {
                 rocksdb_opts.clone(),
             ),
             ColumnFamilyDescriptor::new(
-                CF_MADDRESS_MTXHASH,
-                rocksdb_opts.clone(),
-            ),
-            ColumnFamilyDescriptor::new(
                 CF_M_INFLOW_ADDRESS_TXHASH,
                 rocksdb_opts.clone(),
             ),
@@ -124,12 +122,6 @@ impl Archive {
             .ok_or(anyhow!("Column family not found"))
     }
 
-    fn cf_moonlight_address_txhash(&self) -> Result<&ColumnFamily> {
-        self.moonlight_db
-            .cf_handle(CF_MADDRESS_MTXHASH)
-            .ok_or(anyhow!("Column family not found"))
-    }
-
     fn cf_memo_txhash(&self) -> Result<&ColumnFamily> {
         self.moonlight_db
             .cf_handle(CF_M_MEMO_TXHASH)
@@ -148,22 +140,34 @@ impl Archive {
     ) -> Result<()> {
         debug!("Loading moonlight transaction events into the moonlight db");
 
-        let (address_mappings, memo_mappings, moonlight_groups) =
-            transformer::group_by_origins_filter_and_convert(
-                block_events,
-                block_height,
-            );
+        let transformer::TransormerResult {
+            address_outflow_mappings,
+            address_inflow_mappings,
+            memo_mappings,
+            moonlight_tx_groups,
+        } = transformer::group_by_origins_filter_and_convert(
+            block_events,
+            block_height,
+        );
 
-        debug!("Found {} moonlight transactions", moonlight_groups.len());
+        debug!("Found {} moonlight transactions", moonlight_tx_groups.len());
 
-        let address_mappings = util::check_duplicates(address_mappings);
+        let address_inflow_mappings =
+            util::check_duplicates(address_inflow_mappings);
+        let address_outflow_mappings =
+            util::check_duplicates(address_outflow_mappings);
 
-        for mapping in address_mappings {
+        for mapping in address_inflow_mappings {
             let (pk, tx_hash) = mapping;
-            self.update_address_txhash(pk, tx_hash)?;
+            self.update_inflow_address_txhash(pk, tx_hash)?;
         }
 
-        for moonlight_group in moonlight_groups {
+        for mapping in address_outflow_mappings {
+            let (pk, tx_hash) = mapping;
+            self.update_outflow_address_txhash(pk, tx_hash)?;
+        }
+
+        for moonlight_group in moonlight_tx_groups {
             self.insert_txhash_events(
                 *moonlight_group.origin(),
                 moonlight_group,
@@ -176,18 +180,6 @@ impl Archive {
         }
 
         Ok(())
-    }
-
-    /// Insert or update an AccountPublicKey to TxHash mapping.
-    fn update_address_txhash(
-        &self,
-        pk: AccountPublicKey,
-        tx_hash: TxHash,
-    ) -> Result<()> {
-        let cf_address = self.cf_moonlight_address_txhash()?;
-        let key = pk.to_bytes();
-
-        self.append_txhash(cf_address, &key, tx_hash)
     }
 
     /// Insert or update an AccountPublicKey to TxHash mapping for inflows.
@@ -282,7 +274,7 @@ impl Archive {
         Ok(())
     }
 
-    /// Get a vector of Vec<MoonlightTxEvents> for a given AccountPublicKey.
+    /// Get the full moonlight transaction history of a given AccountPublicKey.
     ///
     /// Every MoonlightTxEvents is associated with a TxHash.
     /// The underlying Vec<ContractEvent> contains at least one event that
@@ -295,10 +287,22 @@ impl Archive {
         &self,
         pk: AccountPublicKey,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
-        if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
-            self.moonlight_txs_by_txhash(tx_hashes)
-        } else {
+        let MoonlightFlows { inflows, outflows } =
+            self.moonlight_flows(Some(pk), Some(pk))?;
+
+        // merge inflows and outflows
+        let mut tx_hashes = Vec::new();
+        if let Some(inflows) = inflows {
+            tx_hashes.extend(inflows);
+        }
+        if let Some(outflows) = outflows {
+            tx_hashes.extend(outflows);
+        }
+
+        if tx_hashes.is_empty() {
             Ok(None)
+        } else {
+            self.moonlight_txs_by_txhash(tx_hashes)
         }
     }
 
@@ -309,7 +313,7 @@ impl Archive {
         &self,
         memo: Vec<u8>,
     ) -> Result<Option<Vec<MoonlightTxEvents>>> {
-        if let Some(tx_hashes) = self.get_memo_tx_id(memo)? {
+        if let Some(tx_hashes) = self.get_memo_txhashes(memo)? {
             self.moonlight_txs_by_txhash(tx_hashes)
         } else {
             Ok(None)
@@ -335,45 +339,83 @@ impl Archive {
             }
         }
 
-        Ok(Some(deserialized_events))
+        if deserialized_events.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(deserialized_events))
+        }
     }
 
-    pub fn raw_moonlight_txs_by_pk(
+    pub fn raw_moonlight_txs_by_txhash(
         &self,
-        pk: AccountPublicKey,
+        tx_hashes: Vec<TxHash>,
     ) -> Result<Option<Vec<Vec<u8>>>> {
-        if let Some(tx_hashes) = self.get_moonlight_tx_id(pk)? {
-            let multi_get = self.multi_get_moonlight_events(tx_hashes)?;
+        let multi_get = self.multi_get_moonlight_events(tx_hashes)?;
 
-            // Convert the Vec<Result<Option<Vec<u8>>> into a Vec<Vec<u8>> by
-            // throwing away the errors and None values
-            let mut raw = Vec::with_capacity(multi_get.len());
+        // Convert the Vec<Result<Option<Vec<u8>>> into a Vec<Vec<u8>> by
+        // throwing away the errors and None values
+        let mut raw = Vec::with_capacity(multi_get.len());
 
-            for serialized_event in multi_get {
-                if let Ok(Some(e)) = serialized_event {
-                    raw.push(e);
-                } else {
-                    warn!("Serialized moonlight event not found");
-                    continue;
-                }
+        for serialized_event in multi_get {
+            if let Ok(Some(e)) = serialized_event {
+                raw.push(e);
+            } else {
+                warn!("Serialized moonlight event not found");
+                continue;
             }
+        }
 
-            Ok(Some(raw))
+        Ok(Some(raw))
+    }
+
+    /// Get a vector of TxHash that relate to moonlight
+    /// in- or outflows for a given AccountPublicKey.
+    pub fn moonlight_flows(
+        &self,
+        sender: Option<AccountPublicKey>,
+        receiver: Option<AccountPublicKey>,
+    ) -> Result<MoonlightFlows> {
+        let mut outflows = None;
+        let mut inflows = None;
+
+        match (sender, receiver) {
+            (None, Some(receiver)) => {
+                inflows = self.get_moonlight_inflow_txhashes(receiver)?
+            }
+            (Some(sender), None) => {
+                outflows = self.get_moonlight_outflow_txhashes(sender)?
+            }
+            (Some(sender), Some(receiver)) => {
+                inflows = self.get_moonlight_inflow_txhashes(receiver)?;
+                outflows = self.get_moonlight_outflow_txhashes(sender)?;
+            }
+            _ => return Err(anyhow!("No sender or receiver provided")),
+        }
+
+        Ok(MoonlightFlows { inflows, outflows })
+    }
+
+    fn get_moonlight_outflow_txhashes(
+        &self,
+        sender: AccountPublicKey,
+    ) -> Result<Option<Vec<TxHash>>> {
+        if let Some(tx_hashes) = self
+            .moonlight_db
+            .get_cf(self.cf_m_outflow_address_txhash()?, sender.to_bytes())?
+        {
+            Ok(Some(serde_json::from_slice::<Vec<TxHash>>(&tx_hashes)?))
         } else {
             Ok(None)
         }
     }
 
-    /// Get a vector of TxHash that relate to moonlight
-    /// in- or outflows for a given AccountPublicKey.
-    pub fn get_moonlight_tx_id(
+    fn get_moonlight_inflow_txhashes(
         &self,
-        pk: AccountPublicKey,
+        receiver: AccountPublicKey,
     ) -> Result<Option<Vec<TxHash>>> {
-        let txn = self.moonlight_db.transaction();
-
-        if let Some(tx_hashes) =
-            txn.get_cf(self.cf_moonlight_address_txhash()?, pk.to_bytes())?
+        if let Some(tx_hashes) = self
+            .moonlight_db
+            .get_cf(self.cf_m_inflow_address_txhash()?, receiver.to_bytes())?
         {
             Ok(Some(serde_json::from_slice::<Vec<TxHash>>(&tx_hashes)?))
         } else {
@@ -383,10 +425,13 @@ impl Archive {
 
     /// Get a vector of TxHash that relate to moonlight
     /// in- or outflows for a given memo.
-    pub fn get_memo_tx_id(&self, memo: Vec<u8>) -> Result<Option<Vec<TxHash>>> {
-        let txn = self.moonlight_db.transaction();
-
-        if let Some(tx_hashes) = txn.get_cf(self.cf_memo_txhash()?, memo)? {
+    pub fn get_memo_txhashes(
+        &self,
+        memo: Vec<u8>,
+    ) -> Result<Option<Vec<TxHash>>> {
+        if let Some(tx_hashes) =
+            self.moonlight_db.get_cf(self.cf_memo_txhash()?, memo)?
+        {
             Ok(Some(serde_json::from_slice::<Vec<TxHash>>(&tx_hashes)?))
         } else {
             Ok(None)
@@ -396,12 +441,11 @@ impl Archive {
     /// Get MoonlightTxEvents for a given TxHash.
     pub fn get_moonlight_events(
         &self,
-        tx_id: TxHash,
+        tx_hashes: TxHash,
     ) -> Result<Option<Vec<u8>>> {
-        let txn = self.moonlight_db.transaction();
-
-        if let Some(events) =
-            txn.get_cf(self.cf_txhash_moonlight_events()?, tx_id)?
+        if let Some(events) = self
+            .moonlight_db
+            .get_cf(self.cf_txhash_moonlight_events()?, tx_hashes)?
         {
             Ok(Some(events))
         } else {
@@ -426,13 +470,10 @@ impl Archive {
     /// Get multiple MoonlightTxEvents for a given list of TxHash.
     fn multi_get_moonlight_events(
         &self,
-        tx_ids: Vec<TxHash>,
+        tx_hashes: Vec<TxHash>,
     ) -> Result<Vec<CoreResult<Option<Vec<u8>>, rocksdb::Error>>> {
-        let txn = self.moonlight_db.transaction();
-
-        let keys = self.tx_hashes_multiget_key_tuple(tx_ids)?;
-
-        Ok(txn.multi_get_cf(keys))
+        let keys = self.tx_hashes_multiget_key_tuple(tx_hashes)?;
+        Ok(self.moonlight_db.multi_get_cf(keys))
     }
 }
 
@@ -465,7 +506,9 @@ mod util {
 
 #[cfg(test)]
 mod tests {
-    use super::transformer::group_by_origins_filter_and_convert;
+    use super::transformer::{
+        group_by_origins_filter_and_convert, TransormerResult,
+    };
     use super::*;
     use execution_core::transfer::withdraw::WithdrawReceiver;
     use execution_core::transfer::{
@@ -676,13 +719,19 @@ mod tests {
     async fn test_event_transformer() {
         let block_events = block_events();
 
-        let (mappings, _, moonlight_groups) =
-            group_by_origins_filter_and_convert(block_events, 1);
+        let TransormerResult {
+            address_outflow_mappings,
+            address_inflow_mappings,
+            memo_mappings,
+            moonlight_tx_groups,
+        } = group_by_origins_filter_and_convert(block_events, 1);
 
+        assert_eq!(address_outflow_mappings.len(), 3);
+        assert_eq!(address_inflow_mappings.len(), 2);
+        assert_eq!(memo_mappings.len(), 3);
         // 5 moonlight groups means 5 transactions containing moonlight related
         // events
-        assert_eq!(moonlight_groups.len(), 5);
-        assert_eq!(mappings.len(), 5);
+        assert_eq!(moonlight_tx_groups.len(), 5);
     }
 
     #[tokio::test]
@@ -698,15 +747,19 @@ mod tests {
         // Store block events in the archive
         archive.tl_moonlight(block_events.clone(), 1).unwrap();
 
-        let fetched_tx_hashes =
-            archive.get_moonlight_tx_id(pk).unwrap().unwrap();
+        let MoonlightFlows { inflows, outflows } =
+            archive.moonlight_flows(Some(pk), Some(pk)).unwrap();
+        let fetched_tx_hashes = inflows
+            .unwrap()
+            .into_iter()
+            .chain(outflows.unwrap())
+            .collect::<Vec<TxHash>>();
 
-        let fetched_events_by_tx_hash =
-            archive.moonlight_txs_by_pk(pk).unwrap().unwrap();
+        let fetched_events = archive.moonlight_txs_by_pk(pk).unwrap().unwrap();
 
         assert_eq!(fetched_tx_hashes.len(), 5);
 
-        for moonlight_events in fetched_events_by_tx_hash {
+        for moonlight_events in fetched_events {
             assert_eq!(moonlight_events.block_height(), 1);
 
             match moonlight_events.origin().as_ref() {
@@ -742,14 +795,18 @@ mod tests {
         let path = test_dir();
         let archive = Archive::create_or_open(path).await;
         let pk = AccountPublicKey::default();
-
         assert!(archive.moonlight_txs_by_pk(pk).unwrap().is_none());
 
         let block_events = block_events();
         archive.tl_moonlight(block_events.clone(), 1).unwrap();
 
-        let fetched_tx_hashes =
-            archive.get_moonlight_tx_id(pk).unwrap().unwrap();
+        let MoonlightFlows { inflows, outflows } =
+            archive.moonlight_flows(Some(pk), Some(pk)).unwrap();
+        let fetched_tx_hashes = inflows
+            .unwrap()
+            .into_iter()
+            .chain(outflows.unwrap())
+            .collect::<Vec<TxHash>>();
 
         let fetched_events_by_tx_hash =
             serde_json::from_slice::<MoonlightTxEvents>(
