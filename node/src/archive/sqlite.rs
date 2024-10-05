@@ -16,7 +16,7 @@ use sqlx::{
 };
 use tracing::{error, info, warn};
 
-use crate::archive::transformer::MoonlightTxEvents;
+use crate::archive::moonlight::MoonlightGroup;
 use crate::archive::{Archive, Archivist};
 
 /// The name of the archive SQLite database.
@@ -253,9 +253,9 @@ impl Archivist for Archive {
     fn fetch_moonlight_histories(
         &self,
         address: AccountPublicKey,
-    ) -> Result<Option<Vec<MoonlightTxEvents>>> {
+    ) -> Result<Option<Vec<MoonlightGroup>>> {
         // Get the moonlight events for the given public key from rocksdb
-        self.moonlight_txs_by_pk(address)
+        self.full_moonlight_history(address)
     }
 }
 
