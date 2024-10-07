@@ -17,9 +17,12 @@ use crate::{vm, Network};
 use crate::database::{Candidate, Ledger};
 use metrics::counter;
 use node_data::ledger::{to_str, Attestation, Block};
-use node_data::message::payload::{GetResource, Inv, RatificationResult, Vote};
+use node_data::message::payload::{
+    GetResource, Inv, Quorum, RatificationResult, Vote,
+};
 
-use node_data::message::{payload, Message, Metadata};
+// use node_data::message::{payload, Message, Metadata, WireMessage};
+use node_data::message::{Message, Metadata};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
@@ -288,104 +291,90 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         flood_request(&self.network, &inv).await;
     }
 
-    /// Handles a Quorum message that is received from either the network
-    /// or internal consensus execution.
+    /// Handles a Success Quorum message that is received from either the
+    /// network or internal consensus execution.
     ///
-    /// The winner block is built from the quorum attestation and candidate
-    /// block. If the candidate is not found in local storage then the
-    /// block/candidate is requested from the network.
-    ///
-    /// It returns the corresponding winner block if it gets accepted
-    pub(crate) async fn on_quorum_msg(
+    /// If the corresponding Candidate is in the DB, we attach the Attestation
+    /// and handle the new block; otherwise, we request the Candidate from the
+    /// network
+    pub(crate) async fn on_success_quorum(
         &mut self,
-        quorum: &payload::Quorum,
-        msg: &Message,
-    ) -> anyhow::Result<Option<Block>> {
+        qmsg: &Quorum,
+        metadata: Option<Metadata>,
+    ) {
         // Clean up attestation cache
         self.clean_att_cache();
 
-        // FIXME: We should return the whole outcome for this quorum
-        // Basically we need to inform the upper layer if the received quorum is
-        // valid (even if it's a FailedQuorum)
-        // This will be usefull in order to:
-        // - Reset the idle timer if the current iteration reached a quorum
-        // - Move to next iteration if the quorum is a Failed one
-        // - Remove the FIXME in fsm::on_block_event
-        let res = match quorum.att.result {
-            RatificationResult::Success(Vote::Valid(hash)) => {
-                let local_header = self.acc.read().await.tip_header().await;
-                let db = self.acc.read().await.db.clone();
-                let remote_height = msg.header.round;
+        if let RatificationResult::Success(Vote::Valid(candidate)) =
+            qmsg.att.result
+        {
+            let db = self.acc.read().await.db.clone();
+            let tip_header = self.acc.read().await.tip_header().await;
+            let tip_height = tip_header.height;
+            let quorum_height = qmsg.header.round;
 
+            let quorum_blk = if quorum_height > tip_height + 1 {
                 // Quorum from future
-                if remote_height > local_header.height + 1 {
-                    debug!(
-                        event = "Quorum from future",
-                        hash = to_str(&hash),
-                        height = remote_height,
-                    );
 
-                    self.flood_request_block(hash, quorum.att).await;
+                // We do not check the db because we currently do not store
+                // candidates from the future
+                None
+            } else if (quorum_height == tip_height + 1)
+                || (quorum_height == tip_height && tip_header.hash != candidate)
+            {
+                // If Quorum is for at height tip+1 or tip (but for a different
+                // candidate) we try to fetch the candidate from the DB
+                let res = db
+                    .read()
+                    .await
+                    .view(|t| t.fetch_candidate_block(&candidate));
 
-                    Ok(None)
-                } else {
-                    // If the quorum msg belongs to the next block,
-                    // if the quorum msg belongs to a block of current round
-                    // with different hash:
-                    // Then try to fetch the corresponding candidate and
-                    // redirect to on_block_event
-                    if (remote_height == local_header.height + 1)
-                        || (remote_height == local_header.height
-                            && local_header.hash != hash)
-                    {
-                        let res = db
-                            .read()
-                            .await
-                            .view(|t| t.fetch_candidate_block(&hash));
+                match res {
+                    Ok(b) => b,
+                    Err(_) => None,
+                }
+            } else {
+                // INFO: we currently ignore Quorum messages from the past
+                None
+            };
 
-                        match res {
-                            Ok(b) => Ok(b),
-                            Err(err) => {
-                                error!(
-                                    event = "Candidate not found",
-                                    hash = to_str(&hash),
-                                    height = remote_height,
-                                    err = ?err,
-                                );
+            let attestation = qmsg.att;
 
-                                // Candidate block is not found from local
-                                // storage.  Cache the attestation and request
-                                // candidate block only.
-                                self.flood_request_block(hash, quorum.att)
-                                    .await;
-                                Err(err)
-                            }
-                        }
-                    } else {
-                        Ok(None)
+            if let Some(mut blk) = quorum_blk {
+                // Candidate found. We can build the "full" block
+                info!(
+                    event = "new block",
+                    src = "quorum_msg",
+                    blk_height = blk.header().height,
+                    blk_hash = to_str(&blk.header().hash),
+                );
+
+                // Attach the Attestation to the block
+                blk.set_attestation(attestation);
+
+                // Handle the new block
+                let res = self.on_block_event(blk, metadata).await;
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!("Error on block handling: {e}");
                     }
                 }
-            }
-            _ => Ok(None),
-        }?;
+            } else {
+                // Candidate block not found
+                debug!(
+                    event = "Candidate not found. Requesting it to the network",
+                    hash = to_str(&candidate),
+                    height = quorum_height,
+                );
 
-        if let Some(mut block) = res {
-            info!(
-                event = "block received",
-                src = "quorum_msg",
-                blk_height = block.header().height,
-                blk_hash = to_str(&block.header().hash),
-            );
-
-            block.set_attestation(quorum.att);
-            if let Some(block) =
-                self.on_block_event(block, msg.metadata.clone()).await?
-            {
-                return Ok(Some(block));
+                // Cache the attestation and request the candidate from the
+                // network.
+                self.flood_request_block(candidate, attestation).await;
             }
         }
 
-        Ok(None)
+        error!("Invalid Quorum message");
     }
 
     pub(crate) async fn on_heartbeat_event(&mut self) -> anyhow::Result<()> {
