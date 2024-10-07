@@ -29,7 +29,8 @@ use node_data::message::payload::Vote;
 use node_data::{get_current_timestamp, Serializable, StepName};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{cmp, env};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, info, warn};
@@ -189,9 +190,63 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         }
 
+        let tip_ts = acc.tip.read().await.inner().header().timestamp;
+        Self::init_delay(tip_ts).await;
+
         Ok(acc)
     }
 
+    pub async fn init_delay(tip_ts: u64) {
+        let spin_time: u64 = env::var("RUSK_CONSENSUS_SPIN_TIME")
+            .unwrap_or_default()
+            .parse()
+            .unwrap_or_default();
+
+        let spin_time = cmp::max(spin_time, tip_ts);
+
+        if spin_time == 0 || get_current_timestamp() > tip_ts {
+            return;
+        }
+
+        info!("RUSK_CONSENSUS_SPIN_TIME is {spin_time}");
+
+        let spin_time = UNIX_EPOCH + Duration::from_secs(spin_time);
+        let mut now = SystemTime::now();
+        while spin_time > now {
+            let to_wait =
+                spin_time.duration_since(now).expect("When the hell am I?");
+
+            info!(
+                "Waiting {to_wait:?} for consensus to be triggered at {}",
+                time_util::print_system_time_to_rfc3339(&spin_time)
+            );
+
+            let chunk = match to_wait {
+                // More than 1h print every 15min
+                secs if secs > Duration::from_secs(60 * 60) => {
+                    Duration::from_secs(15 * 60)
+                }
+                // More than 30min print every 10in
+                secs if secs > Duration::from_secs(30 * 60) => {
+                    Duration::from_secs(10 * 60)
+                }
+                // More than 5min print every 5min
+                secs if secs > Duration::from_secs(5 * 60) => {
+                    Duration::from_secs(5 * 60)
+                }
+                // More than 1min print every 30secs
+                secs if secs > Duration::from_secs(60) => {
+                    Duration::from_secs(30)
+                }
+                // Countdown last minute
+                _ => Duration::from_secs(1),
+            };
+
+            tokio::time::sleep(chunk).await;
+            now = SystemTime::now();
+        }
+        env::remove_var("RUSK_CONSENSUS_SPIN_TIME");
+    }
     pub async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
