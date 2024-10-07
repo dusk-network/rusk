@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switch `raw` payload with `json` in transaction details [#2364]
 - Change the displayed value for average gas price to lux [#2416]
 - Change the blocks table header `FEE` to `GAS` and `AVG` to `AVG PRICE` and `TOTAL` to `USED` [#2416]
+- Change the tooltip info of the block rewards [#2166]
 
 ### Fixed
 
@@ -77,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2364]: https://github.com/dusk-network/rusk/issues/2364
 [#2389]: https://github.com/dusk-network/rusk/issues/2389
 [#2527]: https://github.com/dusk-network/rusk/issues/2527
+[#2166]: https://github.com/dusk-network/rusk/issues/2166
 
 <!-- VERSIONS -->
 

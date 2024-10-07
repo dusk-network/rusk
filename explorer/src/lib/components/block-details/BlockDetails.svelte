@@ -132,7 +132,9 @@
     </ListItem>
 
     <!-- BLOCK REWARD -->
-    <ListItem tooltipText="The reward allocated to the block generator">
+    <ListItem
+      tooltipText="The reward allocated to the block generator can fluctuate between 70-80% of the total reward and the flexible 10% can end up being burnt if there's no unanimous vote on a block"
+    >
       <svelte:fragment slot="term">block reward</svelte:fragment>
       <svelte:fragment slot="definition"
         >{formatter(luxToDusk(data.header.reward))} DUSK</svelte:fragment
