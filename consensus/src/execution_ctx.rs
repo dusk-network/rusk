@@ -139,7 +139,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             info!(event = "run event_loop", ?dur, mode = "open_consensus",);
             dur
         } else {
-            let dur = self.iter_ctx.get_timeout(self.step_name());
+            let dur = self.iter_ctx.get_timeout();
             debug!(event = "run event_loop", ?dur);
             dur
         };
@@ -186,7 +186,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // block is accepted
                             continue;
                         } else {
-                            self.report_elapsed_time().await;
                             return Ok(step_result);
                         }
                     }
@@ -470,8 +469,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) {
-        self.iter_ctx.on_timeout_event(self.step_name());
-
         if let Some(msg) = phase
             .lock()
             .await
@@ -534,24 +531,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         }
 
         None
-    }
-
-    /// Reports step elapsed time to the client
-    async fn report_elapsed_time(&mut self) {
-        let elapsed = self
-            .step_start_time
-            .take()
-            .expect("valid start time")
-            .elapsed();
-
-        let _ = self
-            .client
-            .add_step_elapsed_time(
-                self.round_update.round,
-                self.step_name(),
-                elapsed,
-            )
-            .await;
     }
 
     pub(crate) fn get_curr_generator(&self) -> Option<PublicKeyBytes> {

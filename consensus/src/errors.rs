@@ -76,8 +76,6 @@ pub enum OperationError {
     InvalidEST(anyhow::Error),
     #[error("failed to verify header {0}")]
     InvalidHeader(HeaderError),
-    #[error("Unable to update metrics {0}")]
-    MetricsUpdate(anyhow::Error),
     #[error("Invalid Iteration Info {0}")]
     InvalidIterationInfo(io::Error),
     #[error("Invalid Faults {0}")]

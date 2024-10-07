@@ -182,7 +182,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 validation_handler,
                 ratification_handler,
                 proposal_handler,
-                ru.base_timeouts.clone(),
+                ru.base_timeout,
             );
 
             let (prev_block_hash, saved_iter) =
