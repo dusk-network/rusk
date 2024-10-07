@@ -371,6 +371,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         // any check
                         broadcast(&self.network, &msg.clone()).await;
                     }
+                } else {
+                    let task = self.task.read().await;
+                    task.main_inbound.try_send(msg);
                 }
             }
             _ => warn!("invalid inbound message"),
