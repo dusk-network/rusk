@@ -68,7 +68,7 @@ fn create_step_votes(
                 pk.clone(),
                 sk.clone(),
                 tip_header,
-                HashMap::default(),
+                Duration::default(),
                 vec![],
             );
             let sig = match step {

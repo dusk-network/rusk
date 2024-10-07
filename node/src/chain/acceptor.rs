@@ -7,7 +7,6 @@
 use crate::database::{self, Candidate, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
-use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
@@ -26,7 +25,7 @@ use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
-use node_data::{get_current_timestamp, Serializable, StepName};
+use node_data::{get_current_timestamp, Serializable};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -38,10 +37,7 @@ use tracing::{debug, info, warn};
 use super::consensus::Task;
 use crate::chain::header_validation::{verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
-use crate::database::rocksdb::{
-    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
-    MD_STATE_ROOT_KEY,
-};
+use crate::database::rocksdb::{MD_AVG_STEP, MD_HASH_KEY, MD_STATE_ROOT_KEY};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
 
@@ -249,7 +245,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
     pub async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
-        let base_timeouts = self.adjust_round_base_timeouts().await;
+        let base_timeout = self.step_avg_timeout().await;
         let tip = self.tip.read().await.inner().clone();
 
         let tip_block_voters =
@@ -260,7 +256,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list,
             &self.db,
             &self.vm,
-            base_timeouts,
+            base_timeout,
             tip_block_voters,
         );
     }
@@ -603,6 +599,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // A fully valid block is accepted, consensus task must be aborted.
         task.abort_with_wait().await;
 
+        self.add_step_avg_time(
+            tip.inner().header().iteration + 1,
+            Duration::from_secs(block_time),
+        )
+        .await?;
+
         Self::emit_metrics(
             tip.inner(),
             &label,
@@ -696,13 +698,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Restart Consensus.
         if enable_consensus {
-            let base_timeouts = self.adjust_round_base_timeouts().await;
+            let base_timeout = self.step_avg_timeout().await;
             task.spawn(
                 tip.inner(),
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
-                base_timeouts,
+                base_timeout,
                 tip_block_voters,
             );
         }
@@ -981,13 +983,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let tip_block_voters =
             self.get_att_voters(provisioners_list.prev(), &tip).await;
 
-        let base_timeouts = self.adjust_round_base_timeouts().await;
+        let base_timeout = self.step_avg_timeout().await;
         task.spawn(
             &tip,
             provisioners_list,
             &self.db,
             &self.vm,
-            base_timeouts,
+            base_timeout,
             tip_block_voters,
         );
     }
@@ -1049,30 +1051,38 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.task.read().await.outbound.clone()
     }
 
-    async fn adjust_round_base_timeouts(&self) -> TimeoutSet {
-        let mut base_timeout_set = TimeoutSet::new();
+    async fn add_step_avg_time(
+        &self,
+        number_of_iter: u8,
+        block_elapsed: Duration,
+    ) -> Result<()> {
+        let iter_avg = block_elapsed / number_of_iter as u32;
+        let step_avg = iter_avg / 3_u32;
 
-        base_timeout_set.insert(
-            StepName::Proposal,
-            self.read_avg_timeout(MD_AVG_PROPOSAL).await,
-        );
+        let db = self.db.read().await;
+        db.update(|t| {
+            let mut metric = match &t.op_read(MD_AVG_STEP)? {
+                Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
+                    .unwrap_or_default(),
+                None => AverageElapsedTime::default(),
+            };
 
-        base_timeout_set.insert(
-            StepName::Validation,
-            self.read_avg_timeout(MD_AVG_VALIDATION).await,
-        );
+            metric.push_back(step_avg);
+            debug!(event = "avg_updated", metric = ?metric);
 
-        base_timeout_set.insert(
-            StepName::Ratification,
-            self.read_avg_timeout(MD_AVG_RATIFICATION).await,
-        );
+            let mut bytes = Vec::new();
+            metric.write(&mut bytes)?;
 
-        base_timeout_set
+            t.op_write(MD_AVG_STEP, bytes)
+        })
+        .map_err(|e| anyhow::anyhow!("Cannot update step_avg {e}"))?;
+
+        Ok(())
     }
 
-    async fn read_avg_timeout(&self, key: &[u8]) -> Duration {
+    async fn step_avg_timeout(&self) -> Duration {
         let metric = self.db.read().await.view(|t| {
-            let bytes = &t.op_read(key)?;
+            let bytes = &t.op_read(MD_AVG_STEP)?;
             let metric = match bytes {
                 Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
                     .unwrap_or_default(),
@@ -1086,12 +1096,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok::<AverageElapsedTime, anyhow::Error>(metric)
         });
 
-        metric
+        let stored_avg = metric
             .unwrap_or_default()
             .average()
-            .unwrap_or(MIN_STEP_TIMEOUT)
-            .max(MIN_STEP_TIMEOUT)
-            .min(MAX_STEP_TIMEOUT)
+            .unwrap_or(MAX_STEP_TIMEOUT);
+
+        stored_avg.max(MIN_STEP_TIMEOUT).min(MAX_STEP_TIMEOUT)
     }
 
     async fn get_prev_block_seed(&self) -> Result<Seed> {

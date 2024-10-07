@@ -7,7 +7,7 @@
 use crate::database::{self, Candidate, Mempool, Metadata};
 use crate::{vm, Message};
 use async_trait::async_trait;
-use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
+use dusk_consensus::commons::RoundUpdate;
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError};
 use dusk_consensus::operations::{
@@ -24,12 +24,9 @@ use tokio::task::JoinHandle;
 use tracing::{debug, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
-use crate::chain::metrics::AverageElapsedTime;
-use crate::database::rocksdb::{
-    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_LAST_ITER,
-};
+use crate::database::rocksdb::MD_LAST_ITER;
 use metrics::gauge;
-use node_data::{ledger, Serializable, StepName};
+use node_data::ledger;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -99,7 +96,7 @@ impl Task {
         provisioners_list: ContextProvisioners,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
-        base_timeout: TimeoutSet,
+        base_timeout: Duration,
         voters: Vec<Voter>,
     ) {
         let current = provisioners_list.to_current();
@@ -120,7 +117,7 @@ impl Task {
             self.keys.1.clone(),
             self.keys.0.clone(),
             tip.header(),
-            base_timeout.clone(),
+            base_timeout,
             voters,
         );
 
@@ -352,40 +349,6 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             verification_output,
             discarded_txs,
         })
-    }
-
-    async fn add_step_elapsed_time(
-        &self,
-        _round: u64,
-        step_name: StepName,
-        elapsed: Duration,
-    ) -> Result<(), OperationError> {
-        let db_key = match step_name {
-            StepName::Proposal => MD_AVG_PROPOSAL,
-            StepName::Validation => MD_AVG_VALIDATION,
-            StepName::Ratification => MD_AVG_RATIFICATION,
-        };
-
-        let db = self.db.read().await;
-        let _ = db
-            .update(|t| {
-                let mut metric = match &t.op_read(db_key)? {
-                    Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
-                        .unwrap_or_default(),
-                    None => AverageElapsedTime::default(),
-                };
-
-                metric.push_back(elapsed);
-                debug!(event = "avg_updated", ?step_name,  metric = ?metric);
-
-                let mut bytes = Vec::new();
-                metric.write(&mut bytes)?;
-
-                t.op_write(db_key, bytes)
-            })
-            .map_err(OperationError::MetricsUpdate)?;
-
-        Ok(())
     }
 
     async fn get_block_gas_limit(&self) -> u64 {
