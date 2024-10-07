@@ -171,6 +171,10 @@ impl Message {
         self.version = v;
         self
     }
+
+    pub fn is_local(&self) -> bool {
+        self.metadata.is_none()
+    }
 }
 
 /// Defines a transport-related properties that determines how the message
