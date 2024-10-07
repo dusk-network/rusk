@@ -33,7 +33,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{cmp, env};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{RwLock, RwLockReadGuard};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::{verify_faults, Validator};
@@ -279,7 +279,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .await
     }
 
-    // Re-route message to consensus task
+    // Re-route a message to Consensus and Network
     pub(crate) async fn reroute_msg(
         &self,
         msg: Message,
@@ -304,11 +304,76 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     task.main_inbound.try_send(msg);
                 }
             }
-            Payload::Quorum(payload) => {
-                // Prevent the rebroadcast of any quorum messages if the
-                // blockchain tip has already been updated for the same round.
-                if let Vote::Valid(hash) = payload.vote() {
-                    if *hash != self.get_curr_hash().await {
+            Payload::Quorum(qmsg) => {
+                let tip_header = self.tip.read().await.inner().header().clone();
+
+                match msg.header.compare_round(tip_header.height + 1) {
+                    // If Quorum is for the current round, we verify it,
+                    // rebroadcast it, and reroute it to Consensus
+                    Status::Present => {
+                        // Verify Attestation
+                        let cur_seed = tip_header.seed;
+                        let cur_provisioners = self
+                            .provisioners_list
+                            .read()
+                            .await
+                            .current()
+                            .clone();
+
+                        let res = verify_att(
+                            &qmsg.att,
+                            qmsg.header.clone(),
+                            cur_seed,
+                            &cur_provisioners,
+                            None,
+                        )
+                        .await;
+
+                        match res {
+                            Ok(_) => {
+                                // Rebroadcast
+                                broadcast(&self.network, &msg).await;
+
+                                // Reroute to Consensus
+                                let task = self.task.read().await;
+                                task.main_inbound.try_send(msg);
+                            }
+                            Err(err) => {
+                                error!("Attestation verification failed: {err}")
+                            }
+                        }
+                    }
+
+                    // If Quorum is for a past round, we only rebroadcast it if
+                    // it's Valid and for a different candidate than what we
+                    // accepted.
+                    //
+                    // The rationale is that:
+                    //  - Fail Quorums have no influence on past rounds
+                    //  - Valid Quorums for accepted candidates have been
+                    //    already broadcast by us
+                    Status::Past => {
+                        if let Vote::Valid(candidate) = qmsg.vote() {
+                            // Check if the candidate is in our chain
+                            if let Ok(candidate_exists) = self
+                                .db
+                                .read()
+                                .await
+                                .view(|t| t.get_block_exists(candidate))
+                            {
+                                // If it doesn't exist, then rebroadcast the
+                                // message
+                                if !candidate_exists {
+                                    broadcast(&self.network, &msg).await;
+                                }
+                            } else {
+                                warn!("Could not check candidate in DB. Skipping Quorum rebroadcast");
+                            };
+                        }
+                    }
+                    Status::Future => {
+                        //INFO: we currently rebroadcast future Quorums without
+                        // any check
                         broadcast(&self.network, &msg).await;
                     }
                 }
