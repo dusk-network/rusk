@@ -1,5 +1,4 @@
 type AppStore = import("svelte/store").Readable<AppStoreContent> & {
-  setNetwork: (value: string) => void;
   setTheme: (value: boolean) => void;
 };
 
@@ -11,8 +10,6 @@ type AppStoreContent = {
   isSmallScreen: boolean;
   hasTouchSupport: boolean;
   marketDataFetchInterval: number;
-  network: string;
-  networks: NetworkOption[];
   statsFetchInterval: number;
   transactionsListEntries: number;
 };

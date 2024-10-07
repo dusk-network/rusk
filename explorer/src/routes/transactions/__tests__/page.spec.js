@@ -14,7 +14,7 @@ describe("Transactions page", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 30));
 
-  const { fetchInterval, network, transactionsListEntries } = get(appStore);
+  const { fetchInterval, transactionsListEntries } = get(appStore);
   const getTransactionSpy = vi
     .spyOn(duskAPI, "getTransactions")
     .mockResolvedValue(gqlTransactions.transactions.map(transformTransaction));
@@ -37,7 +37,6 @@ describe("Transactions page", () => {
     expect(getTransactionSpy).toHaveBeenCalledTimes(1);
     expect(getTransactionSpy).toHaveBeenNthCalledWith(
       1,
-      network,
       transactionsListEntries
     );
 
@@ -51,7 +50,6 @@ describe("Transactions page", () => {
     expect(getTransactionSpy).toHaveBeenCalledTimes(2);
     expect(getTransactionSpy).toHaveBeenNthCalledWith(
       2,
-      network,
       transactionsListEntries
     );
 
@@ -60,7 +58,6 @@ describe("Transactions page", () => {
     expect(getTransactionSpy).toHaveBeenCalledTimes(3);
     expect(getTransactionSpy).toHaveBeenNthCalledWith(
       3,
-      network,
       transactionsListEntries
     );
 
@@ -81,7 +78,6 @@ describe("Transactions page", () => {
     expect(getTransactionSpy).toHaveBeenCalledTimes(1);
     expect(getTransactionSpy).toHaveBeenNthCalledWith(
       1,
-      network,
       transactionsListEntries
     );
 

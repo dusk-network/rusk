@@ -7,7 +7,7 @@
     mdiCurrencyUsd,
     mdiSwapVertical,
   } from "@mdi/js";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { createCompactFormatter } from "$lib/dusk/value";
@@ -19,7 +19,6 @@
     createDataStore,
     createPollingDataStore,
   } from "$lib/dusk/svelte-stores";
-  import { onNetworkChange } from "$lib/lifecyles";
   import { appStore, marketDataStore } from "$lib/stores";
 
   import "./StatisticsPanel.css";
@@ -40,11 +39,9 @@
     $appStore.statsFetchInterval
   );
 
-  onNetworkChange((network) => {
-    nodeLocationsStore.reset();
-    nodeLocationsStore.getData(network);
-    pollingStatsDataStore.reset();
-    pollingStatsDataStore.start(network);
+  onMount(() => {
+    nodeLocationsStore.getData();
+    pollingStatsDataStore.start();
   });
 
   onDestroy(pollingStatsDataStore.stop);

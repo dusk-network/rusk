@@ -1,10 +1,10 @@
 <script>
   import { mdiMagnify } from "@mdi/js";
+  import { createEventDispatcher } from "svelte";
+
   import { TextboxAndButton } from "$lib/components";
   import { goto } from "$lib/navigation";
   import { duskAPI } from "$lib/services";
-  import { appStore } from "$lib/stores";
-  import { createEventDispatcher } from "svelte";
 
   /** @type {String}*/
   let value;
@@ -23,7 +23,7 @@
   function submitHandler() {
     if (/^([0-9a-fA-F]{64}|\d+)$/g.test(value)) {
       duskAPI
-        .search($appStore.network, value)
+        .search(value)
         .then((data) => {
           const type = data.length ? data[0].type : undefined;
           switch (type) {
