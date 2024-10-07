@@ -334,6 +334,9 @@ async fn exec() -> anyhow::Result<()> {
                     println!("{th}");
                 }
             }
+            RunResult::ContractId(id) => {
+                println!("Contract ID: {:?}", id);
+            }
             RunResult::Settings() => {}
             RunResult::Create() | RunResult::Restore() => {}
         },
