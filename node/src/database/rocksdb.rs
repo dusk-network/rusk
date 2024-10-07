@@ -817,7 +817,15 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     fn get_txs_ids_sorted_by_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
-        let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf);
+        let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf, true);
+
+        Ok(Box::new(iter))
+    }
+
+    fn get_txs_ids_sorted_by_low_fee(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
+        let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf, false);
 
         Ok(Box::new(iter))
     }
@@ -898,7 +906,7 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
         fees_cf: &ColumnFamily,
         mempool: &'db M,
     ) -> Self {
-        let iter = MemPoolFeeIterator::new(db, fees_cf);
+        let iter = MemPoolFeeIterator::new(db, fees_cf, true);
         MemPoolIterator { iter, mempool }
     }
 }
@@ -914,13 +922,20 @@ impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
 
 pub struct MemPoolFeeIterator<'db, DB: DBAccess> {
     iter: DBRawIteratorWithThreadMode<'db, Transaction<'db, DB>>,
+    fee_desc: bool,
 }
 
 impl<'db, DB: DBAccess> MemPoolFeeIterator<'db, DB> {
-    fn new(db: &'db Transaction<DB>, fees_cf: &ColumnFamily) -> Self {
+    fn new(
+        db: &'db Transaction<DB>,
+        fees_cf: &ColumnFamily,
+        fee_desc: bool,
+    ) -> Self {
         let mut iter = db.raw_iterator_cf(fees_cf);
-        iter.seek_to_last();
-        MemPoolFeeIterator { iter }
+        if fee_desc {
+            iter.seek_to_last();
+        };
+        MemPoolFeeIterator { iter, fee_desc }
     }
 }
 
@@ -932,7 +947,11 @@ impl<DB: DBAccess> Iterator for MemPoolFeeIterator<'_, DB> {
                 if let Some(key) = self.iter.key() {
                     let (gas_price, hash) =
                         deserialize_key(&mut &key.to_vec()[..]).ok()?;
-                    self.iter.prev();
+                    if self.fee_desc {
+                        self.iter.prev();
+                    } else {
+                        self.iter.next();
+                    }
                     Some((gas_price, hash))
                 } else {
                     None

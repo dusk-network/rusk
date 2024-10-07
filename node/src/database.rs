@@ -158,6 +158,11 @@ pub trait Mempool {
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
 
+    /// Get an iterator over the mempool transactions hash by gas price (asc)
+    fn get_txs_ids_sorted_by_low_fee(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
+
     /// Get all transactions hashes.
     fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>>;
 
