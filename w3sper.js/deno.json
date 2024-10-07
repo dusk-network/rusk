@@ -1,5 +1,6 @@
 {
-   "tasks": {
-     "test": "deno test --allow-read --allow-net --allow-write --allow-run --trace-leaks"
-   }
+  "tasks": {
+    "build": "deno run --allow-write --allow-read scripts/build.ts",
+    "test": "deno test --allow-read --allow-net --allow-write --allow-run --trace-leaks"
+  }
 }
