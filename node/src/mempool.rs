@@ -217,12 +217,7 @@ impl MempoolSrv {
         }
 
         // Perform basic checks on the transaction
-        db.read().await.view(|view| {
-            let count = view.txs_count();
-            if count >= max_mempool_txn_count {
-                return Err(TxAcceptanceError::MaxTxnCountExceeded(count));
-            }
-
+        let tx_to_delete = db.read().await.view(|view| {
             // ensure transaction does not exist in the mempool
             if view.get_tx_exists(tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInMempool);
@@ -233,7 +228,17 @@ impl MempoolSrv {
                 return Err(TxAcceptanceError::AlreadyExistsInLedger);
             }
 
-            Ok(())
+            let txs_count = view.txs_count();
+            if txs_count > max_mempool_txn_count {
+                let tx_to_delete = view
+                    .get_txs_ids_sorted_by_low_fee()?
+                    .map(|(_, tx_id)| tx_id)
+                    .next();
+                // Get the lowest fee transaction to delete
+                Ok(tx_to_delete)
+            } else {
+                Ok(None)
+            }
         })?;
 
         // VM Preverify call
@@ -247,12 +252,14 @@ impl MempoolSrv {
         db.read().await.update_dry_run(dry_run, |db| {
             let spend_ids = tx.to_spend_ids();
 
+            let mut replaced = false;
             // ensure spend_ids do not exist in the mempool
             for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
                 if let Some(m_tx) = db.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
                         if db.delete_tx(m_tx_id)? {
                             events.push(TransactionEvent::Removed(m_tx_id));
+                            replaced = true;
                         };
                     } else {
                         return Err(
@@ -263,6 +270,14 @@ impl MempoolSrv {
             }
 
             events.push(TransactionEvent::Included(tx));
+
+            if !replaced {
+                if let Some(to_delete) = tx_to_delete {
+                    if db.delete_tx(to_delete)? {
+                        events.push(TransactionEvent::Removed(to_delete));
+                    };
+                }
+            }
             // Persist transaction in mempool storage
 
             let now = get_current_timestamp();
