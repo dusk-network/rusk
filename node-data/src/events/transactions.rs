@@ -121,7 +121,10 @@ impl Serialize for Transaction {
                 );
             }
             if let Some(sender) = tx.moonlight_sender() {
-                fee.insert("sender", hex::encode(sender.to_bytes()));
+                fee.insert(
+                    "sender",
+                    bs58::encode(sender.to_bytes()).into_string(),
+                );
             }
             fee
         };
