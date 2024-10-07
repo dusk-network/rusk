@@ -32,6 +32,7 @@ use tracing::info;
 const CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
 pub const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
+pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(
@@ -62,6 +63,7 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
         None,
         DEFAULT_GAS_PER_DEPLOY_BYTE,
         DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        DEFAULT_MIN_GAS_LIMIT,
         block_gas_limit,
         u64::MAX,
         sender,
