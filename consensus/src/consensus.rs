@@ -17,13 +17,12 @@ use crate::proposal;
 use crate::queue::MsgRegistry;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{debug, error, info, Instrument};
+use tracing::{debug, error, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
+use std::cmp;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{cmp, env};
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 
@@ -209,7 +208,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             }
 
             loop {
-                Self::consensus_delay().await;
                 db.lock().await.store_last_iter((ru.hash(), iter)).await;
 
                 iter_ctx.on_begin(iter);
@@ -271,56 +269,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 }
             }
         })
-    }
-
-    async fn consensus_delay() {
-        let spin_time: u64 = env::var("RUSK_CONSENSUS_SPIN_TIME")
-            .unwrap_or_default()
-            .parse()
-            .unwrap_or_default();
-
-        if spin_time == 0 {
-            return;
-        }
-
-        info!("RUSK_CONSENSUS_SPIN_TIME is {spin_time}");
-
-        let spin_time = UNIX_EPOCH + Duration::from_secs(spin_time);
-        let mut now = SystemTime::now();
-        while spin_time > now {
-            let to_wait =
-                spin_time.duration_since(now).expect("When the hell am I?");
-
-            info!(
-                "Waiting {to_wait:?} for consensus to be triggered at {}",
-                time_util::print_system_time_to_rfc3339(&spin_time)
-            );
-
-            let chunk = match to_wait {
-                // More than 1h print every 15min
-                secs if secs > Duration::from_secs(60 * 60) => {
-                    Duration::from_secs(15 * 60)
-                }
-                // More than 30min print every 10in
-                secs if secs > Duration::from_secs(30 * 60) => {
-                    Duration::from_secs(10 * 60)
-                }
-                // More than 5min print every 5min
-                secs if secs > Duration::from_secs(5 * 60) => {
-                    Duration::from_secs(5 * 60)
-                }
-                // More than 1min print every 30secs
-                secs if secs > Duration::from_secs(60) => {
-                    Duration::from_secs(30)
-                }
-                // Countdown last minute
-                _ => Duration::from_secs(1),
-            };
-
-            tokio::time::sleep(chunk).await;
-            now = SystemTime::now();
-        }
-        env::remove_var("RUSK_CONSENSUS_SPIN_TIME");
     }
 }
 
