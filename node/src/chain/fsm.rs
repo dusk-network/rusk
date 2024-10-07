@@ -302,9 +302,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         msg: &Message,
     ) -> anyhow::Result<Option<Block>> {
         // Clean up attestation cache
-        let now = Instant::now();
-        self.attestations_cache
-            .retain(|_, (_, expiry)| *expiry > now);
+        self.clean_att_cache();
 
         // FIXME: We should return the whole outcome for this quorum
         // Basically we need to inform the upper layer if the received quorum is
@@ -451,12 +449,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         };
 
         // Clean up attestation cache
-        let now = Instant::now();
-        self.attestations_cache
-            .retain(|_, (_, expiry)| *expiry > now);
+        self.clean_att_cache();
         self.attestations_cache.remove(&block_hash);
 
         block_with_att
+    }
+
+    fn clean_att_cache(&mut self) {
+        let now = Instant::now();
+        self.attestations_cache
+            .retain(|_, (_, expiry)| *expiry > now);
     }
 }
 
