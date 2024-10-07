@@ -384,6 +384,17 @@ impl ConsensusHeader {
         Status::Past
     }
 
+    pub fn is_same_iteration(
+        &self,
+        prev_block: Hash,
+        round: u64,
+        iteration: u8,
+    ) -> bool {
+        prev_block == self.prev_block_hash
+            && round == self.round
+            && iteration == self.iteration
+    }
+
     pub fn signable(&self) -> Vec<u8> {
         let mut buf = vec![];
         self.write(&mut buf).expect("Writing to vec should succeed");
