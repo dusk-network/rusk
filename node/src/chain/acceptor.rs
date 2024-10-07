@@ -226,7 +226,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 secs if secs > Duration::from_secs(60 * 60) => {
                     Duration::from_secs(15 * 60)
                 }
-                // More than 30min print every 10in
+                // More than 30min print every 10min
                 secs if secs > Duration::from_secs(30 * 60) => {
                     Duration::from_secs(10 * 60)
                 }
