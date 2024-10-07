@@ -67,7 +67,7 @@ test("Network synchronization", async () => {
 
   const treasury = new Treasury(owners);
 
-  await treasury.read({ from: 0n, addresses, accounts });
+  await treasury.update({ from: 0n, addresses, accounts });
 
   const bookkeeper = new Bookkeeper(treasury);
 

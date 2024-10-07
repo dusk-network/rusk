@@ -14,7 +14,7 @@ class Key {
   #buffer;
 
   constructor(buffer) {
-    this.#buffer = buffer;
+    this.#buffer = buffer.slice();
   }
 
   toString() {
@@ -22,7 +22,7 @@ class Key {
   }
 
   valueOf() {
-    return this.#buffer.slice(0);
+    return this.#buffer.slice();
   }
 
   [Symbol.toPrimitive](hint) {

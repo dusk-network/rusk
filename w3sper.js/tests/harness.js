@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+const hex = (bytes) =>
+  Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0"));
+
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import {
   test as harnessTest,
@@ -54,6 +57,8 @@ export class Treasury {
   #notes = new Map();
   #accounts = [];
 
+  lastSyncInfo;
+
   constructor(users) {
     this.#users = users;
 
@@ -62,7 +67,7 @@ export class Treasury {
     });
   }
 
-  async read({ from, addresses, accounts }) {
+  async update({ from, addresses, accounts }) {
     if (accounts) {
       this.#accounts = await accounts.balances(this.#users);
     }
@@ -71,7 +76,7 @@ export class Treasury {
       return;
     }
 
-    for await (let [notes] of await addresses.notes(this.#users, {
+    for await (let [notes, syncInfo] of await addresses.notes(this.#users, {
       from,
     })) {
       for (let i = 0; i < this.#users.length; i++) {
@@ -81,14 +86,35 @@ export class Treasury {
           new Map([...userNotes, ...notes[i]]),
         );
       }
+      this.lastSyncInfo = syncInfo;
+      console.log(syncInfo);
     }
+    console.log("done");
+
+    // Get all the nullifiers
+    const nullifiers = Array.from(this.#notes.values()).flatMap((innerMap) =>
+      Array.from(innerMap.keys()),
+    );
+
+    // Returns which notes have been spent of the given ones
+    const spent = (await addresses.spent(nullifiers)).map((n) =>
+      hex(new Uint8Array(n)).join(""),
+    );
+
+    this.#notes.forEach((notes) => {
+      for (let [key, value] of notes) {
+        if (spent.includes(hex(key).join(""))) {
+          notes.delete(key);
+        }
+      }
+    });
   }
 
-  address(profile) {
-    return this.#notes.get(profile.toString());
+  address(identifier) {
+    return this.#notes.get(identifier.toString());
   }
 
-  account(profile) {
-    return this.#accounts.at(+profile);
+  account(identifier) {
+    return this.#accounts.at(+identifier);
   }
 }

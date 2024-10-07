@@ -6,6 +6,7 @@
 
 import { SyncEvent } from "./event.js";
 import { getBYOBReader } from "../../protocol-driver/stream.js";
+import * as DataBuffer from "../../protocol-driver/buffer.js";
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
 import { Bookmark } from "../bookmark.js";
 
@@ -41,7 +42,7 @@ export class AddressSyncer extends EventTarget {
       .then((buffer) => new Bookmark(new Uint8Array(buffer)));
   }
 
-  async root() {
+  get root() {
     const network = this.#network;
     const url = new URL(`/on/contracts:${TRANSFER}/root`, network.url);
 
@@ -50,8 +51,7 @@ export class AddressSyncer extends EventTarget {
       method: "POST",
     });
 
-    const response = await network.dispatch(req);
-    return await response.arrayBuffer();
+    return network.dispatch(req).then((response) => response.arrayBuffer());
   }
 
   async openings(notes, options = {}) {
@@ -61,7 +61,7 @@ export class AddressSyncer extends EventTarget {
 
     // Fetch the openings for each picked notes
     let requests = [];
-    console.log("bookmarks", bookmarks);
+
     for (let i = 0; i < bookmarks.length; i += 8) {
       const body = bookmarks.slice(i, i + 8);
       const url = new URL(`/on/contracts:${TRANSFER}/opening`, network.url);
@@ -79,6 +79,40 @@ export class AddressSyncer extends EventTarget {
       .then((responses) => responses.map((response) => response.arrayBuffer()))
       .then((buffers) => Promise.all(buffers));
     return result;
+  }
+
+  async spent(nullifiers) {
+    const entrySize = await ProtocolDriver.getEntrySize();
+
+    const url = new URL(
+      `/on/contracts:${TRANSFER}/existing_nullifiers`,
+      this.#network.url,
+    );
+
+    const size = nullifiers.length * entrySize.key + 8;
+    const body = new Uint8Array(size);
+
+    DataBuffer.copyInto(body, nullifiers);
+    DataBuffer.layout(body, nullifiers.length);
+
+    const req = new Request(url, {
+      headers: { "Content-Type": "application/octet-stream" },
+      method: "POST",
+      body,
+    });
+
+    const buffer = await this.#network
+      .dispatch(req)
+      .then((response) => response.arrayBuffer());
+
+    const layout = DataBuffer.layout(new Uint8Array(buffer));
+    const spentNullifiers = [];
+
+    for (let i = 0; i < layout.totalLength; i += entrySize.key) {
+      spentNullifiers.push(buffer.slice(i, i + entrySize.key));
+    }
+
+    return spentNullifiers;
   }
 
   async notes(profiles, options = {}) {

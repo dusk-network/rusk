@@ -10,6 +10,7 @@ import { ProfileGenerator } from "../profile.js";
 import * as ProtocolDriver from "../protocol-driver/mod.js";
 
 import { GraphQLRequest } from "./graphql.js";
+import { NetworkError } from "./error.js";
 
 import { Gas } from "./gas.js";
 
@@ -32,6 +33,34 @@ const once = (target, topic) =>
 
 const snakeToCamel = (name) =>
   name.replace(/_([a-z])/g, (_, ch) => ch.toUpperCase());
+
+const onMessage = (event) => {
+  const { data } = event;
+  const headersLength = new DataView(data).getUint32(0, true);
+  const headersBuffer = new Uint8Array(data, 4, headersLength);
+  const headers = new Headers(
+    JSON.parse(new TextDecoder().decode(headersBuffer)),
+  );
+  const body = new Uint8Array(data, 4 + headersLength);
+
+  let payload;
+  switch (headers.get("content-type")) {
+    case "application/json":
+      payload = JSON.parse(new TextDecoder().decode(body));
+      break;
+    case "application/octet-stream":
+      payload = body;
+      break;
+    default:
+      try {
+        payload = JSON.parse(new TextDecoder().decode(body));
+      } catch (e) {
+        payload = body;
+      }
+  }
+
+  console.log({ headers, payload });
+};
 
 export class Network {
   #sessionId;
@@ -69,6 +98,7 @@ export class Network {
 
     const { signal } = options;
     const socket = new WebSocket(url);
+    socket.binaryType = "arraybuffer";
     this.#socket = socket;
     socket.onerror = console.error;
     return new Promise(async (resolve, reject) => {
@@ -85,7 +115,7 @@ export class Network {
 
       this.#sessionId = event.data;
 
-      socket.onmessage = console.log;
+      socket.onmessage = onMessage;
 
       const url = new URL("/on/node/info", this.url);
 
@@ -149,7 +179,53 @@ export class Network {
       builder.gas(gas);
     }
 
-    await builder.build(this);
+    const tx = await builder.build(this);
+
+    // Attempt to preverify the transaction
+    await this.preverify(tx.buffer);
+
+    // Attempt to propagate the transaction
+    await this.propagate(tx.buffer);
+
+    return tx;
+  }
+
+  async prove(circuits) {
+    const url = new URL("/on/prover/prove", this.url);
+
+    const req = new Request(url, {
+      headers: { "Content-Type": "application/octet-stream" },
+      method: "POST",
+      body: circuits,
+    });
+
+    return this.dispatch(req).then((response) => response.arrayBuffer());
+  }
+
+  async preverify(tx) {
+    const url = new URL("/on/transactions/preverify", this.url);
+
+    const req = new Request(url, {
+      headers: { "Content-Type": "application/octet-stream" },
+      method: "POST",
+      body: tx.valueOf(),
+    });
+
+    const _response = await this.dispatch(req);
+
+    return tx;
+  }
+
+  async propagate(tx) {
+    const url = new URL("/on/transactions/propagate", this.url);
+
+    const req = new Request(url, {
+      headers: { "Content-Type": "application/octet-stream" },
+      method: "POST",
+      body: tx.valueOf(),
+    });
+
+    const response = await this.dispatch(req);
   }
 
   async dispatch(resource, options = {}) {
@@ -181,7 +257,7 @@ export class Network {
       if (body.startsWith("Mismatched rusk version:")) {
         throw new Error(body);
       } else {
-        console.error("Server error: ", body);
+        throw new NetworkError(body);
       }
     }
 

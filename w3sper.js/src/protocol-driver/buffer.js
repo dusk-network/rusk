@@ -74,7 +74,7 @@ function createBuffer(byteLength, layoutSize) {
  * @param {Uint8Array} dest - The destination typed array where items will be copied into.
  * @param {Uint8Array[]} items - An array of typed arrays to copy into the destination.
  */
-function copyInto(dest, items) {
+export function copyInto(dest, items) {
   // Keep track of the current offset in the destination
   let offset = 0;
   for (const item of items) {

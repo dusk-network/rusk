@@ -66,7 +66,6 @@ export async function opening(bytes) {
   ) {
     const buffer = new Uint8Array(DataBuffer.from(bytes));
 
-    // Allocate memory for the notes + 4 bytes for the length
     let ptr = await malloc(buffer.byteLength);
 
     // Copy the notes to the WASM memory
@@ -74,6 +73,28 @@ export async function opening(bytes) {
 
     let code = await opening(ptr);
     if (code > 0) throw DriverError.from(code);
+  });
+
+  return await task();
+}
+
+export async function displayScalar(bytes) {
+  const task = protocolDriverModule.task(async function (
+    { malloc, display_scalar },
+    { memcpy },
+  ) {
+    let ptr = await malloc(32);
+    await memcpy(ptr, bytes, 32);
+
+    let out_ptr = await malloc(64);
+
+    let code = await display_scalar(ptr, out_ptr);
+    if (code > 0) throw DriverError.from(code);
+
+    const buffer = await memcpy(null, out_ptr, 64);
+    const text = new TextDecoder().decode(buffer);
+
+    return text;
   });
 
   return await task();
@@ -365,6 +386,44 @@ export const accountsIntoRaw = async (users) =>
     return result;
   })();
 
+export const intoProved = async (tx, proof) =>
+  protocolDriverModule.task(async function (
+    { malloc, into_proved },
+    { memcpy },
+  ) {
+    let buffer = tx.valueOf();
+    const tx_ptr = await malloc(buffer.byteLength);
+    await memcpy(tx_ptr, buffer);
+
+    buffer = proof.valueOf();
+    const proof_ptr = await malloc(buffer.byteLength + 4);
+    const proof_len = new Uint8Array(4);
+
+    new DataView(proof_len.buffer).setUint32(0, buffer.byteLength, true);
+
+    await memcpy(proof_ptr, proof_len);
+    await memcpy(proof_ptr + 4, new Uint8Array(buffer));
+
+    let proved_ptr = await malloc(4);
+    let hash_ptr = await malloc(64);
+
+    const code = await into_proved(tx_ptr, proof_ptr, proved_ptr, hash_ptr);
+    if (code > 0) throw DriverError.from(code);
+
+    proved_ptr = new DataView(
+      (await memcpy(null, proved_ptr, 4)).buffer,
+    ).getUint32(0, true);
+
+    const len = new DataView(
+      (await memcpy(null, proved_ptr, 4)).buffer,
+    ).getUint32(0, true);
+
+    buffer = await memcpy(null, proved_ptr + 4, len);
+    const hash = new TextDecoder().decode(await memcpy(null, hash_ptr, 64));
+
+    return [buffer, hash];
+  })();
+
 export const phoenix = async (info) =>
   protocolDriverModule.task(async function ({ malloc, phoenix }, { memcpy }) {
     const ptr = Object.create(null);
@@ -454,7 +513,7 @@ export const phoenix = async (info) =>
       true,
     );
 
-    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+    const tx_buffer = await memcpy(null, tx_ptr, tx_len);
 
     let proof_ptr = new DataView(
       (await memcpy(null, proof, 4)).buffer,

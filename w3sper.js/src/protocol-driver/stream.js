@@ -46,9 +46,14 @@ function createBYOBReadableStream(stream) {
         // Read from the underlying stream if more data is needed
         reader.read().then(({ done, value }) => {
           if (done) {
-            // If the stream is finished, close it
-            controller.byobRequest.respond(bytesFilled); // Respond with whatever we have
-            controller.close();
+            if (bytesFilled === 0) {
+              controller.close();
+            } else {
+              // Respond with whatever we have, then close the stream
+              controller.byobRequest.respond(bytesFilled);
+              controller.close();
+            }
+
             return;
           }
 

@@ -62,19 +62,22 @@ export class TransactionBuilder {
 
     // Fetch the openings from the network for the picked notes
     const openings = (await syncer.openings(picked)).map((opening) => {
-      const data = new Uint8Array(opening.slice(0));
-      // data[0] = 1;
-      return data;
+      return new Uint8Array(opening.slice(0));
     });
 
     // Fetch the root
-    const root = await syncer.root();
+    const root = await syncer.root;
+
     const sender = this.#from;
     const receiver = this.#to;
     const inputs = picked.values();
+    const nullifiers = [...picked.keys()];
+
+    // Get the chain id from the network
     const { chainId } = network.nodeInfo;
 
-    let [tx, proof] = await ProtocolDriver.phoenix({
+    // Create the unproven transaction
+    let [tx, circuits] = await ProtocolDriver.phoenix({
       sender,
       receiver,
       inputs,
@@ -89,20 +92,16 @@ export class TransactionBuilder {
       data: null,
     });
 
-    // const body = new Uint8Array(proof.byteLength + 8);
-    // new DataView(body.buffer).setUint32(0, proof.byteLength, true);
-    // body.set(proof, 8);
+    // Attempt to prove the transaction
+    const proof = await network.prove(circuits);
 
-    const body = proof;
-    const url = new URL("/on/prover/prove", network.url);
+    // Transform the unproven transaction into a proved transaction
+    const [buffer, hash] = await ProtocolDriver.intoProved(tx, proof);
 
-    const req = new Request(url, {
-      headers: { "Content-Type": "application/octet-stream" },
-      method: "POST",
-      body,
+    return Object.freeze({
+      buffer,
+      hash,
+      nullifiers,
     });
-
-    const response = await network.dispatch(req);
-    console.log(response);
   }
 }

@@ -30,15 +30,15 @@ use error::ErrorCode;
 use alloc::vec::Vec;
 use core::{ptr, slice};
 use dusk_bytes::{DeserializableSlice, Serializable};
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    transfer::data::TransactionData,
-    transfer::phoenix::{
-        ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
-        PublicKey as PhoenixPublicKey,
-    },
-    BlsScalar,
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::phoenix;
+use execution_core::transfer::phoenix::{
+    ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
+    PublicKey as PhoenixPublicKey,
 };
+use execution_core::transfer::Transaction;
+use execution_core::BlsScalar;
 
 use zeroize::Zeroize;
 
@@ -145,6 +145,21 @@ pub unsafe fn map_owned(
         &mut (*last_info_ptr)[8],
         8,
     );
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn display_scalar(
+    scalar_ptr: &[u8; 32],
+    output: &mut [u8; 64],
+) -> ErrorCode {
+    let scalar: BlsScalar =
+        rkyv::from_bytes(scalar_ptr).or(Err(ErrorCode::UnarchivingError))?;
+    let displayed = alloc::format!("{}", scalar);
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes[2..].as_ptr(), output.as_mut_ptr(), 64);
 
     ErrorCode::Ok
 }
@@ -269,19 +284,56 @@ impl Prove for NoOpProver {
     }
 }
 
+// #[no_mangle]
+// pub unsafe fn opening(ptr: *const u8) -> ErrorCode {
+//     let opening = mem::read_buffer(ptr);
+
+//     let opening: Vec<Option<NoteOpening>> =
+//         mem::parse_buffer(&opening).or(Err(ErrorCode::DeserializationError))?
+// ;
+
+//     ErrorCode::Ok
+// }
+
 #[no_mangle]
-pub unsafe fn opening(ptr: *const u8) -> ErrorCode {
-    let opening = mem::read_buffer(ptr);
+pub unsafe fn into_proved(
+    tx_ptr: *const u8,
+    proof_ptr: *const u8,
+    proved_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let tx = mem::read_buffer(tx_ptr);
+    let mut tx: phoenix::Transaction = mem::parse_buffer(tx)?;
+    let proof = mem::read_buffer(proof_ptr);
 
-    // eprintln!("\nOpening Data [{}]: {:?}\n", opening.len(), opening);
+    tx.set_proof(proof.to_vec());
 
-    let opening: Vec<Option<NoteOpening>> =
-        mem::parse_buffer(&opening).or(Err(ErrorCode::DeserializationError))?;
+    let bytes = Transaction::Phoenix(tx.clone()).to_var_bytes();
 
-    // let test = alloc::vec![opening, opening, opening, opening];
-    // let test = to_bytes::<_, 256>(&test).unwrap();
+    let len = bytes.len().to_le_bytes();
 
-    eprintln!("\nOpening: {:?}\n", opening);
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *proved_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    // Unfortunately, the BlsScalar type had a display implementation that
+    // does not follow the raw bytes format. Therefore the `tx.hash` display
+    // DOES NOT match the `tx.hash` of the network.
+    let displayed = alloc::format!("{}", &tx.hash());
+    let displayed = displayed.chars().skip(2).collect::<Vec<_>>();
+    let displayed = displayed
+        .chunks(2)
+        .rev()
+        .flatten()
+        .collect::<alloc::string::String>();
+
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
 
     ErrorCode::Ok
 }
@@ -331,7 +383,7 @@ pub unsafe fn phoenix(
 
     let prover = NoOpProver::default();
 
-    let tx = crate::transaction::phoenix(
+    let tx = phoenix::Transaction::new(
         &mut rng,
         &sender_sk,
         &change_pk,
@@ -350,6 +402,7 @@ pub unsafe fn phoenix(
     .or(Err(ErrorCode::PhoenixTransactionError))?;
 
     let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
+    let bytes_len = bytes.len();
 
     let len = bytes.len().to_le_bytes();
 
@@ -374,37 +427,3 @@ pub unsafe fn phoenix(
 
     ErrorCode::Ok
 }
-
-// pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
-//     rng: &mut R,
-//     sender_sk: &PhoenixSecretKey,
-//     change_pk: &PhoenixPublicKey,
-//     receiver_pk: &PhoenixPublicKey,
-//     inputs: Vec<(Note, NoteOpening)>,
-//     root: BlsScalar,
-//     transfer_value: u64,
-//     obfuscated_transaction: bool,
-//     deposit: u64,
-//     gas_limit: u64,
-//     gas_price: u64,
-//     chain_id: u8,
-//     data: Option<impl Into<TransactionData>>,
-//     prover: &P,
-// ) -> Result<Transaction, Error> {
-//     Ok(PhoenixTransaction::new::<R, P>(
-//         rng,
-//         sender_sk,
-//         change_pk,
-//         receiver_pk,
-//         inputs,
-//         root,
-//         transfer_value,
-//         obfuscated_transaction,
-//         deposit,
-//         gas_limit,
-//         gas_price,
-//         chain_id,
-//         data,
-//         prover,
-//     )?
-//     .into())

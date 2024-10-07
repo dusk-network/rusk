@@ -23,44 +23,32 @@ test("balances", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
 
-  // const TRANSFER =
-  //   "0100000000000000000000000000000000000000000000000000000000000000";
-
-  // const url = new URL(`/on/contracts:${TRANSFER}/root`, network.url);
-
-  // const req = new Request(url, {
-  //   headers: { "Content-Type": "application/octet-stream" },
-  //   method: "POST",
-  // });
-
-  // const response = await network.dispatch(req);
-  // const buffer = await response.arrayBuffer();
-  // const root = new Uint8Array(await buffer);
-  // console.log(root);
-
-  // await ProtocolDriver.root(root);
-
-  // return;
-
   const users = await Promise.all([profiles.default, profiles.next()]);
+
+  let url = new URL("on/transactions/executed", network.url);
+
+  let response = await fetch(url, {
+    headers: {
+      "rusk-version": "0.8.0",
+      "rusk-session-id": network.sessionId,
+    },
+  }).catch(console.error);
+  console.log(response);
 
   const addresses = new AddressSyncer(network);
 
   const treasury = new Treasury(users);
   const from = Bookmark.from(0n);
 
-  await treasury.read({ addresses, from });
+  await treasury.update({ addresses, from });
 
   const bookkeeper = new Bookkeeper(treasury);
 
   let addressBalances = await Promise.all(
     users.map((user) => bookkeeper.balance(user.address)),
   );
-  treasury.cached = addressBalances;
 
   console.log(addressBalances[0].value, addressBalances[1].value);
-  // assert.equal(addressBalances[0].value, 1323002002157n);
-  // assert.equal(addressBalances[1].value, 512720219906168n);
 
   const transfer = bookkeeper
     .transfer(1n)
@@ -69,7 +57,11 @@ test("balances", async () => {
     .to(users[0].address)
     .gas(new Gas({ limit: 500_000_000n }));
 
-  const result = await network.execute(transfer);
+  const tx = await network.execute(transfer);
 
+  console.log("hash:", tx.hash);
+  console.log("nullifier", tx.nullifiers);
+
+  await new Promise((r) => setTimeout(r, 30_000));
   await network.disconnect();
 });
