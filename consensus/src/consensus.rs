@@ -10,14 +10,15 @@ use crate::errors::ConsensusError;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
-use node_data::message::{AsyncQueue, Message, Topics};
+use node_data::message::payload::RatificationResult;
+use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
 use crate::queue::MsgRegistry;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{debug, error, Instrument};
+use tracing::{debug, error, info, warn, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
@@ -207,7 +208,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 debug!(event = "restored iteration", ru.round, iter);
             }
 
-            loop {
+            // Round execution loop
+            'round: loop {
+                Self::consensus_delay().await;
                 db.lock().await.store_last_iter((ru.hash(), iter)).await;
 
                 iter_ctx.on_begin(iter);
@@ -219,7 +222,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 );
 
                 let mut msg = Message::empty();
-                // Execute a single iteration
+                // Execute a iteration steps
                 for phase in phases.iter_mut() {
                     let step_name = phase.to_step_name();
                     // Initialize new phase with message returned by previous
@@ -253,21 +256,51 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         ))
                         .await?;
 
-                    // During execution of any step we may encounter that an
-                    // quorum is generated for a former or current iteration.
-                    if msg.topic() == Topics::Quorum {
-                        sender.send_quorum(msg.clone()).await;
+                    // Handle Quorum messages produced by Consensus or received
+                    // from the network. A Quorum for the current iteration
+                    // means the iteration is over.
+                    if let Payload::Quorum(qmsg) = msg.clone().payload {
+                        // If this message was produced by Consensus, let's
+                        // broadcast it
+                        if msg.is_local() {
+                            info!(
+                                event = "Quorum produced",
+                                round = qmsg.header.round,
+                                iter = qmsg.header.iteration
+                            );
+
+                            sender.send_quorum(msg).await;
+                        }
+
+                        match qmsg.att.result {
+                            // With a Success Quorum we terminate the round.
+                            //
+                            // INFO: the acceptance of the block is handled by
+                            // Chain.
+                            RatificationResult::Success(_) => {
+                                info!("Succes Quorum at iteration {iter}. Terminating the round." );
+                                break 'round;
+                            }
+
+                            // With a Fail Quorum, we move to the next iteration
+                            RatificationResult::Fail(_) => {
+                                info!("Fail Quorum at iteration {iter}. Terminating the iteration." );
+                                break;
+                            }
+                        }
                     }
                 }
 
                 if iter >= CONSENSUS_MAX_ITER - 1 {
-                    error!("Trying to move to an out of bound iteration this should be a bug");
-                    error!("Sticking to the same iter {iter}");
+                    error!("Trying to increase iteration over the maximum. This should be a bug");
+                    warn!("Sticking to the same iter {iter}");
                 } else {
                     iter_ctx.on_close();
                     iter += 1;
                 }
             }
+
+            Ok(())
         })
     }
 }

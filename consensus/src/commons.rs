@@ -99,7 +99,7 @@ impl QuorumMsgSender {
         Self { queue }
     }
 
-    /// Sends an quorum (internally) to the lower layer.
+    /// Sends a quorum (internally) to the lower layer.
     pub(crate) async fn send_quorum(&self, msg: Message) {
         match &msg.payload {
             Payload::Quorum(q) if !q.att.ratification.is_empty() => {
