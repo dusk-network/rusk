@@ -60,6 +60,7 @@ impl Rusk {
         generation_timeout: Option<Duration>,
         gas_per_deploy_byte: u64,
         min_deployment_gas_price: u64,
+        min_gas_limit: u64,
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
@@ -99,6 +100,7 @@ impl Rusk {
             generation_timeout,
             gas_per_deploy_byte,
             min_deployment_gas_price,
+            min_gas_limit,
             feeder_gas_limit,
             event_sender,
             #[cfg(feature = "archive")]

@@ -214,6 +214,12 @@ impl MempoolSrv {
             if tx.inner.gas_limit() < min_gas_limit {
                 return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
             }
+        } else {
+            let vm = vm.read().await;
+            let min_gas_limit = vm.min_gas_limit();
+            if tx.inner.gas_limit() < min_gas_limit {
+                return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
+            }
         }
 
         // Perform basic checks on the transaction

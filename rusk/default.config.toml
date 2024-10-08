@@ -25,6 +25,7 @@
 # Note: changing the gas per deploy byte parameter is equivalent to forking the chain.
 #gas_per_deploy_byte = 100
 #min_deployment_gas_price = 2000
+#min_gas_limit = 75000
 
 [databroker]
 max_inv_entries = 100

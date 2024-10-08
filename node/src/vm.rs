@@ -77,6 +77,7 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn gas_per_deploy_byte(&self) -> u64;
     fn min_deployment_gas_price(&self) -> u64;
+    fn min_gas_limit(&self) -> u64;
 }
 
 // Returns gas charge for bytecode deployment.

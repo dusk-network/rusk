@@ -239,6 +239,10 @@ impl VMExecution for Rusk {
     fn min_deployment_gas_price(&self) -> u64 {
         self.min_deployment_gas_price
     }
+
+    fn min_gas_limit(&self) -> u64 {
+        self.min_gas_limit
+    }
 }
 
 fn has_unique_elements<T>(iter: T) -> bool
