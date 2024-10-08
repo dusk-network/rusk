@@ -16,7 +16,7 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey, stake::StakeData,
     transfer::Transaction as ProtocolTransaction,
 };
-use node::vm::VMExecution;
+use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
@@ -116,7 +116,10 @@ impl VMExecution for Rusk {
             .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }
 
-    fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
+    fn preverify(
+        &self,
+        tx: &Transaction,
+    ) -> anyhow::Result<PreverificationResult> {
         info!("Received preverify request");
         let tx = &tx.inner;
 
@@ -140,7 +143,7 @@ impl VMExecution for Rusk {
                 }
 
                 match crate::verifier::verify_proof(tx) {
-                    Ok(true) => Ok(()),
+                    Ok(true) => Ok(PreverificationResult::Valid),
                     Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
                     Err(e) => {
                         Err(anyhow::anyhow!("Cannot verify the proof: {e}"))
@@ -168,8 +171,18 @@ impl VMExecution for Rusk {
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
 
+                let result = if tx.nonce() > account_data.nonce + 1 {
+                    PreverificationResult::FutureNonce {
+                        account: *tx.sender(),
+                        state: account_data,
+                        nonce_used: tx.nonce(),
+                    }
+                } else {
+                    PreverificationResult::Valid
+                };
+
                 match crate::verifier::verify_signature(tx) {
-                    Ok(true) => Ok(()),
+                    Ok(true) => Ok(result),
                     Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
                     Err(e) => {
                         Err(anyhow::anyhow!("Cannot verify the signature: {e}"))
