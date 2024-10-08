@@ -41,7 +41,7 @@ const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_CANDIDATES_HEIGHT: &str = "cf_candidates_height";
 const CF_MEMPOOL: &str = "cf_mempool";
-const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
+const CF_MEMPOOL_SPENDING_ID: &str = "cf_mempool_spending_id";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 const CF_METADATA: &str = "cf_metadata";
 
@@ -99,10 +99,10 @@ impl Backend {
             .cf_handle(CF_MEMPOOL)
             .expect("mempool column family must exist");
 
-        let nullifiers_cf = self
+        let spending_id_cf = self
             .rocksdb
-            .cf_handle(CF_MEMPOOL_NULLIFIERS)
-            .expect("CF_MEMPOOL_NULLIFIERS column family must exist");
+            .cf_handle(CF_MEMPOOL_SPENDING_ID)
+            .expect("CF_MEMPOOL_SPENDING_ID column family must exist");
 
         let fees_cf = self
             .rocksdb
@@ -129,7 +129,7 @@ impl Backend {
             ledger_txs_cf,
             ledger_faults_cf,
             mempool_cf,
-            nullifiers_cf,
+            spending_id_cf,
             fees_cf,
             ledger_height_cf,
             metadata_cf,
@@ -206,7 +206,10 @@ impl DB for Backend {
             ),
             ColumnFamilyDescriptor::new(CF_METADATA, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
-            ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
+            ColumnFamilyDescriptor::new(
+                CF_MEMPOOL_SPENDING_ID,
+                mp_opts.clone(),
+            ),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts.clone()),
         ];
 
@@ -282,7 +285,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 
     // Mempool column families
     mempool_cf: &'db ColumnFamily,
-    nullifiers_cf: &'db ColumnFamily,
+    spending_id_cf: &'db ColumnFamily,
     fees_cf: &'db ColumnFamily,
 
     metadata_cf: &'db ColumnFamily,
@@ -733,10 +736,10 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         self.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //
-        // Nullifiers
         for n in tx.inner.nullifiers() {
+        // Spending Ids
             let key = n.to_bytes();
-            self.put_cf(self.nullifiers_cf, key, hash)?;
+            self.put_cf(self.spending_id_cf, key, hash)?;
         }
 
         let timestamp = timestamp.to_be_bytes();
@@ -780,7 +783,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             // Delete Nullifiers
             for n in tx.inner.nullifiers() {
                 let key = n.to_bytes();
-                self.inner.delete_cf(self.nullifiers_cf, key)?;
+                self.inner.delete_cf(self.spending_id_cf, key)?;
             }
 
             // Delete Fee_Hash
@@ -798,7 +801,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]> {
         n.iter()
             .filter_map(|n| {
-                match self.snapshot.get_cf(self.nullifiers_cf, n.to_bytes()) {
+                match self.snapshot.get_cf(self.spending_id_cf, n.to_bytes()) {
                     Ok(Some(tx_id)) => tx_id.try_into().ok(),
                     _ => None,
                 }
