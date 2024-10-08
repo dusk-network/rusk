@@ -89,7 +89,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 header.to_consensus_header(),
                 self.prev_header.seed,
                 self.provisioners.current(),
-                RatificationResult::Success(Vote::Valid(header.hash)),
+                Some(RatificationResult::Success(Vote::Valid(header.hash))),
             )
             .await?;
         }
@@ -250,7 +250,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.to_consensus_header(),
             prev_block_seed,
             self.provisioners.prev(),
-            RatificationResult::Success(Vote::Valid(prev_block_hash)),
+            Some(RatificationResult::Success(Vote::Valid(prev_block_hash))),
         )
         .await?;
 
@@ -298,7 +298,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     consensus_header,
                     self.prev_header.seed,
                     self.provisioners.current(),
-                    RatificationResult::Fail(Vote::default()),
+                    Some(RatificationResult::Fail(Vote::default())),
                 )
                 .await?;
 
@@ -399,31 +399,32 @@ pub async fn verify_att(
     consensus_header: ConsensusHeader,
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    expected_result: RatificationResult,
+    expected_result: Option<RatificationResult>,
 ) -> Result<(QuorumResult, QuorumResult, Vec<Voter>), AttestationError> {
     // Check expected result
-    match (att.result, expected_result) {
-        // Both are Success and the inner Valid(Hash) values match
-        (
-            RatificationResult::Success(Vote::Valid(r_hash)),
-            RatificationResult::Success(Vote::Valid(e_hash)),
-        ) => {
-            if r_hash != e_hash {
-                return Err(AttestationError::InvalidHash(e_hash, r_hash));
+    if let Some(expected) = expected_result {
+        match (att.result, expected) {
+            // Both are Success and the inner Valid(Hash) values match
+            (
+                RatificationResult::Success(Vote::Valid(r_hash)),
+                RatificationResult::Success(Vote::Valid(e_hash)),
+            ) => {
+                if r_hash != e_hash {
+                    return Err(AttestationError::InvalidHash(e_hash, r_hash));
+                }
+            }
+            // Both are Fail
+            (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
+            // All other mismatches
+            _ => {
+                return Err(AttestationError::InvalidResult(
+                    att.result, expected,
+                ));
             }
         }
-        // Both are Fail
-        (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
-        // All other mismatches
-        _ => {
-            return Err(AttestationError::InvalidResult(
-                att.result,
-                expected_result,
-            ));
-        }
     }
-    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
+    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
     let vote = att.result.vote();
 
     // Verify validation

@@ -179,9 +179,9 @@ pub fn verify_att(c: &mut Criterion) {
                             consensus_header,
                             tip_header.seed,
                             &provisioners,
-                            RatificationResult::Success(Vote::Valid(
+                            Some(RatificationResult::Success(Vote::Valid(
                                 block_hash,
-                            )),
+                            ))),
                         )
                         .await
                         .expect("block to be verified")
