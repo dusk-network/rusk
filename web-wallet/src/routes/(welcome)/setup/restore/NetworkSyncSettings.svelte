@@ -1,19 +1,18 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { mdiAlertOutline, mdiCubeOutline } from "@mdi/js";
+
   import { AppAnchor } from "$lib/components";
   import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { ToggleableCard } from "$lib/containers/Cards";
   import { Icon, Textbox } from "$lib/dusk/components";
   import { createNumberFormatter } from "$lib/dusk/number";
-  import { settingsStore, walletStore } from "$lib/stores";
-  import { mdiAlertOutline, mdiCubeOutline } from "@mdi/js";
+  import { makeClassName } from "$lib/dusk/string";
+  import { networkStore, settingsStore } from "$lib/stores";
 
-  const { language } = $settingsStore;
-  const numberFormatter = createNumberFormatter(language);
-
-  /** @type {number} */
-  export let blockHeight = 0;
+  /** @type {string} */
+  export let blockHeight = "0";
 
   /** @type {boolean} */
   export let isValid = false;
@@ -21,19 +20,40 @@
   /** @type {boolean} */
   export let isToggled = false;
 
-  /** @type {number} */
+  /** @type {bigint} */
   let currentNetworkBlock;
 
-  walletStore.getCurrentBlockHeight().then((block) => {
+  /** @type {(v: string) => bigint}*/
+  function blockHeightToBigInt(v) {
+    try {
+      return BigInt(v);
+    } catch (err) {
+      return -1n;
+    }
+  }
+
+  const { language } = $settingsStore;
+  const numberFormatter = createNumberFormatter(language);
+
+  const resetBlockHeight = () => {
+    blockHeight = "0";
+  };
+
+  networkStore.getCurrentBlockHeight().then((block) => {
     currentNetworkBlock = block;
   });
 
-  $: isValid =
-    !isToggled || (blockHeight >= 0 && blockHeight <= currentNetworkBlock);
+  $: {
+    const heightAsBigInt = blockHeightToBigInt(blockHeight);
 
-  const resetBlockHeight = () => {
-    blockHeight = 0;
-  };
+    isValid =
+      !isToggled ||
+      (heightAsBigInt >= 0 && heightAsBigInt <= currentNetworkBlock);
+  }
+  $: inputClasses = makeClassName({
+    "block-height-input": true,
+    "block-height-input--invalid": !isValid,
+  });
 </script>
 
 <ToggleableCard
@@ -42,7 +62,14 @@
   heading="Block Height"
   on:toggle={resetBlockHeight}
 >
-  <Textbox type="number" bind:value={blockHeight} placeholder="Block Height" />
+  <Textbox
+    bind:value={blockHeight}
+    className={inputClasses}
+    placeholder="Block Height"
+    pattern="\d+"
+    required
+    type="text"
+  />
   {#if currentNetworkBlock}
     <span class="block-height-meta"
       >Network block height: {numberFormatter(currentNetworkBlock)}</span
@@ -63,11 +90,17 @@
   </p>
 </div>
 
-<style>
-  .block-height-meta {
-    display: inline-block;
-    font-size: 0.75em;
-    margin-left: 1em;
-    opacity: 0.5;
+<style lang="postcss">
+  :global {
+    .block-height-meta {
+      display: inline-block;
+      font-size: 0.75em;
+      margin-left: 1em;
+      opacity: 0.5;
+    }
+
+    .block-height-input--invalid {
+      color: var(--error-color);
+    }
   }
 </style>

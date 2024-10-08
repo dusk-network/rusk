@@ -153,7 +153,7 @@
       showStepper={true}
       nextButton={{
         action: async () => {
-          await initializeWallet(mnemonicPhrase);
+          await initializeWallet(mnemonicPhrase.join(" "));
           mnemonicPhrase = [];
         },
         disabled: false,

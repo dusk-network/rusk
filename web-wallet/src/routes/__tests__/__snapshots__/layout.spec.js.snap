@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Main layout > should render the main layout 1`] = `
+exports[`Main layout > should render the main layout and disconnect from the network when dismounting 1`] = `
 <div>
   <main
     class="app svelte-3y7xzm"
