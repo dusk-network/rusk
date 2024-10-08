@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `min_gas_limit` node configuration argument and enforcement [#2597]
 - Add `gen_contract_id` and 32-byte hash for contract deployment [#1884]
 - Add execution of contract deployment [#1882]
 - Add first version of RUES, allowing websocket clients to subscribe for events
@@ -214,6 +215,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#2597]: https://github.com/dusk-network/rusk/issues/2597
 [#2536]: https://github.com/dusk-network/rusk/issues/2536
 [#2207]: https://github.com/dusk-network/rusk/issues/2207
 [#1884]: https://github.com/dusk-network/rusk/issues/1884
