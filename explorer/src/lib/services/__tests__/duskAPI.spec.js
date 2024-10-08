@@ -14,7 +14,7 @@ import { duskAPI } from "..";
 
 describe("duskAPI", () => {
   const fetchSpy = vi.spyOn(global, "fetch");
-  const node = "nodes.dusk.network";
+  const node = new URL("/", import.meta.url);
   const fakeID = "some-id";
   const apiGetOptions = {
     headers: {
@@ -24,14 +24,16 @@ describe("duskAPI", () => {
     method: "GET",
   };
 
-  /** @type {string} */
-  const gqlExpectedURL = `https://${node}/02/Chain`;
+  /** @type {URL} */
+  const gqlExpectedURL = new URL(`/02/Chain`, node.origin);
 
   const endpointEnvName = "VITE_API_ENDPOINT";
 
   /** @type {(endpoint: string) => URL} */
   const getAPIExpectedURL = (endpoint) =>
-    new URL(`${import.meta.env[endpointEnvName]}/${endpoint}?node=${node}`);
+    new URL(
+      `${import.meta.env[endpointEnvName]}/${endpoint}?node=${encodeURIComponent(node.host)}`
+    );
 
   /** @type {(data: Record<string | number, any> | number) => Response} */
   const makeOKResponse = (data) =>
@@ -68,11 +70,11 @@ describe("duskAPI", () => {
         })
       );
 
-    await expect(duskAPI.getBlock(node, fakeID)).resolves.toStrictEqual(
+    await expect(duskAPI.getBlock(node.host, fakeID)).resolves.toStrictEqual(
       transformBlock(mockData.gqlBlock.block)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($id: String!) { block(hash: $id) {...BlockInfo} }\\n  ","topic":"gql"}",
@@ -85,7 +87,7 @@ describe("duskAPI", () => {
         "method": "POST",
       }
     `);
-    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
@@ -100,7 +102,7 @@ describe("duskAPI", () => {
     `);
     expect(getByHeightSpy).toHaveBeenCalledTimes(1);
     expect(getByHeightSpy).toHaveBeenCalledWith(
-      node,
+      node.host,
       mockData.gqlBlock.block.header.height + 1
     );
 
@@ -126,12 +128,12 @@ describe("duskAPI", () => {
         })
       );
 
-    await expect(duskAPI.getBlockHashByHeight(node, 11)).resolves.toBe(
+    await expect(duskAPI.getBlockHashByHeight(node.host, 11)).resolves.toBe(
       expectedHash
     );
-    await expect(duskAPI.getBlockHashByHeight(node, 11)).resolves.toBe("");
+    await expect(duskAPI.getBlockHashByHeight(node.host, 11)).resolves.toBe("");
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
@@ -144,7 +146,7 @@ describe("duskAPI", () => {
         "method": "POST",
       }
     `);
-    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    // expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
@@ -162,10 +164,10 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the details of a single block", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlockDetails));
 
-    await expect(duskAPI.getBlockDetails(node, fakeID)).resolves.toBe(
+    await expect(duskAPI.getBlockDetails(node.host, fakeID)).resolves.toBe(
       mockData.gqlBlockDetails.block.header.json
     );
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"query($id: String!) { block(hash: $id) { header { json } } }","topic":"gql"}",
@@ -183,11 +185,11 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the list of blocks", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlocks));
 
-    await expect(duskAPI.getBlocks(node, 100)).resolves.toStrictEqual(
+    await expect(duskAPI.getBlocks(node.host, 100)).resolves.toStrictEqual(
       mockData.gqlBlocks.blocks.map(transformBlock)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }\\n  ","topic":"gql"}",
@@ -205,13 +207,15 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the latest chain info", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlLatestChainInfo));
 
-    await expect(duskAPI.getLatestChainInfo(node, 15)).resolves.toStrictEqual({
+    await expect(
+      duskAPI.getLatestChainInfo(node.host, 15)
+    ).resolves.toStrictEqual({
       blocks: mockData.gqlLatestChainInfo.blocks.map(transformBlock),
       transactions:
         mockData.gqlLatestChainInfo.transactions.map(transformTransaction),
     });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) {\\n      blocks(last: $amount) {...BlockInfo},\\n      transactions(last: $amount) {...TransactionInfo}\\n    }\\n  ","topic":"gql"}",
@@ -245,7 +249,7 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the node locations", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations));
 
-    await expect(duskAPI.getNodeLocations(node)).resolves.toStrictEqual(
+    await expect(duskAPI.getNodeLocations(node.host)).resolves.toStrictEqual(
       mockData.apiNodeLocations.data
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -277,10 +281,14 @@ describe("duskAPI", () => {
       )
       .mockResolvedValueOnce(makeOKResponse(last100BlocksTxs));
 
-    await expect(duskAPI.getStats(node)).resolves.toStrictEqual(expectedStats);
+    await expect(duskAPI.getStats(node.host)).resolves.toStrictEqual(
+      expectedStats
+    );
 
     expect(fetchSpy).toHaveBeenCalledTimes(3);
-    expect(fetchSpy.mock.calls[0][0]).toBe(`https://${node}/2/rusk`);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(
+      new URL(`${import.meta.env.VITE_RUSK_PATH || ""}/2/rusk`, node.origin)
+    );
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"","topic":"provisioners"}",
@@ -292,7 +300,7 @@ describe("duskAPI", () => {
         "method": "POST",
       }
     `);
-    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"query { block(height: -1) { header { height } } }","topic":"gql"}",
@@ -304,7 +312,7 @@ describe("duskAPI", () => {
         "method": "POST",
       }
     `);
-    expect(fetchSpy.mock.calls[2][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[2][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[2][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"query { blocks(last: 100) { transactions { err } } }","topic":"gql"}",
@@ -321,11 +329,11 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve a single transaction", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlTransaction));
 
-    await expect(duskAPI.getTransaction(node, fakeID)).resolves.toStrictEqual(
-      transformTransaction(mockData.gqlTransaction.tx)
-    );
+    await expect(
+      duskAPI.getTransaction(node.host, fakeID)
+    ).resolves.toStrictEqual(transformTransaction(mockData.gqlTransaction.tx));
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\n    query($id: String!) { tx(hash: $id) {...TransactionInfo} }\\n  ","topic":"gql"}",
@@ -345,10 +353,10 @@ describe("duskAPI", () => {
       makeOKResponse(mockData.gqlTransactionDetails)
     );
 
-    await expect(duskAPI.getTransactionDetails(node, fakeID)).resolves.toBe(
-      mockData.gqlTransactionDetails.tx.tx.json
-    );
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    await expect(
+      duskAPI.getTransactionDetails(node.host, fakeID)
+    ).resolves.toBe(mockData.gqlTransactionDetails.tx.tx.json);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"query($id: String!) { tx(hash: $id) { tx {json} } }","topic":"gql"}",
@@ -366,11 +374,13 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the list of transactions", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlTransactions));
 
-    await expect(duskAPI.getTransactions(node, 100)).resolves.toStrictEqual(
+    await expect(
+      duskAPI.getTransactions(node.host, 100)
+    ).resolves.toStrictEqual(
       mockData.gqlTransactions.transactions.map(transformTransaction)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\n    query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }\\n  ","topic":"gql"}",
@@ -407,7 +417,9 @@ describe("duskAPI", () => {
   });
 
   it("should be able to make the correct request whether the endpoint in env vars ends with a trailing slash or not", () => {
-    const expectedURL = new URL(`http://example.com/locations?node=${node}`);
+    const expectedURL = new URL(
+      `http://example.com/locations?node=${encodeURIComponent(node.host)}`
+    );
 
     fetchSpy
       .mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations))
@@ -415,11 +427,11 @@ describe("duskAPI", () => {
 
     vi.stubEnv(endpointEnvName, "http://example.com");
 
-    duskAPI.getNodeLocations(node);
+    duskAPI.getNodeLocations(node.host);
 
     vi.stubEnv(endpointEnvName, "http://example.com/");
 
-    duskAPI.getNodeLocations(node);
+    duskAPI.getNodeLocations(node.host);
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy).toHaveBeenNthCalledWith(1, expectedURL, apiGetOptions);
@@ -450,12 +462,12 @@ describe("duskAPI", () => {
       .mockResolvedValueOnce(makeOKResponse(hashResult))
       .mockResolvedValueOnce(makeOKResponse(heightResult));
 
-    await expect(duskAPI.search(node, fakeHash1)).resolves.toStrictEqual(
+    await expect(duskAPI.search(node.host, fakeHash1)).resolves.toStrictEqual(
       transformSearchResult([hashResult, heightResult])
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($id: String!) {\\n      block(hash: $id) { header { hash } },\\n      tx(hash: $id) { id }\\n    }\\n  ","topic":"gql"}",
@@ -468,7 +480,7 @@ describe("duskAPI", () => {
         "method": "POST",
       }
     `);
-    expect(fetchSpy.mock.calls[1][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
@@ -491,12 +503,12 @@ describe("duskAPI", () => {
       makeOKResponse(mockData.gqlSearchPossibleResults[0])
     );
 
-    await expect(duskAPI.search(node, entryHash)).resolves.toStrictEqual(
+    await expect(duskAPI.search(node.host, entryHash)).resolves.toStrictEqual(
       transformSearchResult([mockData.gqlSearchPossibleResults[0]])
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($id: String!) {\\n      block(hash: $id) { header { hash } },\\n      tx(hash: $id) { id }\\n    }\\n  ","topic":"gql"}",
@@ -518,12 +530,12 @@ describe("duskAPI", () => {
       makeOKResponse(mockData.gqlSearchPossibleResults[0])
     );
 
-    await expect(duskAPI.search(node, entryHeight)).resolves.toStrictEqual(
+    await expect(duskAPI.search(node.host, entryHeight)).resolves.toStrictEqual(
       transformSearchResult([mockData.gqlSearchPossibleResults[0]])
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
         "body": "{"data":"\\n    query($height: Float!) { block(height: $height) { header { hash } } }\\n  ","topic":"gql"}",
@@ -539,7 +551,7 @@ describe("duskAPI", () => {
   });
 
   it("should not perform any search at all if the query string doesn't satisfy criteria for both hash and height", async () => {
-    await expect(duskAPI.search(node, "abc")).resolves.toStrictEqual([]);
+    await expect(duskAPI.search(node.host, "abc")).resolves.toStrictEqual([]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });

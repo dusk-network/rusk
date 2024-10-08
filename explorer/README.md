@@ -22,20 +22,25 @@ Run `npm install` from the root folder to get the necessary dependencies.
 The application defines these variables by reading a local `.env`
 
 ```
-# can be empty string, must start with a slash otherwise, must not end with a slash
-VITE_BASE_PATH=""
+# *_PATH variables can be empty string, must start with a slash otherwise, must not end with a slash
+
 VITE_API_ENDPOINT="https://api.dusk.network/v1"
+VITE_BASE_PATH="" # Optional, set to '/explorer' when deploying to an 'apps.*' subdomain
 VITE_BLOCKS_LIST_ENTRIES=100
 VITE_CHAIN_INFO_ENTRIES=15
-VITE_DUSK_MAINNET_NODE="nodes.dusk.network"
-VITE_DUSK_TESTNET_NODE="testnet.nodes.dusk.network"
-VITE_DUSK_DEVNET_NODE="devnet.nodes.dusk.network"
-VITE_DEFAULT_NETWORK=0 #0=localnet 1=devnet 2=testnet 3=mainnet
 VITE_MARKET_DATA_REFETCH_INTERVAL=120000
+VITE_NODE_URL="" # Optional, set to (e.g. 'https://nodes.dusk.network' to) override default
 VITE_REFETCH_INTERVAL=1000
+VITE_RUSK_PATH="" # Optional, set to '/rusk' for dev mode
 VITE_STATS_REFETCH_INTERVAL=1000
 VITE_TRANSACTIONS_LIST_ENTRIES=100
 ```
+
+## Environment variables and dev mode
+
+The application defaults to setting the node URL to `/`. In dev mode, requests made on `/rusk` are passed through a proxy to `localhost:8080`. When the app is running in dev mode, set `VITE_RUSK_PATH` to "/rusk".
+
+The application will determine which network it is connected to by the subdomain it is hosted under, to override this and connect to any node set `VITE_NODE_URL`. Note that only `https://` protocol URLs are valid.
 
 ## NPM scripts
 

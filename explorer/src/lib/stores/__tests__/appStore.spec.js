@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
+import { makeNodeUrl } from "$lib/url";
 
 import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
@@ -30,26 +31,14 @@ describe("appStore", () => {
   it("should be a readable store holding the information needed throughout the whole application", async () => {
     const { appStore } = await import("..");
     const { env } = import.meta;
+    const nodeUrl = makeNodeUrl();
+
+    /** @type {NetworkOption[]}*/
     const expectedNetworks = [
-      { label: "Local", value: new URL("/", import.meta.url) },
-      {
-        label: "Devnet",
-        value: new URL(
-          `${window.location.protocol}${import.meta.env.VITE_DUSK_DEVNET_NODE}`
-        ),
-      },
-      {
-        label: "Testnet",
-        value: new URL(
-          `${window.location.protocol}${import.meta.env.VITE_DUSK_TESTNET_NODE}`
-        ),
-      },
-      {
-        label: "Mainnet",
-        value: new URL(
-          `${window.location.protocol}${import.meta.env.VITE_DUSK_MAINNET_NODE}`
-        ),
-      },
+      { label: "Local", value: nodeUrl },
+      { label: "Devnet", value: nodeUrl },
+      { label: "Testnet", value: nodeUrl },
+      { label: "Mainnet", value: nodeUrl },
     ];
 
     expect(appStore).toHaveProperty("subscribe", expect.any(Function));
@@ -62,10 +51,7 @@ describe("appStore", () => {
       hasTouchSupport: false,
       isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
-      network:
-        expectedNetworks[
-          parseInt(import.meta.env.VITE_DEFAULT_NETWORK, 10) ?? 0
-        ].value.host,
+      network: makeNodeUrl().host,
       networks: expectedNetworks,
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
