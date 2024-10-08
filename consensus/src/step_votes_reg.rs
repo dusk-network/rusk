@@ -179,17 +179,59 @@ impl AttInfoRegistry {
         if sv == StepVotes::default() {
             return None;
         }
-        let att = self
-            .att_list
-            .entry(iteration)
-            .or_insert_with(|| IterationAtts::new(*generator));
 
-        let att_info = att.get_or_insert(vote);
+        let iter_atts = self.get_iteration_atts(iteration, generator);
+        let att_info = iter_atts.get_or_insert(vote);
 
         att_info.set_sv(iteration, sv, step, quorum_reached);
-        att_info
-            .is_ready()
-            .then(|| Self::build_quorum_msg(&self.ru, iteration, att_info.att))
+
+        let attestation = att_info.att;
+        let is_ready = att_info.is_ready();
+
+        if is_ready {
+            return Some(Self::build_quorum_msg(
+                &self.ru,
+                iteration,
+                attestation,
+            ));
+        }
+
+        None
+    }
+
+    fn get_iteration_atts(
+        &mut self,
+        iteration: u8,
+        generator: &PublicKeyBytes,
+    ) -> &mut IterationAtts {
+        self.att_list
+            .entry(iteration)
+            .or_insert_with(|| IterationAtts::new(*generator))
+    }
+
+    pub(crate) fn set_attestation(
+        &mut self,
+        iteration: u8,
+        attestation: Attestation,
+        generator: &PublicKeyBytes,
+    ) {
+        let iter_atts = self.get_iteration_atts(iteration, generator);
+
+        let vote = attestation.result.vote();
+        let att_info = iter_atts.get_or_insert(vote);
+
+        att_info.set_sv(
+            iteration,
+            attestation.validation,
+            StepName::Validation,
+            true,
+        );
+        att_info.set_sv(
+            iteration,
+            attestation.ratification,
+            StepName::Ratification,
+            true,
+        );
     }
 
     fn build_quorum_msg(
