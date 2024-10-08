@@ -62,11 +62,11 @@ impl<T: Operations> Generator<T> {
             dur = format!("{:?}ms", start.elapsed().as_millis()),
         );
 
-        debug!("block: {:?}", &candidate);
-
         let mut candidate = Candidate { candidate };
 
         candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
+
+        debug!(event = "candidate singed", header = ?candidate.header());
 
         Ok(candidate.into())
     }
