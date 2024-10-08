@@ -24,7 +24,6 @@ use core::panic;
 use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
-use node_data::message::payload::Vote;
 use node_data::{get_current_timestamp, Serializable, StepName};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
@@ -304,6 +303,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
             }
             Payload::Quorum(qmsg) => {
+<<<<<<< HEAD
                 let tip_header = self.tip.read().await.inner().header().clone();
 
                 match msg.header.compare_round(tip_header.height + 1) {
@@ -375,6 +375,46 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     let task = self.task.read().await;
                     task.main_inbound.try_send(msg);
                 }
+=======
+                // If Quorum is for the current round, we verify it and reroute
+                // it to Consensus
+                let tip_header = self.tip.read().await.inner().header().clone();
+                if qmsg.header.round == tip_header.height + 1 {
+                    // Verify Attestation
+                    let cur_seed = tip_header.seed;
+                    let cur_provisioners =
+                        self.provisioners_list.read().await.current().clone();
+
+                    let res = verify_att(
+                        &qmsg.att,
+                        qmsg.header.clone(),
+                        cur_seed,
+                        &cur_provisioners,
+                        None,
+                    )
+                    .await;
+
+                    if res.is_ok() {
+                        // Rebroadcast
+                        broadcast(&self.network, &msg.clone()).await;
+
+                        // Reroute to Consensus
+                        let task = self.task.read().await;
+                        task.main_inbound.try_send(msg);
+                    }
+                }
+
+                // Prevent the rebroadcast of any quorum messages if the
+                // blockchain tip has already been updated for the same round.
+                // TODO:
+                // - rebroadcast Quorums from the future after sanity check
+                // - rebroadcast Valid Quorums from the past if better than our
+                //   current accepted block
+
+                // if *hash != self.get_curr_hash().await {
+                    // broadcast(&self.network, &msg).await;
+                // }
+>>>>>>> 3d739321 (node: Verify Quorum msg (wip))
             }
             _ => warn!("invalid inbound message"),
         }
