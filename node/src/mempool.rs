@@ -8,6 +8,7 @@ pub mod conf;
 
 use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
+use crate::vm::PreverificationResult;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
 use conf::{
@@ -15,7 +16,7 @@ use conf::{
 };
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
-use node_data::ledger::Transaction;
+use node_data::ledger::{SpendingId, Transaction};
 use node_data::message::{payload, AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use thiserror::Error;
@@ -242,8 +243,28 @@ impl MempoolSrv {
         })?;
 
         // VM Preverify call
-        if let Err(e) = vm.read().await.preverify(tx) {
-            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
+        let preverification_data =
+            vm.read().await.preverify(tx).map_err(|e| {
+                TxAcceptanceError::VerificationFailed(format!("{e:?}"))
+            })?;
+
+        if let PreverificationResult::FutureNonce {
+            account,
+            state,
+            nonce_used,
+        } = preverification_data
+        {
+            db.read().await.view(|db| {
+                for nonce in state.nonce + 1..nonce_used {
+                    let spending_id = SpendingId::AccountNonce(account, nonce);
+                    if db.get_txs_by_spendable_ids(&[spending_id]).is_empty() {
+                        return Err(TxAcceptanceError::VerificationFailed(
+                            format!("Missing intermediate nonce {nonce}"),
+                        ));
+                    }
+                }
+                Ok(())
+            })?;
         }
 
         let mut events = vec![];

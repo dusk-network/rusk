@@ -11,6 +11,7 @@ use dusk_consensus::{
 };
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
 use execution_core::transfer::data::ContractBytecode;
+use execution_core::transfer::moonlight::AccountData;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 #[derive(Default)]
@@ -45,7 +46,10 @@ pub trait VMExecution: Send + Sync + 'static {
         to_delete: Vec<[u8; 32]>,
     ) -> anyhow::Result<()>;
 
-    fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
+    fn preverify(
+        &self,
+        tx: &Transaction,
+    ) -> anyhow::Result<PreverificationResult>;
 
     fn get_provisioners(
         &self,
@@ -77,6 +81,17 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn gas_per_deploy_byte(&self) -> u64;
     fn min_deployment_gas_price(&self) -> u64;
+}
+
+#[allow(clippy::large_enum_variant)]
+pub enum PreverificationResult {
+    Valid,
+    // Current account state, nonce used by tx
+    FutureNonce {
+        account: BlsPublicKey,
+        state: AccountData,
+        nonce_used: u64,
+    },
 }
 
 // Returns gas charge for bytecode deployment.
