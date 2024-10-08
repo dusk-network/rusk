@@ -46,6 +46,18 @@ use execution_core::{
     BlsScalar,
 };
 
+/// The enum that the sync status reciever emits so the binary can report
+/// on the sync status
+#[derive(Debug)]
+pub enum SyncStatus {
+    /// Syncing is complete
+    Synced,
+    /// Syncing is in progress
+    NotSynced,
+    /// An error occurred while syncing
+    Err(Error),
+}
+
 use currency::Dusk;
 
 /// The largest amount of Dusk that is possible to convert

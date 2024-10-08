@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use bip39::{Language, Mnemonic, MnemonicType};
+use flume::TryRecvError;
 use requestty::Question;
 use rusk_wallet::{
     currency::Dusk,
@@ -199,15 +200,44 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
             .add(AddrSelect::NewAddress, "New address")
     };
 
+    use rusk_wallet::SyncStatus;
+
     if let Some(rx) = &wallet.state()?.sync_rx {
-        if let Ok(status) = rx.try_recv() {
-            action_menu = action_menu
-                .separator()
-                .separator_msg(format!("Sync Status: {}", status));
-        } else {
-            action_menu = action_menu
-                .separator()
-                .separator_msg("Waiting for Sync to complete..".to_string());
+        match rx.try_recv() {
+            Ok(status) => {
+                let last_height = wallet.last_block_height()?;
+
+                action_menu = action_menu.separator().separator_msg(format!(
+                    "Synced at last block height: {}",
+                    last_height
+                ));
+
+                match status {
+                    SyncStatus::Synced => (),
+                    SyncStatus::NotSynced => {
+                        action_menu = action_menu
+                            .separator()
+                            .separator_msg("Syncing in progress..".to_string());
+                    }
+                    SyncStatus::Err(e) => {
+                        action_menu = action_menu.separator().separator_msg(
+                            format!("Sync failed with err: {:?}", e),
+                        )
+                    }
+                }
+            }
+            Err(e) => match e {
+                TryRecvError::Empty => {
+                    action_menu = action_menu
+                        .separator()
+                        .separator_msg("Syncing in progress..".to_string());
+                }
+                TryRecvError::Disconnected => {
+                    action_menu = action_menu.separator().separator_msg(
+                        "Channel disconnected restart the wallet for sync status".to_string(),
+                    );
+                }
+            },
         }
     }
 
