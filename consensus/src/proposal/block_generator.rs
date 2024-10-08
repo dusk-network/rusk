@@ -66,7 +66,7 @@ impl<T: Operations> Generator<T> {
 
         candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        debug!(event = "candidate singed", header = ?candidate.header());
+        debug!(event = "candidate signed", header = ?candidate.header());
 
         Ok(candidate.into())
     }
