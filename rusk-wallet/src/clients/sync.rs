@@ -76,6 +76,9 @@ pub(crate) async fn sync_db(
             last_pos = std::cmp::max(last_pos, *note.pos());
 
             note_data.push((block_height, note));
+
+            // keep track of max block height while inserting notes
+            cache.update_last_block_height(block_height)?;
         }
 
         cache.insert_last_pos(last_pos)?;
@@ -97,7 +100,7 @@ pub(crate) async fn sync_db(
 
                 match spent {
                     true => cache.insert_spent(&pk_bs58, *block_height, note),
-                    false => cache.insert(&pk_bs58, *block_height, note),
+                    false => cache.insert(&pk_bs58, *block_height, note, None),
                 }?;
             }
         }
