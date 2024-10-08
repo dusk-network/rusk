@@ -454,19 +454,18 @@ impl TransferState {
     /// [`Self::spend_moonlight`], depending on if the transaction
     /// uses the Phoenix or the Moonlight models, respectively.
     ///
-    /// Finally executes the contract call if present.
-    ///
     /// # Panics
     /// Any failure while spending will result in a panic. The contract expects
     /// the environment to roll back any change in state.
     ///
     /// [`refund`]: [`TransferState::refund`]
-    pub fn spend_and_execute(
-        &mut self,
-        tx: Transaction,
-    ) -> Result<Vec<u8>, ContractError> {
+    pub fn spend(&mut self, tx: Transaction) {
         if tx.gas_price() == 0 {
             panic!("Gas price too low!");
+        }
+
+        if tx.gas_limit() < GAS_PER_TX {
+            panic!("Gas limit too low!");
         }
 
         transitory::put_transaction(tx);
@@ -475,13 +474,6 @@ impl TransferState {
         match tx {
             Transaction::Phoenix(tx) => self.spend_phoenix(tx),
             Transaction::Moonlight(tx) => self.spend_moonlight(tx),
-        }
-
-        match tx.call() {
-            Some(call) => {
-                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
-            }
-            None => Ok(Vec::new()),
         }
     }
 

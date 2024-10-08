@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 use std::{fs, io};
 
 use execution_core::stake::StakeKeys;
+use execution_core::transfer::data::ContractCall;
 use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use tracing::info;
@@ -698,6 +699,38 @@ fn execute(
     }
 
     let tx_stripped = tx.strip_off_bytecode();
+
+    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+        TRANSFER_CONTRACT,
+        "spend",
+        tx_stripped.as_ref().unwrap_or(tx),
+        u64::MAX,
+    )?;
+
+    
+    receipt.gas_spent = GAS_PER_TX;
+
+    if let Some(ContractCall {
+        contract,
+        fn_name,
+        fn_args,
+    }) = tx.call()
+    {
+        let gas_limit = tx.gas_limit() - receipt.gas_spent;
+
+        let contract_id = ContractId::from_bytes(*contract_id);
+        println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
+
+        let r = session.call_raw(
+            contract_id,
+            fn_name,
+            fn_args.clone(),
+            gas_limit,
+        )?;
+        println!("{r:?}");
+    }
+
+    if let Some(call) = tx.call() {}
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
