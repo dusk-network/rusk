@@ -1,17 +1,18 @@
-#nodes-world-map {
+.nodes-world-map {
   aspect-ratio: 2;
   width: 100%;
   height: auto;
+  max-height: 805px;
 }
 
-@media (min-width: 768px) {
-  #nodes-world-map {
-    max-height: 240px;
-  }
+.nodes-world-map__location {
+  fill-opacity: 0.5;
+  stroke: var(--primary-color);
+  stroke-width: 0.5px;
+  fill: var(--success);
 }
 
-@media (min-width: 1280px) {
-  #nodes-world-map {
-    max-height: 105px;
-  }
+.nodes-world-map__location:hover {
+  stroke: var(--background-color);
+  stroke-width: 0.5px;
 }

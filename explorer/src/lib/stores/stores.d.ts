@@ -30,3 +30,12 @@ type NetworkOption = {
   label: string;
   value: URL;
 };
+
+type NodeLocationStore =
+  import("svelte/store").Readable<NodeLocationStoreContent>;
+
+type NodeLocationStoreContent = {
+  data: NodeLocation[] | null;
+  error: Error | null;
+  isLoading: boolean;
+};
