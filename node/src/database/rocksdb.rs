@@ -736,8 +736,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         self.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //
-        for n in tx.inner.nullifiers() {
         // Spending Ids
+        for n in tx.to_spend_ids() {
             let key = n.to_bytes();
             self.put_cf(self.spending_id_cf, key, hash)?;
         }
@@ -780,8 +780,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             self.inner.delete_cf(self.mempool_cf, hash)?;
 
             // Delete Secondary indexes
-            // Delete Nullifiers
-            for n in tx.inner.nullifiers() {
+            // Delete spendingids (nullifiers or nonce)
+            for n in tx.to_spend_ids() {
                 let key = n.to_bytes();
                 self.inner.delete_cf(self.spending_id_cf, key)?;
             }
