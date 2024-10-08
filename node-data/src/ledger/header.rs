@@ -88,6 +88,7 @@ impl std::fmt::Debug for Header {
         f.debug_struct("Header")
             .field("version", &self.version)
             .field("height", &self.height)
+            .field("iteration", &self.iteration)
             .field("timestamp", &timestamp)
             .field("prev_block_hash", &to_str(&self.prev_block_hash))
             .field("seed", &to_str(self.seed.inner()))
