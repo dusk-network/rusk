@@ -9,8 +9,8 @@ use std::io;
 use dusk_bytes::Serializable as DuskSerializable;
 use execution_core::signatures::bls;
 use execution_core::transfer::Transaction as ProtocolTransaction;
-use execution_core::BlsScalar;
 use serde::Serialize;
+use sha3::Digest;
 
 use crate::Serializable;
 
@@ -63,7 +63,7 @@ impl Transaction {
     /// ### Returns
     /// An array of 32 bytes representing the hash of the transaction.
     pub fn hash(&self) -> [u8; 32] {
-        BlsScalar::hash_to_scalar(&self.inner.to_var_bytes()[..]).to_bytes()
+        sha3::Sha3_256::digest(self.inner.to_var_bytes()).into()
     }
 
     /// Computes the transaction ID.
