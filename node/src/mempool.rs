@@ -230,13 +230,22 @@ impl MempoolSrv {
             }
 
             let txs_count = view.txs_count();
-            if txs_count > max_mempool_txn_count {
-                let tx_to_delete = view
-                    .get_txs_ids_sorted_by_low_fee()?
-                    .map(|(_, tx_id)| tx_id)
-                    .next();
+            if txs_count >= max_mempool_txn_count {
                 // Get the lowest fee transaction to delete
-                Ok(tx_to_delete)
+                let (lowest_price, to_delete) = view
+                    .get_txs_ids_sorted_by_low_fee()?
+                    .next()
+                    .ok_or(anyhow::anyhow!("Cannot get lowest fee tx"))?;
+
+                if tx.gas_price() < lowest_price {
+                    // Or error if the gas price proposed is the lowest of all
+                    // the transactions in the mempool
+                    Err(TxAcceptanceError::MaxTxnCountExceeded(
+                        max_mempool_txn_count,
+                    ))
+                } else {
+                    Ok(Some(to_delete))
+                }
             } else {
                 Ok(None)
             }
