@@ -8,7 +8,7 @@ mod sync;
 
 use dusk_bytes::Serializable;
 use execution_core::{
-    signatures::bls::PublicKey as AccountPublicKey,
+    signatures::bls::PublicKey as BlsPublicKey,
     transfer::{
         moonlight::AccountData,
         phoenix::{Note, NoteLeaf, Prove},
@@ -246,7 +246,7 @@ impl State {
 
     pub(crate) async fn fetch_account(
         &self,
-        pk: &AccountPublicKey,
+        pk: &BlsPublicKey,
     ) -> Result<AccountData, Error> {
         let status = self.status;
         status("Fetching account-data...");
@@ -285,7 +285,7 @@ impl State {
     /// Queries the node for the amount staked by a key.
     pub(crate) async fn fetch_stake(
         &self,
-        pk: &AccountPublicKey,
+        pk: &BlsPublicKey,
     ) -> Result<Option<StakeData>, Error> {
         let status = self.status;
         status("Fetching stake...");
