@@ -119,8 +119,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         let expired_txs = db.get_expired_txs(expiration_time)?;
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
-                            if db.delete_tx(tx_id)? {
-                                let event = TransactionEvent::Removed(tx_id);
+                            for deleted_tx_id in db.delete_tx(tx_id, true)? {
+                                let event = TransactionEvent::Removed(deleted_tx_id);
                                 if let Err(e) = self.event_sender.try_send(event.into()) {
                                     warn!("cannot notify mempool removed transaction {e}")
                                 };
@@ -278,10 +278,10 @@ impl MempoolSrv {
             for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
                 if let Some(m_tx) = db.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        if db.delete_tx(m_tx_id)? {
-                            events.push(TransactionEvent::Removed(m_tx_id));
+                        for deleted_tx in db.delete_tx(m_tx_id, false)? {
+                            events.push(TransactionEvent::Removed(deleted_tx));
                             replaced = true;
-                        };
+                        }
                     } else {
                         return Err(
                             TxAcceptanceError::SpendIdExistsInMempool.into()
@@ -294,9 +294,9 @@ impl MempoolSrv {
 
             if !replaced {
                 if let Some(to_delete) = tx_to_delete {
-                    if db.delete_tx(to_delete)? {
-                        events.push(TransactionEvent::Removed(to_delete));
-                    };
+                    for deleted in db.delete_tx(to_delete, true)? {
+                        events.push(TransactionEvent::Removed(deleted));
+                    }
                 }
             }
             // Persist transaction in mempool storage

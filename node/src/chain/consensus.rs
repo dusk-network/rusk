@@ -342,7 +342,11 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             .map_err(OperationError::InvalidEST)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
-                let _ = m.delete_tx(t.id());
+                if let Ok(_removed) = m.delete_tx(t.id(), true) {
+                    // TODO: `_removed` entries should be sent to rues to inform
+                    // the subscribers that a transaction has been pruned from
+                    // the mempool
+                }
             }
             Ok(())
         });

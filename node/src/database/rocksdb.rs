@@ -772,7 +772,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(self.snapshot.get_cf(self.mempool_cf, h)?.is_some())
     }
 
-    fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
+    fn delete_tx(&self, h: [u8; 32], cascade: bool) -> Result<Vec<[u8; 32]>> {
+        let mut deleted = vec![];
         let tx = self.get_tx(h)?;
         if let Some(tx) = tx {
             let hash = tx.id();
@@ -792,10 +793,21 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                 serialize_key(tx.gas_price(), hash)?,
             )?;
 
-            return Ok(true);
+            deleted.push(h);
+
+            if cascade {
+                // Get the next spending id (aka next nonce tx)
+                // retrieve tx_id and delete it
+                if let Some(spending_id) = tx.next_spending_id() {
+                    for tx_id in self.get_txs_by_spendable_ids(&[spending_id]) {
+                        let cascade_deleted = self.delete_tx(tx_id, cascade)?;
+                        deleted.extend(cascade_deleted);
+                    }
+                }
+            }
         }
 
-        Ok(false)
+        Ok(deleted)
     }
 
     fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]> {
@@ -1293,7 +1305,8 @@ mod tests {
 
             // Delete a contract call
             db.update(|txn| {
-                assert!(txn.delete_tx(t.id()).expect("valid tx"));
+                let deleted = txn.delete_tx(t.id(), false).expect("valid tx");
+                assert!(deleted.len() == 1);
                 Ok(())
             })
             .unwrap();
@@ -1361,9 +1374,10 @@ mod tests {
                 assert_eq!(db.txs_count(), N);
 
                 txs.iter().take(D).for_each(|tx| {
-                    assert!(db
-                        .delete_tx(tx.id())
-                        .expect("transaction should be deleted"));
+                    let deleted = db
+                        .delete_tx(tx.id(), false)
+                        .expect("transaction should be deleted");
+                    assert!(deleted.len() == 1);
                 });
 
                 Ok(())
