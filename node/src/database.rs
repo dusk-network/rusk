@@ -143,7 +143,15 @@ pub trait Mempool {
     fn get_tx_exists(&self, tx_id: [u8; 32]) -> Result<bool>;
 
     /// Deletes a transaction from the mempool.
-    fn delete_tx(&self, tx_id: [u8; 32]) -> Result<bool>;
+    ///
+    /// If `cascade` is true, all dependant transactions are deleted
+    ///
+    /// Return a vector with all the deleted tx_id
+    fn delete_tx(
+        &self,
+        tx_id: [u8; 32],
+        cascade: bool,
+    ) -> Result<Vec<[u8; 32]>>;
 
     /// Get transactions hash from the mempool, searching by spendable ids
     fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]>;

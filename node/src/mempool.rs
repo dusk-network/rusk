@@ -8,6 +8,7 @@ pub mod conf;
 
 use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
+use crate::vm::PreverificationResult;
 use crate::{database, vm, LongLivedService, Message, Network};
 use async_trait::async_trait;
 use conf::{
@@ -15,7 +16,7 @@ use conf::{
 };
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
-use node_data::ledger::Transaction;
+use node_data::ledger::{SpendingId, Transaction};
 use node_data::message::{payload, AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use thiserror::Error;
@@ -118,8 +119,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         let expired_txs = db.get_expired_txs(expiration_time)?;
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
-                            if db.delete_tx(tx_id)? {
-                                let event = TransactionEvent::Removed(tx_id);
+                            for deleted_tx_id in db.delete_tx(tx_id, true)? {
+                                let event = TransactionEvent::Removed(deleted_tx_id);
                                 if let Err(e) = self.event_sender.try_send(event.into()) {
                                     warn!("cannot notify mempool removed transaction {e}")
                                 };
@@ -235,21 +236,50 @@ impl MempoolSrv {
             }
 
             let txs_count = view.txs_count();
-            if txs_count > max_mempool_txn_count {
-                let tx_to_delete = view
-                    .get_txs_ids_sorted_by_low_fee()?
-                    .map(|(_, tx_id)| tx_id)
-                    .next();
+            if txs_count >= max_mempool_txn_count {
                 // Get the lowest fee transaction to delete
-                Ok(tx_to_delete)
+                let (lowest_price, to_delete) = view
+                    .get_txs_ids_sorted_by_low_fee()?
+                    .next()
+                    .ok_or(anyhow::anyhow!("Cannot get lowest fee tx"))?;
+
+                if tx.gas_price() < lowest_price {
+                    // Or error if the gas price proposed is the lowest of all
+                    // the transactions in the mempool
+                    Err(TxAcceptanceError::MaxTxnCountExceeded(
+                        max_mempool_txn_count,
+                    ))
+                } else {
+                    Ok(Some(to_delete))
+                }
             } else {
                 Ok(None)
             }
         })?;
 
         // VM Preverify call
-        if let Err(e) = vm.read().await.preverify(tx) {
-            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
+        let preverification_data =
+            vm.read().await.preverify(tx).map_err(|e| {
+                TxAcceptanceError::VerificationFailed(format!("{e:?}"))
+            })?;
+
+        if let PreverificationResult::FutureNonce {
+            account,
+            state,
+            nonce_used,
+        } = preverification_data
+        {
+            db.read().await.view(|db| {
+                for nonce in state.nonce + 1..nonce_used {
+                    let spending_id = SpendingId::AccountNonce(account, nonce);
+                    if db.get_txs_by_spendable_ids(&[spending_id]).is_empty() {
+                        return Err(TxAcceptanceError::VerificationFailed(
+                            format!("Missing intermediate nonce {nonce}"),
+                        ));
+                    }
+                }
+                Ok(())
+            })?;
         }
 
         let mut events = vec![];
@@ -263,10 +293,10 @@ impl MempoolSrv {
             for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
                 if let Some(m_tx) = db.get_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        if db.delete_tx(m_tx_id)? {
-                            events.push(TransactionEvent::Removed(m_tx_id));
+                        for deleted_tx in db.delete_tx(m_tx_id, false)? {
+                            events.push(TransactionEvent::Removed(deleted_tx));
                             replaced = true;
-                        };
+                        }
                     } else {
                         return Err(
                             TxAcceptanceError::SpendIdExistsInMempool.into()
@@ -279,9 +309,9 @@ impl MempoolSrv {
 
             if !replaced {
                 if let Some(to_delete) = tx_to_delete {
-                    if db.delete_tx(to_delete)? {
-                        events.push(TransactionEvent::Removed(to_delete));
-                    };
+                    for deleted in db.delete_tx(to_delete, true)? {
+                        events.push(TransactionEvent::Removed(deleted));
+                    }
                 }
             }
             // Persist transaction in mempool storage

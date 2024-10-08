@@ -631,23 +631,24 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // block
                 for tx in tip.inner().txs().iter() {
                     let tx_id = tx.id();
-                    let deleted = Mempool::delete_tx(t, tx_id)
+                    for deleted in Mempool::delete_tx(t, tx_id, false)
                         .map_err(|e| warn!("Error while deleting tx: {e}"))
-                        .unwrap_or_default();
-                    if deleted {
-                        events.push(TransactionEvent::Removed(tx_id).into());
+                        .unwrap_or_default()
+                    {
+                        events.push(TransactionEvent::Removed(deleted).into());
                     }
 
                     let spend_ids = tx.to_spend_ids();
                     for orphan_tx in t.get_txs_by_spendable_ids(&spend_ids) {
-                        let deleted = Mempool::delete_tx(t, orphan_tx)
-                            .map_err(|e| {
-                                warn!("Error while deleting orphan_tx: {e}")
-                            })
-                            .unwrap_or_default();
-                        if deleted {
+                        for deleted_tx in
+                            Mempool::delete_tx(t, orphan_tx, false)
+                                .map_err(|e| {
+                                    warn!("Error while deleting orphan_tx: {e}")
+                                })
+                                .unwrap_or_default()
+                        {
                             events.push(
-                                TransactionEvent::Removed(orphan_tx).into(),
+                                TransactionEvent::Removed(deleted_tx).into(),
                             );
                         }
                     }

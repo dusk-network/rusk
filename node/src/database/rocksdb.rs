@@ -41,7 +41,7 @@ const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_CANDIDATES_HEIGHT: &str = "cf_candidates_height";
 const CF_MEMPOOL: &str = "cf_mempool";
-const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
+const CF_MEMPOOL_SPENDING_ID: &str = "cf_mempool_spending_id";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 const CF_METADATA: &str = "cf_metadata";
 
@@ -99,10 +99,10 @@ impl Backend {
             .cf_handle(CF_MEMPOOL)
             .expect("mempool column family must exist");
 
-        let nullifiers_cf = self
+        let spending_id_cf = self
             .rocksdb
-            .cf_handle(CF_MEMPOOL_NULLIFIERS)
-            .expect("CF_MEMPOOL_NULLIFIERS column family must exist");
+            .cf_handle(CF_MEMPOOL_SPENDING_ID)
+            .expect("CF_MEMPOOL_SPENDING_ID column family must exist");
 
         let fees_cf = self
             .rocksdb
@@ -129,7 +129,7 @@ impl Backend {
             ledger_txs_cf,
             ledger_faults_cf,
             mempool_cf,
-            nullifiers_cf,
+            spending_id_cf,
             fees_cf,
             ledger_height_cf,
             metadata_cf,
@@ -206,7 +206,10 @@ impl DB for Backend {
             ),
             ColumnFamilyDescriptor::new(CF_METADATA, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
-            ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
+            ColumnFamilyDescriptor::new(
+                CF_MEMPOOL_SPENDING_ID,
+                mp_opts.clone(),
+            ),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts.clone()),
         ];
 
@@ -282,7 +285,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 
     // Mempool column families
     mempool_cf: &'db ColumnFamily,
-    nullifiers_cf: &'db ColumnFamily,
+    spending_id_cf: &'db ColumnFamily,
     fees_cf: &'db ColumnFamily,
 
     metadata_cf: &'db ColumnFamily,
@@ -733,10 +736,10 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         self.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //
-        // Nullifiers
-        for n in tx.inner.nullifiers() {
+        // Spending Ids
+        for n in tx.to_spend_ids() {
             let key = n.to_bytes();
-            self.put_cf(self.nullifiers_cf, key, hash)?;
+            self.put_cf(self.spending_id_cf, key, hash)?;
         }
 
         let timestamp = timestamp.to_be_bytes();
@@ -769,7 +772,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(self.snapshot.get_cf(self.mempool_cf, h)?.is_some())
     }
 
-    fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
+    fn delete_tx(&self, h: [u8; 32], cascade: bool) -> Result<Vec<[u8; 32]>> {
+        let mut deleted = vec![];
         let tx = self.get_tx(h)?;
         if let Some(tx) = tx {
             let hash = tx.id();
@@ -777,10 +781,10 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             self.inner.delete_cf(self.mempool_cf, hash)?;
 
             // Delete Secondary indexes
-            // Delete Nullifiers
-            for n in tx.inner.nullifiers() {
+            // Delete spendingids (nullifiers or nonce)
+            for n in tx.to_spend_ids() {
                 let key = n.to_bytes();
-                self.inner.delete_cf(self.nullifiers_cf, key)?;
+                self.inner.delete_cf(self.spending_id_cf, key)?;
             }
 
             // Delete Fee_Hash
@@ -789,16 +793,27 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                 serialize_key(tx.gas_price(), hash)?,
             )?;
 
-            return Ok(true);
+            deleted.push(h);
+
+            if cascade {
+                // Get the next spending id (aka next nonce tx)
+                // retrieve tx_id and delete it
+                if let Some(spending_id) = tx.next_spending_id() {
+                    for tx_id in self.get_txs_by_spendable_ids(&[spending_id]) {
+                        let cascade_deleted = self.delete_tx(tx_id, cascade)?;
+                        deleted.extend(cascade_deleted);
+                    }
+                }
+            }
         }
 
-        Ok(false)
+        Ok(deleted)
     }
 
     fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]> {
         n.iter()
             .filter_map(|n| {
-                match self.snapshot.get_cf(self.nullifiers_cf, n.to_bytes()) {
+                match self.snapshot.get_cf(self.spending_id_cf, n.to_bytes()) {
                     Ok(Some(tx_id)) => tx_id.try_into().ok(),
                     _ => None,
                 }
@@ -1290,7 +1305,8 @@ mod tests {
 
             // Delete a contract call
             db.update(|txn| {
-                assert!(txn.delete_tx(t.id()).expect("valid tx"));
+                let deleted = txn.delete_tx(t.id(), false).expect("valid tx");
+                assert!(deleted.len() == 1);
                 Ok(())
             })
             .unwrap();
@@ -1358,9 +1374,10 @@ mod tests {
                 assert_eq!(db.txs_count(), N);
 
                 txs.iter().take(D).for_each(|tx| {
-                    assert!(db
-                        .delete_tx(tx.id())
-                        .expect("transaction should be deleted"));
+                    let deleted = db
+                        .delete_tx(tx.id(), false)
+                        .expect("transaction should be deleted");
+                    assert!(deleted.len() == 1);
                 });
 
                 Ok(())

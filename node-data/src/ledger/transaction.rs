@@ -96,6 +96,15 @@ impl Transaction {
             }
         }
     }
+
+    pub fn next_spending_id(&self) -> Option<SpendingId> {
+        match &self.inner {
+            ProtocolTransaction::Phoenix(_) => None,
+            ProtocolTransaction::Moonlight(m) => {
+                Some(SpendingId::AccountNonce(*m.sender(), m.nonce() + 1))
+            }
+        }
+    }
 }
 
 impl PartialEq<Self> for Transaction {
