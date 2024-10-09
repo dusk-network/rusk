@@ -22,9 +22,16 @@ use crate::{
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     },
-    transfer::withdraw::{Withdraw, WithdrawReceiver},
     BlsScalar, ContractId, Error,
 };
+use data::{ContractCall, ContractDeploy, TransactionData};
+use moonlight::Transaction as MoonlightTransaction;
+use phoenix::{
+    Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    Sender, StealthAddress, Transaction as PhoenixTransaction,
+    NOTES_TREE_DEPTH,
+};
+use withdraw::{Withdraw, WithdrawReceiver};
 
 pub mod data;
 pub mod moonlight;
@@ -54,14 +61,6 @@ pub const CONVERT_TOPIC: &str = "convert";
 /// Topic for the mint event.
 pub const MINT_TOPIC: &str = "mint";
 
-use data::{ContractCall, ContractDeploy, TransactionData};
-use moonlight::Transaction as MoonlightTransaction;
-use phoenix::{
-    Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-    Sender, StealthAddress, Transaction as PhoenixTransaction,
-    NOTES_TREE_DEPTH,
-};
-
 /// The transaction used by the transfer contract.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -87,7 +86,7 @@ impl Transaction {
     pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         rng: &mut R,
         sender_sk: &PhoenixSecretKey,
-        change_pk: &PhoenixPublicKey,
+        refund_pk: &PhoenixPublicKey,
         receiver_pk: &PhoenixPublicKey,
         inputs: Vec<(Note, Opening<(), NOTES_TREE_DEPTH>)>,
         root: BlsScalar,
@@ -103,7 +102,7 @@ impl Transaction {
         Ok(Self::Phoenix(PhoenixTransaction::new::<R, P>(
             rng,
             sender_sk,
-            change_pk,
+            refund_pk,
             receiver_pk,
             inputs,
             root,
@@ -197,15 +196,6 @@ impl Transaction {
         }
     }
 
-    /// Return the stealth address for returning funds for Phoenix transactions.
-    #[must_use]
-    pub fn stealth_address(&self) -> Option<&StealthAddress> {
-        match self {
-            Self::Phoenix(tx) => Some(tx.stealth_address()),
-            Self::Moonlight(_) => None,
-        }
-    }
-
     /// Returns the sender data for Phoenix transactions.
     #[must_use]
     pub fn phoenix_sender(&self) -> Option<&Sender> {
@@ -239,6 +229,17 @@ impl Transaction {
         match self {
             Self::Phoenix(tx) => tx.gas_price(),
             Self::Moonlight(tx) => tx.gas_price(),
+        }
+    }
+
+    /// Returns the refund-address of the transaction.
+    #[must_use]
+    pub fn refund_address(&self) -> RefundAddress {
+        match self {
+            Self::Phoenix(tx) => RefundAddress::Phoenix(tx.stealth_address()),
+            Self::Moonlight(tx) => {
+                RefundAddress::Moonlight(tx.refund_address())
+            }
         }
     }
 
@@ -349,6 +350,15 @@ impl From<MoonlightTransaction> for Transaction {
     fn from(tx: MoonlightTransaction) -> Self {
         Self::Moonlight(tx)
     }
+}
+
+/// Enum defining the address to refund unspent gas to for both Phoenix and
+/// Moonlight transactions.
+pub enum RefundAddress<'a> {
+    /// The address of the Phoenix refund note.
+    Phoenix(&'a StealthAddress),
+    /// The moonlight account to which to send the refund.
+    Moonlight(&'a AccountPublicKey),
 }
 
 /// The payload sent by a contract to the transfer contract to transfer some of
@@ -492,6 +502,8 @@ pub struct PhoenixTransactionEvent {
     pub memo: Vec<u8>,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
+    /// Optional gas-refund note if the refund is positive.
+    pub refund_info: Option<Note>,
 }
 
 /// Event data emitted on a moonlight transaction's completion.
@@ -501,11 +513,14 @@ pub struct MoonlightTransactionEvent {
     /// The account that initiated the transaction.
     pub sender: AccountPublicKey,
     /// The receiver of the funds if any were transferred.
-    pub receiver: Option<AccountPublicKey>,
+    pub receiver: AccountPublicKey,
     /// Transfer amount
     pub value: u64,
     /// The memo included in the transaction.
     pub memo: Vec<u8>,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
+    /// Optional refund-info in the case that the refund-address is different
+    /// from the sender.
+    pub refund_info: Option<(AccountPublicKey, u64)>,
 }
