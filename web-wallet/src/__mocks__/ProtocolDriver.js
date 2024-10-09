@@ -1,5 +1,9 @@
 /* eslint-disable no-unused-vars */
 
+export async function balance() {
+  return { spendable: 0n, value: 0n };
+}
+
 /**
  * @param {Uint8Array} seed
  * @param {number} n

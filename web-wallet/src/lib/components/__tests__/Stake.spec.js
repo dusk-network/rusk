@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { deductLuxFeeFrom } from "$lib/contracts";
-import { createCurrencyFormatter } from "$lib/dusk/currency";
+import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
 
 import { Stake } from "..";
 
@@ -53,7 +53,7 @@ describe("Stake", () => {
     hideStakingNotice: true,
     minAllowedStake: 1234,
     rewards: 345,
-    spendable: 10000,
+    spendable: 10_000_000_000_000n,
     staked: 278,
     statuses: [
       {
@@ -76,7 +76,7 @@ describe("Stake", () => {
   };
 
   const maxSpendable = deductLuxFeeFrom(
-    baseProps.spendable,
+    luxToDusk(baseProps.spendable),
     baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
   );
 
@@ -124,7 +124,7 @@ describe("Stake", () => {
       },
     };
     const currentMaxSpendable = deductLuxFeeFrom(
-      props.spendable,
+      luxToDusk(props.spendable),
       props.gasSettings.gasPrice * props.gasSettings.gasLimit
     );
     const { getByRole } = render(Stake, { ...baseOptions, props });
@@ -155,7 +155,7 @@ describe("Stake", () => {
   it("should not change the default amount (min stake amount) in the textbox if the user clicks the related button and the balance is zero", async () => {
     const props = {
       ...baseProps,
-      spendable: 0,
+      spendable: 0n,
     };
 
     const { getByRole } = render(Stake, props);
@@ -199,7 +199,7 @@ describe("Stake", () => {
     expect(nextButton).toBeEnabled();
 
     await fireEvent.input(amountInput, {
-      target: { value: baseProps.spendable * 2 },
+      target: { value: luxToDusk(baseProps.spendable) * 2 },
     });
 
     expect(nextButton).toBeDisabled();

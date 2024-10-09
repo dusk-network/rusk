@@ -8,44 +8,76 @@ import {
   vi,
 } from "vitest";
 import { get } from "svelte/store";
-import { ProfileGenerator } from "$lib/../../../w3sper.js/src/mod";
+import { Bookkeeper, ProfileGenerator } from "$lib/../../../w3sper.js/src/mod";
 import { generateMnemonic } from "bip39";
 
+import { cacheUnspentNotes } from "$lib/mock-data";
 import walletCache from "$lib/wallet-cache";
 import { getSeedFromMnemonic } from "$lib/wallet";
 
 import { walletStore } from "..";
-import { getKey } from "lamb";
 
 describe("Wallet store", async () => {
   vi.useFakeTimers();
 
-  const settleTime = 1000;
+  // setting up a predictable address and balance
+  const address = cacheUnspentNotes[0].address;
+  const bookkeeperBalance = {
+    spendable: 400000000000000n,
+    value: 1026179647718621n,
+  };
+  const balance = {
+    maximum: bookkeeperBalance.spendable,
+    value: bookkeeperBalance.value,
+  };
+  const balanceSpy = vi
+    .spyOn(Bookkeeper.prototype, "balance")
+    .mockResolvedValue(bookkeeperBalance);
+  const defaultProfileSpy = vi
+    .spyOn(ProfileGenerator.prototype, "default", "get")
+    .mockResolvedValue({
+      address: {
+        toString() {
+          return address;
+        },
+      },
+    });
   const seed = getSeedFromMnemonic(generateMnemonic());
   const profileGenerator = new ProfileGenerator(async () => seed);
   const defaultProfile = await profileGenerator.default;
-  const address = await defaultProfile.address.toString();
-  const balance = { maximum: 1234, value: 567 };
+
   const initialState = {
     addresses: [],
     balance: {
-      maximum: 0,
-      value: 0,
+      maximum: 0n,
+      value: 0n,
     },
     currentAddress: "",
+    currentProfile: defaultProfile,
     initialized: false,
-    syncStatus: { current: 0, error: null, isInProgress: false, last: 0 },
+    profiles: [],
+    syncStatus: {
+      current: 0n,
+      error: null,
+      isInProgress: false,
+      last: 0n,
+      progress: 0,
+    },
   };
+
   const initializedStore = {
     ...initialState,
     addresses: [address],
     balance,
     currentAddress: address,
     initialized: true,
+    profiles: [defaultProfile],
   };
 
   afterAll(() => {
     vi.useRealTimers();
+    balanceSpy.mockRestore();
+    defaultProfileSpy.mockRestore();
   });
 
   describe("Initialization and sync", () => {
@@ -56,11 +88,19 @@ describe("Wallet store", async () => {
         ...initialState,
         addresses: [address],
         currentAddress: address,
+        currentProfile: defaultProfile,
         initialized: true,
-        syncStatus: { current: 0, error: null, isInProgress: true, last: 0 },
+        profiles: [defaultProfile],
+        syncStatus: {
+          current: 0n,
+          error: null,
+          isInProgress: true,
+          last: 0n,
+          progress: 0,
+        },
       });
 
-      await vi.advanceTimersByTimeAsync(settleTime);
+      await vi.runAllTimersAsync();
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
     });
@@ -94,9 +134,8 @@ describe("Wallet store", async () => {
 
     it("should expose a method to clear local data and init the wallet", async () => {
       const newGenerator = new ProfileGenerator(() => new Uint8Array());
-      const newAddress = await newGenerator.default
-        .then(getKey("address"))
-        .then(String);
+      const newProfile = await newGenerator.default;
+      const newAddress = newProfile.address.toString();
 
       walletStore.clearLocalDataAndInit(newGenerator, 99n);
 
@@ -107,6 +146,8 @@ describe("Wallet store", async () => {
         ...initializedStore,
         addresses: [newAddress],
         currentAddress: newAddress,
+        currentProfile: newProfile,
+        profiles: [newProfile],
       });
     });
   });

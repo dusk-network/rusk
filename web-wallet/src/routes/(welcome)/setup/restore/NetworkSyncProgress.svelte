@@ -25,7 +25,7 @@
 </script>
 
 <IconHeadingCard icons={[mdiCubeOutline]} heading="Network Sync">
-  {#if !syncStarted || (syncStatus.isInProgress && (!syncStatus.current || !syncStatus.last))}
+  {#if !syncStarted || (syncStatus.isInProgress && !syncStatus.progress)}
     <span>Syncing...</span>
   {:else if syncStatus.isInProgress}
     <span>
@@ -33,9 +33,7 @@
         >{syncStatus.current.toLocaleString()}/{syncStatus.last.toLocaleString()}</b
       >
     </span>
-    <ProgressBar
-      currentPercentage={(syncStatus.current / syncStatus.last) * 100}
-    />
+    <ProgressBar currentPercentage={syncStatus.progress * 100} />
   {:else if syncStatus.error}
     <ErrorAlert error={syncStatus.error} summary="Sync failed" />
   {:else}

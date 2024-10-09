@@ -5,6 +5,7 @@
     "checkJs": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "lib": ["DOM.AsyncIterable"],
     "noImplicitAny": true,
     "resolveJsonModule": true,
     "skipLibCheck": false,

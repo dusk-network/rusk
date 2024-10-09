@@ -60,8 +60,16 @@ export default defineConfig(({ mode }) => {
         allow: [".."],
       },
       proxy: {
+        // TODO see if you can restrict those two to localhost
+        "/on": {
+          target: "ws://localhost:8080/",
+          ws: true,
+        },
         "/rusk": {
           rewrite: (path) => path.replace(/^\/rusk/, ""),
+          target: "http://localhost:8080/",
+        },
+        "/static/drivers": {
           target: "http://localhost:8080/",
         },
       },

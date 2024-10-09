@@ -11,7 +11,7 @@ import { act, cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
 import { apiMarketData } from "$lib/mock-data";
-import { createCurrencyFormatter } from "$lib/dusk/currency";
+import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
 
 import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
 
@@ -144,7 +144,8 @@ describe("Dashboard Layout", () => {
   });
 
   const usdPrice = 0.5;
-  const expectedFiat = get(mockedWalletStore).balance.value * usdPrice;
+  const expectedFiat =
+    luxToDusk(get(mockedWalletStore).balance.value) * usdPrice;
   const formatter = createCurrencyFormatter("en", "usd", 2);
   const baseProps = {
     data: { currentPrice: Promise.resolve({ usd: usdPrice }) },
@@ -184,10 +185,11 @@ describe("Dashboard Layout", () => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
         syncStatus: {
-          current: 0,
+          current: 0n,
           error: null,
           isInProgress: true,
-          last: 0,
+          last: 0n,
+          progress: 0,
         },
       });
     });
@@ -211,10 +213,11 @@ describe("Dashboard Layout", () => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
         syncStatus: {
-          current: 100,
+          current: 100n,
           error: null,
           isInProgress: true,
-          last: 200,
+          last: 200n,
+          progress: 0.5,
         },
       });
     });
@@ -241,10 +244,11 @@ describe("Dashboard Layout", () => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
         syncStatus: {
-          current: 0,
+          current: 0n,
           error: new Error(),
           isInProgress: false,
-          last: 0,
+          last: 0n,
+          progress: 0,
         },
       });
     });

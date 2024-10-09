@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { filterWith, pluckFrom, setKey, takeFrom, uniques } from "lamb";
+import {
+  add,
+  filterWith,
+  mapValues,
+  pluckFrom,
+  setKey,
+  takeFrom,
+  uniques,
+} from "lamb";
 
 import {
   cachePendingNotesInfo,
@@ -13,6 +21,7 @@ import {
   sortByNullifier,
   sortNullifiers,
 } from "$lib/test-helpers";
+import notesArrayToMap from "$lib/wallet/notesArrayToMap";
 
 import walletCache from "..";
 
@@ -223,6 +232,12 @@ describe("Wallet cache", () => {
   });
 
   describe("Adding notes", () => {
+    /** @type {WalletCacheSyncInfo} */
+    let currentSyncInfo;
+
+    /** @type {WalletCacheSyncInfo} */
+    let newSyncInfo;
+
     const address = cacheUnspentNotes[0].address;
 
     /** @type {(note: WalletCacheNote) => boolean} */
@@ -234,6 +249,15 @@ describe("Wallet cache", () => {
       note: new Uint8Array(),
       nullifier: new Uint8Array(32).fill(0),
     };
+
+    beforeEach(async () => {
+      currentSyncInfo = await walletCache.getSyncInfo();
+
+      expect(currentSyncInfo.blockHeight).toBeGreaterThan(0n);
+      expect(currentSyncInfo.bookmark).toBeGreaterThan(0n);
+
+      newSyncInfo = mapValues(currentSyncInfo, add(999n));
+    });
 
     it("should expose a method to add new notes to the unspent list", async () => {
       /*
@@ -264,23 +288,29 @@ describe("Wallet cache", () => {
         unspentNotesToAdd
       );
 
-      await walletCache.addUnspentNotes(newNotes);
+      await walletCache.addUnspentNotes(newNotes, newSyncInfo);
 
       await expect(
         walletCache.getUnspentNotes().then(sortByNullifier)
       ).resolves.toStrictEqual(sortByNullifier(expectedUnspentNotes));
+      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
+        newSyncInfo
+      );
     });
 
-    it("should leave the unspent notes as they were if an error occurs during insertion", async () => {
+    it("should leave the unspent notes and the sync info as they were if an error occurs during insertion", async () => {
       // @ts-expect-error
       const newNotes = cacheSpentNotes.concat({});
 
       await expect(
-        walletCache.addUnspentNotes(newNotes)
+        walletCache.addUnspentNotes(newNotes, newSyncInfo)
       ).rejects.toBeInstanceOf(Error);
 
       expect(sortByNullifier(cacheUnspentNotes)).toStrictEqual(
         sortByNullifier(await walletCache.getUnspentNotes())
+      );
+      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
+        currentSyncInfo
       );
     });
   });
@@ -300,11 +330,6 @@ describe("Wallet cache", () => {
     const fakeKey = {
       toString() {
         return addressWithPendingNotes;
-      },
-    };
-    const fakeProfile = {
-      get address() {
-        return fakeKey;
       },
     };
 
@@ -339,24 +364,70 @@ describe("Wallet cache", () => {
     });
 
     it("should expose a treasury interface that allows to retrieve all non-pending unspent notes for a given profile", async () => {
-      const unspentNotesMap = await walletCache.treasury.address(fakeProfile);
+      // @ts-expect-error We don't care to pass a real `Key` object
+      const unspentNotesMapA = await walletCache.treasury.address(fakeKey);
 
-      expect(Array.from(unspentNotesMap.keys())).toStrictEqual([
-        addressWithPendingNotes,
-      ]);
+      // @ts-expect-error We don't care to pass a real `Key` object
+      const unspentNotesMapB = await walletCache.treasury.address({
+        toString() {
+          return "non-existent address";
+        },
+      });
 
-      const notesMap = /** @type {Map<Uint8Array, Uint8Array>} */ (
-        unspentNotesMap.get(addressWithPendingNotes)
-      );
-
-      expect(expectedNotes.length).toBe(notesMap.size);
-
-      expect(sortNullifiers(Array.from(notesMap.keys()))).toStrictEqual(
+      expect(expectedNotes.length).toBe(unspentNotesMapA.size);
+      expect(sortNullifiers(Array.from(unspentNotesMapA.keys()))).toStrictEqual(
         sortNullifiers(pluckFrom(expectedNotes, "nullifier"))
       );
-      expect(sortNullifiers(Array.from(notesMap.values()))).toStrictEqual(
-        sortNullifiers(pluckFrom(expectedNotes, "note"))
+      expect(
+        sortNullifiers(Array.from(unspentNotesMapA.values()))
+      ).toStrictEqual(sortNullifiers(pluckFrom(expectedNotes, "note")));
+      expect(unspentNotesMapB).toStrictEqual(new Map());
+    });
+  });
+
+  describe("Utilities", () => {
+    it("should expose a method to update the last block height", async () => {
+      const currentSyncInfo = await walletCache.getSyncInfo();
+      const newBlockHeight = currentSyncInfo.blockHeight * 2n;
+
+      await walletCache.setLastBlockHeight(newBlockHeight);
+
+      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual({
+        ...currentSyncInfo,
+        blockHeight: newBlockHeight,
+      });
+    });
+
+    it("should leave the last block height as it is if an error occurs while writing the new value", async () => {
+      const currentSyncInfo = await walletCache.getSyncInfo();
+
+      // @ts-expect-error We are passing an invalid value on purpose
+      await expect(walletCache.setLastBlockHeight(() => {})).rejects.toThrow();
+
+      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
+        currentSyncInfo
       );
+    });
+
+    it("should expose a method to convert notes in the w3sper map format into the one used by the cache", () => {
+      const addresses = uniques(pluckFrom(cacheUnspentNotes, "address"));
+      const fakeProfiles = addresses.map((address) => ({
+        address: {
+          toString() {
+            return address;
+          },
+        },
+      }));
+      const notesAsMap = notesArrayToMap(cacheUnspentNotes);
+      const notesArray = /** @type {Array<Map<Uint8Array, Uint8Array>>} */ (
+        addresses.map((address) => notesAsMap.get(address))
+      );
+
+      expect(
+        // @ts-expect-error we are passing fake profiles
+        sortByNullifier(walletCache.toCacheNotes(notesArray, fakeProfiles))
+      ).toStrictEqual(sortByNullifier(cacheUnspentNotes));
+      expect(walletCache.toCacheNotes([], [])).toStrictEqual([]);
     });
   });
 });

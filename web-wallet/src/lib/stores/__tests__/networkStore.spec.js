@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 
-import { Network } from "$lib/../../../w3sper.js/src/mod";
+import { AddressSyncer, Network } from "$lib/../../../w3sper.js/src/mod";
 
 describe("NetworkStore", async () => {
   const blockHeight = 999_888_777n;
@@ -58,5 +58,19 @@ describe("NetworkStore", async () => {
     const store = (await import("..")).networkStore;
 
     await expect(store.getCurrentBlockHeight()).resolves.toBe(blockHeight);
+  });
+
+  it("should expose a service method to retrieve a `AddresszSyncer` for the network", async () => {
+    const store = (await import("..")).networkStore;
+
+    await store.disconnect();
+    expect(get(store).connected).toBe(false);
+
+    connectSpy.mockClear();
+
+    const syncer = await store.getAddressSyncer();
+
+    expect(connectSpy).toHaveBeenCalledTimes(1);
+    expect(syncer).toBeInstanceOf(AddressSyncer);
   });
 });
