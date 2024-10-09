@@ -1,17 +1,6 @@
 import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
 
-import { makeNodeUrl } from "$lib/url";
-
-const nodeUrl = makeNodeUrl();
-
-/** @type {NetworkOption[]}*/
-const networks = [
-  { label: "Local", value: nodeUrl },
-  { label: "Devnet", value: nodeUrl },
-  { label: "Testnet", value: nodeUrl },
-  { label: "Mainnet", value: nodeUrl },
-];
 const maxWidthMediaQuery = window.matchMedia("(max-width: 1024px)");
 const browserDefaults = browser
   ? {
@@ -23,10 +12,6 @@ const browserDefaults = browser
 const DEFAULT_FETCH_INTERVAL = 1000;
 const DEFAULT_MARKET_FETCH_INTERVAL = 120000;
 const DEFAULT_STATS_FETCH_INTERVAL = DEFAULT_FETCH_INTERVAL;
-
-function getNetworkHost() {
-  return makeNodeUrl().host;
-}
 
 /** @type {AppStoreContent} */
 const initialState = {
@@ -40,8 +25,6 @@ const initialState = {
   marketDataFetchInterval:
     Number(import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL) ||
     DEFAULT_MARKET_FETCH_INTERVAL,
-  network: getNetworkHost(),
-  networks,
   statsFetchInterval:
     Number(import.meta.env.VITE_STATS_REFETCH_INTERVAL) ||
     DEFAULT_STATS_FETCH_INTERVAL,
@@ -59,13 +42,6 @@ maxWidthMediaQuery.addEventListener("change", (event) => {
   });
 });
 
-/** @param {string} network */
-const setNetwork = (network) =>
-  set({
-    ...get(store),
-    network,
-  });
-
 /** @param {boolean} darkMode */
 const setTheme = (darkMode) => {
   set({
@@ -76,7 +52,6 @@ const setTheme = (darkMode) => {
 
 /** @type {AppStore} */
 export default {
-  setNetwork,
   setTheme,
   subscribe,
 };

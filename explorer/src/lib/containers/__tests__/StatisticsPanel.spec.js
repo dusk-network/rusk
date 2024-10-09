@@ -35,7 +35,7 @@ vi.mock("$lib/services", async (importOriginal) => {
 });
 
 describe("StatisticsPanel", () => {
-  const { statsFetchInterval, network } = get(appStore);
+  const { statsFetchInterval } = get(appStore);
 
   afterEach(cleanup);
 
@@ -49,9 +49,9 @@ describe("StatisticsPanel", () => {
 
     expect(container.firstChild).toMatchSnapshot();
     expect(duskAPI.getNodeLocations).toHaveBeenCalledTimes(1);
-    expect(duskAPI.getNodeLocations).toHaveBeenNthCalledWith(1, network);
+    expect(duskAPI.getNodeLocations).toHaveBeenNthCalledWith(1);
     expect(duskAPI.getStats).toHaveBeenCalledTimes(1);
-    expect(duskAPI.getStats).toHaveBeenNthCalledWith(1, network);
+    expect(duskAPI.getStats).toHaveBeenNthCalledWith(1);
 
     await vi.advanceTimersByTimeAsync(marketDataSettleTime);
 
@@ -63,12 +63,12 @@ describe("StatisticsPanel", () => {
     );
 
     expect(duskAPI.getStats).toHaveBeenCalledTimes(2);
-    expect(duskAPI.getStats).toHaveBeenNthCalledWith(2, network);
+    expect(duskAPI.getStats).toHaveBeenNthCalledWith(2);
 
     await vi.advanceTimersByTimeAsync(statsFetchInterval);
 
     expect(duskAPI.getStats).toHaveBeenCalledTimes(3);
-    expect(duskAPI.getStats).toHaveBeenNthCalledWith(3, network);
+    expect(duskAPI.getStats).toHaveBeenNthCalledWith(3);
 
     unmount();
 

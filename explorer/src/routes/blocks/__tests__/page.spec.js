@@ -14,7 +14,7 @@ describe("Blocks page", () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2024, 4, 30));
 
-  const { blocksListEntries, fetchInterval, network } = get(appStore);
+  const { blocksListEntries, fetchInterval } = get(appStore);
   const getBlocksSpy = vi
     .spyOn(duskAPI, "getBlocks")
     .mockResolvedValue(gqlBlocks.blocks.map(transformBlock));
@@ -35,7 +35,7 @@ describe("Blocks page", () => {
     // snapshost in loading state
     expect(container.firstChild).toMatchSnapshot();
     expect(getBlocksSpy).toHaveBeenCalledTimes(1);
-    expect(getBlocksSpy).toHaveBeenNthCalledWith(1, network, blocksListEntries);
+    expect(getBlocksSpy).toHaveBeenNthCalledWith(1, blocksListEntries);
 
     await vi.advanceTimersByTimeAsync(1);
 
@@ -45,12 +45,12 @@ describe("Blocks page", () => {
     await vi.advanceTimersByTimeAsync(fetchInterval - 1);
 
     expect(getBlocksSpy).toHaveBeenCalledTimes(2);
-    expect(getBlocksSpy).toHaveBeenNthCalledWith(2, network, blocksListEntries);
+    expect(getBlocksSpy).toHaveBeenNthCalledWith(2, blocksListEntries);
 
     await vi.advanceTimersByTimeAsync(fetchInterval);
 
     expect(getBlocksSpy).toHaveBeenCalledTimes(3);
-    expect(getBlocksSpy).toHaveBeenNthCalledWith(3, network, blocksListEntries);
+    expect(getBlocksSpy).toHaveBeenNthCalledWith(3, blocksListEntries);
 
     unmount();
 
@@ -67,7 +67,7 @@ describe("Blocks page", () => {
     expect(get(appStore).isSmallScreen).toBe(true);
 
     expect(getBlocksSpy).toHaveBeenCalledTimes(1);
-    expect(getBlocksSpy).toHaveBeenNthCalledWith(1, network, blocksListEntries);
+    expect(getBlocksSpy).toHaveBeenNthCalledWith(1, blocksListEntries);
 
     await vi.advanceTimersByTimeAsync(1);
 

@@ -57,28 +57,15 @@ const toHeadersVariables = unless(
  */
 const makeAPIURL = (endpoint, params) =>
   new URL(
-    `${endpoint}${import.meta.env.VITE_RUSK_PATH || ""}?${new URLSearchParams(params)}`,
+    `${endpoint}?${new URLSearchParams(params)}`,
     ensureTrailingSlash(import.meta.env.VITE_API_ENDPOINT)
   );
 
 /**
- * @param {string} node
- * @param {string} endpoint
- */
-function getNodeUrl(node, endpoint) {
-  const url = makeNodeUrl();
-
-  url.pathname = `${import.meta.env.VITE_RUSK_PATH || ""}${endpoint}`;
-
-  return url;
-}
-
-/**
- * @param {string} node
  * @param {{ query: string, variables?: Record<string, string | number> }} queryInfo
  */
-const gqlGet = (node, queryInfo) =>
-  fetch(getNodeUrl(node, "/02/Chain"), {
+const gqlGet = (queryInfo) =>
+  fetch(makeNodeUrl("/02/Chain"), {
     body: JSON.stringify({
       data: queryInfo.query,
       topic: "gql",
@@ -95,12 +82,11 @@ const gqlGet = (node, queryInfo) =>
     .then((res) => res.json());
 
 /**
- * @param {string} node
  * @param {"alive_nodes" | "provisioners"} topic
  * @param {any} data
  */
-const hostGet = (node, topic, data) =>
-  fetch(getNodeUrl(node, `/2/rusk`), {
+const hostGet = (topic, data) =>
+  fetch(makeNodeUrl("/2/rusk"), {
     body: JSON.stringify({ data, topic }),
     headers: {
       Accept: "application/json",
@@ -128,18 +114,18 @@ const apiGet = (endpoint, params) =>
     .then(failureToRejection)
     .then((res) => res.json());
 
-/** @type {(node: string) => Promise<HostProvisioner[]>} */
-const getProvisioners = (node) => hostGet(node, "provisioners", "");
+/** @type {() => Promise<HostProvisioner[]>} */
+const getProvisioners = () => hostGet("provisioners", "");
 
-/** @type {(node: string) => Promise<number>} */
-const getLastHeight = (node) =>
-  gqlGet(node, {
+/** @type {() => Promise<number>} */
+const getLastHeight = () =>
+  gqlGet({
     query: "query { block(height: -1) { header { height } } }",
   }).then(getPath("block.header.height"));
 
-/** @type {(node: string) => Promise<Pick<GQLTransaction, "err">[]>} */
-const getLast100BlocksTxs = (node) =>
-  gqlGet(node, {
+/** @type {() => Promise<Pick<GQLTransaction, "err">[]>} */
+const getLast100BlocksTxs = () =>
+  gqlGet({
     query: "query { blocks(last: 100) { transactions { err } } }",
   })
     .then(getKey("blocks"))
@@ -147,62 +133,57 @@ const getLast100BlocksTxs = (node) =>
 
 const duskAPI = {
   /**
-   * @param {string} node
    * @param {string} id
    * @returns {Promise<Block>}
    */
-  getBlock(node, id) {
-    return gqlGet(node, gqlQueries.getBlockQueryInfo(id))
+  getBlock(id) {
+    return gqlGet(gqlQueries.getBlockQueryInfo(id))
       .then(async ({ block }) =>
         setPathIn(
           block,
           "header.nextBlockHash",
-          await duskAPI.getBlockHashByHeight(node, block.header.height + 1)
+          await duskAPI.getBlockHashByHeight(block.header.height + 1)
         )
       )
       .then(transformBlock);
   },
 
   /**
-   * @param {string} node
    * @param {string} id
    * @returns {Promise<string>}
    */
-  getBlockDetails(node, id) {
-    return gqlGet(node, gqlQueries.getBlockDetailsQueryInfo(id)).then(
+  getBlockDetails(id) {
+    return gqlGet(gqlQueries.getBlockDetailsQueryInfo(id)).then(
       getPath("block.header.json")
     );
   },
 
   /**
-   * @param {string} node
    * @param {number} height
    * @returns {Promise<string>}
    */
-  getBlockHashByHeight(node, height) {
-    return gqlGet(node, gqlQueries.getBlockHashQueryInfo(height)).then(
-      ({ block }) => (block ? block.header.hash : "")
+  getBlockHashByHeight(height) {
+    return gqlGet(gqlQueries.getBlockHashQueryInfo(height)).then(({ block }) =>
+      block ? block.header.hash : ""
     );
   },
 
   /**
-   * @param {string} node
    * @param {number} amount
    * @returns {Promise<Block[]>}
    */
-  getBlocks(node, amount) {
-    return gqlGet(node, gqlQueries.getBlocksQueryInfo(amount))
+  getBlocks(amount) {
+    return gqlGet(gqlQueries.getBlocksQueryInfo(amount))
       .then(getKey("blocks"))
       .then(transformBlocks);
   },
 
   /**
-   * @param {string} node
    * @param {number} amount
    * @returns {Promise<ChainInfo>}
    */
-  getLatestChainInfo(node, amount) {
-    return gqlGet(node, gqlQueries.getLatestChainQueryInfo(amount)).then(
+  getLatestChainInfo(amount) {
+    return gqlGet(gqlQueries.getLatestChainQueryInfo(amount)).then(
       ({ blocks, transactions }) => ({
         blocks: transformBlocks(blocks),
         transactions: transformTransactions(transactions),
@@ -232,71 +213,68 @@ const duskAPI = {
   },
 
   /**
-   * @param {string} node
    * @returns {Promise<{ lat: number, lon: number}[]>}
    */
-  getNodeLocations(node) {
+  getNodeLocations() {
+    const host = makeNodeUrl().host;
+    const node = host.includes("localhost") ? "nodes.dusk.network" : host; // Can we determine the localnet location?
+
     return apiGet("locations", { node }).then(getKey("data"));
   },
 
   /**
-   * @param {string} node
    * @returns {Promise<Stats>}
    */
-  getStats(node) {
+  getStats() {
     return Promise.all([
-      getProvisioners(node),
-      getLastHeight(node),
-      getLast100BlocksTxs(node),
+      getProvisioners(),
+      getLastHeight(),
+      getLast100BlocksTxs(),
     ]).then(apply(calculateStats));
   },
 
   /**
-   * @param {string} node
    * @param {string} id
    * @returns {Promise<Transaction>}
    */
-  getTransaction(node, id) {
-    return gqlGet(node, gqlQueries.getTransactionQueryInfo(id))
+  getTransaction(id) {
+    return gqlGet(gqlQueries.getTransactionQueryInfo(id))
       .then(getKey("tx"))
       .then(transformTransaction);
   },
 
   /**
-   * @param {string} node
    * @param {string} id
    * @returns {Promise<string>}
    */
-  getTransactionDetails(node, id) {
-    return gqlGet(node, gqlQueries.getTransactionDetailsQueryInfo(id)).then(
+  getTransactionDetails(id) {
+    return gqlGet(gqlQueries.getTransactionDetailsQueryInfo(id)).then(
       getPath("tx.tx.json")
     );
   },
 
   /**
-   * @param {string} node
    * @param {number} amount
    * @returns {Promise<Transaction[]>}
    */
-  getTransactions(node, amount) {
-    return gqlGet(node, gqlQueries.getTransactionsQueryInfo(amount))
+  getTransactions(amount) {
+    return gqlGet(gqlQueries.getTransactionsQueryInfo(amount))
       .then(getKey("transactions"))
       .then(transformTransactions);
   },
 
   /**
-   * @param {string} node
    * @param {string} query
    * @returns {Promise<SearchResult[]>}
    */
-  search(node, query) {
+  search(query) {
     return Promise.all(
       [
         query.length === 64
-          ? gqlGet(node, gqlQueries.searchByHashQueryInfo(query))
+          ? gqlGet(gqlQueries.searchByHashQueryInfo(query))
           : undefined,
         /^\d+$/.test(query)
-          ? gqlGet(node, gqlQueries.getBlockHashQueryInfo(+query))
+          ? gqlGet(gqlQueries.getBlockHashQueryInfo(+query))
           : undefined,
       ].filter(Boolean)
     ).then(transformSearchResult);

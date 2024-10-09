@@ -60,7 +60,7 @@ export default defineConfig(({ mode }) => {
         VITE_BLOCKS_LIST_ENTRIES: "100",
         VITE_CHAIN_INFO_ENTRIES: "15",
         VITE_MARKET_DATA_REFETCH_INTERVAL: "120000",
-        VITE_NODE_URL: "",
+        VITE_NODE_URL: "https://nodes.dusk.network",
         VITE_REFETCH_INTERVAL: "1000",
         VITE_RUSK_PATH: "",
         VITE_STATS_REFETCH_INTERVAL: "1000",
