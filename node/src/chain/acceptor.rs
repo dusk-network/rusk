@@ -36,7 +36,7 @@ use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, error, info, warn};
 
 use super::consensus::Task;
-use crate::chain::header_validation::{verify_faults, Validator};
+use crate::chain::header_validation::{verify_att, verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
     MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
