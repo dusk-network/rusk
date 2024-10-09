@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use super::*;
 use crate::ledger::{Hash, SpentTransaction, Transaction};
 
+use execution_core::transfer::RefundAddress;
+
 /// Represents events related to transactions.
 ///
 /// - `Removed(Hash)`
@@ -88,9 +90,8 @@ impl Serialize for Transaction {
                 let sender = bs58::encode(sender.to_bytes()).into_string();
                 state.serialize_field("sender", &sender)?;
 
-                let receiver = m.receiver().map(|receiver| {
-                    bs58::encode(receiver.to_bytes()).into_string()
-                });
+                let receiver =
+                    bs58::encode(m.receiver().to_bytes()).into_string();
                 state.serialize_field("receiver", &receiver)?;
 
                 state.serialize_field("value", &m.value())?;
@@ -114,18 +115,16 @@ impl Serialize for Transaction {
             fee.insert("gas_limit", tx.gas_limit().to_string());
             fee.insert("gas_price", tx.gas_price().to_string());
 
-            if let Some(stealth_address) = tx.stealth_address() {
-                fee.insert(
-                    "stealth_address",
-                    bs58::encode(stealth_address.to_bytes()).into_string(),
-                );
-            }
-            if let Some(sender) = tx.moonlight_sender() {
-                fee.insert(
-                    "sender",
-                    bs58::encode(sender.to_bytes()).into_string(),
-                );
-            }
+            let encoded_address = match tx.refund_address() {
+                RefundAddress::Phoenix(address) => {
+                    bs58::encode(address.to_bytes()).into_string()
+                }
+                RefundAddress::Moonlight(address) => {
+                    bs58::encode(address.to_bytes()).into_string()
+                }
+            };
+            fee.insert("refund_address", encoded_address);
+
             fee
         };
 

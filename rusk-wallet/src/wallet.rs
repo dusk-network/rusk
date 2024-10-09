@@ -438,24 +438,25 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let deposit = *deposit;
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
-        let sender = self.bls_pk(sender_idx)?;
+        let sender_pk = self.bls_pk(sender_idx)?;
 
-        let account = state.fetch_account(sender).await?;
+        let sender_account = state.fetch_account(sender_pk).await?;
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.
-        let nonce = account.nonce + 1;
+        let moonlight_nonce = sender_account.nonce + 1;
 
         let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
             &sender_sk,
             None,
+            sender_pk,
             *transfer_value,
             deposit,
             gas.limit,
             gas.price,
-            nonce,
+            moonlight_nonce,
             chain_id,
             exec,
         )?;
@@ -500,7 +501,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let tx = phoenix(
             &mut rng,
             &sender_sk,
-            self.phoenix_pk(sender_idx)?,
+            None,
             receiver_pk,
             inputs,
             root,
@@ -543,7 +544,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
 
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
-        let change_pk = self.phoenix_pk(sender_idx)?;
 
         let inputs = state
             .inputs(sender_idx, amt + gas.limit * gas.price)
@@ -558,7 +558,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let tx = phoenix(
             &mut rng,
             &sender_sk,
-            change_pk,
+            None,
             receiver_pk,
             inputs,
             root,
@@ -600,17 +600,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
 
         let state = self.state()?;
-        let nonce = state.fetch_account(sender_pk).await?.nonce + 1;
+        let moonlight_nonce = state.fetch_account(sender_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let tx = moonlight(
             &sender_sk,
-            Some(*rcvr),
+            None,
+            rcvr,
             amt,
             0,
             gas.limit,
             gas.price,
-            nonce,
+            moonlight_nonce,
             chain_id,
             memo,
         )?;
@@ -643,7 +644,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.derive_phoenix_sk(addr_idx);
         let mut stake_sk = self.derive_bls_sk(addr_idx);
 
-        let nonce = state
+        let stake_nonce = state
             .fetch_stake(&BlsPublicKey::from(&stake_sk))
             .await?
             .map(|s| s.nonce)
@@ -661,8 +662,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
 
         let stake = phoenix_stake(
-            &mut rng, &sender_sk, &stake_sk, inputs, root, gas.limit,
-            gas.price, chain_id, amt, nonce, &Prover,
+            &mut rng,
+            &sender_sk,
+            None,
+            &stake_sk,
+            inputs,
+            root,
+            gas.limit,
+            gas.price,
+            chain_id,
+            amt,
+            stake_nonce,
+            &Prover,
         )?;
 
         sender_sk.zeroize();
@@ -689,31 +700,31 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let state = self.state()?;
         let amt = *amt;
-        let mut stake_sk = self.derive_bls_sk(addr_idx);
-        let stake_pk = self.bls_pk(addr_idx)?;
+        let mut account_sk = self.derive_bls_sk(addr_idx);
+        let account_pk = self.bls_pk(addr_idx)?;
         let chain_id = state.fetch_chain_id().await?;
-        let moonlight_current_nonce =
-            state.fetch_account(stake_pk).await?.nonce + 1;
+        let moonlight_nonce = state.fetch_account(account_pk).await?.nonce + 1;
 
-        let nonce = state
-            .fetch_stake(stake_pk)
+        let stake_nonce = state
+            .fetch_stake(account_pk)
             .await?
             .map(|s| s.nonce)
             .unwrap_or(0)
             + 1;
 
         let stake = moonlight_stake(
-            &stake_sk,
-            &stake_sk,
+            &account_sk,
+            None,
+            &account_sk,
             amt,
             gas.limit,
             gas.price,
-            moonlight_current_nonce,
-            nonce,
+            moonlight_nonce,
+            stake_nonce,
             chain_id,
         )?;
 
-        stake_sk.zeroize();
+        account_sk.zeroize();
 
         state.prove_and_propagate(stake).await
     }
@@ -758,6 +769,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let unstake = phoenix_unstake(
             &mut rng,
             &sender_sk,
+            None,
             &stake_sk,
             inputs,
             root,
@@ -783,15 +795,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let mut stake_sk = self.derive_bls_sk(addr_idx);
+        let mut account_sk = self.derive_bls_sk(addr_idx);
 
-        let pk = self.bls_pk(addr_idx)?;
+        let account_pk = self.bls_pk(addr_idx)?;
 
         let chain_id = state.fetch_chain_id().await?;
-        let account_nonce = state.fetch_account(pk).await?.nonce + 1;
+        let moonlight_nonce = state.fetch_account(account_pk).await?.nonce + 1;
 
         let unstake_value = state
-            .fetch_stake(pk)
+            .fetch_stake(account_pk)
             .await?
             .and_then(|s| s.amount)
             .map(|s| s.total_funds())
@@ -803,16 +815,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let unstake = moonlight_unstake(
             &mut rng,
-            &stake_sk,
-            &stake_sk,
+            &account_sk,
+            None,
+            &account_sk,
             unstake_value,
             gas.price,
             gas.limit,
-            account_nonce,
+            moonlight_nonce,
             chain_id,
         )?;
 
-        stake_sk.zeroize();
+        account_sk.zeroize();
 
         state.prove_and_propagate(unstake).await
     }
@@ -843,6 +856,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let withdraw = phoenix_stake_reward(
             &mut rng,
             &sender_sk,
+            None,
             &stake_sk,
             inputs,
             root,
@@ -881,6 +895,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let convert = phoenix_to_moonlight(
             &mut rng,
             &phoenix_sk,
+            None,
             &moonlight_sk,
             inputs,
             root,
@@ -909,7 +924,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let moonlight_pk = self.bls_pk(addr_idx)?;
 
-        let nonce = state.fetch_account(moonlight_pk).await?.nonce + 1;
+        let moonlight_nonce =
+            state.fetch_account(moonlight_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let mut phoenix_sk = self.derive_phoenix_sk(addr_idx);
@@ -918,11 +934,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let convert = moonlight_to_phoenix(
             &mut rng,
             &moonlight_sk,
+            None,
             &phoenix_sk,
             *amt,
             gas.limit,
             gas.price,
-            nonce,
+            moonlight_nonce,
             chain_id,
         )?;
 
@@ -941,21 +958,28 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
 
-        let pk = self.bls_pk(sender_idx)?;
-        let nonce = state.fetch_account(pk).await?.nonce + 1;
+        let account_pk = self.bls_pk(sender_idx)?;
+        let moonlight_nonce = state.fetch_account(account_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
-        let stake_info = state.fetch_stake(pk).await?;
+        let stake_info = state.fetch_stake(account_pk).await?;
         let reward = stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
         let reward = Dusk::from(reward);
 
-        let mut sender_sk = self.derive_bls_sk(sender_idx);
+        let mut account_sk = self.derive_bls_sk(sender_idx);
 
         let withdraw = moonlight_stake_reward(
-            &mut rng, &sender_sk, &sender_sk, *reward, gas.limit, gas.price,
-            nonce, chain_id,
+            &mut rng,
+            &account_sk,
+            None,
+            &account_sk,
+            *reward,
+            gas.limit,
+            gas.price,
+            moonlight_nonce,
+            chain_id,
         )?;
 
-        sender_sk.zeroize();
+        account_sk.zeroize();
 
         state.prove_and_propagate(withdraw).await
     }
@@ -970,15 +994,23 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
 
-        let pk = self.bls_pk(sender_idx)?;
-        let nonce = state.fetch_account(pk).await?.nonce + 1;
+        let sender_pk = self.bls_pk(sender_idx)?;
+        let moonlight_nonce = state.fetch_account(sender_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
 
         let deploy = moonlight_deployment(
-            &sender_sk, bytes_code, pk, init_args, gas.limit, gas.price, nonce,
-            0, chain_id,
+            &sender_sk,
+            None,
+            bytes_code,
+            sender_pk,
+            init_args,
+            gas.limit,
+            gas.price,
+            moonlight_nonce,
+            0,
+            chain_id,
         )?;
 
         sender_sk.zeroize();
@@ -1006,7 +1038,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let owner_pk = self.bls_pk(sender_idx)?;
 
         let deploy = phoenix_deployment(
-            &mut rng, &sender_sk, inputs, root, bytes_code, owner_pk,
+            &mut rng, &sender_sk, None, inputs, root, bytes_code, owner_pk,
             init_args, 0, gas.limit, gas.price, chain_id, &Prover,
         )?;
 

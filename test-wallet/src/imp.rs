@@ -357,7 +357,7 @@ where
     ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
         let receiver_pk = self.phoenix_public_key(sender_index)?;
-        let change_pk = receiver_pk;
+        let refund_pk = receiver_pk;
 
         let input_notes_openings = self.input_notes_openings(
             &sender_sk,
@@ -375,7 +375,7 @@ where
         let tx = phoenix_transaction(
             rng,
             &sender_sk,
-            &change_pk,
+            Some(&refund_pk),
             &receiver_pk,
             input_notes_openings,
             root,
@@ -406,7 +406,7 @@ where
         gas_price: u64,
     ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
-        let change_pk = self.phoenix_public_key(sender_index)?;
+        let refund_pk = self.phoenix_public_key(sender_index)?;
 
         let input_notes_openings = self.input_notes_openings(
             &sender_sk,
@@ -426,7 +426,7 @@ where
         let tx = phoenix_transaction(
             rng,
             &sender_sk,
-            &change_pk,
+            Some(&refund_pk),
             &receiver_pk,
             input_notes_openings,
             root,
@@ -481,6 +481,7 @@ where
         let tx = phoenix_stake(
             rng,
             &phoenix_sender_sk,
+            Some(&PhoenixPublicKey::from(&phoenix_sender_sk)),
             &stake_sk,
             inputs,
             root,
@@ -538,6 +539,7 @@ where
         let tx = phoenix_unstake(
             rng,
             &phoenix_sender_sk,
+            Some(&PhoenixPublicKey::from(&phoenix_sender_sk)),
             &stake_sk,
             inputs,
             root,
@@ -588,6 +590,7 @@ where
         let tx = phoenix_stake_reward(
             rng,
             &phoenix_sender_sk,
+            Some(&PhoenixPublicKey::from(&phoenix_sender_sk)),
             &stake_sk,
             inputs,
             root,
@@ -632,6 +635,7 @@ where
         let tx = phoenix_to_moonlight(
             rng,
             &phoenix_sender_sk,
+            Some(&PhoenixPublicKey::from(&phoenix_sender_sk)),
             &moonlight_receiver_sk,
             inputs,
             root,
@@ -675,6 +679,7 @@ where
         let tx = phoenix_deployment(
             rng,
             &phoenix_sender_sk,
+            Some(&PhoenixPublicKey::from(&phoenix_sender_sk)),
             inputs,
             root,
             bytecode,
@@ -696,7 +701,7 @@ where
     pub fn moonlight_transfer(
         &self,
         sender_index: u8,
-        receiver_account: BlsPublicKey,
+        receiver_account: &BlsPublicKey,
         value: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -706,7 +711,7 @@ where
 
         self.moonlight_transaction(
             sender_index,
-            Some(receiver_account),
+            receiver_account,
             value,
             deposit,
             gas_limit,
@@ -720,7 +725,7 @@ where
     pub fn moonlight_transaction(
         &self,
         sender_index: u8,
-        receiver_account: Option<BlsPublicKey>,
+        receiver_account: &BlsPublicKey,
         value: u64,
         deposit: u64,
         gas_limit: u64,
@@ -729,26 +734,27 @@ where
     ) -> Result<Transaction, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut sender_sk = derive_bls_sk(&seed, sender_index);
-        let sender_account = BlsPublicKey::from(&sender_sk);
+        let sender_pk = BlsPublicKey::from(&sender_sk);
 
-        let account = self
+        let sender_account = self
             .state
-            .fetch_account(&sender_account)
+            .fetch_account(&sender_pk)
             .map_err(Error::from_state_err)?;
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.
         let max_value = value + deposit + gas_limit * gas_price;
-        if max_value > account.balance {
+        if max_value > sender_account.balance {
             return Err(ExecutionError::InsufficientBalance.into());
         }
-        let nonce = account.nonce + 1;
+        let nonce = sender_account.nonce + 1;
 
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
 
         let tx = MoonlightTransaction::new(
             &sender_sk,
+            Some(&sender_pk),
             receiver_account,
             value,
             deposit,
@@ -795,6 +801,7 @@ where
 
         let tx = moonlight_stake(
             &sender_sk,
+            Some(&sender_pk),
             &staker_sk,
             stake_value,
             gas_limit,
@@ -847,6 +854,7 @@ where
         let tx = moonlight_unstake(
             rng,
             &sender_sk,
+            Some(&sender_pk),
             &staker_sk,
             unstake_value,
             gas_limit,
@@ -892,6 +900,7 @@ where
         let tx = moonlight_stake_reward(
             rng,
             &sender_sk,
+            Some(&sender_pk),
             &staker_sk,
             staker_data.reward,
             gas_limit,
@@ -936,6 +945,7 @@ where
         let tx = moonlight_to_phoenix(
             rng,
             &moonlight_sender_sk,
+            Some(&moonlight_sender_pk),
             &phoenix_receiver_sk,
             convert_value,
             gas_limit,
@@ -977,6 +987,7 @@ where
 
         let tx = moonlight_deployment(
             &sender_sk,
+            Some(&sender_pk),
             bytecode,
             owner,
             init_args,

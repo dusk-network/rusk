@@ -118,11 +118,10 @@ pub(super) fn group_by_origins_filter_and_convert(
                     {
                         address_mappings
                             .push((moonlight_event.sender, tx_hash));
-                        if let Some(receiver) = moonlight_event.receiver {
-                            if moonlight_event.sender != receiver {
-                                // don't push if tx is sent to self
-                                address_mappings.push((receiver, tx_hash));
-                            }
+                        // don't push if tx is sent to self
+                        if moonlight_event.sender != moonlight_event.receiver {
+                            address_mappings
+                                .push((moonlight_event.receiver, tx_hash));
                         }
 
                         if !moonlight_event.memo.is_empty() {

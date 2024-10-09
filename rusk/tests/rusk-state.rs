@@ -274,7 +274,7 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
             wallet
                 .moonlight_transfer(
                     sender_index,
-                    receiver,
+                    &receiver,
                     TRANSFER_VALUE,
                     GAS_LIMIT,
                     LUX,
