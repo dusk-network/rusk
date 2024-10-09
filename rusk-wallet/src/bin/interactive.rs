@@ -718,6 +718,22 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
+        Command::MoonlightStake {
+            addr_idx,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Stake from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Amount to stake = {} DUSK", amt);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
         Command::PhoenixUnstake {
             addr_idx,
             gas_limit,
@@ -731,6 +747,20 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
+        Command::MoonlightUnstake {
+            addr_idx,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Unstake from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
         Command::PhoenixWithdraw {
             addr_idx,
             gas_limit,
@@ -742,6 +772,100 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
                 address_idx_string(addr_idx.unwrap_or_default())
             );
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            prompt::ask_confirm()
+        }
+        Command::MoonlightWithdraw {
+            addr_idx,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Reward from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
+        Command::PhoenixMemo {
+            sndr_idx,
+            memo,
+            rcvr,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Send from = {}",
+                address_idx_string(sndr_idx.unwrap_or_default())
+            );
+            println!("   > Recipient = {}", rcvr.preview());
+            println!("   > Amount to transfer = {} DUSK", amt);
+            println!("   > Memo = {}", memo);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            prompt::ask_confirm()
+        }
+        Command::MoonlightMemo {
+            sndr_idx,
+            memo,
+            rcvr,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Send from = {}",
+                address_idx_string(sndr_idx.unwrap_or_default())
+            );
+            println!("   > Recipient = {}", rcvr.preview());
+            println!("   > Amount to transfer = {} DUSK", amt);
+            println!("   > Memo = {}", memo);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
+        Command::PhoenixContractDeploy {
+            addr_idx,
+            code,
+            init_args,
+            gas_limit,
+            gas_price,
+        } => {
+            let code_len = code.metadata()?.len();
+            let max_fee = gas_limit * gas_price;
+
+            println!(
+                "   > Deploy from = {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Code len = {}", code_len);
+            println!("   > Init args = {}", hex::encode(init_args));
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+
+            prompt::ask_confirm()
+        }
+        Command::MoonlightContractDeploy {
+            addr_idx,
+            code,
+            init_args,
+            gas_limit,
+            gas_price,
+        } => {
+            let code_len = code.metadata()?.len();
+            let max_fee = gas_limit * gas_price;
+
+            println!(
+                "   > Deploy from = {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Code len = {}", code_len);
+            println!("   > Init args = {}", hex::encode(init_args));
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+
             prompt::ask_confirm()
         }
         _ => Ok(true),
