@@ -530,12 +530,14 @@ fn accept(
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
         let tx_id = unspent_tx.id();
+        info!(src = "vm_accept", event = "before execute");
         let receipt = execute(
             &mut session,
             tx,
             gas_per_deploy_byte,
             min_deployment_gas_price,
         )?;
+        info!(src = "vm_accept", event = "after execute");
 
         event_bloom.add_events(&receipt.events);
 
