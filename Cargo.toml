@@ -59,8 +59,8 @@ jubjub-schnorr = { version = "=0.5.0", default-features = false }
 kadcast = "0.7.0-rc.8"
 phoenix-circuits = { version = "=0.4.0", default-features = false }
 phoenix-core = { version = "=0.32.0", default-features = false }
-piecrust = { version = "=0.25.0", git = "https://github.com/dusk-network/piecrust", rev = "aa9fdd4e127a10870ec12c4f278c9e17252fa4f7" }
-piecrust-uplink = { version = "=0.17.1", git = "https://github.com/dusk-network/piecrust", rev = "aa9fdd4e127a10870ec12c4f278c9e17252fa4f7" }
+piecrust = { version = "=0.25.0", git = "https://github.com/dusk-network/piecrust", rev = "e0874cf0cbc64bdb7b575b5eea12240db1ced138" }
+piecrust-uplink = { version = "=0.17.1", git = "https://github.com/dusk-network/piecrust", rev = "e0874cf0cbc64bdb7b575b5eea12240db1ced138" }
 poseidon-merkle = "=0.7.0"
 zk-citadel = "=0.14.0"
 
