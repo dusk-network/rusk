@@ -322,7 +322,11 @@ impl Rusk {
             }
         }
 
-        self.set_current_commit(session.commit()?);
+        info!(src = "vm_accept", event = "before commit");
+        let commit = session.commit()?;
+        info!(src = "vm_accept", event = "after commit");
+        self.set_current_commit(commit);
+        info!(src = "vm_accept", event = "after set_current_commit");
 
         // Sent events to archivist
         #[cfg(feature = "archive")]
