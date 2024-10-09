@@ -35,7 +35,7 @@ use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, info, warn};
 
 use super::consensus::Task;
-use crate::chain::header_validation::{verify_faults, Validator};
+use crate::chain::header_validation::{verify_att, verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
     MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
@@ -249,7 +249,35 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     task.main_inbound.try_send(msg);
                 }
             }
-            Payload::Quorum(payload) => {
+            Payload::Quorum(qmsg) => {
+                // If Quorum is for the current round, we verify it and reroute
+                // it to Consensus
+                let tip_header = self.tip.read().await.inner().header().clone();
+                if qmsg.header.round == tip_header.height + 1 {
+                    // Verify Attestation
+                    let cur_seed = tip_header.seed;
+                    let cur_provisioners =
+                        self.provisioners_list.read().await.current().clone();
+
+                    let res = verify_att(
+                        &qmsg.att,
+                        qmsg.header.clone(),
+                        cur_seed,
+                        &cur_provisioners,
+                        None,
+                    )
+                    .await;
+
+                    if res.is_ok() {
+                        // Rebroadcast
+                        broadcast(&self.network, &msg.clone()).await;
+
+                        // Reroute to Consensus
+                        let task = self.task.read().await;
+                        task.main_inbound.try_send(msg);
+                    }
+                }
+
                 // Prevent the rebroadcast of any quorum messages if the
                 // blockchain tip has already been updated for the same round.
                 if let Vote::Valid(hash) = payload.vote() {
