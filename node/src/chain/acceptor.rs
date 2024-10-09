@@ -31,7 +31,7 @@ use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{RwLock, RwLockReadGuard};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::{verify_att, verify_faults, Validator};
@@ -273,13 +273,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         )
                         .await;
 
-                        if res.is_ok() {
-                            // Rebroadcast
-                            broadcast(&self.network, &msg.clone()).await;
+                        match res {
+                            Ok(_) => {
+                                // Rebroadcast
+                                broadcast(&self.network, &msg).await;
 
-                            // Reroute to Consensus
-                            let task = self.task.read().await;
-                            task.main_inbound.try_send(msg);
+                                // Reroute to Consensus
+                                let task = self.task.read().await;
+                                task.main_inbound.try_send(msg);
+                            }
+                            Err(err) => {
+                                error!("Attestation verification failed: {err}")
+                            }
                         }
                     }
 
@@ -303,7 +308,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                                 // If it doesn't exist, then rebroadcast the
                                 // message
                                 if !candidate_exists {
-                                    broadcast(&self.network, &msg.clone())
+                                    broadcast(&self.network, &msg)
                                         .await;
                                 }
                             } else {
@@ -314,7 +319,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     Status::Future => {
                         //INFO: we currently rebroadcast future Quorums without
                         // any check
-                        broadcast(&self.network, &msg.clone()).await;
+                        broadcast(&self.network, &msg).await;
                     }
                 }
             }
