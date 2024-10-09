@@ -47,7 +47,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
     // generate the keys
     let sender_sk = PhoenixSecretKey::random(rng);
     let sender_pk = PhoenixPublicKey::from(&sender_sk);
-    let change_pk = &sender_pk;
+    let refund_pk = &sender_pk;
 
     let receiver_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
     let value_blinder = JubJubScalar::random(&mut *rng);
@@ -114,7 +114,7 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
     Transaction::phoenix(
         rng,
         &sender_sk,
-        change_pk,
+        refund_pk,
         &receiver_pk,
         inputs,
         root,
@@ -135,7 +135,8 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     data: Option<TransactionData>,
 ) -> Transaction {
     let sender_sk = AccountSecretKey::random(rng);
-    let receiver = Some(AccountPublicKey::from(&AccountSecretKey::random(rng)));
+    let receiver_pk =
+        Some(AccountPublicKey::from(&AccountSecretKey::random(rng)));
 
     let value: u64 = rng.gen();
     let deposit: u64 = rng.gen();
@@ -144,8 +145,15 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     let nonce: u64 = rng.gen();
 
     Transaction::moonlight(
-        &sender_sk, receiver, value, deposit, gas_limit, gas_price, nonce,
-        CHAIN_ID, data,
+        &sender_sk,
+        receiver_pk,
+        value,
+        deposit,
+        gas_limit,
+        gas_price,
+        nonce,
+        CHAIN_ID,
+        data,
     )
     .expect("transaction generation should work")
 }
