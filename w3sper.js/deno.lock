@@ -1,5 +1,8 @@
 {
   "version": "3",
+  "redirects": {
+    "https://deno.land/x/esbuild/mod.js": "https://deno.land/x/esbuild@v0.24.0/mod.js"
+  },
   "remote": {
     "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js": "b3a4ef318038bb186610b894c13f417850190ed926caf5e72ae1733ef0879b6c",
     "https://deno.land/std@0.136.0/_util/assert.ts": "e94f2eb37cebd7f199952e242c77654e43333c1ac4c5c700e929ea3aa5489f74",
@@ -40,6 +43,10 @@
     "https://deno.land/std@0.210.0/assert/unimplemented.ts": "4e3e504792c87c485dbc5f4020489d8806ef697741403af2008dfa7b5a4711e8",
     "https://deno.land/std@0.210.0/assert/unreachable.ts": "1af8c99421cc5fb7332454b2b9eca074a4e394895a180bc837750dedcca75338",
     "https://deno.land/std@0.210.0/fmt/colors.ts": "2685c524bef9b16b3059a417daf6860c754eb755e19e812762ef5dff62f24481",
+    "https://deno.land/x/denoflate@1.2.1/mod.ts": "f5628e44b80b3d80ed525afa2ba0f12408e3849db817d47a883b801f9ce69dd6",
+    "https://deno.land/x/denoflate@1.2.1/pkg/denoflate.js": "b9f9ad9457d3f12f28b1fb35c555f57443427f74decb403113d67364e4f2caf4",
+    "https://deno.land/x/denoflate@1.2.1/pkg/denoflate_bg.wasm.js": "d581956245407a2115a3d7e8d85a9641c032940a8e810acbd59ca86afd34d44d",
+    "https://deno.land/x/esbuild@v0.24.0/mod.js": "15b51f08198c373555700a695b6c6630a86f2c254938e81be7711eb6d4edc74e",
     "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/mod.js": "ce6fcb436bf24ed79bf187ccac9ea6f59ee824afa6c90b2df45af47be52d78b6",
     "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/proxies.js": "a38eeb3735a4fc1e4be1f57837e87f8c28398efb89c62e067cdbb0e196d7e4ea",
     "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/sandbox/mod.js": "a7afe21ef1bf1ef9f69878eea25998eabb412726bd0077ba473a633085ac064a",
