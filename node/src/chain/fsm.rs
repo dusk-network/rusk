@@ -372,9 +372,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 // network.
                 self.flood_request_block(candidate, attestation).await;
             }
+        } else {
+            error!("Invalid Quorum message");
         }
-
-        error!("Invalid Quorum message");
     }
 
     pub(crate) async fn on_heartbeat_event(&mut self) -> anyhow::Result<()> {
