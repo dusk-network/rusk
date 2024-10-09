@@ -559,6 +559,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Store block with updated transactions with Error and GasSpent
                 block_size_on_disk =
                     db.store_block(header, &txs, blk.faults(), label)?;
+                info!(src = "try_accept", event = "after store_block",);
 
                 Ok((txs, rolling_results))
             })?;
@@ -569,6 +570,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 tip.inner().header().seed,
                 header.height,
             );
+            info!(src = "try_accept", event = "after log_missing",);
 
             for slashed in Slash::from_block(blk)? {
                 info!(
@@ -579,9 +581,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
                 slashed_count += 1;
             }
+            info!(src = "try_accept", event = "after slash",);
 
             let selective_update =
                 Self::selective_update(blk, &txs, &vm, &mut provisioners_list);
+            info!(src = "try_accept", event = "after selective_update",);
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
@@ -604,6 +608,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .chain([prev_final_state])
                     .collect::<Vec<_>>();
                 vm.finalize_state(new_final_state, old_finals_to_merge)?;
+
+                info!(src = "try_accept", event = "after finalize",);
             }
 
             anyhow::Ok((label, finalized))
@@ -621,6 +627,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             block_size_on_disk,
             slashed_count,
         );
+        info!(src = "try_accept", event = "after metrics",);
 
         // Clean up the database
         let count = self
@@ -634,12 +641,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .header()
                     .height
                     .saturating_sub(CANDIDATES_DELETION_OFFSET);
-
+                info!(src = "try_accept", event = "before candidate clean",);
                 Candidate::delete(t, |height| height <= threshold)?;
+                info!(src = "try_accept", event = "after candidate clean",);
 
                 // Delete from mempool any transaction already included in the
                 // block
                 for tx in tip.inner().txs().iter() {
+                    info!(
+                        src = "try_accept",
+                        event = "before delete tx mempool",
+                    );
                     let tx_id = tx.id();
                     for deleted in Mempool::delete_tx(t, tx_id, false)
                         .map_err(|e| warn!("Error while deleting tx: {e}"))
@@ -647,8 +659,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     {
                         events.push(TransactionEvent::Removed(deleted).into());
                     }
+                    info!(
+                        src = "try_accept",
+                        event = "after delete tx mempool",
+                    );
 
                     let spend_ids = tx.to_spend_ids();
+                    info!(src = "try_accept", event = "before orphan tx",);
                     for orphan_tx in t.get_txs_by_spendable_ids(&spend_ids) {
                         for deleted_tx in
                             Mempool::delete_tx(t, orphan_tx, false)
@@ -662,10 +679,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             );
                         }
                     }
+                    info!(src = "try_accept", event = "after orphan tx",);
                 }
                 Ok(Candidate::count(t))
             })
             .map_err(|e| warn!("Error while cleaning up the database: {e}"));
+
+        info!(src = "try_accept", event = "after db clean",);
 
         gauge!("dusk_stored_candidates_count")
             .set(count.unwrap_or_default() as f64);
@@ -677,6 +697,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             f.remove_msgs_out_of_range(round + 1, OFFSET_FUTURE_MSGS);
             histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
         }
+        info!(src = "try_accept", event = "after candidate clean (memory)",);
 
         let fsv_bitset = tip.inner().header().att.validation.bitset;
         let ssv_bitset = tip.inner().header().att.ratification.bitset;
