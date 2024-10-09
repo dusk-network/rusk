@@ -498,6 +498,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         blk: &Block,
         enable_consensus: bool,
     ) -> anyhow::Result<bool> {
+        info!(src = "try_accept", event = "init");
         let mut events = vec![];
         let mut task = self.task.write().await;
 
@@ -516,9 +517,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         )
         .await?;
 
+        let header_verification_elapsed = header_verification_start.elapsed();
+        info!(
+            src = "try_accept",
+            event = "header verified",
+            dur = header_verification_elapsed.as_millis()
+        );
         // Elapsed time header verification
         histogram!("dusk_block_header_elapsed")
-            .record(header_verification_start.elapsed());
+            .record(header_verification_elapsed);
 
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
@@ -528,12 +535,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let (label, finalized) = {
             let header = blk.header();
             verify_faults(self.db.clone(), header.height, blk.faults()).await?;
-
+            info!(src = "try_accept", event = "faults verified",);
             let vm = self.vm.write().await;
 
             let (txs, rolling_result) = self.db.read().await.update(|db| {
+                info!(src = "try_accept", event = "before accept",);
                 let (txs, verification_output) =
                     vm.accept(blk, &prev_block_voters[..])?;
+                info!(src = "try_accept", event = "after accept",);
                 for spent_tx in txs.iter() {
                     events.push(TransactionEvent::Executed(spent_tx).into());
                 }
@@ -541,9 +550,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_bloom, verification_output.event_bloom);
-
+                info!(src = "try_accept", event = "before rolling",);
                 let rolling_results =
                     self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
+                info!(src = "try_accept", event = "after rolling",);
 
                 let label = rolling_results.0;
                 // Store block with updated transactions with Error and GasSpent

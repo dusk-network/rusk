@@ -512,6 +512,7 @@ fn accept(
     Session,
     Vec<ContractTxEvent>,
 )> {
+    info!(src = "vm_accept", event = "init");
     let mut session = session;
 
     let mut block_gas_left = block_gas_limit;
@@ -560,7 +561,7 @@ fn accept(
             err: receipt.data.err().map(|e| format!("{e}")),
         });
     }
-
+    info!(src = "vm_accept", event = "before reward");
     let coinbase_events = reward_slash_and_update_root(
         &mut session,
         block_height,
@@ -569,6 +570,7 @@ fn accept(
         slashing,
         voters,
     )?;
+    info!(src = "vm_accept", event = "after reward");
 
     event_bloom.add_events(&coinbase_events);
 
@@ -581,7 +583,9 @@ fn accept(
         .collect();
     events.extend(coinbase_events);
 
+    info!(src = "vm_accept", event = "before calculating root");
     let state_root = session.root();
+    info!(src = "vm_accept", event = "after calculating root");
 
     Ok((
         spent_txs,
