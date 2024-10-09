@@ -18,8 +18,7 @@ use node_data::events::{
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
-use node_data::message::AsyncQueue;
-use node_data::message::Payload;
+use node_data::message::{AsyncQueue, Payload, Status};
 
 use core::panic;
 use dusk_consensus::operations::Voter;
@@ -250,43 +249,73 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
             }
             Payload::Quorum(qmsg) => {
-                // If Quorum is for the current round, we verify it and reroute
-                // it to Consensus
                 let tip_header = self.tip.read().await.inner().header().clone();
-                if qmsg.header.round == tip_header.height + 1 {
-                    // Verify Attestation
-                    let cur_seed = tip_header.seed;
-                    let cur_provisioners =
-                        self.provisioners_list.read().await.current().clone();
 
-                    let res = verify_att(
-                        &qmsg.att,
-                        qmsg.header.clone(),
-                        cur_seed,
-                        &cur_provisioners,
-                        None,
-                    )
-                    .await;
+                match msg.header.compare_round(tip_header.height + 1) {
+                    // If Quorum is for the current round, we verify it,
+                    // rebroadcast it, and reroute it to Consensus
+                    Status::Present => {
+                        // Verify Attestation
+                        let cur_seed = tip_header.seed;
+                        let cur_provisioners = self
+                            .provisioners_list
+                            .read()
+                            .await
+                            .current()
+                            .clone();
 
-                    if res.is_ok() {
-                        // Rebroadcast
+                        let res = verify_att(
+                            &qmsg.att,
+                            qmsg.header.clone(),
+                            cur_seed,
+                            &cur_provisioners,
+                            None,
+                        )
+                        .await;
+
+                        if res.is_ok() {
+                            // Rebroadcast
+                            broadcast(&self.network, &msg.clone()).await;
+
+                            // Reroute to Consensus
+                            let task = self.task.read().await;
+                            task.main_inbound.try_send(msg);
+                        }
+                    }
+
+                    // If Quorum is for a past round, we only rebroadcast it if
+                    // it's Valid and for a different candidate than what we
+                    // accepted.
+                    //
+                    // The rationale is that:
+                    //  - Fail Quorums have no influence on past rounds
+                    //  - Valid Quorums for accepted candidates have been
+                    //    already broadcast by us
+                    Status::Past => {
+                        if let Vote::Valid(candidate) = qmsg.vote() {
+                            // Check if the candidate is in our chain
+                            if let Ok(candidate_exists) = self
+                                .db
+                                .read()
+                                .await
+                                .view(|t| t.get_block_exists(candidate))
+                            {
+                                // If it doesn't exist, then rebroadcast the
+                                // message
+                                if !candidate_exists {
+                                    broadcast(&self.network, &msg.clone())
+                                        .await;
+                                }
+                            } else {
+                                warn!("Could not check candidate in DB. Skipping Quorum rebroadcast");
+                            };
+                        }
+                    }
+                    Status::Future => {
+                        //INFO: we currently rebroadcast future Quorums without
+                        // any check
                         broadcast(&self.network, &msg.clone()).await;
-
-                        // Reroute to Consensus
-                        let task = self.task.read().await;
-                        task.main_inbound.try_send(msg);
                     }
-                }
-
-                // Prevent the rebroadcast of any quorum messages if the
-                // blockchain tip has already been updated for the same round.
-                if let Vote::Valid(hash) = payload.vote() {
-                    if *hash != self.get_curr_hash().await {
-                        broadcast(&self.network, &msg).await;
-                    }
-                } else {
-                    let task = self.task.read().await;
-                    task.main_inbound.try_send(msg);
                 }
             }
             _ => warn!("invalid inbound message"),
@@ -975,10 +1004,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Returns chain tip header
     pub(crate) async fn tip_header(&self) -> ledger::Header {
         self.tip.read().await.inner().header().clone()
-    }
-
-    pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
-        self.tip.read().await.inner().header().hash
     }
 
     pub(crate) async fn get_last_final_block(&self) -> Result<Block> {
