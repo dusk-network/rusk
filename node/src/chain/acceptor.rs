@@ -18,8 +18,7 @@ use node_data::events::{
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
-use node_data::message::AsyncQueue;
-use node_data::message::Payload;
+use node_data::message::{AsyncQueue, Payload, Status};
 
 use core::panic;
 use dusk_consensus::operations::Voter;
@@ -1065,10 +1064,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Returns chain tip header
     pub(crate) async fn tip_header(&self) -> ledger::Header {
         self.tip.read().await.inner().header().clone()
-    }
-
-    pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
-        self.tip.read().await.inner().header().hash
     }
 
     pub(crate) async fn get_last_final_block(&self) -> Result<Block> {
