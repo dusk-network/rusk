@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use super::*;
 use crate::ledger::{Hash, SpentTransaction, Transaction};
 
+use execution_core::transfer::RefundAddress;
+
 /// Represents events related to transactions.
 ///
 /// - `Removed(Hash)`
@@ -114,18 +116,22 @@ impl Serialize for Transaction {
             fee.insert("gas_limit", tx.gas_limit().to_string());
             fee.insert("gas_price", tx.gas_price().to_string());
 
-            if let Some(stealth_address) = tx.stealth_address() {
+            let encoded_address = match tx.refund_address() {
+                RefundAddress::Phoenix(address) => {
+                    bs58::encode(address.to_bytes()).into_string()
+                }
+                RefundAddress::Moonlight(address) => {
+                    bs58::encode(address.to_bytes()).into_string()
+                }
+            };
+            fee.insert("refund_address", encoded_address);
+            if let ProtocolTransaction::Phoenix(tx) = tx {
                 fee.insert(
-                    "stealth_address",
-                    bs58::encode(stealth_address.to_bytes()).into_string(),
+                    "phoenix sender",
+                    hex::encode(tx.sender().to_bytes()),
                 );
             }
-            if let Some(sender) = tx.moonlight_sender() {
-                fee.insert(
-                    "sender",
-                    bs58::encode(sender.to_bytes()).into_string(),
-                );
-            }
+
             fee
         };
 
