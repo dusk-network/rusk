@@ -53,6 +53,8 @@ tracing-subscriber = { workspace = true, features = [
     "json",
 ] }
 
+fastwebsockets = "0.8.0"
+
 rkyv = { workspace = true }
 
 konst = { workspace = true }
