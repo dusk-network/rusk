@@ -261,15 +261,18 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     if let Payload::Quorum(qmsg) = msg.clone().payload {
                         // If this message was produced by Consensus, let's
                         // broadcast it
-                        if msg.is_local() {
-                            info!(
-                                event = "Quorum produced",
-                                round = qmsg.header.round,
-                                iter = qmsg.header.iteration
-                            );
-
+                        let is_local = msg.is_local();
+                        if is_local {
                             sender.send_quorum(msg).await;
                         }
+
+                        debug!(
+                            event = "New Quorum",
+                            round = qmsg.header.round,
+                            iter = qmsg.header.iteration,
+                            vote = ?qmsg.vote(),
+                            is_local
+                        );
 
                         match qmsg.att.result {
                             // With a Success Quorum we terminate the round.
@@ -277,13 +280,24 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                             // INFO: the acceptance of the block is handled by
                             // Chain.
                             RatificationResult::Success(_) => {
-                                info!("Succes Quorum at iteration {iter}. Terminating the round." );
+                                info!(
+                                    event = "Success Quorum. Terminating round",
+                                    round = ru.round,
+                                    iter,
+                                );
+
                                 break 'round;
                             }
 
                             // With a Fail Quorum, we move to the next iteration
                             RatificationResult::Fail(_) => {
-                                info!("Fail Quorum at iteration {iter}. Terminating the iteration." );
+                                info!(
+                                    event =
+                                        "Fail Quorum. Terminating iteration",
+                                    round = ru.round,
+                                    iter,
+                                );
+
                                 break;
                             }
                         }
