@@ -231,7 +231,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             if qround != round || qprev != prev || qiter > iter
                             {
                                 warn!(
-                                  event = "Skipping Quorum for different iteration",
+                                  event = "Skipping Quorum for different round/iteration",
                                   round = qround,
                                   iter = qiter,
                                   vote = ?qmsg.vote(),
@@ -256,6 +256,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                     Vote::NoCandidate | Vote::Invalid(_) => {
                                         // Store Fail Attestation, if not in
                                         // the registry
+                                        // FIXME: get_fail_att doesn't work is first Att is self-produced
                                         match self
                                             .sv_registry
                                             .lock()
