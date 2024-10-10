@@ -19,6 +19,7 @@ use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
 use node_data::message::{AsyncQueue, Payload, Status};
+use tracing::field::debug;
 
 use core::panic;
 use dusk_consensus::operations::Voter;
@@ -330,11 +331,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                         match res {
                             Ok(_) => {
-                                // Rebroadcast
-                                debug!("Rebroadcast Quorum for current round");
-                                broadcast(&self.network, &msg).await;
-
                                 // Reroute to Consensus
+                                //
+                                // INFO: rebroadcast of current-round Quorums is
+                                // delegated to Consensus. We do this to allow
+                                // iteration-based logic
+                                debug!("rerouting Quorum to Consensus");
                                 let task = self.task.read().await;
                                 task.main_inbound.try_send(msg);
                             }
