@@ -153,7 +153,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             match time::timeout_at(deadline, inbound.recv()).await {
                 // Inbound message event
                 Ok(Ok(msg)) => {
-                    match msg.payload.clone() {
+                    match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
                         | Payload::Ratification(_) => {
@@ -163,103 +163,141 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 .process_inbound_msg(phase.clone(), msg)
                                 .await
                             {
-                                if open_consensus_mode {
-                                    info!(
-                                        mode = "open_consensus",
-                                        event = "step completed",
-                                        topic = ?step_result.topic()
-                                    );
+                                info!(
+                                    event = "step completed",
+                                    result = ?step_result.topic()
+                                );
 
-                                    if let Payload::Quorum(qmsg) =
-                                        &step_result.payload
-                                    {
-                                        match qmsg.att.result {
-                                            RatificationResult::Success(_) => {
-                                                // With a Success Quorum we can
-                                                // stop the open consensus mode
-                                                // and terminate the round
-                                                //
-                                                // INFO: by returning here, we
-                                                // let the Consensus task
-                                                // broadcast the message
-                                                return Ok(step_result);
-                                            }
-                                            RatificationResult::Fail(vote) => {
-                                                info!(
-                                                    mode = "open_consensus",
-                                                    event =
-                                                        "ignoring Fail Quorum",
-                                                    ?vote
-                                                );
-                                            }
-                                        }
-                                    }
-
-                                    // In open consensus mode, the step is only
-                                    // terminated in case of Success Quorum.
-                                    // The acceptor will cancel the consensus if
-                                    // a block is accepted
-                                    continue;
-                                } else {
+                                // In the normal case, we just return the result
+                                // to Consensus
+                                if !open_consensus_mode {
                                     self.report_elapsed_time().await;
                                     return Ok(step_result);
                                 }
+
+                                // In Open Consensus, we only return if a Quorum
+                                // is produced. Otherwise, we keep running
+                                if let Payload::Quorum(qmsg) =
+                                    &step_result.payload
+                                {
+                                    match qmsg.att.result {
+                                        RatificationResult::Success(vote) => {
+                                            // With a Success Quorum we can stop
+                                            // the open consensus mode and
+                                            // terminate the round
+                                            //
+                                            // INFO: by returning here, we let
+                                            // the Consensus task broadcast the
+                                            // message
+                                            info!(
+                                                mode = "open_consensus",
+                                                event =
+                                                    "Success Quorum produced",
+                                                ?vote
+                                            );
+
+                                            return Ok(step_result);
+                                        }
+                                        RatificationResult::Fail(vote) => {
+                                            warn!(
+                                                mode = "open_consensus",
+                                                event = "Ignoring Fail Quorum",
+                                                ?vote
+                                            );
+                                        }
+                                    }
+                                }
+
+                                // In open consensus mode, the step is only
+                                // terminated in case of Success Quorum.
+                                // The acceptor will cancel the consensus if
+                                // a block is accepted
+                                continue;
                             }
                         }
 
                         // Handle Quorum messages from the network
-                        Payload::Quorum(qmsg) => {
-                            // We only handle messages for the current round
-                            // and branch, and iteration <= current_iteration
-                            let cur_round = self.round_update.round;
-                            let cur_prev = self.round_update.hash();
-                            let cur_iter = self.iteration;
-                            if qmsg.header.round == cur_round
-                                && qmsg.header.prev_block_hash == cur_prev
-                                && qmsg.header.iteration <= cur_iter
-                            {
-                                // TODO: verify Quorum
+                        Payload::Quorum(ref qmsg) => {
+                            let round = self.round_update.round;
+                            let prev = self.round_update.hash();
+                            let iter = self.iteration;
 
-                                let qiter = qmsg.header.iteration;
-                                let att = qmsg.att;
+                            let qround = qmsg.header.round;
+                            let qiter = qmsg.header.iteration;
+                            let qprev = qmsg.header.prev_block_hash;
+
+                            // We only handle messages for the current round and
+                            // branch, and iteration <= current_iteration
+                            if qround != round || qprev != prev || qiter > iter
+                            {
+                                warn!(
+                                  event = "Skipping Quorum for different iteration",
+                                  round = qround,
+                                  iter = qiter,
+                                  vote = ?qmsg.vote(),
+                                );
+                                continue;
+                            }
+
+                            let att = qmsg.att;
+
+                            if let RatificationResult::Fail(vote) = att.result {
+                                // In Open Consensus, we ignore Fail Quorums
+                                if open_consensus_mode {
+                                    continue;
+                                }
 
                                 // Store Fail Attestations in the Registry.
                                 //
                                 // INFO: We do it here so we can store
                                 // past-iteration Attestations without
                                 // interrupting the step execution
-                                if let RatificationResult::Fail(vote) =
-                                    att.result
-                                {
-                                    match vote {
-                                        Vote::NoCandidate
-                                        | Vote::Invalid(_) => {
-                                            let generator = self
-                                                .iter_ctx
-                                                .get_generator(qiter);
+                                match vote {
+                                    Vote::NoCandidate | Vote::Invalid(_) => {
+                                        // Store Fail Attestation, if not in
+                                        // the registry
+                                        match self
+                                            .sv_registry
+                                            .lock()
+                                            .await
+                                            .get_fail_att(qiter)
+                                        {
+                                            None => {
+                                                debug!(
+                                                  event = "Storing Fail Attestation",
+                                                  round = qround,
+                                                  iter = qiter,
+                                                  vote = ?qmsg.vote(),
+                                                );
 
-                                            // INFO: this potentially overwrites
-                                            // existing Attestations
-                                            self.sv_registry
-                                              .lock()
-                                              .await
-                                              .set_attestation(
-                                                qiter,
-                                                att,
-                                                &generator.expect("There must be a valid generator")
-                                              );
+                                                let generator = self
+                                                    .iter_ctx
+                                                    .get_generator(qiter);
+
+                                                self.sv_registry
+                                                        .lock()
+                                                        .await
+                                                        .set_attestation(
+                                                          qiter,
+                                                          att,
+                                                          &generator.expect("There must be a valid generator")
+                                                        );
+                                            }
+                                            Some(_) => {
+                                                warn!("Skipping known Fail Attestation");
+                                            }
                                         }
-                                        _ => {}
                                     }
+                                    _ => {}
                                 }
+                            }
 
-                                // If we receive a Quorum message for the
-                                // current iteration, we terminate the step and
-                                // pass the message to the Consensus task to
-                                // terminate the iteration.
-                                if qiter == cur_iter {
-                                    return Ok(msg);
-                                }
+                            // If we receive a Quorum message for the
+                            // current iteration, we terminate the step and
+                            // pass the message to the Consensus task to
+                            // terminate the iteration.
+                            if qiter == iter {
+                                return Ok(msg);
                             }
                         }
                         _ => {
