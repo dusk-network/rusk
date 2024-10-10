@@ -247,13 +247,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             _=> {},
         }
 
-        let cache_dir = {
-            if let Some(file) = &self.file {
-                file.path().cache_dir()
-            } else {
-                return Err(Error::WalletFileMissing);
-            }
-        };
+        let cache_dir = self.db_path()?;
 
         // create a state client
         self.state = Some(State::new(
@@ -383,6 +377,19 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub(crate) fn derive_phoenix_vk(&self, index: u8) -> PhoenixViewKey {
         let seed = self.store.get_seed();
         derive_phoenix_vk(seed, index)
+    }
+
+    /// get cache database path
+    pub(crate) fn db_path(&self) -> Result<PathBuf, Error> {
+        let cache_dir = {
+            if let Some(file) = &self.file {
+                file.path().cache_dir()
+            } else {
+                return Err(Error::WalletFileMissing);
+            }
+        };
+
+        Ok(cache_dir)
     }
 
     /// Returns the Phoenix public-key for a given index.
@@ -1110,6 +1117,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let network_last_pos = state.fetch_num_notes().await? - 1;
 
         Ok(network_last_pos == db_pos)
+    }
+
+    /// Erase the cache directory
+    pub fn delete_cache(&mut self) -> Result<(), Error> {
+        let path = self.db_path()?;
+
+        std::fs::remove_dir_all(path).map_err(Error::IO)
     }
 
     /// Close the wallet and zeroize the seed
