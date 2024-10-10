@@ -3,6 +3,7 @@
   flex-direction: row;
   padding: 1.25rem 0;
   font-size: 0.875rem;
+  gap: 1rem;
   justify-content: space-between;
 }
 
