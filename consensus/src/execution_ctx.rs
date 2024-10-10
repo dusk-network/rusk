@@ -256,7 +256,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                     Vote::NoCandidate | Vote::Invalid(_) => {
                                         // Store Fail Attestation, if not in
                                         // the registry
-                                        // FIXME: get_fail_att doesn't work is first Att is self-produced
+                                        // FIXME: get_fail_att doesn't work is
+                                        // first Att is self-produced
                                         match self
                                             .sv_registry
                                             .lock()
