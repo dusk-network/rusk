@@ -19,7 +19,6 @@ use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
 };
 use node_data::message::{AsyncQueue, Payload, Status};
-use tracing::field::debug;
 
 use core::panic;
 use dusk_consensus::operations::Voter;
