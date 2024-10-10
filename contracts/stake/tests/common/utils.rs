@@ -145,7 +145,7 @@ pub fn create_transaction<const I: usize>(
     rng: &mut StdRng,
     session: &mut Session,
     sender_sk: &PhoenixSecretKey,
-    change_pk: &PhoenixPublicKey,
+    refund_pk: &PhoenixPublicKey,
     receiver_pk: &PhoenixPublicKey,
     gas_limit: u64,
     gas_price: u64,
@@ -187,7 +187,7 @@ pub fn create_transaction<const I: usize>(
     PhoenixTransaction::new(
         rng,
         sender_sk,
-        change_pk,
+        refund_pk,
         receiver_pk,
         inputs,
         root,

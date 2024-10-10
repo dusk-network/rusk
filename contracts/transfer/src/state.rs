@@ -565,7 +565,7 @@ impl TransferState {
         // TODO: this is expensive, maybe we should address the fact that
         //       `AccountPublicKey` doesn't `impl Ord` so we can just use it
         //       directly as a key in the `BTreeMap`
-        let from_bytes = moonlight_tx.sender().to_raw_bytes();
+        let sender_bytes = moonlight_tx.sender().to_raw_bytes();
 
         // the total value carried by a transaction is the sum of the value, the
         // deposit, and gas_limit * gas_price.
@@ -573,7 +573,7 @@ impl TransferState {
             + moonlight_tx.deposit()
             + moonlight_tx.gas_limit() * moonlight_tx.gas_price();
 
-        match self.accounts.get_mut(&from_bytes) {
+        match self.accounts.get_mut(&sender_bytes) {
             Some(account) => {
                 if total_value > account.balance {
                     panic!("Account doesn't have enough funds");
@@ -597,17 +597,16 @@ impl TransferState {
             None => panic!("Account has no funds"),
         }
 
-        // if there is a value carried by the transaction but no key specified
-        // in the `receiver` field, we just give the value back to `sender`.
+        // add the value to the receiver account
         if moonlight_tx.value() > 0 {
-            let key = match moonlight_tx.receiver() {
-                Some(to) => to.to_raw_bytes(),
-                None => from_bytes,
-            };
-
-            // if the key has no entry, we simply instantiate a new one with a
-            // zero nonce and balance.
-            let account = self.accounts.entry(key).or_insert(EMPTY_ACCOUNT);
+            // if the receiver has no entry, we simply instantiate a new one
+            // with a zero nonce and balance.
+            let receiver_bytes =
+                moonlight_tx.receiver().map(|rcvr| rcvr.to_raw_bytes());
+            let account = self
+                .accounts
+                .entry(receiver_bytes.unwrap_or(sender_bytes))
+                .or_insert(EMPTY_ACCOUNT);
             account.balance += moonlight_tx.value();
         }
     }
@@ -633,16 +632,15 @@ impl TransferState {
             memo = m.to_vec();
         }
 
-        // in phoenix, a refund note is with the unspent amount to the stealth
-        // address in the `Fee` structure, while in moonlight we simply refund
-        // the `sender` account for what it didn't spend
+        // the unspent gas is refunded to the refund-address specified in the
+        // fee for both phoenix and moonlight transactions.
         //
-        // any eventual deposit that failed to be "picked up" is refunded in the
-        // same way - in phoenix the same note is reused, in moonlight the
-        // 'key's balance gets increased.
+        // any eventual deposit that failed to be "picked up" is also refunded
+        // in the same way - in phoenix the same note is reused, in
+        // moonlight the refund-address' balance gets increased.
         match ongoing.tx {
             Transaction::Phoenix(tx) => {
-                let mut notes = ongoing.notes;
+                let notes = ongoing.notes;
 
                 let remainder_note =
                     tx.fee().gen_remainder_note(gas_spent, deposit);
@@ -651,10 +649,11 @@ impl TransferState {
                     .value(None)
                     .expect("Should always succeed for a transparent note");
 
-                if remainder_value > 0 {
-                    let note = self.push_note_current_height(remainder_note);
-                    notes.push(note);
-                }
+                let refund_info = if remainder_value > 0 {
+                    Some(self.push_note_current_height(remainder_note))
+                } else {
+                    None
+                };
 
                 rusk_abi::emit(
                     PHOENIX_TOPIC,
@@ -663,21 +662,28 @@ impl TransferState {
                         notes,
                         memo,
                         gas_spent,
+                        refund_info,
                     },
                 );
             }
             Transaction::Moonlight(tx) => {
-                let from_bytes = tx.sender().to_raw_bytes();
-
                 let remaining_gas = tx.gas_limit() - gas_spent;
-                let remaining = remaining_gas * tx.gas_price()
+                let refund = remaining_gas * tx.gas_price()
                     + deposit.unwrap_or_default();
 
-                let account = self.accounts.get_mut(&from_bytes).expect(
-                    "The account that just transacted must have an entry",
-                );
+                let refund_account = self
+                    .accounts
+                    .entry(tx.refund_address().to_raw_bytes())
+                    .or_insert(EMPTY_ACCOUNT);
 
-                account.balance += remaining;
+                refund_account.balance += refund;
+
+                let refund_info =
+                    if refund > 0 && tx.refund_address() != tx.sender() {
+                        Some((*tx.refund_address(), refund))
+                    } else {
+                        None
+                    };
 
                 rusk_abi::emit(
                     MOONLIGHT_TOPIC,
@@ -687,6 +693,7 @@ impl TransferState {
                         value: tx.value(),
                         memo,
                         gas_spent,
+                        refund_info,
                     },
                 );
             }

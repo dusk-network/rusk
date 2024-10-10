@@ -543,7 +543,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
 
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
-        let change_pk = self.phoenix_pk(sender_idx)?;
+        let refund_pk = self.phoenix_pk(sender_idx)?;
 
         let inputs = state
             .inputs(sender_idx, amt + gas.limit * gas.price)
@@ -558,7 +558,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let tx = phoenix(
             &mut rng,
             &sender_sk,
-            change_pk,
+            refund_pk,
             receiver_pk,
             inputs,
             root,

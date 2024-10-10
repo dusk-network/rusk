@@ -61,16 +61,58 @@ impl Transaction {
         chain_id: u8,
         data: Option<impl Into<TransactionData>>,
     ) -> Result<Self, Error> {
-        let data = data.map(Into::into);
+        let refund_address = AccountPublicKey::from(sender_sk);
 
-        let payload = Payload {
-            chain_id,
-            sender: AccountPublicKey::from(sender_sk),
+        Self::new_with_refund(
+            sender_sk,
+            &refund_address,
             receiver,
             value,
             deposit,
             gas_limit,
             gas_price,
+            nonce,
+            chain_id,
+            data,
+        )
+    }
+
+    /// Create a new transaction with a specified refund-address for the gas
+    /// refund.
+    ///
+    /// # Errors
+    /// The creation of a transaction is not possible and will error if:
+    /// - the memo, if given, is too large
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_refund(
+        sender_sk: &AccountSecretKey,
+        refund_pk: &AccountPublicKey,
+        receiver: Option<AccountPublicKey>,
+        value: u64,
+        deposit: u64,
+        gas_limit: u64,
+        gas_price: u64,
+        nonce: u64,
+        chain_id: u8,
+        data: Option<impl Into<TransactionData>>,
+    ) -> Result<Self, Error> {
+        let data = data.map(Into::into);
+        let sender = AccountPublicKey::from(sender_sk);
+        let receiver = receiver.unwrap_or(sender);
+
+        let fee = Fee {
+            gas_limit,
+            gas_price,
+            refund_address: *refund_pk,
+        };
+
+        let payload = Payload {
+            chain_id,
+            sender,
+            receiver,
+            value,
+            deposit,
+            fee,
             nonce,
             data,
         };
@@ -116,10 +158,21 @@ impl Transaction {
         &self.payload.sender
     }
 
-    /// Return the receiver of the transaction, if it exists.
+    /// Return the address to send the transaction refund to.
+    #[must_use]
+    pub fn refund_address(&self) -> &AccountPublicKey {
+        &self.payload.fee.refund_address
+    }
+
+    /// Return the receiver of the transaction if it's different from the
+    /// sender.
     #[must_use]
     pub fn receiver(&self) -> Option<&AccountPublicKey> {
-        self.payload.receiver.as_ref()
+        if self.payload.sender == self.payload.receiver {
+            None
+        } else {
+            Some(&self.payload.receiver)
+        }
     }
 
     /// Return the value transferred in the transaction.
@@ -137,13 +190,13 @@ impl Transaction {
     /// Returns the gas limit of the transaction.
     #[must_use]
     pub fn gas_limit(&self) -> u64 {
-        self.payload.gas_limit
+        self.payload.fee.gas_limit
     }
 
     /// Returns the gas price of the transaction.
     #[must_use]
     pub fn gas_price(&self) -> u64 {
-        self.payload.gas_price
+        self.payload.fee.gas_price
     }
 
     /// Returns the nonce of the transaction.
@@ -290,18 +343,16 @@ pub struct Payload {
     /// Key of the sender of this transaction.
     pub sender: AccountPublicKey,
     /// Key of the receiver of the funds.
-    pub receiver: Option<AccountPublicKey>,
+    pub receiver: AccountPublicKey,
     /// Value to be transferred.
     pub value: u64,
     /// Deposit for a contract.
     pub deposit: u64,
-    /// Limit on the gas to be spent.
-    pub gas_limit: u64,
-    /// Price for each unit of gas.
-    pub gas_price: u64,
-    /// Nonce used for replay protection. Nonces are strictly increasing and
-    /// incremental, meaning that for a transaction to be valid, only the
-    /// current nonce + 1 can be used.
+    /// Data used to calculate the transaction fee and refund unspent gas.
+    pub fee: Fee,
+    /// Nonce used for replay protection. Moonlight nonces are strictly
+    /// increasing and incremental, meaning that for a transaction to be
+    /// valid, only the current nonce + 1 can be used.
     ///
     /// The current nonce is queryable via the transfer contract.
     pub nonce: u64,
@@ -316,22 +367,30 @@ impl Payload {
         let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.sender.to_bytes());
-
-        // serialize the recipient
-        match self.receiver {
-            Some(to) => {
-                bytes.push(1);
-                bytes.extend(to.to_bytes());
-            }
-            None => {
-                bytes.push(0);
-            }
+        // to save space we only serialize the receiver if it's different from
+        // the sender
+        if self.sender == self.receiver {
+            bytes.push(0);
+        } else {
+            bytes.push(1);
+            bytes.extend(self.receiver.to_bytes());
         }
 
         bytes.extend(self.value.to_bytes());
         bytes.extend(self.deposit.to_bytes());
-        bytes.extend(self.gas_limit.to_bytes());
-        bytes.extend(self.gas_price.to_bytes());
+
+        // serialize the fee
+        bytes.extend(self.fee.gas_limit.to_bytes());
+        bytes.extend(self.fee.gas_price.to_bytes());
+        // to save space we only serialize the refund-address if it's different
+        // from the sender
+        if self.sender == self.fee.refund_address {
+            bytes.push(0);
+        } else {
+            bytes.push(1);
+            bytes.extend(self.fee.refund_address.to_bytes());
+        }
+
         bytes.extend(self.nonce.to_bytes());
 
         // serialize the contract call, deployment or memo, if present.
@@ -363,22 +422,33 @@ impl Payload {
         let mut buf = buf;
 
         let chain_id = u8::from_reader(&mut buf)?;
-
         let sender = AccountPublicKey::from_reader(&mut buf)?;
-
-        // deserialize recipient
         let receiver = match u8::from_reader(&mut buf)? {
-            0 => None,
-            1 => Some(AccountPublicKey::from_reader(&mut buf)?),
+            0 => sender,
+            1 => AccountPublicKey::from_reader(&mut buf)?,
             _ => {
                 return Err(BytesError::InvalidData);
             }
         };
-
         let value = u64::from_reader(&mut buf)?;
         let deposit = u64::from_reader(&mut buf)?;
+
+        // deserialize the fee
         let gas_limit = u64::from_reader(&mut buf)?;
         let gas_price = u64::from_reader(&mut buf)?;
+        let refund_address = match u8::from_reader(&mut buf)? {
+            0 => sender,
+            1 => AccountPublicKey::from_reader(&mut buf)?,
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+        let fee = Fee {
+            gas_limit,
+            gas_price,
+            refund_address,
+        };
+
         let nonce = u64::from_reader(&mut buf)?;
 
         // deserialize contract call, deploy data, or memo, if present
@@ -411,8 +481,7 @@ impl Payload {
             receiver,
             value,
             deposit,
-            gas_limit,
-            gas_price,
+            fee,
             nonce,
             data,
         })
@@ -427,13 +496,16 @@ impl Payload {
         let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.sender.to_bytes());
-        if let Some(to) = &self.receiver {
-            bytes.extend(to.to_bytes());
+        if self.receiver != self.sender {
+            bytes.extend(self.receiver.to_bytes());
         }
         bytes.extend(self.value.to_bytes());
         bytes.extend(self.deposit.to_bytes());
-        bytes.extend(self.gas_limit.to_bytes());
-        bytes.extend(self.gas_price.to_bytes());
+        bytes.extend(self.fee.gas_limit.to_bytes());
+        bytes.extend(self.fee.gas_price.to_bytes());
+        if self.fee.refund_address != self.sender {
+            bytes.extend(self.fee.refund_address.to_bytes());
+        }
         bytes.extend(self.nonce.to_bytes());
 
         match &self.data {
@@ -457,4 +529,16 @@ impl Payload {
 
         bytes
     }
+}
+
+/// The Fee structure
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Fee {
+    /// Limit on the gas to be spent.
+    pub gas_limit: u64,
+    /// Price for each unit of gas.
+    pub gas_price: u64,
+    /// Address to which to refund the unspent gas.
+    pub refund_address: AccountPublicKey,
 }

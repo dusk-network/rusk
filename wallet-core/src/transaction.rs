@@ -54,7 +54,7 @@ use execution_core::{
 pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     sender_sk: &PhoenixSecretKey,
-    change_pk: &PhoenixPublicKey,
+    refund_pk: &PhoenixPublicKey,
     receiver_pk: &PhoenixPublicKey,
     inputs: Vec<(Note, NoteOpening)>,
     root: BlsScalar,
@@ -70,7 +70,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     Ok(PhoenixTransaction::new::<R, P>(
         rng,
         sender_sk,
-        change_pk,
+        refund_pk,
         receiver_pk,
         inputs,
         root,
@@ -90,7 +90,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
 /// variable.
 ///
 /// # Note
-/// The `current_nonce` is NOT incremented and should be incremented
+/// The `moonlight_nonce` is NOT incremented and should be incremented
 /// by the caller of this function, if its not done so, rusk
 /// will throw 500 error
 ///
@@ -105,7 +105,7 @@ pub fn moonlight(
     deposit: u64,
     gas_limit: u64,
     gas_price: u64,
-    nonce: u64,
+    moonlight_nonce: u64,
     chain_id: u8,
     data: Option<impl Into<TransactionData>>,
 ) -> Result<Transaction, Error> {
@@ -116,7 +116,7 @@ pub fn moonlight(
         deposit,
         gas_limit,
         gas_price,
-        nonce,
+        moonlight_nonce,
         chain_id,
         data,
     )?
@@ -126,7 +126,7 @@ pub fn moonlight(
 /// Create a [`Transaction`] to stake from phoenix-notes.
 ///
 /// # Note
-/// The `current_nonce` is NOT incremented and should be incremented
+/// The `stake_nonce` is NOT incremented and should be incremented
 /// by the caller of this function, if its not done so, rusk
 /// will throw 500 error
 ///
@@ -148,25 +148,26 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     gas_price: u64,
     chain_id: u8,
     stake_value: u64,
-    current_nonce: u64,
+    stake_nonce: u64,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
+    // in a staking transaction the receiver and refund-address is the sender
+    let phoenix_receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
     let obfuscated_transaction = false;
     let deposit = stake_value;
 
-    let stake = Stake::new(stake_sk, stake_value, current_nonce, chain_id);
+    let stake = Stake::new(stake_sk, stake_value, stake_nonce, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
     phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        &phoenix_refund_pk,
+        &phoenix_receiver_pk,
         inputs,
         root,
         transfer_value,
@@ -183,7 +184,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
 /// Create a [`Transaction`] to stake from a Moonlight account.
 ///
 /// # Note
-/// The `moonlight_current_nonce` and `stake_current_nonce` are NOT incremented
+/// The `moonlight_nonce` and `stake_nonce` are NOT incremented
 /// and should be incremented by the caller of this function, if its not done
 /// so, rusk will throw 500 error
 ///
@@ -197,15 +198,14 @@ pub fn moonlight_stake(
     stake_value: u64,
     gas_limit: u64,
     gas_price: u64,
-    moonlight_current_nonce: u64,
-    stake_current_nonce: u64,
+    moonlight_nonce: u64,
+    stake_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
     let transfer_value = 0;
     let deposit = stake_value;
 
-    let stake =
-        Stake::new(stake_sk, stake_value, stake_current_nonce, chain_id);
+    let stake = Stake::new(stake_sk, stake_value, stake_nonce, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
@@ -216,7 +216,7 @@ pub fn moonlight_stake(
         deposit,
         gas_limit,
         gas_price,
-        moonlight_current_nonce,
+        moonlight_nonce,
         chain_id,
         Some(contract_call),
     )
@@ -245,8 +245,9 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
+    // in a staking transaction the receiver and refund-address is the sender
+    let phoenix_receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
     let obfuscated_transaction = false;
@@ -275,8 +276,8 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        &phoenix_refund_pk,
+        &phoenix_receiver_pk,
         inputs,
         root,
         transfer_value,
@@ -293,7 +294,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
 /// Create a [`Transaction`] to withdraw stake rewards into Moonlight account.
 ///
 /// # Note
-/// The `current_nonce` is NOT incremented and should be incremented by the
+/// The `moonlight_nonce` is NOT incremented and should be incremented by the
 /// caller of this function, if its not done so, rusk will throw 500 error
 ///
 /// # Errors
@@ -307,13 +308,13 @@ pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
     reward_amount: u64,
     gas_limit: u64,
     gas_price: u64,
-    current_nonce: u64,
+    moonlight_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
     let transfer_value = 0;
     let deposit = 0;
 
-    let gas_payment_token = WithdrawReplayToken::Moonlight(current_nonce);
+    let gas_payment_token = WithdrawReplayToken::Moonlight(moonlight_nonce);
 
     let contract_call = stake_reward_to_moonlight(
         rng,
@@ -330,7 +331,7 @@ pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
         deposit,
         gas_limit,
         gas_price,
-        current_nonce,
+        moonlight_nonce,
         chain_id,
         Some(contract_call),
     )
@@ -358,8 +359,9 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
+    // in a staking transaction the receiver and refund-address is the sender
+    let phoenix_receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
     let obfuscated_transaction = false;
@@ -388,8 +390,8 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        &phoenix_refund_pk,
+        &phoenix_receiver_pk,
         inputs,
         root,
         transfer_value,
@@ -406,7 +408,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
 /// Create a [`Transaction`] to unstake into a Moonlight account.
 ///
 /// # Note
-/// The `current_nonce` is NOT incremented and should be incremented by the
+/// The `moonlight_nonce` is NOT incremented and should be incremented by the
 /// caller of this function, if its not done so, rusk will throw 500 error
 ///
 /// # Errors
@@ -420,13 +422,13 @@ pub fn moonlight_unstake<R: RngCore + CryptoRng>(
     unstake_value: u64,
     gas_limit: u64,
     gas_price: u64,
-    current_nonce: u64,
+    moonlight_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
     let transfer_value = 0;
     let deposit = 0;
 
-    let gas_payment_token = WithdrawReplayToken::Moonlight(current_nonce);
+    let gas_payment_token = WithdrawReplayToken::Moonlight(moonlight_nonce);
 
     let contract_call = unstake_to_moonlight(
         rng,
@@ -443,7 +445,7 @@ pub fn moonlight_unstake<R: RngCore + CryptoRng>(
         deposit,
         gas_limit,
         gas_price,
-        current_nonce,
+        moonlight_nonce,
         chain_id,
         Some(contract_call),
     )
@@ -476,8 +478,10 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
+    // because a conversion is done through a contract call, the receiver and
+    // refund-address of the transaction is the sender
+    let phoenix_receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
     let obfuscated_transaction = true;
@@ -506,8 +510,8 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     phoenix::<R, P>(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        &phoenix_refund_pk,
+        &phoenix_receiver_pk,
         inputs,
         root,
         transfer_value,
@@ -526,7 +530,7 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
 /// # Note
 /// 1. The ownership of both sender and receiver keys is required, and
 /// enforced by the protocol.
-/// 2. `current_nonce` is NOT incremented and should be incremented by the
+/// 2. `moonlight_nonce` is NOT incremented and should be incremented by the
 ///    caller
 /// of this function, if its not done so, rusk will throw 500 error
 ///
@@ -541,13 +545,14 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
     convert_value: u64,
     gas_limit: u64,
     gas_price: u64,
-    current_nonce: u64,
+    moonlight_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
+    // a conversion is a simultaneous deposit to *and* withdrawal from the
+    // transfer contract
+    let deposit = convert_value;
     let transfer_value = 0;
-    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
-                                 // transfer contract
-    let gas_payment_token = WithdrawReplayToken::Moonlight(current_nonce);
+    let gas_payment_token = WithdrawReplayToken::Moonlight(moonlight_nonce);
 
     let contract_call = convert_to_phoenix(
         rng,
@@ -563,7 +568,7 @@ pub fn moonlight_to_phoenix<R: RngCore + CryptoRng>(
         deposit,
         gas_limit,
         gas_price,
-        current_nonce,
+        moonlight_nonce,
         chain_id,
         Some(contract_call),
     )
@@ -593,8 +598,10 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
     chain_id: u8,
     prover: &P,
 ) -> Result<Transaction, Error> {
-    let receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
-    let change_pk = receiver_pk;
+    // in a contract deployment transaction the receiver and refund-address is
+    // the sender
+    let phoenix_receiver_pk = PhoenixPublicKey::from(phoenix_sender_sk);
+    let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
     let obfuscated_transaction = true;
@@ -624,8 +631,8 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
     phoenix(
         rng,
         phoenix_sender_sk,
-        &change_pk,
-        &receiver_pk,
+        &phoenix_refund_pk,
+        &phoenix_receiver_pk,
         inputs,
         root,
         transfer_value,
@@ -642,7 +649,7 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
 /// Create a new [`Transaction`] to deploy a contract to the network.
 ///
 /// # Note
-/// The `current_nonce` is NOT incremented and should be incremented by the
+/// The `moonlight_nonce` is NOT incremented and should be incremented by the
 /// caller of this function, if its not done so, rusk will throw 500 error
 ///
 /// # Errors
@@ -656,7 +663,7 @@ pub fn moonlight_deployment(
     init_args: Vec<u8>,
     gas_limit: u64,
     gas_price: u64,
-    moonlight_current_nonce: u64,
+    moonlight_nonce: u64,
     deploy_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
@@ -681,7 +688,7 @@ pub fn moonlight_deployment(
         deposit,
         gas_limit,
         gas_price,
-        moonlight_current_nonce,
+        moonlight_nonce,
         chain_id,
         Some(deploy),
     )
