@@ -165,7 +165,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             {
                                 info!(
                                     event = "step completed",
-                                    result = ?step_result.topic()
+                                    result = ?step_result.payload
                                 );
 
                                 // In the normal case, we just return the result
