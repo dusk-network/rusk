@@ -4,11 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Database, RoundUpdate, TimeoutSet};
-use std::cmp;
+use crate::commons::{Database, RoundUpdate};
 
 use crate::config::{
-    exclude_next_generator, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE,
+    exclude_next_generator, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+    TIMEOUT_INCREASE,
 };
 use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
@@ -23,7 +23,6 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Seed;
 use node_data::message::Message;
 use std::collections::HashMap;
-use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -79,8 +78,8 @@ pub struct IterationCtx<DB: Database> {
     /// iteration of current round
     pub(crate) committees: RoundCommittees,
 
-    /// Implements the adaptive timeout algorithm
-    timeouts: TimeoutSet,
+    /// Timeout for each step of the current iteration
+    step_timeout: Duration,
 }
 
 impl<DB: Database> IterationCtx<DB> {
@@ -92,7 +91,7 @@ impl<DB: Database> IterationCtx<DB> {
             Mutex<ratification::handler::RatificationHandler>,
         >,
         proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
-        timeouts: TimeoutSet,
+        base_step_timeout: Duration,
     ) -> Self {
         Self {
             round,
@@ -101,7 +100,7 @@ impl<DB: Database> IterationCtx<DB> {
             validation_handler,
             ratification_handler,
             committees: Default::default(),
-            timeouts,
+            step_timeout: base_step_timeout,
             proposal_handler,
         }
     }
@@ -109,6 +108,15 @@ impl<DB: Database> IterationCtx<DB> {
     /// Executed on starting a new iteration, before Proposal step execution
     pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
+
+        if iter > 0 {
+            self.step_timeout += TIMEOUT_INCREASE;
+        }
+
+        self.step_timeout = self
+            .step_timeout
+            .max(MIN_STEP_TIMEOUT)
+            .min(MAX_STEP_TIMEOUT);
     }
 
     /// Executed on closing an iteration, after Ratification step execution
@@ -122,21 +130,9 @@ impl<DB: Database> IterationCtx<DB> {
         self.join_set.abort_all();
     }
 
-    /// Handles an event of a Phase timeout
-    pub(crate) fn on_timeout_event(&mut self, step_name: StepName) {
-        let curr_step_timeout =
-            self.timeouts.get_mut(&step_name).expect("valid timeout");
-
-        *curr_step_timeout =
-            cmp::min(MAX_STEP_TIMEOUT, curr_step_timeout.add(TIMEOUT_INCREASE));
-    }
-
-    /// Calculates and returns the adjusted timeout for the specified step
-    pub(crate) fn get_timeout(&self, step_name: StepName) -> Duration {
-        *self
-            .timeouts
-            .get(&step_name)
-            .expect("valid timeout per step")
+    /// Return the step timeout for the current iteration
+    pub(crate) fn get_timeout(&self) -> Duration {
+        self.step_timeout
     }
 
     fn get_sortition_config(
