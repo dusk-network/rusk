@@ -22,6 +22,7 @@ use execution_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
 };
 use execution_core::stake::EPOCH;
+use hex;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
@@ -31,7 +32,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{error, info};
 
 const MARGIN_TIMESTAMP: u64 = 3;
 
@@ -410,6 +411,7 @@ pub async fn verify_att(
                 RatificationResult::Success(Vote::Valid(e_hash)),
             ) => {
                 if r_hash != e_hash {
+                    error!("Invalid Attestation. Expected: Valid({:?}), got: Valid({:?})", hex::encode(e_hash), hex::encode(r_hash));
                     return Err(AttestationError::InvalidHash(e_hash, r_hash));
                 }
             }
@@ -417,6 +419,10 @@ pub async fn verify_att(
             (RatificationResult::Fail(_), RatificationResult::Fail(_)) => {}
             // All other mismatches
             _ => {
+                error!(
+                    "Invalid Attestation. Expected: {:?}, got: {:?}",
+                    expected, att.result
+                );
                 return Err(AttestationError::InvalidResult(
                     att.result, expected,
                 ));
