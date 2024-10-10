@@ -6,12 +6,10 @@
 
 // Return a promised rejected if the signal is aborted, resolved otherwise
 
-import { ProfileGenerator } from "../profile.js";
 import * as ProtocolDriver from "../protocol-driver/mod.js";
 
 import { GraphQLRequest } from "./graphql.js";
 import { NetworkError } from "./error.js";
-
 import { Gas } from "./gas.js";
 
 export { Gas };
@@ -174,11 +172,7 @@ export class Network {
     );
   }
 
-  async execute(builder, gas) {
-    if (gas instanceof Gas) {
-      builder.gas(gas);
-    }
-
+  async execute(builder) {
     const tx = await builder.build(this);
 
     // Attempt to preverify the transaction

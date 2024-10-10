@@ -48,6 +48,7 @@ function createBYOBReadableStream(stream) {
           if (done) {
             if (bytesFilled === 0) {
               controller.close();
+              controller.byobRequest.respond(0);
             } else {
               // Respond with whatever we have, then close the stream
               controller.byobRequest.respond(bytesFilled);

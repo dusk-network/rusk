@@ -11,7 +11,7 @@ import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import {
   test as harnessTest,
   assert,
-} from "../../../../nayma/mio-mini/test-harness/mod.js";
+} from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
 
 export { assert };
 
