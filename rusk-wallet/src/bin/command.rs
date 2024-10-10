@@ -6,26 +6,28 @@
 
 mod history;
 
+pub use history::TransactionHistory;
+
 use clap::Subcommand;
-use execution_core::transfer::data::ContractCall;
-use std::{fmt, path::PathBuf};
+use execution_core::{
+    stake::StakeData, transfer::data::ContractCall, BlsScalar,
+    CONTRACT_ID_BYTES,
+};
+use rusk_wallet::{
+    currency::{Dusk, Lux},
+    gas::{
+        Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT,
+        DEFAULT_LIMIT_TRANSFER, DEFAULT_PRICE,
+    },
+    Address, Error, Wallet, EPOCH, MAX_ADDRESSES,
+};
+use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
-use execution_core::{stake::StakeData, BlsScalar};
-use rusk_wallet::{
-    currency::{Dusk, Lux},
-    gas::{Gas, DEFAULT_LIMIT, DEFAULT_PRICE},
-    Address, Error, Wallet, EPOCH, MAX_ADDRESSES,
-};
-use wallet_core::BalanceInfo;
-
-pub use history::TransactionHistory;
-
-/// The default stake gas limit
-pub const DEFAULT_STAKE_GAS_LIMIT: u64 = 2_900_000_000;
+use std::{fmt, path::PathBuf};
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
@@ -97,7 +99,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -124,7 +126,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -143,7 +145,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -159,7 +161,7 @@ pub(crate) enum Command {
         addr_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -175,7 +177,7 @@ pub(crate) enum Command {
         addr_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -197,8 +199,12 @@ pub(crate) enum Command {
         #[clap(short, long)]
         init_args: Vec<u8>,
 
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
+
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -226,7 +232,7 @@ pub(crate) enum Command {
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -261,7 +267,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -288,7 +294,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -307,7 +313,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -323,7 +329,7 @@ pub(crate) enum Command {
         addr_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -339,7 +345,7 @@ pub(crate) enum Command {
         addr_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -362,8 +368,12 @@ pub(crate) enum Command {
         #[clap(short, long)]
         init_args: Vec<u8>,
 
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
+
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -390,7 +400,7 @@ pub(crate) enum Command {
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -410,12 +420,28 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
         #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
+    },
+
+    /// Command to calculate the contract id
+    /// given the contract code and deploy nonce
+    CalculateContractId {
+        /// Bls Public key Address to keep as owner of the contract
+        #[clap(short = 's', long)]
+        addr_idx: Option<u8>,
+
+        /// Path to the WASM contract code
+        #[clap(short, long)]
+        code: PathBuf,
+
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
     },
 
     /// Convert Moonlight DUSK to Phoenix for the same owned address
@@ -429,7 +455,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_STAKE_GAS_LIMIT)]
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -754,7 +780,7 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let addr_idx = addr_idx.unwrap_or_default();
 
-                let contract_id: [u8; 32] = contract_id
+                let contract_id: [u8; CONTRACT_ID_BYTES] = contract_id
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
@@ -801,6 +827,7 @@ impl Command {
                 addr_idx,
                 code,
                 init_args,
+                deploy_nonce,
                 gas_limit,
                 gas_price,
             } => {
@@ -815,7 +842,13 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let tx = wallet
-                    .phoenix_deploy(addr_idx, code, init_args, gas)
+                    .phoenix_deploy(
+                        addr_idx,
+                        code,
+                        init_args,
+                        deploy_nonce,
+                        gas,
+                    )
                     .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
@@ -824,6 +857,7 @@ impl Command {
                 addr_idx,
                 code,
                 init_args,
+                deploy_nonce,
                 gas_limit,
                 gas_price,
             } => {
@@ -838,10 +872,35 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let tx = wallet
-                    .moonlight_deploy(addr_idx, code, init_args, gas)
+                    .moonlight_deploy(
+                        addr_idx,
+                        code,
+                        init_args,
+                        deploy_nonce,
+                        gas,
+                    )
                     .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
+            }
+            Self::CalculateContractId {
+                addr_idx,
+                code,
+                deploy_nonce,
+            } => {
+                let addr_idx = addr_idx.unwrap_or_default();
+
+                if code.extension().unwrap_or_default() != "wasm" {
+                    return Err(Error::InvalidWasmContractPath.into());
+                }
+
+                let code = std::fs::read(code)
+                    .map_err(|_| Error::InvalidWasmContractPath)?;
+
+                let contract_id =
+                    wallet.get_contract_id(addr_idx, code, deploy_nonce)?;
+
+                Ok(RunResult::ContractId(contract_id))
             }
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),
@@ -858,6 +917,7 @@ pub enum RunResult {
     StakeInfo(StakeData, bool),
     Address(Box<Address>),
     Addresses(Vec<Address>),
+    ContractId([u8; CONTRACT_ID_BYTES]),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
@@ -914,6 +974,9 @@ impl fmt::Display for RunResult {
                 }?;
                 let reward = Dusk::from(data.reward);
                 write!(f, "> Accumulated reward is: {reward} DUSK")
+            }
+            ContractId(bytes) => {
+                write!(f, "> Contract ID: {}", hex::encode(bytes))
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();
