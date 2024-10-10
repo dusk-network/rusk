@@ -13,55 +13,13 @@ balance = 500_000_000_000_000_000
 
 # Faucet wallets (Fulvio)
 
-[[phoenix_balance]]
-address = '9Qary8ZQHYRZos3jmk4FBqo35mjJVqzsLwFthRB2vDY3wNnFTNaKcVrw66aeF8X2nYf5YqSq6BDs4TfsbBEnGjd'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
+[[moonlight_account]]
+address = 'pR8NnsQ9Le2hyuEgx2fk4RuZTngkz9T7WfkdDKSJmnfRYMmkNUPhFYXNAeatxsYiixgqq4iKfSCVuo7NhFkLgrbn1VTTweLhPXocUQ4rfxMLRajebdCcPxp46ddSVMpu2Nf'
+balance = 500_000_000_000_000_000
 
-[[phoenix_balance]]
-address = 'qDfYNMkC3m2GdBLsPy4PFCiVfniuSTzWPwgZ9TvpcgRE8ztEJvsCcfTJGtokrxGF8cFyCc9k1gZQpjrdjSooeDE'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '5KtKooBDhJFU3caSPC4AjeHcigRFrZ5YswMFXu74mavmu7sWPExDn9DLsYqTiLdstz8r7JJsDvAnCBhRPyEHQWMF'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '2N9o1ghLKx1e93weUJtymqfRoemjHu43xXLZWKEmbn6WtMrd3WzXDvtEw4LkBd4DskempKKq9UthdKGVoeXvhZVs'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '2neU6jSkQ2QnPxYfc4DaGQvkRtGeaBtU3vdfZHYh3iEWbZ3fosstgx2cKY3JVZTBiQHX3t5NetCK5v7fvoMPZaGe'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '3VHxhiWkA11vT8c5sTC4oDAk7QZ7hRqpMbrPP4z2A94mwWox1WhBWJjBMjVjQuvtJ7Mxqkm53JmH6oWBnXZqPSmi'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '3DXXr1k8NEerGwKCKsCbAaS6Da4TjkX1fYjoJeh61fPjJkyVnfiRG4A7eETTDoqWNUnmMVmvBniSMgcdWXHc7Q5J'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '2YiHv7ageZBUQif2ZRo4NUFGcZBNyWWAm3tyhchczBmPk336MX6ATkaPSLayHrhz1J6A5yfbU1zfoB8aRZBLHUK'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '3Bzh3YrwU1eiNoabHtSrwrU9AtTbAFDUt4w1rcEtCe9jztCrLzEZjJ14HBSECACf1g1jJjn5Ud1jM7oKWWjYSUTJ'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
-
-[[phoenix_balance]]
-address = '33GGzrthCdzCT98ZvHSoXGbQVKkYPXkRfTuxxcTVDW44fJpzTdgoaZYj8tDADmfQX44Cdz9je9dvLrfa6a76Qkq9'
-seed = 0xdead_beef
-notes = [10_000_000_000_000_000]
+[[moonlight_account]]
+address = 'uzUXZAWqhJB1e2czyAPvUk1MaRP4t6CMEQHBGP4ixYem7kphpbW7yF3kkGyMD5agJ7oDH7yQPwcGxgsC1PxrRDAELXMR76eqLcU2ck2oWVYRgxc16yWuCQ8PzHZrs9Qi1Vu'
+balance = 500_000_000_000_000_000
 
 # 100 Dusk network provisioners
 
@@ -469,43 +427,43 @@ amount = 500_000_000_000_000
 
 [[stake]]
 address = 'ykesisNk9pgYFQm65meee5TbTLvrxgS9Mzq1P4GKr4XFXXvN5iraQw1YaNV9H11nFytuGHmx7UngaaTuTnqEkDeGBHvgBE1SZ3PwTsQQRmYsdX2dCKEVxJQbZv47yntfvtQ'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'zERG7qf7STXTAKKiUbEvfj4YcpTttHASTxDXUBA1JYxdhpuU13FtgzDUpU5eMSt3qxYamQNZjiiiDKVN3zi5Mnz264ggAD3Ft9j3BwmcHArQpPdVhLpHCfnq5Pot6GCW9Vx'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'ord8D9WF21NPJmaDc3hN9wLnqRTcNsLwFVwUNZW9JuYmQhpbotxrBKXD25M4w76GXbTRS8nmr8y9jmriaw5tp2yhXLBHL47DK6S2eug2P3K5fYgCcJHEU2suaM8SaCTaek5'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'qeNnTyhWnvJBxSX8D5YS5QCLAtPoZQFCKEHVJoGiDTyFiGz6jnRuz9erafZxLSfWoJNwfz4HoHmKXBfcifHcF8F2sqG5LFSNopLJbkZzGXLaUFFikme1f1PiNiMxxMNkmqP'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'sX4JooVNAFov3Xx9cfZHtRemijsggdRKrywC14jfGyZn5k2wupNvyY9ZLu7YTuh3CpuyKsftbmzYPzdgptG6Rq9UayDXeaPwFHanmXpUqGdTyEvw5Cb3UqGEqfCFZMqQhtz'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = '25yVrGJKTjZzfiHewWbShsU5s2CpuUGfqG17YLt2sf158fc1EJJEYHnPJKFPjoTXYxe1jJymaYoRbnZ1hSCa1uvdsox36mgoKiBQsw2pVUbWmodz5D2EBzrtBKABBKkrChbK'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'pSnJHur5tnA4V88MGPBDCfPYSfSCGynJmbycW5mNeisABxgmZLErnfLuS5vvC6hBD3NKFvdCBhmNv5H8EzTAd5ApavNZeCoautkCDW4KUB8Ey6LNyHGCX19j9TLG8kPdKhf'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'thrWTo9XztqcpodzucqDjoEv2Wk8C6XEhw9DQKcZ8uMjF5NHBeFwysvboLuqbwQwESRVfzJBSvcTZNXTsr25zasagiuseY4tkF1HyK25rg73nJxq86gZQK14bFXMVPLwfpe'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'soPdMsNykSsrLcmHGBGfiajFNc5kJ7SheMEapCu9zjnTyiFaJLc2MTeq8ZQ9R91dgxFQJjkybY2ETgTU5Xv3J9RhoHqzNVnBCty5s2W87UdntXWiSSWPEEpXYrun5Pw7eML'
-amount = 100_000_000_000_000
+amount = 500_000_000_000_000
 
 [[stake]]
 address = 'n3qToJrMkYCnUkJkFG2a7fEVn2Krj6arVUfuQbZNRk4gcDPQ9jESngvKQGZ4XToGAhS4qFsGzJtiZzDJ5E9TyYA5SZcCJGYfi5cZWBJkzmAmwiScS256TCMZZjmEq6aNuj6'
-amount = 100_000_000_000_000
+amount = 1_000_000_000_000_000
 
 # Dry run moonlight funds
 
