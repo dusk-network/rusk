@@ -151,8 +151,40 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     let msg = recv?;
 
                     match msg.payload {
+                        Payload::Candidate(_)
+                        | Payload::Validation(_)
+                        | Payload::Ratification(_) => {
+                            // Re-route message to the Consensus
+                            let acc = self.acceptor.as_ref().expect("initialize is called");
+                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
+                                warn!("Could not reroute msg to Consensus: {}", e);
+                            }
+                        },
+
+                        Payload::Quorum(ref quorum) => {
+                            info!(
+                                event = "Quorum received",
+                                src = "wire",
+                                round = msg.header.round,
+                                iter = msg.header.iteration,
+                                vote = ?quorum.vote(),
+                                metadata = ?msg.metadata,
+                            );
+
+                            // Handle potential new blocks from Success Quorum messages
+                            if let RatificationResult::Success(_) = quorum.att.result {
+                                fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
+                            }
+
+                            // Re-route message to the Consensus
+                            let acc = self.acceptor.as_ref().expect("initialize is called");
+                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
+                                warn!("Could not reroute msg to Consensus: {}", e);
+                            }
+                        },
+
                         Payload::Block(blk) => {
-                           info!(
+                            info!(
                                 event = "Block received",
                                 src = "wire",
                                 blk_height = blk.header().height,
@@ -169,39 +201,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                     error!(event = "fsm::on_event failed", src = "wire", err = ?err);
                                 }
                             }
-
                         }
-
-                        Payload::Quorum(ref quorum) => {
-                            info!(
-                                event = "Quorum received",
-                                src = "wire",
-                                round = msg.header.round,
-                                iter = msg.header.iteration,
-                                metadata = ?msg.metadata,
-                            );
-
-                            // Handle potential new blocks from Success Quorum messages
-                            if let RatificationResult::Success(_) = quorum.att.result {
-                                fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
-                            }
-
-                            // Re-route message to the Consensus
-                            let acc = self.acceptor.as_ref().expect("initialize is called");
-                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
-                                warn!("Could not reroute msg to Consensus: {}", e);
-                            }
-                        },
-
-                        Payload::Candidate(_)
-                        | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
-                            // Re-route message to the Consensus
-                            let acc = self.acceptor.as_ref().expect("initialize is called");
-                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
-                                warn!("Could not reroute msg to Consensus: {}", e);
-                            }
-                        },
 
                         _ => {
                             warn!("invalid inbound message");
@@ -217,7 +217,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     // If the associated candidate block already exists,
                     // the winner block will be compiled and redirected to the Acceptor.
                     if let Payload::Quorum(quorum) = &msg.payload {
-                        fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
+                      if let RatificationResult::Success(_) = quorum.att.result {
+                          fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
+                      }
                     }
 
                     if let Payload::GetResource(res) = &msg.payload {
