@@ -267,4 +267,10 @@ impl AttInfoRegistry {
 
         res
     }
+
+    pub(crate) fn get_fail_att(&self, iteration: u8) -> Option<Attestation> {
+        self.att_list
+            .get(&iteration)
+            .and_then(|atts| atts.failed().map(|info| info.att))
+    }
 }
