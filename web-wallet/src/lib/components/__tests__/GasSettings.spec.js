@@ -35,7 +35,7 @@ describe("GasSettings", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("renders the GasSettings component opened", async () => {
+  it("renders the GasSettings component expanded", async () => {
     const { container, getByRole } = render(GasSettings, baseOptions);
 
     const next = getByRole("button", { name: "EDIT" });
