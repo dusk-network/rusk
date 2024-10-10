@@ -26,6 +26,31 @@ exports[`Footer > renders the Footer component 1`] = `
     <div
       class="footer__links"
     >
+      
+      <a
+        class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+        href="https://apps.dusk.network/explorer"
+      >
+        Mainnet
+      </a>
+      
+      
+      <a
+        class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+        href="https://testnet.apps.dusk.network/explorer"
+      >
+        Testnet
+      </a>
+      
+      
+      <a
+        class="dusk-anchor dusk-anchor--off-surface footer__links-link"
+        href="https://devnet.apps.dusk.network/explorer"
+      >
+        Devnet
+      </a>
+      
+       
       <a
         class="dusk-anchor dusk-anchor--off-surface footer__links-link"
         href="https://dusk.network/privacy-policy"
