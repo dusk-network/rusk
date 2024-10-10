@@ -313,6 +313,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             let tip_height = tip_header.height;
             let quorum_height = qmsg.header.round;
 
+            // Check if we already accepted this block
+            if let Ok(blk_exists) =
+                db.read().await.view(|t| t.get_block_exists(&candidate))
+            {
+                if blk_exists {
+                    warn!("skipping Quorum for known block");
+                    return;
+                }
+            };
+
             let quorum_blk = if quorum_height > tip_height + 1 {
                 // Quorum from future
 
