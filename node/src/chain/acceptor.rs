@@ -331,6 +331,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         match res {
                             Ok(_) => {
                                 // Rebroadcast
+                                debug!("Rebroadcast Quorum for current round");
                                 broadcast(&self.network, &msg).await;
 
                                 // Reroute to Consensus
@@ -354,15 +355,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     Status::Past => {
                         if let Vote::Valid(candidate) = qmsg.vote() {
                             // Check if the candidate is in our chain
-                            if let Ok(candidate_exists) = self
+                            if let Ok(candidate_known) = self
                                 .db
                                 .read()
                                 .await
                                 .view(|t| t.get_block_exists(candidate))
                             {
-                                // If it doesn't exist, then rebroadcast the
-                                // message
-                                if !candidate_exists {
+                                // If candidate is unknown, rebroadcast
+                                if !candidate_known {
+                                    debug!("Rebroadcast Quorum for past round");
                                     broadcast(&self.network, &msg).await;
                                 }
                             } else {
@@ -373,6 +374,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     Status::Future => {
                         //INFO: we currently rebroadcast future Quorums without
                         // any check
+                        debug!("Rebroadcast Quorum for future round");
                         broadcast(&self.network, &msg).await;
                     }
                 }
