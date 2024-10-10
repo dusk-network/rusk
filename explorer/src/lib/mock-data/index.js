@@ -1,3 +1,4 @@
+export { default as apiGeocodeLocations } from "./api-geocode-locations.json";
 export { default as apiMarketData } from "./api-market-data.json";
 export { default as apiNodeLocations } from "./api-node-locations.json";
 export { default as apiStats } from "./api-stats.json";

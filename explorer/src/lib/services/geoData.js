@@ -2,7 +2,7 @@ import { duskAPI } from "$lib/services";
 import { countBy } from "lamb";
 
 const locationKey = "locations-data";
-const gpsKey = "geo-data";
+const geoKey = "geo-data";
 
 /**
  * @param {"reading" | "storing"} action
@@ -127,24 +127,24 @@ const checkLocationStore = async (nodeData, locationStore) => {
  */
 const geoData = () => {
   return duskAPI.getNodeLocations().then(async (data) => {
-    const gpsStoredData = getStorage(gpsKey);
+    const geoStoredData = getStorage(geoKey);
     const locationStoredData = getStorage(locationKey);
     const highestNodeLocation = filterHighestCountSum(
       countOccurrences(countByLatLon(data))
     );
 
-    if (gpsStoredData) {
+    if (geoStoredData) {
       const isNewNodeLocationsData =
-        JSON.stringify(data) !== JSON.stringify(gpsStoredData);
+        JSON.stringify(data) !== JSON.stringify(geoStoredData);
 
       if (isNewNodeLocationsData) {
-        setStorage(gpsKey, data);
+        setStorage(geoKey, data);
         await retrieveAndSetLocationData(highestNodeLocation);
       }
 
       return await checkLocationStore(highestNodeLocation, locationStoredData);
     } else {
-      setStorage(gpsKey, data);
+      setStorage(geoKey, data);
 
       return await checkLocationStore(highestNodeLocation, locationStoredData);
     }

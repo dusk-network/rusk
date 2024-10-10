@@ -15,13 +15,12 @@
   import { duskIcon } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
   import { DataGuard, StaleDataNotice } from "$lib/components";
-  import { duskAPI } from "$lib/services";
+  import { duskAPI, geoData } from "$lib/services";
   import {
     createDataStore,
     createPollingDataStore,
   } from "$lib/dusk/svelte-stores";
   import { appStore, marketDataStore } from "$lib/stores";
-  import geoData from "$lib/services/geoData";
 
   import "./StatisticsPanel.css";
 
