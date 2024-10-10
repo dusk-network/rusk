@@ -259,12 +259,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // from the network. A Quorum for the current iteration
                     // means the iteration is over.
                     if let Payload::Quorum(qmsg) = msg.clone().payload {
-                        // If this message was produced by Consensus, let's
-                        // broadcast it
-                        let is_local = msg.is_local();
-                        if is_local {
-                            sender.send_quorum(msg).await;
-                        }
+                        // Broadcast/Rebroadcast
+                        sender.send_quorum(msg).await;
 
                         debug!(
                             event = "New Quorum",
