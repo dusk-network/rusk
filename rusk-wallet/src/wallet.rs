@@ -1112,6 +1112,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok(network_last_pos == db_pos)
     }
 
+    /// Fetch the last block height from the database
+    pub fn last_block_height(&self) -> Result<u64, Error> {
+        let state = self.state()?;
+
+        Ok(state.cache().last_block_height()?.unwrap_or(0))
+    }
+
     /// Close the wallet and zeroize the seed
     pub fn close(&mut self) {
         self.store.inner_mut().zeroize();

@@ -68,6 +68,9 @@ impl Cache {
         let data = rkyv::to_bytes::<NoteLeaf, TREE_LEAF>(&leaf)
             .map_err(|_| Error::Rkyv)?;
 
+        // keep track of max block height while inserting notes
+        self.insert_last_block_height(block_height)?;
+
         let key = nullifier.to_bytes();
 
         self.db.put_cf(&cf, key, data)?;
@@ -97,6 +100,9 @@ impl Cache {
         let data = rkyv::to_bytes::<NoteLeaf, TREE_LEAF>(&leaf)
             .map_err(|_| Error::Rkyv)?;
         let key = nullifier.to_bytes();
+
+        // keep track of max block height while inserting notes
+        self.insert_last_block_height(block_height)?;
 
         self.db.put_cf(&cf, key, data)?;
 
@@ -149,6 +155,26 @@ impl Cache {
     /// inserted it returns None.
     pub(crate) fn last_pos(&self) -> Result<Option<u64>, Error> {
         Ok(self.db.get(b"last_pos")?.map(|x| {
+            let buff: [u8; 8] = x.try_into().expect("Invalid u64 in cache db");
+
+            u64::from_be_bytes(buff)
+        }))
+    }
+
+    pub(crate) fn insert_last_block_height(
+        &self,
+        block_height: u64,
+    ) -> Result<(), Error> {
+        let last_block_height = self.last_block_height()?.unwrap_or(0);
+        let max = std::cmp::max(last_block_height, block_height);
+
+        self.db.put(b"last_block_height", max.to_be_bytes())?;
+
+        Ok(())
+    }
+
+    pub(crate) fn last_block_height(&self) -> Result<Option<u64>, Error> {
+        Ok(self.db.get(b"last_block_height")?.map(|x| {
             let buff: [u8; 8] = x.try_into().expect("Invalid u64 in cache db");
 
             u64::from_be_bytes(buff)

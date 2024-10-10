@@ -77,7 +77,7 @@ pub struct State {
     client: RuesHttpClient,
     prover: RuskHttpClient,
     store: LocalStore,
-    pub sync_rx: Option<Receiver<String>>,
+    pub sync_rx: Option<Receiver<SyncStatus>>,
     sync_join_handle: Option<JoinHandle<()>>,
 }
 
@@ -121,7 +121,7 @@ impl State {
     }
 
     pub async fn register_sync(&mut self) -> Result<(), Error> {
-        let (sync_tx, sync_rx) = flume::unbounded::<String>();
+        let (sync_tx, sync_rx) = flume::unbounded::<SyncStatus>();
 
         self.sync_rx = Some(sync_rx);
 
@@ -134,11 +134,11 @@ impl State {
 
         let handle = tokio::spawn(async move {
             loop {
-                let _ = sync_tx.send("Syncing..".to_string());
+                let _ = sync_tx.send(SyncStatus::NotSynced);
 
                 let _ = match sync_db(&client, &cache, &store, status).await {
-                    Ok(_) => sync_tx.send("Syncing Complete".to_string()),
-                    Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
+                    Ok(_) => sync_tx.send(SyncStatus::Synced),
+                    Err(e) => sync_tx.send(SyncStatus::Err(e)),
                 };
 
                 sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)).await;
