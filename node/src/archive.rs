@@ -21,7 +21,7 @@ mod sqlite;
 mod transformer;
 
 pub use archivist::ArchivistSrv;
-pub use transformer::MoonlightTxEvents;
+pub use moonlight::MoonlightGroup;
 
 // Archive folder containing the sqlite database and the moonlight database
 const ARCHIVE_FOLDER_NAME: &str = "archive";
@@ -62,9 +62,7 @@ impl Archive {
 
         let sqlite_archive = Self::create_or_open_sqlite(&path).await;
         let moonlight_db =
-            Self::create_or_open_moonlight_db(&path, ArchiveOptions::default())
-                .await;
-
+            Self::create_or_open_moonlight_db(&path, ArchiveOptions::default());
         Self {
             sqlite_archive,
             moonlight_db,
@@ -98,7 +96,7 @@ pub(crate) trait Archivist {
     fn fetch_moonlight_histories(
         &self,
         address: AccountPublicKey,
-    ) -> Result<Option<Vec<MoonlightTxEvents>>>;
+    ) -> Result<Option<Vec<MoonlightGroup>>>;
 
     async fn mark_block_finalized(
         &self,
