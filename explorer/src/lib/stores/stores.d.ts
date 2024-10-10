@@ -14,6 +14,13 @@ type AppStoreContent = {
   transactionsListEntries: number;
 };
 
+type GeocodeDataStoreContent = {
+  data: GeocodeData[] | null;
+  error: Error | null;
+  isLoading: boolean;
+  lastUpdate: Date | null;
+};
+
 type MarketDataStore =
   import("svelte/store").Readable<MarketDataStoreContent> & {
     isDataStale: () => boolean;

@@ -17,6 +17,7 @@ import { ensureTrailingSlash } from "$lib/dusk/string";
 import { makeNodeUrl } from "$lib/url";
 
 import {
+  calculateHighestNodeCityCount,
   calculateStats,
   transformBlock,
   transformSearchResult,
@@ -220,6 +221,43 @@ const duskAPI = {
     const node = host.includes("localhost") ? "nodes.dusk.network" : host; // Can we determine the localnet location?
 
     return apiGet("locations", { node }).then(getKey("data"));
+  },
+
+  /**
+   * @param {NodeLocationsCount[]} data
+   * @returns {Promise<ReverseGeocodeData>}
+   */
+  async getReverseGeocodeData(data) {
+    let delayCounter = 0;
+    /**
+     * @param {number} ms
+     * @returns {Promise<void>}
+     */
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const requests = data.map(async (location) => {
+      const { lat, lon } = location.node;
+      const currentDelay = delayCounter * 500;
+      delayCounter++;
+
+      await delay(currentDelay);
+
+      return apiGet("https://api.locationiq.com/v1/reverse", {
+        format: "json",
+        key: "pk.505671b3538e092ad1219067c5c95025",
+        lat: lat,
+        lon: lon,
+        normalizecity: 1,
+      })
+        .then(getKey("address"))
+        .then((res) => {
+          return {
+            city: res.city,
+            count: location.count,
+            country: res.country,
+          };
+        });
+    });
+    return Promise.all(requests).then(calculateHighestNodeCityCount);
   },
 
   /**

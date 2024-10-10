@@ -6,6 +6,7 @@
     mdiCubeOutline,
     mdiCurrencyUsd,
     mdiSwapVertical,
+    mdiTransitConnectionVariant,
   } from "@mdi/js";
   import { onDestroy, onMount } from "svelte";
 
@@ -13,8 +14,8 @@
   import { createCompactFormatter } from "$lib/dusk/value";
   import { duskIcon } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
-  import { DataGuard, StaleDataNotice, WorldMap } from "$lib/components";
-  import { duskAPI } from "$lib/services";
+  import { DataGuard, StaleDataNotice } from "$lib/components";
+  import { duskAPI, geoData } from "$lib/services";
   import {
     createDataStore,
     createPollingDataStore,
@@ -33,23 +34,22 @@
     return value >= 1e6 ? millionFormatter(value) : valueFormatter(value);
   };
 
-  const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
+  const gpsLocationStore = createDataStore(geoData);
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
     $appStore.statsFetchInterval
   );
 
   onMount(() => {
-    nodeLocationsStore.getData();
+    gpsLocationStore.getData();
     pollingStatsDataStore.start();
   });
 
   onDestroy(pollingStatsDataStore.stop);
 
   $: ({ data: marketData } = $marketDataStore);
-  $: ({ data: nodesData } = $nodeLocationsStore);
   $: ({ data: statsData } = $pollingStatsDataStore);
-
+  $: ({ data: gpsData } = $gpsLocationStore);
   $: statistics = [
     [
       {
@@ -153,7 +153,6 @@
       },
     ],
   ];
-  $: ({ darkMode } = $appStore);
 </script>
 
 <div class="statistics-panel">
@@ -188,7 +187,19 @@
       </div>
     {/each}
   </div>
-  <div class="statistics-panel__world-map">
-    <WorldMap nodes={nodesData} stroke={darkMode ? "white" : "black"} />
-  </div>
+  {#if gpsData}
+    <div class="statistics-panel__node-wrapper">
+      <span class="statistics-panel__node-wrapper-heading">top nodes</span>
+      <div class="statistics-panel__node">
+        <div class="statistics-panel__node-count">
+          <Icon path={mdiTransitConnectionVariant} size="normal" />
+          {gpsData.count}
+        </div>
+        <div class="statistics-panel__node-location">
+          <span>{gpsData.city}</span>
+          <span>{gpsData.country}</span>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
