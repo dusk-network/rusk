@@ -149,6 +149,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Component should either process it or re-route it to the next upper layer
                 recv = self.inbound.recv() => {
                     let msg = recv?;
+
+                    if fsm.is_out_of_sync() {
+                        if let Err(e) = network.read().await.broadcast(&msg).await {
+                            warn!("Unable to broadcast message while outofsync {e}");
+                        }
+                    };
+
                     match msg.payload {
                         Payload::Block(blk) => {
                            info!(
