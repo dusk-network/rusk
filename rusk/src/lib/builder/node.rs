@@ -26,7 +26,7 @@ use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, Services};
-use crate::Rusk;
+use crate::{Rusk, VERSION};
 
 #[derive(Default)]
 pub struct RuskNodeBuilder {
@@ -76,6 +76,7 @@ impl RuskNodeBuilder {
         kadcast: K,
     ) -> Self {
         self.kadcast = kadcast.into();
+        self.kadcast.version = VERSION.to_string();
         self
     }
 
@@ -211,7 +212,7 @@ impl RuskNodeBuilder {
                 self.db_path.clone(),
                 self.db_options.clone(),
             );
-            let net = Kadcast::new(self.kadcast.clone())?;
+            let net = Kadcast::new(self.kadcast)?;
             RuskNode::new(
                 Node::new(net, db, rusk.clone()),
                 #[cfg(feature = "archive")]
