@@ -1030,7 +1030,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
             }
 
-            Err(anyhow::anyhow!("could not find the last final block"))
+            warn!("No final block found, using genesis block");
+            v.fetch_block_by_height(0)?
+                .ok_or(anyhow::anyhow!("could not find the genesis block"))
         })?;
 
         Ok(final_block)
