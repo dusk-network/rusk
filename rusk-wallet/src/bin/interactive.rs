@@ -66,9 +66,8 @@ pub(crate) async fn run_loop(
             AddrSelect::Exit => std::process::exit(0),
         };
 
-        let is_synced = wallet.is_synced().await?;
-
         loop {
+            let is_synced = wallet.is_synced().await?;
             // get balance for this address
             prompt::hide_cursor()?;
             let moonlight_bal = wallet.get_moonlight_balance(addr_idx).await?;
