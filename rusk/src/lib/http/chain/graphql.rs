@@ -15,7 +15,7 @@ use tx::*;
 use async_graphql::{Context, FieldError, FieldResult, Object};
 use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
 #[cfg(feature = "archive")]
-use node::archive::{Archive, MoonlightTxEvents};
+use node::archive::{Archive, MoonlightGroup};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
 
@@ -142,7 +142,29 @@ impl Query {
         ctx: &Context<'_>,
         address: String,
     ) -> OptResult<MoonlightTransactions> {
-        moonlight_tx_by_address(ctx, address).await
+        full_moonlight_history(ctx, address).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[cfg(feature = "archive")]
+    async fn moonlight_history(
+        &self,
+        ctx: &Context<'_>,
+        sender: Option<String>,
+        receiver: Option<String>,
+        from_block: Option<u64>,
+        to_block: Option<u64>,
+        max_count: Option<usize>,
+        page_count: Option<usize>,
+    ) -> OptResult<MoonlightTransactions> {
+        if max_count == Some(0) {
+            return Err(FieldError::new("MaxCount must be greater than 0"));
+        }
+
+        moonlight_transactions(
+            ctx, sender, receiver, from_block, to_block, max_count, page_count,
+        )
+        .await
     }
 
     #[cfg(feature = "archive")]

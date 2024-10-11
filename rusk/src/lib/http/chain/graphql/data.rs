@@ -8,6 +8,11 @@ use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
 use node::database::{Ledger, LightBlock, DB};
+#[cfg(feature = "archive")]
+use {
+    dusk_bytes::Serializable,
+    execution_core::signatures::bls::PublicKey as AccountPublicKey,
+};
 
 pub struct Block {
     header: node_data::ledger::Header,
@@ -32,10 +37,6 @@ impl Block {
 pub struct Header<'a>(&'a node_data::ledger::Header);
 pub struct SpentTransaction(pub node_data::ledger::SpentTransaction);
 pub struct Transaction<'a>(TransactionData<'a>);
-#[cfg(feature = "archive")]
-pub struct MoonlightTransactions(pub Vec<node::archive::MoonlightTxEvents>);
-#[cfg(feature = "archive")]
-pub struct BlockEvents(pub(super) serde_json::Value);
 
 impl<'a> From<&'a node_data::ledger::Transaction> for Transaction<'a> {
     fn from(value: &'a node_data::ledger::Transaction) -> Self {
@@ -62,6 +63,29 @@ impl Deref for TransactionData<'_> {
             TransactionData::Owned(t) => t,
             TransactionData::Ref(t) => t,
         }
+    }
+}
+
+#[cfg(feature = "archive")]
+pub struct MoonlightTransactions(pub Vec<node::archive::MoonlightGroup>);
+#[cfg(feature = "archive")]
+pub struct BlockEvents(pub(super) serde_json::Value);
+#[cfg(feature = "archive")]
+pub(super) struct NewAccountPublicKey(pub AccountPublicKey);
+#[cfg(feature = "archive")]
+impl TryInto<NewAccountPublicKey> for String {
+    type Error = String;
+
+    fn try_into(self) -> Result<NewAccountPublicKey, Self::Error> {
+        let mut pk_bytes = [0u8; 96];
+        bs58::decode(self).into(&mut pk_bytes).map_err(|_| {
+            "Failed to decode given public key to bytes".to_string()
+        })?;
+
+        Ok(NewAccountPublicKey(
+            AccountPublicKey::from_bytes(&pk_bytes)
+                .map_err(|e| "Failed to serialize bytes".to_string())?,
+        ))
     }
 }
 
