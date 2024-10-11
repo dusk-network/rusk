@@ -315,13 +315,26 @@ export class Rues extends EventTarget {
 
   constructor(url) {
     super(url);
-    this.#url = new URL(url);
+
+    if (typeof url === "string") {
+      url = new URL(url);
+    } else if (!(url instanceof URL)) {
+      throw new TypeError(`${url} is not a valid URL.`);
+    }
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      throw new TypeError(`${url} is not a http(s) URL.`);
+    }
+
+    const { protocol, hostname, port } = url;
+
+    Object.defineProperty(this, "url", {
+      value: new URL(`${protocol}//${hostname}` + (port ? `:${port}` : "")),
+      writable: false,
+      enumerable: true,
+    });
 
     this.#session = Promise.withResolvers();
-  }
-
-  get url() {
-    return this.#url;
   }
 
   get ruskVersion() {

@@ -8,6 +8,7 @@
 
 import * as ProtocolDriver from "../protocol-driver/mod.js";
 
+import { Rues } from "./rues.js";
 import { GraphQLRequest } from "./graphql.js";
 import { NetworkError } from "./error.js";
 import { Gas } from "./gas.js";
@@ -32,58 +33,11 @@ const once = (target, topic) =>
 const snakeToCamel = (name) =>
   name.replace(/_([a-z])/g, (_, ch) => ch.toUpperCase());
 
-const onMessage = (event) => {
-  const { data } = event;
-  const headersLength = new DataView(data).getUint32(0, true);
-  const headersBuffer = new Uint8Array(data, 4, headersLength);
-  const headers = new Headers(
-    JSON.parse(new TextDecoder().decode(headersBuffer)),
-  );
-  const body = new Uint8Array(data, 4 + headersLength);
-
-  let payload;
-  switch (headers.get("content-type")) {
-    case "application/json":
-      payload = JSON.parse(new TextDecoder().decode(body));
-      break;
-    case "application/octet-stream":
-      payload = body;
-      break;
-    default:
-      try {
-        payload = JSON.parse(new TextDecoder().decode(body));
-      } catch (e) {
-        payload = body;
-      }
-  }
-
-  console.log({ headers, payload });
-};
-
 export class Network {
-  #sessionId;
-  #socket = null;
+  #rues;
   #nodeInfo = null;
 
-  constructor(url) {
-    if (typeof url === "string") {
-      url = new URL(url);
-    } else if (!(url instanceof URL)) {
-      throw new TypeError(`${url} is not a valid URL.`);
-    }
-
-    if (!["http:", "https:"].includes(url.protocol)) {
-      throw new TypeError(`${url} is not a http(s) URL.`);
-    }
-
-    const { protocol, hostname, port } = url;
-
-    Object.defineProperty(this, "url", {
-      value: new URL(`${protocol}//${hostname}` + (port ? `:${port}` : "")),
-      writable: false,
-      enumerable: true,
-    });
-  }
+  constructor(url) {}
 
   static connect(url, options = {}) {
     return new Network(url).connect(options);
