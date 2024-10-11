@@ -360,6 +360,24 @@ pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
     Ok(bytes)
 }
 
+pub(crate) fn request_nonce() -> anyhow::Result<u64> {
+    let question = requestty::Question::input("Contract Deployment nonce")
+        .message("Introduce a number for nonce")
+        .validate_on_key(|f, _| u64::from_str(f).is_ok())
+        .validate(|f, _| {
+            u64::from_str(f)
+                .is_ok()
+                .then_some(())
+                .ok_or("Invalid number".to_owned())
+        })
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+    let bytes = u64::from_str(a.as_string().expect("answer to be a string"))?;
+
+    Ok(bytes)
+}
+
 /// Request Dusk block explorer to be opened
 pub(crate) fn launch_explorer(url: String) -> Result<()> {
     let q = requestty::Question::confirm("launch")
