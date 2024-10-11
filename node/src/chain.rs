@@ -164,11 +164,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 metadata = ?msg.metadata,
                             );
 
-                            // Handle potential new blocks from Success Quorum messages
-                            if let RatificationResult::Success(_) = quorum.att.result {
-                                fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
-                            }
-
                             // Re-route message to the Consensus
                             let acc = self.acceptor.as_ref().expect("initialize is called");
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
