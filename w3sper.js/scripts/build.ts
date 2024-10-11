@@ -1,27 +1,42 @@
 import { build, stop } from "https://deno.land/x/esbuild/mod.js";
 
-const entryPoint = "./src/mod.js";
-
 const outputDir = "./dist";
-const outputFile = `${outputDir}/w3sper.js`;
 
-if (Deno.statSync(outputDir).isDirectory) {
-  Deno.removeSync(outputDir, { recursive: true });
+const dirs = [
+  { source: "./src/mod.js", dest: `${outputDir}/w3sper.js` },
+  { source: "./src/network/mod.js", dest: `${outputDir}/network.js` },
+  {
+    source: "./src/protocol-driver/mod.js",
+    dest: `${outputDir}/protocol-driver.js`,
+  },
+];
+
+try {
+  if (Deno.statSync(outputDir).isDirectory) {
+    Deno.removeSync(outputDir, { recursive: true });
+  }
+  Deno.mkdirSync(outputDir, { recursive: true });
+} catch (err) {
+  console.error("Error setting up the output directory:", err);
 }
 
-Deno.mkdirSync(outputDir, { recursive: true });
+for (const dir of dirs) {
+  try {
+    const result = await build({
+      entryPoints: [dir.source],
+      outfile: dir.dest,
+      bundle: false,
+      minify: false,
+      format: "esm",
+      sourcemap: true,
+      platform: "node",
+    });
 
-// Build the SDK using esbuild
-const result = await build({
-  entryPoints: [entryPoint],
-  outfile: outputFile,
-  bundle: true,
-  minify: false,
-  format: "esm",
-  sourcemap: true,
-});
-
-console.log("w3sper SDK has been built:", result);
+    console.log(`${dir.source} has been built:`, result);
+  } catch (err) {
+    console.error(`Build failed for ${dir.source}:`, err);
+  }
+}
 
 stop();
 
@@ -32,14 +47,19 @@ const packageJsonContent = {
   type: "module",
   exports: {
     ".": "./w3sper.js",
+    "./network": "./network.js",
+    "./protocol-driver": "./protocol-driver.js",
   },
 };
 
-const packageJsonPath = "./dist/package.json";
+const packageJsonPath = `${outputDir}/package.json`;
 
-Deno.writeTextFileSync(
-  packageJsonPath,
-  JSON.stringify(packageJsonContent, null, 2)
-);
-
-console.log("package.json has been generated:", packageJsonContent);
+try {
+  Deno.writeTextFileSync(
+    packageJsonPath,
+    JSON.stringify(packageJsonContent, null, 2)
+  );
+  console.log("package.json has been generated:", packageJsonContent);
+} catch (err) {
+  console.error("Failed to write package.json:", err);
+}
