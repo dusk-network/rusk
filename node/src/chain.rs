@@ -26,8 +26,7 @@ use dusk_consensus::errors::ConsensusError;
 pub use header_validation::verify_att;
 use node_data::events::Event;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
-use node_data::message::AsyncQueue;
-use node_data::message::{payload, Payload, Topics};
+use node_data::message::{AsyncQueue, Payload, Topics};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
@@ -73,13 +72,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             self.genesis_timestamp,
         )
         .await?;
-
-        let locator = tip.inner().header().hash;
-        let msg = payload::GetBlocks::new(locator).into();
-        if let Err(e) = network.read().await.send_to_alive_peers(msg, 16).await
-        {
-            warn!("Unable to send GetBlocks message {e}");
-        }
 
         let state_hash = tip.inner().header().state_hash;
         let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
