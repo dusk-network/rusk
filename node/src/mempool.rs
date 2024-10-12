@@ -332,13 +332,12 @@ impl MempoolSrv {
             .conf
             .mempool_download_redundancy
             .unwrap_or(DEFAULT_DOWNLOAD_REDUNDANCY);
+
+        let net = network.read().await;
+        net.wait_for_alive_nodes(max_peers, 3).await;
+
         let msg = payload::GetMempool::default().into();
-        if let Err(err) = network
-            .read()
-            .await
-            .send_to_alive_peers(msg, max_peers)
-            .await
-        {
+        if let Err(err) = net.send_to_alive_peers(msg, max_peers).await {
             error!("could not request mempool from network: {err}");
         }
     }
