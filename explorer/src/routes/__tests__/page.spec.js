@@ -40,7 +40,7 @@ vi.mock("$lib/services", async (importOriginal) => {
 });
 
 describe("home page", () => {
-  const { chainInfoEntries, fetchInterval, network } = get(appStore);
+  const { chainInfoEntries, fetchInterval } = get(appStore);
 
   afterEach(() => {
     cleanup();
@@ -60,7 +60,6 @@ describe("home page", () => {
     expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(1);
     expect(duskAPI.getLatestChainInfo).toHaveBeenNthCalledWith(
       1,
-      network,
       chainInfoEntries
     );
 
@@ -74,7 +73,6 @@ describe("home page", () => {
     expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(2);
     expect(duskAPI.getLatestChainInfo).toHaveBeenNthCalledWith(
       2,
-      network,
       chainInfoEntries
     );
 
@@ -83,7 +81,6 @@ describe("home page", () => {
     expect(duskAPI.getLatestChainInfo).toHaveBeenCalledTimes(3);
     expect(duskAPI.getLatestChainInfo).toHaveBeenNthCalledWith(
       3,
-      network,
       chainInfoEntries
     );
 

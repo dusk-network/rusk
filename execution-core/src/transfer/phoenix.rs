@@ -114,7 +114,7 @@ impl Transaction {
     pub fn new<R: RngCore + CryptoRng, P: Prove>(
         rng: &mut R,
         sender_sk: &SecretKey,
-        change_pk: &PublicKey,
+        refund_pk: &PublicKey,
         receiver_pk: &PublicKey,
         inputs: Vec<(Note, NoteOpening)>,
         root: BlsScalar,
@@ -159,7 +159,7 @@ impl Transaction {
         // --- Create the transaction payload
 
         // Set the fee.
-        let fee = Fee::new(rng, change_pk, gas_limit, gas_price);
+        let fee = Fee::new(rng, refund_pk, gas_limit, gas_price);
         let max_fee = fee.max_fee();
 
         if input_value < transfer_value + max_fee + deposit {
@@ -205,7 +205,7 @@ impl Transaction {
         let change_note = Note::obfuscated(
             rng,
             &sender_pk,
-            change_pk,
+            refund_pk,
             change_value,
             change_value_blinder,
             change_sender_blinder,
@@ -623,7 +623,7 @@ pub struct Payload {
     pub chain_id: u8,
     /// Transaction skeleton used for the phoenix transaction.
     pub tx_skeleton: TxSkeleton,
-    /// Data used to calculate the transaction fee.
+    /// Data used to calculate the transaction fee and refund unspent gas.
     pub fee: Fee,
     /// Data to do a contract call, deployment, or insert a memo.
     pub data: Option<TransactionData>,
@@ -790,7 +790,7 @@ impl Fee {
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
-        pk: &PublicKey,
+        refund_pk: &PublicKey,
         gas_limit: u64,
         gas_price: u64,
     ) -> Self {
@@ -801,26 +801,35 @@ impl Fee {
             JubJubScalar::random(&mut *rng),
         ];
 
-        Self::deterministic(&r, pk, gas_limit, gas_price, &sender_blinder)
+        Self::deterministic(
+            &r,
+            refund_pk,
+            gas_limit,
+            gas_price,
+            &sender_blinder,
+        )
     }
 
     /// Create a new Fee without inner randomness
     #[must_use]
     pub fn deterministic(
         r: &JubJubScalar,
-        pk: &PublicKey,
+        refund_pk: &PublicKey,
         gas_limit: u64,
         gas_price: u64,
         sender_blinder: &[JubJubScalar; 2],
     ) -> Self {
-        let stealth_address = pk.gen_stealth_address(r);
-        let sender =
-            Sender::encrypt(stealth_address.note_pk(), pk, sender_blinder);
+        let refund_address = refund_pk.gen_stealth_address(r);
+        let sender = Sender::encrypt(
+            refund_address.note_pk(),
+            refund_pk,
+            sender_blinder,
+        );
 
         Fee {
             gas_limit,
             gas_price,
-            stealth_address,
+            stealth_address: refund_address,
             sender,
         }
     }
@@ -901,13 +910,13 @@ impl Serializable<SIZE> for Fee {
 
         let gas_limit = u64::from_reader(&mut reader)?;
         let gas_price = u64::from_reader(&mut reader)?;
-        let stealth_address = StealthAddress::from_reader(&mut reader)?;
+        let refund_address = StealthAddress::from_reader(&mut reader)?;
         let sender = Sender::from_reader(&mut reader)?;
 
         Ok(Fee {
             gas_limit,
             gas_price,
-            stealth_address,
+            stealth_address: refund_address,
             sender,
         })
     }

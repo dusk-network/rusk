@@ -7,6 +7,7 @@
   import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
   import { appStore } from "$lib/stores";
+  import { makeNodeUrl } from "$lib/url";
 
   import "./Navbar.css";
 
@@ -46,21 +47,30 @@
     )[0]?.clientHeight;
   }
 
+  /**
+   * Determines the network name by the subdomain
+   *
+   * @param {string} host
+   */
+  const getNetworkName = (host) => {
+    const network = host.toLowerCase().split(".");
+
+    if (network[0] === "nodes") {
+      return "mainnet";
+    } else {
+      return network.includes("localhost") ? "localnet" : network[0];
+    }
+  };
+
   afterNavigate(() => {
     hidden = true;
     dispatch("toggleMenu", hidden);
     showSearchNotification = false;
   });
 
-  $: ({ darkMode, network, networks } = $appStore);
+  $: ({ darkMode } = $appStore);
 
-  /** @param {string} host */
-  function getNetworkLabelByHost(host) {
-    const currentNetwork = networks.find(
-      (networkOption) => networkOption.value.host === host
-    );
-    return currentNetwork?.label || "Offline";
-  }
+  const network = makeNodeUrl()?.hostname || "";
 </script>
 
 <nav
@@ -95,7 +105,7 @@
   >
     <Badge
       className="dusk-navbar__menu--network"
-      text={getNetworkLabelByHost(network)}
+      text={getNetworkName(network)}
       variant={network ? "success" : "warning"}
     />
     <NavList className="dusk-navbar__menu--links" {navigation} />

@@ -393,6 +393,89 @@ fn moonlight_transfer() {
 }
 
 #[test]
+fn moonlight_transfer_with_refund() {
+    const TRANSFER_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let phoenix_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let moonlight_sender_sk = AccountSecretKey::random(rng);
+    let moonlight_sender_pk = AccountPublicKey::from(&moonlight_sender_sk);
+
+    let moonlight_refund_pk =
+        AccountPublicKey::from(&AccountSecretKey::random(rng));
+
+    let moonlight_receiver_pk =
+        AccountPublicKey::from(&AccountSecretKey::random(rng));
+
+    let session = &mut instantiate(rng, vm, &phoenix_pk, &moonlight_sender_pk);
+
+    let sender_account = account(session, &moonlight_sender_pk)
+        .expect("Getting the sender account should succeed");
+    let receiver_account = account(session, &moonlight_receiver_pk)
+        .expect("Getting the receiver account should succeed");
+
+    assert_eq!(
+        sender_account.balance, MOONLIGHT_GENESIS_VALUE,
+        "The sender account should have the genesis value"
+    );
+    assert_eq!(
+        receiver_account.balance, 0,
+        "The receiver account should be empty"
+    );
+
+    let chain_id =
+        chain_id(session).expect("Getting the chain ID should succeed");
+
+    let transaction = MoonlightTransaction::new_with_refund(
+        &moonlight_sender_sk,
+        &moonlight_refund_pk,
+        Some(moonlight_receiver_pk),
+        TRANSFER_VALUE,
+        0,
+        GAS_LIMIT,
+        LUX,
+        sender_account.nonce + 1,
+        chain_id,
+        None::<TransactionData>,
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let max_gas = GAS_LIMIT * LUX;
+    let gas_spent = execute(session, transaction)
+        .expect("Transaction should succeed")
+        .gas_spent;
+    let gas_refund = max_gas - gas_spent;
+
+    println!("MOONLIGHT TRANSFER: {} gas", gas_spent);
+
+    let sender_account = account(session, &moonlight_sender_pk)
+        .expect("Getting the sender account should succeed");
+    let refund_account = account(session, &moonlight_refund_pk)
+        .expect("Getting the refund account should succeed");
+    let receiver_account = account(session, &moonlight_receiver_pk)
+        .expect("Getting the receiver account should succeed");
+
+    assert_eq!(
+        sender_account.balance,
+        MOONLIGHT_GENESIS_VALUE - max_gas - TRANSFER_VALUE,
+        "The sender account should decrease by the amount spent"
+    );
+    assert_eq!(
+        refund_account.balance, gas_refund,
+        "The sender account should decrease by the amount spent"
+    );
+    assert_eq!(
+        receiver_account.balance, TRANSFER_VALUE,
+        "The receiver account should have the transferred value"
+    );
+}
+
+#[test]
 fn moonlight_transfer_gas_fails() {
     const TRANSFER_VALUE: u64 = dusk(1.0);
 

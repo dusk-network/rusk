@@ -14,7 +14,7 @@ import { duskAPI } from "..";
 
 describe("duskAPI", () => {
   const fetchSpy = vi.spyOn(global, "fetch");
-  const node = new URL("/", import.meta.url);
+  const node = new URL(import.meta.env.VITE_NODE_URL, import.meta.url);
   const fakeID = "some-id";
   const apiGetOptions = {
     headers: {
@@ -25,14 +25,13 @@ describe("duskAPI", () => {
   };
 
   /** @type {URL} */
-  const gqlExpectedURL = new URL(`/02/Chain`, node.origin);
-
+  const gqlExpectedURL = new URL("/02/Chain", node);
   const endpointEnvName = "VITE_API_ENDPOINT";
 
   /** @type {(endpoint: string) => URL} */
   const getAPIExpectedURL = (endpoint) =>
     new URL(
-      `${import.meta.env[endpointEnvName]}/${endpoint}?node=${encodeURIComponent(node.host)}`
+      `${import.meta.env[endpointEnvName]}/${endpoint}?node=nodes.dusk.network`
     );
 
   /** @type {(data: Record<string | number, any> | number) => Response} */
@@ -70,7 +69,7 @@ describe("duskAPI", () => {
         })
       );
 
-    await expect(duskAPI.getBlock(node.host, fakeID)).resolves.toStrictEqual(
+    await expect(duskAPI.getBlock(fakeID)).resolves.toStrictEqual(
       transformBlock(mockData.gqlBlock.block)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(2);
@@ -102,7 +101,6 @@ describe("duskAPI", () => {
     `);
     expect(getByHeightSpy).toHaveBeenCalledTimes(1);
     expect(getByHeightSpy).toHaveBeenCalledWith(
-      node.host,
       mockData.gqlBlock.block.header.height + 1
     );
 
@@ -128,10 +126,8 @@ describe("duskAPI", () => {
         })
       );
 
-    await expect(duskAPI.getBlockHashByHeight(node.host, 11)).resolves.toBe(
-      expectedHash
-    );
-    await expect(duskAPI.getBlockHashByHeight(node.host, 11)).resolves.toBe("");
+    await expect(duskAPI.getBlockHashByHeight(11)).resolves.toBe(expectedHash);
+    await expect(duskAPI.getBlockHashByHeight(11)).resolves.toBe("");
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
@@ -164,7 +160,7 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the details of a single block", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlockDetails));
 
-    await expect(duskAPI.getBlockDetails(node.host, fakeID)).resolves.toBe(
+    await expect(duskAPI.getBlockDetails(fakeID)).resolves.toBe(
       mockData.gqlBlockDetails.block.header.json
     );
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
@@ -185,7 +181,7 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the list of blocks", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlBlocks));
 
-    await expect(duskAPI.getBlocks(node.host, 100)).resolves.toStrictEqual(
+    await expect(duskAPI.getBlocks(100)).resolves.toStrictEqual(
       mockData.gqlBlocks.blocks.map(transformBlock)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -207,9 +203,7 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the latest chain info", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlLatestChainInfo));
 
-    await expect(
-      duskAPI.getLatestChainInfo(node.host, 15)
-    ).resolves.toStrictEqual({
+    await expect(duskAPI.getLatestChainInfo(15)).resolves.toStrictEqual({
       blocks: mockData.gqlLatestChainInfo.blocks.map(transformBlock),
       transactions:
         mockData.gqlLatestChainInfo.transactions.map(transformTransaction),
@@ -249,7 +243,7 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the node locations", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations));
 
-    await expect(duskAPI.getNodeLocations(node.host)).resolves.toStrictEqual(
+    await expect(duskAPI.getNodeLocations()).resolves.toStrictEqual(
       mockData.apiNodeLocations.data
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -281,9 +275,7 @@ describe("duskAPI", () => {
       )
       .mockResolvedValueOnce(makeOKResponse(last100BlocksTxs));
 
-    await expect(duskAPI.getStats(node.host)).resolves.toStrictEqual(
-      expectedStats
-    );
+    await expect(duskAPI.getStats()).resolves.toStrictEqual(expectedStats);
 
     expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(
@@ -329,9 +321,9 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve a single transaction", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlTransaction));
 
-    await expect(
-      duskAPI.getTransaction(node.host, fakeID)
-    ).resolves.toStrictEqual(transformTransaction(mockData.gqlTransaction.tx));
+    await expect(duskAPI.getTransaction(fakeID)).resolves.toStrictEqual(
+      transformTransaction(mockData.gqlTransaction.tx)
+    );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
@@ -353,9 +345,9 @@ describe("duskAPI", () => {
       makeOKResponse(mockData.gqlTransactionDetails)
     );
 
-    await expect(
-      duskAPI.getTransactionDetails(node.host, fakeID)
-    ).resolves.toBe(mockData.gqlTransactionDetails.tx.tx.json);
+    await expect(duskAPI.getTransactionDetails(fakeID)).resolves.toBe(
+      mockData.gqlTransactionDetails.tx.tx.json
+    );
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
@@ -374,9 +366,7 @@ describe("duskAPI", () => {
   it("should expose a method to retrieve the list of transactions", async () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.gqlTransactions));
 
-    await expect(
-      duskAPI.getTransactions(node.host, 100)
-    ).resolves.toStrictEqual(
+    await expect(duskAPI.getTransactions(100)).resolves.toStrictEqual(
       mockData.gqlTransactions.transactions.map(transformTransaction)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -418,7 +408,7 @@ describe("duskAPI", () => {
 
   it("should be able to make the correct request whether the endpoint in env vars ends with a trailing slash or not", () => {
     const expectedURL = new URL(
-      `http://example.com/locations?node=${encodeURIComponent(node.host)}`
+      "http://example.com/locations?node=nodes.dusk.network"
     );
 
     fetchSpy
@@ -427,11 +417,11 @@ describe("duskAPI", () => {
 
     vi.stubEnv(endpointEnvName, "http://example.com");
 
-    duskAPI.getNodeLocations(node.host);
+    duskAPI.getNodeLocations();
 
     vi.stubEnv(endpointEnvName, "http://example.com/");
 
-    duskAPI.getNodeLocations(node.host);
+    duskAPI.getNodeLocations();
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy).toHaveBeenNthCalledWith(1, expectedURL, apiGetOptions);
@@ -462,7 +452,7 @@ describe("duskAPI", () => {
       .mockResolvedValueOnce(makeOKResponse(hashResult))
       .mockResolvedValueOnce(makeOKResponse(heightResult));
 
-    await expect(duskAPI.search(node.host, fakeHash1)).resolves.toStrictEqual(
+    await expect(duskAPI.search(fakeHash1)).resolves.toStrictEqual(
       transformSearchResult([hashResult, heightResult])
     );
 
@@ -503,7 +493,7 @@ describe("duskAPI", () => {
       makeOKResponse(mockData.gqlSearchPossibleResults[0])
     );
 
-    await expect(duskAPI.search(node.host, entryHash)).resolves.toStrictEqual(
+    await expect(duskAPI.search(entryHash)).resolves.toStrictEqual(
       transformSearchResult([mockData.gqlSearchPossibleResults[0]])
     );
 
@@ -530,7 +520,7 @@ describe("duskAPI", () => {
       makeOKResponse(mockData.gqlSearchPossibleResults[0])
     );
 
-    await expect(duskAPI.search(node.host, entryHeight)).resolves.toStrictEqual(
+    await expect(duskAPI.search(entryHeight)).resolves.toStrictEqual(
       transformSearchResult([mockData.gqlSearchPossibleResults[0]])
     );
 
@@ -551,7 +541,7 @@ describe("duskAPI", () => {
   });
 
   it("should not perform any search at all if the query string doesn't satisfy criteria for both hash and height", async () => {
-    await expect(duskAPI.search(node.host, "abc")).resolves.toStrictEqual([]);
+    await expect(duskAPI.search("abc")).resolves.toStrictEqual([]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });

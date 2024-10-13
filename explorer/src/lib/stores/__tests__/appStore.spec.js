@@ -1,6 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
-import { makeNodeUrl } from "$lib/url";
 
 import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
@@ -31,15 +30,6 @@ describe("appStore", () => {
   it("should be a readable store holding the information needed throughout the whole application", async () => {
     const { appStore } = await import("..");
     const { env } = import.meta;
-    const nodeUrl = makeNodeUrl();
-
-    /** @type {NetworkOption[]}*/
-    const expectedNetworks = [
-      { label: "Local", value: nodeUrl },
-      { label: "Devnet", value: nodeUrl },
-      { label: "Testnet", value: nodeUrl },
-      { label: "Mainnet", value: nodeUrl },
-    ];
 
     expect(appStore).toHaveProperty("subscribe", expect.any(Function));
     expect(appStore).not.toHaveProperty("set");
@@ -51,8 +41,6 @@ describe("appStore", () => {
       hasTouchSupport: false,
       isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
-      network: makeNodeUrl().host,
-      networks: expectedNetworks,
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
     });
@@ -94,14 +82,6 @@ describe("appStore", () => {
     expect(statsFetchInterval).toBe(1000);
 
     vi.unstubAllEnvs();
-  });
-
-  it("should expose a service method to set the selected network", async () => {
-    const { appStore } = await import("..");
-
-    appStore.setNetwork("some-network");
-
-    expect(get(appStore).network).toBe("some-network");
   });
 
   it("should expose a service method to set the dark mode theme", async () => {

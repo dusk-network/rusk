@@ -13,7 +13,6 @@ use rusk_wallet::{
     gas, Address, Error, SyncStatus, Wallet, WalletPath, MAX_ADDRESSES,
 };
 
-use crate::command::DEFAULT_STAKE_GAS_LIMIT;
 use crate::io;
 use crate::io::prompt::request_auth;
 use crate::io::GraphQL;
@@ -67,9 +66,8 @@ pub(crate) async fn run_loop(
             AddrSelect::Exit => std::process::exit(0),
         };
 
-        let is_synced = wallet.is_synced().await?;
-
         loop {
+            let is_synced = wallet.is_synced().await?;
             // get balance for this address
             prompt::hide_cursor()?;
             let moonlight_bal = wallet.get_moonlight_balance(addr_idx).await?;
@@ -284,7 +282,7 @@ fn transaction_op_menu_moonlight(
             sndr_idx: Some(addr_idx),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
@@ -292,23 +290,23 @@ fn transaction_op_menu_moonlight(
             memo: prompt::request_str("memo")?,
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Stake => AddrOp::Run(Box::new(Command::MoonlightStake {
             addr_idx: Some(addr_idx),
             amt: prompt::request_stake_token_amt(moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Unstake => AddrOp::Run(Box::new(Command::MoonlightUnstake {
             addr_idx: Some(addr_idx),
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Withdraw => AddrOp::Run(Box::new(Command::MoonlightWithdraw {
             addr_idx: Some(addr_idx),
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         ContractDeploy => {
@@ -316,7 +314,10 @@ fn transaction_op_menu_moonlight(
                 addr_idx: Some(addr_idx),
                 code: prompt::request_contract_code()?,
                 init_args: prompt::request_bytes("init arguments")?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                deploy_nonce: prompt::request_nonce()?,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_DEPLOYMENT,
+                )?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
@@ -325,7 +326,7 @@ fn transaction_op_menu_moonlight(
             contract_id: prompt::request_bytes("contract id")?,
             fn_name: prompt::request_str("function name to call")?,
             fn_args: prompt::request_bytes("arguments of calling function")?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         History => AddrOp::Back,
@@ -368,7 +369,7 @@ fn transaction_op_menu_phoenix(
             sndr_idx: Some(addr_idx),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
@@ -379,23 +380,23 @@ fn transaction_op_menu_phoenix(
                 "transfer",
                 phoenix_balance,
             )?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Stake => AddrOp::Run(Box::new(Command::PhoenixStake {
             addr_idx: Some(addr_idx),
             amt: prompt::request_stake_token_amt(phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Unstake => AddrOp::Run(Box::new(Command::PhoenixUnstake {
             addr_idx: Some(addr_idx),
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Withdraw => AddrOp::Run(Box::new(Command::PhoenixWithdraw {
             addr_idx: Some(addr_idx),
-            gas_limit: prompt::request_gas_limit(DEFAULT_STAKE_GAS_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         ContractDeploy => {
@@ -403,7 +404,10 @@ fn transaction_op_menu_phoenix(
                 addr_idx: Some(addr_idx),
                 code: prompt::request_contract_code()?,
                 init_args: prompt::request_bytes("init arguments")?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                deploy_nonce: prompt::request_nonce()?,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_DEPLOYMENT,
+                )?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
@@ -412,7 +416,7 @@ fn transaction_op_menu_phoenix(
             contract_id: prompt::request_bytes("contract id")?,
             fn_name: prompt::request_str("function name to call")?,
             fn_args: prompt::request_bytes("arguments of calling function")?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         History => AddrOp::Run(Box::new(Command::PhoenixHistory {
@@ -439,6 +443,8 @@ enum CommandMenuItem {
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
+    // Generate Contract ID.
+    CalculateContractId,
     // Others
     StakeInfo,
     Export,
@@ -476,6 +482,7 @@ fn menu_op(
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
         .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
+        .add(CMI::CalculateContractId, "Calculate Contract ID")
         .add(CMI::Export, "Export provisioner key-pair")
         .separator()
         .add(CMI::Back, "Back")
@@ -517,7 +524,7 @@ fn menu_op(
             AddrOp::Run(Box::new(Command::MoonlightToPhoenix {
                 addr_idx: Some(addr_idx),
                 amt: prompt::request_token_amt("convert", moonlight_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
@@ -525,8 +532,15 @@ fn menu_op(
             AddrOp::Run(Box::new(Command::PhoenixToMoonlight {
                 addr_idx: Some(addr_idx),
                 amt: prompt::request_token_amt("convert", phoenix_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::CalculateContractId => {
+            AddrOp::Run(Box::new(Command::CalculateContractId {
+                addr_idx: Some(addr_idx),
+                deploy_nonce: prompt::request_nonce()?,
+                code: prompt::request_contract_code()?,
             }))
         }
         CMI::Export => AddrOp::Run(Box::new(Command::Export {
@@ -746,6 +760,22 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
+        Command::MoonlightStake {
+            addr_idx,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Stake from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Amount to stake = {} DUSK", amt);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
         Command::PhoenixUnstake {
             addr_idx,
             gas_limit,
@@ -759,6 +789,20 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             prompt::ask_confirm()
         }
+        Command::MoonlightUnstake {
+            addr_idx,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Unstake from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
         Command::PhoenixWithdraw {
             addr_idx,
             gas_limit,
@@ -770,6 +814,104 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
                 address_idx_string(addr_idx.unwrap_or_default())
             );
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            prompt::ask_confirm()
+        }
+        Command::MoonlightWithdraw {
+            addr_idx,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Reward from {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
+        Command::PhoenixMemo {
+            sndr_idx,
+            memo,
+            rcvr,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Send from = {}",
+                address_idx_string(sndr_idx.unwrap_or_default())
+            );
+            println!("   > Recipient = {}", rcvr.preview());
+            println!("   > Amount to transfer = {} DUSK", amt);
+            println!("   > Memo = {}", memo);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            prompt::ask_confirm()
+        }
+        Command::MoonlightMemo {
+            sndr_idx,
+            memo,
+            rcvr,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price;
+            println!(
+                "   > Send from = {}",
+                address_idx_string(sndr_idx.unwrap_or_default())
+            );
+            println!("   > Recipient = {}", rcvr.preview());
+            println!("   > Amount to transfer = {} DUSK", amt);
+            println!("   > Memo = {}", memo);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            prompt::ask_confirm()
+        }
+        Command::PhoenixContractDeploy {
+            addr_idx,
+            code,
+            init_args,
+            deploy_nonce,
+            gas_limit,
+            gas_price,
+        } => {
+            let code_len = code.metadata()?.len();
+            let max_fee = gas_limit * gas_price;
+
+            println!(
+                "   > Deploy from = {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Code len = {}", code_len);
+            println!("   > Init args = {}", hex::encode(init_args));
+            println!("   > Deploy nonce = {}", deploy_nonce);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+
+            prompt::ask_confirm()
+        }
+        Command::MoonlightContractDeploy {
+            addr_idx,
+            code,
+            init_args,
+            deploy_nonce,
+            gas_limit,
+            gas_price,
+        } => {
+            let code_len = code.metadata()?.len();
+            let max_fee = gas_limit * gas_price;
+
+            println!(
+                "   > Deploy from = {}",
+                address_idx_string(addr_idx.unwrap_or_default())
+            );
+            println!("   > Code len = {}", code_len);
+            println!("   > Init args = {}", hex::encode(init_args));
+            println!("   > Deploy nonce = {}", deploy_nonce);
+            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+
             prompt::ask_confirm()
         }
         _ => Ok(true),

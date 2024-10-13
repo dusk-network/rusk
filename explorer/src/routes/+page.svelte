@@ -1,30 +1,25 @@
 <script>
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   import { LatestBlocksCard, LatestTransactionsCard } from "$lib/components";
   import { StatisticsPanel } from "$lib/containers";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
   import { createPollingDataStore } from "$lib/dusk/svelte-stores";
-  import { onNetworkChange } from "$lib/lifecyles";
 
   const pollingDataStore = createPollingDataStore(
     duskAPI.getLatestChainInfo,
     $appStore.fetchInterval
   );
 
-  onNetworkChange((network) => {
-    pollingDataStore.reset();
-    pollingDataStore.start(network, $appStore.chainInfoEntries);
-  });
-
+  onMount(() => pollingDataStore.start($appStore.chainInfoEntries));
   onDestroy(pollingDataStore.stop);
 
   $: ({ data, error, isLoading } = $pollingDataStore);
-  $: ({ chainInfoEntries, isSmallScreen, network } = $appStore);
+  $: ({ chainInfoEntries, isSmallScreen } = $appStore);
 
   const retry = () => {
-    pollingDataStore.start(network, chainInfoEntries);
+    pollingDataStore.start(chainInfoEntries);
   };
 </script>
 

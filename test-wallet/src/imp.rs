@@ -357,7 +357,7 @@ where
     ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
         let receiver_pk = self.phoenix_public_key(sender_index)?;
-        let change_pk = receiver_pk;
+        let refund_pk = receiver_pk;
 
         let input_notes_openings = self.input_notes_openings(
             &sender_sk,
@@ -375,7 +375,7 @@ where
         let tx = phoenix_transaction(
             rng,
             &sender_sk,
-            &change_pk,
+            &refund_pk,
             &receiver_pk,
             input_notes_openings,
             root,
@@ -406,7 +406,7 @@ where
         gas_price: u64,
     ) -> Result<Transaction, Error<S, SC>> {
         let mut sender_sk = self.phoenix_secret_key(sender_index)?;
-        let change_pk = self.phoenix_public_key(sender_index)?;
+        let refund_pk = self.phoenix_public_key(sender_index)?;
 
         let input_notes_openings = self.input_notes_openings(
             &sender_sk,
@@ -426,7 +426,7 @@ where
         let tx = phoenix_transaction(
             rng,
             &sender_sk,
-            &change_pk,
+            &refund_pk,
             &receiver_pk,
             input_notes_openings,
             root,

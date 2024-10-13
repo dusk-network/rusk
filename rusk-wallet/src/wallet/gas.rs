@@ -10,10 +10,16 @@
 use crate::currency::Lux;
 
 /// The minimum gas limit
-pub const MIN_LIMIT: u64 = 350_000_000;
+pub const MIN_LIMIT: u64 = 50_000_000;
 
-/// The default gas limit
-pub const DEFAULT_LIMIT: u64 = 500_000_000;
+/// The default gas limit for transfer transactions
+pub const DEFAULT_LIMIT_TRANSFER: u64 = 100_000_000;
+
+/// The default gas limit for a contract deployment
+pub const DEFAULT_LIMIT_DEPLOYMENT: u64 = 50_000_000;
+
+/// The default gas limit for staking/contract calls
+pub const DEFAULT_LIMIT_CALL: u64 = 2_900_000_000;
 
 /// The default gas price
 pub const DEFAULT_PRICE: Lux = 1;
@@ -71,6 +77,6 @@ impl Gas {
 
 impl Default for Gas {
     fn default() -> Self {
-        Self::new(DEFAULT_LIMIT)
+        Self::new(DEFAULT_LIMIT_TRANSFER)
     }
 }

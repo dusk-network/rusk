@@ -46,7 +46,7 @@ exports[`Main layout > should render the app's main layout 1`] = `
         <span
           class="dusk-badge dusk-badge--variant-success dusk-navbar__menu--network"
         >
-          Local
+          mainnet
         </span>
          
         <nav
