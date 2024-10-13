@@ -807,8 +807,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &stake_sk,
             &stake_sk,
             unstake_value,
-            gas.price,
             gas.limit,
+            gas.price,
             account_nonce,
             chain_id,
         )?;
