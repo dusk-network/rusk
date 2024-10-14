@@ -72,9 +72,11 @@
     <svelte:fragment slot="term">gas used</svelte:fragment>
     <svelte:fragment slot="definition">
       <ProgressBar
-        currentPercentage={(data.transactions.stats.gasUsed /
-          data.transactions.stats.gasLimit) *
-          100}
+        currentPercentage={data.transactions.stats.gasLimit === 0
+          ? 0
+          : (data.transactions.stats.gasUsed /
+              data.transactions.stats.gasLimit) *
+            100}
         className="blocks-list__gas-used"
         ariaLabel="Gas Used"
       />

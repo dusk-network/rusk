@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix Transactions Fee is not properly computed [#2348]
 - Fix shield icons used for tx type [#2389]
+- Fix Gas Used meter if Gas Limit is zero [#2668]
 
 ## [0.2.0] - 2024-08-26
 
@@ -79,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2389]: https://github.com/dusk-network/rusk/issues/2389
 [#2527]: https://github.com/dusk-network/rusk/issues/2527
 [#2166]: https://github.com/dusk-network/rusk/issues/2166
+[#2668]: https://github.com/dusk-network/rusk/issues/2668
 
 <!-- VERSIONS -->
 
