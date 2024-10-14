@@ -20,7 +20,12 @@
   } from "$lib/dusk/components";
   import { AppAnchorButton, GasControls } from "$lib/components";
   import { currencies } from "$lib/dusk/currency";
-  import { gasStore, settingsStore, walletStore } from "$lib/stores";
+  import {
+    gasStore,
+    networkStore,
+    settingsStore,
+    walletStore,
+  } from "$lib/stores";
   import { areValidGasSettings } from "$lib/contracts";
   import { logout } from "$lib/navigation";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
@@ -65,6 +70,12 @@
   let resetError = null;
 
   $: ({ syncStatus } = $walletStore);
+  $: ({ connected } = $networkStore);
+
+  /** @type {import("svelte").ComponentProps<Badge>} */
+  $: connectedBadgeProps = connected
+    ? { text: "Online", variant: "success" }
+    : { text: "Offline", variant: "error" };
 </script>
 
 <section class="settings">
@@ -80,7 +91,7 @@
           <Icon path={mdiCheckNetworkOutline} />
           <h3 class="h4 settings-group__heading">Network</h3>
         </div>
-        <Badge variant="success" text="Online" />
+        <Badge {...connectedBadgeProps} />
       </header>
       <Select
         className="settings-group__select"

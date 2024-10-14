@@ -1,11 +1,16 @@
 <script>
-  import { settingsStore } from "$lib/stores";
+  import { onDestroy } from "svelte";
+  import { networkStore, settingsStore } from "$lib/stores";
   import { Toast, Tooltip } from "$lib/dusk/components";
 
   import "../style/main.css";
 
   settingsStore.subscribe(({ darkMode }) => {
     document.documentElement.classList.toggle("dark", darkMode);
+  });
+
+  onDestroy(async () => {
+    await networkStore.disconnect();
   });
 </script>
 

@@ -1,18 +1,16 @@
 import { settingsStore, walletStore } from "$lib/stores";
-import { getSeedFromMnemonic } from "$lib/wallet";
-import { getWallet } from "$lib/services/wallet";
+import { getSeedFromMnemonic, profileGeneratorFrom } from "$lib/wallet";
 
 /**
- * @param {string[]} mnemonicPhrase
- * @param {number | undefined} syncFrom
+ * @param {string} mnemonic
+ * @param {bigint | undefined} syncFrom
  */
-async function initializeWallet(mnemonicPhrase, syncFrom = undefined) {
+async function initializeWallet(mnemonic, syncFrom = undefined) {
   settingsStore.reset();
 
-  const mnemonic = mnemonicPhrase.join(" ");
-  const seed = getSeedFromMnemonic(mnemonic);
-  const wallet = getWallet(seed);
-  walletStore.clearLocalDataAndInit(wallet, syncFrom);
+  const profileGenerator = profileGeneratorFrom(getSeedFromMnemonic(mnemonic));
+
+  walletStore.clearLocalDataAndInit(profileGenerator, syncFrom);
 }
 
 export default initializeWallet;

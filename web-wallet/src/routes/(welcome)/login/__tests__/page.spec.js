@@ -10,16 +10,19 @@ import {
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { generateMnemonic } from "bip39";
 import { get } from "svelte/store";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
-import { setKey } from "lamb";
+import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
 
-import { addresses } from "$lib/mock-data";
+import { getKey, setKey } from "lamb";
+
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
-import { encryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
+import {
+  encryptMnemonic,
+  getSeedFromMnemonic,
+  profileGeneratorFrom,
+} from "$lib/wallet";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
-import * as walletService from "$lib/services/wallet";
 
 import Login from "../+page.svelte";
 
@@ -32,42 +35,29 @@ function getTextInput(container) {
 }
 
 describe("Login", async () => {
-  const walletGetPsksSpy = vi
-    .spyOn(Wallet.prototype, "getPsks")
-    .mockResolvedValue(addresses);
-  const walletResetSpy = vi
-    .spyOn(Wallet.prototype, "reset")
-    .mockResolvedValue(void 0);
   const mnemonic = generateMnemonic();
   const pwd = "some pwd";
   const loginInfo = await encryptMnemonic(mnemonic, pwd);
   const seed = getSeedFromMnemonic(mnemonic);
-  const userId = (await new Wallet(seed).getPsks())[0];
+  const userId = await profileGeneratorFrom(seed)
+    .default.then(getKey("address"))
+    .then(String);
+
   const getErrorElement = () => document.querySelector(".login__error");
-  const getWalletSpy = vi.spyOn(walletService, "getWallet");
   const gotoSpy = vi.spyOn(navigation, "goto");
   const initSpy = vi.spyOn(walletStore, "init");
-  const settingsResetSpy = vi.spyOn(settingsStore, "reset");
 
   afterEach(async () => {
     cleanup();
-    getWalletSpy.mockClear();
     gotoSpy.mockClear();
     initSpy.mockClear();
     settingsStore.reset();
-    settingsResetSpy.mockClear();
-    walletGetPsksSpy.mockClear();
-    walletResetSpy.mockClear();
     walletStore.reset();
   });
 
-  afterAll(() => {
-    getWalletSpy.mockRestore();
+  afterAll(async () => {
     gotoSpy.mockRestore();
     initSpy.mockRestore();
-    settingsResetSpy.mockRestore();
-    walletGetPsksSpy.mockRestore();
-    walletResetSpy.mockRestore();
   });
 
   describe("Mnemonic phrase workflow", () => {
@@ -93,8 +83,6 @@ describe("Login", async () => {
         Number(textInput.selectionEnd)
       );
 
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(initSpy).not.toHaveBeenCalled();
       expect(errorElement?.textContent).toMatch(/mnemonic/i);
       expect(textInput).toHaveFocus();
@@ -110,10 +98,6 @@ describe("Login", async () => {
       await fireEvent.submit(form, { currentTarget: form });
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe("");
       expect(initSpy).not.toHaveBeenCalled();
       expect(gotoSpy).toHaveBeenCalledWith("/setup/restore");
@@ -131,10 +115,6 @@ describe("Login", async () => {
       await fireEvent.submit(form, { currentTarget: form });
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe(currentUserID);
       expect(initSpy).not.toHaveBeenCalled();
       expect(gotoSpy).toHaveBeenCalledWith("/setup/restore");
@@ -151,13 +131,9 @@ describe("Login", async () => {
       await fireEvent.submit(form, { currentTarget: form });
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe(userId);
       expect(initSpy).toHaveBeenCalledTimes(1);
-      expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
+      expect(initSpy).toHaveBeenCalledWith(expect.any(ProfileGenerator));
       expect(gotoSpy).toHaveBeenCalledTimes(1);
       expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
     });
@@ -175,13 +151,9 @@ describe("Login", async () => {
       await fireEvent.submit(form, { currentTarget: form });
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe(userId);
       expect(initSpy).toHaveBeenCalledTimes(1);
-      expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
+      expect(initSpy).toHaveBeenCalledWith(expect.any(ProfileGenerator));
       expect(gotoSpy).toHaveBeenCalledTimes(1);
       expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
     });
@@ -216,8 +188,6 @@ describe("Login", async () => {
         Number(textInput.selectionEnd)
       );
 
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(initSpy).not.toHaveBeenCalled();
       expect(errorElement?.textContent).toMatch(/password/i);
       expect(textInput).toHaveFocus();
@@ -243,10 +213,6 @@ describe("Login", async () => {
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
       expect(getErrorElement()).toBeNull();
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe("");
       expect(initSpy).not.toHaveBeenCalled();
       expect(gotoSpy).toHaveBeenCalledTimes(1);
@@ -273,11 +239,6 @@ describe("Login", async () => {
 
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
-      expect(get(settingsStore).userId).toBe(currentUserID);
       expect(initSpy).not.toHaveBeenCalled();
       expect(gotoSpy).toHaveBeenCalledTimes(1);
       expect(gotoSpy).toHaveBeenCalledWith("/setup/restore");
@@ -294,13 +255,9 @@ describe("Login", async () => {
       await fireEvent.submit(form, { currentTarget: form });
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe(userId);
       expect(initSpy).toHaveBeenCalledTimes(1);
-      expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
+      expect(initSpy).toHaveBeenCalledWith(expect.any(ProfileGenerator));
       expect(gotoSpy).toHaveBeenCalledTimes(1);
       expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
     });
@@ -318,13 +275,9 @@ describe("Login", async () => {
       await fireEvent.submit(form, { currentTarget: form });
       await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-      expect(getWalletSpy).toHaveBeenCalledTimes(1);
-      expect(getWalletSpy).toHaveBeenCalledWith(seed);
-      expect(walletResetSpy).not.toHaveBeenCalled();
-      expect(settingsResetSpy).not.toHaveBeenCalled();
       expect(get(settingsStore).userId).toBe(userId);
       expect(initSpy).toHaveBeenCalledTimes(1);
-      expect(initSpy).toHaveBeenCalledWith(expect.any(Wallet));
+      expect(initSpy).toHaveBeenCalledWith(expect.any(ProfileGenerator));
       expect(gotoSpy).toHaveBeenCalledTimes(1);
       expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
     });

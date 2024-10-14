@@ -11,7 +11,7 @@ import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 
 import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
 import * as navigation from "$lib/navigation";
-import { settingsStore, walletStore } from "$lib/stores";
+import { networkStore, settingsStore, walletStore } from "$lib/stores";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
 
 import Settings from "../+page.svelte";
@@ -52,7 +52,8 @@ describe("Settings", () => {
   );
   const logoutSpy = vi.spyOn(navigation, "logout");
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await networkStore.connect();
     mockedWalletStore.setMockedStoreValue(initialWalletStoreState);
   });
 
@@ -66,8 +67,12 @@ describe("Settings", () => {
     vi.doUnmock("$lib/stores");
   });
 
-  it("should render the settings page", () => {
+  it("should render the settings page displaying the status of the network", async () => {
     const { container } = render(Settings, {});
+
+    expect(container.firstChild).toMatchSnapshot();
+
+    await networkStore.disconnect();
 
     expect(container.firstChild).toMatchSnapshot();
   });

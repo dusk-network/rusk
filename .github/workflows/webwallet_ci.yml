@@ -64,5 +64,7 @@ jobs:
         working-directory: ./web-wallet
 
       - name: Building the app
+        env:
+          VITE_WALLET_NETWORK: https://testnet.nodes.dusk.network/
         run: npm run build
         working-directory: ./web-wallet

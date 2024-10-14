@@ -6,7 +6,7 @@
   },
   "bugs": "https://github.com/dusk-network/rusk/issues",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "homepage": "https://github.com/dusk-network/rusk/tree/master/web-wallet",
   "license": "MPL-2.0",
@@ -29,13 +29,12 @@
     "test": "vitest --run",
     "test:coverage": "vitest --run --coverage.enabled",
     "test:watch": "vitest",
-    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --fail-on-warnings",
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --fail-on-warnings --ignore ./src/lib/vendor",
     "typecheck:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch --fail-on-warnings"
   },
   "type": "module",
   "version": "0.5.0",
   "dependencies": {
-    "@dusk-network/dusk-wallet-js": "0.5.3",
     "@floating-ui/dom": "1.6.5",
     "@mdi/js": "7.4.47",
     "@wagmi/connectors": "5.1.6",

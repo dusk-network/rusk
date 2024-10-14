@@ -1,16 +1,16 @@
-import { tick } from "svelte";
-import { addresses } from "$lib/mock-data";
-import { settingsStore, walletStore } from "$lib/stores";
-import { getSeedFromMnemonic } from "$lib/wallet";
-import * as navigation from "$lib/navigation";
-import * as walletService from "$lib/services/wallet";
-import loginInfoStorage from "$lib/services/loginInfoStorage";
-import * as shuffleArray from "$lib/dusk/array";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { setKey } from "lamb";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
+import { tick } from "svelte";
+import { getKey, setKey } from "lamb";
 import * as bip39 from "bip39";
+import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+
+import { networkStore, settingsStore, walletStore } from "$lib/stores";
+import * as walletLib from "$lib/wallet";
+import * as navigation from "$lib/navigation";
+import loginInfoStorage from "$lib/services/loginInfoStorage";
+import * as shuffleArray from "$lib/dusk/array";
+
 import Create from "../+page.svelte";
 
 /**
@@ -28,9 +28,7 @@ function asInput(element) {
 }
 
 describe("Create", async () => {
-  const walletGetPsksSpy = vi
-    .spyOn(Wallet.prototype, "getPsks")
-    .mockResolvedValue(addresses);
+  const currentBlockHeight = 1536n;
   const mnemonic =
     "cart dad sail wreck robot grit combine noble rap farm slide sad";
   const mnemonicShuffled = [
@@ -48,44 +46,46 @@ describe("Create", async () => {
     "farm",
   ];
   const pwd = "passwordpassword";
-  const seed = getSeedFromMnemonic(mnemonic);
-  const userId = (await new Wallet(seed).getPsks())[0];
+  const seed = walletLib.getSeedFromMnemonic(mnemonic);
+  const userId = await walletLib
+    .profileGeneratorFrom(seed)
+    .default.then(getKey("address"))
+    .then(String);
+
   const blockHeightSpy = vi
-    .spyOn(Wallet, "networkBlockHeight", "get")
-    .mockResolvedValue(1536);
+    .spyOn(networkStore, "getCurrentBlockHeight")
+    .mockResolvedValue(currentBlockHeight);
   const generateMnemonicSpy = vi
     .spyOn(bip39, "generateMnemonic")
     .mockReturnValue(mnemonic);
   const shuffleArraySpy = vi
     .spyOn(shuffleArray, "shuffleArray")
     .mockReturnValue(mnemonicShuffled);
-  const getWalletSpy = vi.spyOn(walletService, "getWallet");
   const gotoSpy = vi.spyOn(navigation, "goto");
   const settingsResetSpy = vi.spyOn(settingsStore, "reset");
   const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
+  const initWalletSpy = vi.spyOn(walletLib, "initializeWallet");
 
   afterEach(async () => {
     cleanup();
     settingsStore.reset();
-    walletGetPsksSpy.mockClear();
     blockHeightSpy.mockClear();
     generateMnemonicSpy.mockClear();
     shuffleArraySpy.mockClear();
     clearAndInitSpy.mockClear();
-    getWalletSpy.mockClear();
     gotoSpy.mockClear();
     settingsResetSpy.mockClear();
+    initWalletSpy.mockClear();
   });
 
   afterAll(() => {
-    walletGetPsksSpy.mockRestore();
     blockHeightSpy.mockRestore();
     generateMnemonicSpy.mockRestore();
     shuffleArraySpy.mockRestore();
     clearAndInitSpy.mockRestore();
-    getWalletSpy.mockRestore();
     gotoSpy.mockRestore();
     settingsResetSpy.mockRestore();
+    initWalletSpy.mockRestore();
   });
 
   it("should render the Existing Wallet notice step of the Create flow if there is a userId saved in localStorage", () => {
@@ -418,10 +418,13 @@ describe("Create", async () => {
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledWith(seed);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), undefined);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      undefined
+    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
 
@@ -490,10 +493,13 @@ describe("Create", async () => {
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledWith(seed);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), undefined);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      undefined
+    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });

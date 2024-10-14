@@ -13,27 +13,27 @@
     settingsStore,
     walletStore,
   } from "$lib/stores";
-  import { decryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
+  import {
+    decryptMnemonic,
+    getSeedFromMnemonic,
+    profileGeneratorFrom,
+  } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
-  import { getWallet } from "$lib/services/wallet";
-
-  /**
-   * @typedef {import("@dusk-network/dusk-wallet-js").Wallet} Wallet
-   */
 
   const localDataCheckErrorMsg =
     "Mismatched wallet address or no existing wallet";
 
-  /** @type {(wallet: Wallet) => Promise<Wallet>} */
-  async function checkLocalData(wallet) {
-    const defaultAddress = (await wallet.getPsks())[0];
+  /** @type {(seed: Uint8Array) => Promise<import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator>} */
+  async function checkLocalData(seed) {
+    const profileGenerator = profileGeneratorFrom(seed);
+    const defaultAddress = (await profileGenerator.default).address.toString();
     const currentAddress = $settingsStore.userId;
 
     if (!currentAddress || currentAddress !== defaultAddress) {
       throw new Error(localDataCheckErrorMsg);
     }
 
-    return wallet;
+    return profileGenerator;
   }
 
   /** @type {(mnemonic: string) => Promise<Uint8Array>} */
@@ -68,9 +68,8 @@
       : (mnemonic) => getSeedFromMnemonicAsync(mnemonic.toLowerCase());
 
     getSeed(secretText.trim())
-      .then(getWallet)
       .then(checkLocalData)
-      .then((wallet) => walletStore.init(wallet))
+      .then((profileGenerator) => walletStore.init(profileGenerator))
       .then(() => goto("/dashboard"))
       .catch((err) => {
         if (err.message === localDataCheckErrorMsg) {

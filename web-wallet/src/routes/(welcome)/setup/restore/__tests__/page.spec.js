@@ -1,22 +1,22 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { generateMnemonic } from "bip39";
-import { Wallet } from "@dusk-network/dusk-wallet-js";
-import { setKey } from "lamb";
+import { getKey, setKey } from "lamb";
 import { get } from "svelte/store";
-import { addresses } from "$lib/mock-data";
+import { tick } from "svelte";
+import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+
 import * as navigation from "$lib/navigation";
 import {
   mnemonicPhraseResetStore,
   settingsStore,
   walletStore,
 } from "$lib/stores";
-import { encryptMnemonic, getSeedFromMnemonic } from "$lib/wallet";
+import * as walletLib from "$lib/wallet";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
-import * as walletService from "$lib/services/wallet";
 import { toastList } from "$lib/dusk/components/Toast/store";
+
 import Restore from "../+page.svelte";
-import { tick } from "svelte";
 
 /**
  * @param {HTMLElement} input
@@ -33,41 +33,39 @@ function asInput(element) {
 }
 
 describe("Restore", async () => {
-  const walletGetPsksSpy = vi
-    .spyOn(Wallet.prototype, "getPsks")
-    .mockResolvedValue(addresses);
   const mnemonic = generateMnemonic();
   const invalidMnemonic = "dad dad dad dad dad dad dad dad dad dad dad dad";
   const pwd = "passwordpassword";
-  const loginInfo = await encryptMnemonic(mnemonic, pwd);
-  const seed = getSeedFromMnemonic(mnemonic);
-  const userId = (await new Wallet(seed).getPsks())[0];
-  const getWalletSpy = vi.spyOn(walletService, "getWallet");
+  const loginInfo = await walletLib.encryptMnemonic(mnemonic, pwd);
+  const seed = walletLib.getSeedFromMnemonic(mnemonic);
+  const userId = await walletLib
+    .profileGeneratorFrom(seed)
+    .default.then(getKey("address"))
+    .then(String);
   const gotoSpy = vi.spyOn(navigation, "goto");
   const settingsResetSpy = vi.spyOn(settingsStore, "reset");
   const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
   const readTextMock = vi.fn().mockResolvedValue(mnemonic);
+  const initWalletSpy = vi.spyOn(walletLib, "initializeWallet");
 
   Object.assign(window.navigator, { clipboard: { readText: readTextMock } });
 
   afterEach(async () => {
     cleanup();
     clearAndInitSpy.mockClear();
-    getWalletSpy.mockClear();
     gotoSpy.mockClear();
     settingsStore.reset();
     settingsResetSpy.mockClear();
-    walletGetPsksSpy.mockClear();
+    initWalletSpy.mockClear();
     walletStore.reset();
     readTextMock.mockClear();
   });
 
   afterAll(() => {
     clearAndInitSpy.mockRestore();
-    getWalletSpy.mockRestore();
     gotoSpy.mockRestore();
     settingsResetSpy.mockRestore();
-    walletGetPsksSpy.mockRestore();
+    initWalletSpy.mockRestore();
   });
 
   it("should render the Existing Wallet notice step of the Restore flow if there is a userId saved in localStorage", () => {
@@ -164,10 +162,13 @@ describe("Restore", async () => {
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledWith(seed);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, 0n);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), 0);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      0n
+    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });
@@ -215,10 +216,13 @@ describe("Restore", async () => {
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledTimes(1);
-    expect(getWalletSpy).toHaveBeenCalledWith(seed);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, 0n);
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(expect.any(Wallet), 0);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      0n
+    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });
