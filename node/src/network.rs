@@ -165,6 +165,15 @@ impl<const N: usize> Kadcast<N> {
         self.peer.alive_nodes(amount).await
     }
 
+    pub async fn table(&self) -> Vec<SocketAddr> {
+        self.peer
+            .to_route_table()
+            .await
+            .into_values()
+            .flat_map(|v| v.into_iter().map(|(addr, _)| addr))
+            .collect()
+    }
+
     pub fn conf(&self) -> &Config {
         &self.conf
     }
