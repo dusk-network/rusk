@@ -71,6 +71,8 @@ node-data = { workspace = true, optional = true }
 ## GraphQL deps
 async-graphql = { workspace = true }
 
+## RUES deps
+reqwest = { workspace = true }
 
 ## Ephemeral dependencies
 tempfile = { workspace = true, optional = true }
@@ -81,7 +83,6 @@ futures = { workspace = true, optional = true }
 
 [dev-dependencies]
 test-wallet = { version = "0.1.0", path = "../test-wallet" }
-reqwest = { workspace = true }
 rusk-recovery = { workspace = true, features = ["state"] }
 ff = { workspace = true }
 rusk-prover = { workspace = true, features = ["no_random", "debug"] }

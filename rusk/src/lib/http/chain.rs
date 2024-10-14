@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod geo;
 pub mod graphql;
 
 use std::collections::HashMap;
@@ -66,6 +67,7 @@ impl HandleRequest for RuskNode {
             ("transactions", _, "preverify") => true,
             ("transactions", _, "propagate") => true,
             ("network", _, "peers") => true,
+            ("network", _, "peers_location") => true,
             ("node", _, "info") => true,
             ("blocks", _, "gas-price") => true,
             _ => false,
@@ -89,6 +91,8 @@ impl HandleRequest for RuskNode {
                 let amount = request.data.as_string().trim().parse()?;
                 self.alive_nodes(amount).await
             }
+
+            ("network", _, "peers_location") => self.peers_location().await,
             ("node", _, "info") => self.get_info().await,
             ("blocks", _, "gas-price") => {
                 let max_transactions = request
