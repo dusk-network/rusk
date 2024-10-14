@@ -644,12 +644,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.derive_phoenix_sk(addr_idx);
         let mut stake_sk = self.derive_bls_sk(addr_idx);
 
-        let nonce = state
-            .fetch_stake(&BlsPublicKey::from(&stake_sk))
-            .await?
-            .map(|s| s.nonce)
-            .unwrap_or(0)
-            + 1;
+        let stake_pk = self.bls_pk(addr_idx)?;
+        let current_stake = state.fetch_stake(stake_pk).await?;
+        if let Some(stake) = current_stake {
+            if stake.amount.is_some() {
+                return Err(Error::AlreadyStaked);
+            }
+        }
+
+        let nonce = current_stake.map(|s| s.nonce).unwrap_or(0) + 1;
 
         let inputs = state
             .inputs(addr_idx, amt + gas.limit * gas.price)
@@ -696,12 +699,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let moonlight_current_nonce =
             state.fetch_account(stake_pk).await?.nonce + 1;
 
-        let nonce = state
-            .fetch_stake(stake_pk)
-            .await?
-            .map(|s| s.nonce)
-            .unwrap_or(0)
-            + 1;
+        let current_stake = state.fetch_stake(stake_pk).await?;
+        if let Some(stake) = current_stake {
+            if stake.amount.is_some() {
+                return Err(Error::AlreadyStaked);
+            }
+        }
+
+        let nonce = current_stake.map(|s| s.nonce).unwrap_or(0) + 1;
 
         let stake = moonlight_stake(
             &stake_sk,
