@@ -6,6 +6,21 @@
   import { appStore } from "$lib/stores";
   import "./Footer.css";
 
+  const hostedExplorers = [
+    {
+      label: "Mainnet",
+      url: "https://apps.dusk.network/explorer",
+    },
+    {
+      label: "Testnet",
+      url: "https://testnet.apps.dusk.network/explorer",
+    },
+    {
+      label: "Devnet",
+      url: "https://devnet.apps.dusk.network/explorer",
+    },
+  ];
+
   $: ({ darkMode } = $appStore);
 </script>
 
@@ -20,6 +35,15 @@
 
   <div class="footer__links-test">
     <div class="footer__links">
+      {#each hostedExplorers as explorer (explorer.url)}
+        {#if !location.href.includes(explorer.url)}
+          <Anchor
+            onSurface={false}
+            href={explorer.url}
+            className="footer__links-link">{explorer.label}</Anchor
+          >
+        {/if}
+      {/each}
       <Anchor
         onSurface={false}
         href="https://dusk.network/privacy-policy"
