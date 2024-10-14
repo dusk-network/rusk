@@ -8,18 +8,14 @@
 // Provisioners, the BidList, the Seed and the Hash.
 
 use node_data::ledger::*;
-use std::collections::HashMap;
 
 use std::time::Duration;
 
 use execution_core::signatures::bls::SecretKey as BlsSecretKey;
 use node_data::bls::PublicKey;
 use node_data::message::{AsyncQueue, Message, Payload};
-use node_data::StepName;
 
 use crate::operations::Voter;
-
-pub type TimeoutSet = HashMap<StepName, Duration>;
 
 #[derive(Clone, Default, Debug)]
 pub struct RoundUpdate {
@@ -36,7 +32,7 @@ pub struct RoundUpdate {
     att_voters: Vec<Voter>,
     timestamp: u64,
 
-    pub base_timeouts: TimeoutSet,
+    pub base_timeout: Duration,
 }
 
 impl RoundUpdate {
@@ -44,7 +40,7 @@ impl RoundUpdate {
         pubkey_bls: PublicKey,
         secret_key: BlsSecretKey,
         tip_header: &Header,
-        base_timeouts: TimeoutSet,
+        base_timeout: Duration,
         att_voters: Vec<Voter>,
     ) -> Self {
         let round = tip_header.height + 1;
@@ -56,7 +52,7 @@ impl RoundUpdate {
             hash: tip_header.hash,
             seed: tip_header.seed,
             timestamp: tip_header.timestamp,
-            base_timeouts,
+            base_timeout,
             att_voters,
         }
     }

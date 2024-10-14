@@ -5,14 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt;
-use std::time::Duration;
 
 use node_data::bls::PublicKey;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
     Block, Fault, Header, Slash, SpentTransaction, Transaction,
 };
-use node_data::StepName;
 
 use crate::errors::*;
 
@@ -86,13 +84,6 @@ pub trait Operations: Send + Sync {
         &self,
         params: CallParams,
     ) -> Result<Output, OperationError>;
-
-    async fn add_step_elapsed_time(
-        &self,
-        round: u64,
-        step_name: StepName,
-        elapsed: Duration,
-    ) -> Result<(), OperationError>;
 
     async fn get_block_gas_limit(&self) -> u64;
 }

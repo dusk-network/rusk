@@ -57,7 +57,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
     ) -> Result<Message, ConsensusError> {
         ctx.set_start_time();
 
-        let timeout = ctx.iter_ctx.get_timeout(ctx.step_name());
+        let timeout = ctx.iter_ctx.get_timeout();
         debug!(event = "execute_step", ?timeout);
 
         // Execute step

@@ -242,7 +242,7 @@ mod tests {
     };
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
-    use std::collections::HashMap;
+    use std::time::Duration;
 
     impl<V> Aggregator<V> {
         pub fn get_total(&self, step: u8, vote: Vote) -> Option<usize> {
@@ -301,7 +301,7 @@ mod tests {
                 pubkey_bls,
                 secret_key,
                 &tip_header,
-                HashMap::new(),
+                Duration::default(),
                 vec![],
             );
 
