@@ -836,7 +836,9 @@ impl RuesDispatchEvent {
             .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default()
     }
-    pub async fn from_request(req: Request<Incoming>) -> anyhow::Result<Self> {
+    pub async fn from_request(
+        req: Request<Incoming>,
+    ) -> anyhow::Result<(Self, bool)> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
@@ -865,9 +867,19 @@ impl RuesDispatchEvent {
             .and_then(|h| h.to_str().ok())
             .unwrap_or_default();
 
+        let binary_request = content_type == CONTENT_TYPE_BINARY;
+
+        let binary_response = binary_request
+            || parts
+                .headers
+                .get(ACCEPT)
+                .and_then(|h| h.to_str().ok())
+                .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+                .unwrap_or_default();
+
         let bytes = body.collect().await?.to_bytes().to_vec();
-        let data = match content_type {
-            CONTENT_TYPE_BINARY => bytes.into(),
+        let data = match binary_request {
+            true => bytes.into(),
             _ => {
                 let text = String::from_utf8(bytes)
                     .map_err(|e| anyhow::anyhow!("Invalid utf8"))?;
@@ -885,7 +897,7 @@ impl RuesDispatchEvent {
 
         let ret = RuesDispatchEvent { headers, data, uri };
 
-        Ok(ret)
+        Ok((ret, binary_response))
     }
 }
 
