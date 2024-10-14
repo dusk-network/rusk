@@ -40,7 +40,9 @@ impl RuskNode {
             let ip = n.ip();
 
             let url = match std::env::var("IP_API_KEY") {
-                Ok(key) => format!("https://ip-api.com/json/{ip}?key={key}"),
+                Ok(key) => {
+                    format!("https://pro.ip-api.com/json/{ip}?key={key}")
+                }
                 Err(_) => format!("http://ip-api.com/json/{ip}"),
             };
             if let Ok(v) = client.get(url).send().await {
