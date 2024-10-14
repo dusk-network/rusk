@@ -702,7 +702,7 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
-        let event = RuesDispatchEvent::from_request(req).await?;
+        let (event, binary_resp) = RuesDispatchEvent::from_request(req).await?;
         let is_binary = event.is_binary();
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
@@ -713,7 +713,7 @@ async fn handle_request_rues<H: HandleRequest>(
             .await
             .expect("An execution should always return a response");
         resp_headers.extend(execution_response.headers.clone());
-        let mut resp = execution_response.into_http(is_binary)?;
+        let mut resp = execution_response.into_http(binary_resp)?;
 
         for (k, v) in resp_headers {
             let k = HeaderName::from_str(&k)?;
