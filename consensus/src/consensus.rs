@@ -10,7 +10,6 @@ use crate::errors::ConsensusError;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
-use node_data::message::payload::RatificationResult;
 use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::execution_ctx::ExecutionCtx;
@@ -18,7 +17,7 @@ use crate::proposal;
 use crate::queue::MsgRegistry;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{debug, error, info, warn, Instrument};
+use tracing::{debug, error, warn, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
@@ -260,7 +259,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // means the iteration is over.
                     if let Payload::Quorum(ref qmsg) = msg.payload {
                         debug!(
-                            event = "New Quorum",
+                            event = "New Quorum. Terminating iteration",
                             round = qmsg.header.round,
                             iter = qmsg.header.iteration,
                             vote = ?qmsg.vote(),
@@ -270,24 +269,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         // Broadcast/Rebroadcast
                         sender.send_quorum(msg.clone()).await;
 
-                        match qmsg.att.result {
-                            // With a Fail Quorum, we move to the next iteration
-                            RatificationResult::Fail(_) => {
-                                info!(
-                                    event =
-                                        "Fail Quorum. Terminating iteration",
-                                    round = ru.round,
-                                    iter,
-                                );
-
-                                break;
-                            }
-
-                            _ => {
-                                // INFO: we keep running consensus in case we
-                                // fail to accept the block.
-                            }
-                        }
+                        // INFO: we keep running consensus even with Success
+                        // Quorum in case we fail to accept the block.
+                        break;
                     }
                 }
 
