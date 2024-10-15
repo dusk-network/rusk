@@ -40,13 +40,19 @@ impl Bloom {
     /// Add an event to the bloom.
     #[allow(unused)]
     pub fn add_event(&mut self, event: &Event) {
+        // We add the tuple (contract, topic) to allow for checking if an
+        // event with the given topic was emitted in a given block.
         let mut iuf = self.iuf();
         iuf.update(event.source);
         iuf.update(&event.topic);
-        // We explicitly omit the `data` from the filter, since it can be
-        // obtained by other means. Like this the bloom is just used for
-        // querying if a specific event topic has been emitted by a given
-        // contract in a block. iuf.update(&event.data);
+        iuf.add();
+
+        // We also add the triple (contract, topic, data) to allow for checking
+        // if the full event was emitted in the block.
+        let mut iuf = self.iuf();
+        iuf.update(event.source);
+        iuf.update(&event.topic);
+        iuf.update(&event.data);
         iuf.add();
     }
 
