@@ -373,9 +373,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     //  - Valid Quorums for accepted candidates have been
                     //    already broadcast by us
                     Status::Past => {
-                        let mut discarded = false;
-                        let mut reason = "";
-
                         if let Vote::Valid(candidate) = qmsg.vote() {
                             // Check if the candidate is in our chain
                             if let Ok(candidate_known) = self
@@ -389,21 +386,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                                     debug!("Rebroadcast Quorum for past round");
                                     broadcast(&self.network, &msg).await;
                                 } else {
-                                    discarded = true;
-                                    reason = "past round/iter, or fork";
+                                    debug!(
+                                      event = "Quorum discarded",
+                                      reason = "past round/iter, or fork",
+                                      round = qmsg.header.round,
+                                      iter = qmsg.header.iteration,
+                                      vote = ?qmsg.vote(),
+                                    );
                                 }
                             } else {
                                 warn!("Could not check candidate in DB. Skipping Quorum rebroadcast");
                             };
                         } else {
-                            discarded = true;
-                            reason = "past round";
-                        }
-
-                        if discarded {
                             debug!(
                               event = "Quorum discarded",
-                              reason,
+                              reason = "past round",
                               round = qmsg.header.round,
                               iter = qmsg.header.iteration,
                               vote = ?qmsg.vote(),
