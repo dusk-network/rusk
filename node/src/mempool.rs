@@ -19,6 +19,7 @@ use node_data::get_current_timestamp;
 use node_data::ledger::{SpendingId, Transaction};
 use node_data::message::{payload, AsyncQueue, Payload, Topics};
 use std::sync::Arc;
+use std::time::Duration;
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
@@ -328,17 +329,17 @@ impl MempoolSrv {
     /// Message flow:
     /// GetMempool -> Inv -> GetResource -> Tx
     async fn request_mempool<N: Network>(&self, network: &Arc<RwLock<N>>) {
+        const WAIT_TIMEOUT: Duration = Duration::from_secs(5);
         let max_peers = self
             .conf
             .mempool_download_redundancy
             .unwrap_or(DEFAULT_DOWNLOAD_REDUNDANCY);
+
+        let net = network.read().await;
+        net.wait_for_alive_nodes(max_peers, WAIT_TIMEOUT).await;
+
         let msg = payload::GetMempool::default().into();
-        if let Err(err) = network
-            .read()
-            .await
-            .send_to_alive_peers(msg, max_peers)
-            .await
-        {
+        if let Err(err) = net.send_to_alive_peers(msg, max_peers).await {
             error!("could not request mempool from network: {err}");
         }
     }

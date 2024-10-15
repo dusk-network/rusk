@@ -25,7 +25,7 @@ use core::panic;
 use dusk_consensus::operations::Voter;
 use execution_core::stake::{Withdraw, STAKE_CONTRACT};
 use metrics::{counter, gauge, histogram};
-use node_data::message::payload::Vote;
+use node_data::message::payload::{GetBlocks, Vote};
 use node_data::{get_current_timestamp, Serializable, StepName};
 use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
@@ -247,10 +247,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
         env::remove_var("RUSK_CONSENSUS_SPIN_TIME");
     }
+
     pub async fn spawn_task(&self) {
+        const REDUNDANCY: usize = 16;
+        const WAIT_TIMEOUT: Duration = Duration::from_secs(5);
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
         let tip = self.tip.read().await.inner().clone();
+
+        let locator = tip.header().hash;
+        let msg = GetBlocks::new(locator).into();
+        {
+            let net = self.network.read().await;
+            net.wait_for_alive_nodes(REDUNDANCY, WAIT_TIMEOUT).await;
+            if let Err(e) = net.send_to_alive_peers(msg, REDUNDANCY).await {
+                warn!("Unable to send GetBlocks message {e}");
+            }
+        }
 
         let tip_block_voters =
             self.get_att_voters(provisioners_list.prev(), &tip).await;
