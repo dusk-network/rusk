@@ -108,10 +108,11 @@ impl StakeState {
         }
 
         let digest = stake.signature_message().to_vec();
-        let pk = keys.multisig_pk().expect("Invalid MultisigPublicKey");
-
-        if !rusk_abi::verify_bls_multisig(digest, pk, signature) {
-            panic!("Invalid signature!");
+        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
+            panic!("Invalid funds signature!");
+        }
+        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+            panic!("Invalid account signature!");
         }
 
         // make call to transfer contract to transfer balance from the user to
@@ -158,11 +159,12 @@ impl StakeState {
         }
 
         // check signature is correct
-        let digest = unstake.signature_message().to_vec();
-        let pk = keys.multisig_pk().expect("Invalid MultisigPublicKey");
-
-        if !rusk_abi::verify_bls_multisig(digest, pk, signature) {
-            panic!("Invalid signature!");
+        let digest = unstake.signature_message();
+        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
+            panic!("Invalid funds signature!");
+        }
+        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+            panic!("Invalid account signature!");
         }
 
         // make call to the transfer contract to withdraw funds from this
@@ -203,10 +205,12 @@ impl StakeState {
         }
 
         // check signature is correct
-        let digest = withdraw.signature_message().to_vec();
-        let pk = keys.multisig_pk().expect("Invalid MultisigPublicKey");
-        if !rusk_abi::verify_bls_multisig(digest, pk, signature) {
-            panic!("Invalid signature!");
+        let digest = withdraw.signature_message();
+        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
+            panic!("Invalid funds signature!");
+        }
+        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+            panic!("Invalid account signature!");
         }
 
         // make call to the transfer contract to withdraw funds from this
