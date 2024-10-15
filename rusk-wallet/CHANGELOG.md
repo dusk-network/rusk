@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Add
 
+- Add more information to `stake-info` [#2659]
 - Add support for RUES [#2401]
 - Add Moonlight-Phoenix conversion [#2340]
 - Add Moonlight transactions [#2288]
@@ -506,6 +507,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implementation of `Store` trait from `wallet-core`
 - Implementation of `State` and `Prover` traits from `wallet-core`
 
+[#2659]: https://github.com/dusk-network/rusk/issues/2659
 [#2402]: https://github.com/dusk-network/rusk/issues/2402
 [#2401]: https://github.com/dusk-network/rusk/issues/2401
 [#2400]: https://github.com/dusk-network/rusk/issues/2400
