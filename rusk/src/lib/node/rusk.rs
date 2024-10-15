@@ -330,7 +330,11 @@ impl Rusk {
             }
         }
 
-        self.set_current_commit(session.commit()?);
+        info!(src = "vm_accept", event = "before commit");
+        let commit = session.commit()?;
+        info!(src = "vm_accept", event = "after commit");
+        self.set_current_commit(commit);
+        info!(src = "vm_accept", event = "after set_current_commit");
 
         // Sent all events from this block to the archivist
         #[cfg(feature = "archive")]
@@ -579,6 +583,7 @@ fn accept(
     Session,
     Vec<ContractTxEvent>,
 )> {
+    info!(src = "vm_accept", event = "init");
     let mut session = session;
 
     let mut block_gas_left = block_gas_limit;
@@ -592,12 +597,14 @@ fn accept(
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
         let tx_id = unspent_tx.id();
+        info!(src = "vm_accept", event = "before execute");
         let receipt = execute(
             &mut session,
             tx,
             gas_per_deploy_byte,
             min_deployment_gas_price,
         )?;
+        info!(src = "vm_accept", event = "after execute");
 
         event_bloom.add_events(&receipt.events);
 
@@ -628,6 +635,7 @@ fn accept(
         });
     }
 
+    info!(src = "vm_accept", event = "before reward");
     let coinbase_events = reward_slash_and_update_root(
         &mut session,
         block_height,
@@ -636,6 +644,7 @@ fn accept(
         slashing,
         voters,
     )?;
+    info!(src = "vm_accept", event = "after reward");
 
     event_bloom.add_events(&coinbase_events);
 
@@ -648,7 +657,9 @@ fn accept(
         .collect();
     events.extend(coinbase_events);
 
+    info!(src = "vm_accept", event = "before calculating root");
     let state_root = session.root();
+    info!(src = "vm_accept", event = "after calculating root");
 
     Ok((
         spent_txs,
