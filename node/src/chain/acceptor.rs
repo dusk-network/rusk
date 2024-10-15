@@ -498,6 +498,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         blk: &Block,
         enable_consensus: bool,
     ) -> anyhow::Result<bool> {
+        info!(src = "try_accept", event = "init");
         let mut events = vec![];
         let mut task = self.task.write().await;
 
@@ -516,9 +517,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         )
         .await?;
 
+        let header_verification_elapsed = header_verification_start.elapsed();
+        info!(
+            src = "try_accept",
+            event = "header verified",
+            dur = header_verification_elapsed.as_millis()
+        );
         // Elapsed time header verification
         histogram!("dusk_block_header_elapsed")
-            .record(header_verification_start.elapsed());
+            .record(header_verification_elapsed);
 
         let start = std::time::Instant::now();
         let mut est_elapsed_time = Duration::default();
@@ -532,8 +539,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let vm = self.vm.write().await;
 
             let (txs, rolling_result) = self.db.read().await.update(|db| {
+                info!(src = "try_accept", event = "before accept",);
                 let (txs, verification_output) =
                     vm.accept(blk, &prev_block_voters[..])?;
+                info!(src = "try_accept", event = "after accept",);
                 for spent_tx in txs.iter() {
                     events.push(TransactionEvent::Executed(spent_tx).into());
                 }
@@ -542,13 +551,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_bloom, verification_output.event_bloom);
 
+                info!(src = "try_accept", event = "before rolling",);
                 let rolling_results =
                     self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
+                info!(src = "try_accept", event = "after rolling",);
 
                 let label = rolling_results.0;
                 // Store block with updated transactions with Error and GasSpent
                 block_size_on_disk =
                     db.store_block(header, &txs, blk.faults(), label)?;
+                info!(src = "try_accept", event = "after store_block",);
 
                 Ok((txs, rolling_results))
             })?;
@@ -569,9 +581,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
                 slashed_count += 1;
             }
+            info!(src = "try_accept", event = "before selective_update",);
 
             let selective_update =
                 Self::selective_update(blk, &txs, &vm, &mut provisioners_list);
+            info!(src = "try_accept", event = "after selective_update",);
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
@@ -594,6 +608,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .chain([prev_final_state])
                     .collect::<Vec<_>>();
                 vm.finalize_state(new_final_state, old_finals_to_merge)?;
+
+                info!(src = "try_accept", event = "after finalize",);
             }
 
             anyhow::Ok((label, finalized))
@@ -611,6 +627,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             block_size_on_disk,
             slashed_count,
         );
+        info!(src = "try_accept", event = "after metrics",);
 
         // Clean up the database
         let count = self
