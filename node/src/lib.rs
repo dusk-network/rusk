@@ -25,6 +25,7 @@ use node_data::message::Message;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
+use std::time::Instant;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
@@ -93,12 +94,14 @@ pub trait Network: Send + Sync + 'static {
     /// Retrieves number of alive nodes
     async fn alive_nodes_count(&self) -> usize;
 
-    async fn wait_for_alive_nodes(&self, amount: usize, retry: usize) {
-        let mut retry = retry;
-        while self.alive_nodes_count().await < amount && retry > 0 {
+    async fn wait_for_alive_nodes(&self, amount: usize, timeout: Duration) {
+        let start = Instant::now();
+        while self.alive_nodes_count().await < amount {
             warn!("wait_for_alive_nodes");
-            tokio::time::sleep(Duration::from_secs(2)).await;
-            retry -= 1;
+            if start.elapsed() > timeout {
+                return;
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 }
