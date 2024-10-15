@@ -38,11 +38,6 @@ type WalletCacheSyncInfo = {
   bookmark: bigint;
 };
 
-// We'll import this from w3sper.js in the future
-type TemporaryProfile = {
-  address: {};
-};
-
 type WalletCacheTableName =
   | "pendingNotesInfo"
   | "syncInfo"
@@ -50,5 +45,7 @@ type WalletCacheTableName =
   | "unspentNotes";
 
 type WalletCacheTreasury = {
-  address: (profile: TemporaryProfile) => Promise<WalletCacheNotesMap>;
+  address: (
+    identifier: import("$lib/vendor/w3sper.js/src/mod").Profile["address"]
+  ) => Promise<Map<Uint8Array, Uint8Array>>;
 };

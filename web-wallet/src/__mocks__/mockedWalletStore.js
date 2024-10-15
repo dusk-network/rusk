@@ -1,7 +1,7 @@
 import { mockReadableStore } from "$lib/dusk/test-helpers";
 import { addresses } from "$lib/mock-data";
 
-const balance = { maximum: 50000, value: 2345 };
+const balance = { maximum: 50_000_000_000_000n, value: 2_345_000_000_000n };
 const currentAddress = addresses[0];
 
 /** @type {WalletStoreContent} */
@@ -9,8 +9,16 @@ const content = {
   addresses,
   balance,
   currentAddress,
+  currentProfile: null,
   initialized: true,
-  syncStatus: { current: 0, error: null, isInProgress: false, last: 0 },
+  profiles: [],
+  syncStatus: {
+    current: 0n,
+    error: null,
+    isInProgress: false,
+    last: 0n,
+    progress: 0,
+  },
 };
 
 const mockedWalletStore = mockReadableStore(content);

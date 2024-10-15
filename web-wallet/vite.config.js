@@ -56,8 +56,15 @@ export default defineConfig(({ mode }) => {
       mode === "development" ? [basicSsl(), ...commonPlugins] : commonPlugins,
     server: {
       proxy: {
+        "/on": {
+          target: "ws://localhost:8080/",
+          ws: true,
+        },
         "/rusk": {
           rewrite: (path) => path.replace(/^\/rusk/, ""),
+          target: "http://localhost:8080/",
+        },
+        "/static/drivers": {
           target: "http://localhost:8080/",
         },
       },

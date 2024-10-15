@@ -70,7 +70,7 @@
     "fake-indexeddb": "6.0.0",
     "jsdom": "24.1.0",
     "jsdom-worker": "0.3.0",
-    "lamb-types": "0.61.8",
+    "lamb-types": "0.61.9",
     "postcss-nested": "6.0.1",
     "prettier": "3.3.2",
     "prettier-plugin-svelte": "3.2.5",

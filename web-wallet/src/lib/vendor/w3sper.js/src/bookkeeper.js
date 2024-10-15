@@ -27,7 +27,6 @@ export class Bookkeeper {
         const notes = await this.#treasury.address(identifier);
         const seed = await ProfileGenerator.seedFrom(identifier);
         const index = +identifier;
-        console.log(seed, index);
 
         return ProtocolDriver.balance(seed, index, notes);
     }

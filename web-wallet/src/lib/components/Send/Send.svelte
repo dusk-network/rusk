@@ -40,7 +40,7 @@
   /** @type {ContractGasSettings} */
   export let gasSettings;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let spendable;
 
   /** @type {ContractStatus[]} */
@@ -90,10 +90,10 @@
 
   $: luxFee = gasLimit * gasPrice;
   $: fee = formatter(luxToDusk(luxFee));
-  $: maxSpendable = deductLuxFeeFrom(spendable, luxFee);
+  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
   $: isAmountValid = amount >= minAmount && amount <= maxSpendable;
   $: totalLuxFee = luxFee + duskToLux(amount);
-  $: isFeeWithinLimit = totalLuxFee <= duskToLux(spendable);
+  $: isFeeWithinLimit = BigInt(totalLuxFee) <= spendable;
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
   $: addressValidationResult = validateAddress(address);
 
@@ -103,7 +103,7 @@
       return;
     }
 
-    if (spendable < luxToDusk(luxFee)) {
+    if (spendable < BigInt(luxFee)) {
       toast(
         "error",
         "You don't have enough DUSK to cover the transaction fee",
