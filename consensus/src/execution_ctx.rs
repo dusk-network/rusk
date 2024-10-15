@@ -564,9 +564,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         match valid {
             Ok(_) => {
-                // Repropagate past iteration messages (they have been already
-                // validated)
-
                 log_msg("outbound send", "inbound message", &msg);
                 // Re-publish the returned message
                 self.outbound.try_send(msg.clone());
@@ -590,7 +587,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 }
 
                 if msg.header.round > self.round_update.round + 10 {
-                    log_msg("discarded msg (signer not eligible)", SRC, &msg);
+                    log_msg("discarded msg (round too far from now)", SRC, &msg);
                     return None;
                 }
 
