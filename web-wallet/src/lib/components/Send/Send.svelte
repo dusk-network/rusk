@@ -160,6 +160,16 @@
           type="multiline"
           bind:value={address}
         />
+        <ContractStatusesList items={statuses}>
+          {#if enableAllocateButton}
+            <AppAnchorButton
+              className="allocate-button"
+              href="/dashboard/allocate"
+              text="Shield more DUSK"
+              variant="tertiary"
+            />
+          {/if}
+        </ContractStatusesList>
         <ScanQR
           bind:this={scanQrComponent}
           bind:scanner
