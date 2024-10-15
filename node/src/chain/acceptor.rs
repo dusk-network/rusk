@@ -365,48 +365,62 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     }
 
                     // If Quorum is for a past round, we only rebroadcast it if
-                    // it's Valid and for a different candidate than what we
-                    // accepted.
-                    //
-                    // The rationale is that:
-                    //  - Fail Quorums have no influence on past rounds
-                    //  - Valid Quorums for accepted candidates have been
-                    //    already broadcast by us
+                    // it's Valid, since Fail Quorums have no influence on past
+                    // rounds
                     Status::Past => {
-                        if let Vote::Valid(candidate) = qmsg.vote() {
-                            // Check if the candidate is in our chain
-                            if let Ok(candidate_known) = self
-                                .db
-                                .read()
-                                .await
-                                .view(|t| t.get_block_exists(candidate))
-                            {
-                                // If candidate is unknown, rebroadcast
-                                if !candidate_known {
-                                    debug!("Rebroadcast Quorum for past round");
-                                    broadcast(&self.network, &msg).await;
+                        match qmsg.vote() {
+                            Vote::Valid(_) => {
+                                if let Ok(local_blk) =
+                                    self.db.read().await.view(|t| {
+                                        t.fetch_block_by_height(
+                                            qmsg.header.round,
+                                        )
+                                    })
+                                {
+                                    if let Some(l_blk) = local_blk {
+                                        let l_prev =
+                                            l_blk.header().prev_block_hash;
+                                        let l_iter = l_blk.header().iteration;
+                                        let q_prev =
+                                            qmsg.header.prev_block_hash;
+                                        let q_iter = qmsg.header.iteration;
+
+                                        // Rebroadcast past Quorums if they are
+                                        // from a fork or they are for a
+                                        // higher-priority candidate
+                                        if l_prev != q_prev || l_iter > q_iter {
+                                            debug!(
+                                                "Rebroadcast past-round Quorum"
+                                            );
+                                            broadcast(&self.network, &msg)
+                                                .await;
+                                        } else {
+                                            debug!(
+                                              event = "Quorum discarded",
+                                              reason = "past round, lower priority",
+                                              round = qmsg.header.round,
+                                              iter = qmsg.header.iteration,
+                                              vote = ?qmsg.vote(),
+                                            );
+                                        }
+                                    }
                                 } else {
-                                    debug!(
-                                      event = "Quorum discarded",
-                                      reason = "past round/iter, or fork",
-                                      round = qmsg.header.round,
-                                      iter = qmsg.header.iteration,
-                                      vote = ?qmsg.vote(),
-                                    );
-                                }
-                            } else {
-                                warn!("Could not check candidate in DB. Skipping Quorum rebroadcast");
-                            };
-                        } else {
-                            debug!(
-                              event = "Quorum discarded",
-                              reason = "past round",
-                              round = qmsg.header.round,
-                              iter = qmsg.header.iteration,
-                              vote = ?qmsg.vote(),
-                            );
+                                    warn!("Could not check candidate in DB. Skipping Quorum rebroadcast");
+                                };
+                            }
+
+                            _ => {
+                                debug!(
+                                  event = "Quorum discarded",
+                                  reason = "past round, not Valid",
+                                  round = qmsg.header.round,
+                                  iter = qmsg.header.iteration,
+                                  vote = ?qmsg.vote(),
+                                );
+                            }
                         }
                     }
+
                     Status::Future => {
                         //INFO: we currently rebroadcast future Quorums without
                         // any check
