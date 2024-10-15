@@ -160,7 +160,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // If we received a Step Message, we pass it on to
                             // the running step for processing.
                             if let Some(step_result) = self
-                                .process_inbound_msg(phase.clone(), msg)
+                                .process_inbound_msg(phase.clone(), msg.clone())
                                 .await
                             {
                                 info!(
@@ -175,43 +175,43 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                     return Ok(step_result);
                                 }
 
-                                // In Open Consensus, we only return if a Quorum
-                                // is produced. Otherwise, we keep running
+                                // In Open Consensus, we only broadcast Success
+                                // Quorums
                                 if let Payload::Quorum(qmsg) =
                                     &step_result.payload
                                 {
+                                    let qround = qmsg.header.round;
+                                    let qiter = qmsg.header.iteration;
+
                                     match qmsg.att.result {
                                         RatificationResult::Success(vote) => {
-                                            // With a Success Quorum we can stop
-                                            // the open consensus mode and
-                                            // terminate the round
-                                            //
-                                            // INFO: by returning here, we let
-                                            // the Consensus task broadcast the
-                                            // message
                                             info!(
-                                                mode = "open_consensus",
-                                                event =
-                                                    "Success Quorum produced",
-                                                ?vote
+                                                event = "New Quorum",
+                                                round = qround,
+                                                iter = qiter,
+                                                vote = ?vote,
+                                                is_local = true
                                             );
 
-                                            return Ok(step_result);
+                                            self.quorum_sender
+                                                .send_quorum(msg)
+                                                .await;
                                         }
                                         RatificationResult::Fail(vote) => {
-                                            warn!(
-                                                mode = "open_consensus",
-                                                event = "Ignoring Fail Quorum",
-                                                ?vote
+                                            debug!(
+                                              event = "Quorum discarded",
+                                              reason = "Fail Quorum in Open Consensus mode",
+                                              round = qround,
+                                              iter = qiter,
+                                              vote = ?vote,
+                                              is_local = true
                                             );
                                         }
                                     }
                                 }
 
                                 // In open consensus mode, the step is only
-                                // terminated in case of Success Quorum.
-                                // The acceptor will cancel the consensus if
-                                // a block is accepted
+                                // terminated when accepting a block
                                 continue;
                             }
                         }
@@ -236,27 +236,56 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                   round = qround,
                                   iter = qiter,
                                   vote = ?qmsg.vote(),
+                                  is_local = false
                                 );
                                 continue;
                             }
 
                             let att = qmsg.att;
 
-                            if let RatificationResult::Fail(vote) = att.result {
-                                // In Open Consensus, we ignore Fail Quorums
-                                if open_consensus_mode {
-                                    continue;
+                            // Handle Open Consensus mode
+                            if open_consensus_mode {
+                                match att.result {
+                                    RatificationResult::Success(vote) => {
+                                        info!(
+                                            event = "New Quorum",
+                                            round = qround,
+                                            iter = qiter,
+                                            vote = ?vote,
+                                            is_local = false
+                                        );
+
+                                        // Repropagate Success Quorum
+                                        self.quorum_sender
+                                            .send_quorum(msg.clone())
+                                            .await;
+                                    }
+                                    RatificationResult::Fail(vote) => {
+                                        debug!(
+                                          event = "Quorum discarded",
+                                          reason = "Fail Quorum in Open Consensus",
+                                          round = qround,
+                                          iter = qiter,
+                                          vote = ?vote,
+                                          is_local = false
+                                        );
+                                    }
                                 }
 
-                                // Store Fail Attestations in the Registry.
-                                //
-                                // INFO: We do it here so we can store
-                                // past-iteration Attestations without
-                                // interrupting the step execution
+                                // In Open Consensus, we only stop upon
+                                // accepting a block
+                                continue;
+                            }
+
+                            // Store Fail Attestations in the Registry.
+                            //
+                            // INFO: We do it here so we can store
+                            // past-iteration Attestations without interrupting
+                            // the step execution
+                            if let RatificationResult::Fail(vote) = att.result {
                                 match vote {
                                     Vote::NoCandidate | Vote::Invalid(_) => {
-                                        // Store Fail Attestation, if not in
-                                        // the registry
+                                        // Check if we know this Attestation
                                         let mut sv_registry =
                                             self.sv_registry.lock().await;
 
@@ -266,7 +295,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                                   event = "Storing Fail Attestation",
                                                   round = qround,
                                                   iter = qiter,
-                                                  vote = ?qmsg.vote(),
+                                                  vote = ?vote,
                                                 );
 
                                                 let generator = self
@@ -283,10 +312,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                             Some(_) => {
                                                 debug!(
                                                   event = "Quorum discarded",
-                                                  reason = "known Quorum",
+                                                  reason = "known Fail Quorum",
                                                   round = qround,
                                                   iter = qiter,
-                                                  vote = ?qmsg.vote(),
+                                                  vote = ?vote,
                                                 );
                                             }
                                         }
@@ -299,8 +328,17 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // current iteration, we terminate the step and
                             // pass the message to the Consensus task to
                             // terminate the iteration.
+                            // Messages for different iterations are discarded.
                             if qiter == iter {
                                 return Ok(msg);
+                            } else {
+                                debug!(
+                                  event = "Quorum discarded",
+                                  reason = "different iteration",
+                                  round = qround,
+                                  iter = qiter,
+                                  vote = ?qmsg.vote(),
+                                );
                             }
                         }
                         _ => {
