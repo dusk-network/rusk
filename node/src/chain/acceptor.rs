@@ -249,6 +249,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub async fn spawn_task(&self) {
+        const GET_BLOCKS_REDUNDANCY: usize = 16;
+        const WAIT_ALIVE_RETRY: usize = 3;
         let provisioners_list = self.provisioners_list.read().await.clone();
         let base_timeouts = self.adjust_round_base_timeouts().await;
         let tip = self.tip.read().await.inner().clone();
@@ -257,9 +259,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let msg = GetBlocks::new(locator).into();
         {
             let net = self.network.read().await;
-            net.wait_for_alive_nodes(16, 3).await;
+            net.wait_for_alive_nodes(GET_BLOCKS_REDUNDANCY, WAIT_ALIVE_RETRY)
+                .await;
             if let Err(e) =
-                self.network.read().await.send_to_alive_peers(msg, 16).await
+                net.send_to_alive_peers(msg, GET_BLOCKS_REDUNDANCY).await
             {
                 warn!("Unable to send GetBlocks message {e}");
             }

@@ -328,13 +328,14 @@ impl MempoolSrv {
     /// Message flow:
     /// GetMempool -> Inv -> GetResource -> Tx
     async fn request_mempool<N: Network>(&self, network: &Arc<RwLock<N>>) {
+        const WAIT_ALIVE_RETRY: usize = 3;
         let max_peers = self
             .conf
             .mempool_download_redundancy
             .unwrap_or(DEFAULT_DOWNLOAD_REDUNDANCY);
 
         let net = network.read().await;
-        net.wait_for_alive_nodes(max_peers, 3).await;
+        net.wait_for_alive_nodes(max_peers, WAIT_ALIVE_RETRY).await;
 
         let msg = payload::GetMempool::default().into();
         if let Err(err) = net.send_to_alive_peers(msg, max_peers).await {
