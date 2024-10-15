@@ -645,15 +645,9 @@ impl TransferState {
                 let remainder_note =
                     tx.fee().gen_remainder_note(gas_spent, deposit);
 
-                let remainder_value = remainder_note
-                    .value(None)
-                    .expect("Should always succeed for a transparent note");
-
-                let refund_info = if remainder_value > 0 {
-                    Some(self.push_note_current_height(remainder_note))
-                } else {
-                    None
-                };
+                // if the refund-value is 0, we don't push the note onto the
+                // tree and the refund-note will be None
+                let refund_note = self.push_note_current_height(remainder_note);
 
                 rusk_abi::emit(
                     PHOENIX_TOPIC,
@@ -662,7 +656,7 @@ impl TransferState {
                         notes,
                         memo,
                         gas_spent,
-                        refund_info,
+                        refund_note,
                     },
                 );
             }
@@ -874,11 +868,11 @@ impl TransferState {
         self.roots.contains(root)
     }
 
-    pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
+    pub fn push_note(&mut self, block_height: u64, note: Note) -> Option<Note> {
         self.tree.push(NoteLeaf { block_height, note })
     }
 
-    fn push_note_current_height(&mut self, note: Note) -> Note {
+    fn push_note_current_height(&mut self, note: Note) -> Option<Note> {
         let block_height = rusk_abi::block_height();
         self.push_note(block_height, note)
     }
