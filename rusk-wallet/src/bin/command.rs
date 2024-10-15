@@ -956,25 +956,25 @@ impl fmt::Display for RunResult {
                 let hash = hex::encode(hash.to_bytes());
                 write!(f, "> Transaction sent: {hash}",)
             }
-            StakeInfo(data, _) => {
-                match data.amount {
-                    Some(amt) => {
-                        let amount = Dusk::from(amt.value);
-                        let locked = Dusk::from(amt.locked);
-                        let eligibility = amt.eligibility;
-                        let epoch = amt.eligibility / EPOCH;
+            StakeInfo(data, _) => match data.amount {
+                Some(amt) => {
+                    let amount = Dusk::from(amt.value);
+                    let locked = Dusk::from(amt.locked);
+                    let faults = data.faults;
+                    let hard_faults = data.hard_faults;
+                    let eligibility = amt.eligibility;
+                    let epoch = amt.eligibility / EPOCH;
+                    let rewards = Dusk::from(data.reward);
 
-                        writeln!(f, "> Eligible stake amount: {amount} DUSK")?;
-                        if locked > 0 {
-                            writeln!(f, "> Locked amount: {locked} DUSK")?;
-                        };
-                        writeln!(f, "> Stake eligibility from block #{eligibility} (Epoch {epoch})")
-                    }
-                    None => writeln!(f, "> No active stake found for this key"),
-                }?;
-                let reward = Dusk::from(data.reward);
-                write!(f, "> Accumulated reward is: {reward} DUSK")
-            }
+                    writeln!(f, "> Eligible stake: {amount} DUSK")?;
+                    writeln!(f, "> Reclaimable slashed stake: {locked} DUSK")?;
+                    writeln!(f, "> Slashes: {faults}")?;
+                    writeln!(f, "> Hard Slashes: {hard_faults}")?;
+                    writeln!(f, "> Stake active from block #{eligibility} (Epoch {epoch})")?;
+                    write!(f, "> Accumulated rewards is: {rewards} DUSK")
+                }
+                None => write!(f, "> No active stake found for this key"),
+            },
             ContractId(bytes) => {
                 write!(f, "> Contract ID: {}", hex::encode(bytes))
             }

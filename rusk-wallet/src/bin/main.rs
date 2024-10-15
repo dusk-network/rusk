@@ -24,7 +24,9 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
-use rusk_wallet::{currency::Dusk, SecureWalletFile, Wallet, WalletPath};
+use rusk_wallet::{
+    currency::Dusk, SecureWalletFile, Wallet, WalletPath, EPOCH,
+};
 use rusk_wallet::{
     dat::{self, LATEST_VERSION},
     Error,
@@ -318,11 +320,29 @@ async fn exec() -> anyhow::Result<()> {
                 if reward {
                     println!("{}", Dusk::from(info.reward));
                 } else {
-                    let staked_amount = match info.amount {
-                        Some(info) => info.value,
-                        None => 0,
-                    };
-                    println!("{}", Dusk::from(staked_amount));
+                    match info.amount {
+                        Some(amt) => {
+                            let amount = Dusk::from(amt.value);
+                            let locked = Dusk::from(amt.locked);
+                            let faults = info.faults;
+                            let hard_faults = info.hard_faults;
+                            let eligibility = amt.eligibility;
+                            let epoch = amt.eligibility / EPOCH;
+                            let rewards = Dusk::from(info.reward);
+
+                            println!("Eligible stake: {amount} DUSK");
+                            println!(
+                                "Reclaimable slashed stake: {locked} DUSK"
+                            );
+                            println!("Slashes: {faults}");
+                            println!("Hard Slashes: {hard_faults}");
+                            println!("Stake active from block #{eligibility} (Epoch {epoch})");
+                            println!("Accumulated rewards is: {rewards} DUSK");
+                        }
+                        None => {
+                            println!("No active stake found for this key");
+                        }
+                    }
                 }
             }
             RunResult::ExportedKeys(pub_key, key_pair) => {
