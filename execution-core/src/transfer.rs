@@ -503,7 +503,7 @@ pub struct PhoenixTransactionEvent {
     /// Gas spent by the transaction.
     pub gas_spent: u64,
     /// Optional gas-refund note if the refund is positive.
-    pub refund_info: Option<Note>,
+    pub refund_note: Option<Note>,
 }
 
 /// Event data emitted on a moonlight transaction's completion.
