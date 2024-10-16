@@ -154,12 +154,11 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Deploy a contract using a shielded address
-    PhoenixContractDeploy {
-        /// Profile index for the shielded address that will pay for the gas
-        /// [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
+    /// Deploy a contract
+    ContractDeploy {
+        /// Address from which to deploy the contract [default: first]
+        #[clap(short, long)]
+        address: Option<Address>,
 
         /// Path to the WASM contract code
         #[clap(short, long)]
@@ -224,34 +223,6 @@ pub(crate) enum Command {
     },
 
     // Public transaction commands
-    /// Deploy a contract using a public account
-    MoonlightContractDeploy {
-        /// Profile index for the public account address that will pay for the
-        /// gas [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Path to the WASM contract code
-        #[clap(short, long)]
-        code: PathBuf,
-
-        /// Arguments for init function
-        #[clap(short, long)]
-        init_args: Vec<u8>,
-
-        /// Nonce used for the deploy transaction
-        #[clap(short, long)]
-        deploy_nonce: u64,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Call a contract using a public account
     MoonlightContractCall {
         /// Profile index for the public account address that will pay for the
@@ -658,63 +629,52 @@ impl Command {
 
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Self::PhoenixContractDeploy {
-                profile_idx,
+            Self::ContractDeploy {
+                address,
                 code,
                 init_args,
                 deploy_nonce,
                 gas_limit,
                 gas_price,
             } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let profile_idx = profile_idx.unwrap_or_default();
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = wallet.find_index(&address)?;
 
                 if code.extension().unwrap_or_default() != "wasm" {
                     return Err(Error::InvalidWasmContractPath.into());
                 }
-
                 let code = std::fs::read(code)
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
-                let tx = wallet
-                    .phoenix_deploy(
-                        profile_idx,
-                        code,
-                        init_args,
-                        deploy_nonce,
-                        gas,
-                    )
-                    .await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Self::MoonlightContractDeploy {
-                profile_idx,
-                code,
-                init_args,
-                deploy_nonce,
-                gas_limit,
-                gas_price,
-            } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let profile_idx = profile_idx.unwrap_or_default();
-
-                if code.extension().unwrap_or_default() != "wasm" {
-                    return Err(Error::InvalidWasmContractPath.into());
-                }
-
-                let code = std::fs::read(code)
-                    .map_err(|_| Error::InvalidWasmContractPath)?;
-
-                let tx = wallet
-                    .moonlight_deploy(
-                        profile_idx,
-                        code,
-                        init_args,
-                        deploy_nonce,
-                        gas,
-                    )
-                    .await?;
+                let tx = match address {
+                    Address::Shielded { .. } => {
+                        wallet.sync().await?;
+                        wallet
+                            .phoenix_deploy(
+                                addr_idx,
+                                code,
+                                init_args,
+                                deploy_nonce,
+                                gas,
+                            )
+                            .await
+                    }
+                    Address::Public { .. } => {
+                        wallet
+                            .moonlight_deploy(
+                                addr_idx,
+                                code,
+                                init_args,
+                                deploy_nonce,
+                                gas,
+                            )
+                            .await
+                    }
+                }?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }

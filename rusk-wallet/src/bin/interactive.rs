@@ -218,7 +218,6 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
 fn transaction_op_menu_moonlight(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     use TransactionOp::*;
     let menu = Menu::title("Public Transaction Operations")
-        .add(ContractDeploy, "Public Contract Deploy")
         .add(ContractCall, "Public Contract Call")
         //.add(History, "Public Transaction History")
         .separator()
@@ -234,18 +233,6 @@ fn transaction_op_menu_moonlight(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        ContractDeploy => {
-            ProfileOp::Run(Box::new(Command::MoonlightContractDeploy {
-                profile_idx: Some(profile_idx),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         ContractCall => {
             ProfileOp::Run(Box::new(Command::MoonlightContractCall {
                 profile_idx: Some(profile_idx),
@@ -270,7 +257,6 @@ fn transaction_op_menu_moonlight(profile_idx: u8) -> anyhow::Result<ProfileOp> {
 fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     use TransactionOp::*;
     let menu = Menu::title("Shielded Transaction Operations")
-        .add(ContractDeploy, "Shielded Contract Deploy")
         .add(ContractCall, "Shielded Contract Call")
         .add(History, "Shielded Transaction History")
         .separator()
@@ -286,18 +272,6 @@ fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        ContractDeploy => {
-            ProfileOp::Run(Box::new(Command::PhoenixContractDeploy {
-                profile_idx: Some(profile_idx),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         ContractCall => {
             ProfileOp::Run(Box::new(Command::PhoenixContractCall {
                 profile_idx: Some(profile_idx),
@@ -335,6 +309,8 @@ enum CommandMenuItem {
     Unstake,
     // Withdraw
     Withdraw,
+    // Contract Deploy
+    ContractDeploy,
     // Phoenix
     PhoenixTransactions,
     // Moonlight
@@ -352,7 +328,6 @@ enum CommandMenuItem {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
-    ContractDeploy,
     ContractCall,
     // nor a deployment or a call
     History,
@@ -377,6 +352,7 @@ fn menu_op(
         .add(CMI::Unstake, "Unstake")
         .add(CMI::Withdraw, "Withdraw Stake Reward")
         .add(CMI::StakeInfo, "Check Existing Stake")
+        .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::PhoenixTransactions, "Shielded Transactions")
         .add(CMI::MoonlightTransactions, "Public Transactions")
         .add(
@@ -486,6 +462,26 @@ fn menu_op(
         CMI::PhoenixTransactions => transaction_op_menu_phoenix(profile_idx)?,
         CMI::MoonlightTransactions => {
             transaction_op_menu_moonlight(profile_idx)?
+        }
+        CMI::ContractDeploy => {
+            let addr = match prompt::request_protocol()? {
+                prompt::Protocol::Phoenix => {
+                    wallet.shielded_address(profile_idx)
+                }
+                prompt::Protocol::Moonlight => {
+                    wallet.public_address(profile_idx)
+                }
+            }?;
+            ProfileOp::Run(Box::new(Command::ContractDeploy {
+                address: Some(addr),
+                code: prompt::request_contract_code()?,
+                init_args: prompt::request_bytes("init arguments")?,
+                deploy_nonce: prompt::request_nonce()?,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_DEPLOYMENT,
+                )?,
+                gas_price: prompt::request_gas_price()?,
+            }))
         }
         CMI::StakeInfo => ProfileOp::Run(Box::new(Command::StakeInfo {
             profile_idx: Some(profile_idx),
@@ -764,58 +760,30 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             }
             prompt::ask_confirm()
         }
-        Command::PhoenixContractDeploy {
-            profile_idx,
+        Command::ContractDeploy {
+            address,
             code,
             init_args,
             deploy_nonce,
             gas_limit,
             gas_price,
         } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
+
+            println!("   > Pay with {}", sender.preview());
             println!("   > Code len = {}", code_len);
             println!("   > Init args = {}", hex::encode(init_args));
             println!("   > Deploy nonce = {}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            if let Address::Public { .. } = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::MoonlightContractDeploy {
-            profile_idx,
-            code,
-            init_args,
-            deploy_nonce,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let code_len = code.metadata()?.len();
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!("   > Code len = {}", code_len);
-            println!("   > Init args = {}", hex::encode(init_args));
-            println!("   > Deploy nonce = {}", deploy_nonce);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-            prompt::ask_confirm()
-        }
+
         _ => Ok(true),
     }
-}
-
-fn check_index(
-    index: &Option<u8>,
-    total_profiles: usize,
-) -> anyhow::Result<usize> {
-    // if an index is given, check that it is smaller the wallet's profile-count
-    if let Some(idx) = index {
-        if total_profiles > u8::MAX.into() || *idx >= total_profiles as u8 {
-            return Err(Error::Unauthorized.into());
-        }
-    }
-    Ok(index.unwrap_or_default() as usize)
 }
