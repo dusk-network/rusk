@@ -230,7 +230,6 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
 fn transaction_op_menu_moonlight(addr_idx: u8) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
     let menu = Menu::title("Moonlight Transaction Operations")
-        .add(ContractDeploy, "Moonlight Contract Deploy")
         .add(ContractCall, "Moonlight Contract Call")
         //.add(History, "Moonlight Transaction History")
         .separator()
@@ -246,18 +245,6 @@ fn transaction_op_menu_moonlight(addr_idx: u8) -> anyhow::Result<AddrOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        ContractDeploy => {
-            AddrOp::Run(Box::new(Command::MoonlightContractDeploy {
-                addr_idx: Some(addr_idx),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         ContractCall => AddrOp::Run(Box::new(Command::MoonlightContractCall {
             addr_idx: Some(addr_idx),
             contract_id: prompt::request_bytes("contract id")?,
@@ -278,7 +265,6 @@ fn transaction_op_menu_moonlight(addr_idx: u8) -> anyhow::Result<AddrOp> {
 fn transaction_op_menu_phoenix(addr_idx: u8) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
-        .add(ContractDeploy, "Phoenix Contract Deploy")
         .add(ContractCall, "Phoenix Contract Call")
         .add(History, "Phoenix Transaction History")
         .separator()
@@ -294,18 +280,6 @@ fn transaction_op_menu_phoenix(addr_idx: u8) -> anyhow::Result<AddrOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        ContractDeploy => {
-            AddrOp::Run(Box::new(Command::PhoenixContractDeploy {
-                addr_idx: Some(addr_idx),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         ContractCall => AddrOp::Run(Box::new(Command::PhoenixContractCall {
             addr_idx: Some(addr_idx),
             contract_id: prompt::request_bytes("contract id")?,
@@ -339,6 +313,8 @@ enum CommandMenuItem {
     Unstake,
     // Withdraw
     Withdraw,
+    // Contract Deploy
+    ContractDeploy,
     // Phoenix
     PhoenixTransactions,
     // Moonlight
@@ -356,7 +332,6 @@ enum CommandMenuItem {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
-    ContractDeploy,
     ContractCall,
     // nor a deployment or a call
     History,
@@ -381,6 +356,7 @@ fn menu_op(
         .add(CMI::Unstake, "Unstake")
         .add(CMI::Withdraw, "Withdraw Stake Reward")
         .add(CMI::StakeInfo, "Check Existing Stake")
+        .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
@@ -470,6 +446,22 @@ fn menu_op(
             AddrOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::ContractDeploy => {
+            let addr = match prompt::request_protocol()? {
+                prompt::Protocol::Phoenix => wallet.phoenix_address(addr_idx),
+                prompt::Protocol::Moonlight => wallet.bls_address(addr_idx),
+            }?;
+            AddrOp::Run(Box::new(Command::ContractDeploy {
+                address: Some(addr),
+                code: prompt::request_contract_code()?,
+                init_args: prompt::request_bytes("init arguments")?,
+                deploy_nonce: prompt::request_nonce()?,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_DEPLOYMENT,
+                )?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
@@ -741,51 +733,30 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             }
             prompt::ask_confirm()
         }
-        Command::PhoenixContractDeploy {
-            addr_idx,
+        Command::ContractDeploy {
+            address,
             code,
             init_args,
             deploy_nonce,
             gas_limit,
             gas_price,
         } => {
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
 
-            println!(
-                "   > Deploy from = {}",
-                address_idx_string(addr_idx.unwrap_or_default())
-            );
+            println!("   > Deploy from = {sender}",);
             println!("   > Code len = {}", code_len);
             println!("   > Init args = {}", hex::encode(init_args));
             println!("   > Deploy nonce = {}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-
+            if let Address::Bls { .. } = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::MoonlightContractDeploy {
-            addr_idx,
-            code,
-            init_args,
-            deploy_nonce,
-            gas_limit,
-            gas_price,
-        } => {
-            let code_len = code.metadata()?.len();
-            let max_fee = gas_limit * gas_price;
 
-            println!(
-                "   > Deploy from = {}",
-                address_idx_string(addr_idx.unwrap_or_default())
-            );
-            println!("   > Code len = {}", code_len);
-            println!("   > Init args = {}", hex::encode(init_args));
-            println!("   > Deploy nonce = {}", deploy_nonce);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-
-            prompt::ask_confirm()
-        }
         _ => Ok(true),
     }
 }
