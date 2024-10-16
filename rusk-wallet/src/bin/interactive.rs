@@ -110,6 +110,7 @@ pub(crate) async fn run_loop(
             // request operation to perform
             let op = match wallet.is_online().await {
                 true => menu_op(
+                    wallet,
                     addr_idx,
                     phoenix_spendable,
                     moonlight_bal,
@@ -232,7 +233,6 @@ fn transaction_op_menu_moonlight(
 ) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
     let menu = Menu::title("Moonlight Transaction Operations")
-        .add(Transfer, "Moonlight Transfer")
         .add(Memo, "Moonlight Transfer with Memo")
         .add(Stake, "Moonlight Stake")
         .add(Unstake, "Moonlight Unstake")
@@ -253,13 +253,6 @@ fn transaction_op_menu_moonlight(
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        Transfer => AddrOp::Run(Box::new(Command::MoonlightTransfer {
-            sndr_idx: Some(addr_idx),
-            rcvr: prompt::request_rcvr_addr("recipient")?,
-            amt: prompt::request_token_amt("transfer", moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
         Memo => AddrOp::Run(Box::new(Command::MoonlightMemo {
             sndr_idx: Some(addr_idx),
             memo: prompt::request_str("memo")?,
@@ -319,7 +312,6 @@ fn transaction_op_menu_phoenix(
 ) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
-        .add(Transfer, "Phoenix Transfer")
         .add(Memo, "Phoenix Transfer with Memo")
         .add(Stake, "Phoenix Stake")
         .add(Unstake, "Phoenix Unstake")
@@ -340,13 +332,6 @@ fn transaction_op_menu_phoenix(
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        Transfer => AddrOp::Run(Box::new(Command::PhoenixTransfer {
-            sndr_idx: Some(addr_idx),
-            rcvr: prompt::request_rcvr_addr("recipient")?,
-            amt: prompt::request_token_amt("transfer", phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
         Memo => AddrOp::Run(Box::new(Command::PhoenixMemo {
             sndr_idx: Some(addr_idx),
             memo: prompt::request_str("memo")?,
@@ -411,6 +396,8 @@ enum AddrOp {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum CommandMenuItem {
+    // Transfer
+    Transfer,
     // Phoenix
     PhoenixTransactions,
     // Moonlight
@@ -428,7 +415,6 @@ enum CommandMenuItem {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
-    Transfer,
     Memo,
     Stake,
     Unstake,
@@ -443,6 +429,7 @@ enum TransactionOp {
 /// Allows the user to choose the operation to perform for the
 /// selected address
 fn menu_op(
+    wallet: &Wallet<WalletFile>,
     addr_idx: u8,
     phoenix_balance: Dusk,
     moonlight_balance: Dusk,
@@ -452,6 +439,7 @@ fn menu_op(
     use CommandMenuItem as CMI;
 
     let mut cmd_menu = Menu::new()
+        .add(CMI::Transfer, "Transfer")
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
@@ -485,6 +473,26 @@ fn menu_op(
     let cmd = cmd_menu.answer(&answer).to_owned();
 
     let res = match cmd {
+        CMI::Transfer => {
+            let rcvr = prompt::request_rcvr_addr("recipient")?;
+            let (sender, balance) = match &rcvr {
+                Address::Phoenix { .. } => {
+                    (wallet.phoenix_address(addr_idx)?, phoenix_balance)
+                }
+                Address::Bls { .. } => {
+                    (wallet.bls_address(addr_idx)?, moonlight_balance)
+                }
+            };
+            AddrOp::Run(Box::new(Command::Transfer {
+                sender: Some(sender),
+                rcvr,
+                amt: prompt::request_token_amt("transfer", balance)?,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_TRANSFER,
+                )?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
         CMI::PhoenixTransactions => {
             transaction_op_menu_phoenix(addr_idx, phoenix_balance)?
         }
@@ -685,39 +693,23 @@ fn menu_wallet(wallet_found: Option<WalletPath>) -> anyhow::Result<MainMenu> {
 /// Request user confirmation for a transfer transaction
 fn confirm(cmd: &Command) -> anyhow::Result<bool> {
     match cmd {
-        Command::PhoenixTransfer {
-            sndr_idx,
+        Command::Transfer {
+            sender,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
+            let sender = sender.as_ref().expect("sender to be a valid address");
+            sender.same_protocol(rcvr)?;
             let max_fee = gas_limit * gas_price;
-            println!(
-                "   > Send from {}",
-                address_idx_string(sndr_idx.unwrap_or_default())
-            );
-            println!("   > Recipient = {}", rcvr.preview());
+            println!("   > Sender = {sender}");
+            println!("   > Recipient = {rcvr}");
             println!("   > Amount to transfer = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            prompt::ask_confirm()
-        }
-        Command::MoonlightTransfer {
-            sndr_idx,
-            rcvr,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let max_fee = gas_limit * gas_price;
-            println!(
-                "   > Send from {}",
-                address_idx_string(sndr_idx.unwrap_or_default())
-            );
-            println!("   > Recipient = {}", rcvr.preview());
-            println!("   > Amount to transfer = {} DUSK", amt);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            if let Address::Bls { .. } = rcvr {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
         Command::PhoenixStake {

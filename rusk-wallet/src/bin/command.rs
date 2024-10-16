@@ -76,13 +76,13 @@ pub(crate) enum Command {
         addr_idx: Option<u8>,
     },
 
-    /// Send DUSK privately through the network using Phoenix
-    PhoenixTransfer {
-        /// Phoenix address from which to send DUSK [default: first address]
+    /// Send DUSK through the network
+    Transfer {
+        /// Address from which to send DUSK [default: first address]
         #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        sender: Option<Address>,
 
-        /// Phoenix receiver address
+        /// Receiver address
         #[clap(short, long)]
         rcvr: Address,
 
@@ -241,30 +241,6 @@ pub(crate) enum Command {
         /// Check accumulated reward
         #[clap(long, action)]
         reward: bool,
-    },
-
-    // Moonlight transaction commands
-    /// Send DUSK publicly through the network using Moonlight
-    MoonlightTransfer {
-        /// Moonlight Address from which to send DUSK [default: first address]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
-
-        /// Moonlight receiver address
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
     },
 
     /// Attach a memo to a Moonlight transaction
@@ -549,22 +525,42 @@ impl Command {
                     Ok(RunResult::Addresses(phoenix_addresses))
                 }
             }
-            Command::PhoenixTransfer {
-                sndr_idx,
+            Command::Transfer {
+                sender,
                 rcvr,
                 amt,
                 gas_limit,
                 gas_price,
             } => {
-                wallet.sync().await?;
+                let sender_idx = match sender {
+                    Some(addr) => {
+                        let own = wallet.claim_as_address(addr)?;
+                        own.same_protocol(&rcvr)?;
+                        own.index()?
+                    }
+                    None => 0,
+                };
+
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
 
-                let receiver = rcvr.try_phoenix_pk()?;
+                // let receiver = rcvr.try_phoenix_pk()?;
 
-                let tx = wallet
-                    .phoenix_transfer(sender_idx, receiver, None, amt, gas)
-                    .await?;
+                let tx = match rcvr {
+                    Address::Phoenix { index: _, addr } => {
+                        wallet.sync().await?;
+                        wallet
+                            .phoenix_transfer(sender_idx, &addr, None, amt, gas)
+                            .await?
+                    }
+                    Address::Bls { index: _, addr } => {
+                        wallet
+                            .moonlight_transfer(
+                                sender_idx, &addr, None, amt, gas,
+                            )
+                            .await?
+                    }
+                };
+
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::PhoenixMemo {
@@ -592,24 +588,7 @@ impl Command {
                     .await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightTransfer {
-                sndr_idx,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
 
-                let receiver = rcvr.try_bls_pk()?;
-
-                let tx = wallet
-                    .moonlight_transfer(sender_idx, receiver, None, amt, gas)
-                    .await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
             Command::MoonlightMemo {
                 sndr_idx,
                 memo,
