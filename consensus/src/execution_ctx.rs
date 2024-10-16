@@ -477,7 +477,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // Collect message from a previous iteration/step.
         if let Some(m) = self
             .iter_ctx
-            .collect_past_event(&self.round_update, msg)
+            .process_past_msg(&self.round_update, msg)
             .await
         {
             match &m.payload {
