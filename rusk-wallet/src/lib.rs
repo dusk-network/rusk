@@ -34,7 +34,9 @@ pub use rusk::{RuskHttpClient, RuskRequest};
 
 pub use error::Error;
 pub use wallet::gas;
-pub use wallet::{Address, DecodedNote, SecureWalletFile, Wallet, WalletPath};
+pub use wallet::{
+    Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
+};
 
 use execution_core::{
     dusk, from_dusk,
@@ -55,19 +57,19 @@ pub const MIN_CONVERTIBLE: Dusk = Dusk::new(1);
 /// The length of an epoch in blocks
 pub const EPOCH: u64 = 2160;
 /// Max addresses the wallet can store
-pub const MAX_ADDRESSES: usize = get_max_addresses();
+pub const MAX_PROFILES: usize = get_max_addresses();
 
-const DEFAULT_MAX_ADDRESSES: usize = 2;
+const DEFAULT_MAX_PROFILES: usize = 2;
 
 const fn get_max_addresses() -> usize {
-    match option_env!("WALLET_MAX_ADDR") {
+    match option_env!("WALLET_MAX_PROFILES") {
         Some(v) => match konst::primitive::parse_usize(v) {
             Ok(e) if e > 255 => {
-                panic!("WALLET_MAX_ADDR must be lower or equal to 255")
+                panic!("WALLET_MAX_PROFILES must be lower or equal to 255")
             }
             Ok(e) if e > 0 => e,
-            _ => panic!("Invalid WALLET_MAX_ADDR"),
+            _ => panic!("Invalid WALLET_MAX_PROFILES"),
         },
-        None => DEFAULT_MAX_ADDRESSES,
+        None => DEFAULT_MAX_PROFILES,
     }
 }
