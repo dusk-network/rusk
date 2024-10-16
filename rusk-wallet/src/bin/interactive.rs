@@ -215,10 +215,9 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
 
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
-fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
+fn transaction_op_menu_phoenix() -> anyhow::Result<ProfileOp> {
     use TransactionOp::*;
     let menu = Menu::title("Shielded Transaction Operations")
-        .add(History, "Shielded Transaction History")
         .separator()
         .add(Back, "Back");
 
@@ -232,9 +231,6 @@ fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        History => ProfileOp::Run(Box::new(Command::PhoenixHistory {
-            profile_idx: Some(profile_idx),
-        })),
         Back => ProfileOp::Back,
     };
 
@@ -249,6 +245,8 @@ enum ProfileOp {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum CommandMenuItem {
+    // History
+    History,
     // Transfer
     Transfer,
     // Stake
@@ -276,7 +274,6 @@ enum CommandMenuItem {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
-    History,
     Back,
 }
 
@@ -293,6 +290,7 @@ fn menu_op(
     use CommandMenuItem as CMI;
 
     let mut cmd_menu = Menu::new()
+        .add(CMI::History, "Transactions History")
         .add(CMI::Transfer, "Transfer")
         .add(CMI::Stake, "Stake")
         .add(CMI::Unstake, "Unstake")
@@ -405,7 +403,7 @@ fn menu_op(
                 gas_price: prompt::request_gas_price()?,
             }))
         }
-        CMI::PhoenixTransactions => transaction_op_menu_phoenix(profile_idx)?,
+        CMI::PhoenixTransactions => transaction_op_menu_phoenix()?,
         CMI::ContractDeploy => {
             let addr = match prompt::request_protocol()? {
                 prompt::Protocol::Phoenix => {
@@ -445,6 +443,10 @@ fn menu_op(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
             }))
+        }
+        CMI::History => {
+            let profile_idx = Some(profile_idx);
+            ProfileOp::Run(Box::new(Command::History { profile_idx }))
         }
         CMI::StakeInfo => ProfileOp::Run(Box::new(Command::StakeInfo {
             profile_idx: Some(profile_idx),

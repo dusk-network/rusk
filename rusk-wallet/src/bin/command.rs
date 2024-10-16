@@ -68,9 +68,8 @@ pub(crate) enum Command {
         new: bool,
     },
 
-    // Shielded transaction commands
-    /// Show shielded transaction history
-    PhoenixHistory {
+    /// Show address transaction history
+    History {
         /// Profile index for which you want to see the history
         #[clap(long)]
         profile_idx: Option<u8>,
@@ -498,9 +497,9 @@ impl Command {
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
             }
-            Command::PhoenixHistory { profile_idx } => {
-                wallet.sync().await?;
+            Command::History { profile_idx } => {
                 let profile_idx = profile_idx.unwrap_or_default();
+                wallet.sync().await?;
                 let notes = wallet.get_all_notes(profile_idx).await?;
 
                 let transactions =
