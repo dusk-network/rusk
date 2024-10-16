@@ -10,7 +10,7 @@ use node::database::{Mempool, Metadata};
 use {
     dusk_bytes::Serializable,
     execution_core::signatures::bls::PublicKey as AccountPublicKey,
-    node::archive::MoonlightTxEvents,
+    node::archive::MoonlightGroup,
 };
 
 use super::*;
@@ -85,7 +85,7 @@ pub async fn mempool_by_hash<'a>(
 }
 
 #[cfg(feature = "archive")]
-pub(super) async fn moonlight_tx_by_address(
+pub(super) async fn full_moonlight_history(
     ctx: &Context<'_>,
     address: String,
 ) -> OptResult<MoonlightTransactions> {
@@ -101,9 +101,39 @@ pub(super) async fn moonlight_tx_by_address(
     let pk = AccountPublicKey::from_bytes(&pk_bytes)
         .map_err(|_| anyhow::anyhow!("Failed to serialize given public key"))?;
 
-    let moonlight_events = archive.moonlight_txs_by_pk(pk)?;
+    let moonlight_events = archive.full_moonlight_history(pk)?;
 
     if let Some(moonlight_events) = moonlight_events {
+        Ok(Some(MoonlightTransactions(moonlight_events)))
+    } else {
+        Ok(None)
+    }
+}
+
+#[cfg(feature = "archive")]
+pub(super) async fn moonlight_transactions(
+    ctx: &Context<'_>,
+    sender: Option<String>,
+    receiver: Option<String>,
+    from_block: Option<u64>,
+    to_block: Option<u64>,
+    max_count: Option<usize>,
+    page_count: Option<usize>,
+) -> OptResult<MoonlightTransactions> {
+    let (_, archive) = ctx.data::<DBContext>()?;
+
+    let sender: Option<AccountPublicKey> = sender
+        .map(|s| s.try_into())
+        .transpose()?
+        .map(|s: NewAccountPublicKey| s.0);
+    let receiver: Option<AccountPublicKey> = receiver
+        .map(|r| r.try_into())
+        .transpose()?
+        .map(|s: NewAccountPublicKey| s.0);
+
+    if let Some(moonlight_events) = archive.fetch_moonlight_history(
+        sender, receiver, from_block, to_block, max_count, page_count,
+    )? {
         Ok(Some(MoonlightTransactions(moonlight_events)))
     } else {
         Ok(None)
@@ -115,8 +145,6 @@ pub(super) async fn moonlight_tx_by_memo(
     ctx: &Context<'_>,
     memo: Vec<u8>,
 ) -> OptResult<MoonlightTransactions> {
-    use dusk_bytes::ParseHexStr;
-
     let (_, archive) = ctx.data::<DBContext>()?;
 
     let moonlight_events = archive.moonlight_txs_by_memo(memo)?;
