@@ -1,7 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { AppAnchor, AppImage, AppSource } from "$lib/components";
+  import { AppAnchor, AppImage } from "$lib/components";
   import { Anchor } from "$lib/dusk/components";
   import { appStore } from "$lib/stores";
   import "./Footer.css";
@@ -25,46 +25,42 @@
 </script>
 
 <div class="footer">
-  <div class="footer__copyright">
-    <span>© 2018 - 2024 Dusk Network B.V. All Rights Reserved.</span>
-    <span
-      >Explorer v{import.meta.env.APP_VERSION} ({import.meta.env
-        .APP_BUILD_INFO})</span
+  <div class="footer__copyright-container">
+    <p>© 2018 - 2024 Dusk Network B.V. All Rights Reserved.</p>
+    <p>
+      Explorer v{import.meta.env.APP_VERSION} ({import.meta.env.APP_BUILD_INFO})
+    </p>
+  </div>
+  <div class="footer__explorers-links-container">
+    {#each hostedExplorers as explorer (explorer.url)}
+      {#if !location.href.includes(explorer.url)}
+        <Anchor onSurface={false} href={explorer.url} className="footer__link"
+          >{explorer.label}</Anchor
+        >
+      {/if}
+    {/each}
+  </div>
+
+  <div class="footer__misc-links-container">
+    <Anchor
+      onSurface={false}
+      href="https://dusk.network/privacy-policy"
+      className="footer__link">Privacy Policy</Anchor
+    >
+    <Anchor
+      onSurface={false}
+      href="https://dusk.network/terms-of-use"
+      className="footer__link">Terms of Use</Anchor
     >
   </div>
 
-  <div class="footer__links-test">
-    <div class="footer__links">
-      {#each hostedExplorers as explorer (explorer.url)}
-        {#if !location.href.includes(explorer.url)}
-          <Anchor
-            onSurface={false}
-            href={explorer.url}
-            className="footer__links-link">{explorer.label}</Anchor
-          >
-        {/if}
-      {/each}
-      <Anchor
-        onSurface={false}
-        href="https://dusk.network/privacy-policy"
-        className="footer__links-link">Privacy policy</Anchor
-      >
-      <Anchor
-        onSurface={false}
-        href="https://dusk.network/terms-of-use"
-        className="footer__links-link">Terms of use</Anchor
-      >
-    </div>
-    <AppAnchor href="https://dusk.network" className="footer__logo">
-      <picture>
-        <AppSource media="(max-width:768px)" srcset="/dusk_logo_icon.svg" />
-        <AppImage
-          src={darkMode ? "/dusk_logo_light.svg" : "/dusk_logo.svg"}
-          alt="Dusk Logo"
-          sizes="(max-width:768px) 20px, 86px"
-          className="footer__logo-image"
-        />
-      </picture>
-    </AppAnchor>
-  </div>
+  <AppAnchor href="https://dusk.network" className="footer__logo">
+    <picture>
+      <AppImage
+        src={darkMode ? "/dusk_logo_light.svg" : "/dusk_logo.svg"}
+        alt="Dusk Logo"
+        sizes="(max-width:768px) 20px, 86px"
+      />
+    </picture>
+  </AppAnchor>
 </div>
