@@ -180,35 +180,6 @@ pub(crate) enum Command {
         #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
-
-    /// Call a contract using Phoenix
-    PhoenixContractCall {
-        /// Phoenix address from which to call the contract [default: first]
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
-
-        /// Contract id of the contract to call
-        #[clap(short, long)]
-        contract_id: Vec<u8>,
-
-        /// Function name to call
-
-        #[clap(short = 'n', long)]
-        fn_name: String,
-
-        /// Function arguments for this call
-        #[clap(short = 'f', long)]
-        fn_args: Vec<u8>,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Check your stake information
     StakeInfo {
         /// Address used to stake [default: first address]
@@ -220,13 +191,13 @@ pub(crate) enum Command {
         reward: bool,
     },
 
-    /// Call a contract using Moonlight
-    MoonlightContractCall {
-        /// address index of the moonlight account that will pay for the gas
+    /// Call a contract
+    ContractCall {
+        /// Address from which to call the contract [default: first]
         #[clap(short, long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
 
-        /// contract id of the contract to call
+        /// Contract id of the contract to call
         #[clap(short, long)]
         contract_id: Vec<u8>,
 
@@ -572,8 +543,8 @@ impl Command {
                     wallet.moonlight_to_phoenix(addr_idx, amt, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::PhoenixContractCall {
-                addr_idx,
+            Command::ContractCall {
+                address,
                 contract_id,
                 fn_name,
                 fn_args,
@@ -581,7 +552,12 @@ impl Command {
                 gas_price,
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
+
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = address.index()?;
 
                 let contract_id: [u8; CONTRACT_ID_BYTES] = contract_id
                     .try_into()
@@ -590,42 +566,34 @@ impl Command {
                 let call = ContractCall::new(contract_id, fn_name, &fn_args)
                     .map_err(|_| Error::Rkyv)?;
 
-                let tx = wallet
-                    .phoenix_execute(addr_idx, Dusk::from(0), gas, call.into())
-                    .await?;
+                let tx = match address {
+                    Address::Phoenix { .. } => {
+                        wallet.sync().await?;
+                        wallet
+                            .phoenix_execute(
+                                addr_idx,
+                                Dusk::from(0),
+                                gas,
+                                call.into(),
+                            )
+                            .await
+                    }
+                    Address::Bls { .. } => {
+                        wallet
+                            .moonlight_execute(
+                                addr_idx,
+                                Dusk::from(0),
+                                Dusk::from(0),
+                                gas,
+                                call.into(),
+                            )
+                            .await
+                    }
+                }?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightContractCall {
-                addr_idx,
-                contract_id,
-                fn_name,
-                fn_args,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
 
-                let contract_id: [u8; 32] = contract_id
-                    .try_into()
-                    .map_err(|_| Error::InvalidContractId)?;
-
-                let call = ContractCall::new(contract_id, fn_name, &fn_args)
-                    .map_err(|_| Error::Rkyv)?;
-
-                let tx = wallet
-                    .moonlight_execute(
-                        addr_idx,
-                        Dusk::from(0),
-                        Dusk::from(0),
-                        gas,
-                        call.into(),
-                    )
-                    .await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
             Self::ContractDeploy {
                 address,
                 code,
