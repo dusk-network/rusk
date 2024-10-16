@@ -51,22 +51,14 @@ pub(crate) enum Command {
         file: Option<WalletPath>,
     },
 
-    /// Check your current Phoenix balance
-    PhoenixBalance {
-        /// Address index
+    /// Check your current balance
+    Balance {
+        /// Address
         #[clap(short, long)]
-        addr_idx: Option<u8>,
-
+        address: Option<Address>,
         /// Check maximum spendable balance
         #[clap(long)]
         spendable: bool,
-    },
-
-    /// Check your current Moonlight balance
-    MoonlightBalance {
-        /// Address index
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
     },
 
     /// List your existing addresses and generate new ones
@@ -76,21 +68,20 @@ pub(crate) enum Command {
         new: bool,
     },
 
-    // Phoenix transaction commands
     /// Show address transaction history
-    PhoenixHistory {
-        /// Address index for which you want to see the history
+    History {
+        /// Address for which you want to see the history
         #[clap(short, long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
     },
 
-    /// Send DUSK privately through the network using Phoenix
-    PhoenixTransfer {
-        /// Phoenix address from which to send DUSK [default: first address]
+    /// Send DUSK through the network
+    Transfer {
+        /// Address from which to send DUSK [default: first address]
         #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        sender: Option<Address>,
 
-        /// Phoenix receiver address
+        /// Receiver address
         #[clap(short, long)]
         rcvr: Address,
 
@@ -105,40 +96,17 @@ pub(crate) enum Command {
         /// Price you're going to pay for each gas unit (in LUX)
         #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
-    },
-
-    /// Attach a memo to a Phoenix transaction
-    PhoenixMemo {
-        /// Phoenix address from which to send DUSK [default: first address]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
 
         /// Optional memo to attach to the transaction
-        #[clap(short, long)]
-        memo: String,
-
-        /// Phoenix receiver address
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
+        #[clap(long)]
+        memo: Option<String>,
     },
 
-    /// Stake DUSK through Phoenix
-    PhoenixStake {
-        /// Phoenix address from which to stake DUSK [default: first address]
+    /// Stake DUSK
+    Stake {
+        /// Address from which to stake DUSK [default: first address]
         #[clap(short = 's', long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
 
         /// Amount of DUSK to stake
         #[clap(short, long)]
@@ -153,12 +121,12 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Unstake using Phoenix
-    PhoenixUnstake {
-        /// Phoenix address from which to make the unstake request [default:
-        /// first address]
+    /// Unstake DUSK
+    Unstake {
+        /// Address from which to make the unstake request [default: first
+        /// address]
         #[clap(short, long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
@@ -169,12 +137,12 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Withdraw accumulated rewards for a stake key using Phoenix
-    PhoenixWithdraw {
-        /// Phoenix address from which to make the withdraw request [default:
+    /// Withdraw accumulated rewards for a stake key
+    Withdraw {
+        /// Address from which to make the withdraw request [default:
         /// first address]
         #[clap(short, long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
@@ -185,11 +153,11 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Deploy a contract using Phoenix
-    PhoenixContractDeploy {
-        /// Phoenix address from which to deploy the contract [default: first]
+    /// Deploy a contract
+    ContractDeploy {
+        /// Address from which to deploy the contract [default: first]
         #[clap(short, long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
 
         /// Path to the WASM contract code
         #[clap(short, long)]
@@ -211,35 +179,6 @@ pub(crate) enum Command {
         #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
-
-    /// Call a contract using Phoenix
-    PhoenixContractCall {
-        /// Phoenix address from which to call the contract [default: first]
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
-
-        /// Contract id of the contract to call
-        #[clap(short, long)]
-        contract_id: Vec<u8>,
-
-        /// Function name to call
-
-        #[clap(short = 'n', long)]
-        fn_name: String,
-
-        /// Function arguments for this call
-        #[clap(short = 'f', long)]
-        fn_args: Vec<u8>,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Check your stake information
     StakeInfo {
         /// Address used to stake [default: first address]
@@ -251,143 +190,13 @@ pub(crate) enum Command {
         reward: bool,
     },
 
-    // Moonlight transaction commands
-    /// Send DUSK publicly through the network using Moonlight
-    MoonlightTransfer {
-        /// Moonlight Address from which to send DUSK [default: first address]
+    /// Call a contract
+    ContractCall {
+        /// Address from which to call the contract [default: first]
         #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        address: Option<Address>,
 
-        /// Moonlight receiver address
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Attach a memo to a Moonlight transaction
-    MoonlightMemo {
-        /// Moonlight Address from which to send DUSK [default: first address]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
-
-        /// Optional memo to attach to the transaction
-        #[clap(short, long)]
-        memo: String,
-
-        /// Moonlight receiver address
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Stake DUSK using Moonlight
-    MoonlightStake {
-        /// Moonlight address from which to stake DUSK [default: first address]
-        #[clap(short = 's', long)]
-        addr_idx: Option<u8>,
-
-        /// Amount of DUSK to stake
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Unstake using Moonlight
-    MoonlightUnstake {
-        /// Moonlight address from which to make the unstake request [default:
-        /// first address]
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Withdraw accumulated rewards for a stake key using Moonlight
-    MoonlightWithdraw {
-        /// Moonlight address from which to make the withdraw request [default:
-        /// first address]
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Deploy a contract using Moonlight
-    MoonlightContractDeploy {
-        /// Moonlight address from which to deploy the contract [default:
-        /// first]
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
-
-        /// Path to the WASM contract code
-        #[clap(short, long)]
-        code: PathBuf,
-
-        /// Arguments for init function
-        #[clap(short, long)]
-        init_args: Vec<u8>,
-
-        /// Nonce used for the deploy transaction
-        #[clap(short, long)]
-        deploy_nonce: u64,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Call a contract using Moonlight
-    MoonlightContractCall {
-        /// address index of the moonlight account that will pay for the gas
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
-
-        /// contract id of the contract to call
+        /// Contract id of the contract to call
         #[clap(short, long)]
         contract_id: Vec<u8>,
 
@@ -491,28 +300,38 @@ impl Command {
         settings: &Settings,
     ) -> anyhow::Result<RunResult> {
         match self {
-            Command::PhoenixBalance {
-                addr_idx,
-                spendable,
-            } => {
-                let sync_result = wallet.sync().await;
-                if let Err(e) = sync_result {
-                    // Sync error should be reported only if wallet is online
-                    if wallet.is_online().await {
-                        tracing::error!("Unable to update the balance {e:?}")
+            Command::Balance { address, spendable } => {
+                let addr = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                match addr {
+                    Address::Bls { index, addr: _ } => {
+                        let addr_idx = index.unwrap_or_default();
+                        Ok(RunResult::MoonlightBalance(
+                            wallet.get_moonlight_balance(addr_idx).await?,
+                        ))
+                    }
+                    Address::Phoenix { index, addr: _ } => {
+                        let sync_result = wallet.sync().await;
+                        if let Err(e) = sync_result {
+                            // Sync error should be reported only if wallet is
+                            // online
+                            if wallet.is_online().await {
+                                tracing::error!(
+                                    "Unable to update the balance {e:?}"
+                                )
+                            }
+                        }
+                        let addr_idx = index.unwrap_or_default();
+
+                        let balance =
+                            wallet.get_phoenix_balance(addr_idx).await?;
+                        Ok(RunResult::PhoenixBalance(balance, spendable))
                     }
                 }
-                let addr_idx = addr_idx.unwrap_or_default();
+            }
 
-                let balance = wallet.get_phoenix_balance(addr_idx).await?;
-                Ok(RunResult::PhoenixBalance(balance, spendable))
-            }
-            Command::MoonlightBalance { addr_idx } => {
-                let addr_idx = addr_idx.unwrap_or_default();
-                Ok(RunResult::MoonlightBalance(
-                    wallet.get_moonlight_balance(addr_idx).await?,
-                ))
-            }
             Command::Addresses { new } => {
                 if new {
                     if wallet.addresses().len() >= MAX_ADDRESSES {
@@ -527,7 +346,8 @@ impl Command {
 
                     // leave this hack here until `RunResult` gets an overhaul
                     let phoenix_addr = Address::Phoenix {
-                        pk: *wallet.phoenix_pk(new_addr_idx)?,
+                        index: Some(new_addr_idx),
+                        addr: *wallet.phoenix_pk(new_addr_idx)?,
                     };
                     Ok(RunResult::Address(Box::new(phoenix_addr)))
                 } else {
@@ -535,111 +355,124 @@ impl Command {
                         .addresses()
                         .iter()
                         .enumerate()
-                        .map(|(_index, (phoenix_pk, _bls_pk))| {
-                            Address::Phoenix { pk: *phoenix_pk }
+                        .map(|(index, (phoenix_pk, _bls_pk))| {
+                            Address::Phoenix {
+                                index: Some(index as u8),
+                                addr: *phoenix_pk,
+                            }
                         })
                         .collect();
 
                     Ok(RunResult::Addresses(phoenix_addresses))
                 }
             }
-            Command::PhoenixTransfer {
-                sndr_idx,
+            Command::Transfer {
+                sender,
                 rcvr,
                 amt,
                 gas_limit,
                 gas_price,
-            } => {
-                wallet.sync().await?;
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
-
-                let receiver = rcvr.try_phoenix_pk()?;
-
-                let tx = wallet
-                    .phoenix_transfer(sender_idx, receiver, None, amt, gas)
-                    .await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::PhoenixMemo {
-                sndr_idx,
                 memo,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
             } => {
-                wallet.sync().await?;
+                let sender_idx = match sender {
+                    Some(addr) => {
+                        let own = wallet.claim_as_address(addr)?;
+                        own.same_protocol(&rcvr)?;
+                        own.index()?
+                    }
+                    None => 0,
+                };
+
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
 
-                let receiver = rcvr.try_phoenix_pk()?;
-
-                let tx = wallet
-                    .phoenix_transfer(
-                        sender_idx,
-                        receiver,
-                        Some(memo),
-                        amt,
-                        gas,
-                    )
-                    .await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightTransfer {
-                sndr_idx,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
-
-                let receiver = rcvr.try_bls_pk()?;
-
-                let tx = wallet
-                    .moonlight_transfer(sender_idx, receiver, None, amt, gas)
-                    .await?;
+                let memo = memo.filter(|m| !m.trim().is_empty());
+                let tx = match rcvr {
+                    Address::Phoenix { index: _, addr } => {
+                        wallet.sync().await?;
+                        wallet
+                            .phoenix_transfer(sender_idx, &addr, memo, amt, gas)
+                            .await?
+                    }
+                    Address::Bls { index: _, addr } => {
+                        wallet
+                            .moonlight_transfer(
+                                sender_idx, &addr, memo, amt, gas,
+                            )
+                            .await?
+                    }
+                };
 
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightMemo {
-                sndr_idx,
-                memo,
-                rcvr,
+
+            Command::Stake {
+                address,
                 amt,
                 gas_limit,
                 gas_price,
             } => {
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = address.index()?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
-
-                let receiver = rcvr.try_bls_pk()?;
-
-                let tx = wallet
-                    .moonlight_transfer(
-                        sender_idx,
-                        receiver,
-                        Some(memo),
-                        amt,
-                        gas,
-                    )
-                    .await?;
+                let tx = match address {
+                    Address::Phoenix { .. } => {
+                        wallet.sync().await?;
+                        wallet.phoenix_stake(addr_idx, amt, gas).await
+                    }
+                    Address::Bls { .. } => {
+                        wallet.moonlight_stake(addr_idx, amt, gas).await
+                    }
+                }?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::PhoenixStake {
-                addr_idx,
-                amt,
+            Command::Unstake {
+                address,
                 gas_limit,
                 gas_price,
             } => {
-                wallet.sync().await?;
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = address.index()?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
+                let tx = match address {
+                    Address::Phoenix { .. } => {
+                        wallet.sync().await?;
+                        wallet.phoenix_unstake(addr_idx, gas).await
+                    }
+                    Address::Bls { .. } => {
+                        wallet.moonlight_unstake(addr_idx, gas).await
+                    }
+                }?;
 
-                let tx = wallet.phoenix_stake(addr_idx, amt, gas).await?;
+                Ok(RunResult::Tx(tx.hash()))
+            }
+            Command::Withdraw {
+                address,
+                gas_limit,
+                gas_price,
+            } => {
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = address.index()?;
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+                let tx = match address {
+                    Address::Phoenix { .. } => {
+                        wallet.sync().await?;
+                        wallet.phoenix_stake_withdraw(addr_idx, gas).await
+                    }
+                    Address::Bls { .. } => {
+                        wallet.moonlight_stake_withdraw(addr_idx, gas).await
+                    }
+                }?;
+
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::StakeInfo { addr_idx, reward } => {
@@ -651,32 +484,7 @@ impl Command {
 
                 Ok(RunResult::StakeInfo(stake_info, reward))
             }
-            Command::PhoenixUnstake {
-                addr_idx,
-                gas_limit,
-                gas_price,
-            } => {
-                wallet.sync().await?;
 
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
-                let tx = wallet.phoenix_unstake(addr_idx, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::PhoenixWithdraw {
-                addr_idx,
-                gas_limit,
-                gas_price,
-            } => {
-                wallet.sync().await?;
-
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
-                let tx = wallet.phoenix_stake_withdraw(addr_idx, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
             Command::Export {
                 addr_idx,
                 dir,
@@ -694,9 +502,13 @@ impl Command {
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
             }
-            Command::PhoenixHistory { addr_idx } => {
+            Command::History { address } => {
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
                 wallet.sync().await?;
-                let addr_idx = addr_idx.unwrap_or_default();
+                let addr_idx = address.index()?;
                 let notes = wallet.get_all_notes(addr_idx).await?;
 
                 let transactions =
@@ -734,43 +546,8 @@ impl Command {
                     wallet.moonlight_to_phoenix(addr_idx, amt, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightStake {
-                addr_idx,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
-                let tx = wallet.moonlight_stake(addr_idx, amt, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightUnstake {
-                addr_idx,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
-                let tx = wallet.moonlight_unstake(addr_idx, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightWithdraw {
-                addr_idx,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
-                let tx = wallet.moonlight_stake_withdraw(addr_idx, gas).await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::PhoenixContractCall {
-                addr_idx,
+            Command::ContractCall {
+                address,
                 contract_id,
                 fn_name,
                 fn_args,
@@ -778,7 +555,12 @@ impl Command {
                 gas_price,
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
+
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = address.index()?;
 
                 let contract_id: [u8; CONTRACT_ID_BYTES] = contract_id
                     .try_into()
@@ -787,53 +569,42 @@ impl Command {
                 let call = ContractCall::new(contract_id, fn_name, &fn_args)
                     .map_err(|_| Error::Rkyv)?;
 
-                let tx = wallet
-                    .phoenix_execute(addr_idx, Dusk::from(0), gas, call.into())
-                    .await?;
+                let tx = match address {
+                    Address::Phoenix { .. } => {
+                        wallet.sync().await?;
+                        wallet
+                            .phoenix_execute(
+                                addr_idx,
+                                Dusk::from(0),
+                                gas,
+                                call.into(),
+                            )
+                            .await
+                    }
+                    Address::Bls { .. } => {
+                        wallet
+                            .moonlight_execute(
+                                addr_idx,
+                                Dusk::from(0),
+                                Dusk::from(0),
+                                gas,
+                                call.into(),
+                            )
+                            .await
+                    }
+                }?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightContractCall {
-                addr_idx,
-                contract_id,
-                fn_name,
-                fn_args,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
 
-                let contract_id: [u8; 32] = contract_id
-                    .try_into()
-                    .map_err(|_| Error::InvalidContractId)?;
-
-                let call = ContractCall::new(contract_id, fn_name, &fn_args)
-                    .map_err(|_| Error::Rkyv)?;
-
-                let tx = wallet
-                    .moonlight_execute(
-                        addr_idx,
-                        Dusk::from(0),
-                        Dusk::from(0),
-                        gas,
-                        call.into(),
-                    )
-                    .await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Self::PhoenixContractDeploy {
-                addr_idx,
+            Self::ContractDeploy {
+                address,
                 code,
                 init_args,
                 deploy_nonce,
                 gas_limit,
                 gas_price,
             } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
                 if code.extension().unwrap_or_default() != "wasm" {
                     return Err(Error::InvalidWasmContractPath.into());
                 }
@@ -841,45 +612,37 @@ impl Command {
                 let code = std::fs::read(code)
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
-                let tx = wallet
-                    .phoenix_deploy(
-                        addr_idx,
-                        code,
-                        init_args,
-                        deploy_nonce,
-                        gas,
-                    )
-                    .await?;
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Self::MoonlightContractDeploy {
-                addr_idx,
-                code,
-                init_args,
-                deploy_nonce,
-                gas_limit,
-                gas_price,
-            } => {
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = address.index()?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let addr_idx = addr_idx.unwrap_or_default();
-
-                if code.extension().unwrap_or_default() != "wasm" {
-                    return Err(Error::InvalidWasmContractPath.into());
-                }
-
-                let code = std::fs::read(code)
-                    .map_err(|_| Error::InvalidWasmContractPath)?;
-
-                let tx = wallet
-                    .moonlight_deploy(
-                        addr_idx,
-                        code,
-                        init_args,
-                        deploy_nonce,
-                        gas,
-                    )
-                    .await?;
+                let tx = match address {
+                    Address::Phoenix { .. } => {
+                        wallet.sync().await?;
+                        wallet
+                            .phoenix_deploy(
+                                addr_idx,
+                                code,
+                                init_args,
+                                deploy_nonce,
+                                gas,
+                            )
+                            .await
+                    }
+                    Address::Bls { .. } => {
+                        wallet
+                            .moonlight_deploy(
+                                addr_idx,
+                                code,
+                                init_args,
+                                deploy_nonce,
+                                gas,
+                            )
+                            .await
+                    }
+                }?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }

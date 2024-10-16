@@ -16,7 +16,7 @@ use crossterm::{
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 use execution_core::stake::MINIMUM_STAKE;
-use requestty::Question;
+use requestty::{Choice, Question};
 
 use rusk_wallet::gas;
 use rusk_wallet::{
@@ -264,16 +264,7 @@ pub(crate) fn request_token_amt(
     request_token(action, min, balance)
 }
 
-/// Request amount of tokens that can be 0
-pub(crate) fn request_optional_token_amt(
-    action: &str,
-    balance: Dusk,
-) -> anyhow::Result<Dusk> {
-    let min = Dusk::from(0);
-    request_token(action, min, balance)
-}
-
-/// Request amount of tokens that can be 0
+/// Request amount of tokens that can't be lower than MINIMUM_STAKE
 pub(crate) fn request_stake_token_amt(balance: Dusk) -> anyhow::Result<Dusk> {
     let min: Dusk = MINIMUM_STAKE.into();
     request_token("stake", min, balance)
@@ -321,6 +312,35 @@ pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
 
     let a = requestty::prompt_one(question)?;
     Ok(a.as_string().expect("answer to be a string").to_owned())
+}
+
+pub enum Protocol {
+    Phoenix,
+    Moonlight,
+}
+
+impl From<&str> for Protocol {
+    fn from(value: &str) -> Self {
+        match value {
+            "Phoenix" => Protocol::Phoenix,
+            "Moonlight" => Protocol::Moonlight,
+            _ => panic!("Unknown protocol"),
+        }
+    }
+}
+
+/// Request protocol to use
+pub(crate) fn request_protocol() -> anyhow::Result<Protocol> {
+    let question = requestty::Question::select("protocol")
+        .choices(vec![Choice("Phoenix".into()), "Moonlight".into()])
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+    Ok(a.as_list_item()
+        .expect("answer must be a list item")
+        .text
+        .as_str()
+        .into())
 }
 
 /// Request contract WASM file location
