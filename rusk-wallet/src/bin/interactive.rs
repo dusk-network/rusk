@@ -66,6 +66,15 @@ pub(crate) async fn run_loop(
             AddrSelect::Exit => std::process::exit(0),
         };
 
+        let phoenix = Address::Phoenix {
+            index: Some(addr_idx),
+            addr: *wallet.phoenix_pk(addr_idx)?,
+        };
+
+        let moonlight = Address::Bls {
+            index: Some(addr_idx),
+            addr: *wallet.bls_pk(addr_idx)?,
+        };
         loop {
             let is_synced = wallet.is_synced().await?;
             // get balance for this address
@@ -87,23 +96,16 @@ pub(crate) async fn run_loop(
                     "Phoenix Balance",
                 );
                 println!("{0: <23} - Total: {phoenix_total}", "",);
+            } else {
+                println!("Syncing Phoenix Balance",);
             }
-            let phoenix_addr = Address::Phoenix {
-                pk: *wallet.phoenix_pk(addr_idx)?,
-            };
-            println!("{phoenix_addr}\n");
+            println!("Phoenix Address         - {phoenix}");
+            println!();
 
             // display moonlight balance and keys information
-            if is_synced {
-                println!(
-                    "{0: <23} - Total: {moonlight_bal}",
-                    "Moonlight Balance",
-                );
-            }
-            let moonlight_addr = Address::Bls {
-                pk: *wallet.bls_pk(addr_idx)?,
-            };
-            println!("{moonlight_addr}\n");
+            println!("{0: <23} - Total: {moonlight_bal}", "Moonlight Balance",);
+            println!("Moonlight Address       - {moonlight}");
+            println!();
 
             // request operation to perform
             let op = match wallet.is_online().await {

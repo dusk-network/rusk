@@ -51,22 +51,14 @@ pub(crate) enum Command {
         file: Option<WalletPath>,
     },
 
-    /// Check your current Phoenix balance
-    PhoenixBalance {
-        /// Address index
+    /// Check your current balance
+    Balance {
+        /// Address
         #[clap(short, long)]
-        addr_idx: Option<u8>,
-
+        address: Option<Address>,
         /// Check maximum spendable balance
         #[clap(long)]
         spendable: bool,
-    },
-
-    /// Check your current Moonlight balance
-    MoonlightBalance {
-        /// Address index
-        #[clap(short, long)]
-        addr_idx: Option<u8>,
     },
 
     /// List your existing addresses and generate new ones
@@ -491,28 +483,38 @@ impl Command {
         settings: &Settings,
     ) -> anyhow::Result<RunResult> {
         match self {
-            Command::PhoenixBalance {
-                addr_idx,
-                spendable,
-            } => {
-                let sync_result = wallet.sync().await;
-                if let Err(e) = sync_result {
-                    // Sync error should be reported only if wallet is online
-                    if wallet.is_online().await {
-                        tracing::error!("Unable to update the balance {e:?}")
+            Command::Balance { address, spendable } => {
+                let addr = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                match addr {
+                    Address::Bls { index, addr: _ } => {
+                        let addr_idx = index.unwrap_or_default();
+                        Ok(RunResult::MoonlightBalance(
+                            wallet.get_moonlight_balance(addr_idx).await?,
+                        ))
+                    }
+                    Address::Phoenix { index, addr: _ } => {
+                        let sync_result = wallet.sync().await;
+                        if let Err(e) = sync_result {
+                            // Sync error should be reported only if wallet is
+                            // online
+                            if wallet.is_online().await {
+                                tracing::error!(
+                                    "Unable to update the balance {e:?}"
+                                )
+                            }
+                        }
+                        let addr_idx = index.unwrap_or_default();
+
+                        let balance =
+                            wallet.get_phoenix_balance(addr_idx).await?;
+                        Ok(RunResult::PhoenixBalance(balance, spendable))
                     }
                 }
-                let addr_idx = addr_idx.unwrap_or_default();
+            }
 
-                let balance = wallet.get_phoenix_balance(addr_idx).await?;
-                Ok(RunResult::PhoenixBalance(balance, spendable))
-            }
-            Command::MoonlightBalance { addr_idx } => {
-                let addr_idx = addr_idx.unwrap_or_default();
-                Ok(RunResult::MoonlightBalance(
-                    wallet.get_moonlight_balance(addr_idx).await?,
-                ))
-            }
             Command::Addresses { new } => {
                 if new {
                     if wallet.addresses().len() >= MAX_ADDRESSES {
@@ -527,7 +529,8 @@ impl Command {
 
                     // leave this hack here until `RunResult` gets an overhaul
                     let phoenix_addr = Address::Phoenix {
-                        pk: *wallet.phoenix_pk(new_addr_idx)?,
+                        index: Some(new_addr_idx),
+                        addr: *wallet.phoenix_pk(new_addr_idx)?,
                     };
                     Ok(RunResult::Address(Box::new(phoenix_addr)))
                 } else {
@@ -535,8 +538,11 @@ impl Command {
                         .addresses()
                         .iter()
                         .enumerate()
-                        .map(|(_index, (phoenix_pk, _bls_pk))| {
-                            Address::Phoenix { pk: *phoenix_pk }
+                        .map(|(index, (phoenix_pk, _bls_pk))| {
+                            Address::Phoenix {
+                                index: Some(index as u8),
+                                addr: *phoenix_pk,
+                            }
                         })
                         .collect();
 
