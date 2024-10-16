@@ -225,30 +225,6 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
     Ok(menu.answer(&answer).to_owned())
 }
 
-/// Allows the user to choose an operation to perform with the selected
-/// transaction type
-fn transaction_op_menu_phoenix() -> anyhow::Result<AddrOp> {
-    use TransactionOp::*;
-    let menu = Menu::title("Phoenix Transaction Operations")
-        .separator()
-        .add(Back, "Back");
-
-    let questions = Question::select("theme")
-        .message("Please select an operation")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-
-    let val = menu.answer(&answer).to_owned();
-
-    let x = match val {
-        Back => AddrOp::Back,
-    };
-
-    Ok(x)
-}
-
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum AddrOp {
     Run(Box<Command>),
@@ -271,8 +247,6 @@ enum CommandMenuItem {
     ContractDeploy,
     // Contract Call
     ContractCall,
-    // Phoenix
-    PhoenixTransactions,
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
@@ -281,11 +255,6 @@ enum CommandMenuItem {
     // Others
     StakeInfo,
     Export,
-    Back,
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-enum TransactionOp {
     Back,
 }
 
@@ -310,7 +279,6 @@ fn menu_op(
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::ContractCall, "Contract Call")
-        .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
         .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
         .add(CMI::CalculateContractId, "Calculate Contract ID")
@@ -437,7 +405,6 @@ fn menu_op(
             let address = Some(wallet.bls_address(addr_idx)?);
             AddrOp::Run(Box::new(Command::History { address }))
         }
-        CMI::PhoenixTransactions => transaction_op_menu_phoenix()?,
         CMI::StakeInfo => AddrOp::Run(Box::new(Command::StakeInfo {
             addr_idx: Some(addr_idx),
             reward: false,
