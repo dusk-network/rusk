@@ -14,9 +14,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
     signatures::bls::{
-        Error as BlsError, MultisigPublicKey as BlsMultisigPublicKey,
-        MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
-        SecretKey as BlsSecretKey,
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+        Signature as BlsSignature,
     },
     transfer::withdraw::Withdraw as TransferWithdraw,
     ContractId,
@@ -48,7 +47,7 @@ pub struct Stake {
     keys: StakeKeys,
     value: u64,
     nonce: u64,
-    signature: BlsMultisigSignature,
+    signature: DoubleSignature,
 }
 
 impl Stake {
@@ -65,21 +64,25 @@ impl Stake {
     ) -> Self {
         let key = BlsPublicKey::from(sk);
 
+        let keys = StakeKeys {
+            account: key,
+            funds: key,
+        };
+
         let mut stake = Stake {
             chain_id,
-            keys: StakeKeys {
-                account: key,
-                funds: key,
-            },
+            keys,
             value,
             nonce,
-            signature: BlsMultisigSignature::default(),
+            signature: DoubleSignature::default(),
         };
 
         let msg = stake.signature_message();
 
-        let first_sig = sk.sign_multisig(&key, &msg);
-        stake.signature = first_sig.aggregate(&[first_sig]);
+        stake.signature = DoubleSignature {
+            account: sk.sign(&msg),
+            funds: sk.sign(&msg),
+        };
 
         stake
     }
@@ -121,7 +124,7 @@ impl Stake {
 
     /// Signature of the stake.
     #[must_use]
-    pub fn signature(&self) -> &BlsMultisigSignature {
+    pub fn signature(&self) -> &DoubleSignature {
         &self.signature
     }
 
@@ -160,7 +163,7 @@ impl Stake {
 pub struct Withdraw {
     account: BlsPublicKey,
     withdraw: TransferWithdraw,
-    signature: BlsMultisigSignature,
+    signature: DoubleSignature,
 }
 
 impl Withdraw {
@@ -171,13 +174,15 @@ impl Withdraw {
         let mut stake_withdraw = Withdraw {
             account,
             withdraw,
-            signature: BlsMultisigSignature::default(),
+            signature: DoubleSignature::default(),
         };
 
         let msg = stake_withdraw.signature_message();
 
-        let first_sig = sk.sign_multisig(&account, &msg);
-        stake_withdraw.signature = first_sig.aggregate(&[first_sig]);
+        stake_withdraw.signature = DoubleSignature {
+            account: sk.sign(&msg),
+            funds: sk.sign(&msg),
+        };
 
         stake_withdraw
     }
@@ -196,7 +201,7 @@ impl Withdraw {
 
     /// Signature of the withdraw.
     #[must_use]
-    pub fn signature(&self) -> &BlsMultisigSignature {
+    pub fn signature(&self) -> &DoubleSignature {
         &self.signature
     }
 
@@ -282,15 +287,16 @@ pub struct StakeKeys {
     pub funds: BlsPublicKey,
 }
 
-impl StakeKeys {
-    /// Return the `MultisigPublicKey` associated to this `StakeKeys`
-    ///
-    /// # Errors
-    ///
-    /// Look at `MultisigPublicKey::aggregate`
-    pub fn multisig_pk(&self) -> Result<BlsMultisigPublicKey, BlsError> {
-        BlsMultisigPublicKey::aggregate(&[self.account, self.funds])
-    }
+/// Signature used to handle funds (stake/unstake/withdraw)
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
+)]
+#[archive_attr(derive(CheckBytes))]
+pub struct DoubleSignature {
+    /// Signature created with the account key
+    pub account: BlsSignature,
+    /// Signature created with the funds key
+    pub funds: BlsSignature,
 }
 
 impl StakeData {
