@@ -418,16 +418,16 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     ///
     /// Ignores messages that do not originate from emergency iteration of
     /// current round
-    async fn process_past_events(&mut self, msg: Message) {
+    async fn handle_past_msg(&mut self, msg: Message) {
         if msg.header.round != self.round_update.round {
-            log_msg("discarded message", "process_past_events", &msg);
+            log_msg("discarded message", "handle_past_msg", &msg);
             // should we send current tip to the msg sender?
             return;
         }
         // Repropagate past iteration messages (they have been already
         // validated)
 
-        log_msg("outbound send", "process_past_events", &msg);
+        log_msg("outbound send", "handle_past_msg", &msg);
         self.outbound.try_send(msg.clone());
 
         if is_emergency_iter(msg.header.iteration) {
@@ -608,7 +608,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 return None;
             }
             Err(ConsensusError::PastEvent) => {
-                self.process_past_events(msg).await;
+                self.handle_past_msg(msg).await;
                 return None;
             }
             Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
