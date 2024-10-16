@@ -11,7 +11,7 @@ use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
 use crate::queue::{MsgRegistry, MsgRegistryError};
-use crate::ratification::handler::RatificationHandler;
+
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -419,86 +419,45 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Ignores messages that do not originate from emergency iteration of
     /// current round
     async fn handle_past_msg(&mut self, msg: Message) {
+        // Discard past-round messages
         if msg.header.round != self.round_update.round {
-            log_msg("discarded message", "handle_past_msg", &msg);
+            log_msg("discarded message (past round)", "handle_past_msg", &msg);
             // should we send current tip to the msg sender?
             return;
         }
-        // Repropagate past iteration messages (they have been already
-        // validated)
 
+        // Repropagate past iteration messages
+        // INFO: messages are previously validate by is_valid
         log_msg("outbound send", "handle_past_msg", &msg);
         self.outbound.try_send(msg.clone());
 
-        if is_emergency_iter(msg.header.iteration) {
-            self.on_emergency_mode(msg).await;
-        }
-    }
-
-    /// Handles a consensus message in emergency mode
-    async fn on_emergency_mode(&mut self, msg: Message) {
-        let mut msg = msg;
-        // Try to vote for a candidate block from former iteration
-        if let Payload::Candidate(p) = &msg.payload {
-            self.try_cast_validation_vote(&p.candidate).await;
-        }
         let msg_iteration = msg.header.iteration;
 
-        // Try to vote for a validation result from former iteration
-        // This is not implemented yet, no one is requesting it
-        if let Payload::ValidationQuorum(p) = &msg.payload {
-            if !p.result.vote().is_valid() {
-                return;
-            }
-            if let Err(e) = RatificationHandler::verify_validation_result(
-                &p.header,
-                &p.result,
-                &self.iter_ctx.committees,
-            ) {
-                warn!(
-                    event = "invalid validation result",
-                    src = "emergency_iter",
-                    msg_iteration,
-                    ?e
-                );
-                return;
-            }
-            info!(
-                event = "Validation Result from ValidationQuorum",
-                src = "emergency_iter",
-                msg_iteration,
+        // Past-iteration messages are only handled in emergency mode
+        if !is_emergency_iter(msg_iteration) {
+            log_msg(
+                "discarded message (past iter in normal mode)",
+                "handle_past_msg",
+                &msg,
             );
-            msg = p.result.clone().into();
+            // TODO: send Inv(Tip) to peer
+            return;
         }
 
-        // Rebroadcast emergency message if it's not invalid
-        self.outbound.try_send(msg.clone());
-
-        // Collect message from a previous iteration/step.
+        // Process message from a previous iteration/step.
         if let Some(m) = self
             .iter_ctx
             .process_past_msg(&self.round_update, msg)
             .await
         {
             match &m.payload {
-                Payload::Quorum(q) => {
-                    // When collecting votes from a past iteration, only
-                    // quorum for Vote::Valid should be propagated
-                    if let Vote::Valid(_) = &q.vote() {
-                        info!(
-                            event = "Quorum",
-                            src = "emergency_iter",
-                            msg_iteration,
-                            vote = ?q.vote(),
-                        );
-
-                        self.quorum_sender.send_quorum(m).await;
-                    }
+                Payload::Candidate(p) => {
+                    self.try_cast_validation_vote(&p.candidate).await;
                 }
 
                 Payload::ValidationResult(result) => {
                     info!(
-                      event = "Validation result",
+                      event = "New ValidationResult",
                       src = "emergency_iter",
                       msg_iteration,
                       vote = ?result.vote(),
@@ -510,8 +469,27 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             .await
                     }
                 }
+
+                Payload::Quorum(q) => {
+                    // When collecting votes from a past iteration, only
+                    // quorum for Vote::Valid should be propagated
+                    if let Vote::Valid(_) = &q.vote() {
+                        info!(
+                            event = "New Quorum",
+                            src = "emergency_iter",
+                            msg_iteration,
+                            vote = ?q.vote(),
+                        );
+
+                        // Broadcast Quorum
+                        self.quorum_sender.send_quorum(m).await;
+                    }
+                }
+
                 _ => {
-                    // Not supported.
+                    // Validation and Ratification messages should never be
+                    // returned by process_past_msg
+                    warn!("Invalid message returned by process_past_msg. This should be a bug.")
                 }
             }
         }
@@ -587,7 +565,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 }
 
                 if msg.header.round > self.round_update.round + 10 {
-                    log_msg("discarded msg (round too far from now)", SRC, &msg);
+                    log_msg(
+                        "discarded msg (round too far from now)",
+                        SRC,
+                        &msg,
+                    );
                     return None;
                 }
 
