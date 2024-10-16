@@ -206,7 +206,7 @@ impl MsgHandler for ValidationHandler {
         match collect_vote {
             Ok((sv, validation_quorum_reached)) => {
                 // We ignore the result since it's not possible to have a full
-                // quorum in the validation phase
+                // quorum in the Validation step
                 let _ = self.sv_registry.lock().await.set_step_votes(
                     p.header().iteration,
                     &p.vote,

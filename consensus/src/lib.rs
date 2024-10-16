@@ -17,11 +17,11 @@ pub mod config;
 mod execution_ctx;
 mod msg_handler;
 pub mod operations;
-mod phase;
 mod proposal;
 pub mod queue;
 pub mod quorum;
 mod ratification;
+mod step;
 mod step_votes_reg;
 mod validation;
 

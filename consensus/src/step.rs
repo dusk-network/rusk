@@ -13,30 +13,30 @@ use node_data::message::Message;
 use node_data::StepName;
 use tracing::{debug, trace};
 
-macro_rules! await_phase {
+macro_rules! await_step {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
         {
            match $e {
-                Phase::Proposal(p) => p.$n($($args,)*).await,
-                Phase::Validation(p) => p.$n($($args,)*).await,
-                Phase::Ratification(p) => p.$n($($args,)*).await,
+                Step::Proposal(p) => p.$n($($args,)*).await,
+                Step::Validation(p) => p.$n($($args,)*).await,
+                Step::Ratification(p) => p.$n($($args,)*).await,
             }
         }
     };
 }
 
-pub enum Phase<T: Operations, D: Database> {
+pub enum Step<T: Operations, D: Database> {
     Proposal(proposal::step::ProposalStep<T, D>),
     Validation(validation::step::ValidationStep<T>),
     Ratification(ratification::step::RatificationStep),
 }
 
-impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
+impl<T: Operations + 'static, D: Database + 'static> Step<T, D> {
     pub fn to_step_name(&self) -> StepName {
         match self {
-            Phase::Proposal(_) => StepName::Proposal,
-            Phase::Validation(_) => StepName::Validation,
-            Phase::Ratification(_) => StepName::Ratification,
+            Step::Proposal(_) => StepName::Proposal,
+            Step::Validation(_) => StepName::Validation,
+            Step::Ratification(_) => StepName::Ratification,
         }
     }
 
@@ -48,7 +48,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
     ) {
         trace!(event = "init step", msg = format!("{:#?}", msg),);
 
-        await_phase!(self, reinitialize(msg, round, iteration))
+        await_step!(self, reinitialize(msg, round, iteration))
     }
 
     pub async fn run(
@@ -61,6 +61,6 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         debug!(event = "execute_step", ?timeout);
 
         // Execute step
-        await_phase!(self, run(ctx))
+        await_step!(self, run(ctx))
     }
 }
