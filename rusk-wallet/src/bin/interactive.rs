@@ -215,32 +215,6 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
 
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
-fn transaction_op_menu_moonlight() -> anyhow::Result<ProfileOp> {
-    use TransactionOp::*;
-    let menu = Menu::title("Public Transaction Operations")
-        //.add(History, "Public Transaction History")
-        .separator()
-        .add(Back, "Back");
-
-    let questions = Question::select("theme")
-        .message("Please select an operation")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-
-    let val = menu.answer(&answer).to_owned();
-
-    let x = match val {
-        History => ProfileOp::Back,
-        Back => ProfileOp::Back,
-    };
-
-    Ok(x)
-}
-
-/// Allows the user to choose an operation to perform with the selected
-/// transaction type
 fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     use TransactionOp::*;
     let menu = Menu::title("Shielded Transaction Operations")
@@ -289,8 +263,6 @@ enum CommandMenuItem {
     ContractCall,
     // Phoenix
     PhoenixTransactions,
-    // Moonlight
-    MoonlightTransactions,
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
@@ -329,7 +301,6 @@ fn menu_op(
         .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::ContractCall, "Contract Call")
         .add(CMI::PhoenixTransactions, "Shielded Transactions")
-        .add(CMI::MoonlightTransactions, "Public Transactions")
         .add(
             CMI::PhoenixToMoonlight,
             "Convert shielded Dusk to public Dusk",
@@ -435,7 +406,6 @@ fn menu_op(
             }))
         }
         CMI::PhoenixTransactions => transaction_op_menu_phoenix(profile_idx)?,
-        CMI::MoonlightTransactions => transaction_op_menu_moonlight()?,
         CMI::ContractDeploy => {
             let addr = match prompt::request_protocol()? {
                 prompt::Protocol::Phoenix => {
