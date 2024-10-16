@@ -215,10 +215,9 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
 
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
-fn transaction_op_menu_moonlight(profile_idx: u8) -> anyhow::Result<ProfileOp> {
+fn transaction_op_menu_moonlight() -> anyhow::Result<ProfileOp> {
     use TransactionOp::*;
     let menu = Menu::title("Public Transaction Operations")
-        .add(ContractCall, "Public Contract Call")
         //.add(History, "Public Transaction History")
         .separator()
         .add(Back, "Back");
@@ -233,18 +232,6 @@ fn transaction_op_menu_moonlight(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        ContractCall => {
-            ProfileOp::Run(Box::new(Command::MoonlightContractCall {
-                profile_idx: Some(profile_idx),
-                contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to call")?,
-                fn_args: prompt::request_bytes(
-                    "arguments of calling function",
-                )?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         History => ProfileOp::Back,
         Back => ProfileOp::Back,
     };
@@ -257,7 +244,6 @@ fn transaction_op_menu_moonlight(profile_idx: u8) -> anyhow::Result<ProfileOp> {
 fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     use TransactionOp::*;
     let menu = Menu::title("Shielded Transaction Operations")
-        .add(ContractCall, "Shielded Contract Call")
         .add(History, "Shielded Transaction History")
         .separator()
         .add(Back, "Back");
@@ -272,18 +258,6 @@ fn transaction_op_menu_phoenix(profile_idx: u8) -> anyhow::Result<ProfileOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        ContractCall => {
-            ProfileOp::Run(Box::new(Command::PhoenixContractCall {
-                profile_idx: Some(profile_idx),
-                contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to call")?,
-                fn_args: prompt::request_bytes(
-                    "arguments of calling function",
-                )?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
         History => ProfileOp::Run(Box::new(Command::PhoenixHistory {
             profile_idx: Some(profile_idx),
         })),
@@ -311,6 +285,8 @@ enum CommandMenuItem {
     Withdraw,
     // Contract Deploy
     ContractDeploy,
+    // Contract Call
+    ContractCall,
     // Phoenix
     PhoenixTransactions,
     // Moonlight
@@ -328,8 +304,6 @@ enum CommandMenuItem {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
-    ContractCall,
-    // nor a deployment or a call
     History,
     Back,
 }
@@ -353,6 +327,7 @@ fn menu_op(
         .add(CMI::Withdraw, "Withdraw Stake Reward")
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::ContractDeploy, "Contract Deploy")
+        .add(CMI::ContractCall, "Contract Call")
         .add(CMI::PhoenixTransactions, "Shielded Transactions")
         .add(CMI::MoonlightTransactions, "Public Transactions")
         .add(
@@ -460,9 +435,7 @@ fn menu_op(
             }))
         }
         CMI::PhoenixTransactions => transaction_op_menu_phoenix(profile_idx)?,
-        CMI::MoonlightTransactions => {
-            transaction_op_menu_moonlight(profile_idx)?
-        }
+        CMI::MoonlightTransactions => transaction_op_menu_moonlight()?,
         CMI::ContractDeploy => {
             let addr = match prompt::request_protocol()? {
                 prompt::Protocol::Phoenix => {
@@ -480,6 +453,26 @@ fn menu_op(
                 gas_limit: prompt::request_gas_limit(
                     gas::DEFAULT_LIMIT_DEPLOYMENT,
                 )?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::ContractCall => {
+            let addr = match prompt::request_protocol()? {
+                prompt::Protocol::Phoenix => {
+                    wallet.shielded_address(profile_idx)
+                }
+                prompt::Protocol::Moonlight => {
+                    wallet.public_address(profile_idx)
+                }
+            }?;
+            ProfileOp::Run(Box::new(Command::ContractCall {
+                address: Some(addr),
+                contract_id: prompt::request_bytes("contract id")?,
+                fn_name: prompt::request_str("function name to call")?,
+                fn_args: prompt::request_bytes(
+                    "arguments of calling function",
+                )?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
@@ -783,7 +776,6 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             }
             prompt::ask_confirm()
         }
-
         _ => Ok(true),
     }
 }
