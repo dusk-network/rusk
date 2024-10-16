@@ -76,14 +76,13 @@ pub(crate) enum Command {
         profile_idx: Option<u8>,
     },
 
-    /// Send DUSK privately through the network using shielded addresses
-    PhoenixTransfer {
-        /// Profile index for the shielded address from which to send DUSK
-        /// [default: 0]
+    /// Send DUSK through the network
+    Transfer {
+        /// Address from which to send DUSK [default: first address]
         #[clap(long)]
-        profile_idx: Option<u8>,
+        sender: Option<Address>,
 
-        /// Shielded receiver address
+        /// Receiver address
         #[clap(short, long)]
         rcvr: Address,
 
@@ -250,30 +249,6 @@ pub(crate) enum Command {
     },
 
     // Public transaction commands
-    /// Send DUSK publicly through the network.
-    MoonlightTransfer {
-        /// Profile index for the public account address from which to send
-        /// DUSK [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Public account address of the receiver
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Attach a memo to a public transaction
     MoonlightMemo {
         /// Profile index for the public account address from which to send
@@ -545,22 +520,42 @@ impl Command {
                     Ok(RunResult::Profiles(profiles))
                 }
             }
-            Command::PhoenixTransfer {
-                profile_idx,
+            Command::Transfer {
+                sender,
                 rcvr,
                 amt,
                 gas_limit,
                 gas_price,
             } => {
-                wallet.sync().await?;
+                let sender_idx = match sender {
+                    Some(addr) => {
+                        addr.same_protocol(&rcvr)?;
+                        wallet.find_index(&addr)?
+                    }
+                    None => 0,
+                };
+
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = profile_idx.unwrap_or_default();
+                let tx = match rcvr {
+                    Address::Shielded { .. } => {
+                        wallet.sync().await?;
+                        let rcvr_pk = rcvr.shielded_address()?;
+                        wallet
+                            .phoenix_transfer(
+                                sender_idx, rcvr_pk, None, amt, gas,
+                            )
+                            .await?
+                    }
+                    Address::Public { .. } => {
+                        let rcvr_pk = rcvr.public_address()?;
+                        wallet
+                            .moonlight_transfer(
+                                sender_idx, rcvr_pk, None, amt, gas,
+                            )
+                            .await?
+                    }
+                };
 
-                let receiver = rcvr.shielded_address()?;
-
-                let tx = wallet
-                    .phoenix_transfer(sender_idx, receiver, None, amt, gas)
-                    .await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::PhoenixMemo {
@@ -586,24 +581,6 @@ impl Command {
                         gas,
                     )
                     .await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightTransfer {
-                profile_idx,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = profile_idx.unwrap_or_default();
-
-                let receiver = rcvr.public_address()?;
-
-                let tx = wallet
-                    .moonlight_transfer(sender_idx, receiver, None, amt, gas)
-                    .await?;
-
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::MoonlightMemo {
