@@ -227,31 +227,6 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
 
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
-fn transaction_op_menu_moonlight() -> anyhow::Result<AddrOp> {
-    use TransactionOp::*;
-    let menu = Menu::title("Moonlight Transaction Operations")
-        .separator()
-        .add(Back, "Back");
-
-    let questions = Question::select("theme")
-        .message("Please select an operation")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-
-    let val = menu.answer(&answer).to_owned();
-
-    let x = match val {
-        History => AddrOp::Back,
-        Back => AddrOp::Back,
-    };
-
-    Ok(x)
-}
-
-/// Allows the user to choose an operation to perform with the selected
-/// transaction type
 fn transaction_op_menu_phoenix(addr_idx: u8) -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
@@ -300,8 +275,6 @@ enum CommandMenuItem {
     ContractCall,
     // Phoenix
     PhoenixTransactions,
-    // Moonlight
-    MoonlightTransactions,
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
@@ -340,7 +313,6 @@ fn menu_op(
         .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::ContractCall, "Contract Call")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
-        .add(CMI::MoonlightTransactions, "Moonlight Transactions")
         .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
         .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
         .add(CMI::CalculateContractId, "Calculate Contract ID")
@@ -465,7 +437,6 @@ fn menu_op(
         }
 
         CMI::PhoenixTransactions => transaction_op_menu_phoenix(addr_idx)?,
-        CMI::MoonlightTransactions => transaction_op_menu_moonlight()?,
         CMI::StakeInfo => AddrOp::Run(Box::new(Command::StakeInfo {
             addr_idx: Some(addr_idx),
             reward: false,
