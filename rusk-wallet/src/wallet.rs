@@ -441,6 +441,18 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok(&self.profiles()[index].public_addr)
     }
 
+    /// Returns the public account address for a given index.
+    pub fn public_address(&self, index: u8) -> Result<Address, Error> {
+        let addr = *self.public_addr(index)?;
+        Ok(Address::Public { addr })
+    }
+
+    /// Returns the shielded address for a given index.
+    pub fn shielded_address(&self, index: u8) -> Result<Address, Error> {
+        let addr = *self.shielded_addr(index)?;
+        Ok(Address::Shielded { addr })
+    }
+
     /// Executes a generic contract call, paying gas from a public account.
     #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(

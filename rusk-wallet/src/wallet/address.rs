@@ -24,6 +24,15 @@ pub enum Address {
 }
 
 impl Address {
+    /// Check if the `other` Address uses the same protocol
+    pub fn same_protocol(&self, other: &Address) -> anyhow::Result<()> {
+        match (self, other) {
+            (Address::Shielded { .. }, Address::Shielded { .. }) => Ok(()),
+            (Address::Public { .. }, Address::Public { .. }) => Ok(()),
+            _ => anyhow::bail!("Addresses use different protocol"),
+        }
+    }
+
     /// Returns the inner shielded address, if present.
     ///
     /// # Errors
