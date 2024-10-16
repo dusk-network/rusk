@@ -76,20 +76,13 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let p = Self::unwrap_msg(&msg)?;
 
-        info!(
-            "collect_from_past: store candidate block  height: {}, iter: {}, hash: {}",
-            p.candidate.header().height,
-            p.candidate.header().iteration,
-            to_str(&p.candidate.header().hash),
-        );
-
         self.db
             .lock()
             .await
             .store_candidate_block(p.candidate.clone())
             .await;
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(HandleMsgOutput::Ready(msg))
     }
 
     /// Handles of an event of step execution timeout
