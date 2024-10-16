@@ -5,7 +5,9 @@
     mdiAccountGroupOutline,
     mdiCubeOutline,
     mdiCurrencyUsd,
+    mdiMapMarker,
     mdiSwapVertical,
+    mdiTransitConnectionVariant,
   } from "@mdi/js";
   import { onDestroy, onMount } from "svelte";
 
@@ -13,13 +15,10 @@
   import { createCompactFormatter } from "$lib/dusk/value";
   import { duskIcon } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
-  import { DataGuard, StaleDataNotice, WorldMap } from "$lib/components";
+  import { DataGuard, StaleDataNotice } from "$lib/components";
   import { duskAPI } from "$lib/services";
-  import {
-    createDataStore,
-    createPollingDataStore,
-  } from "$lib/dusk/svelte-stores";
-  import { appStore, marketDataStore } from "$lib/stores";
+  import { createPollingDataStore } from "$lib/dusk/svelte-stores";
+  import { appStore, marketDataStore, nodeLocationStore } from "$lib/stores";
 
   import "./StatisticsPanel.css";
 
@@ -33,23 +32,20 @@
     return value >= 1e6 ? millionFormatter(value) : valueFormatter(value);
   };
 
-  const nodeLocationsStore = createDataStore(duskAPI.getNodeLocations);
   const pollingStatsDataStore = createPollingDataStore(
     duskAPI.getStats,
     $appStore.statsFetchInterval
   );
 
   onMount(() => {
-    nodeLocationsStore.getData();
     pollingStatsDataStore.start();
   });
 
   onDestroy(pollingStatsDataStore.stop);
 
   $: ({ data: marketData } = $marketDataStore);
-  $: ({ data: nodesData } = $nodeLocationsStore);
   $: ({ data: statsData } = $pollingStatsDataStore);
-
+  $: ({ data: nodesData } = $nodeLocationStore);
   $: statistics = [
     [
       {
@@ -152,8 +148,30 @@
         title: "Pending Provisioners",
       },
     ],
+
+    [
+      {
+        approximate: false,
+        attributes: null,
+        canBeStale: false,
+        compact: true,
+        data: nodesData ? nodesData[0].count : null,
+        icon: mdiTransitConnectionVariant,
+        title: "Largest Node Cluster",
+      },
+      {
+        approximate: false,
+        attributes: null,
+        canBeStale: false,
+        compact: null,
+        data: nodesData
+          ? `${nodesData[0].city}, ${nodesData[0].countryCode}`
+          : null,
+        icon: mdiMapMarker,
+        title: "Largest Cluster Location",
+      },
+    ],
   ];
-  $: ({ darkMode } = $appStore);
 </script>
 
 <div class="statistics-panel">
@@ -171,6 +189,8 @@
                 <DataGuard data={item.data}>
                   {#if item.compact}
                     {formatter(item.data)}
+                  {:else if item.compact === null}
+                    {item.data}
                   {:else}
                     {valueFormatter(item.data)}
                   {/if}
@@ -187,8 +207,5 @@
         {/each}
       </div>
     {/each}
-  </div>
-  <div class="statistics-panel__world-map">
-    <WorldMap nodes={nodesData} stroke={darkMode ? "white" : "black"} />
   </div>
 </div>

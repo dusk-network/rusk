@@ -17,6 +17,7 @@ import { ensureTrailingSlash } from "$lib/dusk/string";
 import { makeNodeUrl } from "$lib/url";
 
 import {
+  addCountAndUnique,
   calculateStats,
   transformBlock,
   transformSearchResult,
@@ -110,6 +111,21 @@ const apiGet = (endpoint, params) =>
       "Accept-Charset": "utf-8",
     },
     method: "GET",
+  })
+    .then(failureToRejection)
+    .then((res) => res.json());
+
+/**
+ * @param {string} endpoint
+ * @returns {Promise<any>}
+ */
+const nodePost = (endpoint) =>
+  fetch(makeNodeUrl(endpoint), {
+    headers: {
+      Accept: "application/json",
+      "Accept-Charset": "utf-8",
+    },
+    method: "POST",
   })
     .then(failureToRejection)
     .then((res) => res.json());
@@ -213,13 +229,12 @@ const duskAPI = {
   },
 
   /**
-   * @returns {Promise<{ lat: number, lon: number}[]>}
+   * @returns {Promise<NodeLocation[]>}
    */
   getNodeLocations() {
-    const host = makeNodeUrl().host;
-    const node = host.includes("localhost") ? "nodes.dusk.network" : host; // Can we determine the localnet location?
-
-    return apiGet("locations", { node }).then(getKey("data"));
+    return nodePost("/on/network/peers_location").then((data) =>
+      addCountAndUnique(data)
+    );
   },
 
   /**

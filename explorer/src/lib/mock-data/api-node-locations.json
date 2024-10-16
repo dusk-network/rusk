@@ -1,488 +1,618 @@
-{
-  "data": [
-    {
-      "lat": 52.352,
-      "lon": 4.9392
-    },
-    {
-      "lat": 31.2222,
-      "lon": 121.4581
-    },
-    {
-      "lat": 51.5074,
-      "lon": -0.1196
-    },
-    {
-      "lat": 49.405,
-      "lon": 11.1617
-    },
-    {
-      "lat": 60.1719,
-      "lon": 24.9347
-    },
-    {
-      "lat": 52.6959,
-      "lon": 6.1847
-    },
-    {
-      "lat": 33.5939,
-      "lon": -112.303
-    },
-    {
-      "lat": 48.8566,
-      "lon": 2.35222
-    },
-    {
-      "lat": 33.5939,
-      "lon": -112.303
-    },
-    {
-      "lat": 1.32123,
-      "lon": 103.695
-    },
-    {
-      "lat": 27.9822,
-      "lon": -81.6706
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 35.6092,
-      "lon": 139.73
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 47.6034,
-      "lon": -122.3414
-    },
-    {
-      "lat": 39.0438,
-      "lon": -77.4874
-    },
-    {
-      "lat": 47.6348,
-      "lon": -122.3451
-    },
-    {
-      "lat": 49.405,
-      "lon": 11.1617
-    },
-    {
-      "lat": 21.0467,
-      "lon": 105.748
-    },
-    {
-      "lat": 47.6348,
-      "lon": -122.3451
-    },
-    {
-      "lat": 43.709,
-      "lon": -79.4057
-    },
-    {
-      "lat": 47.6034,
-      "lon": -122.3414
-    },
-    {
-      "lat": 47.6034,
-      "lon": -122.3414
-    },
-    {
-      "lat": 47.6034,
-      "lon": -122.3414
-    },
-    {
-      "lat": 42.8856,
-      "lon": -78.8736
-    },
-    {
-      "lat": 1.35208,
-      "lon": 103.82
-    },
-    {
-      "lat": 40.8364,
-      "lon": -74.1403
-    },
-    {
-      "lat": 49.405,
-      "lon": 11.1617
-    },
-    {
-      "lat": 49.405,
-      "lon": 11.1617
-    },
-    {
-      "lat": 1.28967,
-      "lon": 103.85
-    },
-    {
-      "lat": 60.1797,
-      "lon": 24.9344
-    },
-    {
-      "lat": 21.0278,
-      "lon": 105.834
-    },
-    {
-      "lat": 35.6092,
-      "lon": 139.73
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 37.3931,
-      "lon": -121.962
-    },
-    {
-      "lat": 50.475,
-      "lon": 12.365
-    },
-    {
-      "lat": 50.1169,
-      "lon": 8.6837
-    },
-    {
-      "lat": 45.3151,
-      "lon": -73.8779
-    },
-    {
-      "lat": 37.3931,
-      "lon": -121.962
-    },
-    {
-      "lat": 1.32123,
-      "lon": 103.695
-    },
-    {
-      "lat": 40.793,
-      "lon": -74.0247
-    },
-    {
-      "lat": 20.9577,
-      "lon": 105.783
-    },
-    {
-      "lat": 49.405,
-      "lon": 11.1617
-    },
-    {
-      "lat": 41.8874,
-      "lon": -87.6318
-    },
-    {
-      "lat": -33.8715,
-      "lon": 151.2006
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 30.3298,
-      "lon": -81.6492
-    },
-    {
-      "lat": -33.8715,
-      "lon": 151.2006
-    },
-    {
-      "lat": 50.7988,
-      "lon": -1.0944
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 37.3931,
-      "lon": -121.962
-    },
-    {
-      "lat": 37.3417,
-      "lon": -121.9753
-    },
-    {
-      "lat": 45.3151,
-      "lon": -73.8779
-    },
-    {
-      "lat": 1.35208,
-      "lon": 103.82
-    },
-    {
-      "lat": 40.8364,
-      "lon": -74.1403
-    },
-    {
-      "lat": 32.8137,
-      "lon": -96.8704
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 1.32123,
-      "lon": 103.695
-    },
-    {
-      "lat": -6.22636,
-      "lon": 106.832
-    },
-    {
-      "lat": 52.3891,
-      "lon": 4.6563
-    },
-    {
-      "lat": 47.6348,
-      "lon": -122.3451
-    },
-    {
-      "lat": 37.3931,
-      "lon": -121.962
-    },
-    {
-      "lat": 37.3931,
-      "lon": -121.962
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 50.7988,
-      "lon": -1.0944
-    },
-    {
-      "lat": 43.0351,
-      "lon": -108.2024
-    },
-    {
-      "lat": 34.0544,
-      "lon": -118.2441
-    },
-    {
-      "lat": 49.4521,
-      "lon": 11.0767
-    },
-    {
-      "lat": 50.7988,
-      "lon": -1.0944
-    },
-    {
-      "lat": 52.3716,
-      "lon": 4.8883
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 52.352,
-      "lon": 4.9392
-    },
-    {
-      "lat": 40.793,
-      "lon": -74.0247
-    },
-    {
-      "lat": 59.3293,
-      "lon": 18.0686
-    },
-    {
-      "lat": 40.7232,
-      "lon": -74.0051
-    },
-    {
-      "lat": 33.5939,
-      "lon": -112.303
-    },
-    {
-      "lat": 50.7988,
-      "lon": -1.0944
-    },
-    {
-      "lat": 60.1797,
-      "lon": 24.9344
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 49.4423,
-      "lon": 11.0191
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 50.1169,
-      "lon": 8.6837
-    },
-    {
-      "lat": 33.4475,
-      "lon": -112.0866
-    },
-    {
-      "lat": 50.1169,
-      "lon": 8.6837
-    },
-    {
-      "lat": 40.8364,
-      "lon": -74.1403
-    },
-    {
-      "lat": 1.32123,
-      "lon": 103.695
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 41.8879,
-      "lon": -88.1995
-    },
-    {
-      "lat": 40.973,
-      "lon": -76.9117
-    },
-    {
-      "lat": 32.7797,
-      "lon": -96.8022
-    },
-    {
-      "lat": 1.27989,
-      "lon": 103.849
-    },
-    {
-      "lat": 49.2402,
-      "lon": 6.98519
-    },
-    {
-      "lat": 33.5939,
-      "lon": -112.303
-    },
-    {
-      "lat": 60.1719,
-      "lon": 24.9347
-    },
-    {
-      "lat": 47.6034,
-      "lon": -122.3414
-    },
-    {
-      "lat": 33.5939,
-      "lon": -112.303
-    },
-    {
-      "lat": 52.5234,
-      "lon": 13.3224
-    },
-    {
-      "lat": 49.405,
-      "lon": 11.1617
-    },
-    {
-      "lat": 1.28223,
-      "lon": 103.851
-    },
-    {
-      "lat": 1.32123,
-      "lon": 103.695
-    },
-    {
-      "lat": 47.645,
-      "lon": -117.0778
-    },
-    {
-      "lat": 37.3931,
-      "lon": -121.962
-    },
-    {
-      "lat": 52.352,
-      "lon": 4.9392
-    },
-    {
-      "lat": 50.1169,
-      "lon": 8.6837
-    },
-    {
-      "lat": 30.3298,
-      "lon": -81.6492
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 40.793,
-      "lon": -74.0247
-    },
-    {
-      "lat": 52.352,
-      "lon": 4.9392
-    },
-    {
-      "lat": 38.6287,
-      "lon": -90.1988
-    },
-    {
-      "lat": 40.8364,
-      "lon": -74.1403
-    },
-    {
-      "lat": 40.793,
-      "lon": -74.0247
-    },
-    {
-      "lat": 47.9871,
-      "lon": 17.0132
-    },
-    {
-      "lat": 35.6092,
-      "lon": 139.73
-    },
-    {
-      "lat": 1.32123,
-      "lon": 103.695
-    },
-    {
-      "lat": 50.1169,
-      "lon": 8.6837
-    },
-    {
-      "lat": 40.793,
-      "lon": -74.0247
-    },
-    {
-      "lat": 37.7809,
-      "lon": -122.4245
-    },
-    {
-      "lat": 52.352,
-      "lon": 4.9392
-    },
-    {
-      "lat": 50.7988,
-      "lon": -1.0944
-    },
-    {
-      "lat": 47.6348,
-      "lon": -122.3451
-    },
-    {
-      "lat": 40.8364,
-      "lon": -74.1403
-    }
-  ]
-}
+[
+  {
+    "city": "Alexandria",
+    "country": "Australia",
+    "countryCode": "AU",
+    "lat": -33.9088,
+    "lon": 151.196
+  },
+  {
+    "city": "Milan",
+    "country": "Italy",
+    "countryCode": "IT",
+    "lat": 45.4722,
+    "lon": 9.1922
+  },
+  {
+    "city": "Sydney",
+    "country": "Australia",
+    "countryCode": "AU",
+    "lat": -33.808,
+    "lon": 151.1415
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.3891,
+    "lon": 4.6563
+  },
+  {
+    "city": "Nuremberg",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 49.405,
+    "lon": 11.1617
+  },
+  {
+    "city": "Nuremberg",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 49.405,
+    "lon": 11.1617
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.3891,
+    "lon": 4.6563
+  },
+  {
+    "city": "Nuremberg",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 49.4527,
+    "lon": 11.0783
+  },
+  {
+    "city": "Hillsboro",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 45.5397,
+    "lon": -122.9638
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002
+  },
+  {
+    "city": "St Louis",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 38.6364,
+    "lon": -90.1985
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Slough",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 51.5368,
+    "lon": -0.6718
+  },
+  {
+    "city": "Helsinki",
+    "country": "Finland",
+    "countryCode": "FI",
+    "lat": 60.1797,
+    "lon": 24.9344
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "lat": 1.32123,
+    "lon": 103.695
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1103,
+    "lon": 8.7147
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Seattle",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 47.3066,
+    "lon": -122.2619
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Limerick",
+    "country": "Ireland",
+    "countryCode": "IE",
+    "lat": 52.6669,
+    "lon": -8.6274
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "lat": 1.32123,
+    "lon": 103.695
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002
+  },
+  {
+    "city": "Falkenstein",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.4777,
+    "lon": 12.3649
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Helsinki",
+    "country": "Finland",
+    "countryCode": "FI",
+    "lat": 60.1797,
+    "lon": 24.9344
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Paris",
+    "country": "France",
+    "countryCode": "FR",
+    "lat": 48.8323,
+    "lon": 2.4075
+  },
+  {
+    "city": "Newcastle upon Tyne",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 54.9958,
+    "lon": -1.6897
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Sneek",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 53.0366,
+    "lon": 5.6858
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Nuremberg",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 49.405,
+    "lon": 11.1617
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "lat": 1.32123,
+    "lon": 103.695
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "lat": 1.32123,
+    "lon": 103.695
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "lat": 1.32123,
+    "lon": 103.695
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962
+  },
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247
+  }
+]

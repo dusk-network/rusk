@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `txType` fields in transactions and display it [#2347]
 - Add `json` payload to block detail [#2364]
 - Add decode feature for `memo` field [#2527]
+- Add top node info in StatisticsPanel [#2613]
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change the blocks table header `FEE` to `GAS` and `AVG` to `AVG PRICE` and `TOTAL` to `USED` [#2416]
 - Change the tooltip info of the block rewards [#2166]
 - Update Footer layout [#2640]
+- Change WorldMap location [#2613]
 
 ### Fixed
 
@@ -83,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2166]: https://github.com/dusk-network/rusk/issues/2166
 [#2640]: https://github.com/dusk-network/rusk/issues/2640
 [#2668]: https://github.com/dusk-network/rusk/issues/2668
+[#2613]: https://github.com/dusk-network/rusk/issues/2613
 
 <!-- VERSIONS -->
 

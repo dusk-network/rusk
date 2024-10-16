@@ -4,6 +4,7 @@ import { skip, updatePathIn } from "lamb";
 import * as mockData from "$lib/mock-data";
 
 import {
+  addCountAndUnique,
   calculateStats,
   transformBlock,
   transformSearchResult,
@@ -27,12 +28,6 @@ describe("duskAPI", () => {
   /** @type {URL} */
   const gqlExpectedURL = new URL("/02/Chain", node);
   const endpointEnvName = "VITE_API_ENDPOINT";
-
-  /** @type {(endpoint: string) => URL} */
-  const getAPIExpectedURL = (endpoint) =>
-    new URL(
-      `${import.meta.env[endpointEnvName]}/${endpoint}?node=nodes.dusk.network`
-    );
 
   /** @type {(data: Record<string | number, any> | number) => Response} */
   const makeOKResponse = (data) =>
@@ -244,13 +239,9 @@ describe("duskAPI", () => {
     fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations));
 
     await expect(duskAPI.getNodeLocations()).resolves.toStrictEqual(
-      mockData.apiNodeLocations.data
+      addCountAndUnique(mockData.apiNodeLocations)
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      getAPIExpectedURL("locations"),
-      apiGetOptions
-    );
   });
 
   it("should expose a method to retrieve the statistics", async () => {
@@ -408,7 +399,7 @@ describe("duskAPI", () => {
 
   it("should be able to make the correct request whether the endpoint in env vars ends with a trailing slash or not", () => {
     const expectedURL = new URL(
-      "http://example.com/locations?node=nodes.dusk.network"
+      "https://nodes.dusk.network/on/network/peers_location"
     );
 
     fetchSpy
@@ -424,8 +415,20 @@ describe("duskAPI", () => {
     duskAPI.getNodeLocations();
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(fetchSpy).toHaveBeenNthCalledWith(1, expectedURL, apiGetOptions);
-    expect(fetchSpy).toHaveBeenNthCalledWith(2, expectedURL, apiGetOptions);
+    expect(fetchSpy).toHaveBeenNthCalledWith(1, expectedURL, {
+      headers: {
+        Accept: "application/json",
+        "Accept-Charset": "utf-8",
+      },
+      method: "POST",
+    });
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, expectedURL, {
+      headers: {
+        Accept: "application/json",
+        "Accept-Charset": "utf-8",
+      },
+      method: "POST",
+    });
 
     vi.unstubAllEnvs();
   });

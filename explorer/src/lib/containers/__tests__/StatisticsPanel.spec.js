@@ -16,9 +16,7 @@ const marketDataSettleTime = vi.hoisted(() => {
 vi.mock("$lib/services", async (importOriginal) => {
   /** @type {import("$lib/services")} */
   const original = await importOriginal();
-  const { apiMarketData, apiNodeLocations, apiStats } = await import(
-    "$lib/mock-data"
-  );
+  const { apiMarketData, apiStats } = await import("$lib/mock-data");
   const { current_price: currentPrice, market_cap: marketCap } =
     apiMarketData.market_data;
 
@@ -28,7 +26,6 @@ vi.mock("$lib/services", async (importOriginal) => {
       ...original.duskAPI,
       getMarketData: () =>
         resolveAfter(marketDataSettleTime, { currentPrice, marketCap }),
-      getNodeLocations: vi.fn().mockResolvedValue(apiNodeLocations.data),
       getStats: vi.fn().mockResolvedValue(apiStats),
     },
   };
@@ -48,8 +45,6 @@ describe("StatisticsPanel", () => {
     const { container, unmount } = render(StatisticsPanel);
 
     expect(container.firstChild).toMatchSnapshot();
-    expect(duskAPI.getNodeLocations).toHaveBeenCalledTimes(1);
-    expect(duskAPI.getNodeLocations).toHaveBeenNthCalledWith(1);
     expect(duskAPI.getStats).toHaveBeenCalledTimes(1);
     expect(duskAPI.getStats).toHaveBeenNthCalledWith(1);
 
@@ -75,6 +70,5 @@ describe("StatisticsPanel", () => {
     await vi.advanceTimersByTimeAsync(statsFetchInterval * 10);
 
     expect(duskAPI.getStats).toHaveBeenCalledTimes(3);
-    expect(duskAPI.getNodeLocations).toHaveBeenCalledTimes(1);
   });
 });
