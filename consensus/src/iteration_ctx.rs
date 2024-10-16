@@ -21,7 +21,7 @@ use crate::{proposal, ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
 use node_data::ledger::Seed;
-use node_data::message::Message;
+use node_data::message::{Message, Payload, Topics};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
@@ -281,7 +281,17 @@ impl<DB: Database> IterationCtx<DB> {
         let generator = self.get_generator(msg.header.iteration);
 
         match msg.topic() {
-            node_data::message::Topics::Validation => {
+            Topics::Candidate => {
+                let mut handler = self.proposal_handler.lock().await;
+                if let Ok(HandleMsgOutput::Ready(m)) = handler
+                    .collect_from_past(msg, ru, committee, generator)
+                    .await
+                {
+                    return Some(m);
+                }
+            }
+
+            Topics::Validation => {
                 let mut handler = self.validation_handler.lock().await;
                 if let Ok(HandleMsgOutput::Ready(m)) = handler
                     .collect_from_past(msg, ru, committee, generator)
@@ -290,7 +300,8 @@ impl<DB: Database> IterationCtx<DB> {
                     return Some(m);
                 }
             }
-            node_data::message::Topics::Ratification => {
+
+            Topics::Ratification => {
                 let mut handler = self.ratification_handler.lock().await;
                 if let Ok(HandleMsgOutput::Ready(m)) = handler
                     .collect_from_past(msg, ru, committee, generator)
@@ -299,12 +310,15 @@ impl<DB: Database> IterationCtx<DB> {
                     return Some(m);
                 }
             }
-            node_data::message::Topics::Candidate => {
-                let mut handler = self.proposal_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) = handler
-                    .collect_from_past(msg, ru, committee, generator)
-                    .await
-                {
+
+            Topics::ValidationQuorum => {
+                if let Payload::ValidationQuorum(p) = &msg.payload {
+                    if !p.result.vote().is_valid() {
+                        return None;
+                    }
+
+                    // Extract the ValidationResult and return it as msg
+                    let m = p.result.clone().into();
                     return Some(m);
                 }
             }
