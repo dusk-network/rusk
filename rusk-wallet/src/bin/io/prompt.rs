@@ -324,15 +324,15 @@ pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
 }
 
 pub enum Protocol {
-    Shielded,
-    Public,
+    Phoenix,
+    Moonlight,
 }
 
 impl From<&str> for Protocol {
     fn from(value: &str) -> Self {
         match value {
-            "Shielded" => Protocol::Shielded,
-            "Public" => Protocol::Public,
+            "Phoenix" => Protocol::Phoenix,
+            "Moonlight" => Protocol::Moonlight,
             _ => panic!("Unknown protocol"),
         }
     }
@@ -341,7 +341,7 @@ impl From<&str> for Protocol {
 /// Request protocol to use
 pub(crate) fn request_protocol() -> anyhow::Result<Protocol> {
     let question = requestty::Question::select("protocol")
-        .choices(vec![Choice("Public".into()), "Shielded".into()])
+        .choices(vec![Choice("Moonlight".into()), "Phoenix".into()])
         .build();
 
     let a = requestty::prompt_one(question)?;

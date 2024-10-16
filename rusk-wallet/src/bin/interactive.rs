@@ -485,10 +485,10 @@ fn menu_op(
         }
         CMI::Stake => {
             let (addr, balance) = match prompt::request_protocol()? {
-                prompt::Protocol::Shielded => {
+                prompt::Protocol::Phoenix => {
                     (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
-                prompt::Protocol::Public => {
+                prompt::Protocol::Moonlight => {
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
