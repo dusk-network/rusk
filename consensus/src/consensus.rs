@@ -10,14 +10,14 @@ use crate::errors::ConsensusError;
 use crate::operations::Operations;
 use crate::phase::Phase;
 
-use node_data::message::{AsyncQueue, Message, Topics};
+use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
 use crate::queue::MsgRegistry;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
-use tracing::{debug, error, Instrument};
+use tracing::{debug, error, warn, Instrument};
 
 use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
@@ -207,6 +207,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 debug!(event = "restored iteration", ru.round, iter);
             }
 
+            // Round execution loop
             loop {
                 db.lock().await.store_last_iter((ru.hash(), iter)).await;
 
@@ -219,7 +220,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 );
 
                 let mut msg = Message::empty();
-                // Execute a single iteration
+                // Execute iteration steps
                 for phase in phases.iter_mut() {
                     let step_name = phase.to_step_name();
                     // Initialize new phase with message returned by previous
@@ -253,16 +254,30 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         ))
                         .await?;
 
-                    // During execution of any step we may encounter that an
-                    // quorum is generated for a former or current iteration.
-                    if msg.topic() == Topics::Quorum {
+                    // Handle Quorum messages produced by Consensus or received
+                    // from the network. A Quorum for the current iteration
+                    // means the iteration is over.
+                    if let Payload::Quorum(ref qmsg) = msg.payload {
+                        debug!(
+                            event = "New Quorum. Terminating iteration",
+                            round = qmsg.header.round,
+                            iter = qmsg.header.iteration,
+                            vote = ?qmsg.vote(),
+                            is_local = msg.is_local()
+                        );
+
+                        // Broadcast/Rebroadcast
                         sender.send_quorum(msg.clone()).await;
+
+                        // INFO: we keep running consensus even with Success
+                        // Quorum in case we fail to accept the block.
+                        break;
                     }
                 }
 
                 if iter >= CONSENSUS_MAX_ITER - 1 {
-                    error!("Trying to move to an out of bound iteration this should be a bug");
-                    error!("Sticking to the same iter {iter}");
+                    error!("Trying to increase iteration over the maximum. This should be a bug");
+                    warn!("Sticking to the same iter {iter}");
                 } else {
                     iter_ctx.on_close();
                     iter += 1;
