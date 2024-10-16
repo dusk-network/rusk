@@ -213,30 +213,6 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
     Ok(menu.answer(&answer).to_owned())
 }
 
-/// Allows the user to choose an operation to perform with the selected
-/// transaction type
-fn transaction_op_menu_phoenix() -> anyhow::Result<ProfileOp> {
-    use TransactionOp::*;
-    let menu = Menu::title("Shielded Transaction Operations")
-        .separator()
-        .add(Back, "Back");
-
-    let questions = Question::select("theme")
-        .message("Please select an operation")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-
-    let val = menu.answer(&answer).to_owned();
-
-    let x = match val {
-        Back => ProfileOp::Back,
-    };
-
-    Ok(x)
-}
-
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum ProfileOp {
     Run(Box<Command>),
@@ -259,8 +235,6 @@ enum CommandMenuItem {
     ContractDeploy,
     // Contract Call
     ContractCall,
-    // Phoenix
-    PhoenixTransactions,
     // Conversion
     PhoenixToMoonlight,
     MoonlightToPhoenix,
@@ -269,11 +243,6 @@ enum CommandMenuItem {
     // Others
     StakeInfo,
     Export,
-    Back,
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-enum TransactionOp {
     Back,
 }
 
@@ -298,7 +267,6 @@ fn menu_op(
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::ContractCall, "Contract Call")
-        .add(CMI::PhoenixTransactions, "Shielded Transactions")
         .add(
             CMI::PhoenixToMoonlight,
             "Convert shielded Dusk to public Dusk",
@@ -403,7 +371,6 @@ fn menu_op(
                 gas_price: prompt::request_gas_price()?,
             }))
         }
-        CMI::PhoenixTransactions => transaction_op_menu_phoenix()?,
         CMI::ContractDeploy => {
             let addr = match prompt::request_protocol()? {
                 prompt::Protocol::Phoenix => {
