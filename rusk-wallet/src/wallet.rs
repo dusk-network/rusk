@@ -428,6 +428,24 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok(&self.addresses()[index].1)
     }
 
+    /// TOREMOVE
+    pub fn bls_address(&self, index: u8) -> Result<Address, Error> {
+        let pk = self.bls_pk(index)?;
+        Ok(Address::Bls {
+            index: Some(index),
+            addr: *pk,
+        })
+    }
+
+    /// TOREMOVE
+    pub fn phoenix_address(&self, index: u8) -> Result<Address, Error> {
+        let pk = self.phoenix_pk(index)?;
+        Ok(Address::Phoenix {
+            index: Some(index),
+            addr: *pk,
+        })
+    }
+
     /// Creates a generic moonlight execution, paying gas with Moonlight tokens.
     #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(

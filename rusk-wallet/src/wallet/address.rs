@@ -32,6 +32,15 @@ pub enum Address {
 
 /// A public address within Dusk
 impl Address {
+    /// TOCOMMENT
+    pub fn same_protocol(&self, other: &Address) -> anyhow::Result<()> {
+        match (self, other) {
+            (Address::Phoenix { .. }, Address::Phoenix { .. }) => Ok(()),
+            (Address::Bls { .. }, Address::Bls { .. }) => Ok(()),
+            _ => anyhow::bail!("Addresses use different protocol"),
+        }
+    }
+
     /// Returns true if the current user owns this address
     pub fn is_owned(&self) -> bool {
         self.index().is_ok()
