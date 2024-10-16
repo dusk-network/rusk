@@ -234,7 +234,6 @@ fn transaction_op_menu_moonlight(
     use TransactionOp::*;
     let menu = Menu::title("Moonlight Transaction Operations")
         .add(Memo, "Moonlight Transfer with Memo")
-        .add(Stake, "Moonlight Stake")
         .add(Unstake, "Moonlight Unstake")
         .add(Withdraw, "Moonlight Withdraw Stake Reward")
         .add(ContractDeploy, "Moonlight Contract Deploy")
@@ -259,12 +258,6 @@ fn transaction_op_menu_moonlight(
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Stake => AddrOp::Run(Box::new(Command::MoonlightStake {
-            addr_idx: Some(addr_idx),
-            amt: prompt::request_stake_token_amt(moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Unstake => AddrOp::Run(Box::new(Command::MoonlightUnstake {
@@ -313,7 +306,6 @@ fn transaction_op_menu_phoenix(
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
         .add(Memo, "Phoenix Transfer with Memo")
-        .add(Stake, "Phoenix Stake")
         .add(Unstake, "Phoenix Unstake")
         .add(Withdraw, "Phoenix Withdraw Stake Reward")
         .add(ContractDeploy, "Phoenix Contract Deploy")
@@ -341,12 +333,6 @@ fn transaction_op_menu_phoenix(
                 phoenix_balance,
             )?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Stake => AddrOp::Run(Box::new(Command::PhoenixStake {
-            addr_idx: Some(addr_idx),
-            amt: prompt::request_stake_token_amt(phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Unstake => AddrOp::Run(Box::new(Command::PhoenixUnstake {
@@ -398,6 +384,8 @@ enum AddrOp {
 enum CommandMenuItem {
     // Transfer
     Transfer,
+    // Stake
+    Stake,
     // Phoenix
     PhoenixTransactions,
     // Moonlight
@@ -416,7 +404,6 @@ enum CommandMenuItem {
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
     Memo,
-    Stake,
     Unstake,
     Withdraw,
     ContractDeploy,
@@ -440,6 +427,7 @@ fn menu_op(
 
     let mut cmd_menu = Menu::new()
         .add(CMI::Transfer, "Transfer")
+        .add(CMI::Stake, "Stake")
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
@@ -490,6 +478,22 @@ fn menu_op(
                 gas_limit: prompt::request_gas_limit(
                     gas::DEFAULT_LIMIT_TRANSFER,
                 )?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::Stake => {
+            let (addr, balance) = match prompt::request_protocol()? {
+                prompt::Protocol::Phoenix => {
+                    (wallet.phoenix_address(addr_idx)?, phoenix_balance)
+                }
+                prompt::Protocol::Moonlight => {
+                    (wallet.bls_address(addr_idx)?, moonlight_balance)
+                }
+            };
+            AddrOp::Run(Box::new(Command::Stake {
+                address: Some(addr),
+                amt: prompt::request_stake_token_amt(balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
@@ -707,42 +711,29 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             println!("   > Recipient = {rcvr}");
             println!("   > Amount to transfer = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            if let Address::Bls { .. } = rcvr {
+            if let Address::Bls { .. } = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
             prompt::ask_confirm()
         }
-        Command::PhoenixStake {
-            addr_idx,
+        Command::Stake {
+            address,
             amt,
             gas_limit,
             gas_price,
         } => {
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let max_fee = gas_limit * gas_price;
-            println!(
-                "   > Send from {}",
-                address_idx_string(addr_idx.unwrap_or_default())
-            );
+            println!("   > Send from {sender}",);
             println!("   > Amount to stake = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            if let Address::Bls { .. } = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::MoonlightStake {
-            addr_idx,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let max_fee = gas_limit * gas_price;
-            println!(
-                "   > Stake from {}",
-                address_idx_string(addr_idx.unwrap_or_default())
-            );
-            println!("   > Amount to stake = {} DUSK", amt);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-            prompt::ask_confirm()
-        }
+
         Command::PhoenixUnstake {
             addr_idx,
             gas_limit,
