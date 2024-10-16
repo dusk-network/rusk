@@ -68,12 +68,11 @@ pub(crate) enum Command {
         new: bool,
     },
 
-    // Phoenix transaction commands
     /// Show address transaction history
-    PhoenixHistory {
-        /// Address index for which you want to see the history
+    History {
+        /// Address for which you want to see the history
         #[clap(short, long)]
-        addr_idx: Option<u8>,
+        address: Option<Address>,
     },
 
     /// Send DUSK through the network
@@ -503,9 +502,13 @@ impl Command {
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
             }
-            Command::PhoenixHistory { addr_idx } => {
+            Command::History { address } => {
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
                 wallet.sync().await?;
-                let addr_idx = addr_idx.unwrap_or_default();
+                let addr_idx = address.index()?;
                 let notes = wallet.get_all_notes(addr_idx).await?;
 
                 let transactions =

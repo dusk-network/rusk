@@ -227,10 +227,9 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
 
 /// Allows the user to choose an operation to perform with the selected
 /// transaction type
-fn transaction_op_menu_phoenix(addr_idx: u8) -> anyhow::Result<AddrOp> {
+fn transaction_op_menu_phoenix() -> anyhow::Result<AddrOp> {
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
-        .add(History, "Phoenix Transaction History")
         .separator()
         .add(Back, "Back");
 
@@ -244,9 +243,6 @@ fn transaction_op_menu_phoenix(addr_idx: u8) -> anyhow::Result<AddrOp> {
     let val = menu.answer(&answer).to_owned();
 
     let x = match val {
-        History => AddrOp::Run(Box::new(Command::PhoenixHistory {
-            addr_idx: Some(addr_idx),
-        })),
         Back => AddrOp::Back,
     };
 
@@ -261,6 +257,8 @@ enum AddrOp {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum CommandMenuItem {
+    // History
+    History,
     // Transfer
     Transfer,
     // Stake
@@ -288,7 +286,6 @@ enum CommandMenuItem {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
-    History,
     Back,
 }
 
@@ -305,6 +302,7 @@ fn menu_op(
     use CommandMenuItem as CMI;
 
     let mut cmd_menu = Menu::new()
+        .add(CMI::History, "Transactions History")
         .add(CMI::Transfer, "Transfer")
         .add(CMI::Stake, "Stake")
         .add(CMI::Unstake, "Unstake")
@@ -435,8 +433,11 @@ fn menu_op(
                 gas_price: prompt::request_gas_price()?,
             }))
         }
-
-        CMI::PhoenixTransactions => transaction_op_menu_phoenix(addr_idx)?,
+        CMI::History => {
+            let address = Some(wallet.bls_address(addr_idx)?);
+            AddrOp::Run(Box::new(Command::History { address }))
+        }
+        CMI::PhoenixTransactions => transaction_op_menu_phoenix()?,
         CMI::StakeInfo => AddrOp::Run(Box::new(Command::StakeInfo {
             addr_idx: Some(addr_idx),
             reward: false,
