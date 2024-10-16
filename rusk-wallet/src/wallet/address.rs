@@ -10,29 +10,56 @@ use std::{fmt, str::FromStr};
 use super::*;
 use crate::Error;
 
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 
 /// Address for which to perform transactions with
-/// it may be owned by the user or not, if the address is a receiver
+/// it may be owned by the user or not, if the address is a reciever
 /// then the index field will be none
 #[derive(Clone, Eq)]
 #[allow(missing_docs)]
 pub enum Address {
-    /// A Phoenix address used for Phoenix transaction
-    Phoenix { pk: PhoenixPublicKey },
-    /// A BLS address used for Moonlight transactions and staking operations
-    Bls { pk: BlsPublicKey },
+    /// A Phoenix address
+    Phoenix {
+        index: Option<u8>,
+        addr: PhoenixPublicKey,
+    },
+    /// A BLS address for Moonlight account
+    Bls {
+        index: Option<u8>,
+        addr: BlsPublicKey,
+    },
 }
 
 /// A public address within Dusk
 impl Address {
+    /// Returns true if the current user owns this address
+    pub fn is_owned(&self) -> bool {
+        self.index().is_ok()
+    }
+
+    // pub(crate) fn pk(&self) -> Result<&PhoenixPublicKey, Error> {
+    //     if let Self::Phoenix { addr, .. } = self {
+    //         Ok(addr)
+    //     } else {
+    //         Err(Error::ExpectedPhoenixPublicKey)
+    //     }
+    // }
+
+    // pub(crate) fn apk(&self) -> Result<&BlsPublicKey, Error> {
+    //     if let Self::Bls { addr, .. } = self {
+    //         Ok(addr)
+    //     } else {
+    //         Err(Error::ExpectedBlsPublicKey)
+    //     }
+    // }
+
     /// Returns the phoenix-key of the Address if there is any.
     ///
     /// # Errors
     /// If the address carries a bls-key.
     pub fn try_phoenix_pk(&self) -> Result<&PhoenixPublicKey, Error> {
-        if let Self::Phoenix { pk } = self {
-            Ok(pk)
+        if let Self::Phoenix { index: _, addr } = self {
+            Ok(addr)
         } else {
             Err(Error::ExpectedPhoenixPublicKey)
         }
@@ -43,38 +70,88 @@ impl Address {
     /// # Errors
     /// If the address carries a phoenix-key.
     pub fn try_bls_pk(&self) -> Result<&BlsPublicKey, Error> {
-        if let Self::Bls { pk } = self {
-            Ok(pk)
+        if let Self::Bls { index: _, addr } = self {
+            Ok(addr)
         } else {
             Err(Error::ExpectedBlsPublicKey)
         }
     }
 
-    pub(crate) fn to_bytes(&self) -> Vec<u8> {
+    /// find index of the address
+    pub fn index(&self) -> Result<u8, Error> {
         match self {
-            Self::Phoenix { pk } => pk.to_bytes().to_vec(),
-            Self::Bls { pk } => pk.to_bytes().to_vec(),
+            Self::Phoenix { index, .. } => index,
+            Self::Bls { index, .. } => index,
         }
+        .ok_or(Error::AddressNotOwned)
     }
 
-    // Returns a string of 23 character specifying the address kind (Phoenix or
-    // Moonlight/Stake for Bls)
-    fn addr_kind_str(&self) -> String {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         match self {
-            Address::Phoenix { pk: _ } => "Phoenix Address".to_string(),
-            Address::Bls { pk: _ } => "Moonlight/Stake Address".to_string(),
+            Self::Phoenix { addr, .. } => addr.to_bytes().to_vec(),
+            Self::Bls { addr, .. } => addr.to_bytes().to_vec(),
         }
     }
 
     /// A trimmed version of the address to display as preview
     pub fn preview(&self) -> String {
-        let addr_key_str = String::from(self);
-        format!(
-            "{:<23} - {}...{}",
-            self.addr_kind_str(),
-            &addr_key_str[..7],
-            &addr_key_str[addr_key_str.len() - 7..]
-        )
+        let bytes = self.to_bytes();
+        let addr = bs58::encode(bytes).into_string();
+        format!("{}...{}", &addr[..7], &addr[addr.len() - 7..])
+    }
+
+    /// try to create Phoenix address from string
+    pub fn try_from_str_phoenix(s: &str) -> Result<Self, Error> {
+        let bytes = bs58::decode(s).into_vec()?;
+
+        let pk = PhoenixPublicKey::from_reader(&mut &bytes[..])
+            .map_err(|_| Error::BadAddress)?;
+
+        let addr = Self::Phoenix {
+            index: None,
+            addr: pk,
+        };
+
+        Ok(addr)
+    }
+
+    /// try to create Moonlight address from string
+    pub fn try_from_str_bls(s: &str) -> Result<Self, Error> {
+        let bytes = bs58::decode(s).into_vec()?;
+
+        let apk = BlsPublicKey::from_reader(&mut &bytes[..])
+            .map_err(|_| Error::BadAddress)?;
+
+        let addr = Self::Bls {
+            index: None,
+            addr: apk,
+        };
+
+        Ok(addr)
+    }
+
+    /// try to create Phoenix public key from bytes
+    pub fn try_from_bytes_phoenix(
+        bytes: &[u8; PhoenixPublicKey::SIZE],
+    ) -> Result<Self, Error> {
+        let addr = Self::Phoenix {
+            index: None,
+            addr: PhoenixPublicKey::from_bytes(bytes)?,
+        };
+
+        Ok(addr)
+    }
+
+    /// Create an address instance from `BlsPublicKey` bytes.
+    pub fn try_from_bytes_bls(
+        bytes: &[u8; BlsPublicKey::SIZE],
+    ) -> Result<Self, Error> {
+        let addr = Self::Bls {
+            index: None,
+            addr: BlsPublicKey::from_bytes(bytes)?,
+        };
+
+        Ok(addr)
     }
 }
 
@@ -82,63 +159,78 @@ impl FromStr for Address {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let address_bytes = bs58::decode(s).into_vec()?;
-        let mut address_reader = &address_bytes[..];
+        let try_phoenix = Self::try_from_str_phoenix(s);
+        let try_bls = Self::try_from_str_bls(s);
 
-        match address_bytes.len() {
-            PhoenixPublicKey::SIZE => Ok(Self::Phoenix {
-                pk: PhoenixPublicKey::from_reader(&mut address_reader)
-                    .map_err(Error::Bytes)?,
-            }),
-            BlsPublicKey::SIZE => Ok(Self::Bls {
-                pk: BlsPublicKey::from_reader(&mut address_reader)
-                    .map_err(Error::Bytes)?,
-            }),
-            _ => Err(Error::Bytes(dusk_bytes::Error::InvalidData)),
-        }
-    }
-}
-
-impl From<&Address> for String {
-    fn from(address: &Address) -> Self {
-        match address {
-            Address::Phoenix { pk } => {
-                bs58::encode(pk.to_bytes()).into_string()
-            }
-            Address::Bls { pk } => bs58::encode(pk.to_bytes()).into_string(),
+        if let Ok(addr) = try_phoenix {
+            Ok(addr)
+        } else {
+            try_bls
         }
     }
 }
 
 impl PartialEq for Address {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (
-                Address::Phoenix { pk: self_pk },
-                Address::Phoenix { pk: other_pk },
-            ) => self_pk == other_pk,
-            (Address::Bls { pk: self_pk }, Address::Bls { pk: other_pk }) => {
-                self_pk == other_pk
-            }
-            _ => false,
+        match (self.index(), other.index()) {
+            (Ok(x), Ok(y)) => x == y && self.preview() == other.preview(),
+            (_, _) => self.preview() == other.preview(),
         }
     }
 }
 
 impl std::hash::Hash for Address {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.to_bytes().hash(state);
+        // we dont care about addresses we dont own
+        let _ = self.index().map(|f| f.hash(state));
+        self.preview().hash(state);
     }
 }
 
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<23} - {}", self.addr_kind_str(), String::from(self))
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
     }
 }
 
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<23} - {}", self.addr_kind_str(), String::from(self))
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
     }
+}
+
+/// Addresses holds address-related metadata that needs to be
+/// persisted in the wallet file.
+pub(crate) struct Addresses {
+    pub(crate) count: u8,
+}
+
+impl Default for Addresses {
+    fn default() -> Self {
+        Self { count: 1 }
+    }
+}
+
+impl Serializable<1> for Addresses {
+    type Error = BytesError;
+
+    fn from_bytes(buf: &[u8; Addresses::SIZE]) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        Ok(Self { count: buf[0] })
+    }
+
+    fn to_bytes(&self) -> [u8; Addresses::SIZE] {
+        [self.count]
+    }
+}
+
+#[test]
+fn addresses_serde() -> Result<(), Box<dyn std::error::Error>> {
+    let addrs = Addresses { count: 6 };
+    let read = Addresses::from_bytes(&addrs.to_bytes())
+        .map_err(|_| Error::WalletFileCorrupted)?;
+    assert!(read.count == addrs.count);
+    Ok(())
 }
