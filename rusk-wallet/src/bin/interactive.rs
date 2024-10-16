@@ -234,7 +234,6 @@ fn transaction_op_menu_moonlight(
     use TransactionOp::*;
     let menu = Menu::title("Moonlight Transaction Operations")
         .add(Memo, "Moonlight Transfer with Memo")
-        .add(Withdraw, "Moonlight Withdraw Stake Reward")
         .add(ContractDeploy, "Moonlight Contract Deploy")
         .add(ContractCall, "Moonlight Contract Call")
         //.add(History, "Moonlight Transaction History")
@@ -257,11 +256,6 @@ fn transaction_op_menu_moonlight(
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Withdraw => AddrOp::Run(Box::new(Command::MoonlightWithdraw {
-            addr_idx: Some(addr_idx),
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
             gas_price: prompt::request_gas_price()?,
         })),
         ContractDeploy => {
@@ -300,7 +294,6 @@ fn transaction_op_menu_phoenix(
     use TransactionOp::*;
     let menu = Menu::title("Phoenix Transaction Operations")
         .add(Memo, "Phoenix Transfer with Memo")
-        .add(Withdraw, "Phoenix Withdraw Stake Reward")
         .add(ContractDeploy, "Phoenix Contract Deploy")
         .add(ContractCall, "Phoenix Contract Call")
         .add(History, "Phoenix Transaction History")
@@ -329,11 +322,6 @@ fn transaction_op_menu_phoenix(
             gas_price: prompt::request_gas_price()?,
         })),
 
-        Withdraw => AddrOp::Run(Box::new(Command::PhoenixWithdraw {
-            addr_idx: Some(addr_idx),
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
         ContractDeploy => {
             AddrOp::Run(Box::new(Command::PhoenixContractDeploy {
                 addr_idx: Some(addr_idx),
@@ -377,6 +365,8 @@ enum CommandMenuItem {
     Stake,
     // Unstake
     Unstake,
+    // Withdraw
+    Withdraw,
     // Phoenix
     PhoenixTransactions,
     // Moonlight
@@ -395,7 +385,6 @@ enum CommandMenuItem {
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum TransactionOp {
     Memo,
-    Withdraw,
     ContractDeploy,
     ContractCall,
     // nor a deployment or a call
@@ -419,6 +408,7 @@ fn menu_op(
         .add(CMI::Transfer, "Transfer")
         .add(CMI::Stake, "Stake")
         .add(CMI::Unstake, "Unstake")
+        .add(CMI::Withdraw, "Withdraw Stake Reward")
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::PhoenixTransactions, "Phoenix Transactions")
         .add(CMI::MoonlightTransactions, "Moonlight Transactions")
@@ -494,6 +484,18 @@ fn menu_op(
                 prompt::Protocol::Moonlight => wallet.bls_address(addr_idx),
             }?;
             AddrOp::Run(Box::new(Command::Unstake {
+                address: Some(addr),
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+
+        CMI::Withdraw => {
+            let addr = match prompt::request_protocol()? {
+                prompt::Protocol::Phoenix => wallet.phoenix_address(addr_idx),
+                prompt::Protocol::Moonlight => wallet.bls_address(addr_idx),
+            }?;
+            AddrOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
@@ -751,31 +753,20 @@ fn confirm(cmd: &Command) -> anyhow::Result<bool> {
             }
             prompt::ask_confirm()
         }
-        Command::PhoenixWithdraw {
-            addr_idx,
+
+        Command::Withdraw {
+            address,
             gas_limit,
             gas_price,
         } => {
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let max_fee = gas_limit * gas_price;
-            println!(
-                "   > Send from {}",
-                address_idx_string(addr_idx.unwrap_or_default())
-            );
+            println!("   > Send from {sender}",);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            prompt::ask_confirm()
-        }
-        Command::MoonlightWithdraw {
-            addr_idx,
-            gas_limit,
-            gas_price,
-        } => {
-            let max_fee = gas_limit * gas_price;
-            println!(
-                "   > Reward from {}",
-                address_idx_string(addr_idx.unwrap_or_default())
-            );
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            if let Address::Bls { .. } = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
         Command::PhoenixMemo {
