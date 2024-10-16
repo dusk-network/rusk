@@ -209,7 +209,7 @@ fn menu_addr(wallet: &Wallet<WalletFile>) -> anyhow::Result<AddrSelect> {
         } else {
             action_menu = action_menu
                 .separator()
-                .separator_msg("Waiting for Sync to complete..".to_string());
+                .separator_msg("Waiting for Sync to complete..");
         }
     }
 
@@ -273,16 +273,16 @@ fn menu_op(
     let mut cmd_menu = Menu::new()
         .add(CMI::History, "Transactions History")
         .add(CMI::Transfer, "Transfer")
+        .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
+        .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
+        .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::Stake, "Stake")
         .add(CMI::Unstake, "Unstake")
         .add(CMI::Withdraw, "Withdraw Stake Reward")
-        .add(CMI::StakeInfo, "Check Existing Stake")
+        .add(CMI::Export, "Export provisioner key-pair")
         .add(CMI::ContractDeploy, "Contract Deploy")
         .add(CMI::ContractCall, "Contract Call")
-        .add(CMI::PhoenixToMoonlight, "Convert Phoenix Dusk to Moonlight")
-        .add(CMI::MoonlightToPhoenix, "Convert Moonlight Dusk to Phoenix")
         .add(CMI::CalculateContractId, "Calculate Contract ID")
-        .add(CMI::Export, "Export provisioner key-pair")
         .separator()
         .add(CMI::Back, "Back")
         .separator();
