@@ -17,7 +17,7 @@ pub(crate) use menu::Menu;
 use clap::Parser;
 use std::fs::{self, File};
 use std::io::Write;
-use tracing::{warn, Level};
+use tracing::{error, info, warn, Level};
 
 use bip39::{Language, Mnemonic, MnemonicType};
 
@@ -87,10 +87,33 @@ where
 
     // check for connection errors
     match con {
-        Err(Error::RocksDB(e)) => panic!{"Please reset the cache! {e}"},
-        Err(e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
+        Err(Error::RocksDB(_)) => {
+            wallet.close();
+
+            match prompt::ask_confirm_erase_cache() {
+                Ok(true) => {
+                    if let Some(io_err) = wallet.delete_cache().err() {
+                        error!("Error while deleting the cache: {io_err}");
+                    }
+
+                    info!("Restart the wallet to create new cache and sync with network");
+                },
+                Ok(false) => {
+
+                    info!("Wallet will now exit, reset the cache manually");
+                },
+                Err(e) => {
+                    error!("Error while asking for confirmation error: {e}");
+                }
+            }
+
+            // Exit because we cannot proceed because of db error
+            // wallet is already closed
+            std::process::exit(1);
+        },
+        Err(ref e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
         _ => {}
-    }
+    };
 
     wallet
 }
@@ -365,6 +388,9 @@ async fn exec() -> anyhow::Result<()> {
             interactive::run_loop(&mut wallet, &settings).await?;
         }
     }
+
+    // Gracefully close the wallet
+    wallet.close();
 
     Ok(())
 }
