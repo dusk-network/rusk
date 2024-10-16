@@ -272,7 +272,7 @@ impl<DB: Database> IterationCtx<DB> {
     }
 
     /// Collects a message from a past iteration
-    pub(crate) async fn collect_past_event(
+    pub(crate) async fn process_past_msg(
         &self,
         ru: &RoundUpdate,
         msg: Message,
