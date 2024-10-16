@@ -4,12 +4,17 @@ type WalletCacheNote = {
   nullifier: Uint8Array;
 };
 
+type WalletCacheDbNote = Omit<WalletCacheNote, "note" | "nullifier"> & {
+  note: ArrayBuffer;
+  nullifier: ArrayBuffer;
+};
+
 type WalletCacheGetDataType<T extends WalletCacheTableName> =
   T extends "pendingNotesInfo"
-    ? WalletCachePendingNoteInfo[]
+    ? WalletCacheDbPendingNoteInfo[]
     : T extends "syncInfo"
       ? WalletCacheSyncInfo[]
-      : WalletCacheNote[];
+      : WalletCacheDbNote[];
 
 type WalletCacheGetEntriesReturnType<
   T extends WalletCacheTableName,
@@ -18,7 +23,7 @@ type WalletCacheGetEntriesReturnType<
   ? WalletCacheGetDataType<T>
   : T extends "syncInfo"
     ? never
-    : Uint8Array[];
+    : ArrayBuffer[];
 
 type WalletCacheHistoryEntry = {
   history: Transaction[];
@@ -31,6 +36,13 @@ type WalletCacheNotesMap = Map<string, Map<Uint8Array, Uint8Array>>;
 type WalletCachePendingNoteInfo = {
   nullifier: Uint8Array;
   txId: string;
+};
+
+type WalletCacheDbPendingNoteInfo = Omit<
+  WalletCachePendingNoteInfo,
+  "nullifier"
+> & {
+  nullifier: ArrayBuffer;
 };
 
 type WalletCacheSyncInfo = {
