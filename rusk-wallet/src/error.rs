@@ -54,6 +54,9 @@ pub enum Error {
     /// amount of inputs in a transaction
     #[error("Impossible notes' combination for the given value is")]
     NoteCombinationProblem,
+    /// The note wasn't found in the note-tree of the transfer-contract
+    #[error("Note wasn't found in transfer-contract")]
+    NoteNotFound,
     /// Not enough gas to perform this transaction
     #[error("Not enough gas to perform this transaction")]
     NotEnoughGas,
