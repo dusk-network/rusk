@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `json` payload to block detail [#2364]
 - Add decode feature for `memo` field [#2527]
 - Add top node info in StatisticsPanel [#2613]
+- Add Provisioners page [#2649]
 
 ### Changed
 
@@ -86,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2640]: https://github.com/dusk-network/rusk/issues/2640
 [#2668]: https://github.com/dusk-network/rusk/issues/2668
 [#2613]: https://github.com/dusk-network/rusk/issues/2613
+[#2649]: https://github.com/dusk-network/rusk/issues/2649
 
 <!-- VERSIONS -->
 

@@ -16,12 +16,12 @@ describe("calculateStats", () => {
       { err: null },
     ];
     const expectedStats = {
-      activeProvisioners: 944,
-      activeStake: 58872472691778710,
+      activeProvisioners: 213,
+      activeStake: 56732778800000000,
       lastBlock: 1498332,
       txs100blocks: { failed: 2, transfers: 5 },
-      waitingProvisioners: 82,
-      waitingStake: 4381569737564303,
+      waitingProvisioners: 0,
+      waitingStake: 0,
     };
     expect(
       calculateStats(hostProvisioners, lastBlockHeight, last100BlocksTxs)

@@ -71,6 +71,13 @@ exports[`Navbar > renders the Navbar component 1`] = `
       >
         Transactions
       </a>
+      
+      <a
+        class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
+        href="/some-base-path/provisioners"
+      >
+        Provisioners
+      </a>
     </nav>
     
      
