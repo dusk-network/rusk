@@ -53,12 +53,16 @@ impl Cache {
         pk_bs58: &str,
         block_height: u64,
         note_data: (Note, BlsScalar),
+        cf_name: Option<String>,
     ) -> Result<(), Error> {
-        let cf_name = pk_bs58;
+        let cf_name = match cf_name {
+            Some(x) => x,
+            None => pk_bs58.to_string(),
+        };
 
         let cf = self
             .db
-            .cf_handle(cf_name)
+            .cf_handle(&cf_name)
             .ok_or(Error::CacheDatabaseCorrupted)?;
 
         let (note, nullifier) = note_data;
@@ -86,21 +90,7 @@ impl Cache {
     ) -> Result<(), Error> {
         let cf_name = format!("spent_{pk_bs58}");
 
-        let cf = self
-            .db
-            .cf_handle(&cf_name)
-            .ok_or(Error::CacheDatabaseCorrupted)?;
-
-        let (note, nullifier) = note_data;
-
-        let leaf = NoteLeaf { block_height, note };
-        let data = rkyv::to_bytes::<NoteLeaf, TREE_LEAF>(&leaf)
-            .map_err(|_| Error::Rkyv)?;
-        let key = nullifier.to_bytes();
-
-        self.db.put_cf(&cf, key, data)?;
-
-        Ok(())
+        self.insert(pk_bs58, block_height, note_data, Some(cf_name))
     }
 
     pub(crate) fn spend_notes(
@@ -149,6 +139,26 @@ impl Cache {
     /// inserted it returns None.
     pub(crate) fn last_pos(&self) -> Result<Option<u64>, Error> {
         Ok(self.db.get(b"last_pos")?.map(|x| {
+            let buff: [u8; 8] = x.try_into().expect("Invalid u64 in cache db");
+
+            u64::from_be_bytes(buff)
+        }))
+    }
+
+    pub(crate) fn update_last_block_height(
+        &self,
+        block_height: u64,
+    ) -> Result<(), Error> {
+        let last_block_height = self.last_block_height()?.unwrap_or(0);
+        let max = std::cmp::max(last_block_height, block_height);
+
+        self.db.put(b"last_block_height", max.to_be_bytes())?;
+
+        Ok(())
+    }
+
+    pub(crate) fn last_block_height(&self) -> Result<Option<u64>, Error> {
+        Ok(self.db.get(b"last_block_height")?.map(|x| {
             let buff: [u8; 8] = x.try_into().expect("Invalid u64 in cache db");
 
             u64::from_be_bytes(buff)
