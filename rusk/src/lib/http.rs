@@ -8,6 +8,7 @@
 
 #[cfg(feature = "chain")]
 mod chain;
+mod error;
 mod event;
 #[cfg(feature = "prover")]
 mod prover;
@@ -16,13 +17,13 @@ mod rusk;
 mod stream;
 
 pub(crate) use event::{
-    BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
-    RequestData, Target,
+    BinaryWrapper, DataType, MessageResponse as EventResponse, RequestData,
+    Target,
 };
 
 use execution_core::Event;
 use tokio::task::JoinError;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -62,14 +63,16 @@ use tungstenite::protocol::{CloseFrame, Message};
 use futures_util::stream::iter as stream_iter;
 use futures_util::{SinkExt, TryStreamExt};
 
-use anyhow::Error as AnyhowError;
 use hyper_util::rt::TokioIo;
 use rand::rngs::OsRng;
+use thiserror::Error;
 
 #[cfg(feature = "node")]
 use node_data::events::contract::ContractEvent;
 
 use crate::http::event::FullOrStreamBody;
+
+use crate::http::error::{PublicError, PublicResult};
 use crate::VERSION;
 
 pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
@@ -153,7 +156,7 @@ impl HandleRequest for DataSources {
     async fn handle(
         &self,
         request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         info!(
             "Received {:?}:{} request",
             request.event.target, request.event.topic
@@ -164,7 +167,9 @@ impl HandleRequest for DataSources {
                 return h.handle(request).await;
             }
         }
-        Err(anyhow::anyhow!("unsupported target type"))
+        Err(RequestError::Target {
+            message: "Unsupported target type".to_string(),
+        })
     }
 
     fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
@@ -174,7 +179,7 @@ impl HandleRequest for DataSources {
     async fn handle_rues(
         &self,
         event: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         info!("Received event at {}", event.uri);
         event.check_rusk_version()?;
         for h in &self.sources {
@@ -182,7 +187,10 @@ impl HandleRequest for DataSources {
                 return h.handle_rues(event).await;
             }
         }
-        Err(anyhow::anyhow!("unsupported location"))
+        Err(RequestError::Request {
+            reason: "Unsupported Location".to_string(),
+            status: StatusCode::NOT_FOUND,
+        })
     }
 }
 
@@ -296,17 +304,13 @@ async fn handle_stream<H: HandleRequest>(
 
                 if let DataType::Channel(c) = rsp.data {
                     let mut datas = stream_iter(c).map(|e| {
-                        EventResponse {
-                            data: e.into(),
-                            headers: rsp.headers.clone(),
-                            error: None
-                        }
+                        EventResponse { data:e.into(),headers:rsp.headers.clone(), error:None }
                     });//.await;
                     while let Some(c) = datas.next().await {
                         let rsp = serde_json::to_string(&c).unwrap_or_else(|err| {
                             serde_json::to_string(
                                 &EventResponse::from_error(
-                                    format!("Failed serializing response: {err}")
+                                    PublicError::Json(err)
                                 )).expect("serializing error response should succeed")
                             });
 
@@ -325,12 +329,14 @@ async fn handle_stream<H: HandleRequest>(
                 } else {
                     // Serialize the response to text. If this does not succeed,
                     // we simply serialize an error response.
-                    let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
-                        serde_json::to_string(
+                    let rsp = match serde_json::to_string(&rsp) {
+                        Ok(json_string) => json_string,
+                        Err(err) => serde_json::to_string(
                             &EventResponse::from_error(
-                                format!("Failed serializing response: {err}")
+                                    PublicError::Json(err)
                             )).expect("serializing error response should succeed")
-                        });
+                    };
+
 
                     // If we error in sending the message we send a close frame
                     // to the client and stop.
@@ -430,13 +436,9 @@ where
     H: HandleRequest,
 {
     type Response = Response<FullOrStreamBody>;
-    type Error = Infallible;
+    type Error = PublicError;
     type Future = Pin<
-        Box<
-            dyn Future<Output = Result<Self::Response, Self::Error>>
-                + Send
-                + 'static,
-        >,
+        Box<dyn Future<Output = PublicResult<Self::Response>> + Send + 'static>,
     >;
 
     /// Handle the HTTP request.
@@ -471,7 +473,7 @@ where
             })
             .or_else(|error| {
                 Ok(response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
+                    StatusCode::INTERNAL_SERVER_ERROR, // not used in graphql
                     error.to_string(),
                 )
                 .expect("Failed to build response"))
@@ -630,7 +632,7 @@ async fn handle_dispatch<H: HandleRequest>(
     uri: RuesEventUri,
     body: Incoming,
     handler: Arc<H>,
-    sender: mpsc::Sender<Result<RuesEvent, AnyhowError>>,
+    sender: mpsc::Sender<PublicResult<RuesEvent>>,
 ) {
     let bytes = match body.collect().await {
         Ok(bytes) => bytes.to_bytes(),
@@ -651,7 +653,7 @@ async fn handle_dispatch<H: HandleRequest>(
     let rsp = match handler.handle(&req).await {
         Ok(rsp) => rsp,
         Err(err) => {
-            let _ = sender.send(Err(err)).await;
+            let _ = sender.send(Err(err.into())).await;
             return;
         }
     };
@@ -664,7 +666,7 @@ async fn handle_dispatch<H: HandleRequest>(
 fn response(
     status: StatusCode,
     body: impl Into<Bytes>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> PublicResult<Response<FullOrStreamBody>> {
     Ok(Response::builder()
         .status(status)
         .header(RUSK_VERSION_HEADER, VERSION.as_str())
@@ -681,7 +683,7 @@ async fn handle_request_rues<H: HandleRequest>(
     events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> PublicResult<Response<FullOrStreamBody>> {
     if hyper_tungstenite::is_upgrade_request(&req) {
         let (subscription_sender, subscriptions) =
             mpsc::channel(ws_event_channel_cap);
@@ -798,7 +800,7 @@ async fn handle_request<H>(
     events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     ws_event_channel_cap: usize,
-) -> Result<Response<FullOrStreamBody>, ExecutionError>
+) -> PublicResult<Response<FullOrStreamBody>>
 where
     H: HandleRequest,
 {
@@ -887,7 +889,7 @@ async fn handle_execution<H>(
                 headers,
             }
         })
-        .unwrap_or_else(|e| request.to_error(e.to_string()));
+        .unwrap_or_else(|e| request.to_error(e.into()));
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
     let _ = responder.send(rsp);
@@ -915,26 +917,95 @@ async fn handle_execution_rues<H>(
         .unwrap_or_else(|e| EventResponse {
             headers: event.x_headers(),
             data: DataType::None,
-            error: Some(e.to_string()),
+            error: Some(e.into()),
         });
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
     let _ = responder.send(rsp);
 }
 
+type RequestResult<T> = std::result::Result<T, RequestError>;
+
+#[derive(Debug, Error)]
+pub enum RequestError {
+    // All errors from chain module
+    #[cfg(feature = "chain")]
+    #[error("{0}")]
+    Chain(#[from] crate::http::chain::error::ChainError),
+
+    #[error("Failed to parse request: {reason}")]
+    Request { reason: String, status: StatusCode },
+    #[error("Unsupported")]
+    Unsupported,
+    #[error("Invalid contract bytes")]
+    ContractDecode,
+    #[error("Prove failed with error: {0}")]
+    Prove(String),
+    #[error("Unsupported RUES request URI")]
+    UnsupportedRuesEventUri,
+    #[error("Unsupported RUES topic")]
+    UnsupportedRuesEventTopic,
+    #[error(
+        "Mismatched rusk version: required: {requested} - current: {current}"
+    )]
+    VersionMismatch { requested: String, current: String },
+    #[error("{}", message)]
+    Target { message: String },
+
+    // External errors
+    // StatusCode::INTERNAL_SERVER_ERROR most likely
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
+    #[error("Failed parsing hex: {0}")]
+    Hex(#[from] hex::FromHexError),
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("{0}")]
+    Semver(#[from] semver::Error),
+    #[error("Invalid integer: {0}")]
+    ParseInt(#[from] std::num::ParseIntError),
+}
+
+impl RequestError {
+    pub fn status(&self) -> StatusCode {
+        match self {
+            #[cfg(feature = "chain")]
+            RequestError::Chain(err) => err.status(),
+            RequestError::Request { status, .. } => *status,
+            RequestError::Unsupported => StatusCode::NOT_IMPLEMENTED,
+            RequestError::ContractDecode => StatusCode::BAD_REQUEST,
+            RequestError::UnsupportedRuesEventUri => StatusCode::NOT_FOUND,
+            RequestError::UnsupportedRuesEventTopic => StatusCode::NOT_FOUND,
+            RequestError::VersionMismatch { .. } => StatusCode::BAD_REQUEST,
+            RequestError::Target { .. } => StatusCode::BAD_REQUEST,
+            RequestError::Prove(_)
+            | RequestError::Json(_)
+            | RequestError::Hex(_)
+            | RequestError::Io(_)
+            | RequestError::Semver(_)
+            | RequestError::ParseInt(_) => {
+                error!("Internal Server Error: {}", self);
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        }
+    }
+}
+
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
+    // TODO: reconsider this trait
+
     fn can_handle(&self, request: &MessageRequest) -> bool;
     async fn handle(
         &self,
         request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData>;
+    ) -> RequestResult<ResponseData>;
 
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData>;
+    ) -> RequestResult<ResponseData>;
 }
 
 #[cfg(test)]
@@ -973,14 +1044,14 @@ mod tests {
         async fn handle_rues(
             &self,
             request: &RuesDispatchEvent,
-        ) -> anyhow::Result<ResponseData> {
+        ) -> RequestResult<ResponseData> {
             unimplemented!()
         }
 
         async fn handle(
             &self,
             request: &MessageRequest,
-        ) -> anyhow::Result<ResponseData> {
+        ) -> RequestResult<ResponseData> {
             let response = match request.event.to_route() {
                 (_, _, "stream") => {
                     let (sender, rec) = std::sync::mpsc::channel();

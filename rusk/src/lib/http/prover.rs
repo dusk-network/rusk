@@ -9,6 +9,8 @@ use anyhow::anyhow;
 use execution_core::transfer::phoenix::Prove;
 use rusk_prover::LocalProver;
 
+use crate::http::RequestError;
+
 use super::*;
 
 #[async_trait]
@@ -22,13 +24,13 @@ impl HandleRequest for LocalProver {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         let data = request.data.as_bytes();
         let response = match request.uri.inner() {
-            ("prover", _, "prove") => {
-                LocalProver.prove(data).map_err(|e| anyhow!(e))?
-            }
-            _ => anyhow::bail!("Unsupported"),
+            ("prover", _, "prove") => LocalProver.prove(data).map_err(|e| {
+                RequestError::Prove(format!("prove failed: {}", e))
+            })?,
+            _ => return Err(RequestError::UnsupportedRuesEventUri),
         };
         Ok(ResponseData::new(response))
     }
@@ -36,13 +38,16 @@ impl HandleRequest for LocalProver {
     async fn handle(
         &self,
         request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         let topic = request.event.topic.as_str();
         let response = match topic {
-            "prove_execute" => LocalProver
-                .prove(request.event_data())
-                .map_err(|e| anyhow!(e))?,
-            _ => anyhow::bail!("Unsupported"),
+            "prove_execute" => {
+                LocalProver.prove(request.event_data()).map_err(|e| {
+                    RequestError::Prove(format!("prove failed: {}", e))
+                })?
+            }
+
+            _ => return Err(RequestError::UnsupportedRuesEventTopic),
         };
         Ok(ResponseData::new(response))
     }

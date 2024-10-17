@@ -4,20 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::RUSK_VERSION_HEADER;
-
 use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
 use execution_core::ContractId;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{stream, Stream, StreamExt};
 use http_body_util::{BodyExt, Either, Full, StreamBody};
-use hyper::body::{Buf, Frame};
+use hyper::body::{Body, Buf, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{
-    body::{Body, Bytes, Incoming},
-    Request, Response,
-};
+use hyper::{Request, Response, StatusCode};
 use pin_project::pin_project;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
@@ -34,6 +29,9 @@ use std::str::Split;
 use std::sync::mpsc;
 use std::task::{Context, Poll};
 use tungstenite::http::HeaderValue;
+
+use super::{RequestError, RequestResult, RUSK_VERSION_HEADER};
+use crate::http::error::{PublicError, PublicResult};
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,14 +56,14 @@ pub struct MessageRequest {
 }
 
 impl MessageRequest {
-    pub fn to_error<S>(&self, err: S) -> MessageResponse
-    where
-        S: AsRef<str>,
-    {
+    // Note: do we need this or should we use the proper From/Into trait?
+    // We should be able to construct a proper MessageResponse or even a
+    // hyper::Response from an ResponseError including Status Code
+    pub fn to_error(&self, err: PublicError) -> MessageResponse {
         MessageResponse {
             headers: self.x_headers(),
             data: DataType::None,
-            error: Some(err.as_ref().to_string()),
+            error: Some(err),
         }
     }
 
@@ -95,17 +93,21 @@ impl Target {
 }
 
 impl TryFrom<&str> for Target {
-    type Error = anyhow::Error;
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    type Error = RequestError;
+    fn try_from(value: &str) -> RequestResult<Self> {
         let paths: Vec<_> =
             value.split('/').skip_while(|p| p.is_empty()).collect();
         let target_type: i32 = paths
             .first()
-            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?
+            .ok_or_else(|| RequestError::Target {
+                message: "Missing Target Type".to_string(),
+            })?
             .parse()?;
         let target = paths
             .get(1)
-            .ok_or_else(|| anyhow::anyhow!("Missing target"))?
+            .ok_or_else(|| RequestError::Target {
+                message: "Missing Target".to_string(),
+            })?
             .to_string();
 
         let target = match target_type {
@@ -113,7 +115,9 @@ impl TryFrom<&str> for Target {
             0x02 => Target::Host(target),
             0x03 => Target::Debugger(target),
             ty => {
-                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
+                return Err(RequestError::Target {
+                    message: format!("Unsupported target type '{ty}'"),
+                })
             }
         };
 
@@ -134,7 +138,7 @@ impl MessageRequest {
             .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
     }
 
-    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
+    pub fn parse(bytes: &[u8]) -> PublicResult<Self> {
         let (headers, bytes) = parse_header(bytes)?;
         let event = Event::parse(bytes)?;
         Ok(Self { event, headers })
@@ -142,7 +146,7 @@ impl MessageRequest {
 
     pub async fn from_request(
         req: Request<Incoming>,
-    ) -> anyhow::Result<(Self, bool)> {
+    ) -> PublicResult<(Self, bool)> {
         let headers = req
             .headers()
             .iter()
@@ -165,7 +169,7 @@ impl MessageRequest {
         Ok((req, binary_response))
     }
 
-    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+    pub fn check_rusk_version(&self) -> RequestResult<()> {
         if let Some(v) = self.header(RUSK_VERSION_HEADER) {
             let req = match v.as_str() {
                 Some(v) => VersionReq::from_str(v),
@@ -174,9 +178,10 @@ impl MessageRequest {
 
             let current = Version::from_str(&crate::VERSION)?;
             if !req.matches(&current) {
-                return Err(anyhow::anyhow!(
-                    "Mismatched rusk version: requested {req} - current {current}",
-                ));
+                return Err(RequestError::VersionMismatch {
+                    requested: req.to_string(),
+                    current: current.to_string(),
+                });
             }
         }
         Ok(())
@@ -190,12 +195,15 @@ pub struct MessageResponse {
     /// The data returned by the contract call.
     pub data: DataType,
 
-    /// A possible error happening during the contract call.
-    pub error: Option<String>,
+    /// A possible error happening during the contract call
+    /// TODO: Fix this. This error type is also being used when a graphql error
+    /// is returned.
+    #[serde(skip)]
+    pub error: Option<PublicError>,
 }
 
 impl MessageResponse {
-    pub fn from_error(error: String) -> Self {
+    pub fn from_error(error: PublicError) -> Self {
         Self {
             headers: serde_json::Map::default(),
             data: DataType::None,
@@ -206,12 +214,12 @@ impl MessageResponse {
     pub fn into_http(
         self,
         is_binary: bool,
-    ) -> anyhow::Result<Response<FullOrStreamBody>> {
+    ) -> PublicResult<Response<FullOrStreamBody>> {
         if let Some(error) = &self.error {
             return Ok(hyper::Response::builder()
-                .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
+                .status(error.status())
                 .body(Full::new(error.to_string().into()).into())?);
-        }
+        } // return .into_response(); directly later
 
         let mut headers = HashMap::new();
 
@@ -300,7 +308,7 @@ pub struct BinaryOrTextStream {
 }
 
 impl Stream for BinaryOrTextStream {
-    type Item = anyhow::Result<Frame<Bytes>>;
+    type Item = PublicResult<Frame<Bytes>>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -479,7 +487,7 @@ pub struct BinaryWrapper {
 }
 
 impl Event {
-    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
+    pub fn parse(bytes: &[u8]) -> PublicResult<Self> {
         let (topic, bytes) = parse_string(bytes)?;
         let data = bytes.to_vec().into();
 
@@ -491,7 +499,7 @@ impl Event {
     }
     pub async fn from_request(
         req: Request<Incoming>,
-    ) -> anyhow::Result<(Self, bool)> {
+    ) -> PublicResult<(Self, bool)> {
         let (parts, req_body) = req.into_parts();
         // HTTP REQUEST
         let binary_request = parts
@@ -506,10 +514,11 @@ impl Event {
         let body = req_body.collect().await?.to_bytes();
 
         let mut event = match binary_request {
-            true => Event::parse(&body)
-                .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
+            true => {
+                Event::parse(&body).map_err(|e| PublicError::InvalidBodyData)?
+            }
             false => serde_json::from_slice(&body)
-                .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
+                .map_err(|e| PublicError::InvalidBodyData)?,
         };
         event.target = target;
 
@@ -530,9 +539,12 @@ const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
 static CONTENT_TYPE_JSON: HeaderValue =
     HeaderValue::from_static("application/json");
 
-fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
+fn parse_len(bytes: &[u8]) -> PublicResult<(usize, &[u8])> {
     if bytes.len() < 4 {
-        return Err(anyhow::anyhow!("not enough bytes"));
+        return Err(PublicError::ParseBytes {
+            len: bytes.len(),
+            required: 4,
+        });
     }
 
     let len =
@@ -543,10 +555,13 @@ fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
 }
 
 type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-pub(crate) fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
+pub(crate) fn parse_header(bytes: &[u8]) -> PublicResult<Header> {
     let (len, bytes) = parse_len(bytes)?;
     if bytes.len() < len {
-        return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
+        return Err(PublicError::ParseBytes {
+            len: bytes.len(),
+            required: len,
+        });
     }
 
     let (header_bytes, bytes) = bytes.split_at(len);
@@ -555,9 +570,10 @@ pub(crate) fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
     Ok((header, bytes))
 }
 
-fn parse_target_type(bytes: &[u8]) -> anyhow::Result<(u8, &[u8])> {
+fn parse_target_type(bytes: &[u8]) -> PublicResult<(u8, &[u8])> {
+    // ToDo: is this function used?
     if bytes.is_empty() {
-        return Err(anyhow::anyhow!("not enough bytes for target type"));
+        return Err(PublicError::ParseTargetType);
     }
 
     let (target_type_bytes, bytes) = bytes.split_at(1);
@@ -566,89 +582,19 @@ fn parse_target_type(bytes: &[u8]) -> anyhow::Result<(u8, &[u8])> {
     Ok((target_type, bytes))
 }
 
-fn parse_string(bytes: &[u8]) -> anyhow::Result<(String, &[u8])> {
+fn parse_string(bytes: &[u8]) -> PublicResult<(String, &[u8])> {
     let (len, bytes) = parse_len(bytes)?;
     if bytes.len() < len {
-        return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
+        return Err(PublicError::ParseBytes {
+            len: bytes.len(),
+            required: len,
+        });
     }
 
     let (string_bytes, bytes) = bytes.split_at(len);
     let string = String::from_utf8(string_bytes.to_vec())?;
 
     Ok((string, bytes))
-}
-
-#[derive(Debug)]
-pub enum ExecutionError {
-    Http(hyper::http::Error),
-    Hyper(hyper::Error),
-    Json(serde_json::Error),
-    Protocol(tungstenite::error::ProtocolError),
-    Tungstenite(tungstenite::Error),
-    Generic(anyhow::Error),
-}
-
-impl Display for ExecutionError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExecutionError::Http(err) => write!(f, "{err}"),
-            ExecutionError::Hyper(err) => write!(f, "{err}"),
-            ExecutionError::Json(err) => write!(f, "{err}"),
-            ExecutionError::Protocol(err) => write!(f, "{err}"),
-            ExecutionError::Tungstenite(err) => write!(f, "{err}"),
-            ExecutionError::Generic(err) => write!(f, "{err}"),
-        }
-    }
-}
-
-impl std::error::Error for ExecutionError {}
-
-impl From<anyhow::Error> for ExecutionError {
-    fn from(err: anyhow::Error) -> Self {
-        Self::Generic(err)
-    }
-}
-
-impl From<hyper::http::Error> for ExecutionError {
-    fn from(err: hyper::http::Error) -> Self {
-        Self::Http(err)
-    }
-}
-
-impl From<hyper::Error> for ExecutionError {
-    fn from(err: hyper::Error) -> Self {
-        Self::Hyper(err)
-    }
-}
-
-impl From<serde_json::Error> for ExecutionError {
-    fn from(err: serde_json::Error) -> Self {
-        Self::Json(err)
-    }
-}
-
-impl From<InvalidHeaderName> for ExecutionError {
-    fn from(value: InvalidHeaderName) -> Self {
-        Self::Generic(value.into())
-    }
-}
-
-impl From<InvalidHeaderValue> for ExecutionError {
-    fn from(value: InvalidHeaderValue) -> Self {
-        Self::Generic(value.into())
-    }
-}
-
-impl From<tungstenite::error::ProtocolError> for ExecutionError {
-    fn from(err: tungstenite::error::ProtocolError) -> Self {
-        Self::Protocol(err)
-    }
-}
-
-impl From<tungstenite::Error> for ExecutionError {
-    fn from(err: tungstenite::Error) -> Self {
-        Self::Tungstenite(err)
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -812,7 +758,7 @@ impl RuesDispatchEvent {
             .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
     }
 
-    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+    pub fn check_rusk_version(&self) -> RequestResult<()> {
         if let Some(v) = self.header(RUSK_VERSION_HEADER) {
             let req = match v.as_str() {
                 Some(v) => VersionReq::from_str(v),
@@ -821,9 +767,10 @@ impl RuesDispatchEvent {
 
             let current = Version::from_str(&crate::VERSION)?;
             if !req.matches(&current) {
-                return Err(anyhow::anyhow!(
-                    "Mismatched rusk version: requested {req} - current {current}",
-                ));
+                return Err(RequestError::VersionMismatch {
+                    requested: req.to_string(),
+                    current: current.to_string(),
+                });
             }
         }
         Ok(())
@@ -838,11 +785,11 @@ impl RuesDispatchEvent {
     }
     pub async fn from_request(
         req: Request<Incoming>,
-    ) -> anyhow::Result<(Self, bool)> {
+    ) -> PublicResult<(Self, bool)> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or(anyhow::anyhow!("Invalid URL path"))?;
+            .ok_or(PublicError::InvalidPath)?;
 
         let headers = parts
             .headers
@@ -881,8 +828,7 @@ impl RuesDispatchEvent {
         let data = match binary_request {
             true => bytes.into(),
             _ => {
-                let text = String::from_utf8(bytes)
-                    .map_err(|e| anyhow::anyhow!("Invalid utf8"))?;
+                let text = String::from_utf8(bytes)?;
                 if let Some(hex) = text.strip_prefix("0x") {
                     if let Ok(bytes) = hex::decode(hex) {
                         bytes.into()

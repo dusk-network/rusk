@@ -66,7 +66,7 @@ rusk-prover = { workspace = true, features = ["std"], optional = true }
 node = { workspace = true, optional = true }
 dusk-consensus = { workspace = true, optional = true }
 node-data = { workspace = true, optional = true }
-
+thiserror = {  workspace = true  }
 
 ## GraphQL deps
 async-graphql = { workspace = true }

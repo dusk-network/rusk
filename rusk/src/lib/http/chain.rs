@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub(super) mod error;
 mod geo;
 pub mod graphql;
 
@@ -19,11 +20,14 @@ use node::network::Kadcast;
 use node::Network;
 use node_data::ledger::Transaction;
 use node_data::message::Message;
+use thiserror::Error;
 
+use error::{ChainError, ChainResult};
 use graphql::{DBContext, Query};
 
 use async_graphql::{
-    EmptyMutation, EmptySubscription, Name, Schema, Variables,
+    EmptyMutation, EmptySubscription, Name, Schema, ServerError,
+    Value as GqlValue, Variables,
 };
 use serde_json::{json, Map, Value};
 
@@ -76,24 +80,27 @@ impl HandleRequest for RuskNode {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         match request.uri.inner() {
             ("graphql", _, "query") => {
-                self.handle_gql(&request.data, &request.headers).await
+                Ok(self.handle_gql(&request.data, &request.headers).await?)
+                // ToDo: this should not be this deep in the node
             }
             ("transactions", _, "preverify") => {
-                self.handle_preverify(request.data.as_bytes()).await
+                Ok(self.handle_preverify(request.data.as_bytes()).await?)
             }
             ("transactions", _, "propagate") => {
-                self.propagate_tx(request.data.as_bytes()).await
+                Ok(self.propagate_tx(request.data.as_bytes()).await?)
             }
             ("network", _, "peers") => {
                 let amount = request.data.as_string().trim().parse()?;
-                self.alive_nodes(amount).await
+                Ok(self.alive_nodes(amount).await?)
             }
 
-            ("network", _, "peers_location") => self.peers_location().await,
-            ("node", _, "info") => self.get_info().await,
+            ("network", _, "peers_location") => {
+                Ok(self.peers_location().await?)
+            }
+            ("node", _, "info") => Ok(self.get_info().await?),
             ("blocks", _, "gas-price") => {
                 let max_transactions = request
                     .data
@@ -101,30 +108,30 @@ impl HandleRequest for RuskNode {
                     .trim()
                     .parse::<usize>()
                     .unwrap_or(usize::MAX);
-                self.get_gas_price(max_transactions).await
+                Ok(self.get_gas_price(max_transactions).await?)
             }
-            _ => anyhow::bail!("Unsupported"),
+            _ => return Err(RequestError::UnsupportedRuesEventUri),
         }
     }
     async fn handle(
         &self,
         request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         match &request.event.to_route() {
-            (Target::Host(_), "Chain", "gql") => {
-                self.handle_gql(&request.event.data, &request.headers).await
-            }
+            (Target::Host(_), "Chain", "gql") => Ok(self
+                .handle_gql(&request.event.data, &request.headers)
+                .await?),
             (Target::Host(_), "rusk", "preverify") => {
-                self.handle_preverify(request.event_data()).await
+                Ok(self.handle_preverify(request.event_data()).await?)
             }
             (Target::Host(_), "Chain", "propagate_tx") => {
-                self.propagate_tx(request.event_data()).await
+                Ok(self.propagate_tx(request.event_data()).await?)
             }
             (Target::Host(_), "Chain", "alive_nodes") => {
                 let amount = request.event.data.as_string().trim().parse()?;
-                self.alive_nodes(amount).await
+                Ok(self.alive_nodes(amount).await?)
             }
-            (Target::Host(_), "Chain", "info") => self.get_info().await,
+            (Target::Host(_), "Chain", "info") => Ok(self.get_info().await?),
             (Target::Host(_), "Chain", "gas") => {
                 let max_transactions = request
                     .event
@@ -133,20 +140,22 @@ impl HandleRequest for RuskNode {
                     .trim()
                     .parse::<usize>()
                     .unwrap_or(usize::MAX);
-                self.get_gas_price(max_transactions).await
+                Ok(self.get_gas_price(max_transactions).await?)
             }
-            _ => anyhow::bail!("Unsupported"),
+            _ => return Err(RequestError::UnsupportedRuesEventTopic),
         }
     }
 }
+
 impl RuskNode {
     async fn handle_gql(
         &self,
         data: &RequestData,
         headers: &serde_json::Map<String, Value>,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> ChainResult<ResponseData> {
         let gql_query = data.as_string();
 
+        // ToDo: do we want to build the schema every time?
         #[cfg(feature = "archive")]
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
             .data((self.db(), self.archive()))
@@ -156,39 +165,33 @@ impl RuskNode {
             .data((self.db(), ()))
             .finish();
 
+        // If the gql query is empty, return the schema early
         if gql_query.trim().is_empty() {
             return Ok(ResponseData::new(schema.sdl()));
         }
 
         let variables = variables_from_headers(headers);
-        let gql_query =
+        let gql_request =
             async_graphql::Request::new(gql_query).variables(variables);
 
-        let gql_res = schema.execute(gql_query).await;
-        let async_graphql::Response { data, errors, .. } = gql_res;
-        if !errors.is_empty() {
-            return Err(anyhow::anyhow!(serde_json::to_value(errors)?));
-        }
-        let data = serde_json::to_value(&data)
-            .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
+        let data: GqlValue = graphql::gql_execute(gql_request, schema).await?;
+
+        let data = serde_json::to_value(&data)?;
         Ok(ResponseData::new(data))
     }
 
-    async fn handle_preverify(
-        &self,
-        data: &[u8],
-    ) -> anyhow::Result<ResponseData> {
+    async fn handle_preverify(&self, data: &[u8]) -> ChainResult<ResponseData> {
         let tx = execution_core::transfer::Transaction::from_slice(data)
-            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
+            .map_err(|_| ChainError::Bytes)?;
         let db = self.inner().database();
         let vm = self.inner().vm_handler();
         MempoolSrv::check_tx(&db, &vm, &tx.into(), true, usize::MAX).await?;
         Ok(ResponseData::new(DataType::None))
     }
 
-    async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
+    async fn propagate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
         let tx: Transaction = ProtocolTransaction::from_slice(tx)
-            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
+            .map_err(|_| ChainError::Bytes)?
             .into();
         let tx_message = tx.into();
 
@@ -198,13 +201,14 @@ impl RuskNode {
         Ok(ResponseData::new(DataType::None))
     }
 
-    async fn alive_nodes(&self, amount: usize) -> anyhow::Result<ResponseData> {
+    async fn alive_nodes(&self, amount: usize) -> ChainResult<ResponseData> {
         let nodes = self.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
-        Ok(ResponseData::new(serde_json::to_value(nodes)?))
+        let data = serde_json::to_value(nodes)?;
+        Ok(ResponseData::new(data))
     }
 
-    async fn get_info(&self) -> anyhow::Result<ResponseData> {
+    async fn get_info(&self) -> ChainResult<ResponseData> {
         let mut info: HashMap<&str, serde_json::Value> = HashMap::new();
         info.insert("version", VERSION.as_str().into());
         info.insert("version_build", VERSION_BUILD.as_str().into());
@@ -234,7 +238,7 @@ impl RuskNode {
     async fn get_gas_price(
         &self,
         max_transactions: usize,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> ChainResult<ResponseData> {
         let gas_prices: Vec<u64> =
             self.db()
                 .read()

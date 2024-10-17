@@ -16,9 +16,8 @@ use std::thread;
 use tokio::task;
 use tungstenite::http::request;
 
-use execution_core::ContractId;
-
 use crate::node::Rusk;
+use execution_core::ContractId;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 
@@ -51,7 +50,7 @@ impl HandleRequest for Rusk {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         match request.uri.inner() {
             ("contracts", Some(contract_id), method) => {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
@@ -60,14 +59,14 @@ impl HandleRequest for Rusk {
             }
             ("node", _, "provisioners") => self.get_provisioners(),
             ("node", _, "crs") => self.get_crs(),
-            _ => Err(anyhow::anyhow!("Unsupported")),
+            _ => Err(RequestError::Unsupported),
         }
     }
 
     async fn handle(
         &self,
         request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         match &request.event.to_route() {
             (Target::Contract(_), ..) => {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
@@ -77,7 +76,7 @@ impl HandleRequest for Rusk {
                 self.get_provisioners()
             }
             (Target::Host(_), "rusk", "crs") => self.get_crs(),
-            _ => Err(anyhow::anyhow!("Unsupported")),
+            _ => Err(RequestError::Unsupported),
         }
     }
 }
@@ -87,7 +86,7 @@ impl Rusk {
         &self,
         event: &Event,
         feeder: bool,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         let contract = event.target.inner();
         let topic = &event.topic;
         let data = event.data.as_bytes();
@@ -100,12 +99,12 @@ impl Rusk {
         topic: &str,
         data: &[u8],
         feeder: bool,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> RequestResult<ResponseData> {
         let contract_bytes = hex::decode(contract)?;
 
         let contract_bytes = contract_bytes
             .try_into()
-            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
+            .map_err(|_| RequestError::ContractDecode)?;
         let contract_id = ContractId::from_bytes(contract_bytes);
         let fn_name = topic.to_string();
         let data = data.to_vec();
@@ -119,14 +118,19 @@ impl Rusk {
             });
             Ok(ResponseData::new(receiver))
         } else {
-            let data = self
-                .query_raw(contract_id, fn_name, data)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let data =
+                self.query_raw(contract_id, fn_name, data).map_err(|e| {
+                    RequestError::Request {
+                        reason: format!("Failed executing query_raw: {:?}", e),
+                        status: StatusCode::INTERNAL_SERVER_ERROR,
+                    }
+                })?;
+
             Ok(ResponseData::new(data))
         }
     }
 
-    fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
+    fn get_provisioners(&self) -> RequestResult<ResponseData> {
         let prov: Vec<_> = self
             .provisioners(None)
             .expect("Cannot query state for provisioners")
@@ -149,7 +153,7 @@ impl Rusk {
         Ok(ResponseData::new(serde_json::to_value(prov)?))
     }
 
-    fn get_crs(&self) -> anyhow::Result<ResponseData> {
+    fn get_crs(&self) -> RequestResult<ResponseData> {
         let crs = rusk_profile::get_common_reference_string()?;
         Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
     }

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::error::ChainResult;
 use super::*;
 use std::time::{Duration, Instant};
 
@@ -11,7 +12,7 @@ static CACHE: RwLock<(Option<Instant>, Vec<Value>)> =
     RwLock::const_new((None, Vec::new()));
 
 impl RuskNode {
-    pub async fn peers_location(&self) -> anyhow::Result<ResponseData> {
+    pub async fn peers_location(&self) -> ChainResult<ResponseData> {
         let locations = match from_cache().await {
             Some(locations) => locations,
             None => self.update_cache().await?,
@@ -20,7 +21,7 @@ impl RuskNode {
         Ok(ResponseData::new(serde_json::to_value(locations)?))
     }
 
-    async fn update_cache(&self) -> anyhow::Result<Vec<Value>> {
+    async fn update_cache(&self) -> ChainResult<Vec<Value>> {
         let mut cache = CACHE.write().await;
         if !cache_expired(cache.0) {
             return Ok(cache.1.clone());

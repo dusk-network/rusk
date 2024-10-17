@@ -14,7 +14,10 @@ use block::*;
 use data::*;
 use tx::*;
 
-use async_graphql::{Context, FieldError, FieldResult, Object};
+use async_graphql::{
+    Context, EmptyMutation, EmptySubscription, ErrorExtensions, FieldError,
+    FieldResult, Object, Request, Response, Schema, Value, Variables,
+};
 use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
@@ -30,6 +33,9 @@ use {
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::debug;
+
+use super::error::{ChainError, ChainResult};
 
 #[cfg(feature = "archive")]
 pub type DBContext = (Arc<RwLock<Backend>>, Archive);
@@ -37,6 +43,23 @@ pub type DBContext = (Arc<RwLock<Backend>>, Archive);
 pub type DBContext = (Arc<RwLock<Backend>>, ());
 
 pub type OptResult<T> = FieldResult<Option<T>>;
+
+// ToDo: This should use a GraphQL error which should be used across the gql
+// module
+pub async fn gql_execute(
+    gql_query: Request,
+    schema: Schema<Query, EmptyMutation, EmptySubscription>,
+) -> ChainResult<Value> {
+    let gql_res = schema.execute(gql_query).await;
+
+    let async_graphql::Response { data, errors, .. } = gql_res;
+
+    if !errors.is_empty() {
+        return Err(ChainError::from(errors));
+    }
+
+    Ok(data)
+}
 
 pub struct Query;
 
@@ -51,7 +74,8 @@ impl Query {
         let block = match (height, hash) {
             (Some(height), None) => block_by_height(ctx, height).await,
             (None, Some(hash)) => block_by_hash(ctx, hash).await,
-            _ => Err(FieldError::new("Specify heigth or hash")),
+            _ => Err(FieldError::new("Specify height or hash".to_string())
+                .extend_with(|_, e| e.set("status", 422))),
         };
         Ok(block?)
     }
@@ -198,7 +222,8 @@ impl Query {
         match (height, hash) {
             (Some(height), None) => events_by_height(ctx, height).await,
             (None, Some(hash)) => events_by_hash(ctx, hash).await,
-            _ => Err(FieldError::new("Specify height or hash")),
+            _ => Err(FieldError::new("Specify height or hash".to_string())
+                .extend_with(|_, e| e.set("status", 422))),
         }
     }
 
