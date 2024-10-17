@@ -1,26 +1,21 @@
+import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+
 /**
- * Validates a Dusk address, with feedback on failure or success.
- * @param {String} address The public spent key to validate.
- * @returns {{isValid: boolean, reason: string}} An object with two keys:
- *  - `isValid` {Boolean} - true if the address is valid, false if invalid.
- *  - `reason` {String} - describes why the address is invalid or confirms if it is valid.
+ * Validates if an input is an account or an address, with feedback on failure or success.
+ * @param {String} input The input to validate.
+ * @returns {{isValid: boolean, type?: "address" | "account"}} Validation result and the input type.
+ *  - `isValid` {Boolean} - true if the input is valid, false if invalid.
+ *  - `type?` {"address"|"account"} - The type of input that was validated.
  */
-export default function validateAddress(address) {
-  const regex = /[\W_0OIl]/;
+export default function validateAddress(input) {
+  const type = ProfileGenerator.typeOf(input);
 
-  if (address.length < 87 || address.length > 88) {
+  if (type === "account" || type === "address") {
     return {
-      isValid: false,
-      reason: "Invalid length. Addresses must be 87 or 88 characters long.",
+      isValid: true,
+      type,
     };
   }
 
-  if (address.search(regex) !== -1) {
-    return {
-      isValid: false,
-      reason: "Invalid character set. Address contains forbidden characters.",
-    };
-  }
-
-  return { isValid: true, reason: "Valid address." };
+  return { isValid: false };
 }

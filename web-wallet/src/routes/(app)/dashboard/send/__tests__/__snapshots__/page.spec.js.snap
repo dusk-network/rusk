@@ -44,7 +44,7 @@ exports[`Send > should render the send page 1`] = `
     class="dusk-card__body-container"
   >
     <div
-      class="operation svelte-npcavd"
+      class="operation svelte-1qgcpaa"
     >
       <div
         class="dusk-wizard"
@@ -121,10 +121,10 @@ exports[`Send > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-npcavd"
+          class="operation__send svelte-1qgcpaa"
         >
           <div
-            class="operation__address-wrapper svelte-npcavd"
+            class="operation__address-wrapper svelte-1qgcpaa"
           >
             <p>
               Enter address:
@@ -148,6 +148,7 @@ exports[`Send > should render the send page 1`] = `
             required=""
           />
           
+           
            
           <div
             class="contract-statuses svelte-1up3579"

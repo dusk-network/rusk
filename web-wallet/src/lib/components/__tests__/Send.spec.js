@@ -47,6 +47,9 @@ describe("Send", () => {
   const address =
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
 
+  const account =
+    "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
+
   afterEach(() => {
     cleanup();
     baseProps.execute.mockClear();
@@ -68,7 +71,7 @@ describe("Send", () => {
       expect(nextButton).toBeDisabled();
     });
 
-    it("should disable the next button if the address is invalid empty", async () => {
+    it("should disable the next button if the address is invalid", async () => {
       const { getByRole } = render(Send, baseProps);
       const nextButton = getByRole("button", { name: "Next" });
       const addressInput = getByRole("textbox");
@@ -79,6 +82,18 @@ describe("Send", () => {
 
       expect(addressInput).toHaveValue(invalidAddress);
       expect(nextButton).toBeDisabled();
+    });
+
+    it("should display a warning if the address input is a public account", async () => {
+      const { container, getByRole } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, {
+        target: { value: account },
+      });
+
+      expect(addressInput).toHaveValue(account);
+      expect(container.firstChild).toMatchSnapshot();
     });
   });
 

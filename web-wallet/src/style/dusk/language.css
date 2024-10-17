@@ -14,7 +14,8 @@
   --info-color: var(--info);
   --success-color: var(--success-500);
   --success-color-variant-dark: var(--success-700);
-  --warning-color: var(--warning);
+  --warning-color: var(--warning-500);
+  --warning-color-variant-dark: var(--warning-700);
   --muted-color: var(--granite-grey);
 
   --on-background-color: var(--smokey-black);
@@ -110,6 +111,7 @@
   --checkbox-control-checked-bg-color: var(--smokey-black);
 
   /* Fieldset */
+
   --fieldset-background-color: var(--light-grey);
   --fieldset-border-radius: 1.5em;
 
@@ -123,6 +125,11 @@
 
   --home-box-color: var(--silver-metallic);
   --home-grid-color: var(--light-grey);
+
+  /* Info Panel */
+
+  --info-panel-border-color: var(--smokey-black);
+  --info-panel-icon-warning-color: var(--warning-color-variant-dark);
 }
 
 :root.dark {
@@ -171,4 +178,9 @@
   /* Home animation */
 
   --home-grid-color: var(--smokey-black);
+
+  /* Info Panel */
+
+  --info-panel-border-color: var(--light-grey);
+  --info-panel-icon-warning-color: var(--warning-color);
 }

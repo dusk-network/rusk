@@ -4,13 +4,15 @@ import { describe, expect, it } from "vitest";
 describe("validateAddress", () => {
   const validAddresses = [
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM",
-    "4xwKPC9UMvketmoNkDvyaJufcTZWmNn8giB8xWTf3Qk8nFkRW81nTVwSdGPcbomzHThPuoXsdFzrzwiMar6BEfdw",
-    "5kB6VBePF8eFhFVjLwM1xrEL6yGBm1uDsoWyRjdqDQ2nNz8nECAsRh3MZiM6uEo6WmukqyKzzCK9B5rcPTnjZQgt",
-    "4LaS4bWzFQtvxZ7frUaXbfm3xsbnHHYwNkGnLqqpmWPYQeSfbAPy7N4Md8gk5gHn9f4wxNSNyFJuyxcnXPSWTRMd",
-    "gMxrVEH5aW7XuQiXN2Pm2YRLHyCNmokmBb1VzjcmcQg7gzmxstPnozdt7SvvMKLP71BadPsa5jmoWFc2WzWDYPo",
+    "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnM",
   ];
 
-  const invalidAddresses = [
+  const validAccounts = [
+    "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff",
+    "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybf",
+  ];
+
+  const invalidInputs = [
     // Invalid Base58
     "InvalidKey12345",
 
@@ -50,12 +52,22 @@ describe("validateAddress", () => {
       const result = validateAddress(address);
 
       expect(result.isValid).toBe(true);
+      expect(result.type).toBe("address");
     }
   });
 
-  it("fails when supplied with an invalid address", () => {
-    for (const address of invalidAddresses) {
-      const result = validateAddress(address);
+  it("passes when supplied with a valid account", () => {
+    for (const account of validAccounts) {
+      const result = validateAddress(account);
+
+      expect(result.isValid).toBe(true);
+      expect(result.type).toBe("account");
+    }
+  });
+
+  it("fails when supplied with an invalid input", () => {
+    for (const input of invalidInputs) {
+      const result = validateAddress(input);
 
       expect(result.isValid).toBe(false);
     }
