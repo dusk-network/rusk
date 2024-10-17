@@ -340,7 +340,7 @@ impl DataBrokerSrv {
     /// items that the node state is missing, puts these items in a GetResource
     /// wire message, and sends it back to request the items in full.
     ///
-    /// An item is a block or a transaction.
+    /// An item is a block, a transaction, or a ValidationResult.
     async fn handle_inv<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
@@ -408,6 +408,9 @@ impl DataBrokerSrv {
                                 );
                             }
                         }
+                    }
+                    InvType::ValidationResult => {
+                        //TODO: try fetch and ask if is missing
                     }
                 }
 
@@ -513,6 +516,10 @@ impl DataBrokerSrv {
                         } else {
                             None
                         }
+                    }
+                    InvType::ValidationResult => {
+                        //TODO: fetch and return ValidationQuorum
+                        None
                     }
                 })
                 .take(max_entries)
