@@ -255,28 +255,28 @@ impl<W: WireMessage> From<W> for Message {
 impl WireMessage for Candidate {
     const TOPIC: Topics = Topics::Candidate;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header().clone()
+        self.header()
     }
 }
 
 impl WireMessage for Validation {
     const TOPIC: Topics = Topics::Validation;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
 impl WireMessage for Ratification {
     const TOPIC: Topics = Topics::Ratification;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
 impl WireMessage for payload::Quorum {
     const TOPIC: Topics = Topics::Quorum;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
@@ -327,7 +327,7 @@ impl Message {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
 pub struct ConsensusHeader {
     pub prev_block_hash: Hash,
@@ -1456,7 +1456,7 @@ impl StepMessage for Validation {
     const STEP_NAME: StepName = StepName::Validation;
 
     fn header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
@@ -1483,7 +1483,7 @@ impl StepMessage for Ratification {
     const STEP_NAME: StepName = StepName::Ratification;
 
     fn header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
@@ -1545,7 +1545,7 @@ impl StepMessage for ValidationQuorum {
     const STEP_NAME: StepName = StepName::Validation;
 
     fn header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
