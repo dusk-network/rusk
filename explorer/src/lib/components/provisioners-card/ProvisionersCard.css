@@ -1,0 +1,4 @@
+.provisioners-card__table,
+.provisioners-card__list {
+  overflow-y: auto;
+}

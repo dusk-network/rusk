@@ -36,6 +36,10 @@
       link: "/transactions",
       title: "Transactions",
     },
+    {
+      link: "/provisioners",
+      title: "Provisioners",
+    },
   ];
 
   const dispatch = createEventDispatcher();

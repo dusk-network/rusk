@@ -1,0 +1,537 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Provisioners Table > should render the \`ProvisionersTable\` component 1`] = `
+<div
+  class="table-container provisioners-table"
+>
+  <table
+    class="table"
+  >
+    <thead
+      class="table__head"
+    >
+      <tr
+        class="table__row"
+      >
+        <th
+          class="table__header-cell"
+        >
+          Staking Address
+        </th>
+        
+         
+        <th
+          class="table__header-cell"
+        >
+          Staked Amount (DUSK)
+        </th>
+        
+         
+        <th
+          class="table__header-cell"
+        >
+          Reclaimable Staked Amount (DUSK)
+        </th>
+        
+         
+        <th
+          class="table__header-cell"
+        >
+          Slashes
+        </th>
+        
+         
+        <th
+          class="table__header-cell"
+        >
+          Hard Slashes
+        </th>
+        
+         
+        <th
+          class="table__header-cell"
+        >
+          Accumulated Reward (DUSK)
+        </th>
+        
+      </tr>
+    </thead>
+     
+    <tbody
+      class="table__body"
+    >
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          m6dy2gz3jC...tW82FWtnpf
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          500,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          7,121.257296087
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          m9dVuRgr3C...94r33pFQyz
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          500,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          6,923.840604194
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mHGvQ9Xdjz...iTfxTvgn7f
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          4,800
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          89.505343279
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mLx5HUo5Ph...BrRgEzoka8
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          1,234
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          29.633646022
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mTgXDqkyVa...gAseybAsfU
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          500,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          7,518.756679536
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mUJHMDEBiT...FHNxRNhoAA
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          4,800
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          73.800637305
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mUUpjnXow2...SfzQcywzaW
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          500,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          7,653.541671166
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mWvq9EWD9b...oU7BY2oEDe
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          1,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          1.613840782
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mXKJ97xTtr...JgkCK2o7x4
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          500,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          7,512.060104659
+        </td>
+        
+         
+      </tr>
+      
+      <tr
+        class="table__row"
+      >
+        <td
+          class="table__data-cell"
+        >
+          mdXsA3Ee1Y...K8VZPimZ2J
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          500,000
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          0
+        </td>
+        
+         
+        <td
+          class="table__data-cell"
+        >
+          7,973.118109253
+        </td>
+        
+         
+      </tr>
+      
+    </tbody>
+  </table>
+</div>
+`;
