@@ -964,7 +964,6 @@ pub mod payload {
     pub enum InvParam {
         Hash([u8; 32]),
         Height(u64),
-        HashAndIteration([u8; 32], u8),
         Iteration(ConsensusHeader),
     }
 
@@ -979,14 +978,6 @@ pub mod payload {
             match self {
                 InvParam::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
                 InvParam::Height(height) => write!(f, "Height: {}", height),
-                InvParam::HashAndIteration(hash, iteration) => {
-                    write!(
-                        f,
-                        "Hash: {}, Iteration: {}",
-                        to_str(hash),
-                        iteration
-                    )
-                }
                 InvParam::Iteration(ch) => {
                     write!(
                         f,
@@ -1050,12 +1041,11 @@ pub mod payload {
 
         pub fn add_candidate_from_iteration(
             &mut self,
-            prev_block_hash: [u8; 32],
-            iteration: u8,
+            consensus_header: ConsensusHeader,
         ) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::CandidateFromIteration,
-                param: InvParam::HashAndIteration(prev_block_hash, iteration),
+                param: InvParam::Iteration(consensus_header),
             });
         }
 
@@ -1082,10 +1072,6 @@ pub mod payload {
                     InvParam::Hash(hash) => w.write_all(&hash[..])?,
                     InvParam::Height(height) => {
                         w.write_all(&height.to_le_bytes())?
-                    }
-                    InvParam::HashAndIteration(hash, iteration) => {
-                        w.write_all(&hash[..])?;
-                        w.write_all(&[*iteration])?;
                     }
                     InvParam::Iteration(ch) => {
                         ch.write(w)?;
@@ -1135,12 +1121,8 @@ pub mod payload {
                         inv.add_candidate_from_hash(Self::read_bytes(r)?);
                     }
                     InvType::CandidateFromIteration => {
-                        let prev_block_hash = Self::read_bytes(r)?;
-                        let iteration = Self::read_u8(r)?;
-                        inv.add_candidate_from_iteration(
-                            prev_block_hash,
-                            iteration,
-                        );
+                        let ch = ConsensusHeader::read(r)?;
+                        inv.add_candidate_from_iteration(ch);
                     }
                     InvType::ValidationResult => {
                         let ch = ConsensusHeader::read(r)?;
