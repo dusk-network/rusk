@@ -44,9 +44,9 @@ exports[`Main layout > should render the app's main layout 1`] = `
         id="dusk-navbar-menu"
       >
         <span
-          class="dusk-badge dusk-badge--variant-success dusk-navbar__menu--network"
+          class="dusk-badge dusk-badge--variant-warning dusk-navbar__menu--network"
         >
-          mainnet
+          unknown
         </span>
          
         <nav

@@ -13,8 +13,7 @@ import {
 } from "lamb";
 
 import { failureToRejection } from "$lib/dusk/http";
-import { ensureTrailingSlash } from "$lib/dusk/string";
-import { makeNodeUrl } from "$lib/url";
+import { makeApiUrl, makeNodeUrl } from "$lib/url";
 
 import {
   addCountAndUnique,
@@ -50,17 +49,6 @@ const toHeadersVariables = unless(
     fromPairs,
   ])
 );
-
-/**
- * @param {string} endpoint
- * @param {Record<string, any> | undefined} params
- * @returns {URL}
- */
-const makeAPIURL = (endpoint, params) =>
-  new URL(
-    `${endpoint}?${new URLSearchParams(params)}`,
-    ensureTrailingSlash(import.meta.env.VITE_API_ENDPOINT)
-  );
 
 /**
  * @param {{ query: string, variables?: Record<string, string | number> }} queryInfo
@@ -105,7 +93,7 @@ const hostGet = (topic, data) =>
  * @returns {Promise<any>}
  */
 const apiGet = (endpoint, params) =>
-  fetch(makeAPIURL(endpoint, params), {
+  fetch(makeApiUrl(endpoint, params), {
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
@@ -229,7 +217,16 @@ const duskAPI = {
   },
 
   /**
-   * @returns {Promise<NodeLocation[]>}
+   * @returns {Promise<NodeInfo>}
+   */
+  getNodeInfo() {
+    return nodePost("/on/node/info").then((res) => {
+      return res;
+    });
+  },
+
+  /**
+   * @returns {Promise<{ lat: number, lon: number}[]>}
    */
   getNodeLocations() {
     return nodePost("/on/network/peers_location").then((data) =>

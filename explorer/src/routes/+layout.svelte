@@ -1,8 +1,15 @@
 <script>
+  import { onMount } from "svelte";
+
   import { Tooltip } from "$lib/dusk/components";
   import { Footer, Navbar } from "$lib/components";
   import { appStore } from "$lib/stores";
+  import { duskAPI } from "$lib/services";
   import "../style/main.css";
+
+  onMount(async () => {
+    appStore.setNodeInfo(await duskAPI.getNodeInfo());
+  });
 
   /**
    * @param {Boolean} bool

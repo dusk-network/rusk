@@ -7,7 +7,6 @@
   import { AppAnchor, AppImage, SearchNotification } from "$lib/components";
   import { SearchField } from "$lib/containers";
   import { appStore } from "$lib/stores";
-  import { makeNodeUrl } from "$lib/url";
 
   import "./Navbar.css";
 
@@ -48,17 +47,29 @@
   }
 
   /**
-   * Determines the network name by the subdomain
-   *
-   * @param {string} host
+   * @param {NodeInfo} nodeInfo
    */
-  const getNetworkName = (host) => {
-    const network = host.toLowerCase().split(".");
+  const isConnected = (nodeInfo) => {
+    const chainId = nodeInfo.chain_id;
+    return Number.isInteger(chainId) || chainId === null || false;
+  };
 
-    if (network[0] === "nodes") {
-      return "mainnet";
-    } else {
-      return network.includes("localhost") ? "localnet" : network[0];
+  /**
+   * @param {NodeInfo} nodeInfo
+   */
+  const getNetworkName = (nodeInfo) => {
+    switch (nodeInfo.chain_id) {
+      case 1:
+        return "mainnet";
+
+      case 2:
+        return "testnet";
+
+      case 3:
+        return "devnet";
+
+      default:
+        return "localnet";
     }
   };
 
@@ -68,9 +79,7 @@
     showSearchNotification = false;
   });
 
-  $: ({ darkMode } = $appStore);
-
-  const network = makeNodeUrl()?.hostname || "";
+  $: ({ darkMode, nodeInfo } = $appStore);
 </script>
 
 <nav
@@ -105,8 +114,8 @@
   >
     <Badge
       className="dusk-navbar__menu--network"
-      text={getNetworkName(network)}
-      variant={network ? "success" : "warning"}
+      text={isConnected(nodeInfo) ? getNetworkName(nodeInfo) : "unknown"}
+      variant={isConnected(nodeInfo) ? "success" : "warning"}
     />
     <NavList className="dusk-navbar__menu--links" {navigation} />
     <div class="dusk-navbar__menu--search">

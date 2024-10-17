@@ -1,4 +1,5 @@
 type AppStore = import("svelte/store").Readable<AppStoreContent> & {
+  setNodeInfo: (value: NodeInfo) => void;
   setTheme: (value: boolean) => void;
 };
 
@@ -10,6 +11,7 @@ type AppStoreContent = {
   isSmallScreen: boolean;
   hasTouchSupport: boolean;
   marketDataFetchInterval: number;
+  nodeInfo: NodeInfo;
   statsFetchInterval: number;
   transactionsListEntries: number;
 };
@@ -38,4 +40,12 @@ type NodeLocationStoreContent = {
   data: NodeLocation[] | null;
   error: Error | null;
   isLoading: boolean;
+};
+
+type NodeInfo = {
+  bootstrapping_nodes: Array<[]>;
+  chain_id: number | null | undefined;
+  kadcast_address: string;
+  version: string;
+  version_build: string;
 };

@@ -41,6 +41,15 @@ describe("appStore", () => {
       hasTouchSupport: false,
       isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
+      nodeInfo: {
+        /* eslint-disable camelcase */
+        bootstrapping_nodes: [],
+        chain_id: undefined,
+        kadcast_address: "",
+        version: "",
+        version_build: "",
+        /* eslint-enable camelcase */
+      },
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
     });
