@@ -390,22 +390,13 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::HashAndIteration(
-                            prev_block_hash,
-                            iteration,
-                        ) = &i.param
-                        {
+                        if let InvParam::Iteration(ch) = &i.param {
                             if Candidate::fetch_candidate_block_by_iteration(
-                                &t,
-                                *prev_block_hash,
-                                *iteration,
+                                &t, ch,
                             )?
                             .is_none()
                             {
-                                inv.add_candidate_from_iteration(
-                                    *prev_block_hash,
-                                    *iteration,
-                                );
+                                inv.add_candidate_from_iteration(*ch);
                             }
                         }
                     }
@@ -498,15 +489,9 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::HashAndIteration(
-                            prev_block_hash,
-                            iter,
-                        ) = &i.param
-                        {
+                        if let InvParam::Iteration(ch) = &i.param {
                             Candidate::fetch_candidate_block_by_iteration(
-                                &t,
-                                *prev_block_hash,
-                                *iter,
+                                &t, ch,
                             )
                             .ok()
                             .flatten()
