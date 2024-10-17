@@ -67,6 +67,14 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     data: Option<impl Into<TransactionData>>,
     prover: &P,
 ) -> Result<Transaction, Error> {
+    // always create a transparent transaction if the transfer-value is 0
+    // this makes it possible for the transfer-contract to filter on those notes
+    // and not add them to the tree
+    let mut obfuscated_transaction = obfuscated_transaction;
+    if transfer_value == 0 {
+        obfuscated_transaction = false;
+    }
+
     Ok(PhoenixTransaction::new::<R, P>(
         rng,
         sender_sk,
@@ -484,9 +492,10 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = true;
-    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
-                                 // transfer contract
+    let obfuscated_transaction = false;
+    // a conversion is a simultaneous deposit to *and* withdrawal from the
+    // transfer contract
+    let deposit = convert_value;
 
     // split the input notes and openings from the nullifiers
     let mut nullifiers = Vec::with_capacity(inputs.len());
@@ -604,7 +613,7 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = true;
+    let obfuscated_transaction = false;
     let deposit = 0;
 
     // split the input notes and openings from the nullifiers
