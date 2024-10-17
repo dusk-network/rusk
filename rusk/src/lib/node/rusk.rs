@@ -314,6 +314,12 @@ impl Rusk {
 
         if let Some(expected_verification) = consistency_check {
             if expected_verification != verification_output {
+                tracing::error!(
+                    src = "vm_accept",
+                    event = "invalid verification",
+                    ?expected_verification,
+                    ?verification_output
+                );
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
                 return Err(Error::InconsistentState(Box::new(
@@ -322,7 +328,11 @@ impl Rusk {
             }
         }
 
-        self.set_current_commit(session.commit()?);
+        info!(src = "vm_accept", event = "before commit");
+        let commit = session.commit()?;
+        info!(src = "vm_accept", event = "after commit");
+        self.set_current_commit(commit);
+        info!(src = "vm_accept", event = "after set_current_commit");
 
         // Sent events to archivist
         #[cfg(feature = "archive")]
@@ -512,6 +522,7 @@ fn accept(
     Session,
     Vec<ContractTxEvent>,
 )> {
+    info!(src = "vm_accept", event = "init");
     let mut session = session;
 
     let mut block_gas_left = block_gas_limit;
@@ -525,12 +536,20 @@ fn accept(
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
         let tx_id = unspent_tx.id();
+        info!(src = "vm_accept", event = "before execute");
         let receipt = execute(
             &mut session,
             tx,
             gas_per_deploy_byte,
             min_deployment_gas_price,
         )?;
+        info!(src = "vm_accept", event = "after execute");
+
+        info!(
+            src = "bloom",
+            event = "adding events",
+            len = receipt.events.len()
+        );
 
         event_bloom.add_events(&receipt.events);
 
@@ -561,6 +580,7 @@ fn accept(
         });
     }
 
+    info!(src = "vm_accept", event = "before reward");
     let coinbase_events = reward_slash_and_update_root(
         &mut session,
         block_height,
@@ -569,6 +589,12 @@ fn accept(
         slashing,
         voters,
     )?;
+    info!(src = "vm_accept", event = "after reward");
+    info!(
+        src = "bloom",
+        event = "adding reward events",
+        len = coinbase_events.len()
+    );
 
     event_bloom.add_events(&coinbase_events);
 
@@ -581,7 +607,9 @@ fn accept(
         .collect();
     events.extend(coinbase_events);
 
+    info!(src = "vm_accept", event = "before calculating root");
     let state_root = session.root();
+    info!(src = "vm_accept", event = "after calculating root");
 
     Ok((
         spent_txs,
