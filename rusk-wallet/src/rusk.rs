@@ -15,20 +15,20 @@ use crate::Error;
 const REQUIRED_RUSK_VERSION: &str = ">=0.8.0";
 
 #[derive(Debug)]
-/// RuskRequesst according to the rusk event system
+/// RuskRequest according to the rusk event system
 pub struct RuskRequest {
     topic: String,
     data: Vec<u8>,
 }
 
 impl RuskRequest {
-    /// New RuskRequesst from topic and data
+    /// New RuskRequest from topic and data
     pub fn new(topic: &str, data: Vec<u8>) -> Self {
         let topic = topic.to_string();
         Self { data, topic }
     }
 
-    /// Return the binary representation of the RuskRequesst
+    /// Return the binary representation of the RuskRequest
     pub fn to_bytes(&self) -> io::Result<Vec<u8>> {
         let mut buffer = vec![];
         buffer.write_all(&(self.topic.len() as u32).to_le_bytes())?;

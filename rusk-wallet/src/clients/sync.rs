@@ -21,7 +21,7 @@ pub(crate) async fn sync_db(
     let seed = store.get_seed();
 
     let keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> = (0
-        ..MAX_ADDRESSES)
+        ..MAX_PROFILES)
         .map(|i| {
             let i = i as u8;
             (

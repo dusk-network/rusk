@@ -41,7 +41,7 @@ use super::{cache::Cache, *};
 use crate::{
     rusk::{RuskHttpClient, RuskRequest},
     store::LocalStore,
-    Error, MAX_ADDRESSES,
+    Error, MAX_PROFILES,
 };
 
 const TRANSFER_CONTRACT: &str =
@@ -90,7 +90,7 @@ impl State {
         prover: RuskHttpClient,
         store: LocalStore,
     ) -> Result<Self, Error> {
-        let cfs = (0..MAX_ADDRESSES)
+        let cfs = (0..MAX_PROFILES)
             .flat_map(|i| {
                 let pk: PhoenixPublicKey =
                     derive_phoenix_pk(store.get_seed(), i as u8);
