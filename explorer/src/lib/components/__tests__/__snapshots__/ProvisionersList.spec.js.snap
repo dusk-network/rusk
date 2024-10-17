@@ -1,0 +1,112 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
+<dl
+  class="detail-list"
+>
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      staking address
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    m6dy2gz3jC3ifLpZmdTaZbgcptWxRr...UgMi1uSCne1ti5kgYeNHtW82FWtnpf
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      staked amount
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    500,000
+     DUSK
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Reclaimable Staked Amount
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    0
+     DUSK
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      slashes
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    0
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      hard slashes
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    0
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      accumulated reward
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    7,121.257296087
+     DUSK
+  </dd>
+</dl>
+`;

@@ -21,7 +21,7 @@
   /** @type {boolean} */
   export let isSmallScreen;
 
-  const ITEMS_TO_DISPLAY = 15;
+  const ITEMS_TO_DISPLAY = import.meta.env.VITE_CHAIN_INFO_ENTRIES;
 
   let itemsToDisplay = ITEMS_TO_DISPLAY;
 

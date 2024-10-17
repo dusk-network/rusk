@@ -38,7 +38,7 @@
     inputElement?.select();
   }
 
-  const BREAKPOINT = 1024;
+  const BREAKPOINT = 1280;
   const FULL_WIDTH = "100%";
 
   const fieldWidthProps = {

@@ -244,6 +244,15 @@ describe("duskAPI", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("should expose a method to retrieve the host provisioners", async () => {
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.hostProvisioners));
+
+    await expect(duskAPI.getProvisioners()).resolves.toStrictEqual(
+      mockData.hostProvisioners
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("should expose a method to retrieve the statistics", async () => {
     const lastBlockHeight = 1498332;
     const last100BlocksTxs = {
@@ -270,15 +279,16 @@ describe("duskAPI", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(
-      new URL(`${import.meta.env.VITE_RUSK_PATH || ""}/2/rusk`, node.origin)
+      new URL(
+        `${import.meta.env.VITE_RUSK_PATH || ""}/on/node/provisioners`,
+        node.origin
+      )
     );
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"","topic":"provisioners"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
-          "Content-Type": "application/json",
         },
         "method": "POST",
       }
