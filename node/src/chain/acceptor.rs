@@ -334,7 +334,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                         let res = verify_att(
                             &qmsg.att,
-                            qmsg.header.clone(),
+                            qmsg.header,
                             cur_seed,
                             &cur_provisioners,
                             None,
