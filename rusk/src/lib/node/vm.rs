@@ -6,6 +6,7 @@
 
 mod query;
 
+use node_data::events::contract::ContractEvent;
 use tracing::info;
 
 use dusk_bytes::DeserializableSlice;
@@ -72,7 +73,11 @@ impl VMExecution for Rusk {
         &self,
         blk: &Block,
         voters: &[Voter],
-    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
+    ) -> anyhow::Result<(
+        Vec<SpentTransaction>,
+        VerificationOutput,
+        Vec<ContractEvent>,
+    )> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
@@ -80,7 +85,7 @@ impl VMExecution for Rusk {
 
         let slashing = Slash::from_block(blk)?;
 
-        let (txs, verification_output) = self
+        let (txs, verification_output, stake_events) = self
             .accept_transactions(
                 blk.header().height,
                 blk.header().gas_limit,
@@ -96,7 +101,7 @@ impl VMExecution for Rusk {
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
-        Ok((txs, verification_output))
+        Ok((txs, verification_output, stake_events))
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
@@ -306,8 +311,7 @@ impl Rusk {
         let stake_amount = stake.amount.unwrap_or_default();
 
         let value = stake_amount.value;
-        let eligibility = stake_amount.eligibility;
 
-        Stake::new(value, stake.reward, eligibility, stake.nonce)
+        Stake::new(value, stake.reward)
     }
 }
