@@ -963,6 +963,7 @@ pub mod payload {
         Hash([u8; 32]),
         Height(u64),
         HashAndIteration([u8; 32], u8),
+        Iteration(ConsensusHeader),
     }
 
     impl Default for InvParam {
@@ -982,6 +983,15 @@ pub mod payload {
                         "Hash: {}, Iteration: {}",
                         to_str(hash),
                         iteration
+                    )
+                }
+                InvParam::Iteration(ch) => {
+                    write!(
+                        f,
+                        "PrevBlock: {}, Round: {}, Iteration: {}",
+                        to_str(&ch.prev_block_hash),
+                        ch.round,
+                        ch.iteration
                     )
                 }
             }
@@ -1063,6 +1073,9 @@ pub mod payload {
                     InvParam::HashAndIteration(hash, iteration) => {
                         w.write_all(&hash[..])?;
                         w.write_all(&[*iteration])?;
+                    }
+                    InvParam::Iteration(ch) => {
+                        ch.write(w)?;
                     }
                 };
             }
