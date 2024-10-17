@@ -21,7 +21,8 @@ use tracing::info;
 
 use crate::iteration_ctx::RoundCommittees;
 use node_data::message::{
-    Message, Payload, SignedStepMessage, StepMessage, WireMessage,
+    ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+    WireMessage,
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -92,8 +93,12 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         curr_iteration: u8,
     ) -> Option<Message> {
         if is_emergency_iter(curr_iteration) {
-            // While we are in Emergency mode but still the candidate is missing
-            // then we should request it
+            // In Emergency Mode we request the Candidate from our peers
+            // in case we arrived late and missed the votes
+
+            let prev_block_hash = ru.hash();
+            let round = ru.round;
+
             info!(
                 event = "request candidate block",
                 src = "emergency_iter",
@@ -102,7 +107,11 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
             );
 
             let mut inv = Inv::new(1);
-            inv.add_candidate_from_iteration(ru.hash(), curr_iteration);
+            inv.add_candidate_from_iteration(ConsensusHeader {
+                prev_block_hash,
+                round,
+                iteration: curr_iteration,
+            });
             let msg = GetResource::new(inv, None, u64::MAX, 0);
             return Some(msg.into());
         }
