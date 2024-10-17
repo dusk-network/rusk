@@ -314,6 +314,12 @@ impl Rusk {
 
         if let Some(expected_verification) = consistency_check {
             if expected_verification != verification_output {
+                tracing::error!(
+                    src = "vm_accept",
+                    event = "invalid verification",
+                    ?expected_verification,
+                    ?verification_output
+                );
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
                 return Err(Error::InconsistentState(Box::new(
@@ -539,6 +545,12 @@ fn accept(
         )?;
         info!(src = "vm_accept", event = "after execute");
 
+        info!(
+            src = "bloom",
+            event = "adding events",
+            len = receipt.events.len()
+        );
+
         event_bloom.add_events(&receipt.events);
 
         let tx_events: Vec<_> = receipt
@@ -578,6 +590,11 @@ fn accept(
         voters,
     )?;
     info!(src = "vm_accept", event = "after reward");
+    info!(
+        src = "bloom",
+        event = "adding reward events",
+        len = coinbase_events.len()
+    );
 
     event_bloom.add_events(&coinbase_events);
 
