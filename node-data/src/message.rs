@@ -956,6 +956,8 @@ pub mod payload {
         CandidateFromHash,
         /// A candidate block fetched by (prev_block_hash, iteration)
         CandidateFromIteration,
+        /// A ValidationResult fetched by (prev_block_hash, round, iteration)
+        ValidationResult,
     }
 
     #[derive(Clone, Copy)]
@@ -1045,6 +1047,7 @@ pub mod payload {
                 param: InvParam::Hash(hash),
             });
         }
+
         pub fn add_candidate_from_iteration(
             &mut self,
             prev_block_hash: [u8; 32],
@@ -1053,6 +1056,16 @@ pub mod payload {
             self.inv_list.push(InvVect {
                 inv_type: InvType::CandidateFromIteration,
                 param: InvParam::HashAndIteration(prev_block_hash, iteration),
+            });
+        }
+
+        pub fn add_validation_result(
+            &mut self,
+            consensus_header: ConsensusHeader,
+        ) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::ValidationResult,
+                param: InvParam::Iteration(consensus_header),
             });
         }
     }
@@ -1100,6 +1113,7 @@ pub mod payload {
                     2 => InvType::BlockFromHeight,
                     3 => InvType::CandidateFromHash,
                     4 => InvType::CandidateFromIteration,
+                    5 => InvType::ValidationResult,
                     _ => {
                         return Err(io::Error::from(io::ErrorKind::InvalidData))
                     }
@@ -1127,6 +1141,10 @@ pub mod payload {
                             prev_block_hash,
                             iteration,
                         );
+                    }
+                    InvType::ValidationResult => {
+                        let ch = ConsensusHeader::read(r)?;
+                        inv.add_validation_result(ch);
                     }
                 }
             }
