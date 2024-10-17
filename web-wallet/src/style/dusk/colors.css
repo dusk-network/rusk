@@ -25,7 +25,8 @@
 
   --success-500: #16db93;
   --success-700: #0f9363;
-  --warning: #ffcf23;
+  --warning-500: #ffcf23;
+  --warning-700: #d1a300;
   --error: #ed254e;
   --info: #71b1ff;
 }
