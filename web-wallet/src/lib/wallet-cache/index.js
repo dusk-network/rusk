@@ -232,6 +232,22 @@ class WalletCache {
 
   /**
    * @param {Uint8Array[]} nullifiers
+   * @param {string} txId
+   * @returns {Promise<void>}
+   */
+  async setPendingNoteInfo(nullifiers, txId) {
+    const data = nullifiers.map((nullifier) => ({ nullifier, txId }));
+
+    return this.#db
+      .open()
+      .then(async (db) => {
+        await db.table("pendingNotesInfo").bulkAdd(data);
+      })
+      .finally(() => this.#db.close());
+  }
+
+  /**
+   * @param {Uint8Array[]} nullifiers
    * @returns {Promise<void>}
    */
   async spendNotes(nullifiers) {

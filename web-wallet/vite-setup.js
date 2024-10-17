@@ -42,6 +42,15 @@ Object.defineProperty(window, "litIssuedWarnings", {
   writable: false,
 });
 
+vi.mock(
+  "./src/lib/vendor/w3sper.js/src/transaction",
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    TransactionBuilder: (await import("./src/__mocks__/TransactionBuilder.js"))
+      .default,
+  })
+);
+
 /*
  * Mocking deprecated `atob` and `btoa` functions in Node.
  * Vitest get stuck otherwise.

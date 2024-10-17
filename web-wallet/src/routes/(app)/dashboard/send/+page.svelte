@@ -6,7 +6,7 @@
   import { Send } from "$lib/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { executeSend } from "$lib/contracts";
-  import { createCurrencyFormatter } from "$lib/dusk/currency";
+  import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
 
   const collectSettings = collect([
@@ -21,7 +21,7 @@
   $: statuses = [
     {
       label: "Spendable",
-      value: duskFormatter(balance.maximum),
+      value: duskFormatter(luxToDusk(balance.maximum)),
     },
   ];
 </script>
