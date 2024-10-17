@@ -10,6 +10,7 @@ import {
   setKey,
   skipIf,
   unless,
+  updateKey,
   when,
 } from "lamb";
 
@@ -28,6 +29,22 @@ import notesArrayToMap from "$lib/wallet/notesArrayToMap";
 
 /** @type {(profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>) => string[]} */
 const getAddressesFrom = mapWith(compose(String, getKey("address")));
+
+/** @type {(buffer: ArrayBuffer) => Uint8Array} */
+const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
+
+/** @type {(source: WalletCacheDbNote) => Omit<WalletCacheDbNote, "note"> & { note: Uint8Array }} */
+const updateNote = updateKey("note", bufferToUint8Array);
+
+const updateNullifier = updateKey("nullifier", bufferToUint8Array);
+
+/** @type {(v: WalletCacheDbPendingNoteInfo[]) => WalletCachePendingNoteInfo[]} */
+const restorePendingInfo = mapWith(updateNullifier);
+
+/** @type {(v: WalletCacheDbNote[]) => WalletCacheNote[]} */
+const restoreNotes = mapWith(compose(updateNullifier, updateNote));
+
+const restoreNullifiers = mapWith(bufferToUint8Array);
 
 /** @type {(rawCriteria: RawCriteria) => Criteria} */
 const toCriteria = pipe([
@@ -140,7 +157,9 @@ class WalletCache {
    * @returns {Promise<WalletCachePendingNoteInfo[]>}
    */
   getPendingNotesInfo(nullifiers) {
-    return this.#getEntriesFrom("pendingNotesInfo", false, { nullifiers });
+    return this.#getEntriesFrom("pendingNotesInfo", false, { nullifiers }).then(
+      restorePendingInfo
+    );
   }
 
   /**
@@ -148,7 +167,9 @@ class WalletCache {
    * @returns {Promise<WalletCacheNote[]>}
    */
   getSpentNotes(addresses) {
-    return this.#getEntriesFrom("spentNotes", false, { addresses });
+    return this.#getEntriesFrom("spentNotes", false, { addresses }).then(
+      restoreNotes
+    );
   }
 
   /**
@@ -156,7 +177,9 @@ class WalletCache {
    * @returns {Promise<Uint8Array[]>}
    */
   getSpentNotesNullifiers(addresses) {
-    return this.#getEntriesFrom("spentNotes", true, { addresses });
+    return this.#getEntriesFrom("spentNotes", true, { addresses }).then(
+      restoreNullifiers
+    );
   }
 
   /** @returns {Promise<WalletCacheSyncInfo>} */
@@ -171,7 +194,9 @@ class WalletCache {
    * @returns {Promise<WalletCacheNote[]>}
    */
   getUnspentNotes(addresses) {
-    return this.#getEntriesFrom("unspentNotes", false, { addresses });
+    return this.#getEntriesFrom("unspentNotes", false, { addresses }).then(
+      restoreNotes
+    );
   }
 
   /**
@@ -179,7 +204,9 @@ class WalletCache {
    * @returns {Promise<Uint8Array[]>}
    */
   getUnspentNotesNullifiers(addresses) {
-    return this.#getEntriesFrom("unspentNotes", true, { addresses });
+    return this.#getEntriesFrom("unspentNotes", true, { addresses }).then(
+      restoreNullifiers
+    );
   }
 
   /**

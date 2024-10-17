@@ -7,6 +7,7 @@ import {
   filterWith,
   getKey,
   mapValues,
+  mapWith,
   partitionWith,
   pluckFrom,
   setKey,
@@ -453,9 +454,18 @@ describe("Wallet cache", () => {
         .equals(addressWithPendingNotes)
         .and(
           (note) =>
-            !pendingNullifiersAsStrings.includes(note.nullifier.toString())
+            !pendingNullifiersAsStrings.includes(
+              new Uint8Array(note.nullifier).toString()
+            )
         )
-        .toArray();
+        .toArray()
+        .then(
+          mapWith((entry) => ({
+            ...entry,
+            note: new Uint8Array(entry.note),
+            nullifier: new Uint8Array(entry.nullifier),
+          }))
+        );
 
       db.close();
     });
