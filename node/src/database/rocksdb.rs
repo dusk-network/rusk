@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use node_data::ledger::{
     self, Fault, Header, Label, SpendingId, SpentTransaction,
 };
+use node_data::message::ConsensusHeader;
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -625,8 +626,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
 
     fn fetch_candidate_block_by_iteration(
         &self,
-        prev_block_hash: [u8; 32],
-        iteration: u8,
+        consensus_header: &ConsensusHeader,
     ) -> Result<Option<ledger::Block>> {
         let iter = self
             .inner
@@ -636,8 +636,8 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
             let b = ledger::Block::read(&mut &blob[..])?;
 
             let header = b.header();
-            if header.prev_block_hash == prev_block_hash
-                && header.iteration == iteration
+            if header.prev_block_hash == consensus_header.prev_block_hash
+                && header.iteration == consensus_header.iteration
             {
                 return Ok(Some(b));
             }
