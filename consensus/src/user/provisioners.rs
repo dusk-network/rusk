@@ -121,6 +121,13 @@ impl Provisioners {
         self.members.entry(pubkey_bls).or_insert_with(|| stake);
     }
 
+    pub fn get_member_mut(
+        &mut self,
+        pubkey_bls: &PublicKey,
+    ) -> Option<&mut Stake> {
+        self.members.get_mut(pubkey_bls)
+    }
+
     pub fn replace_stake(
         &mut self,
         pubkey_bls: PublicKey,
