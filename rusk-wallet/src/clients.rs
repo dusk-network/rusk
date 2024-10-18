@@ -154,13 +154,9 @@ impl State {
         sync_db(&self.client, &self.cache(), &self.store, self.status).await
     }
 
-    /// Requests that a node prove the given transaction and later propagates it
-    /// Skips writing the proof for non phoenix transactions
-    pub async fn prove_and_propagate(
-        &self,
-        tx: Transaction,
-    ) -> Result<Transaction, Error> {
-        let status = self.status;
+    /// Requests that a node prove the given shielded transaction.
+    /// Returns the transaction unchanged for unshielded transaction.
+    pub async fn prove(&self, tx: Transaction) -> Result<Transaction, Error> {
         let prover = &self.prover;
         let mut tx = tx;
 
@@ -182,6 +178,15 @@ impl State {
             status("Proving sucesss!");
         }
 
+        Ok(tx)
+    }
+
+    /// Propagate a transaction to a node.
+    pub async fn propagate(
+        &self,
+        tx: Transaction,
+    ) -> Result<Transaction, Error> {
+        let status = self.status;
         let tx_bytes = tx.to_var_bytes();
 
         status("Attempt to preverify tx...");
