@@ -49,9 +49,11 @@ impl RuesHttpClient {
     }
 
     /// Check rusk connection
-    pub async fn check_connection(&self) -> Result<(), reqwest::Error> {
-        reqwest::Client::new().post(&self.uri).send().await?;
-        Ok(())
+    /// Returns if status is success or not
+    pub async fn check_connection(&self) -> Result<bool, reqwest::Error> {
+        let request = reqwest::Client::new().post(&self.uri).send().await?;
+
+        Ok(request.status().is_success())
     }
 
     /// Send a RuskRequest to a specific target.
