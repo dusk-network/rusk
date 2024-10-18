@@ -31,7 +31,7 @@ use execution_core::{
     BlsScalar, ContractError, Dusk, Event,
 };
 use node::vm::bytecode_charge;
-use node_data::events::contract::ContractTxEvent;
+use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_profile::to_rusk_state_id_path;
@@ -297,7 +297,11 @@ impl Rusk {
         consistency_check: Option<VerificationOutput>,
         slashing: Vec<Slash>,
         voters: &[Voter],
-    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+    ) -> Result<(
+        Vec<SpentTransaction>,
+        VerificationOutput,
+        Vec<ContractEvent>,
+    )> {
         let session = self.session(block_height, None)?;
 
         let (spent_txs, verification_output, session, events) = accept(
@@ -334,13 +338,17 @@ impl Rusk {
             ));
         }
 
+        let mut stake_events = vec![];
         for event in events {
+            if event.event.target.0 == STAKE_CONTRACT {
+                stake_events.push(event.event.clone());
+            }
             // Send VN event to RUES
             let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event);
         }
 
-        Ok((spent_txs, verification_output))
+        Ok((spent_txs, verification_output, stake_events))
     }
 
     pub fn finalize_state(
