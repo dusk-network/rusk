@@ -1,0 +1,10 @@
+{
+  "bootstrapping_nodes": [
+    "nocturne-20241011-100-2-node-0.testnet.dusk:9000",
+    "nocturne-20241011-100-2-node-1.testnet.dusk:9000"
+  ],
+  "chain_id": 2,
+  "kadcast_address": "64.225.3.119:9000",
+  "version": "0.8.0",
+  "version_build": "0.8.0 (8a9df55 2024-10-14)"
+}

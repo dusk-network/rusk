@@ -253,6 +253,15 @@ describe("duskAPI", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("should expose a method to retrieve the node info", async () => {
+    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiNodeInfo));
+
+    await expect(duskAPI.getNodeInfo()).resolves.toStrictEqual(
+      mockData.apiNodeInfo
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("should expose a method to retrieve the statistics", async () => {
     const lastBlockHeight = 1498332;
     const last100BlocksTxs = {

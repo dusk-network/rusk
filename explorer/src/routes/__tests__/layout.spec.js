@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent } from "@testing-library/svelte";
 import { get } from "svelte/store";
-
+import { duskAPI } from "$lib/services";
 import { appStore as realAppStore } from "$lib/stores";
-
+import { apiNodeInfo } from "$lib/mock-data";
 import { renderWithSimpleContent } from "$lib/dusk/test-helpers";
 
 import MainLayout from "../+layout.svelte";
@@ -30,7 +30,12 @@ vi.mock("$lib/stores", async (importOriginal) => {
     ...original,
     appStore: {
       ...mockedAppStore,
-
+      /** @param {NodeInfo} v w*/
+      setNodeInfo: (v) =>
+        mockedAppStore.setMockedStoreValue({
+          ...mockedAppStore.getMockedStoreValue(),
+          nodeInfo: v,
+        }),
       /** @param {boolean} v */
       setTheme: (v) =>
         mockedAppStore.setMockedStoreValue({
@@ -48,10 +53,19 @@ const appStore =
   );
 
 describe("Main layout", () => {
+  const getNodeInfoSpy = vi
+    .spyOn(duskAPI, "getNodeInfo")
+    .mockResolvedValue(apiNodeInfo);
+
   const baseOptions = { props: {}, target: document.body };
 
   afterEach(() => {
     cleanup();
+    getNodeInfoSpy.mockClear();
+  });
+
+  afterAll(() => {
+    getNodeInfoSpy.mockRestore();
   });
 
   it("should render the app's main layout", () => {
@@ -137,6 +151,38 @@ describe("Main layout", () => {
     await vi.advanceTimersByTimeAsync(1);
 
     expect(tooltip).toHaveAttribute("aria-hidden", "false");
+
+    vi.useRealTimers();
+  });
+
+  it("should set the node information when the layout is mounted", async () => {
+    vi.useFakeTimers();
+
+    const nodeInfoInitialState = {
+      /* eslint-disable camelcase */
+      bootstrapping_nodes: [],
+      chain_id: undefined,
+      kadcast_address: "",
+      version: "",
+      version_build: "",
+      /* eslint-enable camelcase */
+    };
+
+    appStore.setNodeInfo(nodeInfoInitialState);
+
+    expect(get(appStore).nodeInfo).toStrictEqual(nodeInfoInitialState);
+
+    renderWithSimpleContent(MainLayout, baseOptions);
+
+    expect(getNodeInfoSpy).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(get(appStore).nodeInfo).toStrictEqual(apiNodeInfo);
+
+    appStore.setNodeInfo(nodeInfoInitialState);
+
+    expect(get(appStore).nodeInfo).toStrictEqual(nodeInfoInitialState);
 
     vi.useRealTimers();
   });

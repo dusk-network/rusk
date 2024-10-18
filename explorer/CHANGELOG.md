@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change the tooltip info of the block rewards [#2166]
 - Update Footer layout [#2640]
 - Change WorldMap location [#2613]
+- Fetch network information locally [#2662]
 
 ### Fixed
 
@@ -88,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2668]: https://github.com/dusk-network/rusk/issues/2668
 [#2613]: https://github.com/dusk-network/rusk/issues/2613
 [#2649]: https://github.com/dusk-network/rusk/issues/2649
+[#2662]: https://github.com/dusk-network/rusk/issues/2662
 
 <!-- VERSIONS -->
 
