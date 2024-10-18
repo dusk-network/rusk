@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{
-    Candidate, DatabaseOptions, Ledger, LightBlock, Metadata, Persist, DB,
+    Candidate, DatabaseOptions, Ledger, LightBlock, Metadata, Persist,
+    ValidationResult, DB,
 };
 use anyhow::Result;
 use std::cell::RefCell;
@@ -14,6 +15,7 @@ use node_data::ledger::{
     self, Fault, Header, Label, SpendingId, SpentTransaction,
 };
 use node_data::message::ConsensusHeader;
+use node_data::message::payload;
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -656,7 +658,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn delete<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy,
     {
@@ -690,7 +692,78 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
     fn clear_candidates(&self) -> Result<()> {
-        self.delete(|_| true)
+        self.delete_candidate(|_| true)
+    }
+}
+
+// TODO: implement trait
+/// Implementation of the `ValidationResult` trait for `DBTransaction<'db, DB>`.
+impl<'db, DB: DBAccess> ValidationResult for DBTransaction<'db, DB> {
+    /// Stores a ValidationResult in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `vr` - The ValidationResult to store.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the ValidationResult is successfully stored, or an
+    /// error if the operation fails.
+    fn store_validation_result(
+        &self,
+        _vr: &payload::ValidationResult,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Fetches a ValidationResult from the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `prev_block_hash` - The hash of the previous block.
+    /// * `iteration` - The iteration number.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Some(ValidationResult))` if the ValidationResult is found,
+    /// `Ok(None)` if the ValidationResult is not found, or an error if the
+    /// operation fails.
+    fn fetch_validation_result(
+        &self,
+        _consensus_header: &ConsensusHeader,
+    ) -> Result<Option<payload::ValidationResult>> {
+        Ok(None)
+    }
+
+    /// Deletes all items from the `CF_VALIDATION_RESULTS` column family.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn clear_validation_results(&self) -> Result<()> {
+        Ok(())
+    }
+
+    /// Deletes ValidationResult items from the database based on a closure.
+    ///
+    /// # Arguments
+    ///
+    /// * `closure` - If the closure returns `true`, the block will be deleted.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn delete_validation_result<F>(&self, _closure: F) -> Result<()>
+    where
+        F: FnOnce(u64) -> bool + std::marker::Copy,
+    {
+        Ok(())
+    }
+
+    fn count(&self) -> usize {
+        0
     }
 }
 

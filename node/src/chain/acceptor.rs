@@ -741,7 +741,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .height
                     .saturating_sub(CANDIDATES_DELETION_OFFSET);
 
-                Candidate::delete(t, |height| height <= threshold)?;
+                Candidate::delete_candidate(t, |height| height <= threshold)?;
 
                 // Delete from mempool any transaction already included in the
                 // block

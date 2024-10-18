@@ -13,6 +13,7 @@ use anyhow::Result;
 
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
 use node_data::message::ConsensusHeader;
+use node_data::message::payload;
 
 use serde::{Deserialize, Serialize};
 
@@ -125,7 +126,27 @@ pub trait Candidate {
 
     fn clear_candidates(&self) -> Result<()>;
 
-    fn delete<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&self, closure: F) -> Result<()>
+    where
+        F: FnOnce(u64) -> bool + std::marker::Copy;
+
+    fn count(&self) -> usize;
+}
+
+pub trait ValidationResult {
+    fn store_validation_result(
+        &self,
+        vr: &payload::ValidationResult,
+    ) -> Result<()>;
+
+    fn fetch_validation_result(
+        &self,
+        ch: &ConsensusHeader,
+    ) -> Result<Option<payload::ValidationResult>>;
+
+    fn clear_validation_results(&self) -> Result<()>;
+
+    fn delete_validation_result<F>(&self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy;
 

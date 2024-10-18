@@ -6,6 +6,7 @@
 
 pub mod conf;
 
+use crate::database::ValidationResult;
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
@@ -401,7 +402,15 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::ValidationResult => {
-                        //TODO: try fetch and ask if is missing
+                        if let InvParam::Iteration(ch) = &i.param {
+                            if ValidationResult::fetch_validation_result(
+                                &t, ch,
+                            )?
+                            .is_none()
+                            {
+                                inv.add_validation_result(*ch);
+                            }
+                        }
                     }
                 }
 
@@ -503,8 +512,19 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::ValidationResult => {
-                        //TODO: fetch and return ValidationQuorum
-                        None
+                        if let InvParam::Iteration(ch) = &i.param {
+                            ValidationResult::fetch_validation_result(&t, ch)
+                                .ok()
+                                .flatten()
+                                .map(|vr| {
+                                    Message::from(payload::ValidationQuorum {
+                                        header: *ch,
+                                        result: vr,
+                                    })
+                                })
+                        } else {
+                            None
+                        }
                     }
                 })
                 .take(max_entries)
