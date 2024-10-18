@@ -15,6 +15,7 @@ pub(crate) use command::{Command, RunResult};
 pub(crate) use menu::Menu;
 
 use clap::Parser;
+use rocksdb::ErrorKind;
 use std::fs::{self, File};
 use std::io::Write;
 use tracing::{error, info, warn, Level};
@@ -71,7 +72,7 @@ async fn connect<F>(
     mut wallet: Wallet<F>,
     settings: &Settings,
     status: fn(&str),
-) -> Wallet<F>
+) -> anyhow::Result<Wallet<F>>
 where
     F: SecureWalletFile + std::fmt::Debug,
 {
@@ -85,24 +86,33 @@ where
 
     // check for connection errors
     match con {
-        Err(Error::RocksDB(_)) => {
+        Err(Error::RocksDB(e)) => {
             wallet.close();
 
-            match prompt::ask_confirm_erase_cache() {
-                Ok(true) => {
+            let msg = match e.kind() {
+                ErrorKind::InvalidArgument => {
+                    format!("You've used the wrong key to open the cache database \n\r\n\r{0: <1} delete the cache? (Alternatively specify -p (--profile) flag to open with a different cache db)", "[ALERT]")
+                },
+                ErrorKind::Corruption => {
+                       format!("The database appears to be corrupted \n\r\n\r{0: <1} delete the cache?", "[ALERT]")
+                },
+                _ => {
+                    format!("Unknown database error {:?} \n\r\n\r{1: <1} delete the cache?", e, "[ALERT]")
+                }
+            };
+
+             match prompt::ask_confirm_erase_cache(&msg)? {
+                true => {
                     if let Some(io_err) = wallet.delete_cache().err() {
                         error!("Error while deleting the cache: {io_err}");
                     }
 
                     info!("Restart the wallet to create new cache and sync with network");
                 },
-                Ok(false) => {
-
+                false => {
                     info!("Wallet will now exit, reset the cache manually");
                 },
-                Err(e) => {
-                    error!("Error while asking for confirmation error: {e}");
-                }
+
             }
 
             // Exit because we cannot proceed because of db error
@@ -113,7 +123,7 @@ where
         _ => {}
     };
 
-    wallet
+    Ok(wallet)
 }
 
 async fn exec() -> anyhow::Result<()> {
@@ -305,7 +315,7 @@ async fn exec() -> anyhow::Result<()> {
         false => status::interactive,
     };
 
-    wallet = connect(wallet, &settings, status_cb).await;
+    wallet = connect(wallet, &settings, status_cb).await?;
 
     // run command
     match cmd {

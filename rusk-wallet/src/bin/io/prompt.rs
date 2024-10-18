@@ -200,10 +200,8 @@ pub(crate) fn ask_confirm() -> anyhow::Result<bool> {
 }
 
 /// Asks the user for confirmation before deleting cache
-pub(crate) fn ask_confirm_erase_cache() -> anyhow::Result<bool> {
-    let q = requestty::Question::confirm("confirm")
-        .message("Corrupt cache detected, delete the cache? (Alternatively specify --profile to change the location)")
-        .build();
+pub(crate) fn ask_confirm_erase_cache(msg: &str) -> anyhow::Result<bool> {
+    let q = requestty::Question::confirm("confirm").message(msg).build();
     let a = requestty::prompt_one(q)?;
     Ok(a.as_bool().expect("answer to be a bool"))
 }
