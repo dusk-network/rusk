@@ -45,9 +45,8 @@ pub fn recovery_state(
 
     let state_id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
 
-    let _ = rusk_abi::new_vm(&state_dir)?;
-
-    // if the state already exists in the expected path, stop early.
+    // if the state already exists in the expected path, and it's valid, stop
+    // early.
     if state_dir.exists() && state_id_path.exists() {
         info!("{} existing state", theme.info("Found"));
 
