@@ -25,6 +25,15 @@ const initialState = {
   marketDataFetchInterval:
     Number(import.meta.env.VITE_MARKET_DATA_REFETCH_INTERVAL) ||
     DEFAULT_MARKET_FETCH_INTERVAL,
+  nodeInfo: {
+    /* eslint-disable camelcase */
+    bootstrapping_nodes: [],
+    chain_id: undefined,
+    kadcast_address: "",
+    version: "",
+    version_build: "",
+    /* eslint-enable camelcase */
+  },
   statsFetchInterval:
     Number(import.meta.env.VITE_STATS_REFETCH_INTERVAL) ||
     DEFAULT_STATS_FETCH_INTERVAL,
@@ -42,6 +51,14 @@ maxWidthMediaQuery.addEventListener("change", (event) => {
   });
 });
 
+/** @param {NodeInfo} nodeInfo */
+const setNodeInfo = (nodeInfo) => {
+  set({
+    ...get(store),
+    nodeInfo,
+  });
+};
+
 /** @param {boolean} darkMode */
 const setTheme = (darkMode) => {
   set({
@@ -52,6 +69,7 @@ const setTheme = (darkMode) => {
 
 /** @type {AppStore} */
 export default {
+  setNodeInfo,
   setTheme,
   subscribe,
 };

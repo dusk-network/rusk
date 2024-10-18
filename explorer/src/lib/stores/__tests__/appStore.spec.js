@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
+import { apiNodeInfo } from "$lib/mock-data";
 
 import { changeMediaQueryMatches } from "$lib/dusk/test-helpers";
 
@@ -41,6 +42,15 @@ describe("appStore", () => {
       hasTouchSupport: false,
       isSmallScreen: false,
       marketDataFetchInterval: Number(env.VITE_MARKET_DATA_REFETCH_INTERVAL),
+      nodeInfo: {
+        /* eslint-disable camelcase */
+        bootstrapping_nodes: [],
+        chain_id: undefined,
+        kadcast_address: "",
+        version: "",
+        version_build: "",
+        /* eslint-enable camelcase */
+      },
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
     });
@@ -118,5 +128,24 @@ describe("appStore", () => {
     changeMediaQueryMatches("(max-width: 1024px)", true);
 
     expect(get(appStore).isSmallScreen).toBe(true);
+  });
+
+  it("should expose a service method to set the node info", async () => {
+    const { appStore } = await import("..");
+
+    const initialNodeInfo = {
+      /* eslint-disable camelcase */
+      bootstrapping_nodes: [],
+      chain_id: undefined,
+      kadcast_address: "",
+      version: "",
+      version_build: "",
+      /* eslint-enable camelcase */
+    };
+
+    expect(get(appStore).nodeInfo).toStrictEqual(initialNodeInfo);
+
+    appStore.setNodeInfo(apiNodeInfo);
+    expect(get(appStore).nodeInfo).toStrictEqual(apiNodeInfo);
   });
 });
