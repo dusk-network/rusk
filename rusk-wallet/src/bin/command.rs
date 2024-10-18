@@ -54,7 +54,7 @@ pub(crate) enum Command {
     /// Check your current shielded balance
     PhoenixBalance {
         /// Profile index
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Check maximum spendable balance
@@ -65,7 +65,7 @@ pub(crate) enum Command {
     /// Check your current public balance
     MoonlightBalance {
         /// Profile index
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
     },
 
@@ -80,7 +80,7 @@ pub(crate) enum Command {
     /// Show shielded transaction history
     PhoenixHistory {
         /// Profile index for which you want to see the history
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
     },
 
@@ -88,8 +88,8 @@ pub(crate) enum Command {
     PhoenixTransfer {
         /// Profile index for the shielded address from which to send DUSK
         /// [default: 0]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        #[clap(long)]
+        profile_idx: Option<u8>,
 
         /// Shielded receiver address
         #[clap(short, long)]
@@ -112,8 +112,8 @@ pub(crate) enum Command {
     PhoenixMemo {
         /// Profile index for the shielded address from which to send DUSK
         /// [default: 0]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        #[clap(long)]
+        profile_idx: Option<u8>,
 
         /// Memo to attach to the transaction
         #[clap(short, long)]
@@ -140,7 +140,7 @@ pub(crate) enum Command {
     PhoenixStake {
         /// Profile index for the shielded address from which to stake DUSK
         /// [default: 0]
-        #[clap(short = 's', long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Amount of DUSK to stake
@@ -160,7 +160,7 @@ pub(crate) enum Command {
     PhoenixUnstake {
         /// Profile index for the shielded address from which to make the
         /// unstake request [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -176,7 +176,7 @@ pub(crate) enum Command {
     PhoenixWithdraw {
         /// Profile index for the shielded address from which to make the
         /// withdraw request [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -192,7 +192,7 @@ pub(crate) enum Command {
     PhoenixContractDeploy {
         /// Profile index for the shielded address that will pay for the gas
         /// [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Path to the WASM contract code
@@ -220,7 +220,7 @@ pub(crate) enum Command {
     PhoenixContractCall {
         /// Profile index for the shielded address that will pay for the gas
         /// [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Contract id of the contract to call
@@ -249,7 +249,7 @@ pub(crate) enum Command {
     StakeInfo {
         /// Profile index for the public account address to stake from
         /// [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Check accumulated reward
@@ -262,8 +262,8 @@ pub(crate) enum Command {
     MoonlightTransfer {
         /// Profile index for the public account address from which to send
         /// DUSK [default: 0]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        #[clap(long)]
+        profile_idx: Option<u8>,
 
         /// Public account address of the receiver
         #[clap(short, long)]
@@ -286,8 +286,8 @@ pub(crate) enum Command {
     MoonlightMemo {
         /// Profile index for the public account address from which to send
         /// DUSK [default: 0]
-        #[clap(short, long)]
-        sndr_idx: Option<u8>,
+        #[clap(long)]
+        profile_idx: Option<u8>,
 
         /// Memo to attach to the transaction
         #[clap(short, long)]
@@ -314,7 +314,7 @@ pub(crate) enum Command {
     MoonlightStake {
         /// Profile index for the public account address from which to stake
         /// DUSK [default: 0]
-        #[clap(short = 's', long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Amount of DUSK to stake
@@ -334,7 +334,7 @@ pub(crate) enum Command {
     MoonlightUnstake {
         /// Profile index for the public account address from which to make the
         /// unstake request [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -350,7 +350,7 @@ pub(crate) enum Command {
     MoonlightWithdraw {
         /// Profile index for the public account address from which to make the
         /// withdraw request [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -366,7 +366,7 @@ pub(crate) enum Command {
     MoonlightContractDeploy {
         /// Profile index for the public account address that will pay for the
         /// gas [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Path to the WASM contract code
@@ -394,7 +394,7 @@ pub(crate) enum Command {
     MoonlightContractCall {
         /// Profile index for the public account address that will pay for the
         /// gas [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// contract id of the contract to call
@@ -423,7 +423,7 @@ pub(crate) enum Command {
     /// between the shielded and public addresses of the same profile)
     PhoenixToMoonlight {
         /// Profile index for the DUSK conversion [default: 0]
-        #[clap(short = 's', long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Amount of DUSK to transfer to your public account
@@ -444,7 +444,7 @@ pub(crate) enum Command {
     CalculateContractId {
         /// Profile index for the public account that will be listed as the
         /// owner of the contract [default: 0]
-        #[clap(short = 's', long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Path to the WASM contract code
@@ -460,7 +460,7 @@ pub(crate) enum Command {
     /// between the shielded and public addresses of the same profile)
     MoonlightToPhoenix {
         /// Profile index for the DUSK conversion [default: 0]
-        #[clap(short = 's', long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Amount of DUSK to transfer to your shielded account
@@ -479,7 +479,7 @@ pub(crate) enum Command {
     /// Export BLS provisioner key-pair
     Export {
         /// Profile index for which you want the exported keys [default: 0]
-        #[clap(short, long)]
+        #[clap(long)]
         profile_idx: Option<u8>,
 
         /// Output directory for the exported keys
@@ -548,7 +548,7 @@ impl Command {
                 }
             }
             Command::PhoenixTransfer {
-                sndr_idx,
+                profile_idx,
                 rcvr,
                 amt,
                 gas_limit,
@@ -556,7 +556,7 @@ impl Command {
             } => {
                 wallet.sync().await?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
+                let sender_idx = profile_idx.unwrap_or_default();
 
                 let receiver = rcvr.shielded_address()?;
 
@@ -566,7 +566,7 @@ impl Command {
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::PhoenixMemo {
-                sndr_idx,
+                profile_idx,
                 memo,
                 rcvr,
                 amt,
@@ -575,7 +575,7 @@ impl Command {
             } => {
                 wallet.sync().await?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
+                let sender_idx = profile_idx.unwrap_or_default();
 
                 let receiver = rcvr.shielded_address()?;
 
@@ -591,14 +591,14 @@ impl Command {
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::MoonlightTransfer {
-                sndr_idx,
+                profile_idx,
                 rcvr,
                 amt,
                 gas_limit,
                 gas_price,
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
+                let sender_idx = profile_idx.unwrap_or_default();
 
                 let receiver = rcvr.public_address()?;
 
@@ -609,7 +609,7 @@ impl Command {
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::MoonlightMemo {
-                sndr_idx,
+                profile_idx,
                 memo,
                 rcvr,
                 amt,
@@ -617,7 +617,7 @@ impl Command {
                 gas_price,
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = sndr_idx.unwrap_or_default();
+                let sender_idx = profile_idx.unwrap_or_default();
 
                 let receiver = rcvr.public_address()?;
 

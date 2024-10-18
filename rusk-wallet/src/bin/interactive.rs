@@ -242,14 +242,14 @@ fn transaction_op_menu_moonlight(
 
     let x = match val {
         Transfer => ProfileOp::Run(Box::new(Command::MoonlightTransfer {
-            sndr_idx: Some(profile_idx),
+            profile_idx: Some(profile_idx),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", moonlight_bal)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Memo => ProfileOp::Run(Box::new(Command::MoonlightMemo {
-            sndr_idx: Some(profile_idx),
+            profile_idx: Some(profile_idx),
             memo: prompt::request_str("memo")?,
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
@@ -333,14 +333,14 @@ fn transaction_op_menu_phoenix(
 
     let x = match val {
         Transfer => ProfileOp::Run(Box::new(Command::PhoenixTransfer {
-            sndr_idx: Some(profile_idx),
+            profile_idx: Some(profile_idx),
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_token_amt("transfer", phoenix_balance)?,
             gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
             gas_price: prompt::request_gas_price()?,
         })),
         Memo => ProfileOp::Run(Box::new(Command::PhoenixMemo {
-            sndr_idx: Some(profile_idx),
+            profile_idx: Some(profile_idx),
             memo: prompt::request_str("memo")?,
             rcvr: prompt::request_rcvr_addr("recipient")?,
             amt: prompt::request_optional_token_amt(
@@ -688,14 +688,14 @@ fn menu_wallet(wallet_found: Option<WalletPath>) -> anyhow::Result<MainMenu> {
 fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
     match cmd {
         Command::PhoenixTransfer {
-            sndr_idx,
+            profile_idx,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let sndr_idx = check_index(sndr_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[sndr_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.shielded_address_preview());
             println!("   > Recipient = {}", rcvr.preview());
@@ -704,14 +704,14 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             prompt::ask_confirm()
         }
         Command::MoonlightTransfer {
-            sndr_idx,
+            profile_idx,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let sndr_idx = check_index(sndr_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[sndr_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.public_account_preview());
             println!("   > Recipient = {}", rcvr.preview());
@@ -726,9 +726,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.shielded_address_preview());
             println!("   > Stake to {}", profile.staking_account_preview());
@@ -742,9 +741,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.public_account_preview());
             println!("   > Stake to {}", profile.staking_account_preview());
@@ -758,9 +756,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.shielded_address_preview());
             println!("   > Unstake from {}", profile.staking_account_preview());
@@ -776,9 +773,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.public_account_preview());
             println!("   > Unstake from {}", profile.staking_account_preview());
@@ -795,9 +791,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.shielded_address_preview());
             println!(
@@ -816,9 +811,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.public_account_preview());
             println!(
@@ -834,15 +828,15 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             prompt::ask_confirm()
         }
         Command::PhoenixMemo {
-            sndr_idx,
+            profile_idx,
             memo,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let sndr_idx = check_index(sndr_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[sndr_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.shielded_address_preview());
             println!("   > Recipient = {}", rcvr.preview());
@@ -852,15 +846,15 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             prompt::ask_confirm()
         }
         Command::MoonlightMemo {
-            sndr_idx,
+            profile_idx,
             memo,
             rcvr,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let sndr_idx = check_index(sndr_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[sndr_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.public_account_preview());
             println!("   > Recipient = {}", rcvr.preview());
@@ -878,9 +872,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.shielded_address_preview());
@@ -898,9 +891,8 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let profile_idx =
-                check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[profile_idx];
+            let index = check_index(profile_idx, wallet.profiles().len())?;
+            let profile = &wallet.profiles()[index];
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", profile.public_account_preview());
