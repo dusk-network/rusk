@@ -112,6 +112,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
     }
 
+    pub fn is_out_of_sync(&self) -> bool {
+        matches!(self.curr, State::OutOfSync(_))
+    }
+
     pub async fn on_failed_consensus(&mut self) {
         self.acc.write().await.restart_consensus().await;
     }
