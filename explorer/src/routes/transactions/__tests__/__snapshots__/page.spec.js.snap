@@ -1,9 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Transactions page > should render the Transactions page with the mobile layout 1`] = `
-<section
-  id="transactions"
->
+<section>
   <div
     class="dusk-card data-card"
   >
@@ -2506,9 +2504,7 @@ exports[`Transactions page > should render the Transactions page with the mobile
 `;
 
 exports[`Transactions page > should render the Transactions page, start polling for blocks and stop the polling when unmounted 1`] = `
-<section
-  id="transactions"
->
+<section>
   <div
     class="dusk-card data-card"
   >
@@ -2552,9 +2548,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
 `;
 
 exports[`Transactions page > should render the Transactions page, start polling for blocks and stop the polling when unmounted 2`] = `
-<section
-  id="transactions"
->
+<section>
   <div
     class="dusk-card data-card"
   >

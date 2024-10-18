@@ -7,7 +7,7 @@
 
   import "./DataCard.css";
 
-  /** @type {Block[] | Transaction[] | Block | Transaction | null}*/
+  /** @type {Block[] | Transaction[] | HostProvisioner[] | Block | Transaction | null}*/
   export let data;
 
   /** @type {Error | null}*/

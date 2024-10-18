@@ -83,23 +83,6 @@ const gqlGet = (queryInfo) =>
     .then((res) => res.json());
 
 /**
- * @param {"alive_nodes" | "provisioners"} topic
- * @param {any} data
- */
-const hostGet = (topic, data) =>
-  fetch(makeNodeUrl("/2/rusk"), {
-    body: JSON.stringify({ data, topic }),
-    headers: {
-      Accept: "application/json",
-      "Accept-Charset": "utf-8",
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  })
-    .then(failureToRejection)
-    .then((res) => res.json());
-
-/**
  * @param {string} endpoint
  * @param {Record<string, any>} [params]
  * @returns {Promise<any>}
@@ -129,9 +112,6 @@ const nodePost = (endpoint) =>
   })
     .then(failureToRejection)
     .then((res) => res.json());
-
-/** @type {() => Promise<HostProvisioner[]>} */
-const getProvisioners = () => hostGet("provisioners", "");
 
 /** @type {() => Promise<number>} */
 const getLastHeight = () =>
@@ -237,12 +217,17 @@ const duskAPI = {
     );
   },
 
+  /** @returns {Promise<HostProvisioner[]>} */
+  getProvisioners() {
+    return nodePost("/on/node/provisioners");
+  },
+
   /**
    * @returns {Promise<Stats>}
    */
   getStats() {
     return Promise.all([
-      getProvisioners(),
+      duskAPI.getProvisioners(),
       getLastHeight(),
       getLast100BlocksTxs(),
     ]).then(apply(calculateStats));

@@ -17,7 +17,7 @@
   $: ({ isSmallScreen, transactionsListEntries } = $appStore);
 </script>
 
-<section id="transactions">
+<section>
   <TransactionsCard
     on:retry={() => pollingDataStore.start(transactionsListEntries)}
     txns={data}

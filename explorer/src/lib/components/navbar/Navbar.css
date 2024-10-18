@@ -86,7 +86,7 @@
     background-color: transparent;
     flex-direction: row;
     flex-wrap: nowrap;
-    column-gap: 4.375rem;
+    column-gap: 2.5rem;
   }
 
   .dusk-navbar__logo img {
@@ -131,6 +131,12 @@
     position: absolute;
     left: 0;
     top: 5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .dusk-navbar {
+    column-gap: 4.375rem;
   }
 }
 
