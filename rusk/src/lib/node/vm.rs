@@ -312,6 +312,6 @@ impl Rusk {
 
         let value = stake_amount.value;
 
-        Stake::new(value, stake.reward)
+        Stake::new(value, stake_amount.eligibility)
     }
 }
