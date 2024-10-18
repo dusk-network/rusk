@@ -119,7 +119,7 @@ impl Transaction {
         inputs: Vec<(Note, NoteOpening)>,
         root: BlsScalar,
         transfer_value: u64,
-        obfuscated_transaction: bool,
+        obfuscate_transfer_note: bool,
         deposit: u64,
         gas_limit: u64,
         gas_price: u64,
@@ -167,7 +167,7 @@ impl Transaction {
         }
 
         // Generate output notes:
-        let transfer_value_blinder = if obfuscated_transaction {
+        let transfer_value_blinder = if obfuscate_transfer_note {
             JubJubScalar::random(&mut *rng)
         } else {
             JubJubScalar::zero()
@@ -180,7 +180,7 @@ impl Transaction {
             JubJubScalar::random(&mut *rng),
             JubJubScalar::random(&mut *rng),
         ];
-        let transfer_note = if obfuscated_transaction {
+        let transfer_note = if obfuscate_transfer_note {
             Note::obfuscated(
                 rng,
                 &sender_pk,
