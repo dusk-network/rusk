@@ -28,6 +28,7 @@
 @import url("./app-components/marks.css");
 @import url("./app-components/notice.css");
 @import url("./app-components/horizontal-rules.css");
+@import url("./app-components/sync-bar.css");
 
 @font-face {
   font-family: "Soehne";

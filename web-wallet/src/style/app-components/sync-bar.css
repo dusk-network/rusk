@@ -1,0 +1,7 @@
+.sync-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--small-gap);
+  width: 100%;
+}
