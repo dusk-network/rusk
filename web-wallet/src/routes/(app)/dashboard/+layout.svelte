@@ -92,22 +92,24 @@
           size="large"
         />
         <div class="footer__network-message">
-          {#if syncStatusLabel}
+          {#if syncStatusLabel && !syncStatus.isInProgress}
             <span>{syncStatusLabel}</span>
           {/if}
           {#if syncStatus.isInProgress}
-            {#if !syncStatus.progress}
-              <span>Syncing</span>
-            {:else}
-              <span>
-                Syncing: <b
-                  >{syncStatus.current.toLocaleString()}/{syncStatus.last.toLocaleString()}</b
-                >
-              </span>
-              <ProgressBar
-                className="footer__sync-status-progress-bar"
-                currentPercentage={syncStatus.progress * 100}
-              />
+            <span>
+              {syncStatusLabel ? `${syncStatusLabel} -` : ""}
+              <b
+                >Syncing... {syncStatus.progress
+                  ? `${syncStatus.progress * 100}% -`
+                  : ""}</b
+              >
+            </span>
+            {#if syncStatus.progress}
+              <div class="sync-bar">
+                <span>{syncStatus.current.toLocaleString()}</span>
+                <ProgressBar currentPercentage={syncStatus.progress * 100} />
+                <span>{syncStatus.last.toLocaleString()}</span>
+              </div>
             {/if}
           {/if}
         </div>
@@ -213,10 +215,6 @@
     :global(.footer__network-status-icon--warning) {
       color: var(--on-warning-color);
       background: var(--warning-color);
-    }
-
-    :global(.footer__sync-status-progress-bar) {
-      min-width: 100%;
     }
   }
 </style>

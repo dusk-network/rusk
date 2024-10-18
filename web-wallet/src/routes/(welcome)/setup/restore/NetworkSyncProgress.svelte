@@ -25,15 +25,21 @@
 </script>
 
 <IconHeadingCard icons={[mdiCubeOutline]} heading="Network Sync">
+  <div class="sync-bar">
+    <span>{syncStatus.current.toLocaleString()}</span><ProgressBar
+      currentPercentage={syncStatus.progress * 100}
+    /><span>{syncStatus.last.toLocaleString()}</span>
+  </div>
+
   {#if !syncStarted || (syncStatus.isInProgress && !syncStatus.progress)}
     <span>Syncing...</span>
   {:else if syncStatus.isInProgress}
-    <span>
-      Syncing: <b
-        >{syncStatus.current.toLocaleString()}/{syncStatus.last.toLocaleString()}</b
-      >
-    </span>
-    <ProgressBar currentPercentage={syncStatus.progress * 100} />
+    <span>Syncing... <b>{syncStatus.progress * 100}%</b></span>
+    <div class="sync-bar">
+      <span>{syncStatus.current.toLocaleString()}</span><ProgressBar
+        currentPercentage={syncStatus.progress * 100}
+      /><span>{syncStatus.last.toLocaleString()}</span>
+    </div>
   {:else if syncStatus.error}
     <ErrorAlert error={syncStatus.error} summary="Sync failed" />
   {:else}
