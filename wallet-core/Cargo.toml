@@ -25,3 +25,4 @@ dlmalloc = { workspace = true, features = ["global"] }
 rand = { workspace = true, features = ["std_rng"] }
 
 [features]
+debug = []
