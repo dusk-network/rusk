@@ -340,7 +340,7 @@ impl DataBrokerSrv {
     /// items that the node state is missing, puts these items in a GetResource
     /// wire message, and sends it back to request the items in full.
     ///
-    /// An item is a block or a transaction.
+    /// An item is a block, a transaction, or a ValidationResult.
     async fn handle_inv<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
@@ -390,24 +390,18 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::HashAndIteration(
-                            prev_block_hash,
-                            iteration,
-                        ) = &i.param
-                        {
+                        if let InvParam::Iteration(ch) = &i.param {
                             if Candidate::fetch_candidate_block_by_iteration(
-                                &t,
-                                *prev_block_hash,
-                                *iteration,
+                                &t, ch,
                             )?
                             .is_none()
                             {
-                                inv.add_candidate_from_iteration(
-                                    *prev_block_hash,
-                                    *iteration,
-                                );
+                                inv.add_candidate_from_iteration(*ch);
                             }
                         }
+                    }
+                    InvType::ValidationResult => {
+                        //TODO: try fetch and ask if is missing
                     }
                 }
 
@@ -495,15 +489,9 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::HashAndIteration(
-                            prev_block_hash,
-                            iter,
-                        ) = &i.param
-                        {
+                        if let InvParam::Iteration(ch) = &i.param {
                             Candidate::fetch_candidate_block_by_iteration(
-                                &t,
-                                *prev_block_hash,
-                                *iter,
+                                &t, ch,
                             )
                             .ok()
                             .flatten()
@@ -513,6 +501,10 @@ impl DataBrokerSrv {
                         } else {
                             None
                         }
+                    }
+                    InvType::ValidationResult => {
+                        //TODO: fetch and return ValidationQuorum
+                        None
                     }
                 })
                 .take(max_entries)

@@ -12,6 +12,7 @@ pub mod rocksdb;
 use anyhow::Result;
 
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
+use node_data::message::ConsensusHeader;
 
 use serde::{Deserialize, Serialize};
 
@@ -119,8 +120,7 @@ pub trait Candidate {
     /// Fetches a candidate block by lookup key (prev_block_hash, iteration).
     fn fetch_candidate_block_by_iteration(
         &self,
-        prev_block_hash: [u8; 32],
-        iteration: u8,
+        ch: &ConsensusHeader,
     ) -> Result<Option<ledger::Block>>;
 
     fn clear_candidates(&self) -> Result<()>;

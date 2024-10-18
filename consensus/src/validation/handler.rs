@@ -12,15 +12,19 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, StepVotes};
+use node_data::ledger::{to_str, Block, StepVotes};
 use node_data::StepName;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::user::committee::Committee;
 
 use crate::iteration_ctx::RoundCommittees;
-use node_data::message::payload::{QuorumType, Validation, Vote};
-use node_data::message::{payload, Message, Payload, StepMessage};
+use node_data::message::payload::{
+    GetResource, Inv, QuorumType, Validation, Vote,
+};
+use node_data::message::{
+    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+};
 
 fn final_result(
     sv: StepVotes,
@@ -238,16 +242,31 @@ impl MsgHandler for ValidationHandler {
     /// Handles of an event of step execution timeout
     fn handle_timeout(
         &self,
-        _ru: &RoundUpdate,
+        ru: &RoundUpdate,
         curr_iteration: u8,
     ) -> Option<Message> {
         if is_emergency_iter(curr_iteration) {
-            // While we are in Emergency mode but still the candidate is missing
-            // then we request it
+            // In Emergency Mode we request the ValidationResult from our peers
+            // in case we arrived late and missed the votes
 
-            // TODO: Request ValidationResult by prev_block_hash, iteration
-            // lockup key TODO: Should we also request the candidate
-            // block, if it's still missing?
+            let prev_block_hash = ru.hash();
+            let round = ru.round;
+
+            debug!(
+                event = "Request ValidationResult",
+                round,
+                iteration = curr_iteration,
+                prev_block = to_str(&prev_block_hash)
+            );
+
+            let mut inv = Inv::new(1);
+            inv.add_validation_result(ConsensusHeader {
+                prev_block_hash,
+                round,
+                iteration: curr_iteration,
+            });
+            let msg = GetResource::new(inv, None, u64::MAX, 0);
+            return Some(msg.into());
         }
 
         None
