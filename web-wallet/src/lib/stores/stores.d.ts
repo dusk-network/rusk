@@ -73,8 +73,8 @@ type WalletStoreContent = {
   initialized: boolean;
   profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
   syncStatus: {
+    from: bigint;
     isInProgress: boolean;
-    current: bigint;
     last: bigint;
     error: Error | null;
     progress: number;

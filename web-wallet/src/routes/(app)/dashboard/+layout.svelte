@@ -11,9 +11,14 @@
     mdiRestore,
     mdiTimerSand,
   } from "@mdi/js";
-  import { Button, Icon, ProgressBar } from "$lib/dusk/components";
+  import { Button, Icon } from "$lib/dusk/components";
   import { settingsStore, walletStore } from "$lib/stores";
-  import { AddressPicker, AppAnchorButton, Balance } from "$lib/components";
+  import {
+    AddressPicker,
+    AppAnchorButton,
+    Balance,
+    SyncBar,
+  } from "$lib/components";
   import { luxToDusk } from "$lib/dusk/currency";
 
   /** @type {import('./$types').LayoutData} */
@@ -42,7 +47,7 @@
   $: if (syncStatus.isInProgress) {
     iconVariant = "warning";
     networkStatusIconPath = mdiTimerSand;
-    syncStatusLabel = "";
+    syncStatusLabel = `Dusk ${network}`;
   } else if (syncStatus.error) {
     iconVariant = "error";
     networkStatusIconPath = mdiAlertOutline;
@@ -92,21 +97,23 @@
           size="large"
         />
         <div class="footer__network-message">
-          {#if syncStatusLabel}
+          {#if syncStatusLabel && !syncStatus.isInProgress}
             <span>{syncStatusLabel}</span>
           {/if}
           {#if syncStatus.isInProgress}
-            {#if !syncStatus.progress}
-              <span>Syncing</span>
-            {:else}
-              <span>
-                Syncing: <b
-                  >{syncStatus.current.toLocaleString()}/{syncStatus.last.toLocaleString()}</b
-                >
-              </span>
-              <ProgressBar
-                className="footer__sync-status-progress-bar"
-                currentPercentage={syncStatus.progress * 100}
+            <span>
+              {syncStatusLabel} –
+              <b
+                >Syncing... {syncStatus.progress
+                  ? `${syncStatus.progress * 100}%`
+                  : ""}</b
+              >
+            </span>
+            {#if syncStatus.progress}
+              <SyncBar
+                from={syncStatus.from}
+                last={syncStatus.last}
+                progress={syncStatus.progress}
               />
             {/if}
           {/if}
@@ -213,10 +220,6 @@
     :global(.footer__network-status-icon--warning) {
       color: var(--on-warning-color);
       background: var(--warning-color);
-    }
-
-    :global(.footer__sync-status-progress-bar) {
-      min-width: 100%;
     }
   }
 </style>

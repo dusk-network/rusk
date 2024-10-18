@@ -63,8 +63,8 @@ describe("Wallet store", async () => {
     initialized: false,
     profiles: [],
     syncStatus: {
-      current: 0n,
       error: null,
+      from: 0n,
       isInProgress: false,
       last: 0n,
       progress: 0,
@@ -103,8 +103,8 @@ describe("Wallet store", async () => {
         initialized: true,
         profiles: [defaultProfile],
         syncStatus: {
-          current: 0n,
           error: null,
+          from: 0n,
           isInProgress: true,
           last: 0n,
           progress: 0,

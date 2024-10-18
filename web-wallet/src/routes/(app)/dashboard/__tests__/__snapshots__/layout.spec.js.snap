@@ -3,10 +3,10 @@
 exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 <div>
   <section
-    class="dashboard svelte-1i7pgqm"
+    class="dashboard svelte-krh9k4"
   >
     <div
-      class="dashboard-content svelte-1i7pgqm"
+      class="dashboard-content svelte-krh9k4"
     >
       <h2
         class="sr-only"
@@ -154,13 +154,13 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
     </div>
      
     <footer
-      class="footer svelte-1i7pgqm"
+      class="footer svelte-krh9k4"
     >
       <nav
-        class="footer__navigation svelte-1i7pgqm"
+        class="footer__navigation svelte-krh9k4"
       >
         <div
-          class="footer__network-status svelte-1i7pgqm"
+          class="footer__network-status svelte-krh9k4"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
@@ -177,7 +177,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
           
            
           <div
-            class="footer__network-message svelte-1i7pgqm"
+            class="footer__network-message svelte-krh9k4"
           >
             <span>
               Dusk testnet
@@ -187,7 +187,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         </div>
          
         <div
-          class="footer__actions svelte-1i7pgqm"
+          class="footer__actions svelte-krh9k4"
         >
            
           <a
@@ -221,10 +221,10 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
 
 exports[`Dashboard Layout > should render the dashboard layout and show a throbber while balance is loading 1`] = `
 <section
-  class="dashboard svelte-1i7pgqm"
+  class="dashboard svelte-krh9k4"
 >
   <div
-    class="dashboard-content svelte-1i7pgqm"
+    class="dashboard-content svelte-krh9k4"
   >
     <h2
       class="sr-only"
@@ -372,13 +372,13 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
   </div>
    
   <footer
-    class="footer svelte-1i7pgqm"
+    class="footer svelte-krh9k4"
   >
     <nav
-      class="footer__navigation svelte-1i7pgqm"
+      class="footer__navigation svelte-krh9k4"
     >
       <div
-        class="footer__network-status svelte-1i7pgqm"
+        class="footer__network-status svelte-krh9k4"
       >
         <svg
           class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--success"
@@ -395,7 +395,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
         
          
         <div
-          class="footer__network-message svelte-1i7pgqm"
+          class="footer__network-message svelte-krh9k4"
         >
           <span>
             Dusk testnet
@@ -405,7 +405,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
       </div>
        
       <div
-        class="footer__actions svelte-1i7pgqm"
+        class="footer__actions svelte-krh9k4"
       >
          
         <a
@@ -439,10 +439,10 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
 exports[`Dashboard Layout > should render the dashboard layout in the error state 1`] = `
 <div>
   <section
-    class="dashboard svelte-1i7pgqm"
+    class="dashboard svelte-krh9k4"
   >
     <div
-      class="dashboard-content svelte-1i7pgqm"
+      class="dashboard-content svelte-krh9k4"
     >
       <h2
         class="sr-only"
@@ -590,13 +590,13 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
     </div>
      
     <footer
-      class="footer svelte-1i7pgqm"
+      class="footer svelte-krh9k4"
     >
       <nav
-        class="footer__navigation svelte-1i7pgqm"
+        class="footer__navigation svelte-krh9k4"
       >
         <div
-          class="footer__network-status svelte-1i7pgqm"
+          class="footer__network-status svelte-krh9k4"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--error"
@@ -614,7 +614,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
           
            
           <div
-            class="footer__network-message svelte-1i7pgqm"
+            class="footer__network-message svelte-krh9k4"
           >
             <span>
               Dusk testnet - Sync Failed
@@ -624,7 +624,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         </div>
          
         <div
-          class="footer__actions svelte-1i7pgqm"
+          class="footer__actions svelte-krh9k4"
         >
           <button
             aria-label="Retry synchronization"
@@ -678,10 +678,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
 
 exports[`Dashboard Layout > should render the dashboard layout in the sync state when no progress is reported 1`] = `
 <section
-  class="dashboard svelte-1i7pgqm"
+  class="dashboard svelte-krh9k4"
 >
   <div
-    class="dashboard-content svelte-1i7pgqm"
+    class="dashboard-content svelte-krh9k4"
   >
     <h2
       class="sr-only"
@@ -829,13 +829,13 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
   </div>
    
   <footer
-    class="footer svelte-1i7pgqm"
+    class="footer svelte-krh9k4"
   >
     <nav
-      class="footer__navigation svelte-1i7pgqm"
+      class="footer__navigation svelte-krh9k4"
     >
       <div
-        class="footer__network-status svelte-1i7pgqm"
+        class="footer__network-status svelte-krh9k4"
       >
         <svg
           class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
@@ -852,18 +852,25 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         
          
         <div
-          class="footer__network-message svelte-1i7pgqm"
+          class="footer__network-message svelte-krh9k4"
         >
            
           <span>
-            Syncing
+            Dusk testnet
+             –
+              
+            <b>
+              Syncing... 
+              
+            </b>
           </span>
+           
           
         </div>
       </div>
        
       <div
-        class="footer__actions svelte-1i7pgqm"
+        class="footer__actions svelte-krh9k4"
       >
          
         <a
@@ -897,10 +904,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
 exports[`Dashboard Layout > should render the dashboard layout in the sync state with a progress indicator 1`] = `
 <div>
   <section
-    class="dashboard svelte-1i7pgqm"
+    class="dashboard svelte-krh9k4"
   >
     <div
-      class="dashboard-content svelte-1i7pgqm"
+      class="dashboard-content svelte-krh9k4"
     >
       <h2
         class="sr-only"
@@ -1048,13 +1055,13 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
     </div>
      
     <footer
-      class="footer svelte-1i7pgqm"
+      class="footer svelte-krh9k4"
     >
       <nav
-        class="footer__navigation svelte-1i7pgqm"
+        class="footer__navigation svelte-krh9k4"
       >
         <div
-          class="footer__network-status svelte-1i7pgqm"
+          class="footer__network-status svelte-krh9k4"
         >
           <svg
             class="dusk-icon dusk-icon--size--large footer__network-status-icon footer__network-status-icon--warning"
@@ -1071,33 +1078,44 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           
            
           <div
-            class="footer__network-message svelte-1i7pgqm"
+            class="footer__network-message svelte-krh9k4"
           >
              
             <span>
-              Syncing: 
+              Dusk testnet
+               –
+              
               <b>
-                100
-                /
-                200
+                Syncing... 
+                50%
               </b>
             </span>
              
             <div
-              class="dusk-progress-bar footer__sync-status-progress-bar"
-              role="progressbar"
+              class="sync-bar svelte-zpfqie"
             >
+              <span>
+                100
+              </span>
               <div
-                class="dusk-progress-bar__filler"
-                style="width: 0%"
-              />
+                class="dusk-progress-bar"
+                role="progressbar"
+              >
+                <div
+                  class="dusk-progress-bar__filler"
+                  style="width: 0%"
+                />
+              </div>
+              <span>
+                200
+              </span>
             </div>
             
           </div>
         </div>
          
         <div
-          class="footer__actions svelte-1i7pgqm"
+          class="footer__actions svelte-krh9k4"
         >
            
           <a

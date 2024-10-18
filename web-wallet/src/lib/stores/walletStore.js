@@ -33,8 +33,8 @@ const initialState = {
   initialized: false,
   profiles: [],
   syncStatus: {
-    current: 0n,
     error: null,
+    from: 0n,
     isInProgress: false,
     last: 0n,
     progress: 0,
@@ -151,8 +151,8 @@ async function sync(fromBlock) {
     set({
       ...store,
       syncStatus: {
-        current: 0n,
         error: null,
+        from: 0n,
         isInProgress: true,
         last: 0n,
         progress: 0,
@@ -165,14 +165,23 @@ async function sync(fromBlock) {
       signal: syncController.signal,
     });
 
+    const walletCacheSyncInfo = await walletCache.getSyncInfo();
+
     /*
      * Unless the user wants to sync from a specific block height,
      * we restart from the last stored bookmark.
      */
-    const from =
-      fromBlock ?? Bookmark.from((await walletCache.getSyncInfo()).bookmark);
+    const from = fromBlock ?? Bookmark.from(walletCacheSyncInfo.bookmark);
 
     let lastBlockHeight = 0n;
+
+    update((currentStore) => ({
+      ...currentStore,
+      syncStatus: {
+        ...currentStore.syncStatus,
+        from: fromBlock ?? walletCacheSyncInfo.blockHeight,
+      },
+    }));
 
     // @ts-ignore
     addressSyncer.addEventListener("synciteration", ({ detail }) => {
@@ -180,7 +189,6 @@ async function sync(fromBlock) {
         ...currentStore,
         syncStatus: {
           ...currentStore.syncStatus,
-          current: detail.blocks.current,
           last: detail.blocks.last,
           progress: detail.progress,
         },
@@ -275,8 +283,8 @@ async function sync(fromBlock) {
         update((currentStore) => ({
           ...currentStore,
           syncStatus: {
-            current: 0n,
             error,
+            from: 0n,
             isInProgress: false,
             last: 0n,
             progress: 0,
