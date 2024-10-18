@@ -19,7 +19,7 @@ use std::io::Write;
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
-use tracing::{warn, Level};
+use tracing::{error, warn, Level};
 
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
@@ -157,6 +157,24 @@ async fn exec() -> anyhow::Result<()> {
             tracing::subscriber::set_global_default(subscriber)?;
         }
     };
+
+    if !settings.check_state_con().await? {
+        error!(
+            "Error while checking the state endpoint status {}",
+            settings.state,
+        );
+
+        return Ok(());
+    }
+
+    if !settings.check_prover_con().await? {
+        error!(
+            "Error while checking the prover endpoint status {}",
+            settings.prover,
+        );
+
+        return Ok(());
+    }
 
     let is_headless = cmd.is_some();
 

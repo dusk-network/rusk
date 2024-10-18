@@ -160,7 +160,7 @@ pub(crate) enum Command {
     PhoenixUnstake {
         /// Profile index for the shielded address from which to make the
         /// unstake request [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -176,7 +176,7 @@ pub(crate) enum Command {
     PhoenixWithdraw {
         /// Profile index for the shielded address from which to make the
         /// withdraw request [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 'a', long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -192,7 +192,7 @@ pub(crate) enum Command {
     PhoenixContractDeploy {
         /// Profile index for the shielded address that will pay for the gas
         /// [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// Path to the WASM contract code
@@ -220,7 +220,7 @@ pub(crate) enum Command {
     PhoenixContractCall {
         /// Profile index for the shielded address that will pay for the gas
         /// [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// Contract id of the contract to call
@@ -334,7 +334,7 @@ pub(crate) enum Command {
     MoonlightUnstake {
         /// Profile index for the public account address from which to make the
         /// unstake request [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -350,7 +350,7 @@ pub(crate) enum Command {
     MoonlightWithdraw {
         /// Profile index for the public account address from which to make the
         /// withdraw request [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// Max amount of gas for this transaction
@@ -366,7 +366,7 @@ pub(crate) enum Command {
     MoonlightContractDeploy {
         /// Profile index for the public account address that will pay for the
         /// gas [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// Path to the WASM contract code
@@ -394,7 +394,7 @@ pub(crate) enum Command {
     MoonlightContractCall {
         /// Profile index for the public account address that will pay for the
         /// gas [default: 0]
-        #[clap(short, long)]
+        #[clap(short = 's', long)]
         profile_idx: Option<u8>,
 
         /// contract id of the contract to call
