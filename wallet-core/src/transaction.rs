@@ -59,7 +59,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     inputs: Vec<(Note, NoteOpening)>,
     root: BlsScalar,
     transfer_value: u64,
-    obfuscated_transaction: bool,
+    is_transfer: bool,
     deposit: u64,
     gas_limit: u64,
     gas_price: u64,
@@ -67,6 +67,14 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
     data: Option<impl Into<TransactionData>>,
     prover: &P,
 ) -> Result<Transaction, Error> {
+    // always create a transparent transfer-note (the change-note will always be
+    // obfuscated) if the transfer-value is 0 (the transfer-contract doesn't
+    // append transparent notes with value 0 to the tree)
+    let mut obfuscate_transfer_note = is_transfer;
+    if transfer_value == 0 {
+        obfuscate_transfer_note = false;
+    }
+
     Ok(PhoenixTransaction::new::<R, P>(
         rng,
         sender_sk,
@@ -75,7 +83,7 @@ pub fn phoenix<R: RngCore + CryptoRng, P: Prove>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        obfuscate_transfer_note,
         deposit,
         gas_limit,
         gas_price,
@@ -156,7 +164,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = false;
+    let is_transfer = false;
     let deposit = stake_value;
 
     let stake = Stake::new(stake_sk, stake_value, stake_nonce, chain_id);
@@ -171,7 +179,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        is_transfer,
         deposit,
         gas_limit,
         gas_price,
@@ -250,7 +258,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = false;
+    let is_transfer = false;
     let deposit = 0;
 
     // split the input notes and openings from the nullifiers
@@ -281,7 +289,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        is_transfer,
         deposit,
         gas_limit,
         gas_price,
@@ -364,7 +372,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = false;
+    let is_transfer = false;
     let deposit = 0;
 
     // split the input notes and openings from the nullifiers
@@ -395,7 +403,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        is_transfer,
         deposit,
         gas_limit,
         gas_price,
@@ -484,9 +492,10 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = true;
-    let deposit = convert_value; // a convertion is a simultaneous deposit to *and* withdrawal from the
-                                 // transfer contract
+    let is_transfer = false;
+    // a conversion is a simultaneous deposit to *and* withdrawal from the
+    // transfer contract
+    let deposit = convert_value;
 
     // split the input notes and openings from the nullifiers
     let mut nullifiers = Vec::with_capacity(inputs.len());
@@ -515,7 +524,7 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        is_transfer,
         deposit,
         gas_limit,
         gas_price,
@@ -604,7 +613,7 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
     let phoenix_refund_pk = PhoenixPublicKey::from(phoenix_sender_sk);
 
     let transfer_value = 0;
-    let obfuscated_transaction = true;
+    let is_transfer = false;
     let deposit = 0;
 
     // split the input notes and openings from the nullifiers
@@ -636,7 +645,7 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        is_transfer,
         deposit,
         gas_limit,
         gas_price,
