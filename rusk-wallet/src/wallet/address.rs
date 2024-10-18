@@ -11,6 +11,7 @@ use super::*;
 use crate::Error;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
+use serde_json::json;
 
 /// Address to perform a transaction with.
 #[derive(Clone, Eq)]
@@ -224,6 +225,18 @@ impl Profile {
         }
 
         index_string
+    }
+
+    /// format the profile into a json value
+    pub fn to_json(&self) -> serde_json::Value {
+        json!({
+            "shielded": String::from(&Address::Shielded {
+                addr: self.shielded_addr
+            }),
+            "public": String::from(&Address::Public {
+                addr: self.public_addr
+            }),
+        })
     }
 }
 
