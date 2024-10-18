@@ -34,6 +34,13 @@ class NetworkMock extends Network {
   async disconnect() {
     this.#connected = false;
   }
+
+  async execute() {
+    return {
+      hash: "821a88f10f823b74fa3489c5acc6e31b7e2e96d7adff47137f20f4af61612415",
+      nullifiers: [],
+    };
+  }
 }
 
 export default NetworkMock;

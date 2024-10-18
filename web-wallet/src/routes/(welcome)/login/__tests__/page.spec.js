@@ -45,7 +45,16 @@ describe("Login", async () => {
 
   const getErrorElement = () => document.querySelector(".login__error");
   const gotoSpy = vi.spyOn(navigation, "goto");
-  const initSpy = vi.spyOn(walletStore, "init");
+
+  /**
+   * Sometimes a "DatabaseClosedError: Database has been closed" is
+   * thrown when running this test (never happened running it in isolation).
+   *
+   * As I can't pinpoint what's causing it (all connections are opened before
+   * db operations), I added the mocked implementation as here we don't care
+   * about running `init` for real.
+   */
+  const initSpy = vi.spyOn(walletStore, "init").mockResolvedValue(void 0);
 
   afterEach(async () => {
     cleanup();

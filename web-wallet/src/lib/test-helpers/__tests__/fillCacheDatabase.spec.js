@@ -32,7 +32,7 @@ const toDbNote = (entry) => ({
 
 describe("fillCacheDatabase", () => {
   beforeEach(async () => {
-    await getCacheDatabase().delete();
+    await getCacheDatabase().delete({ disableAutoOpen: false });
   });
 
   it("should fill the database tables with mock data", async () => {

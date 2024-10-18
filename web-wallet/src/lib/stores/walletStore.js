@@ -1,6 +1,11 @@
 import { get, writable } from "svelte/store";
 import { setKey } from "lamb";
-import { Bookkeeper, Bookmark } from "$lib/vendor/w3sper.js/src/mod";
+import {
+  Bookkeeper,
+  Bookmark,
+  ProfileGenerator,
+} from "$lib/vendor/w3sper.js/src/mod";
+import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 
 import walletCache from "$lib/wallet-cache";
 
@@ -40,8 +45,32 @@ const { set, subscribe, update } = walletStore;
 
 const bookkeeper = new Bookkeeper(walletCache.treasury);
 
+/** @type {<T>(action: (...args: any[]) => Promise<T>) => Promise<T>} */
+const effectfulAction = (action) => sync().then(action).finally(updateBalance);
+
+const getCurrentAddress = () => get(walletStore).currentProfile?.address;
+
 /** @type {(...args: any) => Promise<void>} */
 const asyncNoopFailure = () => Promise.reject(new Error("Not implemented"));
+
+/** @type {() => Promise<void>} */
+const updateBalance = async () => {
+  const { currentProfile } = get(walletStore);
+
+  if (!currentProfile) {
+    return;
+  }
+
+  const balance = await bookkeeper.balance(currentProfile.address);
+
+  update((currentStore) => ({
+    ...currentStore,
+    balance: {
+      maximum: balance.spendable,
+      value: balance.value,
+    },
+  }));
+};
 
 /** @type {WalletStoreServices["abortSync"]} */
 const abortSync = () => {
@@ -82,9 +111,11 @@ async function init(profileGenerator, syncFromBlock) {
     profiles: [currentProfile],
   });
 
-  sync(syncFromBlock).then(() => {
-    settingsStore.update(setKey("userId", currentAddress));
-  });
+  sync(syncFromBlock)
+    .then(() => {
+      settingsStore.update(setKey("userId", currentAddress));
+    })
+    .finally(updateBalance);
 }
 
 /** @type {WalletStoreServices["reset"]} */
@@ -181,24 +212,20 @@ async function sync(fromBlock) {
         const currentUnspentNullifiers =
           await walletCache.getUnspentNotesNullifiers();
 
-        // retrieve the nullifiers that are now spent
+        /**
+         * Retrieving the nullifiers that are now spent.
+         *
+         * Currently `w3sper.js` returns an array of `ArrayBuffer`s
+         * instead of one of `Uint8Array`s, but we don't
+         * care as `ArrayBuffers` will be written in the
+         * database anyway.
+         */
         const spentNullifiers = await addressSyncer.spent(
           currentUnspentNullifiers
         );
 
         // update the cache with the spent nullifiers info
         await walletCache.spendNotes(spentNullifiers);
-
-        // calculate the balance for the current selected address
-        const balance = await bookkeeper.balance(store.currentProfile?.address);
-
-        update((currentStore) => ({
-          ...currentStore,
-          balance: {
-            maximum: balance.spendable,
-            value: balance.value,
-          },
-        }));
       })
       .then(() => {
         if (syncController?.signal.aborted) {
@@ -234,8 +261,38 @@ async function sync(fromBlock) {
 }
 
 /** @type {WalletStoreServices["transfer"]} */
-const transfer = async (to, amount, gasSettings) =>
-  asyncNoopFailure(to, amount, gasSettings);
+const transfer = async (to, amount, gas) =>
+  effectfulAction(() =>
+    networkStore
+      .connect()
+      .then((network) => {
+        const tx = bookkeeper
+          .transfer(amount)
+          .from(getCurrentAddress())
+          .to(b58.decode(to))
+          .gas(gas);
+
+        return network.execute(
+          ProfileGenerator.typeOf(to) === "address" ? tx.obfuscated() : tx
+        );
+      })
+      .then(
+        /** @type {(txInfo: TransactionInfo) => Promise<TransactionInfo>} */ async (
+          txInfo
+        ) => {
+          /**
+           * For now we ignore the possible error while
+           * writing the pending notes info, as we'll
+           * change soon how they are handled (probably by w3sper directly).
+           */
+          await walletCache
+            .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
+            .catch(() => {});
+
+          return txInfo;
+        }
+      )
+  );
 
 /** @type {WalletStoreServices["unstake"]} */
 const unstake = async (gasSettings) => asyncNoopFailure(gasSettings);

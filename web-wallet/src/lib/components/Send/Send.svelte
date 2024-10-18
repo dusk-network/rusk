@@ -92,7 +92,7 @@
   $: fee = formatter(luxToDusk(luxFee));
   $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
   $: isAmountValid = amount >= minAmount && amount <= maxSpendable;
-  $: totalLuxFee = luxFee + duskToLux(amount);
+  $: totalLuxFee = luxFee + (amount ? duskToLux(amount) : 0);
   $: isFeeWithinLimit = BigInt(totalLuxFee) <= spendable;
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
   $: addressValidationResult = validateAddress(address);
