@@ -486,6 +486,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     /// performed when entering the state
     async fn on_entering(&mut self, blk: &Block) -> anyhow::Result<()> {
         let mut acc = self.acc.write().await;
+
+        // NOTE: If we switched to InSync because of a timeout handled in the
+        // OutOfSync's on_block_event, we need to handle `blk` as usual.
+        // However, given the current implementation, we only handle the tip+1
+        // case, at the risk of losing this block. This should be improved in
+        // the future
+
         let curr_h = acc.get_curr_height().await;
 
         if blk.header().height == curr_h + 1 {
