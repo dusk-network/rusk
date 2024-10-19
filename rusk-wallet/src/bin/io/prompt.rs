@@ -16,7 +16,7 @@ use crossterm::{
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 use execution_core::stake::MINIMUM_STAKE;
-use requestty::Question;
+use requestty::{Choice, Question};
 
 use rusk_wallet::gas;
 use rusk_wallet::{
@@ -321,6 +321,35 @@ pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
 
     let a = requestty::prompt_one(question)?;
     Ok(a.as_string().expect("answer to be a string").to_owned())
+}
+
+pub enum Protocol {
+    Shielded,
+    Public,
+}
+
+impl From<&str> for Protocol {
+    fn from(value: &str) -> Self {
+        match value {
+            "Shielded" => Protocol::Shielded,
+            "Public" => Protocol::Public,
+            _ => panic!("Unknown protocol"),
+        }
+    }
+}
+
+/// Request protocol to use
+pub(crate) fn request_protocol() -> anyhow::Result<Protocol> {
+    let question = requestty::Question::select("protocol")
+        .choices(vec![Choice("Public".into()), "Shielded".into()])
+        .build();
+
+    let a = requestty::prompt_one(question)?;
+    Ok(a.as_list_item()
+        .expect("answer must be a list item")
+        .text
+        .as_str()
+        .into())
 }
 
 /// Request contract WASM file location
