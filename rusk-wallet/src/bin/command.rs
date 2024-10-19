@@ -51,22 +51,14 @@ pub(crate) enum Command {
         file: Option<WalletPath>,
     },
 
-    /// Check your current shielded balance
-    PhoenixBalance {
-        /// Profile index
+    /// Check your current balance
+    Balance {
+        /// Address
         #[clap(long)]
-        profile_idx: Option<u8>,
-
+        address: Option<Address>,
         /// Check maximum spendable balance
         #[clap(long)]
         spendable: bool,
-    },
-
-    /// Check your current public balance
-    MoonlightBalance {
-        /// Profile index
-        #[clap(long)]
-        profile_idx: Option<u8>,
     },
 
     /// List your existing profiles and generate new ones
@@ -503,27 +495,33 @@ impl Command {
         settings: &Settings,
     ) -> anyhow::Result<RunResult<'a>> {
         match self {
-            Command::PhoenixBalance {
-                profile_idx,
-                spendable,
-            } => {
-                let sync_result = wallet.sync().await;
-                if let Err(e) = sync_result {
-                    // Sync error should be reported only if wallet is online
-                    if wallet.is_online().await {
-                        tracing::error!("Unable to update the balance {e:?}")
+            Command::Balance { address, spendable } => {
+                let addr = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let addr_idx = wallet.find_index(&addr)?;
+                match addr {
+                    Address::Public { .. } => Ok(RunResult::MoonlightBalance(
+                        wallet.get_moonlight_balance(addr_idx).await?,
+                    )),
+                    Address::Shielded { .. } => {
+                        let sync_result = wallet.sync().await;
+                        if let Err(e) = sync_result {
+                            // Sync error should be reported only if wallet is
+                            // online
+                            if wallet.is_online().await {
+                                tracing::error!(
+                                    "Unable to update the balance {e:?}"
+                                )
+                            }
+                        }
+
+                        let balance =
+                            wallet.get_phoenix_balance(addr_idx).await?;
+                        Ok(RunResult::PhoenixBalance(balance, spendable))
                     }
                 }
-                let profile_idx = profile_idx.unwrap_or_default();
-
-                let balance = wallet.get_phoenix_balance(profile_idx).await?;
-                Ok(RunResult::PhoenixBalance(balance, spendable))
-            }
-            Command::MoonlightBalance { profile_idx } => {
-                let profile_idx = profile_idx.unwrap_or_default();
-                Ok(RunResult::MoonlightBalance(
-                    wallet.get_moonlight_balance(profile_idx).await?,
-                ))
             }
             Command::Profiles { new } => {
                 if new {
