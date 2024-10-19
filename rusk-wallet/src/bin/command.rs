@@ -146,12 +146,12 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Unstake using into a shielded address
-    PhoenixUnstake {
-        /// Profile index for the shielded address from which to make the
-        /// unstake request [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
+    /// Unstake DUSK
+    Unstake {
+        /// Address from which to make the unstake request [default: first
+        /// address]
+        #[clap(short, long)]
+        address: Option<Address>,
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
@@ -269,22 +269,6 @@ pub(crate) enum Command {
 
         /// Max amount of gas for this transaction
         #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
-    /// Unstake using a public account
-    MoonlightUnstake {
-        /// Profile index for the public account address from which to make the
-        /// unstake request [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -611,6 +595,29 @@ impl Command {
 
                 Ok(RunResult::Tx(tx.hash()))
             }
+            Command::Unstake {
+                address,
+                gas_limit,
+                gas_price,
+            } => {
+                let address = match address {
+                    Some(addr) => wallet.claim_as_address(addr)?,
+                    None => wallet.default_address(),
+                };
+                let profile_idx = wallet.find_index(&address)?;
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+                let tx = match address {
+                    Address::Shielded { .. } => {
+                        wallet.sync().await?;
+                        wallet.phoenix_unstake(profile_idx, gas).await
+                    }
+                    Address::Public { .. } => {
+                        wallet.moonlight_unstake(profile_idx, gas).await
+                    }
+                }?;
+
+                Ok(RunResult::Tx(tx.hash()))
+            }
             Command::StakeInfo {
                 profile_idx,
                 reward,
@@ -622,19 +629,6 @@ impl Command {
                     .ok_or(Error::NotStaked)?;
 
                 Ok(RunResult::StakeInfo(stake_info, reward))
-            }
-            Command::PhoenixUnstake {
-                profile_idx,
-                gas_limit,
-                gas_price,
-            } => {
-                wallet.sync().await?;
-
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let profile_idx = profile_idx.unwrap_or_default();
-
-                let tx = wallet.phoenix_unstake(profile_idx, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
             }
             Command::PhoenixWithdraw {
                 profile_idx,
@@ -709,17 +703,6 @@ impl Command {
 
                 let tx =
                     wallet.moonlight_to_phoenix(profile_idx, amt, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightUnstake {
-                profile_idx,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let profile_idx = profile_idx.unwrap_or_default();
-
-                let tx = wallet.moonlight_unstake(profile_idx, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
             Command::MoonlightWithdraw {
