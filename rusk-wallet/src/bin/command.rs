@@ -97,34 +97,10 @@ pub(crate) enum Command {
         /// Price you're going to pay for each gas unit (in LUX)
         #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
-    },
 
-    /// Attach a memo to a shielded transaction
-    PhoenixMemo {
-        /// Profile index for the shielded address from which to send DUSK
-        /// [default: 0]
+        /// Optional memo to attach to the transaction
         #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Memo to attach to the transaction
-        #[clap(short, long)]
-        memo: String,
-
-        /// Shielded receiver address
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
+        memo: Option<String>,
     },
 
     /// Stake DUSK
@@ -248,34 +224,6 @@ pub(crate) enum Command {
     },
 
     // Public transaction commands
-    /// Attach a memo to a public transaction
-    MoonlightMemo {
-        /// Profile index for the public account address from which to send
-        /// DUSK [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Memo to attach to the transaction
-        #[clap(short, long)]
-        memo: String,
-
-        /// Public account address of the receiver
-        #[clap(short, long)]
-        rcvr: Address,
-
-        /// Amount of DUSK to send
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Deploy a contract using a public account
     MoonlightContractDeploy {
         /// Profile index for the public account address that will pay for the
@@ -473,6 +421,7 @@ impl Command {
                 amt,
                 gas_limit,
                 gas_price,
+                memo,
             } => {
                 let sender_idx = match sender {
                     Some(addr) => {
@@ -483,13 +432,15 @@ impl Command {
                 };
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let memo = memo.filter(|m| !m.trim().is_empty());
                 let tx = match rcvr {
                     Address::Shielded { .. } => {
                         wallet.sync().await?;
                         let rcvr_pk = rcvr.shielded_address()?;
                         wallet
                             .phoenix_transfer(
-                                sender_idx, rcvr_pk, None, amt, gas,
+                                sender_idx, rcvr_pk, memo, amt, gas,
                             )
                             .await?
                     }
@@ -497,61 +448,11 @@ impl Command {
                         let rcvr_pk = rcvr.public_address()?;
                         wallet
                             .moonlight_transfer(
-                                sender_idx, rcvr_pk, None, amt, gas,
+                                sender_idx, rcvr_pk, memo, amt, gas,
                             )
                             .await?
                     }
                 };
-
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::PhoenixMemo {
-                profile_idx,
-                memo,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                wallet.sync().await?;
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = profile_idx.unwrap_or_default();
-
-                let receiver = rcvr.shielded_address()?;
-
-                let tx = wallet
-                    .phoenix_transfer(
-                        sender_idx,
-                        receiver,
-                        Some(memo),
-                        amt,
-                        gas,
-                    )
-                    .await?;
-                Ok(RunResult::Tx(tx.hash()))
-            }
-            Command::MoonlightMemo {
-                profile_idx,
-                memo,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
-            } => {
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-                let sender_idx = profile_idx.unwrap_or_default();
-
-                let receiver = rcvr.public_address()?;
-
-                let tx = wallet
-                    .moonlight_transfer(
-                        sender_idx,
-                        receiver,
-                        Some(memo),
-                        amt,
-                        gas,
-                    )
-                    .await?;
 
                 Ok(RunResult::Tx(tx.hash()))
             }
