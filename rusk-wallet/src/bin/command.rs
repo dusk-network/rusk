@@ -652,10 +652,7 @@ impl Command {
                 reward,
             } => {
                 let profile_idx = profile_idx.unwrap_or_default();
-                let stake_info = wallet
-                    .stake_info(profile_idx)
-                    .await?
-                    .ok_or(Error::NotStaked)?;
+                let stake_info = wallet.stake_info(profile_idx).await?;
 
                 Ok(RunResult::StakeInfo(stake_info, reward))
             }
@@ -933,7 +930,7 @@ pub enum RunResult<'a> {
     Tx(BlsScalar),
     PhoenixBalance(BalanceInfo, bool),
     MoonlightBalance(Dusk),
-    StakeInfo(StakeData, bool),
+    StakeInfo(Option<StakeData>, bool),
     Profile((u8, &'a Profile)),
     Profiles(&'a Vec<Profile>),
     ContractId(([u8; CONTRACT_ID_BYTES], u64)),
@@ -976,7 +973,7 @@ impl<'a> RunResult<'a> {
                     "hash": hex
                 })
             }
-            StakeInfo(data, _) => match data.amount {
+            StakeInfo(Some(data), _) => match data.amount {
                 Some(amt) => {
                     let amount = Dusk::from(amt.value).to_string();
                     let locked = Dusk::from(amt.locked).to_string();
@@ -987,6 +984,7 @@ impl<'a> RunResult<'a> {
                     let rewards = Dusk::from(data.reward).to_string();
 
                     json!({
+                        "has_stake": true,
                         "rewards": rewards,
                         "amount": amount,
                         "locked": locked,
@@ -998,6 +996,9 @@ impl<'a> RunResult<'a> {
                 }
                 None => serde_json::Value::Null,
             },
+            StakeInfo(None, _) => json!({
+                "has_stake": false
+            }),
             ExportedKeys(pk, kp) => {
                 let pk = pk.as_os_str();
                 let kp = kp.as_os_str();
@@ -1073,7 +1074,7 @@ impl<'a> fmt::Display for RunResult<'a> {
                 let hash = hex::encode(hash.to_bytes());
                 write!(f, "> Transaction sent: {hash}",)
             }
-            StakeInfo(data, _) => match data.amount {
+            StakeInfo(Some(data), _) => match data.amount {
                 Some(amt) => {
                     let amount = Dusk::from(amt.value);
                     let locked = Dusk::from(amt.locked);
@@ -1092,6 +1093,9 @@ impl<'a> fmt::Display for RunResult<'a> {
                 }
                 None => write!(f, "> No active stake found for this key"),
             },
+            StakeInfo(None, _) => {
+                write!(f, "> No active stake found for this key")
+            }
             ContractId((bytes, nonce)) => {
                 writeln!(f, "> Contract ID: {}", hex::encode(bytes))?;
                 writeln!(f, "> Deploy Nonce: {}", nonce)
