@@ -264,16 +264,7 @@ pub(crate) fn request_token_amt(
     request_token(action, min, balance)
 }
 
-/// Request amount of tokens that can be 0
-pub(crate) fn request_optional_token_amt(
-    action: &str,
-    balance: Dusk,
-) -> anyhow::Result<Dusk> {
-    let min = Dusk::from(0);
-    request_token(action, min, balance)
-}
-
-/// Request amount of tokens that can be 0
+/// Request amount of tokens that can't be lower than MINIMUM_STAKE
 pub(crate) fn request_stake_token_amt(balance: Dusk) -> anyhow::Result<Dusk> {
     let min: Dusk = MINIMUM_STAKE.into();
     request_token("stake", min, balance)
