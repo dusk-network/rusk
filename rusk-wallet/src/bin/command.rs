@@ -309,10 +309,10 @@ impl Command {
                 };
                 let addr_idx = wallet.find_index(&addr)?;
                 match addr {
-                    Address::Public { .. } => Ok(RunResult::MoonlightBalance(
+                    Address::Public(_) => Ok(RunResult::MoonlightBalance(
                         wallet.get_moonlight_balance(addr_idx).await?,
                     )),
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         let sync_result = wallet.sync().await;
                         if let Err(e) = sync_result {
                             // Sync error should be reported only if wallet is
@@ -372,7 +372,7 @@ impl Command {
 
                 let memo = memo.filter(|m| !m.trim().is_empty());
                 let tx = match rcvr {
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         wallet.sync().await?;
                         let rcvr_pk = rcvr.shielded_address()?;
                         wallet
@@ -381,7 +381,7 @@ impl Command {
                             )
                             .await?
                     }
-                    Address::Public { .. } => {
+                    Address::Public(_) => {
                         let rcvr_pk = rcvr.public_address()?;
                         wallet
                             .moonlight_transfer(
@@ -406,11 +406,11 @@ impl Command {
                 let addr_idx = wallet.find_index(&address)?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet.phoenix_stake(addr_idx, amt, gas).await
                     }
-                    Address::Public { .. } => {
+                    Address::Public(_) => {
                         wallet.moonlight_stake(addr_idx, amt, gas).await
                     }
                 }?;
@@ -429,11 +429,11 @@ impl Command {
                 let profile_idx = wallet.find_index(&address)?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet.phoenix_unstake(profile_idx, gas).await
                     }
-                    Address::Public { .. } => {
+                    Address::Public(_) => {
                         wallet.moonlight_unstake(profile_idx, gas).await
                     }
                 }?;
@@ -452,11 +452,11 @@ impl Command {
                 let addr_idx = wallet.find_index(&address)?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet.phoenix_stake_withdraw(addr_idx, gas).await
                     }
-                    Address::Public { .. } => {
+                    Address::Public(_) => {
                         wallet.moonlight_stake_withdraw(addr_idx, gas).await
                     }
                 }?;
@@ -560,7 +560,7 @@ impl Command {
                     .map_err(|_| Error::Rkyv)?;
 
                 let tx = match address {
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet
                             .phoenix_execute(
@@ -571,7 +571,7 @@ impl Command {
                             )
                             .await
                     }
-                    Address::Public { .. } => {
+                    Address::Public(_) => {
                         wallet
                             .moonlight_execute(
                                 addr_idx,
@@ -609,7 +609,7 @@ impl Command {
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
-                    Address::Shielded { .. } => {
+                    Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet
                             .phoenix_deploy(
@@ -621,7 +621,7 @@ impl Command {
                             )
                             .await
                     }
-                    Address::Public { .. } => {
+                    Address::Public(_) => {
                         wallet
                             .moonlight_deploy(
                                 addr_idx,

@@ -306,10 +306,10 @@ fn menu_op(
         CMI::Transfer => {
             let rcvr = prompt::request_rcvr_addr("recipient")?;
             let (sender, balance) = match &rcvr {
-                Address::Shielded { .. } => {
+                Address::Shielded(_) => {
                     (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
-                Address::Public { .. } => {
+                Address::Public(_) => {
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
@@ -627,7 +627,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
                 println!("   > Memo = {memo}");
             }
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            if let Address::Public { .. } = sender {
+            if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
             prompt::ask_confirm()
@@ -646,7 +646,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             println!("   > Stake to {}", stake_to.preview());
             println!("   > Amount to stake = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            if let Address::Public { .. } = sender {
+            if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
             prompt::ask_confirm()
@@ -666,7 +666,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             println!("   > Unstake from {}", unstake_from.preview());
             println!("   > Receive stake at {}", sender.preview());
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            if let Address::Public { .. } = sender {
+            if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
             prompt::ask_confirm()
@@ -687,7 +687,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             println!("   > Withdraw rewards from {}", withdraw_from.preview());
             println!("   > Receive rewards at {}", sender.preview());
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            if let Address::Public { .. } = sender {
+            if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
             prompt::ask_confirm()
@@ -710,7 +710,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             println!("   > Init args = {}", hex::encode(init_args));
             println!("   > Deploy nonce = {}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            if let Address::Public { .. } = sender {
+            if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
             prompt::ask_confirm()
