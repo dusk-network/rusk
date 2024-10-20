@@ -102,6 +102,46 @@ pub(crate) enum Command {
         memo: Option<String>,
     },
 
+    /// Convert shielded DUSK to public Dusk (the conversion will happen
+    /// between the shielded and public addresses of the same profile)
+    PhoenixToMoonlight {
+        /// Profile index for the DUSK conversion [default: 0]
+        #[clap(long)]
+        profile_idx: Option<u8>,
+
+        /// Amount of DUSK to transfer to your public account
+        #[clap(short, long)]
+        amt: Dusk,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Convert public DUSK to shielded Dusk (the conversion will happen
+    /// between the shielded and public addresses of the same profile)
+    MoonlightToPhoenix {
+        /// Profile index for the DUSK conversion [default: 0]
+        #[clap(long)]
+        profile_idx: Option<u8>,
+
+        /// Amount of DUSK to transfer to your shielded account
+        #[clap(short, long)]
+        amt: Dusk,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
     /// Stake DUSK
     Stake {
         /// Address from which to stake DUSK [default: first address]
@@ -218,27 +258,6 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    // Conversion commands
-    /// Convert shielded DUSK to public Dusk (the conversion will happen
-    /// between the shielded and public addresses of the same profile)
-    PhoenixToMoonlight {
-        /// Profile index for the DUSK conversion [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Amount of DUSK to transfer to your public account
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-
     /// Command to calculate the contract id
     /// given the contract code and deploy nonce
     CalculateContractId {
@@ -254,26 +273,6 @@ pub(crate) enum Command {
         /// Nonce used for the deploy transaction
         #[clap(short, long)]
         deploy_nonce: u64,
-    },
-
-    /// Convert public DUSK to shielded Dusk (the conversion will happen
-    /// between the shielded and public addresses of the same profile)
-    MoonlightToPhoenix {
-        /// Profile index for the DUSK conversion [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Amount of DUSK to transfer to your shielded account
-        #[clap(short, long)]
-        amt: Dusk,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
     },
 
     /// Export BLS provisioner key-pair

@@ -193,11 +193,11 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
         if let Ok(status) = rx.try_recv() {
             action_menu = action_menu
                 .separator()
-                .separator_msg(format!("Sync Status: {}", status));
+                .separator_msg(format!("Sync Status: {status}"));
         } else {
             action_menu = action_menu
                 .separator()
-                .separator_msg("Waiting for Sync to complete..".to_string());
+                .separator_msg("Waiting for Sync to complete..");
         }
     }
 
@@ -261,12 +261,6 @@ fn menu_op(
     let mut cmd_menu = Menu::new()
         .add(CMI::History, "Transactions History")
         .add(CMI::Transfer, "Transfer")
-        .add(CMI::Stake, "Stake")
-        .add(CMI::Unstake, "Unstake")
-        .add(CMI::Withdraw, "Withdraw Stake Reward")
-        .add(CMI::StakeInfo, "Check Existing Stake")
-        .add(CMI::ContractDeploy, "Contract Deploy")
-        .add(CMI::ContractCall, "Contract Call")
         .add(
             CMI::PhoenixToMoonlight,
             "Convert shielded Dusk to public Dusk",
@@ -275,6 +269,13 @@ fn menu_op(
             CMI::MoonlightToPhoenix,
             "Convert public Dusk to shielded Dusk",
         )
+        .add(CMI::StakeInfo, "Check Existing Stake")
+        .add(CMI::Stake, "Stake")
+        .add(CMI::Unstake, "Unstake")
+        .add(CMI::Withdraw, "Withdraw Stake Reward")
+        .add(CMI::StakeInfo, "Check Existing Stake")
+        .add(CMI::ContractDeploy, "Contract Deploy")
+        .add(CMI::ContractCall, "Contract Call")
         .add(CMI::CalculateContractId, "Calculate Contract ID")
         .add(CMI::Export, "Export provisioner key-pair")
         .separator()
@@ -283,7 +284,6 @@ fn menu_op(
 
     let msg = if !is_synced {
         cmd_menu = Menu::new()
-            .add(CMI::StakeInfo, "Check Existing Stake")
             .add(CMI::Export, "Export provisioner key-pair")
             .separator()
             .add(CMI::Back, "Back")

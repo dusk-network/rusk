@@ -63,8 +63,8 @@ where
         self
     }
 
-    pub fn separator_msg(mut self, msg: String) -> Self {
-        self.items.push(Separator(msg));
+    pub fn separator_msg<S: Into<String>>(mut self, msg: S) -> Self {
+        self.items.push(Separator(msg.into()));
         self
     }
 
