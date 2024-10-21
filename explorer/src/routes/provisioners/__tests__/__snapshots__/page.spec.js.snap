@@ -12,7 +12,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
       <h1
         class="data-card__header-title"
       >
-        Provisioniers — 15 Displayed Items
+        Provisioners — 15 Displayed Items
       </h1>
        
       <button
@@ -1690,7 +1690,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
       <h1
         class="data-card__header-title"
       >
-        Provisioniers — 0 Displayed Items
+        Provisioners — 0 Displayed Items
       </h1>
        
       <button
@@ -1734,7 +1734,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
       <h1
         class="data-card__header-title"
       >
-        Provisioniers — 15 Displayed Items
+        Provisioners — 15 Displayed Items
       </h1>
        
       <button
