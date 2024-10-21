@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Candidate, Ledger, Mempool, Metadata};
+use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::TimeoutSet;
@@ -739,7 +739,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .height
                     .saturating_sub(CANDIDATES_DELETION_OFFSET);
 
-                Candidate::delete(t, |height| height <= threshold)?;
+                ConsensusStorage::delete_candidate(t, |height| {
+                    height <= threshold
+                })?;
 
                 // Delete from mempool any transaction already included in the
                 // block
@@ -767,7 +769,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         }
                     }
                 }
-                Ok(Candidate::count(t))
+                Ok(ConsensusStorage::count_candidates(t))
             })
             .map_err(|e| warn!("Error while cleaning up the database: {e}"));
 
