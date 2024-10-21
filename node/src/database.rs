@@ -12,6 +12,7 @@ pub mod rocksdb;
 use anyhow::Result;
 
 use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
+use node_data::message::payload;
 use node_data::message::ConsensusHeader;
 
 use serde::{Deserialize, Serialize};
@@ -109,8 +110,8 @@ pub trait Ledger {
     fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
 }
 
-pub trait Candidate {
-    // Read-write transactions
+pub trait ConsensusStorage {
+    /// Candidate Storage
     fn store_candidate_block(&self, cm: ledger::Block) -> Result<()>;
     fn fetch_candidate_block(
         &self,
@@ -125,11 +126,30 @@ pub trait Candidate {
 
     fn clear_candidates(&self) -> Result<()>;
 
-    fn delete<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy;
 
-    fn count(&self) -> usize;
+    fn count_candidates(&self) -> usize;
+
+    /// ValidationResult Storage
+    fn store_validation_result(
+        &self,
+        vr: &payload::ValidationResult,
+    ) -> Result<()>;
+
+    fn fetch_validation_result(
+        &self,
+        ch: &ConsensusHeader,
+    ) -> Result<Option<payload::ValidationResult>>;
+
+    fn clear_validation_results(&self) -> Result<()>;
+
+    fn delete_validation_result<F>(&self, closure: F) -> Result<()>
+    where
+        F: FnOnce(u64) -> bool + std::marker::Copy;
+
+    fn count_validation_results(&self) -> usize;
 }
 
 pub trait Mempool {
@@ -190,7 +210,7 @@ pub trait Metadata {
 }
 
 pub trait Persist:
-    Ledger + Candidate + Mempool + Metadata + core::fmt::Debug
+    Ledger + ConsensusStorage + Mempool + Metadata + core::fmt::Debug
 {
     // Candidate block functions
 

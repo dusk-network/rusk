@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Candidate, Mempool, Metadata};
+use crate::database::{self, ConsensusStorage, Mempool, Metadata};
 use crate::{vm, Message};
 use async_trait::async_trait;
 use dusk_consensus::commons::{RoundUpdate, TimeoutSet};

@@ -6,10 +6,11 @@
 
 pub mod conf;
 
-use crate::database::{Candidate, Ledger, Mempool};
+use crate::database::{ConsensusStorage, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
+
 use std::cmp::min;
 
 use node_data::message::payload::{self, GetResource, InvParam, InvType};
@@ -375,7 +376,7 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if Candidate::fetch_candidate_block(&t, hash)?
+                            if ConsensusStorage::fetch_candidate_block(&t, hash)?
                                 .is_none()
                             {
                                 inv.add_candidate_from_hash(*hash);
@@ -391,7 +392,7 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if Candidate::fetch_candidate_block_by_iteration(
+                            if ConsensusStorage::fetch_candidate_block_by_iteration(
                                 &t, ch,
                             )?
                             .is_none()
@@ -401,7 +402,15 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::ValidationResult => {
-                        //TODO: try fetch and ask if is missing
+                        if let InvParam::Iteration(ch) = &i.param {
+                            if ConsensusStorage::fetch_validation_result(
+                                &t, ch,
+                            )?
+                            .is_none()
+                            {
+                                inv.add_validation_result(*ch);
+                            }
+                        }
                     }
                 }
 
@@ -469,7 +478,7 @@ impl DataBrokerSrv {
                                 .ok()
                                 .flatten()
                                 .or_else(|| {
-                                    Candidate::fetch_candidate_block(&t, hash)
+                                    ConsensusStorage::fetch_candidate_block(&t, hash)
                                         .ok()
                                         .flatten()
                                 })
@@ -490,7 +499,7 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            Candidate::fetch_candidate_block_by_iteration(
+                            ConsensusStorage::fetch_candidate_block_by_iteration(
                                 &t, ch,
                             )
                             .ok()
@@ -503,8 +512,19 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::ValidationResult => {
-                        //TODO: fetch and return ValidationQuorum
-                        None
+                        if let InvParam::Iteration(ch) = &i.param {
+                            ConsensusStorage::fetch_validation_result(&t, ch)
+                                .ok()
+                                .flatten()
+                                .map(|vr| {
+                                    Message::from(payload::ValidationQuorum {
+                                        header: *ch,
+                                        result: vr,
+                                    })
+                                })
+                        } else {
+                            None
+                        }
                     }
                 })
                 .take(max_entries)
