@@ -33,11 +33,11 @@ impl Address {
         }
     }
 
-    /// Returns the inner shielded address, if present.
+    /// Returns the inner shielded key, if present.
     ///
     /// # Errors
-    /// If the inner address is a public one.
-    pub fn shielded_address(&self) -> Result<&PhoenixPublicKey, Error> {
+    /// If the address is a public one.
+    pub fn shielded_key(&self) -> Result<&PhoenixPublicKey, Error> {
         if let Self::Shielded(addr) = self {
             Ok(addr)
         } else {
@@ -45,11 +45,11 @@ impl Address {
         }
     }
 
-    /// Returns the inner public address, if present.
+    /// Returns the inner public key, if present.
     ///
     /// # Errors
-    /// If the inner address is a shielded one.
-    pub fn public_address(&self) -> Result<&BlsPublicKey, Error> {
+    /// If the address is a shielded one.
+    pub fn public_key(&self) -> Result<&BlsPublicKey, Error> {
         if let Self::Public(addr) = self {
             Ok(addr)
         } else {

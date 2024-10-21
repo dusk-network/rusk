@@ -374,7 +374,7 @@ impl Command {
                 let tx = match rcvr {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
-                        let rcvr_pk = rcvr.shielded_address()?;
+                        let rcvr_pk = rcvr.shielded_key()?;
                         wallet
                             .phoenix_transfer(
                                 sender_idx, rcvr_pk, memo, amt, gas,
@@ -382,7 +382,7 @@ impl Command {
                             .await?
                     }
                     Address::Public(_) => {
-                        let rcvr_pk = rcvr.public_address()?;
+                        let rcvr_pk = rcvr.public_key()?;
                         wallet
                             .moonlight_transfer(
                                 sender_idx, rcvr_pk, memo, amt, gas,
