@@ -492,7 +492,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        state.propagate(tx).await
     }
 
     /// Executes a generic contract call, paying gas with a shielded address.
@@ -546,7 +546,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        let tx = state.prove(tx).await?;
+        state.propagate(tx).await
     }
 
     /// Transfers funds between shielded addresses.
@@ -604,7 +605,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        let tx = state.prove(tx).await?;
+        state.propagate(tx).await
     }
 
     /// Transfers funds between public accounts.
@@ -647,7 +649,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(tx).await
+        state.propagate(tx).await
     }
 
     /// Stakes Dusk using shielded notes.
@@ -701,7 +703,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(stake).await
+        let stake = state.prove(stake).await?;
+        state.propagate(stake).await
     }
 
     /// Stakes Dusk using a public account.
@@ -750,7 +753,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         stake_sk.zeroize();
 
-        state.prove_and_propagate(stake).await
+        state.propagate(stake).await
     }
 
     /// Obtains stake information for a given address.
@@ -808,7 +811,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(unstake).await
+        let unstake = state.prove(unstake).await?;
+        state.propagate(unstake).await
     }
 
     /// Unstakes Dusk onto a public account.
@@ -850,7 +854,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         stake_sk.zeroize();
 
-        state.prove_and_propagate(unstake).await
+        state.propagate(unstake).await
     }
 
     /// Withdraws accumulated staking to a shielded address.
@@ -892,7 +896,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_sk.zeroize();
 
-        state.prove_and_propagate(withdraw).await
+        let withdraw = state.prove(withdraw).await?;
+        state.propagate(withdraw).await
     }
 
     /// Converts Dusk from a shielded address to a public account.
@@ -931,7 +936,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         phoenix_sk.zeroize();
         moonlight_sk.zeroize();
 
-        state.prove_and_propagate(convert).await
+        let convert = state.prove(convert).await?;
+        state.propagate(convert).await
     }
 
     /// Converts Dusk from a public account to a shielded address.
@@ -966,7 +972,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         phoenix_sk.zeroize();
         moonlight_sk.zeroize();
 
-        state.prove_and_propagate(convert).await
+        state.propagate(convert).await
     }
 
     /// Withdraws accumulated staking reward to a public account.
@@ -994,7 +1000,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(withdraw).await
+        state.propagate(withdraw).await
     }
 
     /// Deploys a contract using a public account to pay gas.
@@ -1028,7 +1034,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(deploy).await
+        state.propagate(deploy).await
     }
 
     /// Deploys a contract using shielded notes to pay gas.
@@ -1068,7 +1074,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
 
-        state.prove_and_propagate(deploy).await
+        let deploy = state.prove(deploy).await?;
+        state.propagate(deploy).await
     }
 
     /// Returns BLS key-pair for provisioner nodes
