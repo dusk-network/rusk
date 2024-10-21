@@ -102,7 +102,7 @@ pub(crate) enum Command {
         memo: Option<String>,
     },
 
-    /// Convert shielded DUSK to public Dusk
+    /// Convert shielded DUSK to public DUSK
     Unshield {
         /// Profile index for the DUSK conversion [default: 0]
         #[clap(long)]
@@ -121,7 +121,7 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Convert public DUSK to shielded Dusk
+    /// Convert public DUSK to shielded DUSK
     Shield {
         /// Profile index for the DUSK conversion [default: 0]
         #[clap(long)]
@@ -205,7 +205,7 @@ pub(crate) enum Command {
 
     /// Call a contract
     ContractCall {
-        /// Address from which to call the contract [default: first]
+        /// Address that pays the gas for the contract call [default: first]
         #[clap(short, long)]
         address: Option<Address>,
 
@@ -232,7 +232,8 @@ pub(crate) enum Command {
 
     /// Deploy a contract
     ContractDeploy {
-        /// Address from which to deploy the contract [default: first]
+        /// Address that will pay for the gas to deploy the contract [default:
+        /// first]
         #[clap(short, long)]
         address: Option<Address>,
 
