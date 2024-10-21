@@ -37,7 +37,6 @@ pub(crate) fn online(
     phoenix_balance: Dusk,
     moonlight_balance: Dusk,
     settings: &Settings,
-    is_synced: bool,
 ) -> anyhow::Result<ProfileOp> {
     let mut cmd_menu = Menu::new()
         .add(MenuItem::History, "Show Transactions History")
@@ -56,20 +55,8 @@ pub(crate) fn online(
         .add(MenuItem::Back, "Back")
         .separator();
 
-    let msg = if !is_synced {
-        cmd_menu = Menu::new()
-            .add(MenuItem::Export, "Export provisioner key-pair")
-            .separator()
-            .add(MenuItem::Back, "Back")
-            .separator();
-
-        "The wallet is still syncing. Please come back to display new information."
-    } else {
-        "What do you like to do?"
-    };
-
     let q = Question::select("theme")
-        .message(msg)
+        .message("What do you like to do?")
         .choices(cmd_menu.clone())
         .build();
 
