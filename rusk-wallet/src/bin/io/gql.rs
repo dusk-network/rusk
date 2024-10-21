@@ -54,12 +54,9 @@ pub enum TxStatus {
 
 impl GraphQL {
     /// Create a new GraphQL wallet client
-    pub fn new<S>(url: S, status: fn(&str)) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn new<S: Into<String>>(url: S, status: fn(&str)) -> Self {
         Self {
-            client: RuesHttpClient::new(url.into()),
+            client: RuesHttpClient::new(url),
             status,
         }
     }
@@ -165,7 +162,7 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
             println!("{s}");
         },
         client: RuesHttpClient::new(
-            "http://testnet.nodes.dusk.network:9500/graphql".to_string(),
+            "http://testnet.nodes.dusk.network:9500/graphql",
         ),
     };
     let _ = gql

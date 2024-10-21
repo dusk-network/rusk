@@ -77,8 +77,8 @@ where
 {
     let con = wallet
         .connect_with_status(
-            &settings.state.to_string(),
-            &settings.prover.to_string(),
+            settings.state.as_str(),
+            settings.prover.as_str(),
             status,
         )
         .await;

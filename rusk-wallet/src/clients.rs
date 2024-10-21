@@ -38,11 +38,7 @@ use self::sync::sync_db;
 
 use super::{cache::Cache, *};
 
-use crate::{
-    rusk::{RuskHttpClient, RuskRequest},
-    store::LocalStore,
-    Error, MAX_PROFILES,
-};
+use crate::{store::LocalStore, Error, MAX_PROFILES};
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";
@@ -75,7 +71,7 @@ pub struct State {
     cache: Mutex<Arc<Cache>>,
     status: fn(&str),
     client: RuesHttpClient,
-    prover: RuskHttpClient,
+    prover: RuesHttpClient,
     store: LocalStore,
     pub sync_rx: Option<Receiver<String>>,
     sync_join_handle: Option<JoinHandle<()>>,
@@ -87,7 +83,7 @@ impl State {
         data_dir: &Path,
         status: fn(&str),
         client: RuesHttpClient,
-        prover: RuskHttpClient,
+        prover: RuesHttpClient,
         store: LocalStore,
     ) -> Result<Self, Error> {
         let cfs = (0..MAX_PROFILES)
@@ -166,12 +162,10 @@ impl State {
 
             status("Attempt to prove tx...");
 
-            let prove_req = RuskRequest::new("prove_execute", proof.to_vec());
-
             let proof =
-                prover.call(2, "rusk", &prove_req).await.map_err(|e| {
-                    ExecutionCoreError::PhoenixCircuit(e.to_string())
-                })?;
+                prover.call("prover", None, "prove", proof).await.map_err(
+                    |e| ExecutionCoreError::PhoenixCircuit(e.to_string()),
+                )?;
 
             utx.set_proof(proof);
 
