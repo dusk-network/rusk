@@ -46,11 +46,13 @@
   {error}
   {loading}
   title="Provisioners — {displayedProvisioner.length} Displayed Items"
-  headerButtonDetails={{
-    action: () => loadMoreItems(),
-    disabled: isLoadMoreDisabled,
-    label: "Show More",
-  }}
+  headerButtonDetails={error
+    ? undefined
+    : {
+        action: () => loadMoreItems(),
+        disabled: isLoadMoreDisabled,
+        label: "Show More",
+      }}
 >
   {#if isSmallScreen}
     <div class="provisioners-card__list">
