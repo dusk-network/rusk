@@ -21,6 +21,7 @@ use rusk_wallet::{
     },
     Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES,
 };
+use serde_json::json;
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
@@ -467,10 +468,7 @@ impl Command {
                 reward,
             } => {
                 let profile_idx = profile_idx.unwrap_or_default();
-                let stake_info = wallet
-                    .stake_info(profile_idx)
-                    .await?
-                    .ok_or(Error::NotStaked)?;
+                let stake_info = wallet.stake_info(profile_idx).await?;
 
                 Ok(RunResult::StakeInfo(stake_info, reward))
             }
@@ -652,7 +650,7 @@ impl Command {
                 let contract_id =
                     wallet.get_contract_id(profile_idx, code, deploy_nonce)?;
 
-                Ok(RunResult::ContractId(contract_id))
+                Ok(RunResult::ContractId((contract_id, deploy_nonce)))
             }
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),
@@ -666,10 +664,10 @@ pub enum RunResult<'a> {
     Tx(BlsScalar),
     PhoenixBalance(BalanceInfo, bool),
     MoonlightBalance(Dusk),
-    StakeInfo(StakeData, bool),
+    StakeInfo(Option<StakeData>, bool),
     Profile((u8, &'a Profile)),
     Profiles(&'a Vec<Profile>),
-    ContractId([u8; CONTRACT_ID_BYTES]),
+    ContractId(([u8; CONTRACT_ID_BYTES], u64)),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
@@ -677,9 +675,96 @@ pub enum RunResult<'a> {
     PhoenixHistory(Vec<TransactionHistory>),
 }
 
-impl fmt::Display for RunResult<'_> {
+impl<'a> RunResult<'a> {
+    /// Convert the ran result into json
+    pub fn to_json(&self) -> String {
+        use RunResult::*;
+
+        match self {
+            PhoenixBalance(bal, _) => {
+                json!({
+                    "total": bal.value,
+                    "spendable": bal.spendable
+                })
+            }
+            MoonlightBalance(bal) => {
+                let bal = bal.to_string();
+
+                json!({
+                    "total": bal,
+                })
+            }
+            Profile((_, profile)) => profile.to_json(),
+            Profiles(addrs) => {
+                let addrs = addrs.iter().map(|a| a.to_json()).collect();
+
+                serde_json::Value::Array(addrs)
+            }
+            Tx(hash) => {
+                let hex = hex::encode(hash.to_bytes());
+
+                json!({
+                    "hash": hex
+                })
+            }
+            StakeInfo(Some(data), _) => match data.amount {
+                Some(amt) => {
+                    let amount = Dusk::from(amt.value).to_string();
+                    let locked = Dusk::from(amt.locked).to_string();
+                    let faults = data.faults.to_string();
+                    let hard_faults = data.hard_faults.to_string();
+                    let eligibility = amt.eligibility.to_string();
+                    let epoch = (amt.eligibility / EPOCH).to_string();
+                    let rewards = Dusk::from(data.reward).to_string();
+
+                    json!({
+                        "has_stake": true,
+                        "rewards": rewards,
+                        "amount": amount,
+                        "locked": locked,
+                        "eligibility": eligibility,
+                        "epoch": epoch,
+                        "hard_faults": hard_faults,
+                        "faults": faults,
+                    })
+                }
+                None => serde_json::Value::Null,
+            },
+            StakeInfo(None, _) => json!({
+                "has_stake": false
+            }),
+            ExportedKeys(pk, kp) => {
+                let pk = pk.as_os_str();
+                let kp = kp.as_os_str();
+
+                json!({
+                    "pk_export_location": pk,
+                    "key_pair_export_location": kp
+                })
+            }
+            PhoenixHistory(txns) => {
+                let txns = txns.iter().map(|his| his.to_json()).collect();
+
+                serde_json::Value::Array(txns)
+            }
+            ContractId((bytes, nonce)) => {
+                let contract_id = hex::encode(bytes);
+
+                json!({
+                    "contract_id": contract_id,
+                    "deploy_nonce": nonce
+                })
+            }
+            Create() | Restore() | Settings() => serde_json::Value::Null,
+        }
+        .to_string()
+    }
+}
+
+impl<'a> fmt::Display for RunResult<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use RunResult::*;
+
         match self {
             PhoenixBalance(balance, _) => {
                 let total = Dusk::from(balance.value);
@@ -723,7 +808,7 @@ impl fmt::Display for RunResult<'_> {
                 let hash = hex::encode(hash.to_bytes());
                 write!(f, "> Transaction sent: {hash}",)
             }
-            StakeInfo(data, _) => match data.amount {
+            StakeInfo(Some(data), _) => match data.amount {
                 Some(amt) => {
                     let amount = Dusk::from(amt.value);
                     let locked = Dusk::from(amt.locked);
@@ -742,8 +827,12 @@ impl fmt::Display for RunResult<'_> {
                 }
                 None => write!(f, "> No active stake found for this key"),
             },
-            ContractId(bytes) => {
-                write!(f, "> Contract ID: {}", hex::encode(bytes))
+            StakeInfo(None, _) => {
+                write!(f, "> No active stake found for this key")
+            }
+            ContractId((bytes, nonce)) => {
+                writeln!(f, "> Contract ID: {}", hex::encode(bytes))?;
+                writeln!(f, "> Deploy Nonce: {}", nonce)
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();

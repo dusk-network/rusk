@@ -44,6 +44,11 @@ pub(crate) struct WalletArgs {
     #[clap(long, value_enum, default_value_t = LogFormat::Coloured)]
     pub log_type: LogFormat,
 
+    /// format of the result messages written to stdout after a wallet
+    /// operation
+    #[clap(long, value_enum, default_value_t = LogFormat::Plain)]
+    pub stdout_format: LogFormat,
+
     /// Command
     #[clap(subcommand)]
     pub command: Option<Command>,
