@@ -314,26 +314,28 @@ pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
     Ok(a.as_string().expect("answer to be a string").to_owned())
 }
 
-pub enum Protocol {
-    Phoenix,
-    Moonlight,
+pub enum TransactionModel {
+    Shielded,
+    Public,
 }
 
-impl From<&str> for Protocol {
+impl From<&str> for TransactionModel {
     fn from(value: &str) -> Self {
         match value {
-            "Phoenix" => Protocol::Phoenix,
-            "Moonlight" => Protocol::Moonlight,
-            _ => panic!("Unknown protocol"),
+            "Shielded" => TransactionModel::Shielded,
+            "Public" => TransactionModel::Public,
+            _ => panic!("Unknown transaction model"),
         }
     }
 }
 
-/// Request protocol to use
-pub(crate) fn request_protocol() -> anyhow::Result<Protocol> {
-    let question = requestty::Question::select("protocol")
-        .choices(vec![Choice("Moonlight".into()), "Phoenix".into()])
-        .build();
+/// Request transaction model to use
+pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
+    let question = requestty::Question::select(
+        "Please specify the transaction model to use",
+    )
+    .choices(vec![Choice("Public".into()), "Shielded".into()])
+    .build();
 
     let a = requestty::prompt_one(question)?;
     Ok(a.as_list_item()
