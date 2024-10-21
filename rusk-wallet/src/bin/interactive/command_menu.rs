@@ -14,26 +14,16 @@ use super::ProfileOp;
 /// The command-menu items
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum MenuItem {
-    // History
     History,
-    // Transfer
     Transfer,
-    // Stake
     Stake,
-    // Unstake
     Unstake,
-    // Withdraw
     Withdraw,
-    // Contract Deploy
     ContractDeploy,
-    // Contract Call
     ContractCall,
-    // Conversion
     Unshield,
     Shield,
-    // Generate Contract ID.
     CalculateContractId,
-    // Others
     StakeInfo,
     Export,
     Back,
@@ -50,19 +40,18 @@ pub(crate) fn online(
     is_synced: bool,
 ) -> anyhow::Result<ProfileOp> {
     let mut cmd_menu = Menu::new()
-        .add(MenuItem::History, "Transactions History")
-        .add(MenuItem::Transfer, "Transfer")
-        .add(MenuItem::Unshield, "Convert shielded Dusk to public Dusk")
-        .add(MenuItem::Shield, "Convert public Dusk to shielded Dusk")
+        .add(MenuItem::History, "Show Transactions History")
+        .add(MenuItem::Transfer, "Transfer Dusk")
+        .add(MenuItem::Unshield, "Convert Shielded Dusk to Public Dusk")
+        .add(MenuItem::Shield, "Convert Public Dusk to Shielded Dusk")
         .add(MenuItem::StakeInfo, "Check Existing Stake")
         .add(MenuItem::Stake, "Stake")
         .add(MenuItem::Unstake, "Unstake")
         .add(MenuItem::Withdraw, "Withdraw Stake Reward")
-        .add(MenuItem::StakeInfo, "Check Existing Stake")
-        .add(MenuItem::ContractDeploy, "Contract Deploy")
-        .add(MenuItem::ContractCall, "Contract Call")
+        .add(MenuItem::ContractCall, "Call a Contract")
+        .add(MenuItem::ContractDeploy, "Deploy a Contract")
         .add(MenuItem::CalculateContractId, "Calculate Contract ID")
-        .add(MenuItem::Export, "Export provisioner key-pair")
+        .add(MenuItem::Export, "Export Provisioner Key-Pair")
         .separator()
         .add(MenuItem::Back, "Back")
         .separator();
