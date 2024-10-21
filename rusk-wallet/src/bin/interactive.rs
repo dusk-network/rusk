@@ -236,8 +236,8 @@ enum CommandMenuItem {
     // Contract Call
     ContractCall,
     // Conversion
-    PhoenixToMoonlight,
-    MoonlightToPhoenix,
+    Unshield,
+    Shield,
     // Generate Contract ID.
     CalculateContractId,
     // Others
@@ -261,14 +261,8 @@ fn menu_op(
     let mut cmd_menu = Menu::new()
         .add(CMI::History, "Transactions History")
         .add(CMI::Transfer, "Transfer")
-        .add(
-            CMI::PhoenixToMoonlight,
-            "Convert shielded Dusk to public Dusk",
-        )
-        .add(
-            CMI::MoonlightToPhoenix,
-            "Convert public Dusk to shielded Dusk",
-        )
+        .add(CMI::Unshield, "Convert shielded Dusk to public Dusk")
+        .add(CMI::Shield, "Convert public Dusk to shielded Dusk")
         .add(CMI::StakeInfo, "Check Existing Stake")
         .add(CMI::Stake, "Stake")
         .add(CMI::Unstake, "Unstake")
@@ -419,22 +413,18 @@ fn menu_op(
             profile_idx: Some(profile_idx),
             reward: false,
         })),
-        CMI::MoonlightToPhoenix => {
-            ProfileOp::Run(Box::new(Command::MoonlightToPhoenix {
-                profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", moonlight_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::PhoenixToMoonlight => {
-            ProfileOp::Run(Box::new(Command::PhoenixToMoonlight {
-                profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", phoenix_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
+        CMI::Shield => ProfileOp::Run(Box::new(Command::Shield {
+            profile_idx: Some(profile_idx),
+            amt: prompt::request_token_amt("convert", moonlight_balance)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        CMI::Unshield => ProfileOp::Run(Box::new(Command::Unshield {
+            profile_idx: Some(profile_idx),
+            amt: prompt::request_token_amt("convert", phoenix_balance)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
         CMI::CalculateContractId => {
             ProfileOp::Run(Box::new(Command::CalculateContractId {
                 profile_idx: Some(profile_idx),

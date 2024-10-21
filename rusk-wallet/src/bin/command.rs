@@ -102,9 +102,8 @@ pub(crate) enum Command {
         memo: Option<String>,
     },
 
-    /// Convert shielded DUSK to public Dusk (the conversion will happen
-    /// between the shielded and public addresses of the same profile)
-    PhoenixToMoonlight {
+    /// Convert shielded DUSK to public Dusk
+    Unshield {
         /// Profile index for the DUSK conversion [default: 0]
         #[clap(long)]
         profile_idx: Option<u8>,
@@ -122,9 +121,8 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Convert public DUSK to shielded Dusk (the conversion will happen
-    /// between the shielded and public addresses of the same profile)
-    MoonlightToPhoenix {
+    /// Convert public DUSK to shielded Dusk
+    Shield {
         /// Profile index for the DUSK conversion [default: 0]
         #[clap(long)]
         profile_idx: Option<u8>,
@@ -506,7 +504,7 @@ impl Command {
 
                 Ok(RunResult::PhoenixHistory(transactions))
             }
-            Command::PhoenixToMoonlight {
+            Command::Unshield {
                 profile_idx,
                 gas_limit,
                 gas_price,
@@ -521,7 +519,7 @@ impl Command {
                     wallet.phoenix_to_moonlight(profile_idx, amt, gas).await?;
                 Ok(RunResult::Tx(tx.hash()))
             }
-            Command::MoonlightToPhoenix {
+            Command::Shield {
                 profile_idx,
                 amt,
                 gas_limit,
