@@ -25,11 +25,11 @@ pub enum Address {
 
 impl Address {
     /// Check if the `other` Address uses the same protocol
-    pub fn same_protocol(&self, other: &Address) -> anyhow::Result<()> {
+    pub fn same_protocol(&self, other: &Address) -> Result<(), Error> {
         match (self, other) {
             (Address::Shielded(_), Address::Shielded(_)) => Ok(()),
             (Address::Public(_), Address::Public(_)) => Ok(()),
-            _ => anyhow::bail!("Addresses use different protocol"),
+            _ => Err(Error::DifferentProtocols),
         }
     }
 

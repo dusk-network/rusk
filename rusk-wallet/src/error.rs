@@ -128,6 +128,9 @@ pub enum Error {
     /// Expected Phoenix public key
     #[error("Expected Phoenix public Key")]
     ExpectedPhoenixPublicKey,
+    /// Addresses use different protocols
+    #[error("Addresses use different protocols")]
+    DifferentProtocols,
     /// Invalid contract id provided
     #[error("Invalid contractID provided")]
     InvalidContractId,
