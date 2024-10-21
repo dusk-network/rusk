@@ -24,6 +24,7 @@
   import { toast } from "$lib/dusk/components/Toast/store";
   import {
     AppAnchorButton,
+    Banner,
     ContractStatusesList,
     GasFee,
     GasSettings,
@@ -161,19 +162,9 @@
           bind:value={address}
         />
         {#if addressValidationResult.type === "account"}
-          <div class="warning-banner" transition:fade>
-            <Icon
-              path={mdiAlertOutline}
-              size="large"
-              className="warning-banner__icon"
-            />
-            <div>
-              <strong class="warning-banner__title"
-                >Public Account detected.</strong
-              >
-              <p>This transaction will be public.</p>
-            </div>
-          </div>
+          <Banner title="Public Account detected." variant="info">
+            <p>This transaction will be public.</p>
+          </Banner>
         {/if}
         <ContractStatusesList items={statuses}>
           {#if enableAllocateButton}
@@ -347,25 +338,6 @@
 </div>
 
 <style lang="postcss">
-  .warning-banner {
-    display: flex;
-    align-items: center;
-    border: 0.0625em solid var(--info-panel-border-color);
-    padding: 1em 1.25em;
-    border-radius: 0.75em;
-    font-size: 0.875em;
-    line-height: 1.3125em;
-  }
-
-  .warning-banner__title {
-    font-weight: 500;
-  }
-
-  :global(.warning-banner__icon) {
-    margin-right: var(--small-gap);
-    fill: var(--info-panel-icon-warning-color);
-  }
-
   .operation {
     &__send {
       display: flex;

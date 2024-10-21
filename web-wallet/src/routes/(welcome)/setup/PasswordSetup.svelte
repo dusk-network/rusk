@@ -77,7 +77,7 @@
       opacity: 0.5;
 
       &--error {
-        color: var(--danger-color);
+        color: var(--error-color);
         opacity: 1;
       }
     }

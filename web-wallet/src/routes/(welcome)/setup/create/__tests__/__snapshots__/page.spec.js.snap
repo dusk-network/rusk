@@ -2211,7 +2211,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         
          
         <span
-          class="confirm-password--meta svelte-1itc1ku"
+          class="confirm-password--meta svelte-ww95yl"
         >
           Password must be at least 8 characters
         </span>
